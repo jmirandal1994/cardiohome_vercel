@@ -178,6 +178,7 @@
             </table>
         </div>
 
+        {% if usuario != 'admin' %}
         {% for evento in eventos %}
         <div class="establecimiento">
             <h3>{{ evento.nombre }}</h3>
@@ -198,6 +199,7 @@
             </form>
         </div>
         {% endfor %}
+        {% endif %}
 
     </div>
 </body>

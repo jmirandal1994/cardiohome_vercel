@@ -44,12 +44,19 @@ def login():
 def dashboard():
     if 'usuario' not in session:
         return redirect(url_for('index'))
+
     usuario = session['usuario']
     usuario_id = session['usuario_id']
-    url = f"{SUPABASE_URL}/rest/v1/establecimientos?doctora_id=eq.{usuario_id}&select=*"
-    res = requests.get(url, headers=SUPABASE_HEADERS)
-    eventos = res.json()
-    return render_template('dashboard.html', usuario=usuario, establecimientos=[], eventos=eventos)
+    url_eventos = f"{SUPABASE_URL}/rest/v1/establecimientos?doctora_id=eq.{usuario_id}&select=*"
+    res_eventos = requests.get(url_eventos, headers=SUPABASE_HEADERS)
+    eventos = res_eventos.json()
+
+    doctoras = []
+    if usuario == 'admin':
+        res_doctoras = requests.get(f"{SUPABASE_URL}/rest/v1/doctoras", headers=SUPABASE_HEADERS)
+        doctoras = res_doctoras.json()
+
+    return render_template('dashboard.html', usuario=usuario, establecimientos=[], eventos=eventos, doctoras=doctoras)
 
 @app.route('/logout')
 def logout():
@@ -63,7 +70,6 @@ def admin_agregar():
     horario = request.form['horario']
     obs = request.form['obs']
     doctora_id = request.form['doctora']
-
     archivo = request.files['formulario']
 
     if archivo and permitido(archivo.filename):
@@ -74,8 +80,7 @@ def admin_agregar():
             "observaciones": obs,
             "doctora_id": doctora_id
         }
-        url = f"{SUPABASE_URL}/rest/v1/establecimientos"
-        requests.post(url, headers=SUPABASE_HEADERS, json=data)
+        requests.post(f"{SUPABASE_URL}/rest/v1/establecimientos", headers=SUPABASE_HEADERS, json=data)
 
     return redirect(url_for('dashboard'))
 
@@ -101,7 +106,7 @@ def subir(establecimiento):
 
     enviar_correo_sendgrid(
         asunto=f'Nuevos formularios desde {establecimiento}',
-        cuerpo=f'Doctora: {session["usuario"]}\nEstablecimiento: {establecimiento}\nSe subieron {len(mensajes)} archivo(s).',
+        cuerpo=f'Doctora: {session['usuario']}\nEstablecimiento: {establecimiento}\nSe subieron {len(mensajes)} archivo(s).',
         adjuntos=adjuntos
     )
     return "Archivos procesados:<br>" + "<br>".join(mensajes)

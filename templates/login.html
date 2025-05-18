@@ -5,32 +5,40 @@
     <title>Login - CardioHome</title>
     <style>
         body {
-            font-family: sans-serif;
-            background: #f1f5f9;
+            font-family: 'Segoe UI', sans-serif;
+            background: url('/static/bg-login.jpg') no-repeat center center fixed;
+            background-size: cover;
             display: flex;
-            flex-direction: column;
             align-items: center;
+            justify-content: center;
+            height: 100vh;
             margin: 0;
-            padding: 2rem;
         }
-        .box {
-            background: white;
+        .login-box {
+            background: rgba(255, 255, 255, 0.9);
             padding: 2rem;
             border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            width: 100%;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
             max-width: 400px;
-        }
-        h1 {
+            width: 100%;
             text-align: center;
+        }
+        .login-box img {
+            max-width: 150px;
             margin-bottom: 1rem;
         }
-        input[type=text], input[type=password] {
+        .login-box h1 {
+            margin-bottom: 1rem;
+            font-size: 1.8rem;
+            color: #1a73e8;
+        }
+        input[type="text"], input[type="password"] {
             width: 100%;
             padding: 10px;
             margin-bottom: 1rem;
             border: 1px solid #ccc;
             border-radius: 6px;
+            font-size: 1rem;
         }
         button {
             background: #1a73e8;
@@ -40,22 +48,18 @@
             width: 100%;
             border-radius: 6px;
             font-weight: bold;
+            font-size: 1rem;
             cursor: pointer;
         }
         button:hover {
             background: #155ab6;
         }
-        .logo {
-            max-width: 160px;
-            margin: 0 auto 1rem;
-            display: block;
-        }
     </style>
 </head>
 <body>
-    <div class="box">
-        <img class="logo" src="/static/cardiohome.png" alt="Logo CardioHome">
-        <h1>Acceso Doctora</h1>
+    <div class="login-box">
+        <img src="/static/cardiohome.png" alt="Logo CardioHome">
+        <h1>Acceso a CardioHome</h1>
         <form method="POST" action="/login">
             <input type="text" name="username" placeholder="Usuario" required>
             <input type="password" name="password" placeholder="Contraseña" required>

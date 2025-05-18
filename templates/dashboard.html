@@ -213,9 +213,9 @@
         <div class="establecimiento">
             <h3>{{ evento.nombre }}</h3>
             <p>
-                <a href="{{ url_for('static', filename='formularios/' ~ evento.nombre ~ '.pdf') }}" download>
-                    Descargar Formulario
-                </a>
+                <a href="{{ url_for('descargar_archivo', nombre_archivo=evento.nombre ~ '.pdf') }}" download>
+                   Descargar Formulario
+            </a>
             </p>
             <form action="/subir/{{ evento.nombre }}" method="POST" enctype="multipart/form-data">
                 <label>Subir formularios completados (puedes seleccionar varios):</label><br>

@@ -3,7 +3,6 @@ import os
 import requests
 import base64
 from werkzeug.utils import secure_filename
-from supabase import create_client, Client
 
 app = Flask(__name__)
 app.secret_key = 'clave_super_segura'
@@ -12,7 +11,11 @@ ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'xls', 'xlsx'}
 # -------------------- Supabase Config --------------------
 SUPABASE_URL = 'https://rbzxolreglwndvsrxhmg.supabase.co'
 SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDE3ODcsImV4cCI6MjA2MzExNzc4N30.BbzsUhed1Y_dJYWFKLAHqtV4cXdvjF_ihGdQ_Bpov3Y'
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+SUPABASE_HEADERS = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": f"Bearer {SUPABASE_KEY}",
+    "Content-Type": "application/json"
+}
 
 # -------------------- Utilidades --------------------
 def permitido(filename):
@@ -27,8 +30,9 @@ def index():
 def login():
     usuario = request.form['username']
     clave = request.form['password']
-    response = supabase.table("doctoras").select("*").eq("usuario", usuario).eq("password", clave).execute()
-    data = response.data
+    url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario}&password=eq.{clave}"
+    res = requests.get(url, headers=SUPABASE_HEADERS)
+    data = res.json()
     if data:
         session['usuario'] = usuario
         session['usuario_id'] = data[0]['id']
@@ -42,7 +46,9 @@ def dashboard():
         return redirect(url_for('index'))
     usuario = session['usuario']
     usuario_id = session['usuario_id']
-    eventos = supabase.table("establecimientos").select("*").eq("doctora_id", usuario_id).execute().data
+    url = f"{SUPABASE_URL}/rest/v1/establecimientos?doctora_id=eq.{usuario_id}&select=*"
+    res = requests.get(url, headers=SUPABASE_HEADERS)
+    eventos = res.json()
     return render_template('dashboard.html', usuario=usuario, establecimientos=[], eventos=eventos)
 
 @app.route('/logout')
@@ -68,7 +74,8 @@ def admin_agregar():
             "observaciones": obs,
             "doctora_id": doctora_id
         }
-        supabase.table("establecimientos").insert(data).execute()
+        url = f"{SUPABASE_URL}/rest/v1/establecimientos"
+        requests.post(url, headers=SUPABASE_HEADERS, json=data)
 
     return redirect(url_for('dashboard'))
 

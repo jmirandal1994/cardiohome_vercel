@@ -80,7 +80,11 @@ def admin_agregar():
             "observaciones": obs,
             "doctora_id": doctora_id
         }
-        requests.post(f"{SUPABASE_URL}/rest/v1/establecimientos", headers=SUPABASE_HEADERS, json=data)
+        url = f"{SUPABASE_URL}/rest/v1/establecimientos"
+        response = requests.post(url, headers=SUPABASE_HEADERS, json=data)
+
+        print("STATUS:", response.status_code)
+        print("RESPUESTA:", response.text)
 
     return redirect(url_for('dashboard'))
 

@@ -1,51 +1,37 @@
 from flask import Flask, render_template, request, redirect, session, url_for, flash
 import os
-import json
 import requests
 import base64
 from werkzeug.utils import secure_filename
+from supabase import create_client, Client
 
 app = Flask(__name__)
 app.secret_key = 'clave_super_segura'
 ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'xls', 'xlsx'}
 
-USUARIOS_FILE = 'usuarios.json'
-EVENTOS_FILE = 'eventos.json'
+# -------------------- Supabase Config --------------------
+SUPABASE_URL = 'https://rbzxolreglwndvsrxhmg.supabase.co'
+SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDE3ODcsImV4cCI6MjA2MzExNzc4N30.BbzsUhed1Y_dJYWFKLAHqtV4cXdvjF_ihGdQ_Bpov3Y'
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# -------------------- Utilidades --------------------
 def permitido(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def cargar_usuarios():
-    if not os.path.exists(USUARIOS_FILE):
-        return {}
-    with open(USUARIOS_FILE, 'r') as f:
-        return json.load(f)
-
-def guardar_usuarios(data):
-    with open(USUARIOS_FILE, 'w') as f:
-        json.dump(data, f, indent=4)
-
-def cargar_eventos():
-    if not os.path.exists(EVENTOS_FILE):
-        return []
-    with open(EVENTOS_FILE, 'r') as f:
-        return json.load(f)
-
-def guardar_eventos(data):
-    with open(EVENTOS_FILE, 'w') as f:
-        json.dump(data, f, indent=4)
-
+# -------------------- Rutas --------------------
 @app.route('/')
 def index():
     return render_template('login.html')
 
 @app.route('/login', methods=['POST'])
 def login():
-    usuarios = cargar_usuarios()
     usuario = request.form['username']
     clave = request.form['password']
-    if usuario in usuarios and usuarios[usuario]['password'] == clave:
+    response = supabase.table("doctoras").select("*").eq("usuario", usuario).eq("password", clave).execute()
+    data = response.data
+    if data:
         session['usuario'] = usuario
+        session['usuario_id'] = data[0]['id']
         return redirect(url_for('dashboard'))
     flash('Usuario o contraseña incorrecta')
     return redirect(url_for('index'))
@@ -55,10 +41,9 @@ def dashboard():
     if 'usuario' not in session:
         return redirect(url_for('index'))
     usuario = session['usuario']
-    usuarios = cargar_usuarios()
-    eventos = cargar_eventos()
-    establecimientos = usuarios[usuario]['establecimientos']
-    return render_template('dashboard.html', usuario=usuario, establecimientos=establecimientos, eventos=eventos)
+    usuario_id = session['usuario_id']
+    eventos = supabase.table("establecimientos").select("*").eq("doctora_id", usuario_id).execute().data
+    return render_template('dashboard.html', usuario=usuario, establecimientos=[], eventos=eventos)
 
 @app.route('/logout')
 def logout():
@@ -67,30 +52,23 @@ def logout():
 
 @app.route('/admin/agregar', methods=['POST'])
 def admin_agregar():
-    usuarios = cargar_usuarios()
-    eventos = cargar_eventos()
-
     nombre = request.form['nombre']
     fecha = request.form['fecha']
     horario = request.form['horario']
     obs = request.form['obs']
-    doctora = request.form['doctora']
+    doctora_id = request.form['doctora']
+
     archivo = request.files['formulario']
 
     if archivo and permitido(archivo.filename):
-        if doctora in usuarios:
-            if nombre not in usuarios[doctora]['establecimientos']:
-                usuarios[doctora]['establecimientos'].append(nombre)
-
-    eventos.append({
-        'fecha': fecha,
-        'horario': horario,
-        'establecimiento': nombre,
-        'obs': obs
-    })
-
-    guardar_usuarios(usuarios)
-    guardar_eventos(eventos)
+        data = {
+            "nombre": nombre,
+            "fecha": fecha,
+            "horario": horario,
+            "observaciones": obs,
+            "doctora_id": doctora_id
+        }
+        supabase.table("establecimientos").insert(data).execute()
 
     return redirect(url_for('dashboard'))
 
@@ -135,7 +113,6 @@ def evaluados(establecimiento):
     return f'Datos enviados correctamente: {cantidad} alumnos evaluados.'
 
 # -------------------- SendGrid --------------------
-
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 SENDGRID_FROM = 'noreply@cardiohome.cl'
 SENDGRID_TO = 'jmiraandal@gmail.com'
@@ -176,6 +153,5 @@ def enviar_correo_sendgrid(asunto, cuerpo, adjuntos=None):
         print(f"Error al enviar correo con SendGrid: {e}")
 
 # -------------------- MAIN --------------------
-
 if __name__ == '__main__':
     app.run(debug=True)

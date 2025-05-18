@@ -55,11 +55,12 @@
         th {
             background-color: #f6f8fb;
         }
-        input, button {
+        input, button, select {
             margin-top: 10px;
             padding: 8px;
             border-radius: 5px;
             border: 1px solid #ccc;
+            width: 100%;
         }
         input[type="file"] {
             padding: 6px;
@@ -85,8 +86,39 @@
     <div class="main-content">
         <h2>Establecimientos asignados</h2>
 
-        {% for evento in eventos %}
+        {% if usuario == 'admin' %}
         <div class="establecimiento" style="background:#fffbe6; border-left: 6px solid #fbbc04;">
+            <h3>➕ Agregar nuevo establecimiento</h3>
+            <form action="/admin/agregar" method="POST" enctype="multipart/form-data">
+                <label>Nombre del establecimiento:</label>
+                <input type="text" name="nombre" required>
+
+                <label>Fecha de visita:</label>
+                <input type="date" name="fecha" required>
+
+                <label>Horario:</label>
+                <input type="text" name="horario" placeholder="Ej: 09:00 - 10:30" required>
+
+                <label>Observaciones:</label>
+                <input type="text" name="obs">
+
+                <label>Asignar a doctora:</label>
+                <select name="doctora" required>
+                    <option value="">Seleccionar doctora</option>
+                    <option value="doctora1">doctora1</option>
+                    <option value="doctora2">doctora2</option>
+                </select>
+
+                <label>Formulario (PDF, Word o Excel):</label>
+                <input type="file" name="formulario" accept=".pdf,.doc,.docx,.xls,.xlsx" required>
+
+                <button type="submit">Agregar</button>
+            </form>
+        </div>
+        {% endif %}
+
+        {% for evento in eventos %}
+        <div class="establecimiento" style="background:#fff;">
             <h3>📅 {{ evento.establecimiento }} ({{ evento.fecha }} - {{ evento.horario }})</h3>
             <p><strong>Observaciones:</strong> {{ evento.obs }}</p>
         </div>

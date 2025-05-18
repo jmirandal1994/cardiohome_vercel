@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+</head>
+<body>
+    <h2>Bienvenido, {{ usuario }}</h2>
+
+    <h3>Calendario de Visitas</h3>
+    <table border="1">
+        <tr>
+            <th>Fecha</th>
+            <th>Horario</th>
+            <th>Establecimiento</th>
+            <th>Observaciones</th>
+        </tr>
+        {% for evento in eventos %}
+        <tr>
+            <td>{{ evento.fecha }}</td>
+            <td>{{ evento.horario }}</td>
+            <td>{{ evento.establecimiento }}</td>
+            <td>{{ evento.obs }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h3>Establecimientos Asignados</h3>
+    {% for e in establecimientos %}
+    <div style="margin-bottom:20px;">
+        <h4>{{ e }}</h4>
+        <form action="/subir/{{ e }}" method="post" enctype="multipart/form-data">
+            <label>Subir formulario:</label>
+            <input type="file" name="archivo" multiple>
+            <button type="submit">Subir</button>
+        </form>
+
+        <form action="/evaluados/{{ e }}" method="post">
+            <label>Número de alumnos evaluados:</label>
+            <input type="number" name="alumnos">
+            <button type="submit">Enviar</button>
+        </form>
+    </div>
+    {% endfor %}
+
+    <a href="/logout">Cerrar sesión</a>
+</body>
+</html>

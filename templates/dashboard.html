@@ -102,6 +102,22 @@
         button:hover {
             background-color: #155ab6;
         }
+        .tabla-ids {
+            background: #fff;
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .tabla-ids table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .tabla-ids th, .tabla-ids td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
     </style>
 </head>
 <body>
@@ -115,6 +131,28 @@
         <h2 style="margin-bottom: 25px;">Establecimientos asignados</h2>
 
         {% if usuario == 'admin' %}
+        <div class="tabla-ids">
+            <h4>🔎 IDs disponibles de Doctoras</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Usuario</th>
+                        <th>ID</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in doctoras %}
+                    <tr>
+                        <td>{{ doc.nombre }}</td>
+                        <td>{{ doc.usuario }}</td>
+                        <td>{{ doc.id }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
         <div class="establecimiento" style="background:#fffbe6; border-left: 6px solid #fbbc04;">
             <h3>➕ Agregar nuevo establecimiento</h3>
             <form action="/admin/agregar" method="POST" enctype="multipart/form-data">

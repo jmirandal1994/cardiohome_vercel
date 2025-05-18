@@ -1,8 +1,8 @@
 from flask import Flask, render_template, request, redirect, session, url_for, flash
 import os
 import requests
-from werkzeug.utils import secure_filename
 import base64
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = 'clave_super_segura'
@@ -49,6 +49,30 @@ def logout():
     session.clear()
     return redirect(url_for('index'))
 
+@app.route('/admin/agregar', methods=['POST'])
+def admin_agregar():
+    nombre = request.form['nombre']
+    fecha = request.form['fecha']
+    horario = request.form['horario']
+    obs = request.form['obs']
+    doctora = request.form['doctora']
+    archivo = request.files['formulario']
+
+    if archivo and permitido(archivo.filename):
+        # No guardar en disco
+        if doctora in USUARIOS:
+            if nombre not in USUARIOS[doctora]['establecimientos']:
+                USUARIOS[doctora]['establecimientos'].append(nombre)
+
+        EVENTOS.append({
+            'fecha': fecha,
+            'horario': horario,
+            'establecimiento': nombre,
+            'obs': obs
+        })
+
+    return redirect(url_for('dashboard'))
+
 @app.route('/subir/<establecimiento>', methods=['POST'])
 def subir(establecimiento):
     if 'usuario' not in session:
@@ -65,10 +89,7 @@ def subir(establecimiento):
         if permitido(archivo.filename):
             mensajes.append(f'✔ {archivo.filename}')
             adjunto = base64.b64encode(archivo.read()).decode()
-            adjuntos.append({
-                "filename": archivo.filename,
-                "content": adjunto
-            })
+            adjuntos.append({"filename": archivo.filename, "content": adjunto})
         else:
             mensajes.append(f'✖ {archivo.filename} (no permitido)')
 
@@ -77,7 +98,6 @@ def subir(establecimiento):
         cuerpo=f'Doctora: {session["usuario"]}\nEstablecimiento: {establecimiento}\nSe subieron {len(mensajes)} archivo(s).',
         adjuntos=adjuntos
     )
-
     return "Archivos procesados:<br>" + "<br>".join(mensajes)
 
 @app.route('/evaluados/<establecimiento>', methods=['POST'])
@@ -87,12 +107,10 @@ def evaluados(establecimiento):
 
     cantidad = request.form.get('alumnos')
     usuario = session['usuario']
-
     enviar_correo_sendgrid(
         asunto=f'Alumnos evaluados - {establecimiento}',
         cuerpo=f'Doctora: {usuario}\nEstablecimiento: {establecimiento}\nCantidad evaluada: {cantidad}'
     )
-
     return f'Datos enviados correctamente: {cantidad} alumnos evaluados.'
 
 # -------------------- SendGrid --------------------

@@ -76,6 +76,18 @@
       max-width: 100%;
       font-size: 14px;
     }
+    .fc .fc-toolbar.fc-header-toolbar {
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .fc .fc-list-event-title {
+      font-weight: 600;
+      color: #1a73e8;
+    }
+    .fc .fc-list-event-time {
+      font-weight: 400;
+      color: #555;
+    }
   </style>
 </head>
 <body>
@@ -126,6 +138,7 @@
             center: 'title',
             right: 'listWeek,listDay'
           },
+          noEventsContent: 'No hay eventos asignados esta semana',
           events: [
             {% for evento in eventos %}
             {

@@ -169,7 +169,12 @@
                 <input type="text" name="obs">
 
                 <label>Asignar a doctora (ID Supabase):</label>
-                <input type="text" name="doctora" required>
+                <select name="doctora" required>
+                    <option value="">Seleccionar doctora</option>
+                    {% for doc in doctoras %}
+                    <option value="{{ doc.id }}">{{ doc.nombre }} ({{ doc.usuario }})</option>
+                    {% endfor %}
+                </select>
 
                 <label>Formulario (PDF, Word o Excel):</label>
                 <input type="file" name="formulario" accept=".pdf,.doc,.docx,.xls,.xlsx" required>

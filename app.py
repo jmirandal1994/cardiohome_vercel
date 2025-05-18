@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, session, url_for, flash
 import os
+import json
 import requests
 import base64
 from werkzeug.utils import secure_filename
@@ -8,19 +9,31 @@ app = Flask(__name__)
 app.secret_key = 'clave_super_segura'
 ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'xls', 'xlsx'}
 
-USUARIOS = {
-    'admin': {'password': 'admin123', 'establecimientos': []},
-    'doctora1': {'password': '1234', 'establecimientos': ['Escuela A', 'Liceo B']},
-    'doctora2': {'password': 'abcd', 'establecimientos': []}
-}
-
-EVENTOS = [
-    {'fecha': '20/05/2025', 'horario': '09:00 - 10:30', 'establecimiento': 'Escuela A', 'obs': 'Evaluación inicial'},
-    {'fecha': '21/05/2025', 'horario': '11:00 - 12:30', 'establecimiento': 'Liceo B', 'obs': 'Entrega de informes'}
-]
+USUARIOS_FILE = 'usuarios.json'
+EVENTOS_FILE = 'eventos.json'
 
 def permitido(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def cargar_usuarios():
+    if not os.path.exists(USUARIOS_FILE):
+        return {}
+    with open(USUARIOS_FILE, 'r') as f:
+        return json.load(f)
+
+def guardar_usuarios(data):
+    with open(USUARIOS_FILE, 'w') as f:
+        json.dump(data, f, indent=4)
+
+def cargar_eventos():
+    if not os.path.exists(EVENTOS_FILE):
+        return []
+    with open(EVENTOS_FILE, 'r') as f:
+        return json.load(f)
+
+def guardar_eventos(data):
+    with open(EVENTOS_FILE, 'w') as f:
+        json.dump(data, f, indent=4)
 
 @app.route('/')
 def index():
@@ -28,9 +41,10 @@ def index():
 
 @app.route('/login', methods=['POST'])
 def login():
+    usuarios = cargar_usuarios()
     usuario = request.form['username']
     clave = request.form['password']
-    if usuario in USUARIOS and USUARIOS[usuario]['password'] == clave:
+    if usuario in usuarios and usuarios[usuario]['password'] == clave:
         session['usuario'] = usuario
         return redirect(url_for('dashboard'))
     flash('Usuario o contraseña incorrecta')
@@ -41,8 +55,10 @@ def dashboard():
     if 'usuario' not in session:
         return redirect(url_for('index'))
     usuario = session['usuario']
-    establecimientos = USUARIOS[usuario]['establecimientos']
-    return render_template('dashboard.html', usuario=usuario, establecimientos=establecimientos, eventos=EVENTOS)
+    usuarios = cargar_usuarios()
+    eventos = cargar_eventos()
+    establecimientos = usuarios[usuario]['establecimientos']
+    return render_template('dashboard.html', usuario=usuario, establecimientos=establecimientos, eventos=eventos)
 
 @app.route('/logout')
 def logout():
@@ -51,6 +67,9 @@ def logout():
 
 @app.route('/admin/agregar', methods=['POST'])
 def admin_agregar():
+    usuarios = cargar_usuarios()
+    eventos = cargar_eventos()
+
     nombre = request.form['nombre']
     fecha = request.form['fecha']
     horario = request.form['horario']
@@ -59,17 +78,19 @@ def admin_agregar():
     archivo = request.files['formulario']
 
     if archivo and permitido(archivo.filename):
-        # No guardar en disco
-        if doctora in USUARIOS:
-            if nombre not in USUARIOS[doctora]['establecimientos']:
-                USUARIOS[doctora]['establecimientos'].append(nombre)
+        if doctora in usuarios:
+            if nombre not in usuarios[doctora]['establecimientos']:
+                usuarios[doctora]['establecimientos'].append(nombre)
 
-        EVENTOS.append({
-            'fecha': fecha,
-            'horario': horario,
-            'establecimiento': nombre,
-            'obs': obs
-        })
+    eventos.append({
+        'fecha': fecha,
+        'horario': horario,
+        'establecimiento': nombre,
+        'obs': obs
+    })
+
+    guardar_usuarios(usuarios)
+    guardar_eventos(eventos)
 
     return redirect(url_for('dashboard'))
 

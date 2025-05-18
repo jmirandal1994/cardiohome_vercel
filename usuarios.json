@@ -1,0 +1,14 @@
+{
+    "admin": {
+        "password": "admin123",
+        "establecimientos": []
+    },
+    "doctora1": {
+        "password": "1234",
+        "establecimientos": []
+    },
+    "doctora2": {
+        "password": "abcd",
+        "establecimientos": []
+    }
+}

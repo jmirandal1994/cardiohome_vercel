@@ -114,6 +114,13 @@ def subir(establecimiento):
         adjuntos=adjuntos
     )
     return "Archivos procesados:<br>" + "<br>".join(mensajes)
+    
+    from flask import send_from_directory
+
+@app.route('/descargar/<nombre_archivo>')
+def descargar_archivo(nombre_archivo):
+    return send_from_directory('static/formularios', nombre_archivo, as_attachment=True)
+
 
 @app.route('/evaluados/<establecimiento>', methods=['POST'])
 def evaluados(establecimiento):

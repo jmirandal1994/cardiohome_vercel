@@ -152,6 +152,36 @@
                 </tbody>
             </table>
         </div>
+
+        <div class="establecimiento" style="background:#fffbe6; border-left: 6px solid #fbbc04;">
+            <h3>➕ Agregar nuevo establecimiento</h3>
+            <form action="/admin/agregar" method="POST" enctype="multipart/form-data">
+                <label>Nombre del establecimiento:</label>
+                <input type="text" name="nombre" required>
+
+                <label>Fecha de visita:</label>
+                <input type="date" name="fecha" required>
+
+                <label>Horario:</label>
+                <input type="text" name="horario" placeholder="Ej: 09:00 - 10:30" required>
+
+                <label>Observaciones:</label>
+                <input type="text" name="obs">
+
+                <label>Asignar a doctora (ID Supabase):</label>
+                <select name="doctora" required>
+                    <option value="">Seleccionar doctora</option>
+                    {% for doc in doctoras %}
+                    <option value="{{ doc.id }}">{{ doc.nombre }} ({{ doc.usuario }})</option>
+                    {% endfor %}
+                </select>
+
+                <label>Formulario (PDF, Word o Excel):</label>
+                <input type="file" name="formulario" accept=".pdf,.doc,.docx,.xls,.xlsx" required>
+
+                <button type="submit">Agregar</button>
+            </form>
+        </div>
         {% endif %}
 
         <div class="calendario">

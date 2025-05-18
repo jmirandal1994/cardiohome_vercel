@@ -1,47 +1,114 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Dashboard</title>
+    <meta charset="UTF-8">
+    <title>Dashboard CardioHome</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,600">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 220px;
+            background-color: #1a73e8;
+            color: white;
+            padding: 20px;
+        }
+        .sidebar h3 {
+            margin-bottom: 20px;
+        }
+        .sidebar a {
+            color: white;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            background-color: #f0f2f5;
+            overflow-y: auto;
+        }
+        .establecimiento {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        h2 {
+            margin-bottom: 25px;
+        }
+        table {
+            width: 100%;
+            margin-bottom: 2rem;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        th {
+            background-color: #f6f8fb;
+        }
+        input, button {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        input[type="file"] {
+            padding: 6px;
+        }
+        button {
+            background: #1a73e8;
+            color: white;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #155ab6;
+        }
+    </style>
 </head>
 <body>
-    <h2>Bienvenido, {{ usuario }}</h2>
-
-    <h3>Calendario de Visitas</h3>
-    <table border="1">
-        <tr>
-            <th>Fecha</th>
-            <th>Horario</th>
-            <th>Establecimiento</th>
-            <th>Observaciones</th>
-        </tr>
-        {% for evento in eventos %}
-        <tr>
-            <td>{{ evento.fecha }}</td>
-            <td>{{ evento.horario }}</td>
-            <td>{{ evento.establecimiento }}</td>
-            <td>{{ evento.obs }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-
-    <h3>Establecimientos Asignados</h3>
-    {% for e in establecimientos %}
-    <div style="margin-bottom:20px;">
-        <h4>{{ e }}</h4>
-        <form action="/subir/{{ e }}" method="post" enctype="multipart/form-data">
-            <label>Subir formulario:</label>
-            <input type="file" name="archivo" multiple>
-            <button type="submit">Subir</button>
-        </form>
-
-        <form action="/evaluados/{{ e }}" method="post">
-            <label>Número de alumnos evaluados:</label>
-            <input type="number" name="alumnos">
-            <button type="submit">Enviar</button>
-        </form>
+    <div class="sidebar">
+        <h3>CardioHome</h3>
+        <p>Bienvenida, {{ usuario }}</p>
+        <a href="/logout">Cerrar sesión</a>
     </div>
-    {% endfor %}
+    <div class="main-content">
+        <h2>Establecimientos asignados</h2>
 
-    <a href="/logout">Cerrar sesión</a>
+        {% for evento in eventos %}
+        <div class="establecimiento" style="background:#fffbe6; border-left: 6px solid #fbbc04;">
+            <h3>📅 {{ evento.establecimiento }} ({{ evento.fecha }} - {{ evento.horario }})</h3>
+            <p><strong>Observaciones:</strong> {{ evento.obs }}</p>
+        </div>
+        {% endfor %}
+
+        {% for establecimiento in establecimientos %}
+        <div class="establecimiento">
+            <h3>{{ establecimiento }}</h3>
+
+            <form action="/subir/{{ establecimiento }}" method="POST" enctype="multipart/form-data">
+                <label>Subir formulario(s):</label><br>
+                <input type="file" name="archivo" multiple><br>
+                <button type="submit">Subir</button>
+            </form>
+
+            <form action="/evaluados/{{ establecimiento }}" method="POST">
+                <label for="alumnos">Cantidad de alumnos evaluados:</label><br>
+                <input type="number" name="alumnos" min="0"><br>
+                <button type="submit">Enviar</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
 </body>
 </html>

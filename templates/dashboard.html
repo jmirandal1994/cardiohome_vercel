@@ -66,9 +66,11 @@
         }
         #calendar {
             background: white;
-            padding: 20px;
-            border-radius: 10px;
+            padding: 10px;
+            border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            max-width: 100%;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -113,7 +115,11 @@
                 var calendarEl = document.getElementById('calendar');
                 var calendar = new FullCalendar.Calendar(calendarEl, {
                     initialView: 'timeGridWeek',
+                    slotMinTime: '07:00:00',
+                    slotMaxTime: '19:00:00',
                     locale: 'es',
+                    height: 'auto',
+                    aspectRatio: 1.35,
                     headerToolbar: {
                         left: 'prev,next today',
                         center: 'title',
@@ -123,8 +129,8 @@
                         {% for evento in eventos %}
                         {
                             title: '{{ evento.establecimiento }} - {{ evento.obs }}',
-                            start: '{{ evento.fecha }}T{{ evento.horario.split(" - ")[0]|replace(":", ":") }}:00',
-                            end: '{{ evento.fecha }}T{{ evento.horario.split(" - ")[1]|replace(":", ":") }}:00'
+                            start: '{{ evento.fecha }}T{{ evento.horario.split(" - ")[0] }}:00',
+                            end: '{{ evento.fecha }}T{{ evento.horario.split(" - ")[1] }}:00'
                         },
                         {% endfor %}
                     ]

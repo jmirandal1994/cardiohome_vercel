@@ -109,6 +109,14 @@ def admin_agregar():
     cantidad_alumnos = request.form.get('alumnos')
     archivo = request.files['formulario']
 
+    # 🟡 DEBUG: muestra qué doctora llega
+    print("🟡 doctora_id recibido:", doctora_id)
+
+    # ✅ Validación: doctora debe estar seleccionada y tener un UUID válido
+    if not doctora_id or len(doctora_id) < 10:
+        flash("❌ Debes seleccionar una doctora válida antes de agregar el establecimiento.")
+        return redirect(url_for('dashboard'))
+
     if not archivo or not permitido(archivo.filename):
         flash("Archivo no válido.")
         return redirect(url_for('dashboard'))
@@ -128,6 +136,9 @@ def admin_agregar():
 
     url = f"{SUPABASE_URL}/rest/v1/establecimientos"
     response = requests.post(url, headers=headers, json=data)
+
+    print("📤 POST status:", response.status_code)
+    print("📥 POST response text:", response.text)
 
     if response.status_code != 201:
         flash("❌ Error al guardar el establecimiento.")

@@ -48,7 +48,6 @@ def dashboard():
     usuario = session['usuario']
     usuario_id = session['usuario_id']
 
-    # Si es doctora, mostrar solo sus eventos
     url_eventos = f"{SUPABASE_URL}/rest/v1/establecimientos?doctora_id=eq.{usuario_id}&select=*"
     res_eventos = requests.get(url_eventos, headers=SUPABASE_HEADERS)
     eventos = res_eventos.json()
@@ -59,22 +58,29 @@ def dashboard():
     conteo = {}
 
     if usuario == 'admin':
-        # Trae todas las doctoras
         res_doctoras = requests.get(f"{SUPABASE_URL}/rest/v1/doctoras", headers=SUPABASE_HEADERS)
         doctoras = res_doctoras.json()
 
-        # Trae todos los establecimientos
         res_establecimientos = requests.get(f"{SUPABASE_URL}/rest/v1/establecimientos", headers=SUPABASE_HEADERS)
         establecimientos = res_establecimientos.json()
 
-        # Trae todos los formularios subidos
         res_formularios = requests.get(f"{SUPABASE_URL}/rest/v1/formularios_subidos", headers=SUPABASE_HEADERS)
-        formularios = res_formularios.json()
+        
+        try:
+            formularios = res_formularios.json()
+            # Si por alguna razón recibes un string, intenta convertirlo
+            if isinstance(formularios, str):
+                import json
+                formularios = json.loads(formularios)
+        except Exception as e:
+            print("❌ Error al procesar JSON de formularios:", e)
+            formularios = []
 
-        # Contar formularios por establecimiento
+        # 👇 Aquí está el fix real
         for f in formularios:
-            est_id = f['establecimientos_id']
-            conteo[est_id] = conteo.get(est_id, 0) + 1
+            if isinstance(f, dict) and 'establecimientos_id' in f:
+                est_id = f['establecimientos_id']
+                conteo[est_id] = conteo.get(est_id, 0) + 1
 
     return render_template(
         'dashboard.html',

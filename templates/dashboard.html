@@ -208,6 +208,34 @@
             </table>
         </div>
 
+        {% if usuario == 'admin' %}
+<div class="calendario">
+    <h3>📥 Formularios Subidos por Establecimiento</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Establecimiento</th>
+                <th>Formularios Subidos</th>
+                <th>Ver Archivos</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for est in establecimientos %}
+            <tr>
+                <td>{{ est.nombre }}</td>
+                <td>{{ conteo.get(est.id, 0) }}</td>
+                <td>
+                    {% for f in formularios if f.establecimientos_id == est.id %}
+                        <a href="{{ f.url_archivo }}" target="_blank">{{ f.nombre_archivo }}</a><br>
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
         {% if usuario != 'admin' %}
         {% for evento in eventos %}
         <div class="establecimiento">

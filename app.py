@@ -51,15 +51,28 @@ def dashboard():
     usuario = session['usuario']
     usuario_id = session['usuario_id']
 
+    # Obtener los eventos asignados al usuario
     url_eventos = f"{SUPABASE_URL}/rest/v1/establecimientos?doctora_id=eq.{usuario_id}&select=*"
     res_eventos = requests.get(url_eventos, headers=SUPABASE_HEADERS)
     eventos = res_eventos.json()
-    # ✅ Ordenar eventos por hora de inicio
+
+    # Ordenar por hora de inicio
     eventos.sort(key=lambda e: e['horario'].split(' - ')[0])
 
+    # Obtener todos los formularios (para doctora o admin)
+    res_formularios = requests.get(f"{SUPABASE_URL}/rest/v1/formularios_subidos", headers=SUPABASE_HEADERS)
+    try:
+        formularios = res_formularios.json()
+        if isinstance(formularios, str):
+            import json
+            formularios = json.loads(formularios)
+    except Exception as e:
+        print("❌ Error al procesar JSON de formularios:", e)
+        formularios = []
+
+    # Inicializar variables que solo usa admin
     doctoras = []
     establecimientos = []
-    formularios = []
     conteo = {}
 
     if usuario == 'admin':
@@ -69,19 +82,6 @@ def dashboard():
         res_establecimientos = requests.get(f"{SUPABASE_URL}/rest/v1/establecimientos", headers=SUPABASE_HEADERS)
         establecimientos = res_establecimientos.json()
 
-        res_formularios = requests.get(f"{SUPABASE_URL}/rest/v1/formularios_subidos", headers=SUPABASE_HEADERS)
-        
-        try:
-            formularios = res_formularios.json()
-            # Si por alguna razón recibes un string, intenta convertirlo
-            if isinstance(formularios, str):
-                import json
-                formularios = json.loads(formularios)
-        except Exception as e:
-            print("❌ Error al procesar JSON de formularios:", e)
-            formularios = []
-
-        # 👇 Aquí está el fix real
         for f in formularios:
             if isinstance(f, dict) and 'establecimientos_id' in f:
                 est_id = f['establecimientos_id']

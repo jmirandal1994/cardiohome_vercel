@@ -247,32 +247,34 @@
     {% if usuario == 'admin' %}
     {% for evento in eventos %}
 <div class="establecimiento">
-  <h3>{{ evento.nombre }}</h3>
+<h3>{{ evento.nombre }}</h3>
 
- {% if evento.url_archivo %}
+{% if evento.url_archivo %}
   <p>
     <strong>Formulario base (subido por el administrador):</strong><br>
     <a href="{{ evento.url_archivo }}" target="_blank" download>
       Descargar Formulario: {{ evento.nombre_archivo }}
     </a>
   </p>
+{% else %}
+  <p><em>No hay formulario base disponible para este establecimiento.</em></p>
 {% endif %}
 
-{% set tiene_formulario = false %}
+  {% set tiene_formulario = false %}
   {% for f in formularios %}
-    {% if f.establecimientos_id == evento.id %}
-      {% set tiene_formulario = true %}
-      <p>
-        <strong>Subido por ti:</strong><br>
-        <a href="{{ f.url_archivo }}" target="_blank" download>
-          {{ f.nombre_archivo }}
-        </a>
-      </p>
-    {% endif %}
+  {% if f.establecimientos_id == evento.id %}
+    {% set tiene_formulario = true %}
+    <p>
+      <strong>Subido por ti:</strong><br>
+      <a href="{{ f.url_archivo }}" target="_blank" download>
+        {{ f.nombre_archivo }}
+      </a>
+    </p>
+  {% endif %}
   {% endfor %}
 
   {% if not tiene_formulario %}
-    <p><em>No hay formularios completados subidos aún.</em></p>
+  <p><em>No hay formularios completados subidos aún.</em></p>
   {% endif %}
 
   <form action="/subir/{{ evento.id }}" method="POST" enctype="multipart/form-data">

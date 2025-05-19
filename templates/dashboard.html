@@ -270,8 +270,10 @@
         </tbody>
       </table>
     </div>
+    {% endif %}
+
     {% if usuario != 'admin' %}
-  {% for evento in eventos %}
+    {% for evento in eventos %}
     <div class="establecimiento">
       <h3>{{ evento.nombre }}</h3>
 
@@ -303,7 +305,9 @@
         <button type="submit">Enviar cantidad</button>
       </form>
     </div>
-  {% endfor %}
-{% endif %}
+    {% endfor %}
+    {% endif %}
+
+  </div>
 </body>
 </html>

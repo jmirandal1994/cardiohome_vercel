@@ -30,15 +30,23 @@ def index():
 def login():
     usuario = request.form['username']
     clave = request.form['password']
+
     url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario}&password=eq.{clave}"
     res = requests.get(url, headers=SUPABASE_HEADERS)
-    data = res.json()
-    if data:
+
+    try:
+        data = res.json()
+    except Exception as e:
+        flash('Error al procesar la respuesta del servidor')
+        return redirect(url_for('index'))
+
+    if isinstance(data, list) and len(data) > 0:
         session['usuario'] = usuario
         session['usuario_id'] = data[0]['id']
         return redirect(url_for('dashboard'))
-    flash('Usuario o contraseña incorrecta')
-    return redirect(url_for('index'))
+    else:
+        flash('Usuario o contraseña incorrecta')
+        return redirect(url_for('index'))
 
 @app.route('/dashboard')
 def dashboard():

@@ -51,15 +51,24 @@ def dashboard():
     usuario = session['usuario']
     usuario_id = session['usuario_id']
 
-    # Obtener los eventos asignados al usuario
-    url_eventos = f"{SUPABASE_URL}/rest/v1/establecimientos?doctora_id=eq.{usuario_id}&select=*"
+    # Obtener los eventos asignados al usuario (doctora)
+    if usuario != 'admin':
+        url_eventos = (
+            f"{SUPABASE_URL}/rest/v1/establecimientos"
+            f"?doctora_id=eq.{usuario_id}"
+            f"&select=id,nombre,fecha,horario,observaciones,cantidad_alumnos,url_archivo,nombre_archivo"
+        )
+    else:
+        url_eventos = f"{SUPABASE_URL}/rest/v1/establecimientos?select=*"
+
     res_eventos = requests.get(url_eventos, headers=SUPABASE_HEADERS)
     eventos = res_eventos.json()
 
-    # Ordenar por hora de inicio
-    eventos.sort(key=lambda e: e['horario'].split(' - ')[0])
+    # Ordenar por hora de inicio si hay eventos
+    if isinstance(eventos, list):
+        eventos.sort(key=lambda e: e.get('horario', '').split(' - ')[0])
 
-    # Obtener todos los formularios (para doctora o admin)
+    # Obtener formularios (para todos)
     res_formularios = requests.get(f"{SUPABASE_URL}/rest/v1/formularios_subidos", headers=SUPABASE_HEADERS)
     try:
         formularios = res_formularios.json()
@@ -70,18 +79,21 @@ def dashboard():
         print("❌ Error al procesar JSON de formularios:", e)
         formularios = []
 
-    # Inicializar variables que solo usa admin
+    # Variables adicionales solo para el perfil admin
     doctoras = []
     establecimientos = []
     conteo = {}
 
     if usuario == 'admin':
+        # Obtener lista de doctoras
         res_doctoras = requests.get(f"{SUPABASE_URL}/rest/v1/doctoras", headers=SUPABASE_HEADERS)
         doctoras = res_doctoras.json()
 
+        # Obtener todos los establecimientos
         res_establecimientos = requests.get(f"{SUPABASE_URL}/rest/v1/establecimientos", headers=SUPABASE_HEADERS)
         establecimientos = res_establecimientos.json()
 
+        # Contar formularios por establecimiento
         for f in formularios:
             if isinstance(f, dict) and 'establecimientos_id' in f:
                 est_id = f['establecimientos_id']

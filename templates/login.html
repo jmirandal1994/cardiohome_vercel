@@ -1,82 +1,72 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - CardioHome</title>
   <style>
     body {
       margin: 0;
       padding: 0;
       font-family: 'Segoe UI', sans-serif;
-      background: #eaf6ff; /* fondo más claro */
+      background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1950&q=80') no-repeat center center fixed;
+      background-size: cover;
+      height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
     }
 
-    .login-box {
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid rgba(200, 220, 240, 0.6);
-      padding: 2.5rem;
-      border-radius: 16px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      width: 100%;
-      max-width: 400px;
+    .glass-container {
+      position: relative;
+      width: 350px;
+      padding: 40px;
+      border-radius: 20px;
+      backdrop-filter: blur(15px);
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 0 25px 45px rgba(0, 0, 0, 0.4);
+      color: white;
       text-align: center;
-      color: #333;
+      z-index: 10;
+      overflow: hidden;
     }
 
-    .login-box img {
-      max-width: 160px;
+    .glass-container img {
+      max-width: 150px;
+      margin-bottom: 1rem;
+    }
+
+    .glass-container h1 {
+      font-size: 1.8rem;
       margin-bottom: 1.5rem;
-    }
-
-    .login-box h1 {
-      font-size: 1.9rem;
-      color: #1a73e8;
-      margin-bottom: 1.8rem;
     }
 
     input[type="text"],
     input[type="password"] {
       width: 100%;
-      padding: 6px 12px;
-      height: 38px;
+      padding: 12px;
       margin-bottom: 1rem;
-      font-size: 0.95rem;
-      line-height: 1.2;
-      border: 1px solid #ccddee;
+      border: none;
       border-radius: 8px;
-      background: #fff;
+      background: rgba(255, 255, 255, 0.8);
+      font-size: 1rem;
       color: #000;
-      box-sizing: border-box;
-      transition: border 0.3s, box-shadow 0.3s;
-    }
-
-    input[type="text"]:focus,
-    input[type="password"]:focus {
-      border-color: #1a73e8;
-      outline: none;
-      box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.15);
     }
 
     input::placeholder {
-      color: #888;
+      color: #555;
     }
 
     button {
+      width: 100%;
+      padding: 12px;
       background: #1a73e8;
       color: white;
       border: none;
-      padding: 11px;
-      width: 100%;
-      border-radius: 10px;
-      font-weight: bold;
+      border-radius: 8px;
       font-size: 1rem;
+      font-weight: bold;
       cursor: pointer;
       transition: background 0.3s;
     }
@@ -89,46 +79,25 @@
       display: block;
       margin-top: 1rem;
       font-size: 0.9rem;
-      color: #555;
+      color: #ddd;
       text-decoration: none;
     }
 
     .forgot:hover {
-      color: #1a73e8;
+      color: #fff;
       text-decoration: underline;
     }
 
-    @media (prefers-color-scheme: dark) {
-      body {
-        background: #1e1e1e;
-      }
-
-      .login-box {
-        background: rgba(50, 50, 50, 0.85);
-        color: #fff;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      input[type="text"],
-      input[type="password"] {
-        background: #fefefe;
-        color: #000;
-      }
-
-      input::placeholder {
-        color: #666;
-      }
-    }
-
     @media (max-width: 400px) {
-      .login-box {
-        padding: 2rem;
+      .glass-container {
+        width: 90%;
+        padding: 30px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="login-box">
+  <div class="glass-container">
     <img src="/static/cardiohome.png" alt="Logo CardioHome">
     <h1>Acceso a CardioHome</h1>
     <form method="POST" action="/login">

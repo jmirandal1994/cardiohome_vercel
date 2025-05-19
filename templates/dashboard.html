@@ -325,19 +325,16 @@
   <div class="establecimiento">
     <h3>{{ evento.nombre }}</h3>
 
-    {% set tiene_formulario = false %}
-    {% for f in formularios %}
-      {% if f.establecimientos_id == evento.id %}
-        {% set tiene_formulario = true %}
-        <p>
-          <a href="{{ f.url_archivo }}" target="_blank" download>
-            Descargar Formulario: {{ f.nombre_archivo }}
-          </a>
-        </p>
-      {% endif %}
-    {% endfor %}
+  {% if evento.url_archivo %}
+  <p>
+    <strong>Formulario base (subido por el administrador):</strong><br>
+    <a href="{{ evento.url_archivo }}" target="_blank" download>
+      Descargar Formulario: {{ evento.nombre_archivo }}
+    </a>
+   </p>
+     {% endif %}
 
-    {% if not tiene_formulario %}
+      {% set tiene_formulario = false %}
       <p><em>No hay formularios disponibles para este establecimiento.</em></p>
     {% endif %}
 

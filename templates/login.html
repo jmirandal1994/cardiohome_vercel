@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - CardioHome</title>
     <style>
         body {
@@ -13,46 +14,69 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
+            padding: 1rem;
         }
+
         .login-box {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
             max-width: 400px;
             width: 100%;
             text-align: center;
         }
+
         .login-box img {
             max-width: 150px;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
         }
+
         .login-box h1 {
-            margin-bottom: 1rem;
+            margin-bottom: 1.2rem;
             font-size: 1.8rem;
             color: #1a73e8;
         }
-        input[type="text"], input[type="password"] {
+
+        input[type="text"],
+        input[type="password"] {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             margin-bottom: 1rem;
             border: 1px solid #ccc;
             border-radius: 6px;
             font-size: 1rem;
         }
+
         button {
             background: #1a73e8;
             color: white;
             border: none;
-            padding: 10px;
+            padding: 12px;
             width: 100%;
             border-radius: 6px;
             font-weight: bold;
             font-size: 1rem;
             cursor: pointer;
         }
+
         button:hover {
             background: #155ab6;
+        }
+
+        @media (max-width: 480px) {
+            .login-box {
+                padding: 1.5rem;
+            }
+
+            .login-box h1 {
+                font-size: 1.5rem;
+            }
+
+            input, button {
+                font-size: 0.95rem;
+                padding: 10px;
+            }
         }
     </style>
 </head>

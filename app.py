@@ -47,16 +47,44 @@ def dashboard():
 
     usuario = session['usuario']
     usuario_id = session['usuario_id']
+
+    # Si es doctora, mostrar solo sus eventos
     url_eventos = f"{SUPABASE_URL}/rest/v1/establecimientos?doctora_id=eq.{usuario_id}&select=*"
     res_eventos = requests.get(url_eventos, headers=SUPABASE_HEADERS)
     eventos = res_eventos.json()
 
     doctoras = []
+    establecimientos = []
+    formularios = []
+    conteo = {}
+
     if usuario == 'admin':
+        # Trae todas las doctoras
         res_doctoras = requests.get(f"{SUPABASE_URL}/rest/v1/doctoras", headers=SUPABASE_HEADERS)
         doctoras = res_doctoras.json()
 
-    return render_template('dashboard.html', usuario=usuario, establecimientos=[], eventos=eventos, doctoras=doctoras)
+        # Trae todos los establecimientos
+        res_establecimientos = requests.get(f"{SUPABASE_URL}/rest/v1/establecimientos", headers=SUPABASE_HEADERS)
+        establecimientos = res_establecimientos.json()
+
+        # Trae todos los formularios subidos
+        res_formularios = requests.get(f"{SUPABASE_URL}/rest/v1/formularios_subidos", headers=SUPABASE_HEADERS)
+        formularios = res_formularios.json()
+
+        # Contar formularios por establecimiento
+        for f in formularios:
+            est_id = f['establecimientos_id']
+            conteo[est_id] = conteo.get(est_id, 0) + 1
+
+    return render_template(
+        'dashboard.html',
+        usuario=usuario,
+        eventos=eventos,
+        doctoras=doctoras,
+        establecimientos=establecimientos,
+        formularios=formularios,
+        conteo=conteo
+    )
 
 @app.route('/logout')
 def logout():

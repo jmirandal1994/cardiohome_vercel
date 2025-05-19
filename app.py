@@ -51,15 +51,18 @@ def dashboard():
     usuario = session['usuario']
     usuario_id = session['usuario_id']
 
-    # Obtener los eventos asignados al usuario (doctora)
+    # Campos necesarios para todos los eventos
+    campos = "id,nombre,fecha,horario,observaciones,cantidad_alumnos,url_archivo,nombre_archivo"
+
+    # Obtener los eventos asignados
     if usuario != 'admin':
         url_eventos = (
             f"{SUPABASE_URL}/rest/v1/establecimientos"
             f"?doctora_id=eq.{usuario_id}"
-            f"&select=id,nombre,fecha,horario,observaciones,cantidad_alumnos,url_archivo,nombre_archivo"
+            f"&select={campos}"
         )
     else:
-        url_eventos = f"{SUPABASE_URL}/rest/v1/establecimientos?select=*"
+        url_eventos = f"{SUPABASE_URL}/rest/v1/establecimientos?select={campos}"
 
     res_eventos = requests.get(url_eventos, headers=SUPABASE_HEADERS)
     eventos = res_eventos.json()
@@ -90,7 +93,7 @@ def dashboard():
         doctoras = res_doctoras.json()
 
         # Obtener todos los establecimientos
-        res_establecimientos = requests.get(f"{SUPABASE_URL}/rest/v1/establecimientos", headers=SUPABASE_HEADERS)
+        res_establecimientos = requests.get(f"{SUPABASE_URL}/rest/v1/establecimientos?select={campos}", headers=SUPABASE_HEADERS)
         establecimientos = res_establecimientos.json()
 
         # Contar formularios por establecimiento

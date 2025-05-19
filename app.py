@@ -123,8 +123,11 @@ def admin_agregar():
         "cantidad_alumnos": int(cantidad_alumnos) if cantidad_alumnos else None
     }
 
-    url = f"{SUPABASE_URL}/rest/v1/establecimientos?select=id"
-    response = requests.post(url, headers=SUPABASE_HEADERS, json=data)
+    headers = SUPABASE_HEADERS.copy()
+    headers["Prefer"] = "return=representation"
+
+    url = f"{SUPABASE_URL}/rest/v1/establecimientos"
+    response = requests.post(url, headers=headers, json=data)
 
     if response.status_code != 201:
         flash("❌ Error al guardar el establecimiento.")

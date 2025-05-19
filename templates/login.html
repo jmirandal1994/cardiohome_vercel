@@ -9,7 +9,7 @@
       margin: 0;
       padding: 0;
       font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #dbefff, #f0f8ff);
+      background: linear-gradient(135deg, #f0faff, #ffffff);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -17,55 +17,64 @@
     }
 
     .login-box {
-      background: rgba(255, 255, 255, 0.6);
-      border: 1px solid rgba(200, 200, 255, 0.3);
-      padding: 2.5rem;
+      background: rgba(255, 255, 255, 0.75);
+      border: 1px solid rgba(180, 220, 255, 0.3);
+      padding: 2.8rem;
       border-radius: 18px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       width: 100%;
-      max-width: 400px;
+      max-width: 420px;
       text-align: center;
+      color: #333;
       transition: transform 0.3s ease;
     }
 
     .login-box:hover {
-      transform: translateY(-4px);
+      transform: translateY(-3px);
     }
 
     .login-box img {
-      max-width: 120px;
-      margin-bottom: 1rem;
+      max-width: 160px;
+      margin-bottom: 1.5rem;
     }
 
     .login-box h1 {
-      font-size: 1.8rem;
+      font-size: 1.9rem;
       color: #1a73e8;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.8rem;
     }
 
     input[type="text"],
     input[type="password"] {
       width: 100%;
-      padding: 12px 14px;
+      padding: 13px 15px;
       margin-bottom: 1rem;
-      border: 1px solid #ccc;
+      border: 1px solid #ccddee;
       border-radius: 10px;
       font-size: 1rem;
-      background: rgba(255, 255, 255, 0.95);
+      background: #ffffff;
       color: #000;
+      transition: border 0.3s, box-shadow 0.3s;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+      border-color: #1a73e8;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
     }
 
     input::placeholder {
-      color: #777;
+      color: #999;
     }
 
     button {
       background: #1a73e8;
       color: white;
       border: none;
-      padding: 12px;
+      padding: 13px;
       width: 100%;
       border-radius: 10px;
       font-weight: bold;
@@ -93,23 +102,23 @@
 
     @media (prefers-color-scheme: dark) {
       body {
-        background: linear-gradient(135deg, #1c1f24, #2c2f35);
+        background: linear-gradient(135deg, #2a2a2a, #1e1e1e);
       }
 
       .login-box {
-        background: rgba(30, 30, 30, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(50, 50, 50, 0.85);
         color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.1);
       }
 
       input[type="text"],
       input[type="password"] {
-        background: rgba(255, 255, 255, 0.9);
+        background: #fefefe;
         color: #000;
       }
 
       input::placeholder {
-        color: #444;
+        color: #666;
       }
     }
 

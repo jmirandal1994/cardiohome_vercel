@@ -104,6 +104,7 @@ def admin_agregar():
     horario = request.form['horario']
     obs = request.form['obs']
     doctora_id = request.form['doctora']
+    cantidad_alumnos = request.form.get('alumnos')
     archivo = request.files['formulario']
 
     if archivo and permitido(archivo.filename):
@@ -112,8 +113,10 @@ def admin_agregar():
             "fecha": fecha,
             "horario": horario,
             "observaciones": obs,
-            "doctora_id": doctora_id
+            "doctora_id": doctora_id,
+            "cantidad_alumnos": int(cantidad_alumnos) if cantidad_alumnos else None
         }
+
         url = f"{SUPABASE_URL}/rest/v1/establecimientos"
         response = requests.post(url, headers=SUPABASE_HEADERS, json=data)
 

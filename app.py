@@ -51,6 +51,8 @@ def dashboard():
     url_eventos = f"{SUPABASE_URL}/rest/v1/establecimientos?doctora_id=eq.{usuario_id}&select=*"
     res_eventos = requests.get(url_eventos, headers=SUPABASE_HEADERS)
     eventos = res_eventos.json()
+    # ✅ Ordenar eventos por hora de inicio
+    eventos.sort(key=lambda e: e['horario'].split(' - ')[0])
 
     doctoras = []
     establecimientos = []

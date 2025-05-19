@@ -45,6 +45,9 @@ def dashboard():
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
+    print("👤 usuario:", session.get('usuario'))
+    print("🆔 usuario_id:", session.get('usuario_id'))
+
     usuario = session['usuario']
     usuario_id = session['usuario_id']
 

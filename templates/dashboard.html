@@ -149,9 +149,15 @@
       }
 
       .sidebar {
-        width: 240px;
-        height: 100vh;
+       background: rgba(26, 115, 232, 0.95); /* leve transparencia */
+       color: white;
+       padding: 30px 20px;
+       display: flex;
+       flex-direction: column;
+       align-items: center;
+       box-shadow: 2px 0 15px rgba(0,0,0,0.1);
       }
+
 
       .main-content {
         width: calc(100% - 240px);
@@ -162,14 +168,16 @@
 </head>
 <body>
   <div class="sidebar">
-    <h3>CardioHome</h3>
-    <p>Bienvenida, {{ usuario }}</p>
+    <img src="/static/cardiohome.png" alt="Logo CardioHome" style="max-width: 160px; display:block; margin: 0 auto 20px;" />
+    <h3 style="text-align: center;">CardioHome</h3>
+    <p style="text-align: center; font-weight: 300;">Bienvenida, {{ usuario }}</p>
+    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.3); margin: 20px 0;">
     <a href="/logout">Cerrar sesión</a>
   </div>
 
   <div class="main-content">
-    <h2 style="margin-bottom: 25px;">Establecimientos asignados</h2>
-
+    <h2 style="color: #1a73e8; margin-bottom: 25px;">Panel de Establecimientos</h2>
+    <!-- Aquí sigue tu contenido normal -->
     {% if usuario == 'admin' %}
     <div class="tabla-ids">
       <h4>🔎 IDs disponibles de Doctoras</h4>

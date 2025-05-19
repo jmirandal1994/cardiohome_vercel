@@ -127,6 +127,11 @@ import os
 
 import mimetypes
 
+import mimetypes
+
+# 👉 Agrega esta línea junto a tus claves Supabase al inicio de tu app.py
+SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzU0MTc4NywiZXhwIjoyMDYzMTE3Nzg3fQ.i3ixl5ws3Z3QTxIcZNjI29ZknRmJwwQfUyLmX0Z0khc'# ⚠️ Solo para backend, ¡nunca en frontend!
+
 @app.route('/subir/<establecimiento>', methods=['POST'])
 def subir(establecimiento):
     if 'usuario' not in session:
@@ -145,28 +150,36 @@ def subir(establecimiento):
             file_data = archivo.read()
             mime_type = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
 
-            # 1. Subir archivo a Supabase Storage
+            # 📤 1. Subir archivo a Supabase Storage usando service_role
             upload_url = f"{SUPABASE_URL}/storage/v1/object/formularios/{establecimiento}/{filename}"
             headers_storage = {
-                "apikey": SUPABASE_KEY,
-                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "apikey": SUPABASE_SERVICE_KEY,
+                "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
                 "Content-Type": mime_type
             }
 
             res_upload = requests.put(upload_url, headers=headers_storage, data=file_data)
+            print("🧾 PUT response:", res_upload.status_code, res_upload.text)
 
             if res_upload.status_code in [200, 201]:
-                # 2. Construir URL pública
+                # 🌐 2. Construir URL pública del archivo
                 url_publica = f"{SUPABASE_URL}/storage/v1/object/public/formularios/{establecimiento}/{filename}"
 
-                # 3. Guardar en la tabla formularios_subidos
+                # 📝 3. Guardar en la tabla 'formularios_subidos'
                 data = {
                     "doctoras_id": usuario_id,
                     "establecimientos_id": establecimiento,
                     "nombre_archivo": filename,
                     "url_archivo": url_publica
                 }
-                res_insert = requests.post(f"{SUPABASE_URL}/rest/v1/formularios_subidos", headers=SUPABASE_HEADERS, json=data)
+
+                res_insert = requests.post(
+                    f"{SUPABASE_URL}/rest/v1/formularios_subidos",
+                    headers=SUPABASE_HEADERS,
+                    json=data
+                )
+
+                print("🧾 POST response:", res_insert.status_code, res_insert.text)
 
                 if res_insert.status_code == 201:
                     mensajes.append(f'✔ {filename} subido correctamente')

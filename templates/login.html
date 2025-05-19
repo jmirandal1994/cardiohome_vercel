@@ -1,76 +1,134 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - CardioHome</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: linear-gradient(to right, #e3f2fd, #f8f9fa);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 1rem;
-        }
-        .login-box {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-        .login-box img {
-            max-width: 140px;
-            margin-bottom: 1rem;
-        }
-        .login-box h1 {
-            font-size: 1.6rem;
-            margin-bottom: 1.5rem;
-            color: #1a73e8;
-        }
-        input[type="text"], input[type="password"] {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 1rem;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 1rem;
-        }
-        button {
-            background: #1a73e8;
-            color: white;
-            border: none;
-            padding: 12px;
-            width: 100%;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 1rem;
-            cursor: pointer;
-        }
-        button:hover {
-            background: #155ab6;
-        }
-        @media (max-width: 400px) {
-            .login-box {
-                padding: 1.5rem;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - CardioHome</title>
+  <style>
+    /* Fondo elegante con imagen y degradado */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('https://images.unsplash.com/photo-1531746790731-6c087fecd65a?auto=format&fit=crop&w=1950&q=80') no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      backdrop-filter: blur(4px);
+    }
+
+    .login-box {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      padding: 2.5rem;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      color: #fff;
+      transition: transform 0.3s ease;
+    }
+
+    .login-box:hover {
+      transform: translateY(-5px);
+    }
+
+    .login-box img {
+      max-width: 120px;
+      margin-bottom: 1rem;
+    }
+
+    .login-box h1 {
+      font-size: 1.8rem;
+      margin-bottom: 1.5rem;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 14px;
+      margin-bottom: 1rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      background: rgba(255, 255, 255, 0.8);
+      color: #000;
+    }
+
+    input::placeholder {
+      color: #666;
+    }
+
+    button {
+      background: #1a73e8;
+      color: white;
+      border: none;
+      padding: 12px;
+      width: 100%;
+      border-radius: 10px;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #0f5ac2;
+    }
+
+    .forgot {
+      display: block;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: #ddd;
+      text-decoration: none;
+    }
+
+    .forgot:hover {
+      color: #fff;
+      text-decoration: underline;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .login-box {
+        background: rgba(0, 0, 0, 0.35);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      input[type="text"],
+      input[type="password"] {
+        background: rgba(255, 255, 255, 0.9);
+        color: #000;
+      }
+
+      input::placeholder {
+        color: #444;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .login-box {
+        padding: 2rem;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="login-box">
-        <img src="/static/cardiohome.png" alt="Logo CardioHome">
-        <h1>Acceso a CardioHome</h1>
-        <form method="POST" action="/login">
-            <input type="text" name="username" placeholder="Usuario" required>
-            <input type="password" name="password" placeholder="Contraseña" required>
-            <button type="submit">Ingresar</button>
-        </form>
-    </div>
+  <div class="login-box">
+    <img src="/static/cardiohome.png" alt="Logo CardioHome">
+    <h1>Acceso a CardioHome</h1>
+    <form method="POST" action="/login">
+      <input type="text" name="username" placeholder="Usuario" required>
+      <input type="password" name="password" placeholder="Contraseña" required>
+      <button type="submit">Ingresar</button>
+    </form>
+    <a href="#" class="forgot">¿Olvidaste tu contraseña?</a>
+  </div>
 </body>
 </html>

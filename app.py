@@ -206,9 +206,21 @@ def evaluados(establecimiento):
 
     cantidad = request.form.get('alumnos')
     usuario = session['usuario']
+
+    # 🔍 Consultar el nombre del establecimiento por su ID (uuid)
+    res_est = requests.get(
+        f"{SUPABASE_URL}/rest/v1/establecimientos?id=eq.{establecimiento}&select=nombre",
+        headers=SUPABASE_HEADERS
+    )
+    if res_est.status_code == 200 and res_est.json():
+        nombre_establecimiento = res_est.json()[0]['nombre']
+    else:
+        nombre_establecimiento = 'Desconocido'
+
+    # ✉️ Enviar correo con el nombre real
     enviar_correo_sendgrid(
-        asunto=f'Alumnos evaluados - {establecimiento}',
-        cuerpo=f'Doctora: {usuario}\nEstablecimiento: {establecimiento}\nCantidad evaluada: {cantidad}'
+        asunto=f'Alumnos evaluados - {nombre_establecimiento}',
+        cuerpo=f'Doctora: {usuario}\nEstablecimiento: {nombre_establecimiento}\nCantidad evaluada: {cantidad}'
     )
     return f'Datos enviados correctamente: {cantidad} alumnos evaluados.'
 

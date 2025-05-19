@@ -125,6 +125,8 @@ def admin_agregar():
 from werkzeug.utils import secure_filename
 import os
 
+import mimetypes
+
 @app.route('/subir/<establecimiento>', methods=['POST'])
 def subir(establecimiento):
     if 'usuario' not in session:
@@ -137,29 +139,41 @@ def subir(establecimiento):
     usuario_id = session['usuario_id']
     mensajes = []
 
-    os.makedirs('static/uploads', exist_ok=True)  # Asegura que exista la carpeta
-
     for archivo in archivos:
         if permitido(archivo.filename):
             filename = secure_filename(archivo.filename)
-            local_path = os.path.join('static/uploads', filename)
-            archivo.save(local_path)
+            file_data = archivo.read()
+            mime_type = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
 
-            data = {
-                "doctoras_id": usuario_id,
-                "establecimientos_id": establecimiento,
-                "nombre_archivo": filename,
-                "url_archivo": f"/static/uploads/{filename}"
+            # 1. Subir archivo a Supabase Storage
+            upload_url = f"{SUPABASE_URL}/storage/v1/object/formularios/{establecimiento}/{filename}"
+            headers_storage = {
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": mime_type
             }
 
-            url = f"{SUPABASE_URL}/rest/v1/formularios_subidos"
-            res = requests.post(url, headers=SUPABASE_HEADERS, json=data)
+            res_upload = requests.put(upload_url, headers=headers_storage, data=file_data)
 
-            if res.status_code == 201:
-                mensajes.append(f'✔ {filename} subido correctamente')
+            if res_upload.status_code in [200, 201]:
+                # 2. Construir URL pública
+                url_publica = f"{SUPABASE_URL}/storage/v1/object/public/formularios/{establecimiento}/{filename}"
+
+                # 3. Guardar en la tabla formularios_subidos
+                data = {
+                    "doctoras_id": usuario_id,
+                    "establecimientos_id": establecimiento,
+                    "nombre_archivo": filename,
+                    "url_archivo": url_publica
+                }
+                res_insert = requests.post(f"{SUPABASE_URL}/rest/v1/formularios_subidos", headers=SUPABASE_HEADERS, json=data)
+
+                if res_insert.status_code == 201:
+                    mensajes.append(f'✔ {filename} subido correctamente')
+                else:
+                    mensajes.append(f'✖ Error al guardar en la base de datos: {res_insert.text}')
             else:
-                mensajes.append(f'✖ Error al subir {filename}: {res.text}')
-
+                mensajes.append(f'✖ Error al subir {filename} al bucket: {res_upload.text}')
         else:
             mensajes.append(f'✖ {archivo.filename} (tipo no permitido)')
 

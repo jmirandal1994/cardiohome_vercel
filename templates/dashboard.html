@@ -236,28 +236,30 @@
 </div>
 {% endif %}
 
-        {% if usuario != 'admin' %}
-        {% for evento in eventos %}
-        <div class="establecimiento">
-            <h3>{{ evento.nombre }}</h3>
-            <p>
-                <a href="{{ url_for('descargar_archivo', nombre_archivo=evento.nombre ~ '.pdf') }}" download>
-                   Descargar Formulario
-            </a>
-            </p>
-            <form action="/subir/{{ evento.nombre }}" method="POST" enctype="multipart/form-data">
-                <label>Subir formularios completados (puedes seleccionar varios):</label><br>
-                <input type="file" name="archivo" multiple accept=".pdf,.doc,.docx,.xls,.xlsx" required><br>
-                <button type="submit">Subir</button>
-            </form>
-            <form action="/evaluados/{{ evento.nombre }}" method="POST">
-                <label for="alumnos">Cantidad de alumnos evaluados:</label><br>
-                <input type="number" name="alumnos" min="0" required><br>
-                <button type="submit">Enviar cantidad</button>
-            </form>
-        </div>
-        {% endfor %}
-        {% endif %}
+{% if usuario != 'admin' %}
+{% for evento in eventos %}
+<div class="establecimiento">
+    <h3>{{ evento.nombre }}</h3>
+    <p>
+        <a href="{{ url_for('descargar_archivo', nombre_archivo=evento.nombre ~ '.pdf') }}" download>
+           Descargar Formulario
+        </a>
+    </p>
+    <!-- ✅ CORREGIDO: usar evento.id -->
+    <form action="/subir/{{ evento.id }}" method="POST" enctype="multipart/form-data">
+        <label>Subir formularios completados (puedes seleccionar varios):</label><br>
+        <input type="file" name="archivo" multiple accept=".pdf,.doc,.docx,.xls,.xlsx" required><br>
+        <button type="submit">Subir</button>
+    </form>
+    <!-- ✅ CORREGIDO: usar evento.id -->
+    <form action="/evaluados/{{ evento.id }}" method="POST">
+        <label for="alumnos">Cantidad de alumnos evaluados:</label><br>
+        <input type="number" name="alumnos" min="0" required><br>
+        <button type="submit">Enviar cantidad</button>
+    </form>
+</div>
+{% endfor %}
+{% endif %}
 
     </div>
 </body>

@@ -109,21 +109,74 @@ def admin_agregar():
     cantidad_alumnos = request.form.get('alumnos')
     archivo = request.files['formulario']
 
-    if archivo and permitido(archivo.filename):
-        data = {
-            "nombre": nombre,
-            "fecha": fecha,
-            "horario": horario,
-            "observaciones": obs,
-            "doctora_id": doctora_id,
-            "cantidad_alumnos": int(cantidad_alumnos) if cantidad_alumnos else None
-        }
+    if not archivo or not permitido(archivo.filename):
+        flash("Archivo no válido.")
+        return redirect(url_for('dashboard'))
 
-        url = f"{SUPABASE_URL}/rest/v1/establecimientos"
-        response = requests.post(url, headers=SUPABASE_HEADERS, json=data)
+    # 1. Crear el establecimiento
+    data = {
+        "nombre": nombre,
+        "fecha": fecha,
+        "horario": horario,
+        "observaciones": obs,
+        "doctora_id": doctora_id,
+        "cantidad_alumnos": int(cantidad_alumnos) if cantidad_alumnos else None
+    }
 
-        print("STATUS:", response.status_code)
-        print("RESPUESTA:", response.text)
+    url = f"{SUPABASE_URL}/rest/v1/establecimientos?select=id"
+    response = requests.post(url, headers=SUPABASE_HEADERS, json=data)
+
+    if response.status_code != 201:
+        flash("❌ Error al guardar el establecimiento.")
+        print("ESTAB FALLO:", response.text)
+        return redirect(url_for('dashboard'))
+
+    try:
+        establecimiento_id = response.json()[0]['id']
+    except Exception as e:
+        flash("❌ No se pudo obtener el ID del establecimiento.")
+        print("Error parsing ID:", e)
+        return redirect(url_for('dashboard'))
+
+    # 2. Subir el archivo a Supabase Storage
+    filename = secure_filename(archivo.filename)
+    file_data = archivo.read()
+    mime_type = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+
+    upload_url = f"{SUPABASE_URL}/storage/v1/object/formularios/{establecimiento_id}/{filename}"
+    headers_storage = {
+        "apikey": SUPABASE_SERVICE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+        "Content-Type": mime_type
+    }
+    res_upload = requests.put(upload_url, headers=headers_storage, data=file_data)
+
+    if res_upload.status_code not in [200, 201]:
+        flash("❌ Error al subir el archivo.")
+        print("UPLOAD ERROR:", res_upload.text)
+        return redirect(url_for('dashboard'))
+
+    # 3. Registrar archivo en formularios_subidos
+    url_publica = f"{SUPABASE_URL}/storage/v1/object/public/formularios/{establecimiento_id}/{filename}"
+
+    data_formulario = {
+        "doctoras_id": doctora_id,
+        "establecimientos_id": establecimiento_id,
+        "nombre_archivo": filename,
+        "url_archivo": url_publica
+    }
+
+    res_insert = requests.post(
+        f"{SUPABASE_URL}/rest/v1/formularios_subidos",
+        headers=SUPABASE_HEADERS,
+        json=data_formulario
+    )
+
+    if res_insert.status_code == 201:
+        flash("✅ Establecimiento y formulario agregado correctamente.")
+    else:
+        flash("⚠️ Establecimiento agregado, pero error al guardar el formulario.")
+        print("INSERT FORM FAIL:", res_insert.text)
 
     return redirect(url_for('dashboard'))
 

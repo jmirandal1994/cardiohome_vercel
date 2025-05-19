@@ -203,6 +203,37 @@ def subir(establecimiento):
 def descargar_archivo(nombre_archivo):
     return send_from_directory('static/formularios', nombre_archivo, as_attachment=True)
 
+from flask import Response
+import mimetypes
+
+@app.route('/descargar_formulario/<establecimiento>/<nombre_archivo>')
+def descargar_formulario(establecimiento, nombre_archivo):
+    if 'usuario' not in session:
+        return redirect(url_for('index'))
+
+    # Construye la URL del archivo en Supabase Storage
+    supabase_url = f"{SUPABASE_URL}/storage/v1/object/formularios/{establecimiento}/{nombre_archivo}"
+    headers = {
+        "apikey": SUPABASE_SERVICE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+    }
+
+    res = requests.get(supabase_url, headers=headers)
+
+    if res.status_code == 200:
+        # Detecta tipo MIME automáticamente según la extensión
+        mime_type = mimetypes.guess_type(nombre_archivo)[0] or 'application/octet-stream'
+
+        return Response(
+            res.content,
+            mimetype=mime_type,
+            headers={
+                "Content-Disposition": f"attachment; filename={nombre_archivo}"
+            }
+        )
+    else:
+        return f"Error al descargar archivo: {res.status_code} - {res.text}", 500
+
 
 @app.route('/evaluados/<establecimiento>', methods=['POST'])
 def evaluados(establecimiento):

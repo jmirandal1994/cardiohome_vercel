@@ -208,7 +208,7 @@
         <select name="doctora" required>
           <option value="">Seleccionar doctora</option>
           {% for doc in doctoras %}
-          <option value="{{ doc.id }}">{{ doc.nombre }} ({{ doc.usuario }})</option>
+         <option value="{{ doc.id|e }}">{{ doc.nombre }} ({{ doc.usuario }})</option>
           {% endfor %}
         </select>
         <label>Formulario (PDF, Word o Excel):</label>

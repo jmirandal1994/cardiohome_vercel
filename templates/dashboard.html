@@ -272,41 +272,41 @@
     </div>
     {% endif %}
 
-    {% if usuario != 'admin' %}
-    {% for evento in eventos %}
-    <div class="establecimiento">
-      <h3>{{ evento.nombre }}</h3>
+  {% if usuario != 'admin' %}
+  {% for evento in eventos %}
+  <div class="establecimiento">
+    <h3>{{ evento.nombre }}</h3>
 
-      {% set tiene_formulario = false %}
-      {% for f in formularios %}
-        {% if f.establecimientos_id == evento.id %}
-          {% set tiene_formulario = true %}
-          <p>
-            <a href="{{ url_for('descargar_formulario', establecimiento=evento.id, nombre_archivo=f.nombre_archivo) }}">
-              Descargar Formulario: {{ f.nombre_archivo }}
-            </a>
-          </p>
-        {% endif %}
-      {% endfor %}
-
-      {% if not tiene_formulario %}
-        <p><em>No hay formularios disponibles para este establecimiento.</em></p>
+    {% set tiene_formulario = false %}
+    {% for f in formularios %}
+      {% if f.establecimientos_id == evento.id %}
+        {% set tiene_formulario = true %}
+        <p>
+          <a href="{{ f.url_archivo }}" target="_blank" download>
+            Descargar Formulario: {{ f.nombre_archivo }}
+          </a>
+        </p>
       {% endif %}
-
-      <form action="/subir/{{ evento.id }}" method="POST" enctype="multipart/form-data">
-        <label>Subir formularios completados (puedes seleccionar varios):</label><br />
-        <input type="file" name="archivo" multiple accept=".pdf,.doc,.docx,.xls,.xlsx" required /><br />
-        <button type="submit">Subir</button>
-      </form>
-
-      <form action="/evaluados/{{ evento.id }}" method="POST">
-        <label for="alumnos">Cantidad de alumnos evaluados:</label><br />
-        <input type="number" name="alumnos" min="0" required /><br />
-        <button type="submit">Enviar cantidad</button>
-      </form>
-    </div>
     {% endfor %}
+
+    {% if not tiene_formulario %}
+      <p><em>No hay formularios disponibles para este establecimiento.</em></p>
     {% endif %}
+
+    <form action="/subir/{{ evento.id }}" method="POST" enctype="multipart/form-data">
+      <label>Subir formularios completados (puedes seleccionar varios):</label><br>
+      <input type="file" name="archivo" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm" required><br>
+      <button type="submit">Subir</button>
+    </form>
+
+    <form action="/evaluados/{{ evento.id }}" method="POST">
+      <label for="alumnos">Cantidad de alumnos evaluados:</label><br>
+      <input type="number" name="alumnos" min="0" required><br>
+      <button type="submit">Enviar cantidad</button>
+    </form>
+  </div>
+  {% endfor %}
+{% endif %}
 
   </div>
 </body>

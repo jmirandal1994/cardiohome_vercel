@@ -2,79 +2,155 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Colegios Evaluados</title>
+    <title>Colegios Evaluados - CardioHome</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        :root {
+            --azul-cardio: #1a73e8;
+            --gris-fondo: #f4f6f9;
+            --gris-borde: #dcdcdc;
+            --blanco: #ffffff;
+            --gris-claro: #f9f9f9;
+        }
+
         body {
-            font-family: sans-serif;
-            margin: 2rem;
-            background: #f9f9f9;
-        }
-        .form-box {
-            background: white;
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--gris-fondo);
+            color: #333;
             padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-            max-width: 500px;
         }
+
+        h1, h2 {
+            color: var(--azul-cardio);
+        }
+
+        .contenedor {
+            max-width: 1000px;
+            margin: auto;
+        }
+
+        .formulario {
+            background-color: var(--blanco);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+            margin-bottom: 2rem;
+        }
+
+        .formulario label {
+            font-weight: 600;
+            display: block;
+            margin-top: 1rem;
+        }
+
+        .formulario input[type="text"],
+        .formulario input[type="date"],
+        .formulario input[type="number"],
+        .formulario textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 0.3rem;
+            border: 1px solid var(--gris-borde);
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .formulario textarea {
+            resize: vertical;
+        }
+
+        .formulario button {
+            margin-top: 1.5rem;
+            background-color: var(--azul-cardio);
+            color: white;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .formulario button:hover {
+            background-color: #155ab6;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
+            background-color: var(--blanco);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
+
         th, td {
-            padding: 10px;
-            border: 1px solid #ddd;
+            padding: 14px 18px;
             text-align: left;
+            border-bottom: 1px solid var(--gris-borde);
         }
+
         th {
-            background: #eee;
+            background-color: var(--gris-claro);
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background-color: #eef3fb;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="contenedor">
+        <h1>Colegios Evaluados</h1>
 
-<h1>Colegios Evaluados</h1>
+        <div class="formulario">
+            <h2>Registrar nuevo colegio</h2>
+            <form method="POST" action="/admin/registrar_colegio">
+                <label for="nombre">Nombre del colegio:</label>
+                <input type="text" name="nombre" id="nombre" required>
 
-<div class="form-box">
-    <form method="POST" action="/admin/registrar_colegio">
-        <label>Nombre del colegio:</label><br>
-        <input type="text" name="nombre" required><br><br>
+                <label for="fecha">Fecha de evaluación:</label>
+                <input type="date" name="fecha" id="fecha" required>
 
-        <label>Fecha de evaluación:</label><br>
-        <input type="date" name="fecha" required><br><br>
+                <label for="obs">Observaciones:</label>
+                <textarea name="obs" id="obs" rows="3"></textarea>
 
-        <label>Observaciones:</label><br>
-        <textarea name="obs" rows="2" cols="40"></textarea><br><br>
+                <label for="alumnos">Cantidad de alumnos:</label>
+                <input type="number" name="alumnos" id="alumnos" min="0">
 
-        <label>Cantidad de alumnos:</label><br>
-        <input type="number" name="alumnos" min="0"><br><br>
+                <button type="submit">Registrar Colegio</button>
+            </form>
+        </div>
 
-        <button type="submit">Registrar Colegio</button>
-    </form>
-</div>
-
-<h2>Listado de colegios</h2>
-<table>
-    <thead>
-        <tr>
-            <th>Nombre</th>
-            <th>Fecha</th>
-            <th>Cantidad de alumnos</th>
-            <th>Observaciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for c in colegios %}
-        <tr>
-            <td>{{ c.nombre }}</td>
-            <td>{{ c.fecha_evaluacion }}</td>
-            <td>{{ c.cantidad_alumnos or 0 }}</td>
-            <td>{{ c.observaciones or '' }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
+        <h2>Listado de colegios registrados</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Fecha de evaluación</th>
+                    <th>Cantidad de alumnos</th>
+                    <th>Observaciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in colegios %}
+                <tr>
+                    <td>{{ c.nombre }}</td>
+                    <td>{{ c.fecha_evaluacion }}</td>
+                    <td>{{ c.cantidad_alumnos or 0 }}</td>
+                    <td>{{ c.observaciones or '' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </body>
 </html>

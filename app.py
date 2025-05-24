@@ -282,6 +282,49 @@ def descargar_archivo(nombre_archivo):
 from flask import Response
 import mimetypes
 
+@app.route('/admin/registrar_colegio', methods=['POST'])
+def registrar_colegio():
+    if session.get('usuario') != 'admin':
+        return redirect(url_for('dashboard'))
+
+    import uuid
+    nuevo_id = str(uuid.uuid4())
+    nombre = request.form['nombre']
+    fecha = request.form['fecha']
+    obs = request.form.get('obs', '')
+    alumnos = request.form.get('alumnos')
+
+    data = {
+        "id": nuevo_id,
+        "nombre": nombre,
+        "fecha_evaluacion": fecha,
+        "observaciones": obs,
+        "cantidad_alumnos": int(alumnos) if alumnos else None
+    }
+
+    res = requests.post(
+        f"{SUPABASE_URL}/rest/v1/colegios_registrados",
+        headers=SUPABASE_HEADERS,
+        json=data
+    )
+
+    if res.status_code == 201:
+        flash("✅ Colegio registrado correctamente.")
+    else:
+        flash("❌ Error al registrar el colegio.")
+    return redirect(url_for('colegios'))
+
+@app.route('/colegios')
+def colegios():
+    if session.get('usuario') != 'admin':
+        return redirect(url_for('dashboard'))
+
+    res = requests.get(f"{SUPABASE_URL}/rest/v1/colegios_registrados?select=*", headers=SUPABASE_HEADERS)
+    colegios = res.json()
+    colegios.sort(key=lambda x: x.get('fecha_evaluacion') or '', reverse=True)
+
+    return render_template('colegios.html', colegios=colegios)
+
 @app.route('/descargar_formulario/<establecimiento>/<nombre_archivo>')
 def descargar_formulario(establecimiento, nombre_archivo):
     if 'usuario' not in session:

@@ -289,6 +289,40 @@ def registrar_colegio():
 
     import uuid
     nuevo_id = str(uuid.uuid4())
+    nombre = request.form.get('nombre')
+    fecha = request.form.get('fecha')
+    obs = request.form.get('obs', '')
+    alumnos = request.form.get('alumnos')
+
+    # Validación rápida
+    if not nombre or not fecha:
+        flash("❌ Nombre y fecha son obligatorios.")
+        return redirect(url_for('colegios'))
+
+    data = {
+        "id": nuevo_id,
+        "nombre": nombre,
+        "fecha_evaluacion": fecha,
+        "observaciones": obs,
+        "cantidad_alumnos": int(alumnos) if alumnos else None
+    }
+
+    res = requests.post(
+        f"{SUPABASE_URL}/rest/v1/colegios_registrados",
+        headers={**SUPABASE_HEADERS, "Prefer": "return=representation"},
+        json=data
+    )
+
+    if res.status_code == 201:
+        flash("✅ Colegio registrado correctamente.")
+    else:
+        print("❌ Error al registrar:", res.status_code, res.text)
+        flash("❌ Error al registrar el colegio.")
+
+    return redirect(url_for('colegios'))
+
+    import uuid
+    nuevo_id = str(uuid.uuid4())
     nombre = request.form['nombre']
     fecha = request.form['fecha']
     obs = request.form.get('obs', '')

@@ -168,12 +168,17 @@
 </head>
 <body>
   <div class="sidebar">
-    <img src="/static/cardiohome.png" alt="Logo CardioHome" style="max-width: 160px; display:block; margin: 0 auto 20px;" />
-    <h3 style="text-align: center;">CardioHome</h3>
-    <p style="text-align: center; font-weight: 300;">Bienvenida, {{ usuario }}</p>
-    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.3); margin: 20px 0;">
-    <a href="/logout">Cerrar sesión</a>
-  </div>
+  <img src="/static/cardiohome.png" alt="Logo CardioHome" style="max-width: 160px; display:block; margin: 0 auto 20px;" />
+  <h3 style="text-align: center;">CardioHome</h3>
+  <p style="text-align: center; font-weight: 300;">Bienvenida, {{ usuario }}</p>
+  <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.3); margin: 20px 0;">
+  
+  {% if usuario == 'admin' %}
+    <a href="/colegios">📋 Colegios Evaluados</a>
+  {% endif %}
+  
+  <a href="/logout">Cerrar sesión</a>
+</div>
 
   <div class="main-content">
     <h2 style="color: #1a73e8; margin-bottom: 25px;">Panel de Establecimientos</h2>

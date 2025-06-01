@@ -179,16 +179,10 @@ def relleno_formularios():
     return render_template('subir_excel.html')
     
 from PyPDF2 import PdfReader, PdfWriter
-from datetime import datetime
-import io
-from flask import send_file
-
-from PyPDF2 import PdfReader, PdfWriter
 from PyPDF2.generic import NameObject, BooleanObject
-from flask import send_file, request, redirect, session, url_for
-from datetime import datetime
 import io
-import os
+from datetime import datetime
+from flask import send_file
 
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
@@ -208,13 +202,14 @@ def generar_pdf():
     derivaciones = request.form['derivaciones']
     fecha_eval = datetime.today().strftime('%d-%m-%Y')
 
-    # Cargar PDF base
+    # Ruta del PDF base
     PDF_BASE = os.path.join("static", "FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE .pdf")
     reader = PdfReader(PDF_BASE)
     writer = PdfWriter()
-    writer.add_page(reader.pages[0])
+    page = reader.pages[0]
+    writer.add_page(page)
 
-    # Rellenar campos
+    # Campos a completar
     campos = {
         "nombre": nombre,
         "rut": rut,
@@ -233,19 +228,12 @@ def generar_pdf():
 
     writer.update_page_form_field_values(writer.pages[0], campos)
 
-    # Forzar que el visor PDF muestre los valores rellenados
-    if "/AcroForm" in writer._root_object:
-        writer._root_object["/AcroForm"].update({
-            NameObject("/NeedAppearances"): BooleanObject(True)
-        })
-    else:
-        writer._root_object.update({
-            NameObject("/AcroForm"): writer._add_object({
-                NameObject("/NeedAppearances"): BooleanObject(True)
-            })
-        })
+    # ⚠️ Forzar que los valores aparezcan visibles
+    writer._root_object.update({
+        NameObject("/NeedAppearances"): BooleanObject(True)
+    })
 
-    # Exportar PDF
+    # Guardar como archivo en memoria
     output = io.BytesIO()
     writer.write(output)
     output.seek(0)

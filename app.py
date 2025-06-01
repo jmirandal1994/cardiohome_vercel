@@ -206,10 +206,9 @@ def generar_pdf():
     PDF_BASE = os.path.join("static", "FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE .pdf")
     reader = PdfReader(PDF_BASE)
     writer = PdfWriter()
-    page = reader.pages[0]
-    writer.add_page(page)
+    writer.add_page(reader.pages[0])
 
-    # Campos a completar
+    # Campos del formulario
     campos = {
         "nombre": nombre,
         "rut": rut,
@@ -226,14 +225,25 @@ def generar_pdf():
         "sexo_m": "Yes" if sexo == "M" else "Off"
     }
 
+    # Rellenar campos
     writer.update_page_form_field_values(writer.pages[0], campos)
 
-    # ⚠️ Forzar que los valores aparezcan visibles
+    # ⚠️ Visibilidad forzada de apariencias
+    for page in writer.pages:
+        writer.update_page_form_field_values(page, campos)
+        if "/Annots" in page:
+            for annot in page["/Annots"]:
+                obj = annot.get_object()
+                obj.update({
+                    NameObject("/Ff"): NumberObject(1)  # Campo visible
+                })
+
+    # Necesario para que algunos visores muestren los datos (aunque no todos lo respetan)
     writer._root_object.update({
         NameObject("/NeedAppearances"): BooleanObject(True)
     })
 
-    # Guardar como archivo en memoria
+    # Generar PDF
     output = io.BytesIO()
     writer.write(output)
     output.seek(0)

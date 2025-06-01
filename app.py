@@ -14,9 +14,7 @@ import json
 app = Flask(__name__)
 app.secret_key = 'clave_super_segura'
 ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'xls', 'xlsx'}
-UPLOAD_FOLDER = 'uploads'
 PDF_BASE = 'FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE.pdf'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # -------------------- Supabase Config --------------------
 SUPABASE_URL = 'https://rbzxolreglwndvsrxhmg.supabase.co'

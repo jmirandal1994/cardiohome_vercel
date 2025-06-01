@@ -179,6 +179,7 @@ def relleno_formularios():
 
     return render_template('subir_excel.html')
 
+
 from flask import send_file, request, redirect, url_for, session
 from pypdf import PdfReader, PdfWriter
 from pypdf.generic import NameObject, DictionaryObject, BooleanObject
@@ -188,64 +189,73 @@ import os
 
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
-    if 'usuario' not in session:
-        return redirect(url_for('index'))
+    try:
+        if 'usuario' not in session:
+            return redirect(url_for('index'))
 
-    nombre = request.form['nombre']
-    rut = request.form['rut']
-    fecha_nac = request.form['fecha_nacimiento']
-    edad = request.form['edad']
-    nacionalidad = request.form['nacionalidad']
-    sexo = request.form['sexo']
-    estado = request.form['estado']
-    diagnostico = request.form['diagnostico']
-    fecha_reeval = request.form['fecha_reevaluacion']
-    derivaciones = request.form['derivaciones']
-    fecha_eval = datetime.today().strftime('%d/%m/%Y')
+        # Datos recibidos del formulario
+        nombre = request.form.get('nombre', '')
+        rut = request.form.get('rut', '')
+        fecha_nac = request.form.get('fecha_nacimiento', '')
+        edad = request.form.get('edad', '')
+        nacionalidad = request.form.get('nacionalidad', '')
+        sexo = request.form.get('sexo', '')
+        estado = request.form.get('estado', '')
+        diagnostico = request.form.get('diagnostico', '')
+        fecha_reeval = request.form.get('fecha_reevaluacion', '')
+        derivaciones = request.form.get('derivaciones', '')
+        fecha_eval = datetime.today().strftime('%d/%m/%Y')
 
-    PDF_BASE = os.path.join("static", "FORMULARIO.pdf")
-    reader = PdfReader(PDF_BASE)
-    writer = PdfWriter()
-    page = reader.pages[0]
-    writer.add_page(page)
+        # Ruta al PDF base (verifica que el nombre y la ruta estén bien)
+        PDF_BASE = os.path.join("static", "FORMULARIO.pdf")
+        if not os.path.exists(PDF_BASE):
+            return f"No se encontró el archivo base en {PDF_BASE}", 500
 
-    campos = {
-        "nombre": nombre,
-        "rut": rut,
-        "fecha_nacimiento": fecha_nac,
-        "nacionalidad": nacionalidad,
-        "edad": edad,
-        "diagnostico_1": diagnostico,
-        "diagnostico_2": diagnostico,
-        "estado_general": estado,
-        "fecha_evaluacion": fecha_eval,
-        "fecha_reevaluacion": fecha_reeval,
-        "derivaciones": derivaciones,
-        "sexo_f": "X" if sexo == "F" else "",
-        "sexo_m": "X" if sexo == "M" else "",
-    }
+        reader = PdfReader(PDF_BASE)
+        writer = PdfWriter()
+        page = reader.pages[0]
+        writer.add_page(page)
 
-    writer.update_page_form_field_values(page, campos)
+        campos = {
+            "nombre": nombre,
+            "rut": rut,
+            "fecha_nacimiento": fecha_nac,
+            "nacionalidad": nacionalidad,
+            "edad": edad,
+            "diagnostico_1": diagnostico,
+            "diagnostico_2": diagnostico,
+            "estado_general": estado,
+            "fecha_evaluacion": fecha_eval,
+            "fecha_reevaluacion": fecha_reeval,
+            "derivaciones": derivaciones,
+            "sexo_f": "X" if sexo == "F" else "",
+            "sexo_m": "X" if sexo == "M" else "",
+        }
 
-    # Forzar apariencia visible de los campos
-    if "/AcroForm" in writer._root_object:
-        writer._root_object["/AcroForm"].update({
-            NameObject("/NeedAppearances"): BooleanObject(True)
-        })
-    else:
-        writer._root_object.update({
-            NameObject("/AcroForm"): DictionaryObject({
+        writer.update_page_form_field_values(writer.pages[0], campos)
+
+        # Forzar que se vean los campos rellenados
+        if "/AcroForm" in writer._root_object:
+            writer._root_object["/AcroForm"].update({
                 NameObject("/NeedAppearances"): BooleanObject(True)
             })
-        })
+        else:
+            writer._root_object.update({
+                NameObject("/AcroForm"): DictionaryObject({
+                    NameObject("/NeedAppearances"): BooleanObject(True)
+                })
+            })
 
-    # Guardar a memoria
-    buffer = io.BytesIO()
-    writer.write(buffer)
-    buffer.seek(0)
+        # Guardar en memoria
+        buffer = io.BytesIO()
+        writer.write(buffer)
+        buffer.seek(0)
 
-    nombre_archivo = f"{nombre.replace(' ', '_')}_{rut}_formulario.pdf"
-    return send_file(buffer, as_attachment=True, download_name=nombre_archivo, mimetype='application/pdf')
+        nombre_archivo = f"{nombre.replace(' ', '_')}_{rut}_formulario.pdf"
+        return send_file(buffer, as_attachment=True, download_name=nombre_archivo, mimetype='application/pdf')
+
+    except Exception as e:
+        return f"Error al generar el PDF: {str(e)}", 500
     
 @app.route('/subir_excel/<int:evento_id>', methods=['POST'])
 def subir_excel(evento_id):

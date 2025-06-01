@@ -191,7 +191,7 @@ def generar_pdf():
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
-    # Datos del formulario
+    # Datos recibidos del formulario
     nombre = request.form['nombre']
     rut = request.form['rut']
     fecha_nac = request.form['fecha_nacimiento']
@@ -202,9 +202,9 @@ def generar_pdf():
     diagnostico = request.form['diagnostico']
     fecha_reeval = request.form['fecha_reevaluacion']
     derivaciones = request.form['derivaciones']
-    fecha_eval = datetime.today().strftime('%d/%m/%Y')
+    fecha_eval = datetime.today().strftime('%d-%m-%Y')
 
-    # Cargar PDF base
+    # Ruta al PDF base
     PDF_BASE = os.path.join("static", "FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE .pdf")
     reader = PdfReader(PDF_BASE)
     writer = PdfWriter()
@@ -229,21 +229,14 @@ def generar_pdf():
 
     writer.update_page_form_field_values(writer.pages[0], campos)
 
-    # Asegurarse que el diccionario AcroForm esté presente y correcto
-    if "/AcroForm" not in writer._root_object:
-        from PyPDF2.generic import DictionaryObject, ArrayObject, NameObject
-        writer._root_object.update({
-            NameObject("/AcroForm"): DictionaryObject({
-                NameObject("/Fields"): ArrayObject(),  # lista vacía para evitar error
-                NameObject("/NeedAppearances"): BooleanObject(True)
-            })
-        })
-    else:
-        writer._root_object["/AcroForm"].update({
+    # Agregar /AcroForm con NeedAppearances forzado
+    writer._root_object.update({
+        NameObject("/AcroForm"): DictionaryObject({
             NameObject("/NeedAppearances"): BooleanObject(True)
         })
+    })
 
-    # Guardar el nuevo PDF en memoria
+    # Exportar a memoria
     output = io.BytesIO()
     writer.write(output)
     output.seek(0)

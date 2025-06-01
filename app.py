@@ -180,38 +180,37 @@ def relleno_formularios():
     return render_template('subir_excel.html')
 
 
-from flask import send_file, request, redirect, url_for, session
-from pypdf import PdfReader, PdfWriter
-from pypdf.generic import NameObject, DictionaryObject, BooleanObject
+from flask import Flask, request, redirect, url_for, session, send_file
+from PyPDF2 import PdfReader, PdfWriter
+from PyPDF2.generic import NameObject, BooleanObject, DictionaryObject
 from datetime import datetime
-import io
-import os
+import io, os
 
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
-    # Recibe datos
-    nombre = request.form.get('nombre', '')
-    rut = request.form.get('rut', '')
-    fecha_nac = request.form.get('fecha_nacimiento', '')
-    edad = request.form.get('edad', '')
-    nacionalidad = request.form.get('nacionalidad', '')
-    sexo = request.form.get('sexo', '')
-    estado = request.form.get('estado', '')
-    diagnostico = request.form.get('diagnostico', '')
-    fecha_reeval = request.form.get('fecha_reevaluacion', '')
-    derivaciones = request.form.get('derivaciones', '')
-    fecha_eval = datetime.today().strftime('%d/%m/%Y')
+    # Datos del formulario
+    nombre = request.form['nombre']
+    rut = request.form['rut']
+    fecha_nac = request.form['fecha_nacimiento']
+    edad = request.form['edad']
+    nacionalidad = request.form['nacionalidad']
+    sexo = request.form['sexo']
+    estado = request.form['estado']
+    diagnostico = request.form['diagnostico']
+    fecha_reeval = request.form['fecha_reevaluacion']
+    derivaciones = request.form['derivaciones']
+    fecha_eval = datetime.today().strftime('%d/%m/%Y')  # día/mes/año
 
-    # Ruta del PDF
+    # Ruta al PDF base
     PDF_BASE = os.path.join("static", "FORMULARIO.pdf")
     reader = PdfReader(PDF_BASE)
     writer = PdfWriter()
-
     writer.add_page(reader.pages[0])
 
+    # Campos del formulario
     campos = {
         "nombre": nombre,
         "rut": rut,
@@ -230,26 +229,24 @@ def generar_pdf():
 
     writer.update_page_form_field_values(writer.pages[0], campos)
 
-    # ⚠️ Si el PDF original no tiene /AcroForm, créalo
-    if "/AcroForm" not in writer._root_object:
-        writer._root_object.update({
-            NameObject("/AcroForm"): DictionaryObject({
-                NameObject("/Fields"): writer._pages,
-                NameObject("/NeedAppearances"): BooleanObject(True)
-            })
-        })
-    else:
+    # Forzar visibilidad de los campos rellenados
+    if "/AcroForm" in writer._root_object:
         writer._root_object["/AcroForm"].update({
             NameObject("/NeedAppearances"): BooleanObject(True)
         })
+    else:
+        writer._root_object.update({
+            NameObject("/AcroForm"): DictionaryObject({
+                NameObject("/NeedAppearances"): BooleanObject(True)
+            })
+        })
 
-    # Exporta
-    buffer = io.BytesIO()
-    writer.write(buffer)
-    buffer.seek(0)
+    output = io.BytesIO()
+    writer.write(output)
+    output.seek(0)
 
     nombre_archivo = f"{nombre.replace(' ', '_')}_{rut}_formulario.pdf"
-    return send_file(buffer, as_attachment=True, download_name=nombre_archivo, mimetype='application/pdf')
+    return send_file(output, as_attachment=True, download_name=nombre_archivo, mimetype='application/pdf')
     
 @app.route('/subir_excel/<int:evento_id>', methods=['POST'])
 def subir_excel(evento_id):

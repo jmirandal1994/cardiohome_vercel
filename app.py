@@ -199,6 +199,12 @@ from pypdf.generic import NameObject, BooleanObject
 import io, os
 from datetime import datetime
 
+from PyPDF2 import PdfReader, PdfWriter
+from PyPDF2.generic import NameObject, BooleanObject
+import io
+from datetime import datetime
+from flask import send_file, request, session, redirect, url_for
+
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
     if 'usuario' not in session:
@@ -217,12 +223,27 @@ def generar_pdf():
     derivaciones = request.form['derivaciones']
     fecha_eval = datetime.today().strftime('%d-%m-%Y')
 
-    # Ruta PDF base
+    # Ruta del PDF base
     PDF_BASE = os.path.join("static", "FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE .pdf")
     reader = PdfReader(PDF_BASE)
     writer = PdfWriter()
-    writer.add_page(reader.pages[0])
 
+    # Agregar página y copiar formulario
+    page = reader.pages[0]
+    writer.add_page(page)
+    
+    # Copiar campos del formulario
+    if "/AcroForm" in reader.trailer["/Root"]:
+        writer._root_object.update({
+            NameObject("/AcroForm"): reader.trailer["/Root"]["/AcroForm"]
+        })
+
+    # Forzar aparición de campos
+    writer._root_object["/AcroForm"].update({
+        NameObject("/NeedAppearances"): BooleanObject(True)
+    })
+
+    # Campos a rellenar
     campos = {
         "nombre": nombre,
         "rut": rut,
@@ -239,14 +260,9 @@ def generar_pdf():
         "sexo_m": "Yes" if sexo == "M" else "Off"
     }
 
-    writer.update_page_form_field_values(writer.pages[0], campos)
+    writer.update_page_form_field_values(page, campos)
 
-    # 🔥 Esta es la parte crítica
-    writer._root_object.update({
-        NameObject("/NeedAppearances"): BooleanObject(True)
-    })
-
-    # Guardar y retornar
+    # Enviar PDF generado
     output = io.BytesIO()
     writer.write(output)
     output.seek(0)

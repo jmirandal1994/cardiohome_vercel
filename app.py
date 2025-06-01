@@ -167,11 +167,43 @@ def generar_pdf():
     nombre_archivo = f"{estudiante['nombre'].replace(' ', '_')}_formulario.pdf"
     return send_file(pdf_output, as_attachment=True, download_name=nombre_archivo)
 
-@app.route('/subir_excel', methods=['GET'])
-def subir_excel():
-    if 'usuario' not in session:
-        return redirect(url_for('index'))
-    return render_template('subir_excel.html')
+@app.route('/subir_excel/<int:evento_id>', methods=['POST'])
+def subir_excel(evento_id):
+    if 'excel' not in request.files:
+        return "Archivo no enviado", 400
+
+    file = request.files['excel']
+    if file.filename == '':
+        return "Nombre de archivo vacío", 400
+
+    wb = load_workbook(file)
+    sheet = wb.active
+
+    estudiantes = []
+
+    for row in sheet.iter_rows(min_row=2, values_only=True):
+        nombre, rut, fecha_nac_str, nacionalidad = row[:4]
+        if not nombre or not rut or not fecha_nac_str:
+            continue  # ignora filas incompletas
+
+        fecha_nac = datetime.strptime(str(fecha_nac_str), '%d/%m/%Y')
+        edad = calculate_age(fecha_nac)
+        genero = guess_gender(nombre)
+
+        estudiantes.append({
+            "nombre": nombre,
+            "rut": rut,
+            "fecha_nacimiento": fecha_nac.strftime('%d/%m/%Y'),
+            "edad": edad,
+            "nacionalidad": nacionalidad,
+            "genero": genero
+        })
+
+    # Puedes almacenar estudiantes en sesión o base de datos, o pasar a otra vista
+    session['estudiantes'] = estudiantes
+    session['evento_id'] = evento_id
+
+    return redirect(url_for('rellenar_formularios'))
 
 @app.route('/')
 def index():

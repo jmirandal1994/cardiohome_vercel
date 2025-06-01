@@ -200,15 +200,9 @@ def generar_pdf():
     sexo = request.form['sexo']
     estado = request.form['estado']
     diagnostico = request.form['diagnostico']
-    fecha_reeval_raw = request.form['fecha_reevaluacion']
+    fecha_reeval = request.form['fecha_reevaluacion']
     derivaciones = request.form['derivaciones']
     fecha_eval = datetime.today().strftime('%d-%m-%Y')
-
-    # Convertir fecha de reevaluación a formato DD/MM/YYYY
-    try:
-        fecha_reeval = datetime.strptime(fecha_reeval_raw, '%Y-%m-%d').strftime('%d/%m/%Y')
-    except:
-        fecha_reeval = fecha_reeval_raw  # Por si acaso falla, dejarla como viene
 
     # Ruta al PDF base
     PDF_BASE = os.path.join("static", "FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE .pdf")
@@ -235,7 +229,7 @@ def generar_pdf():
 
     writer.update_page_form_field_values(writer.pages[0], campos)
 
-    # Forzar la aparición de los campos
+    # Agregar /AcroForm con NeedAppearances forzado
     writer._root_object.update({
         NameObject("/AcroForm"): DictionaryObject({
             NameObject("/NeedAppearances"): BooleanObject(True)
@@ -249,8 +243,9 @@ def generar_pdf():
 
     nombre_archivo = f"{nombre.replace(' ', '_')}_{rut}_formulario.pdf"
     return send_file(output, as_attachment=True, download_name=nombre_archivo, mimetype='application/pdf')
-
-@app.route('/subir_excel/<int:evento_id>', methods=['POST'])
+    
+    
+    @app.route('/subir_excel/<int:evento_id>', methods=['POST'])
 def subir_excel(evento_id):
     if 'excel' not in request.files:
         return "Archivo no enviado", 400

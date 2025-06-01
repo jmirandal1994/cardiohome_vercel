@@ -244,9 +244,8 @@ def generar_pdf():
     nombre_archivo = f"{nombre.replace(' ', '_')}_{rut}_formulario.pdf"
     return send_file(output, as_attachment=True, download_name=nombre_archivo, mimetype='application/pdf')
     
-    
-    @app.route('/subir_excel/<int:evento_id>', methods=['POST'])
-    def subir_excel(evento_id):
+@app.route('/subir_excel/<int:evento_id>', methods=['POST'])
+def subir_excel(evento_id):
     if 'excel' not in request.files:
         return "Archivo no enviado", 400
 
@@ -277,7 +276,6 @@ def generar_pdf():
             "genero": genero
         })
 
-    # Puedes almacenar estudiantes en sesión o base de datos, o pasar a otra vista
     session['estudiantes'] = estudiantes
     session['evento_id'] = evento_id
 

@@ -183,33 +183,38 @@ from datetime import datetime
 import io
 from flask import send_file
 
+from PyPDF2 import PdfReader, PdfWriter
+from PyPDF2.generic import NameObject, BooleanObject
+from flask import send_file, request, redirect, session, url_for
+from datetime import datetime
+import io
+import os
+
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
-    # Datos recibidos desde el formulario
+    # Datos del formulario
     nombre = request.form['nombre']
     rut = request.form['rut']
     fecha_nac = request.form['fecha_nacimiento']
     edad = request.form['edad']
     nacionalidad = request.form['nacionalidad']
-    sexo = request.form['sexo']  # M o F
+    sexo = request.form['sexo']
     estado = request.form['estado']
     diagnostico = request.form['diagnostico']
     fecha_reeval = request.form['fecha_reevaluacion']
     derivaciones = request.form['derivaciones']
     fecha_eval = datetime.today().strftime('%d-%m-%Y')
 
-    # Ruta al PDF base con espacios incluidos
+    # Cargar PDF base
     PDF_BASE = os.path.join("static", "FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE .pdf")
-
-    # Abrir y copiar el PDF base
     reader = PdfReader(PDF_BASE)
     writer = PdfWriter()
     writer.add_page(reader.pages[0])
 
-    # Rellenar campos del PDF
+    # Rellenar campos
     campos = {
         "nombre": nombre,
         "rut": rut,
@@ -228,14 +233,17 @@ def generar_pdf():
 
     writer.update_page_form_field_values(writer.pages[0], campos)
 
-    # Exportar a memoria como archivo
+    # 👇 Forzar visibilidad
+    writer._root_object.update({
+        NameObject("/NeedAppearances"): BooleanObject(True)
+    })
+
+    # Exportar PDF
     output = io.BytesIO()
     writer.write(output)
     output.seek(0)
 
-    # Generar nombre limpio
     nombre_archivo = f"{nombre.replace(' ', '_')}_{rut}_formulario.pdf"
-
     return send_file(output, as_attachment=True, download_name=nombre_archivo, mimetype='application/pdf')
 
 

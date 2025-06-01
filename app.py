@@ -202,15 +202,15 @@ def generar_pdf():
     diagnostico = request.form['diagnostico']
     fecha_reeval = request.form['fecha_reevaluacion']
     derivaciones = request.form['derivaciones']
-    fecha_eval = datetime.today().strftime('%d/%m/%Y')  # día/mes/año
+    fecha_eval = datetime.today().strftime('%d/%m/%Y')
 
-    # Ruta al PDF base
-    PDF_BASE = os.path.join("static", "FORMULARIO.pdf")
-    reader = PdfReader(PDF_BASE)
+    # Leer PDF base
+    ruta_pdf = os.path.join("static", "FORMULARIO.pdf")
+    reader = PdfReader(ruta_pdf)
     writer = PdfWriter()
     writer.add_page(reader.pages[0])
 
-    # Campos del formulario
+    # Campos a rellenar
     campos = {
         "nombre": nombre,
         "rut": rut,
@@ -227,20 +227,21 @@ def generar_pdf():
         "sexo_m": "X" if sexo == "M" else "",
     }
 
+    # Forzar /AcroForm si no existe
+    if "/AcroForm" not in writer._root_object:
+        writer._root_object.update({
+            NameObject("/AcroForm"): DictionaryObject()
+        })
+
+    # Agregar los campos al PDF
     writer.update_page_form_field_values(writer.pages[0], campos)
 
-    # Forzar visibilidad de los campos rellenados
-    if "/AcroForm" in writer._root_object:
-        writer._root_object["/AcroForm"].update({
-            NameObject("/NeedAppearances"): BooleanObject(True)
-        })
-    else:
-        writer._root_object.update({
-            NameObject("/AcroForm"): DictionaryObject({
-                NameObject("/NeedAppearances"): BooleanObject(True)
-            })
-        })
+    # Asegurar que se vea todo (esto evita tener que hacer clic para mostrar)
+    writer._root_object["/AcroForm"].update({
+        NameObject("/NeedAppearances"): BooleanObject(True)
+    })
 
+    # Generar PDF final
     output = io.BytesIO()
     writer.write(output)
     output.seek(0)

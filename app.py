@@ -224,8 +224,8 @@ def generar_pdf():
         "fecha_evaluacion": fecha_eval,
         "fecha_reevaluacion": fecha_reeval,
         "derivaciones": derivaciones,
-        "sexo_f": "Yes" if sexo == "F" else "Off",
-        "sexo_m": "Yes" if sexo == "M" else "Off"
+        "sexo_f": "X" if sexo == "F" else "",
+        "sexo_m": "X" if sexo == "M" else "",
     }
 
     writer.update_page_form_field_values(writer.pages[0], campos)

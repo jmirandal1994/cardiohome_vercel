@@ -178,20 +178,19 @@ def relleno_formularios():
             return redirect(request.url)
 
     return render_template('subir_excel.html')
-    
 
-from flask import send_file
-from PyPDF2 import PdfReader, PdfWriter
-from PyPDF2.generic import NameObject, BooleanObject, DictionaryObject
-import io, os
+from flask import send_file, request, session, redirect, url_for
+from pypdf import PdfReader, PdfWriter
+from pypdf.generic import BooleanObject, NameObject
 from datetime import datetime
+import io, os
 
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
-    # Obtener datos del formulario
+    # Obtener los datos
     nombre = request.form['nombre']
     rut = request.form['rut']
     fecha_nac = request.form['fecha_nacimiento']
@@ -204,16 +203,13 @@ def generar_pdf():
     derivaciones = request.form['derivaciones']
     fecha_eval = datetime.today().strftime('%d-%m-%Y')
 
-    # Ruta del PDF base
+    # Ruta al PDF base
     PDF_BASE = os.path.join("static", "FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE .pdf")
     reader = PdfReader(PDF_BASE)
     writer = PdfWriter()
+    writer.add_page(reader.pages[0])
 
-    # Copiar primera página
-    page = reader.pages[0]
-    writer.add_page(page)
-
-    # Campos a rellenar
+    # Diccionario de campos
     campos = {
         "nombre": nombre,
         "rut": rut,
@@ -230,29 +226,21 @@ def generar_pdf():
         "sexo_m": "Yes" if sexo == "M" else "Off"
     }
 
-    # Actualizar campos
-    writer.update_page_form_field_values(page, campos)
+    # Rellenar campos
+    writer.update_page_form_field_values(writer.pages[0], campos)
 
-    # 👇 Forzar la regeneración de las apariencias (necesario para que se vean)
-    if "/AcroForm" in writer._root_object:
-        writer._root_object["/AcroForm"].update({
-            NameObject("/NeedAppearances"): BooleanObject(True)
-        })
-    else:
-        writer._root_object.update({
-            NameObject("/AcroForm"): DictionaryObject({
-                NameObject("/NeedAppearances"): BooleanObject(True)
-            })
-        })
+    # Forzar NeedAppearances
+    writer._root_object.update({
+        NameObject("/NeedAppearances"): BooleanObject(True)
+    })
 
-    # Crear PDF en memoria
+    # Guardar PDF
     output = io.BytesIO()
     writer.write(output)
     output.seek(0)
 
-    # Enviar archivo generado
-    filename = f"{nombre.replace(' ', '_')}_{rut}_formulario.pdf"
-    return send_file(output, as_attachment=True, download_name=filename, mimetype='application/pdf')
+    nombre_archivo = f"{nombre.replace(' ', '_')}_{rut}_formulario.pdf"
+    return send_file(output, as_attachment=True, download_name=nombre_archivo, mimetype='application/pdf')
 
 
 @app.route('/subir_excel/<int:evento_id>', methods=['POST'])

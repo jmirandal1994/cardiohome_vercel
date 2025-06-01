@@ -1,9 +1,90 @@
-<form action="/relleno_formularios" method="POST" enctype="multipart/form-data">
-  <label>Nombre del establecimiento:</label>
-  <input type="text" name="establecimiento" required><br><br>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Subir Nómina de Estudiantes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background: #f4f7fa;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
 
-  <label>Sube el Excel con la nómina:</label>
-  <input type="file" name="excel" accept=".xlsx,.xls" required><br><br>
+    .form-container {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+      max-width: 500px;
+      width: 100%;
+    }
 
-  <button type="submit">Cargar</button>
-</form>
+    .form-container h2 {
+      margin-bottom: 20px;
+      color: #1a73e8;
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    input[type="text"],
+    input[type="file"],
+    button {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+
+    input[type="file"]::file-selector-button {
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      margin-right: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button {
+      background-color: #1a73e8;
+      color: white;
+      font-weight: bold;
+      border: none;
+      margin-top: 20px;
+      transition: background 0.3s;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #155ab6;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>🧠 Relleno de Formularios</h2>
+    <form action="/relleno_formularios" method="POST" enctype="multipart/form-data">
+      <label>Nombre del establecimiento:</label>
+      <input type="text" name="establecimiento" required>
+
+      <label>Sube el Excel con la nómina:</label>
+      <input type="file" name="excel" accept=".xlsx,.xls" required>
+
+      <button type="submit">📤 Cargar Nómina</button>
+    </form>
+  </div>
+</body>
+</html>

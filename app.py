@@ -143,49 +143,58 @@ def relleno_formularios():
 
     return render_template('subir_excel.html')
     
+from PyPDF2 import PdfReader, PdfWriter
+from datetime import datetime
+
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
-    datos = request.form
-    estudiante_id = int(datos['index'])
-    estudiante = session['estudiantes'][estudiante_id]
+    # Datos del formulario
+    nombre = request.form['nombre']
+    rut = request.form['rut']
+    fecha_nac = request.form['fecha_nacimiento']
+    edad = request.form['edad']
+    nacionalidad = request.form['nacionalidad']
+    sexo = request.form['sexo']
+    estado = request.form['estado']
+    diagnostico = request.form['diagnostico']
+    fecha_reeval = request.form['fecha_reevaluacion']
+    derivaciones = request.form['derivaciones']
+    fecha_eval = datetime.today().strftime('%d-%m-%Y')
 
-    diagnostico = datos['diagnostico']
-    estado_general = datos['estado_general']
-    derivaciones = datos['derivaciones']
-    fecha_reevaluacion = datos['fecha_reevaluacion']
-    fecha_evaluacion = date.today().strftime("%d-%m-%Y")
-
+    # Leer el PDF base
     reader = PdfReader(PDF_BASE)
     writer = PdfWriter()
-    writer.append(reader)
 
-    campos_pdf = {
-        'nombre': estudiante['nombre'],
-        'rut': estudiante['rut'],
-        'fecha_nacimiento': estudiante['fecha_nacimiento'],
-        'edad': estudiante['edad'],
-        'nacionalidad': estudiante['nacionalidad'],
-        'diagnostico_1': diagnostico,
-        'diagnostico_2': diagnostico,
-        'estado_general': estado_general,
-        'derivaciones': derivaciones,
-        'fecha_evaluacion': fecha_evaluacion,
-        'fecha_reevaluacion': fecha_reevaluacion,
-        'sexo_f': "Yes" if estudiante['sexo'] == 'F' else "Off",
-        'sexo_m': "Yes" if estudiante['sexo'] == 'M' else "Off"
-    }
+    page = reader.pages[0]
+    writer.add_page(page)
 
-    writer.update_page_form_field_values(writer.pages[0], campos_pdf)
+    # Rellenar campos del PDF (ajusta los nombres de campos según tu archivo PDF)
+    writer.update_page_form_field_values(writer.pages[0], {
+        "nombre": nombre,
+        "rut": rut,
+        "fecha_nacimiento": fecha_nac,
+        "nacionalidad": nacionalidad,
+        "edad": edad,
+        "sexo": sexo,
+        "estado": estado,
+        "diagnostico_1": diagnostico,
+        "diagnostico_2": diagnostico,
+        "fecha_evaluacion": fecha_eval,
+        "fecha_reevaluacion": fecha_reeval,
+        "derivaciones": derivaciones,
+    })
 
-    pdf_output = io.BytesIO()
-    writer.write(pdf_output)
-    pdf_output.seek(0)
+    # Salida como archivo descargable
+    output = io.BytesIO()
+    writer.write(output)
+    output.seek(0)
 
-    nombre_archivo = f"{estudiante['nombre'].replace(' ', '_')}_formulario.pdf"
-    return send_file(pdf_output, as_attachment=True, download_name=nombre_archivo)
+    nombre_archivo = f"formulario_{nombre.replace(' ', '_')}_{rut}.pdf"
+
+    return send_file(output, as_attachment=True, download_name=nombre_archivo, mimetype='application/pdf')
 
 @app.route('/subir_excel/<int:evento_id>', methods=['POST'])
 def subir_excel(evento_id):

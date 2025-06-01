@@ -179,18 +179,19 @@ def relleno_formularios():
 
     return render_template('subir_excel.html')
     
+
+from flask import request, session, redirect, url_for, send_file
 from PyPDF2 import PdfReader, PdfWriter
 from PyPDF2.generic import NameObject, BooleanObject
-import io
 from datetime import datetime
-from flask import send_file
+import io, os
 
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
-    # Datos del formulario
+    # Recoger datos desde el formulario
     nombre = request.form['nombre']
     rut = request.form['rut']
     fecha_nac = request.form['fecha_nacimiento']
@@ -203,13 +204,13 @@ def generar_pdf():
     derivaciones = request.form['derivaciones']
     fecha_eval = datetime.today().strftime('%d-%m-%Y')
 
-    # Ruta del PDF base
+    # Cargar el PDF base
     PDF_BASE = os.path.join("static", "FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE .pdf")
     reader = PdfReader(PDF_BASE)
     writer = PdfWriter()
     writer.add_page(reader.pages[0])
 
-    # Campos del formulario
+    # Campos a rellenar
     campos = {
         "nombre": nombre,
         "rut": rut,
@@ -226,31 +227,39 @@ def generar_pdf():
         "sexo_m": "Yes" if sexo == "M" else "Off"
     }
 
-    # Rellenar campos
     writer.update_page_form_field_values(writer.pages[0], campos)
 
-    # ⚠️ Visibilidad forzada de apariencias
-    for page in writer.pages:
-        writer.update_page_form_field_values(page, campos)
-        if "/Annots" in page:
-            for annot in page["/Annots"]:
-                obj = annot.get_object()
-                obj.update({
-                    NameObject("/Ff"): NumberObject(1)  # Campo visible
-                })
-
-    # Necesario para que algunos visores muestren los datos (aunque no todos lo respetan)
+    # Forzar apariencia de los campos (1ª escritura)
     writer._root_object.update({
+        NameObject("/AcroForm"): writer._root_object.get("/AcroForm") or writer._add_object({}),
+    })
+    writer._root_object["/AcroForm"].update({
         NameObject("/NeedAppearances"): BooleanObject(True)
     })
 
-    # Generar PDF
-    output = io.BytesIO()
-    writer.write(output)
-    output.seek(0)
+    # Primer paso: guardar temporalmente
+    temp_output = io.BytesIO()
+    writer.write(temp_output)
+    temp_output.seek(0)
+
+    # Segundo paso: reescribir para asegurar renderizado
+    reader2 = PdfReader(temp_output)
+    writer2 = PdfWriter()
+    writer2.add_page(reader2.pages[0])
+    writer2.update_page_form_field_values(writer2.pages[0], campos)
+    writer2._root_object.update({
+        NameObject("/AcroForm"): writer2._root_object.get("/AcroForm") or writer2._add_object({}),
+    })
+    writer2._root_object["/AcroForm"].update({
+        NameObject("/NeedAppearances"): BooleanObject(True)
+    })
+
+    final_output = io.BytesIO()
+    writer2.write(final_output)
+    final_output.seek(0)
 
     nombre_archivo = f"{nombre.replace(' ', '_')}_{rut}_formulario.pdf"
-    return send_file(output, as_attachment=True, download_name=nombre_archivo, mimetype='application/pdf')
+    return send_file(final_output, as_attachment=True, download_name=nombre_archivo, mimetype='application/pdf')
 
 
 @app.route('/subir_excel/<int:evento_id>', methods=['POST'])

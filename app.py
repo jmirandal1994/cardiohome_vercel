@@ -180,37 +180,19 @@ def relleno_formularios():
     return render_template('subir_excel.html')
 
 
-from flask import send_file
+from flask import request, send_file, session, redirect, url_for
 from PyPDF2 import PdfReader, PdfWriter
-from PyPDF2.generic import BooleanObject, NameObject, IndirectObject
-import io
-from datetime import datetime
-
-from flask import send_file
-from PyPDF2 import PdfReader, PdfWriter
-from PyPDF2.generic import NameObject, BooleanObject
+from PyPDF2.generic import NameObject, BooleanObject, DictionaryObject
 from datetime import datetime
 import io
 import os
-
-from flask import send_file
-from pypdf import PdfReader, PdfWriter
-from pypdf.generic import NameObject, BooleanObject
-import io, os
-from datetime import datetime
-
-from PyPDF2 import PdfReader, PdfWriter
-from PyPDF2.generic import NameObject, BooleanObject
-import io
-from datetime import datetime
-from flask import send_file, request, session, redirect, url_for
 
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
-    # Datos del formulario
+    # Datos recibidos del formulario
     nombre = request.form['nombre']
     rut = request.form['rut']
     fecha_nac = request.form['fecha_nacimiento']
@@ -223,27 +205,13 @@ def generar_pdf():
     derivaciones = request.form['derivaciones']
     fecha_eval = datetime.today().strftime('%d-%m-%Y')
 
-    # Ruta del PDF base
+    # Ruta al PDF base
     PDF_BASE = os.path.join("static", "FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE .pdf")
     reader = PdfReader(PDF_BASE)
     writer = PdfWriter()
+    writer.add_page(reader.pages[0])
 
-    # Agregar página y copiar formulario
-    page = reader.pages[0]
-    writer.add_page(page)
-    
-    # Copiar campos del formulario
-    if "/AcroForm" in reader.trailer["/Root"]:
-        writer._root_object.update({
-            NameObject("/AcroForm"): reader.trailer["/Root"]["/AcroForm"]
-        })
-
-    # Forzar aparición de campos
-    writer._root_object["/AcroForm"].update({
-        NameObject("/NeedAppearances"): BooleanObject(True)
-    })
-
-    # Campos a rellenar
+    # Rellenar campos
     campos = {
         "nombre": nombre,
         "rut": rut,
@@ -260,9 +228,16 @@ def generar_pdf():
         "sexo_m": "Yes" if sexo == "M" else "Off"
     }
 
-    writer.update_page_form_field_values(page, campos)
+    writer.update_page_form_field_values(writer.pages[0], campos)
 
-    # Enviar PDF generado
+    # Agregar /AcroForm con NeedAppearances forzado
+    writer._root_object.update({
+        NameObject("/AcroForm"): DictionaryObject({
+            NameObject("/NeedAppearances"): BooleanObject(True)
+        })
+    })
+
+    # Exportar a memoria
     output = io.BytesIO()
     writer.write(output)
     output.seek(0)

@@ -84,50 +84,60 @@ def enviar_correo_sendgrid(asunto, cuerpo, adjuntos=None):
         print(f"Error al enviar correo con SendGrid: {e}")
 # -------------------- Rutas --------------------
 
+import pandas as pd
+import unicodedata
+
+def normalizar(texto):
+    if not isinstance(texto, str):
+        return ""
+    texto = texto.strip().lower()
+    texto = unicodedata.normalize('NFKD', texto).encode('ascii', 'ignore').decode('utf-8')
+    texto = texto.replace(" ", "_")
+    return texto
+
 @app.route('/relleno_formularios', methods=['GET', 'POST'])
 def relleno_formularios():
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
     if request.method == 'POST':
+        establecimiento = request.form.get('establecimiento')
+        file = request.files.get('excel')
+
+        if not file or file.filename == '':
+            flash('No se ha seleccionado ningún archivo.', 'error')
+            return redirect(request.url)
+
         try:
-            establecimiento = request.form.get('establecimiento')
-            file = request.files.get('excel')
-
-            if not file or file.filename == '':
-                flash('No se ha seleccionado ningún archivo.', 'error')
-                return redirect(request.url)
-
-            wb = load_workbook(file)
-            ws = wb.active
+            df = pd.read_excel(file, engine='openpyxl')
+            df.columns = [normalizar(col) for col in df.columns]
 
             estudiantes = []
-            for row in ws.iter_rows(min_row=2, values_only=True):
-                if row[0] is None:
+            for _, row in df.iterrows():
+                nombre = row.get('nombre')
+                rut = row.get('rut')
+                fecha_nac_str = row.get('fecha_de_nacimiento')
+                nacionalidad = row.get('nacionalidad')
+
+                if not nombre or not rut or not fecha_nac_str:
                     continue
 
-                nombre, rut, fecha_nac_str, nacionalidad = row[:4]
-
                 try:
-                    fecha_nac = datetime.strptime(str(fecha_nac_str), "%d-%m-%Y").date()
-                except ValueError:
-                    try:
-                        fecha_nac = datetime.strptime(str(fecha_nac_str), "%d/%m/%Y").date()
-                    except ValueError:
-                        continue
+                    fecha_nac = pd.to_datetime(fecha_nac_str, dayfirst=True).date()
+                except Exception:
+                    continue
 
                 edad = calculate_age(fecha_nac)
                 sexo = guess_gender(nombre.split()[0])
 
-                estudiante = {
+                estudiantes.append({
                     'nombre': nombre,
                     'rut': rut,
-                    'fecha_nacimiento': fecha_nac.strftime("%d-%m-%Y"),
+                    'fecha_nacimiento': fecha_nac.strftime('%d-%m-%Y'),
                     'edad': edad,
                     'nacionalidad': nacionalidad,
                     'sexo': sexo
-                }
-                estudiantes.append(estudiante)
+                })
 
             session['estudiantes'] = estudiantes
             session['establecimiento'] = establecimiento
@@ -135,8 +145,9 @@ def relleno_formularios():
             return render_template('formulario_relleno.html', estudiantes=estudiantes)
 
         except Exception as e:
-            print(f"❌ ERROR en /relleno_formularios POST: {e}")
-            return f"Error interno: {str(e)}", 500
+            print(f"❌ Error al procesar el Excel: {e}")
+            flash('Error al procesar el archivo Excel. Verifique el formato.', 'error')
+            return redirect(request.url)
 
     return render_template('subir_excel.html')
     

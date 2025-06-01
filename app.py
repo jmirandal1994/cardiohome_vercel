@@ -179,12 +179,11 @@ def relleno_formularios():
 
     return render_template('subir_excel.html')
 
-
+from flask import send_file, request, redirect, url_for, session
 from pypdf import PdfReader, PdfWriter
-from PyPDF2.pdf import PageObject
-import io
-from flask import send_file
+from pypdf.generic import NameObject, DictionaryObject, BooleanObject
 from datetime import datetime
+import io
 import os
 
 @app.route('/generar_pdf', methods=['POST'])
@@ -192,7 +191,6 @@ def generar_pdf():
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
-    # Recoge datos
     nombre = request.form['nombre']
     rut = request.form['rut']
     fecha_nac = request.form['fecha_nacimiento']
@@ -203,12 +201,13 @@ def generar_pdf():
     diagnostico = request.form['diagnostico']
     fecha_reeval = request.form['fecha_reevaluacion']
     derivaciones = request.form['derivaciones']
-    fecha_eval = datetime.today().strftime('%d/%m/%Y')  # <- aquí cambiamos el formato
+    fecha_eval = datetime.today().strftime('%d/%m/%Y')
 
     PDF_BASE = os.path.join("static", "FORMULARIO.pdf")
     reader = PdfReader(PDF_BASE)
     writer = PdfWriter()
-    writer.add_page(reader.pages[0])
+    page = reader.pages[0]
+    writer.add_page(page)
 
     campos = {
         "nombre": nombre,
@@ -226,35 +225,27 @@ def generar_pdf():
         "sexo_m": "X" if sexo == "M" else "",
     }
 
-    writer.update_page_form_field_values(writer.pages[0], campos)
+    writer.update_page_form_field_values(page, campos)
 
-    # Fuerza renderizado de campos
-    writer._root_object.update({
-        NameObject("/AcroForm"): DictionaryObject({
+    # Forzar apariencia visible de los campos
+    if "/AcroForm" in writer._root_object:
+        writer._root_object["/AcroForm"].update({
             NameObject("/NeedAppearances"): BooleanObject(True)
         })
-    })
+    else:
+        writer._root_object.update({
+            NameObject("/AcroForm"): DictionaryObject({
+                NameObject("/NeedAppearances"): BooleanObject(True)
+            })
+        })
 
-    # 🔁 Flatten: convierte campos en texto permanente
-    from PyPDF2 import PdfReader as R2, PdfWriter as W2
-    output = io.BytesIO()
-    writer.write(output)
-    output.seek(0)
-
-    temp_reader = R2(output)
-    temp_writer = W2()
-    for page in temp_reader.pages:
-        temp_writer.add_page(page)
-
-    # Remove form fields (flattening)
-    temp_writer._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
-
-    final_output = io.BytesIO()
-    temp_writer.write(final_output)
-    final_output.seek(0)
+    # Guardar a memoria
+    buffer = io.BytesIO()
+    writer.write(buffer)
+    buffer.seek(0)
 
     nombre_archivo = f"{nombre.replace(' ', '_')}_{rut}_formulario.pdf"
-    return send_file(final_output, as_attachment=True, download_name=nombre_archivo, mimetype='application/pdf')
+    return send_file(buffer, as_attachment=True, download_name=nombre_archivo, mimetype='application/pdf')
     
 @app.route('/subir_excel/<int:evento_id>', methods=['POST'])
 def subir_excel(evento_id):

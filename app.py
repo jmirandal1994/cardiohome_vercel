@@ -233,6 +233,13 @@ def generar_pdf():
             NameObject("/AcroForm"): DictionaryObject()
         })
 
+    # Reformatear fecha de reevaluación a DD/MM/YYYY si viene en formato YYYY-MM-DD
+    if "-" in fecha_reeval:
+    try:
+        fecha_reeval = datetime.strptime(fecha_reeval, '%Y-%m-%d').strftime('%d/%m/%Y')
+    except ValueError:
+        pass  # Si ya está en formato correcto o no es válido, lo deja igual
+
     # Agregar los campos al PDF
     writer.update_page_form_field_values(writer.pages[0], campos)
 

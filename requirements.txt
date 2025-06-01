@@ -3,3 +3,4 @@ gunicorn
 requests
 PyPDF2
 openpyxl
+pandas

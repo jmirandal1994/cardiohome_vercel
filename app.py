@@ -202,15 +202,15 @@ def generar_pdf():
     diagnostico = request.form['diagnostico']
     fecha_reeval = request.form['fecha_reevaluacion']
     derivaciones = request.form['derivaciones']
-    fecha_eval = datetime.today().strftime('%d-%m-%Y')
 
-    # Ruta al PDF base
+    # Formateo fecha de evaluación
+    fecha_eval = datetime.today().strftime('%d/%m/%Y')
+
     PDF_BASE = os.path.join("static", "FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE .pdf")
     reader = PdfReader(PDF_BASE)
     writer = PdfWriter()
     writer.add_page(reader.pages[0])
 
-    # Rellenar campos
     campos = {
         "nombre": nombre,
         "rut": rut,
@@ -229,14 +229,18 @@ def generar_pdf():
 
     writer.update_page_form_field_values(writer.pages[0], campos)
 
-    # Agregar /AcroForm con NeedAppearances forzado
-    writer._root_object.update({
-        NameObject("/AcroForm"): DictionaryObject({
+    # Asegura que el diccionario AcroForm exista
+    if "/AcroForm" in reader.trailer["/Root"]:
+        writer._root_object.update({
+            NameObject("/AcroForm"): reader.trailer["/Root"]["/AcroForm"]
+        })
+        writer._root_object["/AcroForm"].update({
             NameObject("/NeedAppearances"): BooleanObject(True)
         })
-    })
+    else:
+        # Si no hay AcroForm, lanza excepción explícita
+        raise Exception("El PDF no contiene un formulario válido (/AcroForm)")
 
-    # Exportar a memoria
     output = io.BytesIO()
     writer.write(output)
     output.seek(0)

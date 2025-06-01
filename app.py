@@ -179,6 +179,11 @@ def relleno_formularios():
 
     return render_template('subir_excel.html')
 
+from flask import send_file, session, redirect, url_for, request
+from PyPDF2 import PdfReader, PdfWriter
+from PyPDF2.generic import NameObject, BooleanObject, DictionaryObject
+import os, io
+from datetime import datetime
 
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
@@ -194,23 +199,17 @@ def generar_pdf():
     sexo = request.form['sexo']
     estado = request.form['estado']
     diagnostico = request.form['diagnostico']
-    fecha_reeval_raw = request.form['fecha_reevaluacion']
+    fecha_reeval = request.form['fecha_reevaluacion']
     derivaciones = request.form['derivaciones']
-    fecha_eval = datetime.today().strftime('%d/%m/%Y')
-
-    # Formatear fecha de reevaluación
-    try:
-        fecha_reeval = datetime.strptime(fecha_reeval_raw, '%Y-%m-%d').strftime('%d/%m/%Y')
-    except:
-        fecha_reeval = fecha_reeval_raw  # Por si ya viene en formato correcto
+    fecha_eval = datetime.today().strftime('%d/%m/%Y')  # <-- aquí el cambio de formato
 
     # Ruta al PDF base
-    PDF_BASE = os.path.join("static", "FORMULARIO.pdf")
+    PDF_BASE = os.path.join("static", "FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE .pdf")
     reader = PdfReader(PDF_BASE)
     writer = PdfWriter()
     writer.add_page(reader.pages[0])
 
-    # Rellenar campos
+    # Datos a rellenar
     campos = {
         "nombre": nombre,
         "rut": rut,
@@ -229,25 +228,26 @@ def generar_pdf():
 
     writer.update_page_form_field_values(writer.pages[0], campos)
 
-    # Transferir correctamente el AcroForm desde el PDF original
-    if "/AcroForm" in reader.trailer["/Root"]:
-        acroform = reader.trailer["/Root"]["/AcroForm"].get_object()
-        acroform.update({
+    # Forzar apariencia visible
+    if "/AcroForm" in writer._root_object:
+        writer._root_object["/AcroForm"].update({
             NameObject("/NeedAppearances"): BooleanObject(True)
         })
-        writer._root_object.update({
-            NameObject("/AcroForm"): acroform
-        })
     else:
-        raise Exception("El PDF no contiene un formulario (/AcroForm)")
+        writer._root_object.update({
+            NameObject("/AcroForm"): DictionaryObject({
+                NameObject("/NeedAppearances"): BooleanObject(True)
+            })
+        })
 
-    # Exportar PDF generado
+    # Guardar en memoria
     output = io.BytesIO()
     writer.write(output)
     output.seek(0)
 
     nombre_archivo = f"{nombre.replace(' ', '_')}_{rut}_formulario.pdf"
     return send_file(output, as_attachment=True, download_name=nombre_archivo, mimetype='application/pdf')
+
     
 @app.route('/subir_excel/<int:evento_id>', methods=['POST'])
 def subir_excel(evento_id):

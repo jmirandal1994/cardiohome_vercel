@@ -26,8 +26,16 @@
     .sidebar a {
       color: white;
       text-decoration: none;
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 15px;
+      border-radius: 6px;
       margin-bottom: 10px;
+    }
+
+    .sidebar a:hover {
+      background-color: rgba(255, 255, 255, 0.1);
     }
 
     .main-content {
@@ -149,15 +157,16 @@
       }
 
       .sidebar {
-       background: rgba(26, 115, 232, 0.95); /* leve transparencia */
-       color: white;
-       padding: 30px 20px;
-       display: flex;
-       flex-direction: column;
-       align-items: center;
-       box-shadow: 2px 0 15px rgba(0,0,0,0.1);
+        background: rgba(26, 115, 232, 0.95);
+        color: white;
+        padding: 30px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-shadow: 2px 0 15px rgba(0,0,0,0.1);
+        width: 240px;
+        min-height: 100vh;
       }
-
 
       .main-content {
         width: calc(100% - 240px);
@@ -168,22 +177,22 @@
 </head>
 <body>
   <div class="sidebar">
-  <img src="/static/cardiohome.png" alt="Logo CardioHome" style="max-width: 160px; display:block; margin: 0 auto 20px;" />
-  <h3 style="text-align: center;">CardioHome</h3>
-  <p style="text-align: center; font-weight: 300;">Bienvenida, {{ usuario }}</p>
-  <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.3); margin: 20px 0;">
-  
-  {% if usuario == 'admin' %}
-  <a href="/colegios">📋 Colegios Evaluados</a>
-  {% endif %}
+    <img src="/static/cardiohome.png" alt="Logo CardioHome" style="max-width: 160px; display:block; margin: 0 auto 20px;" />
+    <h3 style="text-align: center;">CardioHome</h3>
+    <p style="text-align: center; font-weight: 300;">Bienvenida, {{ usuario }}</p>
+    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.3); margin: 20px 0;">
 
-  {% if usuario != 'admin' %}
-  <a href="/relleno_formularios">🧠 Relleno de Formularios</a>
-  {% endif %}
-  
-  <a href="/logout">Cerrar sesión</a>
-</div>
+    {% if usuario == 'admin' %}
+    <a href="/colegios"><span>📋</span><span>Colegios Evaluados</span></a>
+    {% endif %}
 
+    {% if usuario != 'admin' %}
+    <a href="/relleno_formularios"><span>🧠</span><span>Relleno de Formularios</span></a>
+    {% endif %}
+
+    <a href="/logout">Cerrar sesión</a>
+  </div>
+  
   <div class="main-content">
     <h2 style="color: #1a73e8; margin-bottom: 25px;">Panel de Establecimientos</h2>
     <!-- Aquí sigue tu contenido normal -->

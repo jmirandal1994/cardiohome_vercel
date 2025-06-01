@@ -204,7 +204,7 @@ def generar_pdf():
     fecha_eval = datetime.today().strftime('%d/%m/%Y')  # <-- aquí el cambio de formato
 
     # Ruta al PDF base
-    PDF_BASE = os.path.join("static", "FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE .pdf")
+    PDF_BASE = os.path.join("static", "FORMULARIO.pdf")
     reader = PdfReader(PDF_BASE)
     writer = PdfWriter()
     writer.add_page(reader.pages[0])

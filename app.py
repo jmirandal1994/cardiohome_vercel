@@ -179,7 +179,6 @@ def relleno_formularios():
 
     return render_template('subir_excel.html')
 
-
 from flask import send_file, request, session, redirect, url_for
 from pypdf import PdfReader, PdfWriter
 from pypdf.generic import NameObject, BooleanObject, DictionaryObject
@@ -192,7 +191,7 @@ def generar_pdf():
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
-    # Captura de datos del formulario
+    # Datos recibidos
     nombre = request.form['nombre']
     rut = request.form['rut']
     fecha_nac = request.form['fecha_nacimiento']
@@ -201,18 +200,23 @@ def generar_pdf():
     sexo = request.form['sexo']
     estado = request.form['estado']
     diagnostico = request.form['diagnostico']
-    fecha_reeval = datetime.strptime(request.form['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
+    fecha_reeval_input = request.form['fecha_reevaluacion']
     derivaciones = request.form['derivaciones']
     fecha_eval = datetime.today().strftime('%d/%m/%Y')
 
-    # Ruta al formulario base
+    # Formatear fecha de reevaluación a DD/MM/YYYY
+    try:
+        fecha_reeval = datetime.strptime(fecha_reeval_input, '%Y-%m-%d').strftime('%d/%m/%Y')
+    except ValueError:
+        fecha_reeval = fecha_reeval_input  # Por si ya viene en formato correcto
+
+    # Ruta al PDF base
     PDF_BASE = os.path.join("static", "FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE .pdf")
     reader = PdfReader(PDF_BASE)
     writer = PdfWriter()
-    page = reader.pages[0]
-    writer.add_page(page)
+    writer.add_page(reader.pages[0])
 
-    # Asegura que el diccionario AcroForm exista
+    # Asegurar existencia de /AcroForm
     if "/AcroForm" not in writer._root_object:
         writer._root_object.update({
             NameObject("/AcroForm"): DictionaryObject()
@@ -222,7 +226,7 @@ def generar_pdf():
         NameObject("/NeedAppearances"): BooleanObject(True)
     })
 
-    # Llenado de campos
+    # Campos del formulario
     campos = {
         "nombre": nombre,
         "rut": rut,
@@ -235,11 +239,12 @@ def generar_pdf():
         "fecha_evaluacion": fecha_eval,
         "fecha_reevaluacion": fecha_reeval,
         "derivaciones": derivaciones,
-        "sexo_f": "Yes" if sexo == "F" else "",
-        "sexo_m": "Yes" if sexo == "M" else ""
+        "sexo_f": "X" if sexo == "F" else "",
+        "sexo_m": "X" if sexo == "M" else "",
     }
 
-    writer.update_page_form_field_values(page, campos)
+    # Aplicar los valores
+    writer.update_page_form_field_values(writer.pages[0], campos)
 
     # Exportar
     output = io.BytesIO()
@@ -248,6 +253,7 @@ def generar_pdf():
 
     nombre_archivo = f"{nombre.replace(' ', '_')}_{rut}_formulario.pdf"
     return send_file(output, as_attachment=True, download_name=nombre_archivo, mimetype='application/pdf')
+
     
 @app.route('/subir_excel/<int:evento_id>', methods=['POST'])
 def subir_excel(evento_id):

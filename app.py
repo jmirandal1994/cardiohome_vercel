@@ -145,56 +145,64 @@ def relleno_formularios():
     
 from PyPDF2 import PdfReader, PdfWriter
 from datetime import datetime
+import io
+from flask import send_file
 
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
-    # Datos del formulario
+    # Datos recibidos desde el formulario
     nombre = request.form['nombre']
     rut = request.form['rut']
     fecha_nac = request.form['fecha_nacimiento']
     edad = request.form['edad']
     nacionalidad = request.form['nacionalidad']
-    sexo = request.form['sexo']
+    sexo = request.form['sexo']  # M o F
     estado = request.form['estado']
     diagnostico = request.form['diagnostico']
     fecha_reeval = request.form['fecha_reevaluacion']
     derivaciones = request.form['derivaciones']
     fecha_eval = datetime.today().strftime('%d-%m-%Y')
 
-    # Leer el PDF base
+    # Ruta al PDF base con espacios incluidos
+    PDF_BASE = os.path.join("static", "FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE .pdf")
+
+    # Abrir y copiar el PDF base
     reader = PdfReader(PDF_BASE)
     writer = PdfWriter()
+    writer.add_page(reader.pages[0])
 
-    page = reader.pages[0]
-    writer.add_page(page)
-
-    # Rellenar campos del PDF (ajusta los nombres de campos según tu archivo PDF)
-    writer.update_page_form_field_values(writer.pages[0], {
+    # Rellenar campos del PDF
+    campos = {
         "nombre": nombre,
         "rut": rut,
         "fecha_nacimiento": fecha_nac,
         "nacionalidad": nacionalidad,
         "edad": edad,
-        "sexo": sexo,
-        "estado": estado,
         "diagnostico_1": diagnostico,
         "diagnostico_2": diagnostico,
+        "estado_general": estado,
         "fecha_evaluacion": fecha_eval,
         "fecha_reevaluacion": fecha_reeval,
         "derivaciones": derivaciones,
-    })
+        "sexo_f": "Yes" if sexo == "F" else "Off",
+        "sexo_m": "Yes" if sexo == "M" else "Off"
+    }
 
-    # Salida como archivo descargable
+    writer.update_page_form_field_values(writer.pages[0], campos)
+
+    # Exportar a memoria como archivo
     output = io.BytesIO()
     writer.write(output)
     output.seek(0)
 
-    nombre_archivo = f"formulario_{nombre.replace(' ', '_')}_{rut}.pdf"
+    # Generar nombre limpio
+    nombre_archivo = f"{nombre.replace(' ', '_')}_{rut}_formulario.pdf"
 
     return send_file(output, as_attachment=True, download_name=nombre_archivo, mimetype='application/pdf')
+
 
 @app.route('/subir_excel/<int:evento_id>', methods=['POST'])
 def subir_excel(evento_id):

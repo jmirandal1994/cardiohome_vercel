@@ -246,7 +246,7 @@ def generar_pdf():
     
     
     @app.route('/subir_excel/<int:evento_id>', methods=['POST'])
-def subir_excel(evento_id):
+    def subir_excel(evento_id):
     if 'excel' not in request.files:
         return "Archivo no enviado", 400
 

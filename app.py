@@ -109,44 +109,61 @@ def relleno_formularios():
             return redirect(request.url)
 
         try:
-            df = pd.read_excel(file, engine='openpyxl')
-            df.columns = [normalizar(col) for col in df.columns]
+            wb = load_workbook(file)  # lee el Excel en memoria
+            ws = wb.active
 
             estudiantes = []
-            for _, row in df.iterrows():
-                nombre = row.get('nombre')
-                rut = row.get('rut')
-                fecha_nac_str = row.get('fecha_de_nacimiento')
-                nacionalidad = row.get('nacionalidad')
-
-                if not nombre or not rut or not fecha_nac_str:
-                    continue
-
+            for i, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
                 try:
-                    fecha_nac = pd.to_datetime(fecha_nac_str, dayfirst=True).date()
-                except Exception:
+                    nombre = str(row[0]).strip() if row[0] else ''
+                    rut = str(row[1]).strip() if row[1] else ''
+                    fecha_nac_str = str(row[2]).strip() if row[2] else ''
+                    nacionalidad = str(row[3]).strip() if row[3] else ''
+
+                    # Validación de campos esenciales
+                    if not nombre or not rut or not fecha_nac_str:
+                        print(f"⚠️ Fila {i} incompleta: {row}")
+                        continue
+
+                    # Validación de fecha flexible
+                    try:
+                        fecha_nac = datetime.strptime(fecha_nac_str, "%d-%m-%y")
+                    except ValueError:
+                        try:
+                            fecha_nac = datetime.strptime(fecha_nac_str, "%d-%m-%Y")
+                        except ValueError:
+                            print(f"⚠️ Fila {i} con fecha inválida: {fecha_nac_str}")
+                            continue
+
+                    edad = calculate_age(fecha_nac)
+                    sexo = guess_gender(nombre.split()[0])
+
+                    estudiante = {
+                        'nombre': nombre,
+                        'rut': rut,
+                        'fecha_nacimiento': fecha_nac.strftime("%d-%m-%Y"),
+                        'edad': edad,
+                        'nacionalidad': nacionalidad or 'No especificada',
+                        'sexo': sexo
+                    }
+                    estudiantes.append(estudiante)
+
+                except Exception as e:
+                    print(f"❌ Error procesando fila {i}: {e}")
                     continue
-
-                edad = calculate_age(fecha_nac)
-                sexo = guess_gender(nombre.split()[0])
-
-                estudiantes.append({
-                    'nombre': nombre,
-                    'rut': rut,
-                    'fecha_nacimiento': fecha_nac.strftime('%d-%m-%Y'),
-                    'edad': edad,
-                    'nacionalidad': nacionalidad,
-                    'sexo': sexo
-                })
 
             session['estudiantes'] = estudiantes
             session['establecimiento'] = establecimiento
 
+            if not estudiantes:
+                flash('No se pudo cargar ningún estudiante. Revisa el archivo.', 'warning')
+                return redirect(request.url)
+
             return render_template('formulario_relleno.html', estudiantes=estudiantes)
 
         except Exception as e:
-            print(f"❌ Error al procesar el Excel: {e}")
-            flash('Error al procesar el archivo Excel. Verifique el formato.', 'error')
+            print(f"❌ Error al procesar Excel: {e}")
+            flash('Error al procesar el archivo Excel. Verifica el formato.', 'error')
             return redirect(request.url)
 
     return render_template('subir_excel.html')

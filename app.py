@@ -90,54 +90,32 @@ def relleno_formularios():
         return redirect(url_for('index'))
 
     if request.method == 'POST':
-        establecimiento = request.form.get('establecimiento')
-        file = request.files.get('excel')
+        establecimiento = request.form['establecimiento']
+        file = request.files['excel']
 
-        if not file or file.filename == '':
-            flash('No se ha seleccionado ningún archivo.', 'error')
-            return redirect(request.url)
+        wb = load_workbook(file)  # Lee directamente el archivo sin guardar
+        ws = wb.active
 
-        try:
-            wb = load_workbook(file)  # se lee en memoria sin guardar en disco
-            ws = wb.active
+        estudiantes = []
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            nombre, rut, fecha_nac_str, nacionalidad = row
+            fecha_nac = datetime.strptime(str(fecha_nac_str), "%d-%m-%Y").date()
+            edad = calculate_age(fecha_nac)
+            sexo = guess_gender(nombre.split()[0])
 
-            estudiantes = []
-            for row in ws.iter_rows(min_row=2, values_only=True):
-                if row[0] is None:
-                    continue  # omitir filas vacías
+            estudiante = {
+                'nombre': nombre,
+                'rut': rut,
+                'fecha_nacimiento': fecha_nac.strftime("%d-%m-%Y"),
+                'edad': edad,
+                'nacionalidad': nacionalidad,
+                'sexo': sexo
+            }
+            estudiantes.append(estudiante)
 
-                nombre, rut, fecha_nac_str, nacionalidad = row[:4]
-
-                try:
-                    fecha_nac = datetime.strptime(str(fecha_nac_str), "%d-%m-%Y").date()
-                except ValueError:
-                    try:
-                        fecha_nac = datetime.strptime(str(fecha_nac_str), "%d/%m/%Y").date()
-                    except ValueError:
-                        continue  # omitir si la fecha no es válida
-
-                edad = calculate_age(fecha_nac)
-                sexo = guess_gender(nombre.split()[0])
-
-                estudiante = {
-                    'nombre': nombre,
-                    'rut': rut,
-                    'fecha_nacimiento': fecha_nac.strftime("%d-%m-%Y"),
-                    'edad': edad,
-                    'nacionalidad': nacionalidad,
-                    'sexo': sexo
-                }
-                estudiantes.append(estudiante)
-
-            session['estudiantes'] = estudiantes
-            session['establecimiento'] = establecimiento
-
-            return render_template('formulario_relleno.html', estudiantes=estudiantes)
-
-        except Exception as e:
-            print(f"Error procesando el archivo: {e}")
-            flash('Error al procesar el archivo Excel. Verifique el formato.', 'error')
-            return redirect(request.url)
+        session['estudiantes'] = estudiantes
+        session['establecimiento'] = establecimiento
+        return render_template('formulario_relleno.html', estudiantes=estudiantes, establecimiento=establecimiento)
 
     return render_template('subir_excel.html')
     

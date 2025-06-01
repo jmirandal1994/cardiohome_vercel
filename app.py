@@ -95,6 +95,25 @@ def normalizar(texto):
     texto = texto.replace(" ", "_")
     return texto
 
+from openpyxl import load_workbook
+from datetime import datetime, date
+from flask import render_template, request, session, redirect, url_for, flash
+
+def calculate_age(birth_date):
+    today = date.today()
+    years = today.year - birth_date.year
+    months = today.month - birth_date.month
+    if months < 0:
+        years -= 1
+        months += 12
+    return f"{years} años con {months} meses"
+
+def guess_gender(name):
+    name = name.lower()
+    if name.endswith("a"):
+        return "F"
+    return "M"
+
 @app.route('/relleno_formularios', methods=['GET', 'POST'])
 def relleno_formularios():
     if 'usuario' not in session:
@@ -109,61 +128,52 @@ def relleno_formularios():
             return redirect(request.url)
 
         try:
-            wb = load_workbook(file)  # lee el Excel en memoria
+            wb = load_workbook(file)
             ws = wb.active
 
             estudiantes = []
-            for i, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
-                try:
-                    nombre = str(row[0]).strip() if row[0] else ''
-                    rut = str(row[1]).strip() if row[1] else ''
-                    fecha_nac_str = str(row[2]).strip() if row[2] else ''
-                    nacionalidad = str(row[3]).strip() if row[3] else ''
-
-                    # Validación de campos esenciales
-                    if not nombre or not rut or not fecha_nac_str:
-                        print(f"⚠️ Fila {i} incompleta: {row}")
-                        continue
-
-                    # Validación de fecha flexible
-                    try:
-                        fecha_nac = datetime.strptime(fecha_nac_str, "%d-%m-%y")
-                    except ValueError:
-                        try:
-                            fecha_nac = datetime.strptime(fecha_nac_str, "%d-%m-%Y")
-                        except ValueError:
-                            print(f"⚠️ Fila {i} con fecha inválida: {fecha_nac_str}")
-                            continue
-
-                    edad = calculate_age(fecha_nac)
-                    sexo = guess_gender(nombre.split()[0])
-
-                    estudiante = {
-                        'nombre': nombre,
-                        'rut': rut,
-                        'fecha_nacimiento': fecha_nac.strftime("%d-%m-%Y"),
-                        'edad': edad,
-                        'nacionalidad': nacionalidad or 'No especificada',
-                        'sexo': sexo
-                    }
-                    estudiantes.append(estudiante)
-
-                except Exception as e:
-                    print(f"❌ Error procesando fila {i}: {e}")
+            i = 2  # Comenzamos en la fila 2
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if not row or row[0] is None:
                     continue
+
+                nombre, rut, fecha_nac_str, nacionalidad = row[:4]
+
+                try:
+                    if isinstance(fecha_nac_str, datetime):
+                        fecha_nac = fecha_nac_str.date()
+                    else:
+                        try:
+                            fecha_nac = datetime.strptime(str(fecha_nac_str), "%d-%m-%y").date()
+                        except ValueError:
+                            fecha_nac = datetime.strptime(str(fecha_nac_str), "%d-%m-%Y").date()
+                except Exception as e:
+                    print(f"⚠️ Fila {i} con fecha inválida: {fecha_nac_str} ({e})")
+                    i += 1
+                    continue
+
+                edad = calculate_age(fecha_nac)
+                sexo = guess_gender(nombre.split()[0])
+
+                estudiante = {
+                    'nombre': nombre,
+                    'rut': rut,
+                    'fecha_nacimiento': fecha_nac.strftime("%d-%m-%Y"),
+                    'edad': edad,
+                    'nacionalidad': nacionalidad,
+                    'sexo': sexo
+                }
+                estudiantes.append(estudiante)
+                i += 1
 
             session['estudiantes'] = estudiantes
             session['establecimiento'] = establecimiento
 
-            if not estudiantes:
-                flash('No se pudo cargar ningún estudiante. Revisa el archivo.', 'warning')
-                return redirect(request.url)
-
             return render_template('formulario_relleno.html', estudiantes=estudiantes)
 
         except Exception as e:
-            print(f"❌ Error al procesar Excel: {e}")
-            flash('Error al procesar el archivo Excel. Verifica el formato.', 'error')
+            print(f"❌ Error al procesar el archivo Excel: {e}")
+            flash('Error al procesar el archivo Excel. Verifique que el formato sea correcto.', 'error')
             return redirect(request.url)
 
     return render_template('subir_excel.html')

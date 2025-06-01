@@ -180,18 +180,17 @@ def relleno_formularios():
     return render_template('subir_excel.html')
     
 
-from flask import request, session, redirect, url_for, send_file
 from PyPDF2 import PdfReader, PdfWriter
 from PyPDF2.generic import NameObject, BooleanObject
-from datetime import datetime
 import io, os
+from flask import request, send_file, session, redirect, url_for
+from datetime import datetime
 
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
-    # Recoger datos desde el formulario
     nombre = request.form['nombre']
     rut = request.form['rut']
     fecha_nac = request.form['fecha_nacimiento']
@@ -204,13 +203,12 @@ def generar_pdf():
     derivaciones = request.form['derivaciones']
     fecha_eval = datetime.today().strftime('%d-%m-%Y')
 
-    # Cargar el PDF base
     PDF_BASE = os.path.join("static", "FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE .pdf")
     reader = PdfReader(PDF_BASE)
     writer = PdfWriter()
-    writer.add_page(reader.pages[0])
+    page = reader.pages[0]
+    writer.add_page(page)
 
-    # Campos a rellenar
     campos = {
         "nombre": nombre,
         "rut": rut,
@@ -227,39 +225,22 @@ def generar_pdf():
         "sexo_m": "Yes" if sexo == "M" else "Off"
     }
 
-    writer.update_page_form_field_values(writer.pages[0], campos)
+    writer.update_page_form_field_values(page, campos)
 
-    # Forzar apariencia de los campos (1ª escritura)
+    # Fuerza de aparición visual para todos los visores
     writer._root_object.update({
-        NameObject("/AcroForm"): writer._root_object.get("/AcroForm") or writer._add_object({}),
-    })
-    writer._root_object["/AcroForm"].update({
         NameObject("/NeedAppearances"): BooleanObject(True)
     })
 
-    # Primer paso: guardar temporalmente
-    temp_output = io.BytesIO()
-    writer.write(temp_output)
-    temp_output.seek(0)
+    # ⚠️ Solución adicional: agregar script JavaScript para forzar render de los campos
+    writer.add_js("this.dirty = false; this.viewState = 'edit'; this.refreshFields();")
 
-    # Segundo paso: reescribir para asegurar renderizado
-    reader2 = PdfReader(temp_output)
-    writer2 = PdfWriter()
-    writer2.add_page(reader2.pages[0])
-    writer2.update_page_form_field_values(writer2.pages[0], campos)
-    writer2._root_object.update({
-        NameObject("/AcroForm"): writer2._root_object.get("/AcroForm") or writer2._add_object({}),
-    })
-    writer2._root_object["/AcroForm"].update({
-        NameObject("/NeedAppearances"): BooleanObject(True)
-    })
-
-    final_output = io.BytesIO()
-    writer2.write(final_output)
-    final_output.seek(0)
+    output = io.BytesIO()
+    writer.write(output)
+    output.seek(0)
 
     nombre_archivo = f"{nombre.replace(' ', '_')}_{rut}_formulario.pdf"
-    return send_file(final_output, as_attachment=True, download_name=nombre_archivo, mimetype='application/pdf')
+    return send_file(output, as_attachment=True, download_name=nombre_archivo, mimetype='application/pdf')
 
 
 @app.route('/subir_excel/<int:evento_id>', methods=['POST'])

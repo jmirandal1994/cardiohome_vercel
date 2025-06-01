@@ -233,10 +233,17 @@ def generar_pdf():
 
     writer.update_page_form_field_values(writer.pages[0], campos)
 
-    # 👇 Forzar visibilidad
-    writer._root_object.update({
-        NameObject("/NeedAppearances"): BooleanObject(True)
-    })
+    # Forzar que el visor PDF muestre los valores rellenados
+    if "/AcroForm" in writer._root_object:
+        writer._root_object["/AcroForm"].update({
+            NameObject("/NeedAppearances"): BooleanObject(True)
+        })
+    else:
+        writer._root_object.update({
+            NameObject("/AcroForm"): writer._add_object({
+                NameObject("/NeedAppearances"): BooleanObject(True)
+            })
+        })
 
     # Exportar PDF
     output = io.BytesIO()

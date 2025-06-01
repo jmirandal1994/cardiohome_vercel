@@ -204,6 +204,13 @@ def generar_pdf():
     derivaciones = request.form['derivaciones']
     fecha_eval = datetime.today().strftime('%d/%m/%Y')
 
+    # Reformatear fecha de reevaluación a DD/MM/YYYY si viene en formato YYYY-MM-DD
+    if "-" in fecha_reeval:
+        try:
+            fecha_reeval = datetime.strptime(fecha_reeval, '%Y-%m-%d').strftime('%d/%m/%Y')
+        except ValueError:
+            pass  # Si ya está en formato correcto o no es válido, lo deja igual
+
     # Leer PDF base
     ruta_pdf = os.path.join("static", "FORMULARIO.pdf")
     reader = PdfReader(ruta_pdf)
@@ -232,13 +239,6 @@ def generar_pdf():
         writer._root_object.update({
             NameObject("/AcroForm"): DictionaryObject()
         })
-
-    # Reformatear fecha de reevaluación a DD/MM/YYYY si viene en formato YYYY-MM-DD
-    if "-" in fecha_reeval:
-    try:
-        fecha_reeval = datetime.strptime(fecha_reeval, '%Y-%m-%d').strftime('%d/%m/%Y')
-    except ValueError:
-        pass  # Si ya está en formato correcto o no es válido, lo deja igual
 
     # Agregar los campos al PDF
     writer.update_page_form_field_values(writer.pages[0], campos)

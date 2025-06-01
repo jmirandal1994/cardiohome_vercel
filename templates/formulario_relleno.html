@@ -14,6 +14,14 @@
       color: #1a73e8;
     }
 
+    #buscador {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
     .estudiante {
       background: white;
       padding: 20px;
@@ -54,8 +62,10 @@
 <body>
   <h2>Rellenar Formularios - {{ session['establecimiento'] }}</h2>
 
+  <input type="text" id="buscador" placeholder="Buscar estudiante por nombre...">
+
   {% for est in estudiantes %}
-  <div class="estudiante">
+  <div class="estudiante" data-nombre="{{ est.nombre | lower }}">
     <form action="/generar_pdf" method="POST">
       <input type="hidden" name="nombre" value="{{ est.nombre }}">
       <input type="hidden" name="rut" value="{{ est.rut }}">
@@ -64,7 +74,7 @@
       <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
       <input type="hidden" name="sexo" value="{{ est.sexo }}">
 
-      <p><strong>Nombre:</strong> {{ est.nombre }}</p>
+      <p><strong class="nombre-estudiante">Nombre:</strong> {{ est.nombre }}</p>
       <p><strong>RUT:</strong> {{ est.rut }}</p>
       <p><strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento }} ({{ est.edad }})</p>
       <p><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</p>
@@ -86,5 +96,18 @@
     </form>
   </div>
   {% endfor %}
+
+  <script>
+    const input = document.getElementById('buscador');
+    input.addEventListener('input', function () {
+      const filtro = this.value.toLowerCase();
+      const estudiantes = document.querySelectorAll('.estudiante');
+
+      estudiantes.forEach(div => {
+        const nombre = div.getAttribute('data-nombre');
+        div.style.display = nombre.includes(filtro) ? '' : 'none';
+      });
+    });
+  </script>
 </body>
 </html>

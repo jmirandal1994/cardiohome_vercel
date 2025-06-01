@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Formulario de Relleno</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f0f2f5;
+    }
+
+    h2 {
+      color: #1a73e8;
+    }
+
+    .estudiante {
+      background: white;
+      padding: 20px;
+      margin-bottom: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #155ab6;
+    }
+  </style>
+</head>
+<body>
+  <h2>Rellenar Formularios - {{ session['establecimiento'] }}</h2>
+
+  {% for est in estudiantes %}
+  <div class="estudiante">
+    <form action="/generar_pdf" method="POST">
+      <input type="hidden" name="nombre" value="{{ est.nombre }}">
+      <input type="hidden" name="rut" value="{{ est.rut }}">
+      <input type="hidden" name="fecha_nacimiento" value="{{ est.fecha_nacimiento }}">
+      <input type="hidden" name="edad" value="{{ est.edad }}">
+      <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
+      <input type="hidden" name="sexo" value="{{ est.sexo }}">
+
+      <p><strong>Nombre:</strong> {{ est.nombre }}</p>
+      <p><strong>RUT:</strong> {{ est.rut }}</p>
+      <p><strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento }} ({{ est.edad }})</p>
+      <p><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</p>
+      <p><strong>Sexo:</strong> {{ est.sexo }}</p>
+
+      <label for="estado">Estado general del alumno:</label>
+      <textarea name="estado" rows="3" required></textarea>
+
+      <label for="diagnostico">Diagnóstico (se insertará en ambos campos del PDF):</label>
+      <textarea name="diagnostico" rows="2" required></textarea>
+
+      <label for="fecha_reevaluacion">Fecha de reevaluación:</label>
+      <input type="date" name="fecha_reevaluacion" required>
+
+      <label for="derivaciones">Derivaciones:</label>
+      <textarea name="derivaciones" rows="2" required></textarea>
+
+      <button type="submit">Generar PDF</button>
+    </form>
+  </div>
+  {% endfor %}
+</body>
+</html>

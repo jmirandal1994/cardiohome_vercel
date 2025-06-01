@@ -191,7 +191,7 @@ def generar_pdf():
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
-    # Datos del formulario
+    # Datos recibidos del formulario
     nombre = request.form['nombre']
     rut = request.form['rut']
     fecha_nac = request.form['fecha_nacimiento']
@@ -200,15 +200,15 @@ def generar_pdf():
     sexo = request.form['sexo']
     estado = request.form['estado']
     diagnostico = request.form['diagnostico']
-    fecha_reeval_input = request.form['fecha_reevaluacion']
+    fecha_reeval_raw = request.form['fecha_reevaluacion']
     derivaciones = request.form['derivaciones']
     fecha_eval = datetime.today().strftime('%d-%m-%Y')
 
-    # Reformatear la fecha de reevaluación
+    # Convertir fecha de reevaluación a formato DD/MM/YYYY
     try:
-        fecha_reeval = datetime.strptime(fecha_reeval_input, "%Y-%m-%d").strftime("%d-%m-%Y")
+        fecha_reeval = datetime.strptime(fecha_reeval_raw, '%Y-%m-%d').strftime('%d/%m/%Y')
     except:
-        fecha_reeval = fecha_reeval_input  # Si falla, dejar como viene
+        fecha_reeval = fecha_reeval_raw  # Por si acaso falla, dejarla como viene
 
     # Ruta al PDF base
     PDF_BASE = os.path.join("static", "FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE .pdf")
@@ -216,7 +216,7 @@ def generar_pdf():
     writer = PdfWriter()
     writer.add_page(reader.pages[0])
 
-    # Campos del formulario PDF
+    # Rellenar campos
     campos = {
         "nombre": nombre,
         "rut": rut,
@@ -230,24 +230,19 @@ def generar_pdf():
         "fecha_reevaluacion": fecha_reeval,
         "derivaciones": derivaciones,
         "sexo_f": "X" if sexo == "F" else "",
-        "sexo_m": "X" if sexo == "M" else ""
+        "sexo_m": "X" if sexo == "M" else "",
     }
 
     writer.update_page_form_field_values(writer.pages[0], campos)
 
-    # Forzar /NeedAppearances en /AcroForm
-    if "/AcroForm" in writer._root_object:
-        writer._root_object["/AcroForm"].update({
+    # Forzar la aparición de los campos
+    writer._root_object.update({
+        NameObject("/AcroForm"): DictionaryObject({
             NameObject("/NeedAppearances"): BooleanObject(True)
         })
-    else:
-        writer._root_object.update({
-            NameObject("/AcroForm"): DictionaryObject({
-                NameObject("/NeedAppearances"): BooleanObject(True)
-            })
-        })
+    })
 
-    # Exportar a PDF
+    # Exportar a memoria
     output = io.BytesIO()
     writer.write(output)
     output.seek(0)

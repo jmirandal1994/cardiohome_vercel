@@ -184,14 +184,15 @@ from flask import send_file, request, session, redirect, url_for
 from pypdf import PdfReader, PdfWriter
 from pypdf.generic import NameObject, BooleanObject, DictionaryObject
 from datetime import datetime
-import io, os
+import os
+import io
 
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
-    # Datos recibidos del formulario
+    # Captura de datos del formulario
     nombre = request.form['nombre']
     rut = request.form['rut']
     fecha_nac = request.form['fecha_nacimiento']
@@ -200,17 +201,28 @@ def generar_pdf():
     sexo = request.form['sexo']
     estado = request.form['estado']
     diagnostico = request.form['diagnostico']
-    fecha_reeval = request.form['fecha_reevaluacion']
+    fecha_reeval = datetime.strptime(request.form['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
     derivaciones = request.form['derivaciones']
-    fecha_eval = datetime.today().strftime('%d-%m-%Y')
+    fecha_eval = datetime.today().strftime('%d/%m/%Y')
 
-    # Ruta al PDF base
+    # Ruta al formulario base
     PDF_BASE = os.path.join("static", "FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE .pdf")
     reader = PdfReader(PDF_BASE)
     writer = PdfWriter()
-    writer.add_page(reader.pages[0])
+    page = reader.pages[0]
+    writer.add_page(page)
 
-    # Rellenar campos
+    # Asegura que el diccionario AcroForm exista
+    if "/AcroForm" not in writer._root_object:
+        writer._root_object.update({
+            NameObject("/AcroForm"): DictionaryObject()
+        })
+
+    writer._root_object["/AcroForm"].update({
+        NameObject("/NeedAppearances"): BooleanObject(True)
+    })
+
+    # Llenado de campos
     campos = {
         "nombre": nombre,
         "rut": rut,
@@ -223,20 +235,13 @@ def generar_pdf():
         "fecha_evaluacion": fecha_eval,
         "fecha_reevaluacion": fecha_reeval,
         "derivaciones": derivaciones,
-        "sexo_f": "X" if sexo == "F" else "",
-        "sexo_m": "X" if sexo == "M" else "",
+        "sexo_f": "Yes" if sexo == "F" else "",
+        "sexo_m": "Yes" if sexo == "M" else ""
     }
 
-    writer.update_page_form_field_values(writer.pages[0], campos)
+    writer.update_page_form_field_values(page, campos)
 
-    # Agregar /AcroForm con NeedAppearances forzado
-    writer._root_object.update({
-        NameObject("/AcroForm"): DictionaryObject({
-            NameObject("/NeedAppearances"): BooleanObject(True)
-        })
-    })
-
-    # Exportar a memoria
+    # Exportar
     output = io.BytesIO()
     writer.write(output)
     output.seek(0)

@@ -179,12 +179,6 @@ def relleno_formularios():
 
     return render_template('subir_excel.html')
 
-from flask import send_file, request, session, redirect, url_for
-from pypdf import PdfReader, PdfWriter
-from pypdf.generic import NameObject, BooleanObject, DictionaryObject
-from datetime import datetime
-import os
-import io
 
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
@@ -200,17 +194,23 @@ def generar_pdf():
     sexo = request.form['sexo']
     estado = request.form['estado']
     diagnostico = request.form['diagnostico']
-    fecha_reeval = request.form['fecha_reevaluacion']
+    fecha_reeval_raw = request.form['fecha_reevaluacion']
     derivaciones = request.form['derivaciones']
-
-    # Formateo fecha de evaluación
     fecha_eval = datetime.today().strftime('%d/%m/%Y')
 
+    # Formatear fecha de reevaluación
+    try:
+        fecha_reeval = datetime.strptime(fecha_reeval_raw, '%Y-%m-%d').strftime('%d/%m/%Y')
+    except:
+        fecha_reeval = fecha_reeval_raw  # Por si ya viene en formato correcto
+
+    # Ruta al PDF base
     PDF_BASE = os.path.join("static", "FORMULARIO.pdf")
     reader = PdfReader(PDF_BASE)
     writer = PdfWriter()
     writer.add_page(reader.pages[0])
 
+    # Rellenar campos
     campos = {
         "nombre": nombre,
         "rut": rut,
@@ -229,18 +229,19 @@ def generar_pdf():
 
     writer.update_page_form_field_values(writer.pages[0], campos)
 
-    # Asegura que el diccionario AcroForm exista
+    # Transferir correctamente el AcroForm desde el PDF original
     if "/AcroForm" in reader.trailer["/Root"]:
-        writer._root_object.update({
-            NameObject("/AcroForm"): reader.trailer["/Root"]["/AcroForm"]
-        })
-        writer._root_object["/AcroForm"].update({
+        acroform = reader.trailer["/Root"]["/AcroForm"].get_object()
+        acroform.update({
             NameObject("/NeedAppearances"): BooleanObject(True)
         })
+        writer._root_object.update({
+            NameObject("/AcroForm"): acroform
+        })
     else:
-        # Si no hay AcroForm, lanza excepción explícita
-        raise Exception("El PDF no contiene un formulario válido (/AcroForm)")
+        raise Exception("El PDF no contiene un formulario (/AcroForm)")
 
+    # Exportar PDF generado
     output = io.BytesIO()
     writer.write(output)
     output.seek(0)

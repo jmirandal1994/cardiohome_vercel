@@ -28,7 +28,6 @@
       margin-bottom: 30px;
       border-radius: 12px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-      position: relative;
     }
 
     label {
@@ -43,21 +42,6 @@
       margin-top: 5px;
       border: 1px solid #ccc;
       border-radius: 5px;
-    }
-
-    .editable {
-      background-color: #f9f9f9;
-    }
-
-    .edit-btn {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      cursor: pointer;
-      background: none;
-      border: none;
-      font-size: 1.2em;
-      color: #1a73e8;
     }
 
     button {
@@ -82,40 +66,31 @@
 
   {% for est in estudiantes %}
   <div class="estudiante" data-nombre="{{ est.nombre | lower }}">
-    <button class="edit-btn" onclick="toggleEditable(this)">✏️</button>
     <form action="/generar_pdf" method="POST">
-      <label>Nombre:</label>
-      <input type="text" name="nombre" value="{{ est.nombre }}" class="editable-field" readonly>
-
-      <label>RUT:</label>
-      <input type="text" name="rut" value="{{ est.rut }}" class="editable-field" readonly>
-
-      <label>Fecha de nacimiento:</label>
-      <input type="date" name="fecha_nacimiento" value="{{ est.fecha_nacimiento }}" class="editable-field" readonly>
-
-      <label>Sexo:</label>
-      <input type="text" name="sexo" value="{{ est.sexo }}" class="editable-field" readonly>
-
+      <input type="hidden" name="nombre" value="{{ est.nombre }}">
+      <input type="hidden" name="rut" value="{{ est.rut }}">
+      <input type="hidden" name="fecha_nacimiento" value="{{ est.fecha_nacimiento }}">
       <input type="hidden" name="edad" value="{{ est.edad }}">
       <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
+      <input type="hidden" name="sexo" value="{{ est.sexo }}">
 
-      <p><strong>Edad:</strong> {{ est.edad }}</p>
+      <p><strong>Nombre:</strong> {{ est.nombre }}</p>
+      <p><strong>RUT:</strong> {{ est.rut }}</p>
+      <p><strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento }} ({{ est.edad }})</p>
       <p><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</p>
+      <p><strong>Sexo:</strong> {{ est.sexo }}</p>
 
       <label for="estado">Estado general del alumno:</label>
       <textarea name="estado" rows="3" required></textarea>
 
       <label for="diagnostico">Diagnóstico (se insertará en ambos campos del PDF):</label>
-  <select name="diagnostico" required>
-  <option value="">Seleccionar diagnóstico</option>
-  <option value="Trastorno del espectro autista">Trastorno del espectro autista</option>
-  <option value="GARC">GARC</option>
-  <option value="Funcionamiento Intelectual Limitrofe">Funcionamiento Intelectual Limitrofe</option>
-  <option value="Dificultad intelectual leve">Dificultad intelectual leve</option>
-  <option value="Dificultad Especifica del aprendizaje">Dificultad específica del aprendizaje</option>
-  <option value="Trastorno por deficit de atención">Trastorno por déficit de atención</option>
-  <option value="Trastorno por deficit de atención e hiperactividad">Trastorno por déficit de atención e hiperactividad</option>
-    </select>
+      <select name="diagnostico" required>
+        <option value="">Seleccionar diagnóstico</option>
+        <option value="Trastorno del espectro autista">Trastorno del espectro autista</option>
+        <option value="GARC">GARC</option>
+        <option value="Trastorno por deficit de atención">Trastorno por déficit de atención</option>
+        <option value="Trastorno por deficit de atención e hiperactividad">Trastorno por déficit de atención e hiperactividad</option>
+      </select>
 
       <label>Plazo de reevaluación:</label>
       <select name="plazo" onchange="setFechaReevaluacion(this)">
@@ -127,7 +102,7 @@
       </select>
 
       <label for="fecha_reevaluacion">Fecha de reevaluación:</label>
-      <input type="date" name="fecha_reevaluacion" id="fechaReevaluacion_{{ loop.index }}" required>
+      <input type="date" name="fecha_reevaluacion" required>
 
       <label for="derivaciones">Derivaciones:</label>
       <textarea name="derivaciones" rows="2" required></textarea>
@@ -138,7 +113,6 @@
   {% endfor %}
 
   <script>
-    // Filtrar estudiantes
     const input = document.getElementById('buscador');
     input.addEventListener('input', function () {
       const filtro = this.value.toLowerCase();
@@ -150,17 +124,6 @@
       });
     });
 
-    // Habilitar campos editables
-    function toggleEditable(btn) {
-      const container = btn.closest('.estudiante');
-      const fields = container.querySelectorAll('.editable-field');
-      fields.forEach(f => {
-        f.readOnly = !f.readOnly;
-        f.classList.toggle('editable');
-      });
-    }
-
-    // Calcular fecha de reevaluación automática
     function setFechaReevaluacion(select) {
       const años = parseInt(select.value);
       if (!años) return;

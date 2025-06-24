@@ -106,7 +106,13 @@
       <textarea name="estado" rows="3" required></textarea>
 
       <label for="diagnostico">Diagnóstico (se insertará en ambos campos del PDF):</label>
-      <textarea name="diagnostico" rows="2" required></textarea>
+  <select name="diagnostico" required>
+  <option value="">Seleccionar diagnóstico</option>
+  <option value="Trastorno del espectro autista">Trastorno del espectro autista</option>
+  <option value="GARC">GARC</option>
+  <option value="Trastorno por deficit de atención">Trastorno por déficit de atención</option>
+  <option value="Trastorno por deficit de atención e hiperactividad">Trastorno por déficit de atención e hiperactividad</option>
+    </select>
 
       <label>Plazo de reevaluación:</label>
       <select name="plazo" onchange="setFechaReevaluacion(this)">

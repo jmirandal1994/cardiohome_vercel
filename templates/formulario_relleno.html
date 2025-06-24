@@ -5,58 +5,96 @@
   <title>Formulario de Relleno</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background-color: #f0f2f5;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f0f4f8;
+      padding: 40px;
     }
 
     h2 {
       color: #1a73e8;
+      text-align: center;
+      margin-bottom: 30px;
     }
 
     #buscador {
       width: 100%;
-      padding: 10px;
-      margin-bottom: 20px;
+      max-width: 400px;
+      display: block;
+      margin: 0 auto 30px;
+      padding: 12px 15px;
       border: 1px solid #ccc;
-      border-radius: 6px;
+      border-radius: 8px;
+      font-size: 1rem;
     }
 
     .estudiante {
-      background: white;
-      padding: 20px;
-      margin-bottom: 30px;
+      background: #ffffff;
       border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      padding: 30px;
+      margin-bottom: 40px;
+      transition: box-shadow 0.3s ease;
+    }
+
+    .estudiante:hover {
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
     }
 
     label {
       display: block;
-      margin-top: 10px;
-      font-weight: bold;
+      margin-top: 15px;
+      font-weight: 600;
+      color: #333;
     }
 
     input, textarea, select {
       width: 100%;
-      padding: 8px;
+      padding: 10px 12px;
       margin-top: 5px;
       border: 1px solid #ccc;
-      border-radius: 5px;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
     }
 
     button {
-      margin-top: 15px;
-      padding: 10px 20px;
-      background-color: #1a73e8;
-      color: white;
+      flex: 1;
+      background: #1a73e8;
+      color: #fff;
       border: none;
-      border-radius: 5px;
+      padding: 12px 15px;
+      border-radius: 6px;
       cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s;
     }
 
     button:hover {
-      background-color: #155ab6;
+      background: #155ab6;
     }
+
+    button.secondary {
+      background: #34a853;
+    }
+
+    button.secondary:hover {
+      background: #2c8c46;
+    }
+
+    p {
+      margin: 5px 0;
+    }
+
+    .info {
+      font-weight: 500;
+      color: #555;
+    }
+
   </style>
 </head>
 <body>
@@ -67,23 +105,27 @@
   {% for est in estudiantes %}
   <div class="estudiante" data-nombre="{{ est.nombre | lower }}">
     <form action="/generar_pdf" method="POST">
-      <input type="hidden" name="nombre" value="{{ est.nombre }}">
-      <input type="hidden" name="rut" value="{{ est.rut }}">
+      <!-- Editable Nombre y RUT -->
+      <label>Nombre:</label>
+      <input type="text" name="nombre" value="{{ est.nombre }}" required>
+
+      <label>RUT:</label>
+      <input type="text" name="rut" value="{{ est.rut }}" required>
+
+      <!-- Fecha de nacimiento NO editable -->
       <input type="hidden" name="fecha_nacimiento" value="{{ est.fecha_nacimiento }}">
       <input type="hidden" name="edad" value="{{ est.edad }}">
       <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
       <input type="hidden" name="sexo" value="{{ est.sexo }}">
 
-      <p><strong>Nombre:</strong> {{ est.nombre }}</p>
-      <p><strong>RUT:</strong> {{ est.rut }}</p>
-      <p><strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento }} ({{ est.edad }})</p>
-      <p><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</p>
-      <p><strong>Sexo:</strong> {{ est.sexo }}</p>
+      <p class="info"><strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento }} ({{ est.edad }})</p>
+      <p class="info"><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</p>
+      <p class="info"><strong>Sexo:</strong> {{ est.sexo }}</p>
 
-      <label for="estado">Estado general del alumno:</label>
+      <label>Estado general del alumno:</label>
       <textarea name="estado" rows="3" required></textarea>
 
-      <label for="diagnostico">Diagnóstico (se insertará en ambos campos del PDF):</label>
+      <label>Diagnóstico (se insertará en ambos campos del PDF):</label>
       <select name="diagnostico" required>
         <option value="">Seleccionar diagnóstico</option>
         <option value="Trastorno del espectro autista">Trastorno del espectro autista</option>
@@ -101,18 +143,22 @@
         <option value="2">TDAH - 2 años</option>
       </select>
 
-      <label for="fecha_reevaluacion">Fecha de reevaluación:</label>
+      <label>Fecha de reevaluación:</label>
       <input type="date" name="fecha_reevaluacion" required>
 
-      <label for="derivaciones">Derivaciones:</label>
+      <label>Derivaciones:</label>
       <textarea name="derivaciones" rows="2" required></textarea>
 
-      <button type="submit">Generar PDF</button>
+      <div class="button-group">
+        <button type="submit">Generar PDF</button>
+        <button type="button" class="secondary" onclick="enviarADrive(this)">Enviar a Drive</button>
+      </div>
     </form>
   </div>
   {% endfor %}
 
   <script>
+    // Buscador de estudiantes
     const input = document.getElementById('buscador');
     input.addEventListener('input', function () {
       const filtro = this.value.toLowerCase();
@@ -124,6 +170,7 @@
       });
     });
 
+    // Calcular fecha de reevaluación automática
     function setFechaReevaluacion(select) {
       const años = parseInt(select.value);
       if (!años) return;
@@ -138,6 +185,11 @@
       const container = select.closest('.estudiante');
       const fechaInput = container.querySelector('input[name="fecha_reevaluacion"]');
       fechaInput.value = fecha;
+    }
+
+    // Simulación de enviar a Drive
+    function enviarADrive(button) {
+      alert("Aquí iría la lógica para enviar a Google Drive (por programar con tu backend).");
     }
   </script>
 </body>

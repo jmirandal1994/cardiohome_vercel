@@ -2,12 +2,21 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Formulario de Relleno</title>
+  <title>Formulario de Relleno - CardioHome</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
       background-color: #f0f4f8;
       padding: 40px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    header img {
+      max-width: 200px;
     }
 
     h2 {
@@ -27,17 +36,26 @@
       font-size: 1rem;
     }
 
-    .estudiante {
+    .container {
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+
+    .formulario {
+      flex: 1 1 500px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      padding: 30px;
+    }
+
+    .preview {
+      flex: 1 1 300px;
       background: #ffffff;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.06);
       padding: 30px;
-      margin-bottom: 40px;
-      transition: box-shadow 0.3s ease;
-    }
-
-    .estudiante:hover {
-      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
     }
 
     label {
@@ -86,8 +104,13 @@
       background: #2c8c46;
     }
 
-    p {
-      margin: 5px 0;
+    .preview h3 {
+      margin-top: 0;
+      color: #1a73e8;
+    }
+
+    .preview p {
+      margin: 8px 0;
     }
 
     .info {
@@ -98,62 +121,77 @@
   </style>
 </head>
 <body>
+  <header>
+    <img src="/static/cardiohome.png" alt="CardioHome Logo">
+  </header>
+
   <h2>Rellenar Formularios - {{ session['establecimiento'] }}</h2>
 
   <input type="text" id="buscador" placeholder="Buscar estudiante por nombre...">
 
   {% for est in estudiantes %}
-  <div class="estudiante" data-nombre="{{ est.nombre | lower }}">
-    <form action="/generar_pdf" method="POST">
-      <!-- Editable Nombre y RUT -->
-      <label>Nombre:</label>
-      <input type="text" name="nombre" value="{{ est.nombre }}" required>
+  <div class="container estudiante" data-nombre="{{ est.nombre | lower }}">
+    <div class="formulario">
+      <form action="/generar_pdf" method="POST" oninput="updatePreview(this)">
+        <!-- Editable Nombre y RUT -->
+        <label>Nombre:</label>
+        <input type="text" name="nombre" value="{{ est.nombre }}" required>
 
-      <label>RUT:</label>
-      <input type="text" name="rut" value="{{ est.rut }}" required>
+        <label>RUT:</label>
+        <input type="text" name="rut" value="{{ est.rut }}" required>
 
-      <!-- Fecha de nacimiento NO editable -->
-      <input type="hidden" name="fecha_nacimiento" value="{{ est.fecha_nacimiento }}">
-      <input type="hidden" name="edad" value="{{ est.edad }}">
-      <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
-      <input type="hidden" name="sexo" value="{{ est.sexo }}">
+        <!-- Fecha de nacimiento NO editable -->
+        <input type="hidden" name="fecha_nacimiento" value="{{ est.fecha_nacimiento }}">
+        <input type="hidden" name="edad" value="{{ est.edad }}">
+        <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
+        <input type="hidden" name="sexo" value="{{ est.sexo }}">
 
-      <p class="info"><strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento }} ({{ est.edad }})</p>
-      <p class="info"><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</p>
-      <p class="info"><strong>Sexo:</strong> {{ est.sexo }}</p>
+        <p class="info"><strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento }} ({{ est.edad }})</p>
+        <p class="info"><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</p>
+        <p class="info"><strong>Sexo:</strong> {{ est.sexo }}</p>
 
-      <label>Estado general del alumno:</label>
-      <textarea name="estado" rows="3" required></textarea>
+        <label>Estado general del alumno:</label>
+        <textarea name="estado" rows="3" required></textarea>
 
-      <label>Diagnóstico (se insertará en ambos campos del PDF):</label>
-      <select name="diagnostico" required>
-        <option value="">Seleccionar diagnóstico</option>
-        <option value="Trastorno del espectro autista">Trastorno del espectro autista</option>
-        <option value="GARC">GARC</option>
-        <option value="Trastorno por deficit de atención">Trastorno por déficit de atención</option>
-        <option value="Trastorno por deficit de atención e hiperactividad">Trastorno por déficit de atención e hiperactividad</option>
-      </select>
+        <label>Diagnóstico:</label>
+        <select name="diagnostico" required>
+          <option value="">Seleccionar diagnóstico</option>
+          <option value="Trastorno del espectro autista">Trastorno del espectro autista</option>
+          <option value="GARC">GARC</option>
+          <option value="Trastorno por deficit de atención">Trastorno por déficit de atención</option>
+          <option value="Trastorno por deficit de atención e hiperactividad">Trastorno por déficit de atención e hiperactividad</option>
+        </select>
 
-      <label>Plazo de reevaluación:</label>
-      <select name="plazo" onchange="setFechaReevaluacion(this)">
-        <option value="">Seleccionar plazo</option>
-        <option value="4">Trastorno Espectro Autista - 4 años</option>
-        <option value="3">Trastorno Espectro Autista - 3 años</option>
-        <option value="2">TDA - 2 años</option>
-        <option value="2">TDAH - 2 años</option>
-      </select>
+        <label>Plazo de reevaluación:</label>
+        <select name="plazo" onchange="setFechaReevaluacion(this)">
+          <option value="">Seleccionar plazo</option>
+          <option value="4">Trastorno Espectro Autista - 4 años</option>
+          <option value="3">Trastorno Espectro Autista - 3 años</option>
+          <option value="2">TDA - 2 años</option>
+          <option value="2">TDAH - 2 años</option>
+        </select>
 
-      <label>Fecha de reevaluación:</label>
-      <input type="date" name="fecha_reevaluacion" required>
+        <label>Fecha de reevaluación:</label>
+        <input type="date" name="fecha_reevaluacion" required>
 
-      <label>Derivaciones:</label>
-      <textarea name="derivaciones" rows="2" required></textarea>
+        <label>Derivaciones:</label>
+        <textarea name="derivaciones" rows="2" required></textarea>
 
-      <div class="button-group">
-        <button type="submit">Generar PDF</button>
-        <button type="button" class="secondary" onclick="enviarADrive(this)">Enviar a Drive</button>
-      </div>
-    </form>
+        <div class="button-group">
+          <button type="submit">Generar PDF</button>
+          <button type="button" class="secondary" onclick="enviarADrive(this)">Enviar a Drive</button>
+        </div>
+      </form>
+    </div>
+    <div class="preview">
+      <h3>Vista Previa</h3>
+      <p><strong>Nombre:</strong> <span class="prev-nombre">{{ est.nombre }}</span></p>
+      <p><strong>RUT:</strong> <span class="prev-rut">{{ est.rut }}</span></p>
+      <p><strong>Estado:</strong> <span class="prev-estado">-</span></p>
+      <p><strong>Diagnóstico:</strong> <span class="prev-diagnostico">-</span></p>
+      <p><strong>Fecha Reevaluación:</strong> <span class="prev-reevaluacion">-</span></p>
+      <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">-</span></p>
+    </div>
   </div>
   {% endfor %}
 
@@ -187,9 +225,20 @@
       fechaInput.value = fecha;
     }
 
-    // Simulación de enviar a Drive
+    // Vista previa dinámica
+    function updatePreview(form) {
+      const container = form.closest('.container');
+      container.querySelector('.prev-nombre').textContent = form.nombre.value;
+      container.querySelector('.prev-rut').textContent = form.rut.value;
+      container.querySelector('.prev-estado').textContent = form.estado.value;
+      container.querySelector('.prev-diagnostico').textContent = form.diagnostico.value;
+      container.querySelector('.prev-reevaluacion').textContent = form.fecha_reevaluacion.value;
+      container.querySelector('.prev-derivaciones').textContent = form.derivaciones.value;
+    }
+
+    // Simular envío a Drive
     function enviarADrive(button) {
-      alert("Aquí iría la lógica para enviar a Google Drive (por programar con tu backend).");
+      alert("Aquí va la integración con Google Drive.");
     }
   </script>
 </body>

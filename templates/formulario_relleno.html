@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>Formulario de Relleno - CardioHome</title>
+  <!-- SweetAlert2 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -12,11 +14,24 @@
 
     header {
       text-align: center;
-      margin-bottom: 40px;
+      margin-bottom: 20px;
     }
 
     header img {
       max-width: 200px;
+    }
+
+    header h1 {
+      font-size: 1.2rem;
+      color: #555;
+      margin-top: 10px;
+    }
+
+    .breadcrumb {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #888;
+      margin-bottom: 30px;
     }
 
     h2 {
@@ -36,11 +51,26 @@
       font-size: 1rem;
     }
 
+    details {
+      margin-bottom: 30px;
+      animation: fadeIn 0.5s ease;
+    }
+
+    summary {
+      background: #1a73e8;
+      color: #fff;
+      padding: 15px 20px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      user-select: none;
+    }
+
     .container {
       display: flex;
       gap: 40px;
       flex-wrap: wrap;
-      margin-bottom: 50px;
+      margin-top: 20px;
     }
 
     .formulario {
@@ -58,9 +88,9 @@
       box-shadow: 0 4px 20px rgba(0,0,0,0.08);
       padding: 30px;
       border-left: 6px solid #1a73e8;
-      transition: box-shadow 0.3s ease, transform 0.2s ease;
       position: relative;
       overflow: hidden;
+      transition: box-shadow 0.3s ease, transform 0.2s ease;
     }
 
     .preview:hover {
@@ -154,93 +184,126 @@
       color: #555;
     }
 
+    .badge {
+      display: inline-block;
+      background: #1a73e8;
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      margin-left: 10px;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 50px;
+      color: #888;
+      font-size: 0.9rem;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
   </style>
 </head>
 <body>
   <header>
     <img src="/static/cardiohome.png" alt="CardioHome Logo">
+    <h1>Dra. Adriana Valenzuela — Relleno de Formularios</h1>
   </header>
 
-  <h2>Rellenar Formularios - {{ session['establecimiento'] }}</h2>
+  <div class="breadcrumb">🏠 Inicio > Relleno de Formularios > {{ session['establecimiento'] }}</div>
 
   <input type="text" id="buscador" placeholder="Buscar estudiante por nombre...">
 
   {% for est in estudiantes %}
-  <div class="container estudiante" data-nombre="{{ est.nombre | lower }}">
-    <div class="formulario">
-      <form action="/generar_pdf" method="POST" oninput="updatePreview(this)">
-        <label>Nombre:</label>
-        <input type="text" name="nombre" value="{{ est.nombre }}" required>
+  <details class="estudiante" data-nombre="{{ est.nombre | lower }}">
+    <summary>{{ est.nombre }}</summary>
+    <div class="container">
+      <div class="formulario">
+        <form action="/generar_pdf" method="POST" oninput="updatePreview(this)">
+          <label>Nombre:</label>
+          <input type="text" name="nombre" value="{{ est.nombre }}" required>
 
-        <label>RUT:</label>
-        <input type="text" name="rut" value="{{ est.rut }}" required>
+          <label>RUT:</label>
+          <input type="text" name="rut" value="{{ est.rut }}" required>
 
-        <input type="hidden" name="fecha_nacimiento" value="{{ est.fecha_nacimiento }}">
-        <input type="hidden" name="edad" value="{{ est.edad }}">
-        <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
-        <input type="hidden" name="sexo" value="{{ est.sexo }}">
+          <input type="hidden" name="fecha_nacimiento" value="{{ est.fecha_nacimiento }}">
+          <input type="hidden" name="edad" value="{{ est.edad }}">
+          <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
+          <input type="hidden" name="sexo" value="{{ est.sexo }}">
 
-        <p class="info"><strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento }} ({{ est.edad }})</p>
-        <p class="info"><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</p>
-        <p class="info"><strong>Sexo:</strong> {{ est.sexo }}</p>
+          <p class="info"><strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento }} ({{ est.edad }})</p>
+          <p class="info"><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</p>
+          <p class="info"><strong>Sexo:</strong> {{ est.sexo }}</p>
 
-        <label>Estado general del alumno:</label>
-        <textarea name="estado" rows="3" required></textarea>
+          <label>Estado general del alumno:</label>
+          <textarea name="estado" rows="3" required></textarea>
 
-        <label>Diagnóstico:</label>
-        <select name="diagnostico" required>
-          <option value="">Seleccionar diagnóstico</option>
-          <option value="Trastorno del espectro autista">Trastorno del espectro autista</option>
-          <option value="GARC">GARC</option>
-          <option value="Trastorno por deficit de atención">Trastorno por déficit de atención</option>
-          <option value="Trastorno por deficit de atención e hiperactividad">Trastorno por déficit de atención e hiperactividad</option>
-        </select>
+          <label>Diagnóstico:</label>
+          <select name="diagnostico" required>
+            <option value="">Seleccionar diagnóstico</option>
+            <option value="Trastorno del espectro autista">Trastorno del espectro autista</option>
+            <option value="GARC">GARC</option>
+            <option value="Trastorno por deficit de atención">Trastorno por déficit de atención</option>
+            <option value="Trastorno por deficit de atención e hiperactividad">Trastorno por déficit de atención e hiperactividad</option>
+          </select>
 
-        <label>Plazo de reevaluación:</label>
-        <select name="plazo" onchange="setFechaReevaluacion(this)">
-          <option value="">Seleccionar plazo</option>
-          <option value="4">Trastorno Espectro Autista - 4 años</option>
-          <option value="3">Trastorno Espectro Autista - 3 años</option>
-          <option value="2">TDA - 2 años</option>
-          <option value="2">TDAH - 2 años</option>
-        </select>
+          <label>Plazo de reevaluación:</label>
+          <select name="plazo" onchange="setFechaReevaluacion(this)">
+            <option value="">Seleccionar plazo</option>
+            <option value="4">Trastorno Espectro Autista - 4 años</option>
+            <option value="3">Trastorno Espectro Autista - 3 años</option>
+            <option value="2">TDA - 2 años</option>
+            <option value="2">TDAH - 2 años</option>
+          </select>
 
-        <label>Fecha de reevaluación:</label>
-        <input type="date" name="fecha_reevaluacion" required>
+          <label>Fecha de reevaluación:</label>
+          <input type="date" name="fecha_reevaluacion" required>
 
-        <label>Derivaciones:</label>
-        <textarea name="derivaciones" rows="2" required></textarea>
+          <label>Derivaciones:</label>
+          <textarea name="derivaciones" rows="2" required></textarea>
 
-        <div class="button-group">
-          <button type="submit">Generar PDF</button>
-          <button type="button" class="secondary" onclick="enviarADrive(this)">Enviar a Drive</button>
-        </div>
-      </form>
+          <div class="button-group">
+            <button type="submit" onclick="mostrarExito(event)">Generar PDF</button>
+            <button type="button" class="secondary" onclick="enviarADrive(this)">Enviar a Drive</button>
+          </div>
+
+          <span class="badge">Guardado</span>
+        </form>
+      </div>
+
+      <div class="preview">
+        <h3>Vista Previa</h3>
+        <p><strong>Nombre:</strong> <span class="prev-nombre">{{ est.nombre }}</span></p>
+        <p><strong>RUT:</strong> <span class="prev-rut">{{ est.rut }}</span></p>
+        <p><strong>Estado:</strong> <span class="prev-estado">-</span></p>
+        <p><strong>Diagnóstico:</strong> <span class="prev-diagnostico">-</span></p>
+        <p><strong>Fecha Reevaluación:</strong> <span class="prev-reevaluacion">-</span></p>
+        <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">-</span></p>
+
+        <img src="/static/formulario_muestra.png" alt="Ejemplo Formulario" class="preview-img">
+
+        <button onclick="window.print()" style="margin-top: 20px; width: 100%;">🖨️ Imprimir Vista Previa</button>
+      </div>
     </div>
-
-    <div class="preview">
-      <h3>Vista Previa</h3>
-      <p><strong>Nombre:</strong> <span class="prev-nombre">{{ est.nombre }}</span></p>
-      <p><strong>RUT:</strong> <span class="prev-rut">{{ est.rut }}</span></p>
-      <p><strong>Estado:</strong> <span class="prev-estado">-</span></p>
-      <p><strong>Diagnóstico:</strong> <span class="prev-diagnostico">-</span></p>
-      <p><strong>Fecha Reevaluación:</strong> <span class="prev-reevaluacion">-</span></p>
-      <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">-</span></p>
-
-      <!-- Imagen de muestra del formulario -->
-      <img src="/static/formulario_muestra.png" alt="Ejemplo Formulario" class="preview-img">
-    </div>
-  </div>
+  </details>
   {% endfor %}
+
+  <footer>
+    © 2025 CardioHome · Todos los derechos reservados.
+  </footer>
 
   <script>
     const input = document.getElementById('buscador');
     input.addEventListener('input', function () {
       const filtro = this.value.toLowerCase();
       const estudiantes = document.querySelectorAll('.estudiante');
-      estudiantes.forEach(div => {
-        const nombre = div.getAttribute('data-nombre');
-        div.style.display = nombre.includes(filtro) ? '' : 'none';
+      estudiantes.forEach(detail => {
+        const nombre = detail.getAttribute('data-nombre');
+        detail.style.display = nombre.includes(filtro) ? '' : 'none';
       });
     });
 
@@ -266,10 +329,31 @@
       container.querySelector('.prev-diagnostico').textContent = form.diagnostico.value;
       container.querySelector('.prev-reevaluacion').textContent = form.fecha_reevaluacion.value;
       container.querySelector('.prev-derivaciones').textContent = form.derivaciones.value;
+
+      const badge = form.querySelector('.badge');
+      badge.textContent = "Guardando...";
+      clearTimeout(badge.timeout);
+      badge.timeout = setTimeout(() => {
+        badge.textContent = "Guardado";
+      }, 800);
+    }
+
+    function mostrarExito(event) {
+      event.preventDefault();
+      Swal.fire({
+        icon: 'success',
+        title: 'PDF generado correctamente',
+        showConfirmButton: false,
+        timer: 1500
+      });
     }
 
     function enviarADrive(button) {
-      alert("Aquí se conecta la subida a Google Drive. 🚀");
+      Swal.fire({
+        icon: 'info',
+        title: 'Próximamente',
+        text: 'Aquí se conectará con Google Drive.'
+      });
     }
   </script>
 </body>

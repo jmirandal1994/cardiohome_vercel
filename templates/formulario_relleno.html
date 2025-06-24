@@ -40,22 +40,56 @@
       display: flex;
       gap: 40px;
       flex-wrap: wrap;
+      margin-bottom: 50px;
     }
 
     .formulario {
       flex: 1 1 500px;
-      background: #fff;
+      background: #ffffff;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.06);
       padding: 30px;
     }
 
     .preview {
-      flex: 1 1 300px;
+      flex: 1 1 350px;
       background: #ffffff;
       border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
       padding: 30px;
+      border-left: 6px solid #1a73e8;
+      transition: box-shadow 0.3s ease, transform 0.2s ease;
+    }
+
+    .preview:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    }
+
+    .preview h3 {
+      margin-top: 0;
+      font-size: 1.4rem;
+      color: #1a73e8;
+      border-bottom: 2px solid #1a73e8;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    .preview p {
+      margin: 12px 0;
+      font-size: 1rem;
+      color: #333;
+    }
+
+    .preview p strong {
+      display: inline-block;
+      width: 180px;
+      color: #1a73e8;
+    }
+
+    .preview span {
+      font-weight: 500;
+      color: #555;
     }
 
     label {
@@ -104,16 +138,8 @@
       background: #2c8c46;
     }
 
-    .preview h3 {
-      margin-top: 0;
-      color: #1a73e8;
-    }
-
-    .preview p {
-      margin: 8px 0;
-    }
-
-    .info {
+    p.info {
+      margin: 5px 0;
       font-weight: 500;
       color: #555;
     }
@@ -133,14 +159,12 @@
   <div class="container estudiante" data-nombre="{{ est.nombre | lower }}">
     <div class="formulario">
       <form action="/generar_pdf" method="POST" oninput="updatePreview(this)">
-        <!-- Editable Nombre y RUT -->
         <label>Nombre:</label>
         <input type="text" name="nombre" value="{{ est.nombre }}" required>
 
         <label>RUT:</label>
         <input type="text" name="rut" value="{{ est.rut }}" required>
 
-        <!-- Fecha de nacimiento NO editable -->
         <input type="hidden" name="fecha_nacimiento" value="{{ est.fecha_nacimiento }}">
         <input type="hidden" name="edad" value="{{ est.edad }}">
         <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
@@ -183,6 +207,7 @@
         </div>
       </form>
     </div>
+
     <div class="preview">
       <h3>Vista Previa</h3>
       <p><strong>Nombre:</strong> <span class="prev-nombre">{{ est.nombre }}</span></p>
@@ -196,36 +221,33 @@
   {% endfor %}
 
   <script>
-    // Buscador de estudiantes
+    // Buscador
     const input = document.getElementById('buscador');
     input.addEventListener('input', function () {
       const filtro = this.value.toLowerCase();
       const estudiantes = document.querySelectorAll('.estudiante');
-
       estudiantes.forEach(div => {
         const nombre = div.getAttribute('data-nombre');
         div.style.display = nombre.includes(filtro) ? '' : 'none';
       });
     });
 
-    // Calcular fecha de reevaluación automática
+    // Calcular fecha reevaluación
     function setFechaReevaluacion(select) {
       const años = parseInt(select.value);
       if (!años) return;
-
       const today = new Date();
       today.setFullYear(today.getFullYear() + años);
       const yyyy = today.getFullYear();
       const mm = String(today.getMonth() + 1).padStart(2, '0');
       const dd = String(today.getDate()).padStart(2, '0');
       const fecha = `${yyyy}-${mm}-${dd}`;
-
       const container = select.closest('.estudiante');
       const fechaInput = container.querySelector('input[name="fecha_reevaluacion"]');
       fechaInput.value = fecha;
     }
 
-    // Vista previa dinámica
+    // Actualizar Vista Previa
     function updatePreview(form) {
       const container = form.closest('.container');
       container.querySelector('.prev-nombre').textContent = form.nombre.value;
@@ -236,9 +258,9 @@
       container.querySelector('.prev-derivaciones').textContent = form.derivaciones.value;
     }
 
-    // Simular envío a Drive
+    // Simular enviar a Drive
     function enviarADrive(button) {
-      alert("Aquí va la integración con Google Drive.");
+      alert("Aquí se conecta la subida a Google Drive. 😊");
     }
   </script>
 </body>

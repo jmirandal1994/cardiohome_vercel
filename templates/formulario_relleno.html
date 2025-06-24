@@ -279,7 +279,7 @@
           <textarea name="derivaciones" rows="2" required></textarea>
 
           <div class="button-group">
-            <button type="submit" onclick="mostrarExito(event)">Generar PDF</button>
+            <button type="submit" onclick="mostrarExito()">Generar PDF</button>
             <button type="button" class="secondary" onclick="enviarADrive(this)">Enviar a Drive</button>
           </div>
         </form>
@@ -344,14 +344,15 @@
       }, 800);
     }
 
-    function mostrarExito(event) {
-      event.preventDefault();
-      Swal.fire({
-        icon: 'success',
-        title: 'PDF generado correctamente',
-        showConfirmButton: false,
-        timer: 1500
-      });
+    function mostrarExito() {
+      setTimeout(() => {
+        Swal.fire({
+          icon: 'success',
+          title: 'PDF generado correctamente',
+          showConfirmButton: false,
+          timer: 1500
+        });
+      }, 1000);
     }
 
     function enviarADrive() {

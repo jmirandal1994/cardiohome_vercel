@@ -51,21 +51,13 @@
     }
 
     summary {
+      background: #1a73e8;  /* azul uniforme para todos */
+      color: #fff;
       padding: 15px 20px;
       border-radius: 8px;
       font-weight: bold;
       cursor: pointer;
       user-select: none;
-    }
-
-    .summary-hombre {
-      background: #1a73e8;
-      color: #fff;
-    }
-
-    .summary-mujer {
-      background: #f8c3cd;
-      color: #333;
     }
 
     .container {
@@ -234,7 +226,7 @@
 
   {% for est in estudiantes %}
   <details class="estudiante" data-nombre="{{ est.nombre | lower }}">
-    <summary class="summary-{{ est.sexo | lower }}">{{ est.nombre }}</summary>
+    <summary>{{ est.nombre }}</summary>
     <div class="container">
       <div class="formulario">
         <span class="badge">Guardado</span>

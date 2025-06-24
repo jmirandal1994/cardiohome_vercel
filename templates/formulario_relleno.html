@@ -59,6 +59,8 @@
       padding: 30px;
       border-left: 6px solid #1a73e8;
       transition: box-shadow 0.3s ease, transform 0.2s ease;
+      position: relative;
+      overflow: hidden;
     }
 
     .preview:hover {
@@ -90,6 +92,14 @@
     .preview span {
       font-weight: 500;
       color: #555;
+    }
+
+    .preview-img {
+      display: block;
+      width: 100%;
+      margin-top: 25px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
     label {
@@ -216,12 +226,14 @@
       <p><strong>Diagnóstico:</strong> <span class="prev-diagnostico">-</span></p>
       <p><strong>Fecha Reevaluación:</strong> <span class="prev-reevaluacion">-</span></p>
       <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">-</span></p>
+
+      <!-- Imagen de muestra del formulario -->
+      <img src="/static/formulario_muestra.png" alt="Ejemplo Formulario" class="preview-img">
     </div>
   </div>
   {% endfor %}
 
   <script>
-    // Buscador
     const input = document.getElementById('buscador');
     input.addEventListener('input', function () {
       const filtro = this.value.toLowerCase();
@@ -232,7 +244,6 @@
       });
     });
 
-    // Calcular fecha reevaluación
     function setFechaReevaluacion(select) {
       const años = parseInt(select.value);
       if (!años) return;
@@ -247,7 +258,6 @@
       fechaInput.value = fecha;
     }
 
-    // Actualizar Vista Previa
     function updatePreview(form) {
       const container = form.closest('.container');
       container.querySelector('.prev-nombre').textContent = form.nombre.value;
@@ -258,9 +268,8 @@
       container.querySelector('.prev-derivaciones').textContent = form.derivaciones.value;
     }
 
-    // Simular enviar a Drive
     function enviarADrive(button) {
-      alert("Aquí se conecta la subida a Google Drive. 😊");
+      alert("Aquí se conecta la subida a Google Drive. 🚀");
     }
   </script>
 </body>

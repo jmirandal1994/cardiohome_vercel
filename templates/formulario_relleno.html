@@ -76,9 +76,31 @@
     .formulario {
       flex: 1 1 500px;
       background: #ffffff;
+      border-left: 6px solid #1a73e8;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.06);
       padding: 30px;
+      position: relative; /* Para el badge flotante */
+    }
+
+    .badge {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      background: #34a853;
+      color: #fff;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .badge.show {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     .preview {
@@ -184,16 +206,6 @@
       color: #555;
     }
 
-    .badge {
-      display: inline-block;
-      background: #1a73e8;
-      color: #fff;
-      padding: 4px 10px;
-      border-radius: 12px;
-      font-size: 0.8rem;
-      margin-left: 10px;
-    }
-
     footer {
       text-align: center;
       margin-top: 50px;
@@ -205,7 +217,6 @@
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
-
   </style>
 </head>
 <body>
@@ -223,6 +234,7 @@
     <summary>{{ est.nombre }}</summary>
     <div class="container">
       <div class="formulario">
+        <span class="badge">Guardado</span>
         <form action="/generar_pdf" method="POST" oninput="updatePreview(this)">
           <label>Nombre:</label>
           <input type="text" name="nombre" value="{{ est.nombre }}" required>
@@ -270,8 +282,6 @@
             <button type="submit" onclick="mostrarExito(event)">Generar PDF</button>
             <button type="button" class="secondary" onclick="enviarADrive(this)">Enviar a Drive</button>
           </div>
-
-          <span class="badge">Guardado</span>
         </form>
       </div>
 
@@ -299,11 +309,10 @@
   <script>
     const input = document.getElementById('buscador');
     input.addEventListener('input', function () {
-      const filtro = this.value.toLowerCase();
       const estudiantes = document.querySelectorAll('.estudiante');
       estudiantes.forEach(detail => {
         const nombre = detail.getAttribute('data-nombre');
-        detail.style.display = nombre.includes(filtro) ? '' : 'none';
+        detail.style.display = nombre.includes(this.value.toLowerCase()) ? '' : 'none';
       });
     });
 
@@ -312,13 +321,9 @@
       if (!años) return;
       const today = new Date();
       today.setFullYear(today.getFullYear() + años);
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const dd = String(today.getDate()).padStart(2, '0');
-      const fecha = `${yyyy}-${mm}-${dd}`;
+      const fecha = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
       const container = select.closest('.estudiante');
-      const fechaInput = container.querySelector('input[name="fecha_reevaluacion"]');
-      fechaInput.value = fecha;
+      container.querySelector('input[name="fecha_reevaluacion"]').value = fecha;
     }
 
     function updatePreview(form) {
@@ -330,7 +335,8 @@
       container.querySelector('.prev-reevaluacion').textContent = form.fecha_reevaluacion.value;
       container.querySelector('.prev-derivaciones').textContent = form.derivaciones.value;
 
-      const badge = form.querySelector('.badge');
+      const badge = form.closest('.formulario').querySelector('.badge');
+      badge.classList.add('show');
       badge.textContent = "Guardando...";
       clearTimeout(badge.timeout);
       badge.timeout = setTimeout(() => {
@@ -348,7 +354,7 @@
       });
     }
 
-    function enviarADrive(button) {
+    function enviarADrive() {
       Swal.fire({
         icon: 'info',
         title: 'Próximamente',

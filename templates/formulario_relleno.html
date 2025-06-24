@@ -57,13 +57,20 @@
     }
 
     summary {
-      background: #1a73e8;
-      color: #fff;
       padding: 15px 20px;
       border-radius: 8px;
       font-weight: bold;
       cursor: pointer;
       user-select: none;
+      color: #fff;
+    }
+
+    .summary-mujer {
+      background: #f8c3cd; /* Rosita suave tipo piel */
+    }
+
+    .summary-hombre {
+      background: #1a73e8; /* Azul como siempre */
     }
 
     .container {
@@ -80,7 +87,7 @@
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.06);
       padding: 30px;
-      position: relative; /* Para el badge flotante */
+      position: relative;
     }
 
     .badge {
@@ -232,7 +239,7 @@
 
   {% for est in estudiantes %}
   <details class="estudiante" data-nombre="{{ est.nombre | lower }}">
-    <summary>{{ est.nombre }}</summary>
+    <summary class="summary-{{ est.sexo | lower }}">{{ est.nombre }}</summary>
     <div class="container">
       <div class="formulario">
         <span class="badge">Guardado</span>

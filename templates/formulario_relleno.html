@@ -172,6 +172,7 @@
 
     .button-group {
       display: flex;
+      flex-wrap: wrap;
       gap: 10px;
       margin-top: 20px;
     }
@@ -280,7 +281,8 @@
 
           <div class="button-group">
             <button type="submit" onclick="mostrarExito()">Generar PDF</button>
-            <button type="button" class="secondary" onclick="enviarADrive(this)">Enviar a Drive</button>
+            <button type="button" class="secondary" onclick="enviarADrive()">Enviar a Drive</button>
+            <button type="button" class="secondary" onclick="insertarFirma()">Insertar Firma</button>
           </div>
         </form>
       </div>
@@ -360,6 +362,14 @@
         icon: 'info',
         title: 'Próximamente',
         text: 'Aquí se conectará con Google Drive.'
+      });
+    }
+
+    function insertarFirma() {
+      Swal.fire({
+        icon: 'info',
+        title: 'Próximamente',
+        text: 'Se insertará la firma según la doctora que corresponda.'
       });
     }
   </script>

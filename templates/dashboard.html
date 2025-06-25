@@ -6,7 +6,11 @@
     <title>Panel Médico - CardioHome</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    {# Favicon: Usar PNG y ICO para mayor compatibilidad #}
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
     <style>
         :root {
             --primary-blue: #007BFF; /* Un azul ligeramente más brillante y moderno */
@@ -674,7 +678,7 @@
             </ul>
         </div>
         
-        {% comment %}
+        {#
         {% for evento in eventos %}
         <div class="card establishment-details">
             <h3><i class="fas fa-hospital"></i> {{ evento.nombre }}</h3>
@@ -719,7 +723,7 @@
             </form>
         </div>
         {% endfor %}
-        {% endcomment %}
+        #}
         {% endif %}
 
         <div class="card calendar">

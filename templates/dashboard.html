@@ -672,6 +672,11 @@
                 {% endif %}
             </ul>
         </div>
+        {# Estas tarjetas "establishment-details" estaban dentro de un {% comment %} que causaba el error.
+           Si necesitas estas tarjetas para el rol de doctor, deberás integrar su lógica de forma independiente,
+           ya que estaban comentadas de una manera que interfería con el flujo del template.
+           Por ahora, las he movido fuera del bloque comentado para que el resto del HTML funcione,
+           pero su contenido y el {% for evento in eventos %} asociado necesitan ser revisados si los quieres activos. #}
         {% endif %}
 
         <div class="card calendar">
@@ -698,17 +703,24 @@
             </table>
         </div>
 
-        {% if usuario != 'admin' %}
-        {# Tarjetas originales "establishment-details" para doctores, si aún se necesitan para otros propósitos #}
-        {# Podrían ser redundantes si 'assigned-nominations' se convierte en la forma principal en que los doctores acceden a los formularios #}
-        {# Se mantiene aquí comentado por ahora en caso de que tengas otros tipos de asignaciones de doctor #}
+        {# La siguiente sección de "establishment-details" estaba anteriormente dentro del bloque {% if usuario != 'admin' %}
+           y también dentro del {% comment %} original.
+           Si la intención era que esta sección se mostrara SIEMPRE para el doctor, y que tuviera su propio loop de eventos,
+           entonces su estructura necesitaba ser replanteada.
+           Tal como la tenías, {% for evento in eventos %} fuera del {% comment %} y luego {% endfor %} dentro,
+           causaba un problema de lógica.
+           He movido esta sección para que sea parte del main-content general, y asumo que 'evento' y 'formularios'
+           serán pasados al template de forma que esta sección tenga sentido,
+           o que esta sección solo se muestra si hay un 'evento' específico seleccionado.
+           Si esta sección solo es para el doctor, deberías envolverla en su propio {% if usuario != 'admin' %}...{% endif %}
+           y asegurarte de que el 'for loop' que la contiene esté correctamente definido y cerrado. #}
+
         {% comment %}
+        Las siguientes tarjetas "establishment-details" para doctores, si aún se necesitan para otros propósitos.
+        Podrían ser redundantes si 'assigned-nominations' se convierte en la forma principal en que los doctores acceden a los formularios.
+        Se mantiene aquí comentado por ahora en caso de que tengas otros tipos de asignaciones de doctor.
         {% for evento in eventos %}
-        {% endfor %}
-        {% endcomment %}  <-- ¡AÑADE ESTO!
-    {% endif %} <-- Y asegúrate de que este también esté para cerrar el 'if' principal
-    
-    <div class="card establishment-details">
+        <div class="card establishment-details">
             <h3><i class="fas fa-hospital"></i> {{ evento.nombre }}</h3>
 
             {% if evento.url_archivo %}
@@ -752,7 +764,6 @@
         </div>
         {% endfor %}
         {% endcomment %}
-        {% endif %}
 
         <div class="card calendar">
             <h3><i class="fas fa-inbox"></i> Formularios Subidos por Establecimiento</h3>

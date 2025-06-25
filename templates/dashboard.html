@@ -6,6 +6,7 @@
     <title>Panel Médico - CardioHome</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <style>
         :root {
             --primary-blue: #007BFF; /* Un azul ligeramente más brillante y moderno */
@@ -634,7 +635,7 @@
                         <option value="neurologia">Neurología</option>
                     </select>
                 </div>
-                 <div>
+                   <div>
                     <label for="nombre_especifico">Nombre de la Nómina/Referencia (Establecimiento):</label>
                     <input type="text" id="nombre_especifico" name="nombre_especifico" placeholder="Ej: Clínica Los Andes - Neuro" required>
                 </div>
@@ -672,53 +673,8 @@
                 {% endif %}
             </ul>
         </div>
-        {# Estas tarjetas "establishment-details" estaban dentro de un {% comment %} que causaba el error.
-           Si necesitas estas tarjetas para el rol de doctor, deberás integrar su lógica de forma independiente,
-           ya que estaban comentadas de una manera que interfería con el flujo del template.
-           Por ahora, las he movido fuera del bloque comentado para que el resto del HTML funcione,
-           pero su contenido y el {% for evento in eventos %} asociado necesitan ser revisados si los quieres activos. #}
-        {% endif %}
-
-        <div class="card calendar">
-            <h3><i class="fas fa-calendar-alt"></i> Calendario de Visitas</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Horario</th>
-                        <th>Establecimiento</th>
-                        <th>Observaciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for evento in eventos %}
-                    <tr>
-                        <td>{{ evento.fecha }}</td>
-                        <td>{{ evento.horario }}</td>
-                        <td>{{ evento.nombre }}</td>
-                        <td>{{ evento.observaciones }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        {# La siguiente sección de "establishment-details" estaba anteriormente dentro del bloque {% if usuario != 'admin' %}
-           y también dentro del {% comment %} original.
-           Si la intención era que esta sección se mostrara SIEMPRE para el doctor, y que tuviera su propio loop de eventos,
-           entonces su estructura necesitaba ser replanteada.
-           Tal como la tenías, {% for evento in eventos %} fuera del {% comment %} y luego {% endfor %} dentro,
-           causaba un problema de lógica.
-           He movido esta sección para que sea parte del main-content general, y asumo que 'evento' y 'formularios'
-           serán pasados al template de forma que esta sección tenga sentido,
-           o que esta sección solo se muestra si hay un 'evento' específico seleccionado.
-           Si esta sección solo es para el doctor, deberías envolverla en su propio {% if usuario != 'admin' %}...{% endif %}
-           y asegurarte de que el 'for loop' que la contiene esté correctamente definido y cerrado. #}
-
+        
         {% comment %}
-        Las siguientes tarjetas "establishment-details" para doctores, si aún se necesitan para otros propósitos.
-        Podrían ser redundantes si 'assigned-nominations' se convierte en la forma principal en que los doctores acceden a los formularios.
-        Se mantiene aquí comentado por ahora en caso de que tengas otros tipos de asignaciones de doctor.
         {% for evento in eventos %}
         <div class="card establishment-details">
             <h3><i class="fas fa-hospital"></i> {{ evento.nombre }}</h3>
@@ -764,6 +720,31 @@
         </div>
         {% endfor %}
         {% endcomment %}
+        {% endif %}
+
+        <div class="card calendar">
+            <h3><i class="fas fa-calendar-alt"></i> Calendario de Visitas</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Horario</th>
+                        <th>Establecimiento</th>
+                        <th>Observaciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for evento in eventos %}
+                    <tr>
+                        <td>{{ evento.fecha }}</td>
+                        <td>{{ evento.horario }}</td>
+                        <td>{{ evento.nombre }}</td>
+                        <td>{{ evento.observaciones }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
         <div class="card calendar">
             <h3><i class="fas fa-inbox"></i> Formularios Subidos por Establecimiento</h3>

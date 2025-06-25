@@ -12,6 +12,7 @@
             --primary-dark-blue: #0056b3;
             --secondary-accent: #28a745; /* Green for success/positive actions */
             --warning-accent: #ffc107; /* Yellow for warnings/additions */
+            --info-accent: #17a2b8; /* Cyan for info/new type of upload */
             --background-light: #f8f9fa; /* Lighter background */
             --card-background: #ffffff;
             --text-dark: #343a40; /* Darker text for contrast */
@@ -197,6 +198,13 @@
             color: var(--warning-accent);
         }
 
+        .card.upload-roster { /* New card style for roster upload */
+            border-left: 8px solid var(--info-accent);
+        }
+        .card.upload-roster h3 {
+            color: var(--info-accent);
+        }
+
         .card.calendar {
             border-left: 8px solid var(--primary-blue);
         }
@@ -349,6 +357,14 @@
             background-color: #e0a800; /* Darker yellow on hover */
             color: white;
         }
+
+        .upload-roster button { /* Style for upload roster button */
+            background-color: var(--info-accent);
+        }
+        .upload-roster button:hover {
+            background-color: #117a8b; /* Darker cyan on hover */
+        }
+
 
         .establishment-details a {
             color: var(--primary-blue);
@@ -560,7 +576,7 @@
                 </div>
                 <div>
                     <label for="formulario">Formulario (PDF, Word o Excel):</label>
-                    <input type="file" id="formulario" name="formulario" accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm" required />
+                    <input type="file" id="formulario" name="formulario" accept=".pdf,.doc,.docx,.xls,.xlsx" required />
                 </div>
                 <div>
                     <label for="alumnos_agregar">Cantidad de alumnos:</label>
@@ -569,6 +585,39 @@
                 <button type="submit"><i class="fas fa-paper-plane"></i> Agregar Establecimiento</button>
             </form>
         </div>
+
+        <div class="card upload-roster"> {# New card for Excel roster upload #}
+            <h3><i class="fas fa-file-upload"></i> Cargar Nómina Médica</h3>
+            <form action="/admin/cargar_nomina" method="POST" enctype="multipart/form-data">
+                <div>
+                    <label for="tipo_nomina">Tipo de Nómina:</label>
+                    <select id="tipo_nomina" name="tipo_nomina" required>
+                        <option value="">Seleccionar tipo</option>
+                        <option value="medicina_familiar">Medicina Familiar</option>
+                        <option value="neurologia">Neurología</option>
+                    </select>
+                </div>
+                 <div>
+                    <label for="nombre_especifico">Nombre de la Nómina/Referencia:</label>
+                    <input type="text" id="nombre_especifico" name="nombre_especifico" placeholder="Ej: Nómina U. de Chile 2025" required>
+                </div>
+                <div>
+                    <label for="doctora_nomina">Asignar a doctora (ID Supabase):</label>
+                    <select id="doctora_nomina" name="doctora" required>
+                        <option value="">Seleccionar doctora</option>
+                        {% for doc in doctoras %}
+                       <option value="{{ doc.id|e }}">{{ doc.nombre }} ({{ doc.usuario }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="excel_nomina">Sube el archivo Excel de la nómina:</label>
+                    <input type="file" id="excel_nomina" name="excel" accept=".xlsx,.xls,.csv" required>
+                </div>
+                <button type="submit"><i class="fas fa-upload"></i> Cargar Nómina</button>
+            </form>
+        </div>
+
         {% endif %}
 
         <div class="card calendar">

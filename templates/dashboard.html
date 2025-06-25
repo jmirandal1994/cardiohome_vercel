@@ -1,780 +1,761 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Panel Médico - CardioHome</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - CardioHome</title>
+    <!-- Fuentes de Google Fonts para un aspecto más profesional -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome para íconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    
-    {# Favicon: Usar PNG y ICO para mayor compatibilidad #}
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
-
     <style>
         :root {
-            --primary-blue: #007BFF; /* Un azul ligeramente más brillante y moderno */
-            --primary-dark-blue: #0056b3;
-            --secondary-accent: #28a745; /* Verde para éxito/acciones positivas */
-            --warning-accent: #ffc107; /* Amarillo para advertencias/adiciones */
-            --info-accent: #17a2b8; /* Cian para información/nuevo tipo de carga */
-            --background-light: #f8f9fa; /* Fondo más claro */
-            --card-background: #ffffff;
-            --text-dark: #343a40; /* Texto más oscuro para contraste */
-            --text-medium: #6c757d;
-            --border-light: #e9ecef; /* Borde más claro */
-            --shadow-subtle: rgba(0, 0, 0, 0.08);
-            --shadow-medium: rgba(0, 0, 0, 0.15);
-            --sidebar-width: 280px;
+            --primary-dark: hsl(210, 29%, 24%); /* Deep Slate Blue */
+            --primary-medium: hsl(210, 15%, 35%); /* Darker Grayish Blue */
+            --primary-light: hsl(210, 16%, 95%); /* Light Gray-Blue */
+            --background-accent: hsl(210, 16%, 98%); /* Very Light Gray-Blue */
+            --accent-green: hsl(140, 60%, 40%); /* Forest Green */
+            --accent-red: hsl(0, 70%, 55%); /* Vibrant Red */
+            --accent-blue: hsl(200, 60%, 50%); /* Sky Blue */
+            --text-dark: hsl(210, 10%, 20%);
+            --text-light: hsl(0, 0%, 98%);
+            --border-color: hsl(210, 10%, 88%);
+            --shadow-light: rgba(0, 0, 0, 0.06);
+            --shadow-medium: rgba(0, 0, 0, 0.12);
+            --shadow-strong: rgba(0, 0, 0, 0.2);
+            --border-radius-base: 12px;
+            --padding-base: 25px;
+            --gap-base: 25px;
         }
 
         body {
             margin: 0;
-            font-family: 'Open Sans', sans-serif; /* Una fuente limpia y legible para el cuerpo */
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            background-color: var(--background-light);
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-accent);
             color: var(--text-dark);
             line-height: 1.6;
-        }
-
-        /* Estilos de la barra lateral */
-        .sidebar {
-            background: var(--primary-blue); /* Azul primario sólido */
-            color: white;
-            padding: 30px 20px;
-            box-shadow: 4px 0 20px var(--shadow-medium);
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            flex-shrink: 0;
-            position: sticky; /* Barra lateral fija para contenido largo */
-            top: 0;
-            height: 100vh;
-            overflow-y: auto; /* Habilitar desplazamiento si el contenido es demasiado largo */
-            scrollbar-width: none; /* Ocultar barra de desplazamiento para Firefox */
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        .sidebar::-webkit-scrollbar {
-            display: none; /* Ocultar barra de desplazamiento para Chrome, Safari, Opera */
-        }
-
-        .sidebar .logo-container {
-            padding-bottom: 25px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            margin-bottom: 25px;
-            width: 100%;
+        header {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-medium) 100%);
+            color: var(--text-light);
+            padding: var(--padding-base) 0 80px 0;
             text-align: center;
-        }
-
-        .sidebar img {
-            max-width: 180px; /* Logo ligeramente más grande */
-            height: auto;
-            display: block;
-            margin: 0 auto;
-            filter: drop-shadow(0 0 5px rgba(0,0,0,0.3)); /* Sombra sutil en el logo */
-        }
-
-        .sidebar h3 {
-            margin-top: 15px;
-            margin-bottom: 5px;
-            font-family: 'Montserrat', sans-serif; /* Una fuente más distintiva para los títulos */
-            font-weight: 700;
-            font-size: 1.8em;
-            letter-spacing: 0.5px;
-            color: rgba(255, 255, 255, 0.95);
-        }
-
-        .sidebar p {
-            font-weight: 300;
-            font-size: 0.95em;
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 25px;
-        }
-
-        .sidebar hr {
-            border: 0;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-            margin: 20px 0;
-            width: 80%;
-        }
-
-        .sidebar nav {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .sidebar a {
-            color: white;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 14px 20px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-            width: calc(100% - 40px); /* Ajuste para el padding */
-            justify-content: flex-start;
-            font-weight: 500;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.05em;
-        }
-
-        .sidebar a:hover {
-            background-color: var(--primary-dark-blue);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-
-        .sidebar a .icon {
-            font-size: 1.3em;
-            width: 25px; /* Ancho fijo para los iconos */
-            text-align: center;
-        }
-
-        /* Estilos del contenido principal */
-        .main-content {
-            flex-grow: 1;
-            padding: 40px;
-            background-color: var(--background-light);
-            overflow-x: hidden; /* Prevenir desplazamiento horizontal */
-        }
-
-        .main-content h2 {
-            color: var(--primary-blue);
-            margin-bottom: 35px;
-            font-size: 2.5em;
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
+            box-shadow: 0 6px 20px var(--shadow-strong);
             position: relative;
-            padding-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
         }
 
-        .main-content h2::after {
-            content: '';
+        header img {
+            width: 100px;
+            height: auto;
+            filter: brightness(0) invert(1);
+            margin-bottom: 10px;
+        }
+
+        header h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 32px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .logout-btn {
+            background-color: var(--accent-red);
+            color: var(--text-light);
+            border: none;
+            padding: 12px 25px;
+            border-radius: var(--border-radius-base);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
             position: absolute;
-            left: 0;
-            bottom: 0;
-            width: 80px; /* Subrayado más corto y moderno */
-            height: 4px;
-            background-color: var(--primary-blue);
-            border-radius: 2px;
+            top: 20px;
+            right: 25px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
 
-        /* Estilos base de las tarjetas */
+        .logout-btn:hover {
+            background-color: hsl(0, 70%, 45%);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+        }
+        .logout-btn i {
+            font-size: 16px;
+        }
+
+        .container {
+            padding: var(--gap-base);
+            max-width: 1280px;
+            margin: -40px auto var(--gap-base) auto;
+            display: grid;
+            gap: var(--gap-base);
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            flex-grow: 1;
+            align-items: start;
+            z-index: 5;
+        }
+
         .card {
-            background: var(--card-background);
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 6px 20px var(--shadow-subtle);
-            margin-bottom: 35px;
-            border: 1px solid var(--border-light);
+            background: white;
+            padding: var(--padding-base);
+            border-radius: var(--border-radius-base);
+            box-shadow: 0 4px 18px var(--shadow-medium);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-color);
+            position: relative;
         }
 
         .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px var(--shadow-medium);
+            box-shadow: 0 8px 25px var(--shadow-strong);
         }
 
         .card h3 {
+            font-family: 'Montserrat', sans-serif;
+            margin-top: 0;
             margin-bottom: 20px;
-            color: var(--primary-blue);
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.8em;
-            font-weight: 600;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border-light);
+            color: var(--primary-dark);
+            font-size: 22px;
+            font-weight: 700;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
             display: flex;
             align-items: center;
             gap: 10px;
         }
-
-        /* Variaciones específicas de tarjetas */
-        .card.add-establishment {
-            border-left: 8px solid var(--warning-accent);
+        .card h3 i {
+            color: var(--accent-blue);
+            font-size: 1.2em;
         }
 
-        .card.add-establishment h3 {
-            color: var(--warning-accent);
-        }
-
-        .card.upload-roster { /* Nuevo estilo de tarjeta para carga de nómina */
-            border-left: 8px solid var(--info-accent);
-        }
-        .card.upload-roster h3 {
-            color: var(--info-accent);
-        }
-
-        .card.calendar {
-            border-left: 8px solid var(--primary-blue);
-        }
-
-        .card.doctor-ids-table {
-            border-left: 8px solid var(--secondary-accent);
-        }
-        .card.doctor-ids-table h4 {
-            color: var(--secondary-accent);
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.4em;
-            font-weight: 600;
-            margin-bottom: 15px;
+        .summary {
+            grid-column: 1 / -1;
             display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .card.assigned-nominations { /* Nuevo estilo para nóminas asignadas */
-            border-left: 8px solid var(--secondary-accent);
-        }
-        .card.assigned-nominations h3 {
-            color: var(--secondary-accent);
-        }
-        .card.assigned-nominations ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        .card.assigned-nominations li {
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border-light);
-        }
-        .card.assigned-nominations li:last-child {
-            border-bottom: none;
-        }
-        .card.assigned-nominations li a {
-            color: var(--primary-blue);
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 1.1em;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: color 0.2s ease;
-        }
-        .card.assigned-nominations li a:hover {
-            color: var(--primary-dark-blue);
-            text-decoration: underline;
-        }
-        .card.assigned-nominations .no-nominations {
-            color: var(--text-medium);
-            font-style: italic;
-            padding-top: 10px;
-        }
-
-
-        /* Estilos de tabla */
-        table {
-            width: 100%;
-            border-collapse: separate; /* Usar separate para esquinas redondeadas en celdas */
-            border-spacing: 0; /* Eliminar espaciado predeterminado */
+            justify-content: space-around;
+            gap: var(--gap-base);
+            flex-wrap: wrap;
             margin-top: 20px;
-            border-radius: 8px; /* Esquinas redondeadas para toda la tabla */
-            overflow: hidden; /* Ocultar contenido fuera del border-radius */
         }
 
-        th,
-        td {
-            padding: 16px 20px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-light);
-            border-right: 1px solid var(--border-light); /* Añadir borde derecho para efecto de cuadrícula */
-        }
-
-        th:last-child, td:last-child {
-            border-right: none; /* Eliminar borde derecho en la última columna */
-        }
-
-        th {
-            background-color: #e9f0f8; /* Fondo de encabezado más claro */
+        .summary .card {
+            flex: 1;
+            min-width: 250px;
+            text-align: center;
             font-weight: 600;
-            color: var(--primary-dark-blue);
-            text-transform: uppercase;
-            font-size: 0.9em;
+            font-size: 18px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .summary .card p {
+            font-size: 32px;
+            margin: 10px 0 0;
+            font-weight: 800;
             letter-spacing: 0.5px;
         }
 
-        th:first-child { border-top-left-radius: 8px; }
-        th:last-child { border-top-right-radius: 8px; }
-
-        tbody tr:last-child td {
-            border-bottom: none;
+        .summary .card:nth-child(1) {
+            background-color: hsl(140, 50%, 90%);
+            color: var(--accent-green);
+            border: 1px solid hsl(140, 50%, 80%);
+        }
+        .summary .card:nth-child(2) {
+            background-color: hsl(0, 60%, 92%);
+            color: var(--accent-red);
+            border: 1px solid hsl(0, 60%, 85%);
+        }
+        .summary .card:nth-child(3) {
+            background-color: hsl(200, 70%, 90%);
+            color: var(--accent-blue);
+            border: 1px solid hsl(200, 70%, 85%);
         }
 
-        tbody tr:hover {
-            background-color: #f0f7ff;
-            transition: background 0.2s ease-in-out;
+        .summary .card h3 i {
+            font-size: 24px;
+            margin-right: 10px;
+            color: inherit;
         }
 
-        /* Estilos de formulario */
         form {
-            margin-top: 20px;
-            display: grid;
-            grid-template-columns: 1fr; /* Por defecto, una sola columna */
+            display: flex;
+            flex-direction: column;
             gap: 15px;
         }
-
         form label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
+            font-weight: 500;
+            margin-bottom: -10px; /* Ajuste para acercar el label al input */
             color: var(--text-dark);
             font-size: 0.95em;
         }
-
-        input[type="file"],
-        input[type="number"],
-        input[type="text"],
-        input[type="date"],
-        select {
-            padding: 12px 15px;
-            border-radius: 8px;
-            border: 1px solid var(--border-light);
+        form input, form select {
+            padding: 14px 18px;
+            margin: 0;
             width: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-size: 16px;
             box-sizing: border-box;
-            font-size: 1em;
-            color: var(--text-dark);
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
 
-        input[type="file"]:focus,
-        input[type="number"]:focus,
-        input[type="text"]:focus,
-        input[type="date"]:focus,
-        select:focus {
-            border-color: var(--primary-blue);
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        form input:focus, form select:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 4px hsla(200, 60%, 50%, 0.2);
             outline: none;
         }
-
-        input[type="file"]::file-selector-button {
-            background: var(--primary-blue);
-            color: white;
+        form button {
+            padding: 14px 30px;
+            background-color: var(--primary-dark);
+            color: var(--text-light);
             border: none;
-            padding: 10px 18px;
-            border-radius: 6px;
+            border-radius: var(--border-radius-base);
             cursor: pointer;
-            transition: background-color 0.2s ease, transform 0.2s ease;
-            margin-right: 15px;
-            font-weight: 500;
-        }
-
-        input[type="file"]::file-selector-button:hover {
-            background-color: var(--primary-dark-blue);
-            transform: translateY(-1px);
-        }
-
-        button {
-            padding: 12px 25px;
-            border: none;
-            background-color: var(--primary-blue);
-            color: white;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 1.05em;
-            transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            font-weight: 700;
+            font-size: 17px;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
             margin-top: 15px;
-            width: auto; /* Mantener el ancho natural del botón */
-            display: inline-flex; /* Para alineación de iconos */
+            width: auto;
+            align-self: flex-start;
+            display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        form button:hover {
+            background-color: var(--primary-medium);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px var(--shadow-medium);
+        }
+
+        .filter-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .filter-buttons button {
+            flex-grow: 1;
+            margin-top: 0;
+            align-self: stretch;
+        }
+
+        #descargarExcel {
+            background-color: var(--accent-green);
+        }
+        #descargarExcel:hover {
+            background-color: hsl(140, 60%, 30%);
+        }
+        #limpiarFiltros {
+            background-color: hsl(210, 10%, 50%);
+        }
+        #limpiarFiltros:hover {
+            background-color: hsl(210, 10%, 40%);
+        }
+
+        .lista-items {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            margin-top: 20px;
+        }
+
+        .item-card {
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-base);
+            padding: 15px 20px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column; /* Cambiado a columna para mejor apilamiento de info */
+            gap: 8px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .item-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        }
+        .item-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-bottom: 5px; /* Espacio entre header y detalles */
+        }
+        .item-card-details {
+            font-size: 0.9em;
+            color: #555;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .item-card-action-link {
+            display: inline-block;
+            background-color: var(--accent-blue);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 0.9em;
+            margin-top: 10px;
+            align-self: flex-end; /* Alinea el botón a la derecha */
+            transition: background-color 0.3s ease;
+        }
+        .item-card-action-link:hover {
+            background-color: hsl(200, 60%, 40%);
+        }
+
+        /* Colores específicos para listas de movimientos */
+        .movimiento {
+            border-left: 6px solid;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            margin-bottom: 12px;
+            border-radius: var(--border-radius-base);
+            font-size: 16px;
+            background-color: white;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .movimiento:hover {
+            background-color: var(--background-accent);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        }
+        .movement-details {
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap;
             gap: 8px;
         }
-
-        button:hover {
-            background-color: var(--primary-dark-blue);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        .movimiento .monto {
+            font-weight: 700;
+            font-size: 1.2em;
         }
-
-        /* Estilo de botón específico */
-        .add-establishment button {
-            background-color: var(--warning-accent);
-            color: var(--text-dark); /* Texto más oscuro para botón amarillo */
-        }
-        .add-establishment button:hover {
-            background-color: #e0a800; /* Amarillo más oscuro al pasar el ratón */
-            color: white;
-        }
-
-        .upload-roster button { /* Estilo para el botón de carga de nómina */
-            background-color: var(--info-accent);
-        }
-        .upload-roster button:hover {
-            background-color: #117a8b; /* Cian más oscuro al pasar el ratón */
-        }
-
-
-        .establishment-details a {
-            color: var(--primary-blue);
-            text-decoration: none;
+        .movimiento .descripcion {
             font-weight: 500;
-            display: inline-flex;
+        }
+        .movimiento .categoria {
+            font-style: normal;
+            font-weight: 400;
+            color: hsl(210, 5%, 45%);
+            padding: 2px 8px;
+            border-radius: 4px;
+            background-color: hsla(210, 10%, 80%, 0.4);
+            font-size: 0.9em;
+        }
+        .movimiento .fecha {
+            color: hsl(210, 5%, 60%);
+            font-size: 0.85em;
+        }
+        .ingreso {
+            border-color: var(--accent-green);
+        }
+        .gasto {
+            border-color: var(--accent-red);
+        }
+        .delete-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: hsl(210, 10%, 50%);
+            font-size: 20px;
+            transition: color 0.2s ease, transform 0.1s ease;
+        }
+        .delete-btn:hover {
+            color: var(--accent-red);
+            transform: scale(1.15);
+        }
+
+        .graficos {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: var(--gap-base);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .graficos .card {
+            flex: 1 1 calc(50% - var(--gap-base) / 2);
+            min-width: 320px;
+            height: 450px;
+            display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 5px;
-            transition: color 0.2s ease;
-            margin-top: 5px;
+            justify-content: center;
+            box-sizing: border-box;
+            padding: var(--padding-base);
         }
 
-        .establishment-details a:hover {
-            color: var(--primary-dark-blue);
-            text-decoration: underline;
+        /* Flash Messages */
+        .flash-messages {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+            text-align: center;
+            grid-column: 1 / -1; /* Ocupa todo el ancho */
+        }
+        .flash-messages li {
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            display: inline-block;
+            font-weight: 500;
+            font-size: 0.95em;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .flash-messages .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .flash-messages .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .flash-messages .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .flash-messages .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
         }
 
-        .establishment-details p.no-form {
-            color: var(--text-medium);
-            font-style: italic;
-            margin-top: 10px;
-        }
 
-        /* Ajustes responsivos */
-        @media (min-width: 768px) {
-            body {
-                flex-direction: row;
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            header {
+                padding-top: 90px;
+                padding-bottom: 50px;
             }
-
-            .sidebar {
-                width: var(--sidebar-width);
+            .logout-btn {
+                top: 20px;
+                right: 20px;
             }
-
-            .main-content {
-                width: calc(100% - var(--sidebar-width));
-                padding: 40px 50px; /* Más padding horizontal */
+            .container {
+                padding: 15px;
+                margin-top: -30px;
             }
-
-            form {
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Dos columnas para formularios en pantallas más anchas */
+            .summary .card, .graficos .card {
+                flex-basis: 100%;
+                min-width: unset;
             }
-
-            form button {
-                grid-column: 1 / -1; /* Hacer que el botón abarque todas las columnas */
-                justify-self: start; /* Alinear el botón al inicio */
+            form input, form select {
+                width: calc(100% - 20px);
             }
-        }
-
-        @media (max-width: 767px) {
-            .sidebar {
-                width: 100%;
-                height: auto;
-                position: relative;
-                padding: 20px 15px;
-                flex-direction: row;
-                justify-content: center; /* Centrar elementos en móvil */
-                flex-wrap: wrap; /* Permitir ajuste de línea */
-                text-align: center;
+            .filter-buttons {
+                flex-direction: column;
             }
-
-            .sidebar .logo-container {
-                width: auto;
-                border-bottom: none;
-                margin-bottom: 15px;
-            }
-
-            .sidebar img {
-                max-width: 120px;
-                margin-bottom: 10px;
-            }
-
-            .sidebar h3,
-            .sidebar p {
-                width: 100%; /* Tomar todo el ancho */
-                margin-bottom: 10px;
-            }
-
-            .sidebar nav {
-                flex-direction: row; /* Navegación horizontal en móvil */
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 10px; /* Espacio entre elementos de navegación móvil */
-            }
-
-            .sidebar a {
-                padding: 10px 15px;
-                font-size: 0.9em;
-                width: auto; /* Ajustar ancho para elementos en línea */
-                flex-grow: 1; /* Permitir que los enlaces crezcan */
-                justify-content: center;
-            }
-
-            .sidebar hr {
-                display: none; /* Ocultar hr en móvil */
-            }
-
-            .main-content {
-                padding: 25px 20px;
-            }
-
-            .main-content h2 {
-                font-size: 1.8em;
-                margin-bottom: 25px;
-                text-align: center;
+            .filter-buttons button {
                 width: 100%;
             }
-            .main-content h2::after {
-                left: 50%;
-                transform: translateX(-50%); /* Centrar subrayado en móvil */
-            }
-
-            .card {
-                padding: 20px;
-                margin-bottom: 25px;
-            }
-
             .card h3 {
-                font-size: 1.5em;
-                text-align: center;
-                display: block; /* Apilar icono y texto */
+                font-size: 20px;
             }
+            .summary .card p {
+                font-size: 28px;
+            }
+            .summary .card {
+                padding: 20px;
+            }
+            .item-card-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .item-card-action-link {
+                align-self: flex-start;
+            }
+        }
 
-            form button {
-                width: 100%;
-                margin-top: 20px;
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .graficos .card {
+                flex-basis: calc(50% - var(--gap-base) / 2);
             }
-
-            th, td {
-                padding: 12px 15px;
-                font-size: 0.85em;
+            .summary .card {
+                min-width: 200px;
             }
+            .container {
+                padding: 20px;
+            }
+        }
+        @media (min-width: 1025px) {
+            .container {
+                grid-template-columns: 1fr 1fr;
+            }
+            /* Orden explícito de las tarjetas para pantallas grandes */
+            .card.admin-form:nth-of-type(1) { grid-column: 1; grid-row: 1; } /* Agregar Establecimiento */
+            .card.admin-form:nth-of-type(2) { grid-column: 2; grid-row: 1; } /* Cargar Nómina Médica */
+            .card.admin-list:nth-of-type(1) { grid-column: 1 / -1; grid-row: 2; } /* Visitas Programadas (Admin) */
+            .card.admin-list:nth-of-type(2) { grid-column: 1 / -1; grid-row: 3; } /* Nóminas Cargadas (Admin) */
         }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <div class="logo-container">
-            <img src="/static/cardiohome.png" alt="Logo CardioHome" />
-            <h3>CardioHome</h3>
-        </div>
-        <p>Bienvenida, {{ usuario }}</p>
+    <header>
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo COAFIN" />
+        <h1>Bienvenido a tu Panel de CardioHome</h1>
+        <button class="logout-btn" onclick="cerrarSesion()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</button>
+    </header>
 
-        <nav>
-            {% if usuario == 'admin' %}
-            <a href="/colegios"><span class="icon"><i class="fas fa-clipboard-list"></i></span><span>Colegios Evaluados</span></a>
-            {% else %} {# Esta es la vista para el rol de doctor #}
-            <a href="/mis_nominas"><span class="icon"><i class="fas fa-file-alt"></i></span><span>Mis Nóminas Asignadas</span></a>
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flash-messages">
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
             {% endif %}
-
-            <a href="/logout"><span class="icon"><i class="fas fa-sign-out-alt"></i></span><span>Cerrar sesión</span></a>
-        </nav>
-    </div>
-
-    <div class="main-content">
-        <h2>Panel de Actividades</h2> {# Título general cambiado #}
+        {% endwith %}
 
         {% if usuario == 'admin' %}
-        <div class="card doctor-ids-table">
-            <h4><i class="fas fa-id-card-alt"></i> IDs disponibles de Doctoras</h4>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nombre</th>
-                        <th>Usuario</th>
-                        <th>ID</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for doc in doctoras %}
-                    <tr>
-                        <td>{{ doc.nombre }}</td>
-                        <td>{{ doc.usuario }}</td>
-                        <td>{{ doc.id }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+            <!-- Sección para Administrador -->
+            <div class="card admin-form">
+                <h3><i class="fa-solid fa-calendar-plus"></i> Agregar Visita Programada</h3>
+                <form action="{{ url_for('admin_agregar') }}" method="POST" enctype="multipart/form-data">
+                    <label for="nombre_establecimiento">Nombre Establecimiento:</label>
+                    <input type="text" id="nombre_establecimiento" name="nombre" placeholder="Ej: Liceo Bicentenario" required />
 
-        <div class="card add-establishment">
-            <h3><i class="fas fa-plus-circle"></i> Agregar nuevo establecimiento (Visita programada)</h3>
-            <form action="/admin/agregar" method="POST" enctype="multipart/form-data">
-                <div>
-                    <label for="nombre">Nombre del establecimiento:</label>
-                    <input type="text" id="nombre" name="nombre" required />
-                </div>
-                <div>
-                    <label for="fecha">Fecha de visita:</label>
-                    <input type="date" id="fecha" name="fecha" required />
-                </div>
-                <div>
-                    <label for="horario">Horario:</label>
-                    <input type="text" id="horario" name="horario" placeholder="Ej: 09:00 - 10:30" required />
-                </div>
-                <div>
-                    <label for="obs">Observaciones:</label>
-                    <input type="text" id="obs" name="obs" />
-                </div>
-                <div>
-                    <label for="doctora">Asignar a doctora (ID Supabase):</label>
-                    <select id="doctora" name="doctora" required>
-                        <option value="">Seleccionar doctora</option>
+                    <label for="fecha_establecimiento">Fecha:</label>
+                    <input type="date" id="fecha_establecimiento" name="fecha" required />
+
+                    <label for="horario_establecimiento">Horario:</label>
+                    <input type="text" id="horario_establecimiento" name="horario" placeholder="Ej: 09:00 - 11:00" required />
+
+                    <label for="doctora_establecimiento">Asignar a Doctora:</label>
+                    <select id="doctora_establecimiento" name="doctora" required>
+                        <option value="">Selecciona una doctora</option>
                         {% for doc in doctoras %}
-                       <option value="{{ doc.id|e }}">{{ doc.nombre }} ({{ doc.usuario }})</option>
+                            <option value="{{ doc.id }}">{{ doc.usuario }}</option>
                         {% endfor %}
                     </select>
-                </div>
-                <div>
-                    <label for="formulario">Formulario (PDF, Word o Excel):</label>
-                    <input type="file" id="formulario" name="formulario" accept=".pdf,.doc,.docx,.xls,.xlsx" required />
-                </div>
-                <div>
-                    <label for="alumnos_agregar">Cantidad de alumnos:</label>
-                    <input type="number" id="alumnos_agregar" name="alumnos" min="0" required />
-                </div>
-                <button type="submit"><i class="fas fa-paper-plane"></i> Agregar Establecimiento</button>
-            </form>
-        </div>
 
-        <div class="card upload-roster"> {# Nueva tarjeta para carga de nómina Excel #}
-            <h3><i class="fas fa-file-upload"></i> Cargar Nómina Médica (Para formularios)</h3>
-            <form action="/admin/cargar_nomina" method="POST" enctype="multipart/form-data">
-                <div>
+                    <label for="alumnos_establecimiento">Cantidad de Alumnos:</label>
+                    <input type="number" id="alumnos_establecimiento" name="alumnos" min="0" placeholder="Ej: 30" />
+
+                    <label for="obs_establecimiento">Observaciones:</label>
+                    <textarea id="obs_establecimiento" name="obs" rows="3" placeholder="Notas adicionales..."></textarea>
+
+                    <label for="formulario_base">Formulario Base (PDF/DOCX):</label>
+                    <input type="file" id="formulario_base" name="formulario" accept=".pdf,.docx,.doc" required />
+                    
+                    <button type="submit"><i class="fa-solid fa-plus"></i> Agregar Visita</button>
+                </form>
+            </div>
+
+            <div class="card admin-form">
+                <h3><i class="fa-solid fa-file-excel"></i> Cargar Nómina Médica (Excel/CSV)</h3>
+                <form action="{{ url_for('admin_cargar_nomina') }}" method="POST" enctype="multipart/form-data">
                     <label for="tipo_nomina">Tipo de Nómina:</label>
-                    <select id="tipo_nomina" name="tipo_nomina" required>
-                        <option value="">Seleccionar tipo</option>
-                        <option value="medicina_familiar">Medicina Familiar</option>
-                        <option value="neurologia">Neurología</option>
-                    </select>
-                </div>
-                   <div>
-                    <label for="nombre_especifico">Nombre de la Nómina/Referencia (Establecimiento):</label>
-                    <input type="text" id="nombre_especifico" name="nombre_especifico" placeholder="Ej: Clínica Los Andes - Neuro" required>
-                </div>
-                <div>
-                    <label for="doctora_nomina">Asignar a doctora (ID Supabase):</label>
+                    <input type="text" id="tipo_nomina" name="tipo_nomina" placeholder="Ej: General, Dental, Oftalmológica" required />
+
+                    <label for="nombre_especifico">Nombre Específico (Ej: Liceo X - Nómina Mayo):</label>
+                    <input type="text" id="nombre_especifico" name="nombre_especifico" placeholder="Nombre único para esta nómina" required />
+
+                    <label for="doctora_nomina">Asignar a Doctora:</label>
                     <select id="doctora_nomina" name="doctora" required>
-                        <option value="">Seleccionar doctora</option>
+                        <option value="">Selecciona una doctora</option>
                         {% for doc in doctoras %}
-                       <option value="{{ doc.id|e }}">{{ doc.nombre }} ({{ doc.usuario }})</option>
+                            <option value="{{ doc.id }}">{{ doc.usuario }}</option>
                         {% endfor %}
                     </select>
-                </div>
-                <div>
-                    <label for="excel_nomina">Sube el archivo Excel de la nómina:</label>
-                    <input type="file" id="excel_nomina" name="excel" accept=".xlsx,.xls,.csv" required>
-                </div>
-                <button type="submit"><i class="fas fa-upload"></i> Cargar Nómina</button>
-            </form>
-        </div>
 
-        {% else %} {# Esta sección es para la vista del doctor #}
-        <div class="card assigned-nominations">
-            <h3><i class="fas fa-tasks"></i> Mis Nóminas/Establecimientos Asignados</h3>
-            <ul>
-                {% if assigned_nominations %}
-                    {% for nomina in assigned_nominations %}
-                    <li>
-                        <a href="/relleno_formularios/{{ nomina.id }}">
-                            <i class="fas fa-file-signature"></i> {{ nomina.nombre_establecimiento }} ({{ nomina.tipo_nomina_display }})
-                        </a>
-                    </li>
-                    {% endfor %}
-                {% else %}
-                    <p class="no-nominations">No tienes nóminas o establecimientos asignados por ahora.</p>
-                {% endif %}
-            </ul>
-        </div>
-        
-        {#
-        {% for evento in eventos %}
-        <div class="card establishment-details">
-            <h3><i class="fas fa-hospital"></i> {{ evento.nombre }}</h3>
+                    <label for="excel_nomina">Archivo Excel/CSV de la Nómina:</label>
+                    <input type="file" id="excel_nomina" name="excel" accept=".xls,.xlsx,.csv" required />
+                    
+                    <button type="submit"><i class="fa-solid fa-upload"></i> Cargar Nómina</button>
+                </form>
+            </div>
 
-            {% if evento.url_archivo %}
-            <p>
-                <strong>Formulario base (subido por el administrador):</strong><br>
-                <a href="{{ evento.url_archivo }}" target="_blank" download><i class="fas fa-download"></i> Descargar Formulario: {{ evento.nombre_archivo }}</a>
-            </p>
-            {% else %}
-            <p class="no-form"><i class="fas fa-info-circle"></i> <em>No hay formulario base disponible para este establecimiento.</em></p>
-            {% endif %}
+            <!-- Sección para el administrador: Visitas Programadas (todos los eventos) -->
+            <div class="card admin-list">
+                <h3><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas Programadas</h3>
+                <ul class="lista-items">
+                    {% if eventos %}
+                        {% for evento in eventos %}
+                            <li class="item-card">
+                                <div class="item-card-header">
+                                    <span>{{ evento.nombre }} ({{ evento.fecha }})</span>
+                                    <span>{{ evento.horario }}</span>
+                                </div>
+                                <div class="item-card-details">
+                                    <span>Alumnos: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
+                                    <span>Doc: {{ (doctoras | selectattr('id', 'equalto', evento.doctora_id) | first).usuario if evento.doctora_id else 'N/A' }}</span>
+                                    <span>Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
+                                </div>
+                                {% if evento.url_archivo %}
+                                    <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
+                                        <i class="fa-solid fa-file-alt"></i> Ver Formulario Base
+                                    </a>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <p style="text-align: center; color: #777;">No hay visitas programadas.</p>
+                    {% endif %}
+                </ul>
+            </div>
 
-            {% set tiene_formulario = false %}
-            {% for f in formularios %}
-                {% if f.establecimientos_id == evento.id %}
-                    {% set tiene_formulario = true %}
-                    <p>
-                        <a href="{{ f.url_archivo }}" target="_blank" download><i class="fas fa-file-download"></i> Descargar Formulario Completado: {{ f.nombre_archivo }}</a>
-                    </p>
-                {% endif %}
-            {% endfor %}
+            <!-- NUEVA SECCIÓN para el administrador: Nóminas Cargadas -->
+            <div class="card admin-list">
+                <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Médicas Cargadas</h3>
+                <ul class="lista-items">
+                    {% if admin_nominas_cargadas %} {# Se asume que 'admin_nominas_cargadas' se pasa desde Flask #}
+                        {% for nomina in admin_nominas_cargadas %}
+                            <li class="item-card">
+                                <div class="item-card-header">
+                                    <span>{{ nomina.nombre_nomina }} ({{ nomina.tipo_nomina.replace('_', ' ').title() }})</span>
+                                    <span>Asignada a: {{ (doctoras | selectattr('id', 'equalto', nomina.doctora_id) | first).usuario if nomina.doctora_id else 'N/A' }}</span>
+                                </div>
+                                <div class="item-card-details">
+                                    <span>Archivo Original: {{ nomina.nombre_excel_original }}</span>
+                                </div>
+                                {% if nomina.url_excel_original %}
+                                    <a href="{{ nomina.url_excel_original }}" target="_blank" class="item-card-action-link">
+                                        <i class="fa-solid fa-file-excel"></i> Ver Excel Original
+                                    </a>
+                                {% endif %}
+                                <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="item-card-action-link" style="background-color: var(--accent-green);">
+                                    <i class="fa-solid fa-list-ul"></i> Ver Estudiantes
+                                </a>
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <p style="text-align: center; color: #777;">No hay nóminas médicas cargadas.</p>
+                    {% endif %}
+                </ul>
+            </div>
 
-            {% if not tiene_formulario %}
-                <p class="no-form"><i class="fas fa-exclamation-circle"></i> <em>No hay formularios completados subidos aún.</em></p>
-            {% endif %}
 
-            <form action="/subir/{{ evento.id }}" method="POST" enctype="multipart/form-data">
-                <div>
-                    <label for="archivo_subir_{{ evento.id }}">Subir formularios completados (puedes seleccionar varios):</label><br>
-                    <input type="file" id="archivo_subir_{{ evento.id }}" name="archivo" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm" required><br>
-                </div>
-                <button type="submit"><i class="fas fa-upload"></i> Subir Formularios</button>
-            </form>
+        {% else %}
+            <!-- Sección para Doctores -->
+            <div class="card">
+                <h3><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</h3>
+                <ul class="lista-items">
+                    {% if eventos %}
+                        {% for evento in eventos %}
+                            <li class="item-card">
+                                <div class="item-card-header">
+                                    <span>{{ evento.nombre }} ({{ evento.fecha }})</span>
+                                    <span>{{ evento.horario }}</span>
+                                </div>
+                                <div class="item-card-details">
+                                    <span>Alumnos esperados: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
+                                    <span>Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
+                                </div>
+                                {% if evento.url_archivo %}
+                                    <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
+                                        <i class="fa-solid fa-file-alt"></i> Descargar Formulario Base
+                                    </a>
+                                {% endif %}
+                                <form action="{{ url_for('subir', establecimiento=evento.id) }}" method="POST" enctype="multipart/form-data" style="margin-top: 10px;">
+                                    <label for="archivo_{{ loop.index }}">Subir Formulario Completado:</label>
+                                    <input type="file" id="archivo_{{ loop.index }}" name="archivo" accept=".pdf,.docx,.doc,.xls,.xlsx,.csv" required />
+                                    <button type="submit" style="background-color: var(--accent-green);"><i class="fa-solid fa-upload"></i> Subir Formulario</button>
+                                </form>
+                                <form action="{{ url_for('evaluados', establecimiento=evento.id) }}" method="POST" style="margin-top: 10px;">
+                                    <label for="alumnos_evaluados_{{ loop.index }}">Alumnos Evaluados:</label>
+                                    <input type="number" id="alumnos_evaluados_{{ loop.index }}" name="alumnos" min="0" placeholder="N° de alumnos evaluados" required />
+                                    <button type="submit" style="background-color: var(--accent-blue);"><i class="fa-solid fa-check"></i> Registrar Evaluados</button>
+                                </form>
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <p style="text-align: center; color: #777;">No tienes visitas programadas.</p>
+                    {% endif %}
+                </ul>
+            </div>
 
-            <form action="/evaluados/{{ evento.id }}" method="POST">
-                <div>
-                    <label for="alumnos_evaluados_{{ evento.id }}">Cantidad de alumnos evaluados:</label><br>
-                    <input type="number" id="alumnos_evaluados_{{ evento.id }}" name="alumnos" min="0" required><br>
-                </div>
-                <button type="submit"><i class="fas fa-save"></i> Registrar Cantidad</button>
-            </form>
-        </div>
-        {% endfor %}
-        #}
+            <div class="card">
+                <h3><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Médicas Asignadas</h3>
+                <ul class="lista-items">
+                    {% if assigned_nominations %}
+                        {% for nomina in assigned_nominations %}
+                            <li class="item-card">
+                                <div class="item-card-header">
+                                    <span>{{ nomina.nombre_establecimiento }}</span>
+                                    <span>Tipo: {{ nomina.tipo_nomina_display }}</span>
+                                </div>
+                                <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="item-card-action-link">
+                                    <i class="fa-solid fa-edit"></i> Rellenar y Ver Estudiantes
+                                </a>
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <p style="text-align: center; color: #777;">No tienes nóminas médicas asignadas en este momento.</p>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <!-- Sección de Formularios Subidos (para la doctora) -->
+            <div class="card">
+                <h3><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</h3>
+                <ul class="lista-items">
+                    {% if formularios %}
+                        {% for form_subido in formularios %}
+                            {% if form_subido.doctoras_id == usuario_id %} {# Filtra los formularios subidos por la doctora actual #}
+                                <li class="item-card">
+                                    <div class="item-card-header">
+                                        <span>{{ form_subido.nombre_archivo }}</span>
+                                        <span>Fecha: {{ form_subido.fecha_subida.strftime('%d-%m-%Y') if form_subido.fecha_subida else 'N/A' }}</span>
+                                    </div>
+                                    <div class="item-card-details">
+                                        <span>Establecimiento: 
+                                            {% set est = establecimientos | selectattr('id', 'equalto', form_subido.establecimientos_id) | first %}
+                                            {{ est.nombre if est else 'Desconocido' }}
+                                        </span>
+                                    </div>
+                                    <a href="{{ form_subido.url_archivo }}" target="_blank" class="item-card-action-link" style="background-color: var(--primary-medium);">
+                                        <i class="fa-solid fa-eye"></i> Ver Archivo
+                                    </a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p style="text-align: center; color: #777;">No has subido ningún formulario aún.</p>
+                    {% endif %}
+                </ul>
+            </div>
+
         {% endif %}
-
-        <div class="card calendar">
-            <h3><i class="fas fa-calendar-alt"></i> Calendario de Visitas</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Horario</th>
-                        <th>Establecimiento</th>
-                        <th>Observaciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for evento in eventos %}
-                    <tr>
-                        <td>{{ evento.fecha }}</td>
-                        <td>{{ evento.horario }}</td>
-                        <td>{{ evento.nombre }}</td>
-                        <td>{{ evento.observaciones }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <div class="card calendar">
-            <h3><i class="fas fa-inbox"></i> Formularios Subidos por Establecimiento</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Establecimiento</th>
-                        <th>Formularios Subidos</th>
-                        <th>Ver Archivos</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for est in establecimientos %}
-                    <tr>
-                        <td>{{ est.nombre }}</td>
-                        <td>{{ conteo.get(est.id, 0) }}</td>
-                        <td>
-                            {% for f in formularios if f.establecimientos_id == est.id %}
-                            <a href="{{ f.url_archivo }}" target="_blank"><i class="fas fa-file"></i> {{ f.nombre_archivo }}</a><br />
-                            {% endfor %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
     </div>
+
+    <script>
+        function cerrarSesion() {
+            window.location.href = "/logout"; // Asegúrate de que esta ruta existe en Flask para limpiar la sesión
+        }
+    </script>
 </body>
 </html>

@@ -704,7 +704,11 @@
         {# Se mantiene aquí comentado por ahora en caso de que tengas otros tipos de asignaciones de doctor #}
         {% comment %}
         {% for evento in eventos %}
-        <div class="card establishment-details">
+        {% endfor %}
+        {% endcomment %}  <-- ¡AÑADE ESTO!
+    {% endif %} <-- Y asegúrate de que este también esté para cerrar el 'if' principal
+    
+    <div class="card establishment-details">
             <h3><i class="fas fa-hospital"></i> {{ evento.nombre }}</h3>
 
             {% if evento.url_archivo %}

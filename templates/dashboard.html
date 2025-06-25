@@ -1,348 +1,575 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard Médico - CardioHome</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Médico - CardioHome</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #1a73e8;
+            --primary-dark: #155ab6;
+            --secondary-color: #fbbc04;
+            --background-light: #f0f2f5;
+            --card-background: #ffffff;
+            --text-dark: #333;
+            --text-medium: #555;
+            --text-light: #777;
+            --border-color: #e0e0e0;
+            --shadow-light: rgba(0, 0, 0, 0.05);
+            --shadow-medium: rgba(0, 0, 0, 0.1);
+        }
 
-    .sidebar {
-      background-color: #1a73e8;
-      color: white;
-      padding: 20px;
-    }
+        body {
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: var(--background-light);
+            color: var(--text-dark);
+        }
 
-    .sidebar h3 {
-      margin-bottom: 20px;
-    }
+        /* Sidebar Styling */
+        .sidebar {
+            background: linear-gradient(180deg, var(--primary-color) 0%, #155ab6 100%);
+            color: white;
+            padding: 25px 20px;
+            box-shadow: 2px 0 15px var(--shadow-medium);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-shrink: 0; /* Prevent sidebar from shrinking */
+        }
 
-    .sidebar a {
-      color: white;
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 15px;
-      border-radius: 6px;
-      margin-bottom: 10px;
-    }
+        .sidebar h3 {
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 1.5em;
+        }
 
-    .sidebar a:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
+        .sidebar p {
+            font-weight: 300;
+            font-size: 0.95em;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 25px;
+        }
 
-    .main-content {
-      padding: 30px;
-      background-color: #f0f2f5;
-      flex-grow: 1;
-    }
+        .sidebar hr {
+            border: 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            margin: 20px 0;
+            width: 80%;
+        }
 
-    .establecimiento {
-      margin-bottom: 30px;
-      padding: 20px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    }
+        .sidebar a {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+            width: 100%;
+            justify-content: flex-start;
+            font-weight: 400;
+        }
 
-    .calendario {
-      margin-bottom: 40px;
-      background: linear-gradient(to right, #ffffff, #f9f9f9);
-      padding: 25px;
-      border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      border-left: 6px solid #1a73e8;
-    }
+        .sidebar a:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
 
-    .calendario h3 {
-      margin-bottom: 15px;
-      color: #1a73e8;
-      font-size: 1.4em;
-      border-bottom: 1px solid #e0e0e0;
-      padding-bottom: 10px;
-    }
+        .sidebar a span:first-child {
+            font-size: 1.2em; /* Icon size */
+        }
 
-    .calendario table {
-      width: 100%;
-      border-collapse: collapse;
-    }
+        /* Main Content Styling */
+        .main-content {
+            flex-grow: 1;
+            padding: 30px;
+            background-color: var(--background-light);
+        }
 
-    .calendario th,
-    .calendario td {
-      padding: 14px 18px;
-      border-bottom: 1px solid #e0e0e0;
-      text-align: left;
-    }
+        .main-content h2 {
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            font-size: 2em;
+            font-weight: 700;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            display: inline-block; /* To make border-bottom only as wide as content */
+        }
 
-    .calendario th {
-      background-color: #f6f8fb;
-      font-weight: 600;
-      color: #333;
-    }
+        /* Card Base Styling */
+        .card {
+            background: var(--card-background);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px var(--shadow-light);
+            margin-bottom: 30px;
+        }
 
-    .calendario tr:hover {
-      background-color: #eef3fb;
-      transition: background 0.2s ease-in-out;
-    }
+        .card h3 {
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            font-size: 1.5em;
+            font-weight: 500;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
 
-    form {
-      margin-top: 10px;
-    }
+        /* Specific Card Variations */
+        .card.add-establishment {
+            background: linear-gradient(to right, #ffffff, #fdfdfd);
+            border-left: 6px solid var(--secondary-color);
+        }
 
-    input[type="file"],
-    input[type="number"],
-    input[type="text"],
-    input[type="date"],
-    select {
-      margin-bottom: 10px;
-      padding: 8px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      width: 100%;
-    }
+        .card.calendar {
+            background: linear-gradient(to right, #ffffff, #f9f9f9);
+            border-left: 6px solid var(--primary-color);
+        }
 
-    input[type="file"]::file-selector-button {
-      background: #1a73e8;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
+        /* Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
 
-    button {
-      padding: 8px 14px;
-      border: none;
-      background-color: #1a73e8;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: bold;
-    }
+        th,
+        td {
+            padding: 15px 18px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
+        }
 
-    button:hover {
-      background-color: #155ab6;
-    }
+        th {
+            background-color: #f6f8fb;
+            font-weight: 600;
+            color: var(--text-medium);
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
 
-    .tabla-ids {
-      background: #fff;
-      margin-bottom: 20px;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-    }
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
 
-    .tabla-ids table {
-      width: 100%;
-      border-collapse: collapse;
-    }
+        tbody tr:hover {
+            background-color: #eef3fb;
+            transition: background 0.2s ease-in-out;
+        }
 
-    .tabla-ids th,
-    .tabla-ids td {
-      padding: 8px;
-      text-align: left;
-      border-bottom: 1px solid #eee;
-    }
+        /* Form Styling */
+        form {
+            margin-top: 20px;
+        }
 
-    @media (min-width: 768px) {
-      body {
-        flex-direction: row;
-      }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-medium);
+            font-size: 0.95em;
+        }
 
-      .sidebar {
-        background: rgba(26, 115, 232, 0.95);
-        color: white;
-        padding: 30px 20px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        box-shadow: 2px 0 15px rgba(0,0,0,0.1);
-        width: 240px;
-        min-height: 100vh;
-      }
+        input[type="file"],
+        input[type="number"],
+        input[type="text"],
+        input[type="date"],
+        select {
+            margin-bottom: 15px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            width: calc(100% - 24px); /* Account for padding */
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+            font-size: 1em;
+        }
 
-      .main-content {
-        width: calc(100% - 240px);
-        padding: 30px;
-      }
-    }
-  </style>
+        input[type="file"]::file-selector-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            margin-right: 10px;
+        }
+
+        input[type="file"]::file-selector-button:hover {
+            background-color: var(--primary-dark);
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1em;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        /* Specific Table for Doctor IDs */
+        .doctor-ids-table {
+            background: var(--card-background);
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px var(--shadow-light);
+        }
+
+        .doctor-ids-table h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .doctor-ids-table table {
+            margin-top: 0;
+        }
+
+        .doctor-ids-table th,
+        .doctor-ids-table td {
+            padding: 10px 12px;
+            font-size: 0.9em;
+        }
+
+        .establishment-details {
+            padding: 25px;
+            background: var(--card-background);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px var(--shadow-light);
+            margin-bottom: 30px;
+        }
+
+        .establishment-details h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 1.6em;
+            font-weight: 600;
+        }
+
+        .establishment-details p {
+            margin-bottom: 10px;
+            line-height: 1.6;
+            color: var(--text-medium);
+        }
+
+        .establishment-details p strong {
+            color: var(--text-dark);
+        }
+
+        .establishment-details a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .establishment-details a:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+        /* Responsive Adjustments */
+        @media (min-width: 768px) {
+            body {
+                flex-direction: row;
+            }
+
+            .sidebar {
+                width: 260px; /* Slightly wider sidebar for better content display */
+                min-height: 100vh;
+                padding: 30px 20px;
+                align-items: flex-start; /* Align content to start */
+            }
+
+            .sidebar h3,
+            .sidebar p {
+                text-align: left;
+                width: 100%;
+            }
+
+            .sidebar hr {
+                width: 100%;
+            }
+
+            .sidebar a {
+                padding: 12px 15px; /* Adjust padding for wider sidebar */
+            }
+
+            .main-content {
+                width: calc(100% - 260px);
+                padding: 40px; /* More generous padding for larger screens */
+            }
+        }
+
+        @media (max-width: 767px) {
+            .sidebar {
+                width: 100%;
+                padding: 20px;
+                flex-direction: row;
+                justify-content: space-around;
+                flex-wrap: wrap;
+            }
+
+            .sidebar img,
+            .sidebar h3,
+            .sidebar p,
+            .sidebar hr {
+                width: auto; /* Reset width for inline display */
+                margin: 0 10px 10px 0; /* Adjust margins */
+                text-align: center;
+            }
+
+            .sidebar img {
+                max-width: 100px;
+                margin-bottom: 10px;
+            }
+
+            .sidebar a {
+                padding: 8px 12px;
+                font-size: 0.9em;
+                justify-content: center;
+                flex-grow: 1; /* Allow links to take available space */
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .main-content h2 {
+                font-size: 1.6em;
+                margin-bottom: 20px;
+                text-align: center;
+                width: 100%;
+            }
+
+            .card {
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+
+            .card h3 {
+                font-size: 1.3em;
+                text-align: center;
+            }
+
+            input[type="file"],
+            input[type="number"],
+            input[type="text"],
+            input[type="date"],
+            select {
+                width: calc(100% - 20px); /* Adjust for smaller padding */
+                padding: 8px 10px;
+            }
+
+            button {
+                width: 100%;
+                padding: 12px;
+            }
+
+            th, td {
+                padding: 10px;
+                font-size: 0.85em;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="sidebar">
-    <img src="/static/cardiohome.png" alt="Logo CardioHome" style="max-width: 160px; display:block; margin: 0 auto 20px;" />
-    <h3 style="text-align: center;">CardioHome</h3>
-    <p style="text-align: center; font-weight: 300;">Bienvenida, {{ usuario }}</p>
-    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.3); margin: 20px 0;">
+    <div class="sidebar">
+        <img src="/static/cardiohome.png" alt="Logo CardioHome" style="max-width: 160px; display:block; margin: 0 auto 20px;" />
+        <h3>CardioHome</h3>
+        <p>Bienvenida, {{ usuario }}</p>
+        <hr>
 
-    {% if usuario == 'admin' %}
-    <a href="/colegios"><span>📋</span><span>Colegios Evaluados</span></a>
-    {% endif %}
-
-    {% if usuario != 'admin' %}
-    <a href="/relleno_formularios"><span>🧠</span><span>Relleno de Formularios</span></a>
-    {% endif %}
-
-    <a href="/logout">Cerrar sesión</a>
-  </div>
-  
-  <div class="main-content">
-    <h2 style="color: #1a73e8; margin-bottom: 25px;">Panel de Establecimientos</h2>
-    <!-- Aquí sigue tu contenido normal -->
-    {% if usuario == 'admin' %}
-    <div class="tabla-ids">
-      <h4>🔎 IDs disponibles de Doctoras</h4>
-      <table>
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Usuario</th>
-            <th>ID</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for doc in doctoras %}
-          <tr>
-            <td>{{ doc.nombre }}</td>
-            <td>{{ doc.usuario }}</td>
-            <td>{{ doc.id }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="establecimiento" style="background:#fffbe6; border-left: 6px solid #fbbc04;">
-      <h3>➕ Agregar nuevo establecimiento</h3>
-      <form action="/admin/agregar" method="POST" enctype="multipart/form-data">
-        <label>Nombre del establecimiento:</label>
-        <input type="text" name="nombre" required />
-        <label>Fecha de visita:</label>
-        <input type="date" name="fecha" required />
-        <label>Horario:</label>
-        <input type="text" name="horario" placeholder="Ej: 09:00 - 10:30" required />
-        <label>Observaciones:</label>
-        <input type="text" name="obs" />
-        <label>Asignar a doctora (ID Supabase):</label>
-        <select name="doctora" required>
-          <option value="">Seleccionar doctora</option>
-          {% for doc in doctoras %}
-         <option value="{{ doc.id|e }}">{{ doc.nombre }} ({{ doc.usuario }})</option>
-          {% endfor %}
-        </select>
-        <label>Formulario (PDF, Word o Excel):</label>
-        <input type="file" name="formulario" accept=".pdf,.doc,.docx,.xls,.xlsx" required />
-        <label>Cantidad de alumnos:</label>
-        <input type="number" name="alumnos" min="0" required />
-        <button type="submit">Agregar</button>
-      </form>
-    </div>
-    {% endif %}
-
-    <div class="calendario">
-      <h3>📅 Calendario de Visitas</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Horario</th>
-            <th>Establecimiento</th>
-            <th>Observaciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for evento in eventos %}
-          <tr>
-            <td>{{ evento.fecha }}</td>
-            <td>{{ evento.horario }}</td>
-            <td>{{ evento.nombre }}</td>
-            <td>{{ evento.observaciones }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    {% if usuario != 'admin' %}
-    {% for evento in eventos %}
-    <div class="establecimiento">
-      <h3>{{ evento.nombre }}</h3>
-
-      {% if evento.url_archivo %}
-      <p>
-        <strong>Formulario base (subido por el administrador):</strong><br>
-        <a href="{{ evento.url_archivo }}" target="_blank" download>
-          Descargar Formulario: {{ evento.nombre_archivo }}
-        </a>
-      </p>
-      {% else %}
-      <p><em>No hay formulario base disponible para este establecimiento.</em></p>
-      {% endif %}
-
-      {% set tiene_formulario = false %}
-      {% for f in formularios %}
-        {% if f.establecimientos_id == evento.id %}
-          {% set tiene_formulario = true %}
-          <p>
-            <a href="{{ f.url_archivo }}" target="_blank" download>
-              Descargar Formulario: {{ f.nombre_archivo }}
-            </a>
-          </p>
+        {% if usuario == 'admin' %}
+        <a href="/colegios"><span>📋</span><span>Colegios Evaluados</span></a>
         {% endif %}
-      {% endfor %}
 
-      {% if not tiene_formulario %}
-        <p><em>No hay formularios completados subidos aún.</em></p>
-      {% endif %}
+        {% if usuario != 'admin' %}
+        <a href="/relleno_formularios"><span>🧠</span><span>Relleno de Formularios</span></a>
+        {% endif %}
 
-      <form action="/subir/{{ evento.id }}" method="POST" enctype="multipart/form-data">
-        <label>Subir formularios completados (puedes seleccionar varios):</label><br>
-        <input type="file" name="archivo" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm" required><br>
-        <button type="submit">Subir</button>
-      </form>
-
-      <form action="/evaluados/{{ evento.id }}" method="POST">
-        <label for="alumnos">Cantidad de alumnos evaluados:</label><br>
-        <input type="number" name="alumnos" min="0" required><br>
-        <button type="submit">Enviar cantidad</button>
-      </form>
+        <a href="/logout"><span>🚪</span><span>Cerrar sesión</span></a>
     </div>
-    {% endfor %}
-    {% endif %}
 
-    <div class="calendario">
-      <h3>📥 Formularios Subidos por Establecimiento</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Establecimiento</th>
-            <th>Formularios Subidos</th>
-            <th>Ver Archivos</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for est in establecimientos %}
-          <tr>
-            <td>{{ est.nombre }}</td>
-            <td>{{ conteo.get(est.id, 0) }}</td>
-            <td>
-              {% for f in formularios if f.establecimientos_id == est.id %}
-              <a href="{{ f.url_archivo }}" target="_blank">{{ f.nombre_archivo }}</a><br />
-              {% endfor %}
-            </td>
+    <div class="main-content">
+        <h2>Panel de Establecimientos</h2>
 
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+        {% if usuario == 'admin' %}
+        <div class="doctor-ids-table card">
+            <h4>🔎 IDs disponibles de Doctoras</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Usuario</th>
+                        <th>ID</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in doctoras %}
+                    <tr>
+                        <td>{{ doc.nombre }}</td>
+                        <td>{{ doc.usuario }}</td>
+                        <td>{{ doc.id }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card add-establishment">
+            <h3>➕ Agregar nuevo establecimiento</h3>
+            <form action="/admin/agregar" method="POST" enctype="multipart/form-data">
+                <label for="nombre">Nombre del establecimiento:</label>
+                <input type="text" id="nombre" name="nombre" required />
+
+                <label for="fecha">Fecha de visita:</label>
+                <input type="date" id="fecha" name="fecha" required />
+
+                <label for="horario">Horario:</label>
+                <input type="text" id="horario" name="horario" placeholder="Ej: 09:00 - 10:30" required />
+
+                <label for="obs">Observaciones:</label>
+                <input type="text" id="obs" name="obs" />
+
+                <label for="doctora">Asignar a doctora (ID Supabase):</label>
+                <select id="doctora" name="doctora" required>
+                    <option value="">Seleccionar doctora</option>
+                    {% for doc in doctoras %}
+                   <option value="{{ doc.id|e }}">{{ doc.nombre }} ({{ doc.usuario }})</option>
+                    {% endfor %}
+                </select>
+
+                <label for="formulario">Formulario (PDF, Word o Excel):</label>
+                <input type="file" id="formulario" name="formulario" accept=".pdf,.doc,.docx,.xls,.xlsx" required />
+
+                <label for="alumnos_agregar">Cantidad de alumnos:</label>
+                <input type="number" id="alumnos_agregar" name="alumnos" min="0" required />
+
+                <button type="submit">Agregar Establecimiento</button>
+            </form>
+        </div>
+        {% endif %}
+
+        <div class="card calendar">
+            <h3>📅 Calendario de Visitas</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Horario</th>
+                        <th>Establecimiento</th>
+                        <th>Observaciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for evento in eventos %}
+                    <tr>
+                        <td>{{ evento.fecha }}</td>
+                        <td>{{ evento.horario }}</td>
+                        <td>{{ evento.nombre }}</td>
+                        <td>{{ evento.observaciones }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if usuario != 'admin' %}
+        {% for evento in eventos %}
+        <div class="card establishment-details">
+            <h3>{{ evento.nombre }}</h3>
+
+            {% if evento.url_archivo %}
+            <p>
+                <strong>Formulario base (subido por el administrador):</strong><br>
+                <a href="{{ evento.url_archivo }}" target="_blank" download>
+                    Descargar Formulario: {{ evento.nombre_archivo }}
+                </a>
+            </p>
+            {% else %}
+            <p><em>No hay formulario base disponible para este establecimiento.</em></p>
+            {% endif %}
+
+            {% set tiene_formulario = false %}
+            {% for f in formularios %}
+                {% if f.establecimientos_id == evento.id %}
+                    {% set tiene_formulario = true %}
+                    <p>
+                        <a href="{{ f.url_archivo }}" target="_blank" download>
+                            Descargar Formulario Completado: {{ f.nombre_archivo }}
+                        </a>
+                    </p>
+                {% endif %}
+            {% endfor %}
+
+            {% if not tiene_formulario %}
+                <p><em>No hay formularios completados subidos aún.</em></p>
+            {% endif %}
+
+            <form action="/subir/{{ evento.id }}" method="POST" enctype="multipart/form-data">
+                <label for="archivo_subir_{{ evento.id }}">Subir formularios completados (puedes seleccionar varios):</label><br>
+                <input type="file" id="archivo_subir_{{ evento.id }}" name="archivo" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm" required><br>
+                <button type="submit">Subir Formularios</button>
+            </form>
+
+            <form action="/evaluados/{{ evento.id }}" method="POST">
+                <label for="alumnos_evaluados_{{ evento.id }}">Cantidad de alumnos evaluados:</label><br>
+                <input type="number" id="alumnos_evaluados_{{ evento.id }}" name="alumnos" min="0" required><br>
+                <button type="submit">Registrar Cantidad</button>
+            </form>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <div class="card calendar">
+            <h3>📥 Formularios Subidos por Establecimiento</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Establecimiento</th>
+                        <th>Formularios Subidos</th>
+                        <th>Ver Archivos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for est in establecimientos %}
+                    <tr>
+                        <td>{{ est.nombre }}</td>
+                        <td>{{ conteo.get(est.id, 0) }}</td>
+                        <td>
+                            {% for f in formularios if f.establecimientos_id == est.id %}
+                            <a href="{{ f.url_archivo }}" target="_blank">{{ f.nombre_archivo }}</a><br />
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-  </div>
 </body>
 </html>

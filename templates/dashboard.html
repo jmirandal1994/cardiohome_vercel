@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard Médico - CardioHome</title>
+    <title>Panel Médico - CardioHome</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         :root {
-            --primary-blue: #007BFF; /* A slightly brighter, more modern blue */
+            --primary-blue: #007BFF; /* Un azul ligeramente más brillante y moderno */
             --primary-dark-blue: #0056b3;
-            --secondary-accent: #28a745; /* Green for success/positive actions */
-            --warning-accent: #ffc107; /* Yellow for warnings/additions */
-            --info-accent: #17a2b8; /* Cyan for info/new type of upload */
-            --background-light: #f8f9fa; /* Lighter background */
+            --secondary-accent: #28a745; /* Verde para éxito/acciones positivas */
+            --warning-accent: #ffc107; /* Amarillo para advertencias/adiciones */
+            --info-accent: #17a2b8; /* Cian para información/nuevo tipo de carga */
+            --background-light: #f8f9fa; /* Fondo más claro */
             --card-background: #ffffff;
-            --text-dark: #343a40; /* Darker text for contrast */
+            --text-dark: #343a40; /* Texto más oscuro para contraste */
             --text-medium: #6c757d;
-            --border-light: #e9ecef; /* Lighter border */
+            --border-light: #e9ecef; /* Borde más claro */
             --shadow-subtle: rgba(0, 0, 0, 0.08);
             --shadow-medium: rgba(0, 0, 0, 0.15);
             --sidebar-width: 280px;
@@ -25,7 +25,7 @@
 
         body {
             margin: 0;
-            font-family: 'Open Sans', sans-serif; /* A clean, readable body font */
+            font-family: 'Open Sans', sans-serif; /* Una fuente limpia y legible para el cuerpo */
             display: flex;
             flex-direction: column;
             min-height: 100vh;
@@ -34,9 +34,9 @@
             line-height: 1.6;
         }
 
-        /* Sidebar Styling */
+        /* Estilos de la barra lateral */
         .sidebar {
-            background: var(--primary-blue); /* Solid primary blue */
+            background: var(--primary-blue); /* Azul primario sólido */
             color: white;
             padding: 30px 20px;
             box-shadow: 4px 0 20px var(--shadow-medium);
@@ -44,15 +44,15 @@
             flex-direction: column;
             align-items: center;
             flex-shrink: 0;
-            position: sticky; /* Sticky sidebar for long content */
+            position: sticky; /* Barra lateral fija para contenido largo */
             top: 0;
             height: 100vh;
-            overflow-y: auto; /* Enable scrolling if content is too long */
-            scrollbar-width: none; /* Hide scrollbar for Firefox */
+            overflow-y: auto; /* Habilitar desplazamiento si el contenido es demasiado largo */
+            scrollbar-width: none; /* Ocultar barra de desplazamiento para Firefox */
         }
 
         .sidebar::-webkit-scrollbar {
-            display: none; /* Hide scrollbar for Chrome, Safari, Opera */
+            display: none; /* Ocultar barra de desplazamiento para Chrome, Safari, Opera */
         }
 
         .sidebar .logo-container {
@@ -64,17 +64,17 @@
         }
 
         .sidebar img {
-            max-width: 180px; /* Slightly larger logo */
+            max-width: 180px; /* Logo ligeramente más grande */
             height: auto;
             display: block;
             margin: 0 auto;
-            filter: drop-shadow(0 0 5px rgba(0,0,0,0.3)); /* Subtle shadow on logo */
+            filter: drop-shadow(0 0 5px rgba(0,0,0,0.3)); /* Sombra sutil en el logo */
         }
 
         .sidebar h3 {
             margin-top: 15px;
             margin-bottom: 5px;
-            font-family: 'Montserrat', sans-serif; /* A more distinct font for titles */
+            font-family: 'Montserrat', sans-serif; /* Una fuente más distintiva para los títulos */
             font-weight: 700;
             font-size: 1.8em;
             letter-spacing: 0.5px;
@@ -112,7 +112,7 @@
             border-radius: 8px;
             margin-bottom: 10px;
             transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-            width: calc(100% - 40px); /* Account for padding */
+            width: calc(100% - 40px); /* Ajuste para el padding */
             justify-content: flex-start;
             font-weight: 500;
             font-family: 'Montserrat', sans-serif;
@@ -127,16 +127,16 @@
 
         .sidebar a .icon {
             font-size: 1.3em;
-            width: 25px; /* Fixed width for icons */
+            width: 25px; /* Ancho fijo para los iconos */
             text-align: center;
         }
 
-        /* Main Content Styling */
+        /* Estilos del contenido principal */
         .main-content {
             flex-grow: 1;
             padding: 40px;
             background-color: var(--background-light);
-            overflow-x: hidden; /* Prevent horizontal scroll */
+            overflow-x: hidden; /* Prevenir desplazamiento horizontal */
         }
 
         .main-content h2 {
@@ -154,13 +154,13 @@
             position: absolute;
             left: 0;
             bottom: 0;
-            width: 80px; /* Shorter, more modern underline */
+            width: 80px; /* Subrayado más corto y moderno */
             height: 4px;
             background-color: var(--primary-blue);
             border-radius: 2px;
         }
 
-        /* Card Base Styling */
+        /* Estilos base de las tarjetas */
         .card {
             background: var(--card-background);
             padding: 30px;
@@ -189,7 +189,7 @@
             gap: 10px;
         }
 
-        /* Specific Card Variations */
+        /* Variaciones específicas de tarjetas */
         .card.add-establishment {
             border-left: 8px solid var(--warning-accent);
         }
@@ -198,7 +198,7 @@
             color: var(--warning-accent);
         }
 
-        .card.upload-roster { /* New card style for roster upload */
+        .card.upload-roster { /* Nuevo estilo de tarjeta para carga de nómina */
             border-left: 8px solid var(--info-accent);
         }
         .card.upload-roster h3 {
@@ -223,14 +223,53 @@
             gap: 10px;
         }
 
-        /* Table Styling */
+        .card.assigned-nominations { /* Nuevo estilo para nóminas asignadas */
+            border-left: 8px solid var(--secondary-accent);
+        }
+        .card.assigned-nominations h3 {
+            color: var(--secondary-accent);
+        }
+        .card.assigned-nominations ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .card.assigned-nominations li {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .card.assigned-nominations li:last-child {
+            border-bottom: none;
+        }
+        .card.assigned-nominations li a {
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: color 0.2s ease;
+        }
+        .card.assigned-nominations li a:hover {
+            color: var(--primary-dark-blue);
+            text-decoration: underline;
+        }
+        .card.assigned-nominations .no-nominations {
+            color: var(--text-medium);
+            font-style: italic;
+            padding-top: 10px;
+        }
+
+
+        /* Estilos de tabla */
         table {
             width: 100%;
-            border-collapse: separate; /* Use separate for rounded corners on cells */
-            border-spacing: 0; /* Remove default spacing */
+            border-collapse: separate; /* Usar separate para esquinas redondeadas en celdas */
+            border-spacing: 0; /* Eliminar espaciado predeterminado */
             margin-top: 20px;
-            border-radius: 8px; /* Rounded corners for the whole table */
-            overflow: hidden; /* Hide content outside border-radius */
+            border-radius: 8px; /* Esquinas redondeadas para toda la tabla */
+            overflow: hidden; /* Ocultar contenido fuera del border-radius */
         }
 
         th,
@@ -238,15 +277,15 @@
             padding: 16px 20px;
             text-align: left;
             border-bottom: 1px solid var(--border-light);
-            border-right: 1px solid var(--border-light); /* Add right border for grid effect */
+            border-right: 1px solid var(--border-light); /* Añadir borde derecho para efecto de cuadrícula */
         }
 
         th:last-child, td:last-child {
-            border-right: none; /* Remove right border on last column */
+            border-right: none; /* Eliminar borde derecho en la última columna */
         }
 
         th {
-            background-color: #e9f0f8; /* Lighter header background */
+            background-color: #e9f0f8; /* Fondo de encabezado más claro */
             font-weight: 600;
             color: var(--primary-dark-blue);
             text-transform: uppercase;
@@ -266,11 +305,11 @@
             transition: background 0.2s ease-in-out;
         }
 
-        /* Form Styling */
+        /* Estilos de formulario */
         form {
             margin-top: 20px;
             display: grid;
-            grid-template-columns: 1fr; /* Default to single column */
+            grid-template-columns: 1fr; /* Por defecto, una sola columna */
             gap: 15px;
         }
 
@@ -335,8 +374,8 @@
             font-size: 1.05em;
             transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
             margin-top: 15px;
-            width: auto; /* Keep button width natural */
-            display: inline-flex; /* For icon alignment */
+            width: auto; /* Mantener el ancho natural del botón */
+            display: inline-flex; /* Para alineación de iconos */
             align-items: center;
             justify-content: center;
             gap: 8px;
@@ -348,21 +387,21 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
 
-        /* Specific button styling */
+        /* Estilo de botón específico */
         .add-establishment button {
             background-color: var(--warning-accent);
-            color: var(--text-dark); /* Darker text for yellow button */
+            color: var(--text-dark); /* Texto más oscuro para botón amarillo */
         }
         .add-establishment button:hover {
-            background-color: #e0a800; /* Darker yellow on hover */
+            background-color: #e0a800; /* Amarillo más oscuro al pasar el ratón */
             color: white;
         }
 
-        .upload-roster button { /* Style for upload roster button */
+        .upload-roster button { /* Estilo para el botón de carga de nómina */
             background-color: var(--info-accent);
         }
         .upload-roster button:hover {
-            background-color: #117a8b; /* Darker cyan on hover */
+            background-color: #117a8b; /* Cian más oscuro al pasar el ratón */
         }
 
 
@@ -388,7 +427,7 @@
             margin-top: 10px;
         }
 
-        /* Responsive Adjustments */
+        /* Ajustes responsivos */
         @media (min-width: 768px) {
             body {
                 flex-direction: row;
@@ -400,16 +439,16 @@
 
             .main-content {
                 width: calc(100% - var(--sidebar-width));
-                padding: 40px 50px; /* More generous horizontal padding */
+                padding: 40px 50px; /* Más padding horizontal */
             }
 
             form {
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Two columns for forms on wider screens */
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Dos columnas para formularios en pantallas más anchas */
             }
 
             form button {
-                grid-column: 1 / -1; /* Make button span all columns */
-                justify-self: start; /* Align button to the start */
+                grid-column: 1 / -1; /* Hacer que el botón abarque todas las columnas */
+                justify-self: start; /* Alinear el botón al inicio */
             }
         }
 
@@ -420,8 +459,8 @@
                 position: relative;
                 padding: 20px 15px;
                 flex-direction: row;
-                justify-content: center; /* Center items on mobile */
-                flex-wrap: wrap; /* Allow wrapping */
+                justify-content: center; /* Centrar elementos en móvil */
+                flex-wrap: wrap; /* Permitir ajuste de línea */
                 text-align: center;
             }
 
@@ -438,27 +477,27 @@
 
             .sidebar h3,
             .sidebar p {
-                width: 100%; /* Take full width */
+                width: 100%; /* Tomar todo el ancho */
                 margin-bottom: 10px;
             }
 
             .sidebar nav {
-                flex-direction: row; /* Horizontal navigation on mobile */
+                flex-direction: row; /* Navegación horizontal en móvil */
                 flex-wrap: wrap;
                 justify-content: center;
-                gap: 10px; /* Space between mobile nav items */
+                gap: 10px; /* Espacio entre elementos de navegación móvil */
             }
 
             .sidebar a {
                 padding: 10px 15px;
                 font-size: 0.9em;
-                width: auto; /* Adjust width for inline items */
-                flex-grow: 1; /* Allow links to grow */
+                width: auto; /* Ajustar ancho para elementos en línea */
+                flex-grow: 1; /* Permitir que los enlaces crezcan */
                 justify-content: center;
             }
 
             .sidebar hr {
-                display: none; /* Hide hr on mobile */
+                display: none; /* Ocultar hr en móvil */
             }
 
             .main-content {
@@ -473,7 +512,7 @@
             }
             .main-content h2::after {
                 left: 50%;
-                transform: translateX(-50%); /* Center underline on mobile */
+                transform: translateX(-50%); /* Centrar subrayado en móvil */
             }
 
             .card {
@@ -484,7 +523,7 @@
             .card h3 {
                 font-size: 1.5em;
                 text-align: center;
-                display: block; /* Stack icon and text */
+                display: block; /* Apilar icono y texto */
             }
 
             form button {
@@ -510,10 +549,8 @@
         <nav>
             {% if usuario == 'admin' %}
             <a href="/colegios"><span class="icon"><i class="fas fa-clipboard-list"></i></span><span>Colegios Evaluados</span></a>
-            {% endif %}
-
-            {% if usuario != 'admin' %}
-            <a href="/relleno_formularios"><span class="icon"><i class="fas fa-file-alt"></i></span><span>Relleno de Formularios</span></a>
+            {% else %} {# Esta es la vista para el rol de doctor #}
+            <a href="/mis_nominas"><span class="icon"><i class="fas fa-file-alt"></i></span><span>Mis Nóminas Asignadas</span></a>
             {% endif %}
 
             <a href="/logout"><span class="icon"><i class="fas fa-sign-out-alt"></i></span><span>Cerrar sesión</span></a>
@@ -521,7 +558,7 @@
     </div>
 
     <div class="main-content">
-        <h2>Panel de Establecimientos</h2>
+        <h2>Panel de Actividades</h2> {# Título general cambiado #}
 
         {% if usuario == 'admin' %}
         <div class="card doctor-ids-table">
@@ -547,7 +584,7 @@
         </div>
 
         <div class="card add-establishment">
-            <h3><i class="fas fa-plus-circle"></i> Agregar nuevo establecimiento</h3>
+            <h3><i class="fas fa-plus-circle"></i> Agregar nuevo establecimiento (Visita programada)</h3>
             <form action="/admin/agregar" method="POST" enctype="multipart/form-data">
                 <div>
                     <label for="nombre">Nombre del establecimiento:</label>
@@ -586,8 +623,8 @@
             </form>
         </div>
 
-        <div class="card upload-roster"> {# New card for Excel roster upload #}
-            <h3><i class="fas fa-file-upload"></i> Cargar Nómina Médica</h3>
+        <div class="card upload-roster"> {# Nueva tarjeta para carga de nómina Excel #}
+            <h3><i class="fas fa-file-upload"></i> Cargar Nómina Médica (Para formularios)</h3>
             <form action="/admin/cargar_nomina" method="POST" enctype="multipart/form-data">
                 <div>
                     <label for="tipo_nomina">Tipo de Nómina:</label>
@@ -598,8 +635,8 @@
                     </select>
                 </div>
                  <div>
-                    <label for="nombre_especifico">Nombre de la Nómina/Referencia:</label>
-                    <input type="text" id="nombre_especifico" name="nombre_especifico" placeholder="Ej: Nómina U. de Chile 2025" required>
+                    <label for="nombre_especifico">Nombre de la Nómina/Referencia (Establecimiento):</label>
+                    <input type="text" id="nombre_especifico" name="nombre_especifico" placeholder="Ej: Clínica Los Andes - Neuro" required>
                 </div>
                 <div>
                     <label for="doctora_nomina">Asignar a doctora (ID Supabase):</label>
@@ -618,6 +655,23 @@
             </form>
         </div>
 
+        {% else %} {# Esta sección es para la vista del doctor #}
+        <div class="card assigned-nominations">
+            <h3><i class="fas fa-tasks"></i> Mis Nóminas/Establecimientos Asignados</h3>
+            <ul>
+                {% if assigned_nominations %}
+                    {% for nomina in assigned_nominations %}
+                    <li>
+                        <a href="/relleno_formularios/{{ nomina.id }}">
+                            <i class="fas fa-file-signature"></i> {{ nomina.nombre_establecimiento }} ({{ nomina.tipo_nomina_display }})
+                        </a>
+                    </li>
+                    {% endfor %}
+                {% else %}
+                    <p class="no-nominations">No tienes nóminas o establecimientos asignados por ahora.</p>
+                {% endif %}
+            </ul>
+        </div>
         {% endif %}
 
         <div class="card calendar">
@@ -645,6 +699,10 @@
         </div>
 
         {% if usuario != 'admin' %}
+        {# Tarjetas originales "establishment-details" para doctores, si aún se necesitan para otros propósitos #}
+        {# Podrían ser redundantes si 'assigned-nominations' se convierte en la forma principal en que los doctores acceden a los formularios #}
+        {# Se mantiene aquí comentado por ahora en caso de que tengas otros tipos de asignaciones de doctor #}
+        {% comment %}
         {% for evento in eventos %}
         <div class="card establishment-details">
             <h3><i class="fas fa-hospital"></i> {{ evento.nombre }}</h3>
@@ -689,6 +747,7 @@
             </form>
         </div>
         {% endfor %}
+        {% endcomment %}
         {% endif %}
 
         <div class="card calendar">

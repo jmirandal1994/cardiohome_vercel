@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Nóminas - CardioHome</title>
+    <!-- Incluir Font Awesome para los iconos si lo usas en el dashboard general -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Enlazar a tu archivo CSS principal si tienes uno global -->
+    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"> -->
+    <style>
+        /* Reutiliza algunas variables de tu dashboard.html si tienes un CSS global */
+        :root {
+            --primary-dark: hsl(210, 29%, 24%);
+            --background-accent: hsl(210, 16%, 98%);
+            --text-dark: hsl(210, 10%, 20%);
+            --border-color: hsl(210, 10%, 88%);
+            --border-radius-base: 12px;
+            --padding-base: 25px;
+            --gap-base: 25px;
+            --accent-blue: hsl(200, 60%, 50%);
+            --accent-green: hsl(140, 60%, 40%);
+            --accent-red: hsl(0, 70%, 55%);
+            --shadow-medium: rgba(0, 0, 0, 0.12);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-accent);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .header-section {
+            background-color: var(--primary-dark);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .header-section h1 {
+            margin: 0;
+            font-size: 2em;
+        }
+        
+        .back-to-dashboard {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: var(--accent-blue);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .back-to-dashboard:hover {
+            background-color: hsl(200, 60%, 40%);
+            transform: translateY(-50%) scale(1.05);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: var(--gap-base) auto;
+            padding: 0 var(--padding-base);
+            flex-grow: 1;
+        }
+
+        .card {
+            background: white;
+            padding: var(--padding-base);
+            border-radius: var(--border-radius-base);
+            box-shadow: 0 4px 18px var(--shadow-medium);
+            margin-bottom: var(--gap-base);
+            border: 1px solid var(--border-color);
+        }
+
+        .card h2 {
+            font-family: 'Montserrat', sans-serif;
+            color: var(--primary-dark);
+            font-size: 1.8em;
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nomina-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .nomina-item {
+            background-color: var(--background-accent);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            padding: 15px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .nomina-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .nomina-title {
+            font-weight: 600;
+            font-size: 1.1em;
+            color: var(--primary-dark);
+        }
+
+        .nomina-details {
+            font-size: 0.95em;
+            color: #555;
+        }
+
+        .nomina-link {
+            display: inline-block;
+            background-color: var(--accent-green);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: 500;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+            align-self: flex-start; /* Alinea el botón a la izquierda */
+        }
+
+        .nomina-link:hover {
+            background-color: hsl(140, 60%, 30%);
+        }
+
+        .no-nominas {
+            text-align: center;
+            color: #777;
+            font-size: 1.1em;
+            padding: 30px;
+            border: 1px dashed var(--border-color);
+            border-radius: var(--border-radius-base);
+            margin-top: 20px;
+        }
+
+        .flash-messages {
+            list-style: none;
+            padding: 10px 0;
+            margin: 0;
+            text-align: center;
+        }
+        .flash-messages li {
+            padding: 8px 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            display: inline-block;
+            font-size: 0.9em;
+        }
+        .flash-messages .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .flash-messages .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .flash-messages .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .flash-messages .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-section">
+        <a href="{{ url_for('dashboard') }}" class="back-to-dashboard">
+            <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+        </a>
+        <h1>Mis Nóminas Asignadas</h1>
+    </div>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flash-messages">
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <h2><i class="fa-solid fa-file-invoice"></i> Nóminas Disponibles</h2>
+            {% if assigned_nominations %}
+                <ul class="nomina-list">
+                    {% for nomina in assigned_nominations %}
+                        <li class="nomina-item">
+                            <span class="nomina-title">{{ nomina.nombre_establecimiento }}</span>
+                            <span class="nomina-details">Tipo: {{ nomina.tipo_nomina_display }}</span>
+                            <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="nomina-link">
+                                <i class="fa-solid fa-edit"></i> Rellenar Formulario
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="no-nominas">
+                    <i class="fa-solid fa-folder-open" style="font-size: 2em; margin-bottom: 10px; display: block;"></i>
+                    No tienes nóminas asignadas en este momento.
+                </p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

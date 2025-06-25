@@ -26,7 +26,7 @@ PDF_BASE = 'FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE.pdf' # Asegúrate de qu
 firebaseConfig = json.loads(os.getenv("FIREBASE_CONFIG", "{}")) # Load from environment variable
 SUPABASE_URL = os.getenv("SUPABASE_URL") or firebaseConfig.get("SUPABASE_URL", "https://rbzxolreglwndvsrxhmg.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY") or firebaseConfig.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDE3ODcsImV4cCI6MjA2MzExNzc4N30.BbzsUhed1Y_dJYWFKLAHqtV4cXdvjF_ihGdQ_Bpov3Y")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or firebaseConfig.get("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImiWF0IjoxNzQ3NTQxNzg3LCJleHAiOjIwNjMxMTc3ODd9.i3ixl5ws3Z3QTxIcZNjI29ZknRmJwwQfUyLmX0Z0khc")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or firebaseConfig.get("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzU0MTc4NywiZXhwIjoyMDYzMTE3Nzg3fQ.i3ixl5ws3Z3QTxIcZNjI29ZknRmJwwQfUyLmX0Z0khc")
 
 SUPABASE_HEADERS = {
     "apikey": SUPABASE_KEY,
@@ -220,7 +220,7 @@ def generar_pdf():
     print(f"DEBUG: generar_pdf - Datos recibidos: nombre={nombre}, rut={rut}, fecha_nac={fecha_nac}")
 
 
-    # Reformat reevaluation date to DD/MM/YYYY if it comes in YYYY-MM-DD format (from HTML date input)
+    # Reformat reevaluation date to DD/MM/YYYY if it comes in Wayback-MM-DD format (from HTML date input)
     if fecha_reeval and "-" in fecha_reeval:
         try:
             fecha_reeval = datetime.strptime(fecha_reeval, '%Y-%m-%d').strftime('%d/%m/%Y')
@@ -692,7 +692,7 @@ def admin_cargar_nomina():
             print(f"DEBUG: Respuesta de Supabase al insertar estudiantes (text): {res_insert_estudiantes.text}")
             flash(f"✅ Nómina '{nombre_especifico}' cargada y {len(estudiantes_a_insertar)} estudiantes procesados exitosamente.", 'success')
         else:
-            flash("⚠️ El archivo de la nómina no contiene estudiantes válidos para procesar.", 'warning')
+            flash("⚠️ The nomination file contains no valid students to process.", 'warning')
 
     except Exception as e:
         print(f"❌ Error al procesar el archivo Excel o insertar estudiantes: {e}")

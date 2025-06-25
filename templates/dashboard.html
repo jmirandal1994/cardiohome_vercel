@@ -4,198 +4,345 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Médico - CardioHome</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
       display: flex;
-      flex-direction: row;
-      background-color: #f4f6f9;
+      flex-direction: column;
+      min-height: 100vh;
     }
 
     .sidebar {
       background-color: #1a73e8;
       color: white;
-      width: 250px;
-      min-height: 100vh;
-      padding: 30px 20px;
-      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      padding: 20px;
     }
 
-    .sidebar img {
-      max-width: 160px;
+    .sidebar h3 {
       margin-bottom: 20px;
     }
 
     .sidebar a {
       color: white;
       text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
       padding: 10px 15px;
-      display: block;
-      border-radius: 8px;
+      border-radius: 6px;
       margin-bottom: 10px;
-      transition: background 0.3s ease;
     }
 
     .sidebar a:hover {
-      background-color: rgba(255, 255, 255, 0.2);
+      background-color: rgba(255, 255, 255, 0.1);
     }
 
     .main-content {
+      padding: 30px;
+      background-color: #f0f2f5;
       flex-grow: 1;
-      padding: 40px;
     }
 
-    h2 {
-      color: #1a73e8;
-      margin-bottom: 20px;
-    }
-
-    .section {
+    .establecimiento {
+      margin-bottom: 30px;
+      padding: 20px;
       background: white;
       border-radius: 12px;
-      padding: 30px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .calendario {
       margin-bottom: 40px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      background: linear-gradient(to right, #ffffff, #f9f9f9);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      border-left: 6px solid #1a73e8;
     }
 
-    canvas {
-      width: 100% !important;
-      height: auto !important;
+    .calendario h3 {
+      margin-bottom: 15px;
+      color: #1a73e8;
+      font-size: 1.4em;
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 10px;
     }
 
-    .proyecto-lista {
-      margin-top: 20px;
+    .calendario table {
+      width: 100%;
+      border-collapse: collapse;
     }
 
-    .proyecto {
-      cursor: pointer;
-      padding: 10px;
-      margin-bottom: 5px;
-      border-radius: 8px;
-      background: #eef3fb;
+    .calendario th,
+    .calendario td {
+      padding: 14px 18px;
+      border-bottom: 1px solid #e0e0e0;
+      text-align: left;
+    }
+
+    .calendario th {
+      background-color: #f6f8fb;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .calendario tr:hover {
+      background-color: #eef3fb;
       transition: background 0.2s ease-in-out;
     }
 
-    .proyecto:hover {
-      background: #d6e5fb;
+    form {
+      margin-top: 10px;
     }
 
-    .colegios {
-      margin-left: 20px;
-      margin-top: 5px;
-      display: none;
+    input[type="file"],
+    input[type="number"],
+    input[type="text"],
+    input[type="date"],
+    select {
+      margin-bottom: 10px;
+      padding: 8px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      width: 100%;
     }
 
-    .colegios.active {
-      display: block;
+    input[type="file"]::file-selector-button {
+      background: #1a73e8;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button {
+      padding: 8px 14px;
+      border: none;
+      background-color: #1a73e8;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #155ab6;
+    }
+
+    .tabla-ids {
+      background: #fff;
+      margin-bottom: 20px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+
+    .tabla-ids table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .tabla-ids th,
+    .tabla-ids td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    @media (min-width: 768px) {
+      body {
+        flex-direction: row;
+      }
+
+      .sidebar {
+        background: rgba(26, 115, 232, 0.95);
+        color: white;
+        padding: 30px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-shadow: 2px 0 15px rgba(0,0,0,0.1);
+        width: 240px;
+        min-height: 100vh;
+      }
+
+      .main-content {
+        width: calc(100% - 240px);
+        padding: 30px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="sidebar">
-    <img src="/static/cardiohome.png" alt="Logo CardioHome" />
-    <h3>CardioHome</h3>
-    <p>Bienvenida, {{ usuario }}</p>
-    <hr style="width: 100%; border-top: 1px solid rgba(255,255,255,0.3); margin: 20px 0;">
+    <img src="/static/cardiohome.png" alt="Logo CardioHome" style="max-width: 160px; display:block; margin: 0 auto 20px;" />
+    <h3 style="text-align: center;">CardioHome</h3>
+    <p style="text-align: center; font-weight: 300;">Bienvenida, {{ usuario }}</p>
+    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.3); margin: 20px 0;">
+
     {% if usuario == 'admin' %}
-    <a href="/colegios">📋 Colegios Evaluados</a>
+    <a href="/colegios"><span>📋</span><span>Colegios Evaluados</span></a>
     {% endif %}
+
     {% if usuario != 'admin' %}
-    <a href="/relleno_formularios">🧠 Relleno de Formularios</a>
+    <a href="/relleno_formularios"><span>🧠</span><span>Relleno de Formularios</span></a>
     {% endif %}
-    <a href="/logout">🚪 Cerrar sesión</a>
-  </div>
 
+    <a href="/logout">Cerrar sesión</a>
+  </div>
+  
   <div class="main-content">
-    <h2>📊 Estadísticas de Evaluaciones</h2>
-
-    <div class="section">
-      <h3>Evaluaciones por Día</h3>
-      <canvas id="graficoEvaluaciones"></canvas>
+    <h2 style="color: #1a73e8; margin-bottom: 25px;">Panel de Establecimientos</h2>
+    <!-- Aquí sigue tu contenido normal -->
+    {% if usuario == 'admin' %}
+    <div class="tabla-ids">
+      <h4>🔎 IDs disponibles de Doctoras</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Usuario</th>
+            <th>ID</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for doc in doctoras %}
+          <tr>
+            <td>{{ doc.nombre }}</td>
+            <td>{{ doc.usuario }}</td>
+            <td>{{ doc.id }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
 
-    <div class="section">
-      <h3>Evaluaciones por Proyecto</h3>
-      <canvas id="graficoProyectos"></canvas>
+    <div class="establecimiento" style="background:#fffbe6; border-left: 6px solid #fbbc04;">
+      <h3>➕ Agregar nuevo establecimiento</h3>
+      <form action="/admin/agregar" method="POST" enctype="multipart/form-data">
+        <label>Nombre del establecimiento:</label>
+        <input type="text" name="nombre" required />
+        <label>Fecha de visita:</label>
+        <input type="date" name="fecha" required />
+        <label>Horario:</label>
+        <input type="text" name="horario" placeholder="Ej: 09:00 - 10:30" required />
+        <label>Observaciones:</label>
+        <input type="text" name="obs" />
+        <label>Asignar a doctora (ID Supabase):</label>
+        <select name="doctora" required>
+          <option value="">Seleccionar doctora</option>
+          {% for doc in doctoras %}
+         <option value="{{ doc.id|e }}">{{ doc.nombre }} ({{ doc.usuario }})</option>
+          {% endfor %}
+        </select>
+        <label>Formulario (PDF, Word o Excel):</label>
+        <input type="file" name="formulario" accept=".pdf,.doc,.docx,.xls,.xlsx" required />
+        <label>Cantidad de alumnos:</label>
+        <input type="number" name="alumnos" min="0" required />
+        <button type="submit">Agregar</button>
+      </form>
+    </div>
+    {% endif %}
 
-      <div class="proyecto-lista">
-        {% for proyecto, data in evaluaciones_por_proyecto.items() %}
-        <div class="proyecto" onclick="toggleColegios('{{ proyecto }}')">
-          📁 <strong>{{ proyecto }}</strong>: {{ data.total }} evaluaciones
-          <div id="colegios-{{ proyecto }}" class="colegios">
-            {% for colegio in data.establecimientos %}
-              <p>🏫 {{ colegio }}</p>
-            {% endfor %}
-          </div>
-        </div>
-        {% endfor %}
-      </div>
+    <div class="calendario">
+      <h3>📅 Calendario de Visitas</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Horario</th>
+            <th>Establecimiento</th>
+            <th>Observaciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for evento in eventos %}
+          <tr>
+            <td>{{ evento.fecha }}</td>
+            <td>{{ evento.horario }}</td>
+            <td>{{ evento.nombre }}</td>
+            <td>{{ evento.observaciones }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if usuario != 'admin' %}
+    {% for evento in eventos %}
+    <div class="establecimiento">
+      <h3>{{ evento.nombre }}</h3>
+
+      {% if evento.url_archivo %}
+      <p>
+        <strong>Formulario base (subido por el administrador):</strong><br>
+        <a href="{{ evento.url_archivo }}" target="_blank" download>
+          Descargar Formulario: {{ evento.nombre_archivo }}
+        </a>
+      </p>
+      {% else %}
+      <p><em>No hay formulario base disponible para este establecimiento.</em></p>
+      {% endif %}
+
+      {% set tiene_formulario = false %}
+      {% for f in formularios %}
+        {% if f.establecimientos_id == evento.id %}
+          {% set tiene_formulario = true %}
+          <p>
+            <a href="{{ f.url_archivo }}" target="_blank" download>
+              Descargar Formulario: {{ f.nombre_archivo }}
+            </a>
+          </p>
+        {% endif %}
+      {% endfor %}
+
+      {% if not tiene_formulario %}
+        <p><em>No hay formularios completados subidos aún.</em></p>
+      {% endif %}
+
+      <form action="/subir/{{ evento.id }}" method="POST" enctype="multipart/form-data">
+        <label>Subir formularios completados (puedes seleccionar varios):</label><br>
+        <input type="file" name="archivo" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm" required><br>
+        <button type="submit">Subir</button>
+      </form>
+
+      <form action="/evaluados/{{ evento.id }}" method="POST">
+        <label for="alumnos">Cantidad de alumnos evaluados:</label><br>
+        <input type="number" name="alumnos" min="0" required><br>
+        <button type="submit">Enviar cantidad</button>
+      </form>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="calendario">
+      <h3>📥 Formularios Subidos por Establecimiento</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Establecimiento</th>
+            <th>Formularios Subidos</th>
+            <th>Ver Archivos</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for est in establecimientos %}
+          <tr>
+            <td>{{ est.nombre }}</td>
+            <td>{{ conteo.get(est.id, 0) }}</td>
+            <td>
+              {% for f in formularios if f.establecimientos_id == est.id %}
+              <a href="{{ f.url_archivo }}" target="_blank">{{ f.nombre_archivo }}</a><br />
+              {% endfor %}
+            </td>
+
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
-
-  <script>
-    // Datos dinámicos desde Flask
-    const dataEvaluaciones = {{ evaluaciones_por_dia|tojson }};
-    const fechas = dataEvaluaciones.map(item => item.fecha);
-    const cantidades = dataEvaluaciones.map(item => item.cantidad);
-
-    const ctx = document.getElementById('graficoEvaluaciones').getContext('2d');
-    new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: fechas,
-        datasets: [{
-          label: 'Evaluaciones realizadas',
-          data: cantidades,
-          borderColor: '#1a73e8',
-          backgroundColor: 'rgba(26,115,232,0.1)',
-          fill: true,
-          tension: 0.3
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { display: false }
-        }
-      }
-    });
-
-    // Datos por proyecto (puedes reutilizar el mismo patrón para otras visualizaciones)
-    const dataProyectos = {
-      labels: [{% for proyecto in evaluaciones_por_proyecto.keys() %}'{{ proyecto }}',{% endfor %}],
-      datasets: [{
-        label: 'Evaluaciones por Proyecto',
-        data: [{% for data in evaluaciones_por_proyecto.values() %}{{ data.total }},{% endfor %}],
-        backgroundColor: '#1a73e8'
-      }]
-    };
-
-    const ctx2 = document.getElementById('graficoProyectos').getContext('2d');
-    new Chart(ctx2, {
-      type: 'bar',
-      data: dataProyectos,
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { display: false }
-        },
-        scales: {
-          y: { beginAtZero: true }
-        }
-      }
-    });
-
-    // Mostrar/ocultar colegios de un proyecto
-    function toggleColegios(id) {
-      const el = document.getElementById(`colegios-${id}`);
-      el.classList.toggle('active');
-    }
-  </script>
 </body>
 </html>

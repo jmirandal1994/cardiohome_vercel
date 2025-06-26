@@ -397,6 +397,19 @@
             background: #7A3FEE;
         }
 
+        button.mark-evaluated-btn {
+            background: var(--accent-blue); /* Color distintivo para el botón de evaluación */
+        }
+        button.mark-evaluated-btn:hover {
+            background: hsl(200, 70%, 45%); /* Tono más oscuro al pasar el mouse */
+        }
+        button.mark-evaluated-btn:disabled {
+            background: #ccc; /* Gris para el botón deshabilitado */
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
         p.info {
             margin: 5px 0;
             font-weight: 500;
@@ -512,7 +525,8 @@
 
         {% if estudiantes %}
             {% for est in estudiantes %}
-            <details class="estudiante" data-nombre="{{ est.nombre | lower }}">
+            {# Added data-evaluated-status to details for JS to easily check if student is evaluated #}
+            <details class="estudiante" data-nombre="{{ est.nombre | lower }}" data-estudiante-id="{{ est.id }}" data-nomina-id="{{ session['current_nomina_id'] }}" data-evaluated-status="{{ 'true' if est.fecha_relleno is not none else 'false' }}">
                 <summary>
                     <span>{{ est.nombre }}</span>
                     <i class="fas fa-chevron-right chevron-icon"></i>
@@ -590,6 +604,13 @@
                                 <button type="button" class="secondary signature-button" onclick="insertarFirma()">
                                     <i class="fas fa-signature"></i> Insertar Firma
                                 </button>
+                                {# NEW BUTTON: Mark as evaluated #}
+                                <button type="button" class="mark-evaluated-btn" 
+                                    {% if est.fecha_relleno is not none %}disabled{% endif %} 
+                                    onclick="marcarComoEvaluado(this)">
+                                    <i class="fas fa-check-circle"></i> 
+                                    {% if est.fecha_relleno is not none %}Evaluado{% else %}Marcar como Evaluado{% endif %}
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -602,7 +623,7 @@
                         <p><strong>Diagnóstico:</strong> <span class="prev-diagnostico">-</span></p>
                         <p><strong>Fecha Reevaluación:</strong> <span class="prev-reevaluacion">-</span></p>
                         <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">-</span></p>
-                        {# Updated prev-sexo span to reflect the <select> value, not the hidden input #}
+                        {# Updated prev-sexo span to reflect the <select> value #}
                         <p><strong>Sexo:</strong> <span class="prev-sexo"></span></p> 
 
 
@@ -725,6 +746,65 @@
                 }, 800);
             }
         }
+
+        async function marcarComoEvaluado(buttonElement) {
+            const form = buttonElement.closest('form');
+            const estudianteId = form.querySelector('input[name="estudiante_id"]').value;
+            const nominaId = form.querySelector('input[name="nomina_id"]').value;
+
+            Swal.fire({
+                title: '¿Marcar como Evaluado?',
+                text: 'Esta acción registrará la evaluación del alumno.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, marcar',
+                cancelButtonText: 'Cancelar'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const response = await fetch('/marcar_evaluado', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: new URLSearchParams({
+                                estudiante_id: estudianteId,
+                                nomina_id: nominaId
+                            })
+                        });
+                        const data = await response.json();
+
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Evaluado!',
+                                text: data.message,
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                window.location.reload(); // Recargar la página para actualizar el conteo y los botones
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: data.message
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Error al marcar como evaluado:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error de Conexión',
+                            text: 'No se pudo conectar con el servidor para marcar la evaluación.'
+                        });
+                    }
+                }
+            });
+        }
+
 
         function mostrarExito() {
             setTimeout(() => {

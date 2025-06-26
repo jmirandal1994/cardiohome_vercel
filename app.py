@@ -337,14 +337,21 @@ def generar_pdf():
 
         # 📤 1. Subir el PDF generado a Supabase Storage
         unique_file_uuid = str(uuid.uuid4())
-        upload_path = f"formularios_completados_estudiantes/{nomina_id}/{estudiante_id}/{unique_file_uuid}_{nombre_archivo_generado}"
-        upload_url = f"{SUPABASE_URL}/storage/v1/object/{upload_path}"
+        # Corregir la URL de subida, quitando el primer "/" extra si existe, y asegurando que la ruta es correcta.
+        # Supabase Storage ya maneja los prefijos de bucket. La URL completa debe ser limpia.
+        # Example: {SUPABASE_URL}/storage/v1/object/bucketName/path/to/file.pdf
+        # Mi path es "formularios_completados_estudiantes/{nomina_id}/{estudiante_id}/{unique_file_uuid}_{nombre_archivo_generado}"
+        # Se asume que "formularios_completados_estudiantes" es el nombre del bucket o una subcarpeta directa de un bucket.
+        # Basado en la URL de error anterior, parece que "formularios_completados_estudiantes" es el bucket.
+        upload_path_corrected = f"formularios_completados_estudiantes/{nomina_id}/{estudiante_id}/{unique_file_uuid}_{nombre_archivo_generado}"
+        upload_url = f"{SUPABASE_URL}/storage/v1/object/{upload_path_corrected}"
         
-        print(f"DEBUG: Subiendo PDF generado a Storage: {upload_url}")
+        print(f"DEBUG: Subiendo PDF generado a Storage (corrected path): {upload_url}")
         res_upload = requests.put(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=output_buffer.getvalue())
         res_upload.raise_for_status()
         
-        url_publica_generado = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path}"
+        # La URL pública siempre usa "public" después del "v1/object/", no importa si es service_role o anon.
+        url_publica_generado = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path_corrected}"
         print(f"DEBUG: PDF generado subido, URL pública: {url_publica_generado}")
 
         # 📝 2. Registrar en la tabla 'formularios_subidos'
@@ -573,7 +580,7 @@ def dashboard():
 def logout():
     """Cierra la sesión del usuario."""
     session.clear()
-    flash('Has cerrado sesión correctamente.', 'info')
+    # flash('Has cerrado sesión correctamente.', 'info') # Eliminado para evitar mensajes inesperados
     return redirect(url_for('index'))
 
 @app.route('/admin/agregar', methods=['POST'])

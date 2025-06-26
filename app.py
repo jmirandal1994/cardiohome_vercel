@@ -4,47 +4,65 @@ import requests
 import base64
 from werkzeug.utils import secure_filename
 from datetime import datetime, date
-from openpyxl import load_workbook # Necesario si se usa openpyxl directamente en algún lugar
+from openpyxl import load_workbook
 from PyPDF2 import PdfReader, PdfWriter
 from PyPDF2.generic import BooleanObject, NameObject, NumberObject, DictionaryObject
 import mimetypes
 import io
 import uuid
 import json
-import pandas as pd # Importado para un manejo más robusto de Excel/CSV
-import unicodedata # Necesario para la función normalizar
+import pandas as pd
+import unicodedata
+
+# Importaciones específicas para Google Drive API
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from google.auth.transport.requests import Request
+
 
 app = Flask(__name__)
-# ¡IMPORTANTE! Cambia esta clave por una cadena larga y aleatoria en producción.
-# Se recomienda encarecidamente usar variables de entorno para esta clave.
 app.secret_key = os.getenv("SECRET_KEY", "clave_super_segura_cardiohome_2025")
-ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'xls', 'xlsx', 'csv'} # Añadido 'csv' para las nóminas
-PDF_BASE = 'FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE.pdf' # Asegúrate de que este archivo exista en la carpeta 'static'
+ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'xls', 'xlsx', 'csv'}
+PDF_BASE = 'FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE.pdf' 
 
 # -------------------- Supabase Configuration --------------------
-# Estas variables deben ser inyectadas por el entorno de Vercel (o tu entorno de despliegue).
-# Se incluyen valores por defecto para pruebas locales, pero NUNCA deben usarse en producción.
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://rbzxolreglwndvsrxhmg.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDE3ODcsImV4cCI6MjA2MzExNzc4N30.BbzsUhed1Y_dJYWFKLAHqtV4cXdvjF_ihGdQ_Bpov3Y")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImiYXRiOjE3NDc1NDE3ODcsImV4cCI6MjA2MzExNzc4N30.i3ixl5ws3Z3QTxIcZNjI29ZknRmJwwQfUyLmX0Z0khc")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDE3ODcsImV4cCI6MjA2MzExNzc4N30.BbzsUhed1Y_dJYWFKLAHqtY4cXdvjF_ihGdQ_Bpov3Y")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImiYXRiOjE3NDc1NDE3ODcsImV4cCI6MjA2MzExNzc4N30.i3ixl5ws3Z3QTxIcZNjI29ZknRmX0Z0khc")
 
 SUPABASE_HEADERS = {
     "apikey": SUPABASE_KEY,
     "Authorization": f"Bearer {SUPABASE_KEY}",
     "Content-Type": "application/json",
-    "Accept": "application/json" # Asegurarse de que acepte JSON
+    "Accept": "application/json" 
 }
-SUPABASE_SERVICE_HEADERS = { # Cabeceras para service_role (permisos elevados, ¡usar solo en el backend!)
+SUPABASE_SERVICE_HEADERS = {
     "apikey": SUPABASE_SERVICE_KEY,
     "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
     "Content-Type": "application/json",
-    "Accept": "application/json" # Asegurarse de que acepte JSON
+    "Accept": "application/json" 
 }
 
-# Configuración de SendGrid (asegúrate de tener tus claves en las variables de entorno)
+# Configuración de SendGrid
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
-SENDGRID_FROM = os.getenv("SENDGRID_FROM_EMAIL", 'your_sendgrid_email@example.com') # ¡Cambia esto a tu correo verificado en SendGrid!
-SENDGRID_TO = os.getenv("SENDGRID_ADMIN_EMAIL", 'destination_admin_email@example.com') # Correo al que se enviarán las notificaciones
+SENDGRID_FROM = os.getenv("SENDGRID_FROM_EMAIL", 'your_sendgrid_email@example.com')
+SENDGRID_TO = os.getenv("SENDGRID_ADMIN_EMAIL", 'destination_admin_email@example.com')
+
+# -------------------- Google Drive API Configuration (Empresa) --------------------
+# Estas variables deben obtenerse de Google Cloud Console y el script get_refresh_token.py
+# Es CRUCIAL que se configuren como variables de entorno en Vercel para producción.
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "YOUR_GOOGLE_CLIENT_ID") 
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "YOUR_GOOGLE_CLIENT_SECRET")
+# Este es el Refresh Token de la cuenta de Google Drive de la EMPRESA.
+# Se obtiene una sola vez con el script get_refresh_token.py (ejecución local temporal).
+GOOGLE_DRIVE_REFRESH_TOKEN = os.getenv("GOOGLE_DRIVE_REFRESH_TOKEN", None)
+# ID de la carpeta padre en Google Drive (ej. "Formularios CardioHome")
+# Si se deja None, las carpetas de colegios se crearán en la raíz de "Mi unidad".
+GOOGLE_DRIVE_PARENT_FOLDER_ID = os.getenv("GOOGLE_DRIVE_PARENT_FOLDER_ID", None)
+
+SCOPES = ['https://www.googleapis.com/auth/drive.file'] # Acceso solo a archivos creados o abiertos por la app
+
 
 # -------------------- Utilidades --------------------
 def permitido(filename):
@@ -62,14 +80,10 @@ def calculate_age(birth_date):
     return f"{years} años con {months} meses"
 
 def guess_gender(name):
-    """Intenta adivinar el género basado en el nombre (heurística simple y con librería names si disponible)."""
-    # Puedes ampliar estas listas o usar una librería más robusta si necesitas mayor precisión
+    """Intenta adivinar el género basado en el nombre (heurística simple)."""
     name_lower = name.lower().strip()
-    
-    # Intenta con la primera palabra para nombres compuestos
     first_word = name_lower.split(' ')[0]
 
-    # Heurística simple para nombres en español
     nombres_masculinos = ["juan", "pedro", "luis", "carlos", "jose", "manuel", "alejandro", "ignacio", "felipe", "vicente", "emilio", "cristobal", "mauricio", "diego", "jean", "agustin", "joaquin", "thomas", "martin", "angel", "alonso"]
     nombres_femeninos = ["maria", "ana", "sofia", "laura", "paula", "trinidad", "mariana", "lizeth", "alexandra", "lisset"] 
 
@@ -78,14 +92,11 @@ def guess_gender(name):
     elif first_word in nombres_femeninos:
         return 'F'
     
-    # Si no se encuentra en las listas, intenta con la terminación (menos fiable)
     if name_lower.endswith(('o', 'n', 'r', 'l')):
         return 'M'
-    if name_lower.endswith(('a', 'e')): # 'e' es ambiguo, pero puede ayudar
+    if name_lower.endswith(('a', 'e')):
         return 'F'
-
-    # Fallback general si no se puede inferir
-    return "M" # Por defecto masculino si no hay pistas claras
+    return "M" 
 
 def normalizar(texto):
     """Normaliza texto: quita espacios, minúsculas, tildes y reemplaza espacios por guiones bajos."""
@@ -114,7 +125,7 @@ def enviar_correo_sendgrid(asunto, cuerpo, adjuntos=None):
             {
                 "content": adj["content"],
                 "filename": adj["filename"],
-                "type": "application/octet-stream", # Tipo genérico para archivos binarios
+                "type": "application/octet-stream", 
                 "disposition": "attachment"
             } for adj in adjuntos
         ]
@@ -134,27 +145,140 @@ def enviar_correo_sendgrid(asunto, cuerpo, adjuntos=None):
     except Exception as e:
         print(f"Error al enviar correo con SendGrid: {e}")
 
+# -------------------- Google Drive API Functions (Empresa) --------------------
+
+_COMPANY_DRIVE_CREDS = None # Variable global para almacenar las credenciales de la empresa
+
+def get_company_google_credentials():
+    """
+    Obtiene y refresca las credenciales de Google para la cuenta de la empresa.
+    Utiliza el refresh token almacenado en las variables de entorno.
+    Almacena las credenciales en una variable global para reutilización.
+    """
+    global _COMPANY_DRIVE_CREDS
+
+    if _COMPANY_DRIVE_CREDS and _COMPANY_DRIVE_CREDS.valid:
+        print("DEBUG: Credenciales de Google Drive de empresa válidas y en caché.")
+        return _COMPANY_DRIVE_CREDS
+
+    if not GOOGLE_DRIVE_REFRESH_TOKEN:
+        print("ERROR: GOOGLE_DRIVE_REFRESH_TOKEN no está configurado en las variables de entorno.")
+        return None
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        print("ERROR: GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET no están configurados.")
+        return None
+
+    creds = Credentials(
+        None, # access_token es None inicialmente, se refrescará
+        refresh_token=GOOGLE_DRIVE_REFRESH_TOKEN,
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=GOOGLE_CLIENT_ID,
+        client_secret=GOOGLE_CLIENT_SECRET,
+        scopes=SCOPES
+    )
+    
+    # Intenta refrescar el token de acceso
+    try:
+        print("DEBUG: Intentando refrescar token de Google Drive de empresa...")
+        creds.refresh(Request())
+        _COMPANY_DRIVE_CREDS = creds # Almacena en caché
+        print("DEBUG: Token de acceso de Google Drive de empresa refrescado y credenciales obtenidas.")
+        return creds
+    except Exception as e:
+        print(f"ERROR: No se pudo refrescar el token de Google Drive de empresa: {e}")
+        return None
+
+def find_or_create_drive_folder(service, folder_name, parent_folder_id=None):
+    """
+    Busca una carpeta por nombre. Si no existe, la crea.
+    :param service: Objeto de servicio de Google Drive API.
+    :param folder_name: Nombre de la carpeta a buscar o crear.
+    :param parent_folder_id: (Opcional) ID de la carpeta padre donde buscar/crear.
+    :return: ID de la carpeta encontrada o creada, o None si falla.
+    """
+    try:
+        # Buscar la carpeta
+        query = f"name = '{folder_name}' and mimeType = 'application/vnd.google-apps.folder'"
+        if parent_folder_id:
+            query += f" and '{parent_folder_id}' in parents"
+        
+        results = service.files().list(q=query, spaces='drive', fields='files(id, name)').execute()
+        items = results.get('files', [])
+
+        if items:
+            print(f"DEBUG: Carpeta '{folder_name}' encontrada con ID: {items[0]['id']}")
+            return items[0]['id']
+        else:
+            # Crear la carpeta si no existe
+            file_metadata = {
+                'name': folder_name,
+                'mimeType': 'application/vnd.google-apps.folder'
+            }
+            if parent_folder_id:
+                file_metadata['parents'] = [parent_folder_id]
+            
+            folder = service.files().create(body=file_metadata, fields='id').execute()
+            print(f"DEBUG: Carpeta '{folder_name}' creada con ID: {folder.get('id')}")
+            return folder.get('id')
+    except HttpError as error:
+        print(f"ERROR: Error al buscar o crear carpeta en Google Drive: {error}")
+        return None
+    except Exception as e:
+        print(f"ERROR: Error inesperado en find_or_create_drive_folder: {e}")
+        return None
+
+def upload_pdf_to_google_drive(creds, file_content_io, file_name, folder_id=None):
+    """
+    Sube un archivo PDF a Google Drive.
+    :param creds: Objeto Credentials autenticado de Google.
+    :param file_content_io: io.BytesIO que contiene el contenido del archivo PDF.
+    :param file_name: Nombre del archivo a subir.
+    :param folder_id: (Opcional) ID de la carpeta de Google Drive donde se subirá el archivo.
+                      Si no se especifica, se subirá a la raíz de My Drive.
+    :return: ID del archivo subido en Google Drive o None si falla.
+    """
+    try:
+        service = build('drive', 'v3', credentials=creds)
+        
+        file_metadata = {'name': file_name, 'mimeType': 'application/pdf'}
+        if folder_id:
+            file_metadata['parents'] = [folder_id]
+
+        file_content_io.seek(0) # Asegurarse de que el cursor esté al inicio del stream
+
+        file = service.files().create(
+            body=file_metadata,
+            media_body=file_content_io, # Pasar el objeto BytesIO directamente
+            media_mime_type='application/pdf', 
+            fields='id'
+        ).execute()
+
+        print(f"DEBUG: Archivo subido a Google Drive. ID: {file.get('id')}")
+        return file.get('id')
+
+    except HttpError as error:
+        print(f"ERROR: Ocurrió un error al subir a Google Drive: {error}")
+        return None
+    except Exception as e:
+        print(f"ERROR: Error inesperado al subir a Google Drive: {e}")
+        return None
+
 # -------------------- Rutas de la Aplicación --------------------
 
 @app.route('/relleno_formularios/<nomina_id>', methods=['GET'])
 def relleno_formularios(nomina_id):
-    """
-    Muestra el formulario de relleno para una nómina específica.
-    Carga los estudiantes asociados a la `nomina_id` desde Supabase.
-    """
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
     print(f"DEBUG: Accediendo a /relleno_formularios con nomina_id: {nomina_id}")
     print(f"DEBUG: ID de usuario en sesión (doctora) para /relleno_formularios: {session.get('usuario_id')}")
 
-    # 1. Obtener la información de la nómina específica (nombre, tipo, etc.)
     nomina_data = None
     try:
         url_nomina = f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}&select=nombre_nomina,tipo_nomina"
         print(f"DEBUG: URL para obtener nómina en /relleno_formularios: {url_nomina}")
         res_nomina = requests.get(url_nomina, headers=SUPABASE_HEADERS)
-        res_nomina.raise_for_status() # Lanza excepción para errores HTTP (4xx o 5xx)
+        res_nomina.raise_for_status()
         nomina_data = res_nomina.json()
         print(f"DEBUG: Datos de la nómina recibidos en /relleno_formularios: {nomina_data}")
 
@@ -176,7 +300,6 @@ def relleno_formularios(nomina_id):
         flash('Error inesperado al cargar la información de la nómina.', 'error')
         return redirect(url_for('dashboard'))
 
-    # 2. Obtener los estudiantes asociados a esta nómina
     estudiantes = []
     total_forms_completed_for_nomina = 0
     try:
@@ -189,7 +312,6 @@ def relleno_formularios(nomina_id):
 
 
         for est in estudiantes_raw:
-            # Asegurarse de que fecha_nacimiento es un objeto date para calculate_age
             if 'fecha_nacimiento' in est and isinstance(est['fecha_nacimiento'], str):
                 try:
                     fecha_nac_obj = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
@@ -202,7 +324,6 @@ def relleno_formularios(nomina_id):
                 est['fecha_nacimiento_formato'] = 'N/A'
                 est['edad'] = 'N/A'
             
-            # Contar formularios completados para esta nómina
             if est.get('fecha_relleno') is not None:
                 total_forms_completed_for_nomina += 1
 
@@ -222,34 +343,29 @@ def relleno_formularios(nomina_id):
     return render_template('formulario_relleno.html', 
                            estudiantes=estudiantes, 
                            total_forms_completed_for_nomina=total_forms_completed_for_nomina,
-                           establecimiento_nombre=nomina['nombre_nomina']) # Pasar el nombre del establecimiento aquí
+                           establecimiento_nombre=nomina['nombre_nomina'])
 
 
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
-    """
-    Genera un archivo PDF rellenado con los datos del formulario.
-    También persiste los datos del formulario en Supabase y actualiza 'fecha_relleno'.
-    """
     if 'usuario' not in session:
         flash('Debes iniciar sesión para acceder a esta página.', 'danger')
         return redirect(url_for('index'))
 
-    # Datos del formulario recibidos del POST
     estudiante_id = request.form.get('estudiante_id')
     nomina_id = request.form.get('nomina_id')
     nombre = request.form.get('nombre')
     rut = request.form.get('rut')
-    fecha_nac = request.form.get('fecha_nacimiento') # Viene ya formateado desde el HTML
+    fecha_nac = request.form.get('fecha_nacimiento')
     edad = request.form.get('edad')
     nacionalidad = request.form.get('nacionalidad')
-    sexo = request.form.get('sexo') # Ahora viene del <select>
+    sexo = request.form.get('sexo')
     estado_general = request.form.get('estado')
     diagnostico = request.form.get('diagnostico')
-    plazo_reevaluacion_str = request.form.get('plazo') # El valor numérico del select
+    plazo_reevaluacion_str = request.form.get('plazo')
     fecha_reeval = request.form.get('fecha_reevaluacion')
     derivaciones = request.form.get('derivaciones')
-    fecha_eval = datetime.today().strftime('%d/%m/%Y') # Fecha de la evaluación actual
+    fecha_eval = datetime.today().strftime('%d/%m/%Y')
 
     print(f"DEBUG: generar_pdf - Datos recibidos: nombre={nombre}, rut={rut}, sexo={sexo}, diagnostico={diagnostico}, fecha_reeval={fecha_reeval}")
 
@@ -261,26 +377,24 @@ def generar_pdf():
 
     # 1. Persistir los datos del formulario en Supabase
     try:
-        # Convertir fecha_reevaluacion a formato YYYY-MM-DD para Supabase si no lo está ya
         fecha_reevaluacion_db = fecha_reeval
-        if fecha_reeval and "/" in fecha_reeval: # Si viene de la base de datos en DD/MM/YYYY
+        if fecha_reeval and "/" in fecha_reeval:
             try:
                 fecha_reevaluacion_db = datetime.strptime(fecha_reeval, '%d/%m/%Y').strftime('%Y-%m-%d')
             except ValueError:
-                pass # Si no es el formato esperado, se deja como está.
+                pass
 
-        # Data a actualizar en Supabase
         update_data = {
             'sexo': sexo,
             'estado_general': estado_general,
             'diagnostico': diagnostico,
             'fecha_reevaluacion': fecha_reevaluacion_db,
             'derivaciones': derivaciones,
-            'fecha_relleno': str(date.today()) # Marcar la fecha actual de llenado
+            'fecha_relleno': str(date.today())
         }
         
         print(f"DEBUG: Datos a actualizar en Supabase para estudiante {estudiante_id}: {update_data}")
-        response_db = requests.patch( # Usar PATCH para actualizar parcialmente
+        response_db = requests.patch(
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}",
             headers=SUPABASE_HEADERS,
             json=update_data
@@ -304,14 +418,13 @@ def generar_pdf():
         return redirect(url_for('dashboard'))
 
     # 2. Generar el PDF con los datos actualizados
-    # Reformatear fecha de reevaluación a DD/MM/YYYY si viene en formato YYYY-MM-DD (del date input HTML)
     if fecha_reeval and "-" in fecha_reeval:
         try:
             fecha_reeval_pdf = datetime.strptime(fecha_reeval, '%Y-%m-%d').strftime('%d/%m/%Y')
         except ValueError:
-            fecha_reeval_pdf = fecha_reeval # Si no es YYYY-MM-DD, se deja como está para el PDF
+            fecha_reeval_pdf = fecha_reeval
     else:
-        fecha_reeval_pdf = fecha_reeval # Si ya viene en DD/MM/YYYY o es nulo
+        fecha_reeval_pdf = fecha_reeval
 
     ruta_pdf = os.path.join("static", "FORMULARIO.pdf")
     if not os.path.exists(ruta_pdf):
@@ -323,10 +436,8 @@ def generar_pdf():
     try:
         reader = PdfReader(ruta_pdf)
         writer = PdfWriter()
-        writer.add_page(reader.pages[0]) # Añadir la primera página del PDF base
+        writer.add_page(reader.pages[0])
 
-        # Diccionario de campos a rellenar en el PDF.
-        # ¡Asegúrate de que las claves aquí (ej. "nombre", "rut") coincidan exactamente con los nombres de los campos en tu PDF editable!
         campos = {
             "nombre": nombre,
             "rut": rut,
@@ -334,39 +445,34 @@ def generar_pdf():
             "nacionalidad": nacionalidad,
             "edad": edad,
             "diagnostico_1": diagnostico,
-            "diagnostico_2": diagnostico, # Si tienes un campo secundario para el mismo diagnóstico
+            "diagnostico_2": diagnostico,
             "estado_general": estado_general,
             "fecha_evaluacion": fecha_eval,
             "fecha_reevaluacion": fecha_reeval_pdf,
             "derivaciones": derivaciones,
-            "sexo_f": "X" if sexo == "F" else "", # Marcar casilla de sexo femenino
-            "sexo_m": "X" if sexo == "M" else "", # Marcar casilla de sexo masculino
+            "sexo_f": "X" if sexo == "F" else "",
+            "sexo_m": "X" if sexo == "M" else "",
         }
         print(f"DEBUG: Fields to fill in PDF: {campos}")
 
-        # Asegurarse de que /AcroForm exista en el objeto raíz del PDF
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({
                 NameObject("/AcroForm"): DictionaryObject()
             })
 
-        # Actualizar los valores de los campos del formulario en la página
         writer.update_page_form_field_values(writer.pages[0], campos)
 
-        # Forzar la visualización de los campos rellenados sin necesidad de hacer clic
         writer._root_object["/AcroForm"].update({
             NameObject("/NeedAppearances"): BooleanObject(True)
         })
 
-        # Generar el PDF final en memoria
         output = io.BytesIO()
         writer.write(output)
-        output.seek(0) # Mover el cursor al inicio del stream
+        output.seek(0)
 
-        # Preparar el nombre del archivo para la descarga
         nombre_archivo_descarga = f"{nombre.replace(' ', '_')}_{rut}_formulario.pdf"
         print(f"DEBUG: PDF generado y listo para descarga: {nombre_archivo_descarga}")
-        flash('PDF generado correctamente.', 'success') # Muestra un flash message de éxito antes de la descarga
+        flash('PDF generado correctamente.', 'success')
         return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
 
     except Exception as e:
@@ -379,15 +485,12 @@ def generar_pdf():
 
 @app.route('/marcar_evaluado', methods=['POST'])
 def marcar_evaluado():
-    """
-    Marca a un estudiante como evaluado, actualizando su fecha_relleno en Supabase.
-    """
     if 'usuario' not in session:
         return jsonify({"success": False, "message": "No autorizado"}), 401
 
     estudiante_id = request.form.get('estudiante_id')
     nomina_id = request.form.get('nomina_id')
-    doctora_id = session.get('usuario_id') # Obtener el ID de la doctora de la sesión
+    doctora_id = session.get('usuario_id')
 
     print(f"DEBUG: Recibida solicitud para marcar como evaluado: estudiante_id={estudiante_id}, nomina_id={nomina_id}, doctora_id={doctora_id}")
 
@@ -396,18 +499,18 @@ def marcar_evaluado():
 
     try:
         update_data = {
-            'fecha_relleno': str(date.today()), # Registrar la fecha actual
-            'doctora_evaluadora_id': doctora_id # Opcional: Registrar qué doctora evaluó al alumno
+            'fecha_relleno': str(date.today()),
+            'doctora_evaluadora_id': doctora_id
         }
         
         response = requests.patch(
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}",
-            headers=SUPABASE_HEADERS, # Usar HEADERS normales para la API, RLS debe permitir PATCH por el usuario autenticado
+            headers=SUPABASE_HEADERS,
             json=update_data
         )
         response.raise_for_status()
         
-        if response.status_code == 200 or response.status_code == 204: # 200 OK or 204 No Content for successful PATCH
+        if response.status_code == 200 or response.status_code == 204:
             print(f"DEBUG: Estudiante {estudiante_id} marcado como evaluado y guardado en Supabase.")
             return jsonify({"success": True, "message": "Estudiante marcado como evaluado."})
         else:
@@ -423,24 +526,22 @@ def marcar_evaluado():
 
 @app.route('/')
 def index():
-    """Muestra la página de inicio de sesión."""
     return render_template('login.html')
 
 @app.route('/login', methods=['POST'])
 def login():
-    """Procesa el intento de inicio de sesión."""
     usuario = request.form['username']
     clave = request.form['password']
     url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario}&password=eq.{clave}"
     print(f"DEBUG: Intento de login para usuario: {usuario}, URL: {url}")
     try:
         res = requests.get(url, headers=SUPABASE_HEADERS)
-        res.raise_for_status() # Lanza una excepción para errores HTTP
+        res.raise_for_status()
         data = res.json()
         print(f"DEBUG: Respuesta Supabase login: {data}")
         if data:
             session['usuario'] = usuario
-            session['usuario_id'] = data[0]['id'] # <-- ID de la doctora/admin que inicia sesión
+            session['usuario_id'] = data[0]['id']
             print(f"DEBUG: Sesión iniciada: usuario={session['usuario']}, usuario_id={session['usuario_id']}")
             flash(f'¡Bienvenido, {usuario}!', 'success')
             return redirect(url_for('dashboard'))
@@ -453,7 +554,6 @@ def login():
 
 @app.route('/dashboard')
 def dashboard():
-    """Muestra el panel de control del usuario (admin o doctora)."""
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
@@ -461,26 +561,22 @@ def dashboard():
     usuario_id = session.get('usuario_id')
     print(f"DEBUG: Accediendo a dashboard para usuario: {usuario}, ID: {usuario_id}")
 
-    # --- Inicialización de variables para evitar UnboundLocalError ---
     doctoras = []
     establecimientos_admin_list = []
     admin_nominas_cargadas = []
-    conteo = {} # Conteo de formularios subidos por establecimiento (para admin)
-    evaluaciones_doctora = 0 # Conteo de evaluaciones para la doctora logueada
+    conteo = {}
+    evaluaciones_doctora = 0 # This variable is for the individual doctor's count
 
-    # --- Lógica para Eventos/Establecimientos (Visitas Programadas) ---
-    campos_establecimientos = "id,nombre,fecha,horario,observaciones,cantidad_alumnos,url_archivo,nombre_archivo,doctora_id" # Added doctora_id
+    campos_establecimientos = "id,nombre,fecha,horario,observaciones,cantidad_alumnos,url_archivo,nombre_archivo,doctora_id"
     eventos = []
     try:
         if usuario != 'admin':
-            # Para doctores, solo sus eventos asignados
             url_eventos = (
                 f"{SUPABASE_URL}/rest/v1/establecimientos"
-                f"?doctora_id=eq.{usuario_id}" # Filtra por el ID de la doctora logueada
+                f"?doctora_id=eq.{usuario_id}"
                 f"&select={campos_establecimientos}"
             )
         else:
-            # Para admin, todos los eventos
             url_eventos = f"{SUPABASE_URL}/rest/v1/establecimientos?select={campos_establecimientos}"
             
         print(f"DEBUG: URL para obtener eventos: {url_eventos}")
@@ -490,14 +586,12 @@ def dashboard():
         print(f"DEBUG: Eventos recibidos: {eventos}")
 
         if isinstance(eventos, list):
-            # Ordenar por horario si existe y es válido
             eventos.sort(key=lambda e: e.get('horario', '').split(' - ')[0] if e.get('horario') else '')
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener eventos: {e}")
         print(f"Response text: {res_eventos.text if 'res_eventos' in locals() else 'No response'}")
         flash('Error al cargar el calendario de visitas.', 'error')
 
-    # --- Lógica para Formularios Subidos (General, por cualquier doctora) ---
     formularios = []
     try:
         url_formularios_subidos = f"{SUPABASE_URL}/rest/v1/formularios_subidos"
@@ -511,14 +605,14 @@ def dashboard():
         print(f"Response text: {res_formularios.text if 'res_formularios' in locals() else 'No response'}")
         flash('Error al cargar los formularios subidos.', 'error')
 
-    # --- Lógica para Nóminas Asignadas (Solo para Doctores) ---
     assigned_nominations = []
+    doctor_performance_data = {} # Initialize for admin view
     if usuario != 'admin':
         try:
             url_nominas_asignadas = (
                 f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-                f"?doctora_id=eq.{usuario_id}" # Filtra por el ID de la doctora logueada
-                f"&select=id,nombre_nomina,tipo_nomina,doctora_id" # Added doctora_id for debugging
+                f"?doctora_id=eq.{usuario_id}"
+                f"&select=id,nombre_nomina,tipo_nomina,doctora_id"
             )
             print(f"DEBUG: URL para obtener nóminas asignadas (doctor): {url_nominas_asignadas}")
             res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_HEADERS)
@@ -530,18 +624,16 @@ def dashboard():
                 display_name = nom['tipo_nomina'].replace('_', ' ').title()
                 assigned_nominations.append({
                     'id': nom['id'],
-                    'nombre_establecimiento': nom['nombre_nomina'], # Renamed for consistency in the template
+                    'nombre_establecimiento': nom['nombre_nomina'],
                     'tipo_nomina_display': display_name
                 })
             print(f"DEBUG: Nóminas asignadas procesadas para plantilla: {assigned_nominations}")
             
-            # Contar evaluaciones para la doctora logueada
-            # Se hace una consulta separada para mayor precisión y rendimiento si la tabla es grande
+            # Conteo de evaluaciones solo para la doctora loggeada (no admin)
             url_evaluaciones_doctora = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?doctora_evaluadora_id=eq.{usuario_id}&fecha_relleno.not.is.null&select=count"
             print(f"DEBUG: URL para contar evaluaciones de doctora: {url_evaluaciones_doctora}")
             res_evaluaciones_doctora = requests.get(url_evaluaciones_doctora, headers=SUPABASE_HEADERS)
             res_evaluaciones_doctora.raise_for_status()
-            # La cabecera Range-Unit content-range contiene el conteo total
             content_range = res_evaluaciones_doctora.headers.get('Content-Range')
             if content_range:
                 try:
@@ -550,16 +642,13 @@ def dashboard():
                     evaluaciones_doctora = 0
             print(f"DEBUG: Total de evaluaciones para doctora {usuario_id}: {evaluaciones_doctora}")
 
-
         except requests.exceptions.RequestException as e:
             print(f"❌ Error al obtener nóminas asignadas o contar evaluaciones: {e}")
             print(f"Response text: {res_nominas_asignadas.text if 'res_nominas_asignadas' in locals() else 'No response'}")
             flash('Error al cargar sus nóminas asignadas o conteo de evaluaciones.', 'error')
 
-    # --- Lógica específica del Administrador (mostrar listas de doctores y conteos) ---
     if usuario == 'admin':
         try:
-            # Obtener lista completa de doctoras
             url_doctoras = f"{SUPABASE_URL}/rest/v1/doctoras"
             print(f"DEBUG: URL para obtener doctoras (admin): {url_doctoras}")
             res_doctoras = requests.get(url_doctoras, headers=SUPABASE_HEADERS)
@@ -572,7 +661,6 @@ def dashboard():
             flash('Error al cargar la lista de doctoras para administración.', 'error')
 
         try:
-            # Obtener todos los establecimientos (no solo los del admin logueado)
             url_establecimientos_admin = f"{SUPABASE_URL}/rest/v1/establecimientos?select=id,nombre"
             print(f"DEBUG: URL para obtener establecimientos (admin): {url_establecimientos_admin}")
             res_establecimientos = requests.get(url_establecimientos_admin, headers=SUPABASE_HEADERS)
@@ -584,14 +672,12 @@ def dashboard():
             print(f"Response text: {res_establecimientos.text if 'res_establecimientos' in locals() else 'No response'}")
 
 
-        # Contar formularios subidos por establecimiento
         for f in formularios:
             if isinstance(f, dict) and 'establecimientos_id' in f:
                 est_id = f['establecimientos_id']
                 conteo[est_id] = conteo.get(est_id, 0) + 1
         print(f"DEBUG: Conteo de formularios por establecimiento: {conteo}")
 
-        # Obtener nóminas cargadas por el admin (todas las nóminas)
         try:
             url_admin_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina,tipo_nomina,doctora_id,url_excel_original,nombre_excel_original"
             print(f"DEBUG: URL para obtener nóminas cargadas por admin: {url_admin_nominas}")
@@ -603,33 +689,52 @@ def dashboard():
             print(f"❌ Error al obtener nóminas cargadas por admin: {e}")
             print(f"Response text: {res_admin_nominas.text if 'res_admin_nominas' in locals() else 'No response'}")
             flash('Error al cargar la lista de nóminas en la vista de administrador.', 'error')
+        
+        # --- NUEVA LÓGICA: Obtener rendimiento por doctora (para admin) ---
+        for doc in doctoras:
+            doctor_id = doc['id']
+            try:
+                # Query to count completed forms for this specific doctor
+                url_doctor_forms = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?doctora_evaluadora_id=eq.{doctor_id}&fecha_relleno.not.is.null&select=count"
+                print(f"DEBUG: URL para rendimiento de doctora {doc['usuario']}: {url_doctor_forms}")
+                res_doctor_forms = requests.get(url_doctor_forms, headers=SUPABASE_HEADERS)
+                res_doctor_forms.raise_for_status()
+                count_range = res_doctor_forms.headers.get('Content-Range')
+                if count_range:
+                    doctor_performance_data[doctor_id] = int(count_range.split('/')[-1])
+                else:
+                    doctor_performance_data[doctor_id] = 0
+                print(f"DEBUG: Doctora {doc['usuario']} (ID: {doctor_id}) ha completado {doctor_performance_data[doctor_id]} formularios.")
+            except requests.exceptions.RequestException as e:
+                print(f"❌ Error al obtener formularios completados para doctora {doc['usuario']}: {e}")
+                doctor_performance_data[doctor_id] = 0 # Set to 0 on error
+            except Exception as e:
+                print(f"❌ Error inesperado al procesar rendimiento de doctora {doc['usuario']}: {e}")
+                doctor_performance_data[doctor_id] = 0
+
 
     return render_template(
         'dashboard.html',
         usuario=usuario,
         eventos=eventos,
-        doctoras=doctoras, # Lista de doctoras para admin (ahora siempre inicializada)
-        establecimientos=establecimientos_admin_list, # Lista de establecimientos para admin (ahora siempre inicializada)
-        formularios=formularios, # Formularios subidos por las doctoras
+        doctoras=doctoras,
+        establecimientos=establecimientos_admin_list,
+        formularios=formularios,
         conteo=conteo,
-        assigned_nominations=assigned_nominations, # Nóminas asignadas a la doctora logueada
-        admin_nominas_cargadas=admin_nominas_cargadas, # ¡NUEVO! Nóminas cargadas por el admin (ahora siempre inicializada)
-        evaluaciones_doctora=evaluaciones_doctora # Conteo de evaluaciones para la doctora logueada
+        assigned_nominations=assigned_nominations,
+        admin_nominas_cargadas=admin_nominas_cargadas,
+        evaluaciones_doctora=evaluaciones_doctora, # For individual doctor (non-admin)
+        doctor_performance_data=doctor_performance_data # NEW! For admin view
     )
 
 @app.route('/logout')
 def logout():
-    """Cierra la sesión del usuario."""
     session.clear()
     flash('Has cerrado sesión correctamente.', 'info')
     return redirect(url_for('index'))
 
 @app.route('/admin/agregar', methods=['POST'])
 def admin_agregar():
-    """
-    Ruta para que el **administrador** agregue un nuevo **establecimiento**
-    (una visita programada) y suba un formulario base asociado.
-    """
     if session.get('usuario') != 'admin':
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
@@ -638,9 +743,9 @@ def admin_agregar():
     fecha = request.form.get('fecha')
     horario = request.form.get('horario')
     obs = request.form.get('obs')
-    doctora_id_from_form = request.form.get('doctora', '').strip() # <-- Obtiene el ID seleccionado del formulario
+    doctora_id_from_form = request.form.get('doctora', '').strip()
     cantidad_alumnos = request.form.get('alumnos')
-    archivo = request.files.get('formulario') # Archivo PDF o DOCX base
+    archivo = request.files.get('formulario')
 
     print(f"DEBUG: admin_agregar - Datos recibidos: nombre={nombre}, fecha={fecha}, horario={horario}, doctora_id_from_form={doctora_id_from_form}, alumnos={cantidad_alumnos}, archivo_presente={bool(archivo)}")
 
@@ -652,20 +757,17 @@ def admin_agregar():
         flash("❌ Archivo de formulario base no válido o no seleccionado.", 'error')
         return redirect(url_for('dashboard'))
 
-    nuevo_id = str(uuid.uuid4()) # ID único para el establecimiento
+    nuevo_id = str(uuid.uuid4())
     filename = secure_filename(archivo.filename)
     file_data = archivo.read()
-    # mime_type = mimetypes.guess_type(filename)[0] or 'application/octet-stream' # Not strictly needed for Storage upload
 
-    # 1. Subir el archivo de formulario base a Supabase Storage
     try:
         upload_path = f"formularios/{nuevo_id}/{filename}"
         upload_url = f"{SUPABASE_URL}/storage/v1/object/{upload_path}"
         print(f"DEBUG: Subiendo archivo a Storage: {upload_url}")
-        res_upload = requests.post(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=file_data) # Use POST for first upload
-        res_upload.raise_for_status() # Lanza excepción si la subida falla
+        res_upload = requests.put(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=file_data)
+        res_upload.raise_for_status()
 
-        # The public URL needs to follow the bucket/path structure
         url_publica = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path}"
         print(f"DEBUG: Archivo subido, URL pública: {url_publica}")
     except requests.exceptions.RequestException as e:
@@ -673,14 +775,13 @@ def admin_agregar():
         flash("❌ Error al subir el archivo del formulario base.", 'error')
         return redirect(url_for('dashboard'))
 
-    # 2. Insertar los datos del establecimiento en la tabla 'establecimientos'
     data_establecimiento = {
         "id": nuevo_id,
         "nombre": nombre,
         "fecha": fecha,
         "horario": horario,
         "observaciones": obs,
-        "doctora_id": doctora_id_from_form, # <-- Usa el ID del formulario
+        "doctora_id": doctora_id_from_form,
         "cantidad_alumnos": int(cantidad_alumnos) if cantidad_alumnos else None,
         "url_archivo": url_publica,
         "nombre_archivo": filename
@@ -690,10 +791,10 @@ def admin_agregar():
     try:
         response_db = requests.post(
             f"{SUPABASE_URL}/rest/v1/establecimientos",
-            headers=SUPABASE_HEADERS, # Se usan SUPABASE_HEADERS porque RLS debe permitir la inserción
+            headers=SUPABASE_HEADERS,
             json=data_establecimiento
         )
-        response_db.raise_for_status() # Lanza excepción si la inserción en DB falla
+        response_db.raise_for_status()
         print(f"DEBUG: Respuesta de Supabase al insertar establecimiento (status): {response_db.status_code}")
         print(f"DEBUG: Respuesta de Supabase al insertar establecimiento (text): {response_db.text}")
         flash("✅ Establecimiento y formulario base agregado correctamente.", 'success')
@@ -709,17 +810,13 @@ def admin_agregar():
 
 @app.route('/admin/cargar_nomina', methods=['POST'])
 def admin_cargar_nomina():
-    """
-    Ruta para que el **administrador** suba una lista de estudiantes
-    desde un archivo Excel o CSV y la asigne a una doctora.
-    """
     if session.get('usuario') != 'admin':
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
 
     tipo_nomina = request.form.get('tipo_nomina')
     nombre_especifico = request.form.get('nombre_especifico')
-    doctora_id_from_form = request.form.get('doctora', '').strip() # <-- Obtiene el ID seleccionado del formulario
+    doctora_id_from_form = request.form.get('doctora', '').strip()
     excel_file = request.files.get('excel')
 
     print(f"DEBUG: admin_cargar_nomina - Datos recibidos: tipo_nomina={tipo_nomina}, nombre_especifico={nombre_especifico}, doctora_id_from_form={doctora_id_from_form}, archivo_presente={bool(excel_file)}")
@@ -732,32 +829,29 @@ def admin_cargar_nomina():
         flash('❌ Archivo Excel o CSV no válido. Extensiones permitidas: .xls, .xlsx, .csv', 'error')
         return redirect(url_for('dashboard'))
 
-    nomina_id = str(uuid.uuid4()) # ID único para esta nómina
+    nomina_id = str(uuid.uuid4())
     excel_filename = secure_filename(excel_file.filename)
-    excel_file_data = excel_file.read() # Leer contenido binario del archivo
-    # mime_type = mimetypes.guess_type(excel_filename)[0] or 'application/octet-stream' # Not strictly needed for Storage
+    excel_file_data = excel_file.read()
 
-    # 1. Subir el archivo Excel/CSV original a Supabase Storage
     try:
         upload_path = f"nominas-medicas/{nomina_id}/{excel_filename}" 
         upload_url = f"{SUPABASE_URL}/storage/v1/object/{upload_path}"
         print(f"DEBUG: Subiendo archivo Excel a Storage: {upload_url}")
-        res_upload = requests.post(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=excel_file_data)
+        res_upload = requests.put(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=excel_file_data)
         res_upload.raise_for_status()
         
-        url_excel_publica = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path}" # Public URL is public/bucket/path
+        url_excel_publica = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path}"
         print(f"DEBUG: Archivo Excel subido, URL pública: {url_excel_publica}")
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al subir archivo Excel a Storage: {e} - {res_upload.text if 'res_upload' in locals() else ''}")
         flash("❌ Error al subir el archivo de la nómina al almacenamiento. Por favor, inténtelo de nuevo.", 'error')
         return redirect(url_for('dashboard'))
 
-    # 2. Insertar la entrada de la nómina en la tabla 'nominas_medicas'
     data_nomina = {
         "id": nomina_id,
         "nombre_nomina": nombre_especifico,
         "tipo_nomina": tipo_nomina,
-        "doctora_id": doctora_id_from_form, # <-- Usa el ID del formulario
+        "doctora_id": doctora_id_from_form,
         "url_excel_original": url_excel_publica,
         "nombre_excel_original": excel_filename
     }
@@ -776,34 +870,25 @@ def admin_cargar_nomina():
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al guardar nómina en DB: {e} - {res_insert_nomina.text if 'res_insert_nomina' in locals() else ''}")
         flash("❌ Error al guardar los datos de la nómina en la base de datos.", 'error')
-        # Considera limpiar el archivo de Storage si la inserción en DB falla
         return redirect(url_for('dashboard'))
 
-    # 3. Leer y procesar el contenido del Excel/CSV para guardar estudiantes
-    # Use io.BytesIO to read the file data from memory
     excel_data_stream = io.BytesIO(excel_file_data)
     
-    # Check if the file is an Excel or CSV
     if excel_filename.endswith(('.xls', '.xlsx')):
         df = pd.read_excel(excel_data_stream)
         print("DEBUG: Archivo leído como Excel.")
     elif excel_filename.endswith('.csv'):
-        # Assuming UTF-8 encoding. You may need to adjust this.
         df = pd.read_csv(excel_data_stream, encoding='utf-8')
         print("DEBUG: Archivo leído como CSV.")
     else:
-        # This case should be handled by 'permitido()' but it's good practice.
         flash('❌ Formato de archivo no soportado para la nómina.', 'error')
         return redirect(url_for('dashboard'))
 
-    # Prepare data for insertion into 'estudiantes_nomina'
     estudiantes_a_insertar = []
-    # Normalize column names to make them case-insensitive and handle accents
     df.columns = [normalizar(col) for col in df.columns]
 
     print(f"DEBUG: Columnas del archivo normalizadas: {df.columns}")
 
-    # Map possible column names to their normalized versions
     column_mapping = {
         'nombre_completo': ['nombre_completo', 'nombre_y_apellido', 'nombre'],
         'rut': ['rut'],
@@ -813,8 +898,6 @@ def admin_cargar_nomina():
         'direccion': ['direccion', 'dirección']
     }
     
-    # Find the correct column names from the DataFrame
-    # This loop is to make the code more robust against slight column name variations
     col_map = {}
     for key, possible_names in column_mapping.items():
         for name in possible_names:
@@ -822,14 +905,11 @@ def admin_cargar_nomina():
                 col_map[key] = name
                 break
     
-    # Log the found columns
     print(f"DEBUG: Mapeo de columnas encontrado: {col_map}")
 
-    # Check if all critical columns are present
     if not all(k in col_map for k in ['nombre_completo', 'rut', 'fecha_nacimiento']):
         print(f"ERROR: No se encontraron columnas críticas. Columnas esperadas: {column_mapping.keys()}. Columnas encontradas: {df.columns.tolist()}")
         flash("❌ El archivo no contiene las columnas necesarias: 'Nombre', 'RUT', y 'Fecha de Nacimiento'.", 'error')
-        # Rollback: delete the uploaded file and the nomina entry
         try:
             requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
             requests.delete(f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}", headers=SUPABASE_SERVICE_HEADERS)
@@ -844,50 +924,45 @@ def admin_cargar_nomina():
             rut_raw = row.get(col_map.get('rut'))
             fecha_nacimiento_raw = row.get(col_map.get('fecha_nacimiento'))
 
-            # Basic validation
             if not all([nombre_completo_raw, rut_raw, fecha_nacimiento_raw]):
                 print(f"AVISO: Fila {index+2} ignorada por datos faltantes. Datos: {row.to_dict()}")
                 continue
             
-            # Format RUT without dots and hyphens
             rut_limpio = str(rut_raw).replace('.', '').replace('-', '').strip()
             
-            # Convert date from Excel/CSV format to YYYY-MM-DD
             if isinstance(fecha_nacimiento_raw, datetime):
                 fecha_nac_str = fecha_nacimiento_raw.strftime('%Y-%m-%d')
             elif isinstance(fecha_nacimiento_raw, date):
                 fecha_nac_str = fecha_nacimiento_raw.strftime('%Y-%m-%d')
-            else: # Try to parse from a string
+            else:
                 try:
                     fecha_nac_str = pd.to_datetime(fecha_nacimiento_raw, errors='coerce').strftime('%Y-%m-%d')
                 except Exception as date_e:
                     print(f"AVISO: Error al parsear fecha de nacimiento en fila {index+2}: {fecha_nacimiento_raw} - {date_e}")
-                    fecha_nac_str = None # Use None if parsing fails
+                    fecha_nac_str = None
             
-            # Try to guess gender
             sexo_adivinado = guess_gender(str(nombre_completo_raw))
 
             estudiante = {
                 "nomina_id": nomina_id,
-                "nombre": str(nombre_completo_raw).strip(), # Usar 'nombre' en vez de 'nombre_completo'
+                "nombre": str(nombre_completo_raw).strip(),
                 "rut": rut_limpio,
-                "fecha_nacimiento": fecha_nac_str, # Store as string
+                "fecha_nacimiento": fecha_nac_str,
                 "nacionalidad": str(row.get(col_map.get('nacionalidad'), 'Chilena')).strip(),
                 "comuna": str(row.get(col_map.get('comuna'), 'No especificada')).strip(),
                 "direccion": str(row.get(col_map.get('direccion'), 'No especificada')).strip(),
                 "sexo": sexo_adivinado,
-                "estado_general": None, # Se inicializan a None
+                "estado_general": None,
                 "diagnostico": None,
                 "fecha_reevaluacion": None,
                 "derivaciones": None,
-                "fecha_relleno": None # Este campo se llenará cuando la doctora complete el formulario
+                "fecha_relleno": None
             }
             estudiantes_a_insertar.append(estudiante)
             
         except Exception as e:
             print(f"❌ Error al procesar fila {index+2}: {e}")
             flash(f"Error al procesar la fila {index+2} del archivo. Verifique el formato de los datos.", 'error')
-            # Rollback: delete the uploaded file and the nomina entry
             try:
                 requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
                 requests.delete(f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}", headers=SUPABASE_SERVICE_HEADERS)
@@ -900,7 +975,6 @@ def admin_cargar_nomina():
         flash("⚠️ El archivo Excel/CSV no contiene datos válidos para estudiantes. La nómina fue cargada, pero sin estudiantes.", 'warning')
         return redirect(url_for('dashboard'))
 
-    # 4. Insertar los estudiantes en la tabla 'estudiantes_nomina'
     print(f"DEBUG: Preparados para insertar {len(estudiantes_a_insertar)} estudiantes.")
     try:
         url_estudiantes_insert = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
@@ -920,6 +994,123 @@ def admin_cargar_nomina():
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al insertar estudiantes en la DB: {e} - {res_insert_estudiantes.text if 'res_insert_estudiantes' in locals() else ''}")
         flash(f"❌ Error al guardar los estudiantes en la base de datos. La nómina fue creada, pero no se agregaron los estudiantes. ({e})", 'error')
-        # You might want to delete the nomina from nominas_medicas in case of error here too, for consistency.
         return redirect(url_for('dashboard'))
+
+@app.route('/enviar_formulario_a_drive', methods=['POST'])
+def enviar_formulario_a_drive():
+    """
+    Endpoint para enviar el formulario PDF a Google Drive de la empresa.
+    Genera el PDF en memoria y lo sube a una carpeta específica por colegio.
+    """
+    if 'usuario_id' not in session:
+        return jsonify({"success": False, "message": "No autorizado"}), 401
+
+    doctor_id = session['usuario_id'] # ID de la doctora actual, para logging o si se necesitara.
+    
+    # Obtener credenciales de la cuenta de empresa
+    creds = get_company_google_credentials()
+    if not creds:
+        return jsonify({"success": False, "message": "Error de autenticación con Google Drive de la empresa. Contacte al administrador (refresh token no configurado o inválido)."}), 500
+
+    # Recopilar datos del formulario para generar el PDF
+    estudiante_id = request.form.get('estudiante_id')
+    nomina_id = request.form.get('nomina_id') # Necesitamos la nomina_id para obtener el nombre del colegio/establecimiento
+    nombre = request.form.get('nombre')
+    rut = request.form.get('rut')
+    fecha_nac = request.form.get('fecha_nacimiento')
+    edad = request.form.get('edad')
+    nacionalidad = request.form.get('nacionalidad')
+    sexo = request.form.get('sexo')
+    estado_general = request.form.get('estado')
+    diagnostico = request.form.get('diagnostico')
+    fecha_reeval = request.form.get('fecha_reevaluacion')
+    derivaciones = request.form.get('derivaciones')
+    fecha_eval = datetime.today().strftime('%d/%m/%Y')
+
+    if not all([estudiante_id, nomina_id, nombre, rut]): # Campos mínimos para identificar y nombrar el archivo
+        return jsonify({"success": False, "message": "Faltan datos esenciales del formulario para subir a Drive."}), 400
+
+    # Obtener el nombre del colegio/establecimiento para crear la carpeta
+    establecimiento_nombre = "Formularios Varios" # Nombre por defecto si no se encuentra
+    try:
+        res_nomina = requests.get(
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}&select=nombre_nomina",
+            headers=SUPABASE_HEADERS
+        )
+        res_nomina.raise_for_status()
+        nomina_data = res_nomina.json()
+        if nomina_data and nomina_data[0] and 'nombre_nomina' in nomina_data[0]:
+            establecimiento_nombre = nomina_data[0]['nombre_nomina']
+        else:
+            print(f"ADVERTENCIA: No se pudo encontrar el nombre de la nómina para ID: {nomina_id}, usando '{establecimiento_nombre}'.")
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR: Error al obtener nombre de nómina para Drive: {e}")
+    except Exception as e:
+        print(f"ERROR: Error inesperado al obtener nombre de nómina para Drive: {e}")
+
+    # Reformatear fecha de reevaluación a DD/MM/YYYY si viene en formato ISO
+    fecha_reeval_pdf = fecha_reeval
+    if fecha_reeval and "-" in fecha_reeval:
+        try:
+            fecha_reeval_pdf = datetime.strptime(fecha_reeval, '%Y-%m-%d').strftime('%d/%m/%Y')
+        except ValueError:
+            pass
+
+    ruta_pdf = os.path.join("static", "FORMULARIO.pdf")
+    if not os.path.exists(ruta_pdf):
+        print("ERROR: Archivo FORMULARIO.pdf no encontrado para generar PDF para Drive.")
+        return jsonify({"success": False, "message": "Error interno: Archivo base del formulario no encontrado en el servidor."}), 500
+
+    try:
+        reader = PdfReader(ruta_pdf)
+        writer = PdfWriter()
+        writer.add_page(reader.pages[0])
+
+        campos = {
+            "nombre": nombre,
+            "rut": rut,
+            "fecha_nacimiento": fecha_nac,
+            "nacionalidad": nacionalidad,
+            "edad": edad,
+            "diagnostico_1": diagnostico,
+            "diagnostico_2": diagnostico,
+            "estado_general": estado_general,
+            "fecha_evaluacion": fecha_eval,
+            "fecha_reevaluacion": fecha_reeval_pdf,
+            "derivaciones": derivaciones,
+            "sexo_f": "X" if sexo == "F" else "",
+            "sexo_m": "X" if sexo == "M" else "",
+        }
+        writer.update_page_form_field_values(writer.pages[0], campos)
+        if "/AcroForm" not in writer._root_object:
+            writer._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
+        writer._root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
+
+        output_pdf_io = io.BytesIO()
+        writer.write(output_pdf_io)
+        output_pdf_io.seek(0) # Reset buffer position
+
+        file_name = f"{nombre.replace(' ', '_')}_{rut}_formulario.pdf"
+        
+        # 1. Obtener el servicio de Drive
+        service = build('drive', 'v3', credentials=creds)
+
+        # 2. Buscar o crear la carpeta del colegio
+        # Si GOOGLE_DRIVE_PARENT_FOLDER_ID está configurado, la carpeta del colegio se creará dentro de ella.
+        colegio_folder_id = find_or_create_drive_folder(service, establecimiento_nombre, GOOGLE_DRIVE_PARENT_FOLDER_ID)
+
+        if not colegio_folder_id:
+            return jsonify({"success": False, "message": "Error al encontrar o crear la carpeta del colegio en Google Drive."}), 500
+
+        # 3. Subir el PDF a la carpeta del colegio
+        file_id = upload_pdf_to_google_drive(creds, output_pdf_io, file_name, colegio_folder_id)
+
+        if file_id:
+            return jsonify({"success": True, "message": f"Formulario enviado a Google Drive (ID: {file_id}) en la carpeta '{establecimiento_nombre}'."})
+        else:
+            return jsonify({"success": False, "message": "Error al subir el formulario a Google Drive."}), 500
+
+    except Exception as e:
+        print(f"ERROR: Error al procesar y subir formulario a Drive: {e}")
+        return jsonify({"success": False, "message": f"Error interno del servidor al procesar y subir a Drive: {str(e)}"}), 500
 

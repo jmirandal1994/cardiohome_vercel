@@ -28,7 +28,7 @@ PDF_BASE = 'FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE.pdf'
 
 # -------------------- Supabase Configuration --------------------
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://rbzxolreglwndvsrxhmg.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDE3ODcsImV4cCI6MjA2MzExNzc4N30.BbzsUhed1Y_dJYWFKLAHqtY4cXdvjF_ihGdQ_Bpov3Y")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDE3ODcsImV4cCI6MjA2MzExNzc4N30.BbzsUhed1Y_dJYWFKLAHqtV4cXdvjF_ihGdQ_Bpov3Y")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImiYXRiOjE3NDc1NDE3ODcsImV4cCI6MjA2MzExNzc4N30.i3ixl5ws3Z3QTxIcZNjI29ZknRmX0Z0khc")
 
 SUPABASE_HEADERS = {
@@ -394,9 +394,10 @@ def generar_pdf():
         }
         
         print(f"DEBUG: Datos a actualizar en Supabase para estudiante {estudiante_id}: {update_data}")
+        # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para la actualización del estudiante
         response_db = requests.patch(
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}",
-            headers=SUPABASE_HEADERS,
+            headers=SUPABASE_SERVICE_HEADERS, # <-- USAR SERVICE_HEADERS AQUI
             json=update_data
         )
         response_db.raise_for_status()
@@ -503,9 +504,10 @@ def marcar_evaluado():
             'doctora_evaluadora_id': doctora_id
         }
         
+        # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para la actualización
         response = requests.patch(
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}",
-            headers=SUPABASE_HEADERS,
+            headers=SUPABASE_SERVICE_HEADERS, # <-- USAR SERVICE_HEADERS AQUI
             json=update_data
         )
         response.raise_for_status()
@@ -535,7 +537,7 @@ def login():
     url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario}&password=eq.{clave}"
     print(f"DEBUG: Intento de login para usuario: {usuario}, URL: {url}")
     try:
-        # --- CAMBIO IMPORTANTE AQUÍ: Usar SUPABASE_SERVICE_HEADERS para el login ---
+        # Usar SUPABASE_SERVICE_HEADERS para el login para asegurar acceso completo
         res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS) 
         res.raise_for_status()
         data = res.json()
@@ -562,11 +564,13 @@ def dashboard():
     usuario_id = session.get('usuario_id')
     print(f"DEBUG: Accediendo a dashboard para usuario: {usuario}, ID: {usuario_id}")
 
+    # Inicialización de variables para evitar UnboundLocalError
     doctoras = []
     establecimientos_admin_list = []
     admin_nominas_cargadas = []
     conteo = {}
-    evaluaciones_doctora = 0 # This variable is for the individual doctor's count
+    evaluaciones_doctora = 0 # Esta variable es para el conteo de la doctora individual
+
 
     campos_establecimientos = "id,nombre,fecha,horario,observaciones,cantidad_alumnos,url_archivo,nombre_archivo,doctora_id"
     eventos = []
@@ -651,7 +655,7 @@ def dashboard():
     if usuario == 'admin':
         try:
             url_doctoras = f"{SUPABASE_URL}/rest/v1/doctoras"
-            print(f"DEBUG: URL para obtener doctoras (admin con service key): {url_doctoras}") # DEBUG
+            print(f"DEBUG: URL para obtener doctoras (admin con service key): {url_doctoras}") 
             res_doctoras = requests.get(url_doctoras, headers=SUPABASE_SERVICE_HEADERS) # <-- Usar SERVICE_HEADERS
             res_doctoras.raise_for_status()
             doctoras = res_doctoras.json()
@@ -659,11 +663,11 @@ def dashboard():
         except requests.exceptions.RequestException as e:
             print(f"❌ ERROR AL OBTENER DOCTORAS (ADMIN DASHBOARD) CON SERVICE KEY: {e} - {res_doctoras.text if 'res_doctoras' in locals() else ''}")
             flash('Error crítico al cargar doctoras en el panel de administrador. Verifique su SUPABASE_SERVICE_KEY.', 'error')
-            doctoras = [] # Ensure it's an empty list on error
+            doctoras = [] 
 
         try:
             url_establecimientos_admin = f"{SUPABASE_URL}/rest/v1/establecimientos?select=id,nombre"
-            print(f"DEBUG: URL para obtener establecimientos (admin con service key): {url_establecimientos_admin}") # DEBUG
+            print(f"DEBUG: URL para obtener establecimientos (admin con service key): {url_establecimientos_admin}") 
             res_establecimientos = requests.get(url_establecimientos_admin, headers=SUPABASE_SERVICE_HEADERS) # <-- Usar SERVICE_HEADERS
             res_establecimientos.raise_for_status()
             establecimientos_admin_list = res_establecimientos.json()
@@ -672,7 +676,7 @@ def dashboard():
             print(f"❌ Error al obtener establecimientos (ADMIN DASHBOARD) CON SERVICE KEY: {e}")
             print(f"Response text: {res_establecimientos.text if 'res_establecimientos' in locals() else 'No response'}")
             flash('Error crítico al cargar establecimientos en el panel de administrador. Verifique su SUPABASE_SERVICE_KEY.', 'error')
-            establecimientos_admin_list = [] # Ensure empty on error
+            establecimientos_admin_list = [] 
 
 
         for f in formularios:
@@ -694,14 +698,12 @@ def dashboard():
             flash('Error al cargar la lista de nóminas en la vista de administrador.', 'error')
         
         # --- LÓGICA DE RENDIMIENTO POR DOCTORA PARA ADMIN ---
-        # Asegúrate de que 'doctoras' esté poblado antes de este bucle
-        if doctoras: # Solo si hay doctoras para procesar
+        if doctoras: 
             for doc in doctoras:
                 doctor_id = doc['id']
                 try:
-                    # Consulta a Supabase para contar formularios con fecha_relleno no nula
                     url_doctor_forms = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?doctora_evaluadora_id=eq.{doctor_id}&fecha_relleno.not.is.null&select=count"
-                    print(f"DEBUG: URL para rendimiento de doctora {doc['usuario']} con service key: {url_doctor_forms}") # DEBUG
+                    print(f"DEBUG: URL para rendimiento de doctora {doc['usuario']} con service key: {url_doctor_forms}") 
                     res_doctor_forms = requests.get(url_doctor_forms, headers=SUPABASE_SERVICE_HEADERS) # <-- Usar SERVICE_HEADERS
                     res_doctor_forms.raise_for_status()
                     count_range = res_doctor_forms.headers.get('Content-Range')
@@ -712,7 +714,7 @@ def dashboard():
                     print(f"DEBUG: Doctora {doc['usuario']} (ID: {doctor_id}) ha completado {doctor_performance_data[doctor_id]} formularios.")
                 except requests.exceptions.RequestException as e:
                     print(f"❌ ERROR AL OBTENER FORMULARIOS COMPLETADOS PARA DOCTORA {doc['usuario']} CON SERVICE KEY: {e}")
-                    doctor_performance_data[doctor_id] = 0 # Establecer a 0 en caso de error para que no falle la app
+                    doctor_performance_data[doctor_id] = 0 
                 except Exception as e:
                     print(f"❌ Error inesperado al procesar rendimiento de doctora {doc['usuario']}: {e}")
                     doctor_performance_data[doctor_id] = 0
@@ -728,8 +730,8 @@ def dashboard():
         conteo=conteo,
         assigned_nominations=assigned_nominations,
         admin_nominas_cargadas=admin_nominas_cargadas,
-        evaluaciones_doctora=evaluaciones_doctora, # Para la vista individual de la doctora
-        doctor_performance_data=doctor_performance_data # ¡NUEVO! Para la vista del administrador
+        evaluaciones_doctora=evaluaciones_doctora, 
+        doctor_performance_data=doctor_performance_data 
     )
 
 @app.route('/logout')
@@ -765,6 +767,7 @@ def admin_agregar():
     nuevo_id = str(uuid.uuid4())
     filename = secure_filename(archivo.filename)
     file_data = archivo.read()
+    mime_type = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
 
     try:
         upload_path = f"formularios/{nuevo_id}/{filename}"
@@ -794,9 +797,10 @@ def admin_agregar():
     print(f"DEBUG: Payload para insertar establecimiento: {data_establecimiento}")
 
     try:
+        # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para la inserción
         response_db = requests.post(
             f"{SUPABASE_URL}/rest/v1/establecimientos",
-            headers=SUPABASE_HEADERS,
+            headers=SUPABASE_SERVICE_HEADERS, # <-- USAR SERVICE_HEADERS AQUI
             json=data_establecimiento
         )
         response_db.raise_for_status()
@@ -837,6 +841,7 @@ def admin_cargar_nomina():
     nomina_id = str(uuid.uuid4())
     excel_filename = secure_filename(excel_file.filename)
     excel_file_data = excel_file.read()
+    mime_type = mimetypes.guess_type(excel_filename)[0] or 'application/octet-stream'
 
     try:
         upload_path = f"nominas-medicas/{nomina_id}/{excel_filename}" 
@@ -845,12 +850,11 @@ def admin_cargar_nomina():
         res_upload = requests.put(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=excel_file_data)
         res_upload.raise_for_status()
         
-        # Corrección aquí: La URL pública necesita el prefijo del bucket 'nominas-medicas' después de 'public/'
-        url_excel_publica = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path}" # Corregido para que incluya el path completo
+        url_excel_publica = f"{SUPABASE_URL}/storage/v1/object/public/nominas-medicas/{upload_path}" 
         print(f"DEBUG: Archivo Excel subido, URL pública: {url_excel_publica}")
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al subir archivo Excel a Storage: {e} - {res_upload.text if 'res_upload' in locals() else ''}")
-        flash("❌ Error al subir el archivo de la nómina al almacenamiento. Por favor, inténtelo de nuevo.", 'error')
+        flash("❌ Error al subir el archivo de la nómina.", 'error')
         return redirect(url_for('dashboard'))
 
     data_nomina = {
@@ -864,9 +868,10 @@ def admin_cargar_nomina():
     print(f"DEBUG: Payload para insertar nómina en nominas_medicas: {data_nomina}")
 
     try:
+        # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para la inserción
         res_insert_nomina = requests.post(
             f"{SUPABASE_URL}/rest/v1/nominas_medicas",
-            headers=SUPABASE_HEADERS,
+            headers=SUPABASE_SERVICE_HEADERS, # <-- USAR SERVICE_HEADERS AQUI
             json=data_nomina
         )
         res_insert_nomina.raise_for_status()
@@ -983,11 +988,10 @@ def admin_cargar_nomina():
 
     print(f"DEBUG: Preparados para insertar {len(estudiantes_a_insertar)} estudiantes.")
     try:
-        url_estudiantes_insert = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-        print(f"DEBUG: URL para insertar estudiantes: {url_estudiantes_insert}")
+        # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para la inserción
         res_insert_estudiantes = requests.post(
-            url_estudiantes_insert,
-            headers=SUPABASE_HEADERS,
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina",
+            headers=SUPABASE_SERVICE_HEADERS, # <-- USAR SERVICE_HEADERS AQUI
             json=estudiantes_a_insertar
         )
         res_insert_estudiantes.raise_for_status()
@@ -1119,6 +1123,167 @@ def enviar_formulario_a_drive():
     except Exception as e:
         print(f"ERROR: Error al procesar y subir formulario a Drive: {e}")
         return jsonify({"success": False, "message": f"Error interno del servidor al procesar y subir a Drive: {str(e)}"}), 500
+
+@app.route('/subir/<establecimiento>', methods=['POST'])
+def subir(establecimiento):
+    if 'usuario' not in session:
+        return redirect(url_for('index'))
+
+    archivos = request.files.getlist('archivo')
+    print(f"DEBUG: subir - Establecimiento ID: {establecimiento}, Cantidad de archivos: {len(archivos)}")
+    print(f"DEBUG: ID de usuario en sesión (doctora) para /subir: {session.get('usuario_id')}")
+
+
+    if not archivos or archivos[0].filename == '':
+        flash('No se seleccionó ningún archivo para subir.', 'error')
+        return redirect(url_for('dashboard'))
+
+    usuario_id = session['usuario_id']
+    mensajes = []
+
+    for archivo in archivos:
+        if permitido(archivo.filename):
+            filename = secure_filename(archivo.filename)
+            file_data = archivo.read()
+            mime_type = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+
+            unique_file_id = str(uuid.uuid4())
+
+            upload_path = f"formularios_completados/{establecimiento}/{unique_file_id}/{filename}"
+            upload_url = f"{SUPABASE_URL}/storage/v1/object/{upload_path}"
+            print(f"DEBUG: Subiendo archivo completado a Storage: {upload_url}")
+            
+            try:
+                res_upload = requests.put(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=file_data)
+                res_upload.raise_for_status()
+                
+                url_publica = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path}"
+                print(f"DEBUG: Archivo completado subido, URL pública: {url_publica}")
+
+                data = {
+                    "doctoras_id": usuario_id,
+                    "establecimientos_id": establecimiento,
+                    "nombre_archivo": filename,
+                    "url_archivo": url_publica
+                }
+                print(f"DEBUG: Payload para insertar formulario subido en DB: {data}")
+
+                # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para la inserción en formularios_subidos
+                res_insert = requests.post(
+                    f"{SUPABASE_URL}/rest/v1/formularios_subidos",
+                    headers=SUPABASE_SERVICE_HEADERS, # <-- USAR SERVICE_HEADERS AQUI
+                    json=data
+                )
+                res_insert.raise_for_status()
+                print(f"DEBUG: Respuesta de Supabase al insertar formulario subido (status): {res_insert.status_code}")
+                print(f"DEBUG: Respuesta de Supabase al insertar formulario subido (text): {res_insert.text}")
+                mensajes.append(f"✅ Archivo '{filename}' subido y registrado correctamente.")
+            
+            except requests.exceptions.RequestException as e:
+                error_msg = f"❌ Error al subir o registrar '{filename}': {e} - {res_upload.text if 'res_upload' in locals() else res_insert.text if 'res_insert' in locals() else 'No response'}"
+                print(error_msg)
+                mensajes.append(error_msg)
+            except Exception as e:
+                error_msg = f"❌ Error inesperado al procesar '{filename}': {e}"
+                print(error_msg)
+                mensajes.append(error_msg)
+        else:
+            mensajes.append(f"⚠️ Archivo '{archivo.filename}' no permitido.")
+    
+    for msg in mensajes:
+        flash(msg, 'success' if '✅' in msg else 'error' if '❌' in msg else 'warning')
+
+    return redirect(url_for('dashboard'))
+
+@app.route('/colegios')
+def colegios():
+    if session.get('usuario') != 'admin':
+        flash('Acceso denegado.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    return render_template('colegios.html')
+
+@app.route('/mis_nominas')
+def mis_nominas():
+    if 'usuario' not in session:
+        return redirect(url_for('index'))
+    
+    usuario_id = session.get('usuario_id')
+    assigned_nominations = []
+
+    print(f"DEBUG: Accediendo a /mis_nominas. ID de usuario en sesión: {usuario_id}")
+
+    if not usuario_id:
+        flash("No se pudo obtener el ID de usuario.", "error")
+        print(f"DEBUG: usuario_id no encontrado en sesión para /mis_nominas.")
+        return redirect(url_for('dashboard'))
+
+    try:
+        url_nominas_asignadas = (
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?doctora_id=eq.{usuario_id}"
+            f"&select=id,nombre_nomina,tipo_nomina,doctora_id"
+        )
+        print(f"DEBUG: URL para mis_nominas: {url_nominas_asignadas}")
+        res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_HEADERS)
+        res_nominas_asignadas.raise_for_status()
+        raw_nominas = res_nominas_asignadas.json()
+        print(f"DEBUG: Nóminas raw recibidas para mis_nominas: {raw_nominas}")
+
+        for nom in raw_nominas:
+            display_name = nom['tipo_nomina'].replace('_', ' ').title()
+            assigned_nominations.append({
+                'id': nom['id'],
+                'nombre_establecimiento': nom['nombre_nomina'],
+                'tipo_nomina_display': display_name
+            })
+        print(f"DEBUG: Nóminas asignadas procesadas para plantilla /mis_nominas: {assigned_nominations}")
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error al obtener mis nóminas: {e}")
+        print(f"Response text: {res_nominas_asignadas.text if 'res_nominas_asignadas' in locals() else 'No response'}")
+        flash('Error al cargar sus nóminas asignadas.', 'error')
+    except Exception as e:
+        print(f"❌ Error inesperado al procesar mis nóminas: {e}")
+        flash('Error inesperado al cargar sus nóminas asignadas.', 'error')
+
+
+    return render_template('mis_nominas.html', assigned_nominations=assigned_nominations)
+
+@app.route('/evaluados/<establecimiento>', methods=['POST'])
+def evaluados(establecimiento):
+    if 'usuario' not in session:
+        return redirect(url_for('index'))
+
+    alumnos_evaluados = request.form.get('alumnos')
+    
+    print(f"DEBUG: evaluados - Establecimiento ID: {establecimiento}, Alumnos evaluados: {alumnos_evaluados}")
+    print(f"DEBUG: ID de usuario en sesión (doctora) para /evaluados: {session.get('usuario_id')}")
+
+
+    data_update = {
+        "cantidad_alumnos_evaluados": int(alumnos_evaluados) if alumnos_evaluados else 0
+    }
+
+    try:
+        # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para la actualización
+        response_db = requests.patch(
+            f"{SUPABASE_URL}/rest/v1/establecimientos?id=eq.{establecimiento}",
+            headers=SUPABASE_SERVICE_HEADERS, # <-- USAR SERVICE_HEADERS AQUI
+            json=data_update
+        )
+        response_db.raise_for_status()
+        print(f"DEBUG: Respuesta de Supabase al actualizar alumnos evaluados (status): {response_db.status_code}")
+        print(f"DEBUG: Respuesta de Supabase al actualizar alumnos evaluados (text): {response_db.text}")
+        flash("✅ Cantidad de alumnos evaluados registrada correctamente.", 'success')
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error al registrar alumnos evaluados: {e} - {response_db.text if 'response_db' in locals() else ''}")
+        flash("❌ Error al registrar la cantidad de alumnos evaluados.", 'error')
+    except Exception as e:
+        print(f"❌ Error inesperado al registrar alumnos evaluados: {e}")
+        flash("❌ Error inesperado al registrar la cantidad de alumnos evaluados.", 'error')
+
+    return redirect(url_for('dashboard'))
 
 
 

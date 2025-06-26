@@ -507,21 +507,23 @@
                             <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
                             
                             <label>Sexo:</label>
-                            <select name="sexo" required onchange="updatePreview(this.form)"> {# Added onchange for instant preview update #}
-                                <option value="M" {% if est.sexo_inferido == 'M' %}selected{% endif %}>Masculino</option>
-                                <option value="F" {% if est.sexo_inferido == 'F' %}selected{% endif %}>Femenino</option>
+                            <select name="sexo" required onchange="updatePreview(this.form)">
+                                {# Using est.sexo for initial selection, as it seems to hold the correct inferred value from DB #}
+                                <option value="M" {% if est.sexo == 'M' %}selected{% endif %}>Masculino</option>
+                                <option value="F" {% if est.sexo == 'F' %}selected{% endif %}>Femenino</option>
                             </select>
 
                             <p class="info"><strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento_formato }} ({{ est.edad }})</p>
                             <p class="info"><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</p>
-                            {# Removed the redundant "Sexo (Inferido)" line from the main form #}
+                            {# Changed to display the selected value from the dropdown, not the inferred DB value #}
+                            <p class="info"><strong>Sexo:</strong> <span class="prev-sexo-info">{{ est.sexo == 'M' ? 'Masculino' : 'Femenino' }}</span></p>
 
 
                             <label>Estado general del alumno:</label>
                             <textarea name="estado" rows="3" placeholder="Observaciones del estado general..." required>{{ est.estado_general if est.estado_general is not none else '' }}</textarea>
 
                             <label>Diagnóstico:</label>
-                            <select name="diagnostico" required>
+                            <select name="diagnostico" required onchange="updatePreview(this.form)"> {# Added onchange #}
                                 <option value="">Seleccionar diagnóstico</option>
                                 <option value="Trastorno espectro autista" {% if est.diagnostico == 'Trastorno espectro autista' %}selected{% endif %}>Trastorno espectro autista</option>
                                 <option value="GARC" {% if est.diagnostico == 'GARC' %}selected{% endif %}>GARC</option>
@@ -614,11 +616,12 @@
                 updatePreview(form); // Actualiza la vista previa con los valores iniciales
                 const selectPlazo = form.querySelector('select[name="plazo"]');
                 const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');
-                // Si ya hay un valor de fecha de reevaluación desde la base de datos, úsalo
+                
+                // Si la fecha de reevaluación ya viene pre-cargada del servidor (ej. de DB), la mostramos.
+                // De lo contrario, intentamos calcularla si hay un plazo ya seleccionado.
                 if (fechaReevaluacionInput && fechaReevaluacionInput.value) {
-                    // No hacer nada, la fecha ya está pre-cargada
+                    // La fecha ya está en el input, no hacemos nada más con el plazo.
                 } else if (selectPlazo && selectPlazo.value) {
-                    // Si no hay fecha pre-cargada, pero sí hay un plazo seleccionado, calcula
                     setFechaReevaluacion(selectPlazo);
                 }
             });
@@ -643,7 +646,7 @@
                 const month = String(futureDate.getMonth() + 1).padStart(2, '0');
                 const day = String(futureDate.getDate()).padStart(2, '0');
 
-                fechaReevaluacionInput.value = `${year}-${month}-${day}`; // Formato Canberra-MM-DD para input type="date"
+                fechaReevaluacionInput.value = `${year}-${month}-${day}`; // Formato YYYY-MM-DD para input type="date"
             } else {
                 fechaReevaluacionInput.value = ''; // Limpiar si no es una selección válida
             }
@@ -672,7 +675,12 @@
             }
 
             // Actualizar el campo de sexo en la vista previa
-            container.querySelector('.prev-sexo').textContent = form.sexo ? (form.sexo.value === 'M' ? 'Masculino' : 'Femenino') : '-';
+            const sexoSelect = form.querySelector('select[name="sexo"]');
+            if (sexoSelect) {
+                container.querySelector('.prev-sexo').textContent = sexoSelect.value === 'M' ? 'Masculino' : 'Femenino';
+            } else {
+                container.querySelector('.prev-sexo').textContent = '-';
+            }
 
             // Lógica del badge "Guardado"
             const badge = form.closest('.formulario').querySelector('.badge');

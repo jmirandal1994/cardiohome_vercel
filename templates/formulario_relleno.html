@@ -505,11 +505,17 @@
                             <input type="hidden" name="fecha_nacimiento" value="{{ est.fecha_nacimiento_formato }}"> {# Usar el formato ya procesado #}
                             <input type="hidden" name="edad" value="{{ est.edad }}">
                             <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
-                            <input type="hidden" name="sexo" value="{{ est.sexo_inferido }}"> {# Usar el inferido #}
+                            {# AQUI ESTA EL CAMBIO: VUELVE EL SELECT DE SEXO #}
+                            <label>Sexo:</label>
+                            <select name="sexo" required>
+                                <option value="M" {% if est.sexo_inferido == 'M' %}selected{% endif %}>Masculino</option>
+                                <option value="F" {% if est.sexo_inferido == 'F' %}selected{% endif %}>Femenino</option>
+                            </select>
 
                             <p class="info"><strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento_formato }} ({{ est.edad }})</p>
                             <p class="info"><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</p>
-                            <p class="info"><strong>Sexo:</strong> {{ est.sexo_inferido }}</p>
+                            <p class="info"><strong>Sexo (Inferido):</strong> {{ est.sexo_inferido }}</p> {# Puedes dejar esta línea para mostrar el inferido si deseas #}
+
 
                             <label>Estado general del alumno:</label>
                             <textarea name="estado" rows="3" placeholder="Observaciones del estado general..." required>{{ est.estado_general if est.estado_general is not none else '' }}</textarea>
@@ -564,6 +570,8 @@
                         <p><strong>Diagnóstico:</strong> <span class="prev-diagnostico">-</span></p>
                         <p><strong>Fecha Reevaluación:</strong> <span class="prev-reevaluacion">-</span></p>
                         <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">-</span></p>
+                        <p><strong>Sexo:</strong> <span class="prev-sexo">-</span></p> {# Nuevo span para la vista previa del sexo #}
+
 
                         <img src="/static/formulario_muestra.png" alt="Ejemplo Formulario" class="preview-img" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=Imagen+No+Disponible';" />
 
@@ -662,6 +670,9 @@
             } else {
                 container.querySelector('.prev-reevaluacion').textContent = '-';
             }
+
+            // Actualizar el campo de sexo en la vista previa
+            container.querySelector('.prev-sexo').textContent = form.sexo ? (form.sexo.value === 'M' ? 'Masculino' : 'Femenino') : '-';
 
             // Lógica del badge "Guardado"
             const badge = form.closest('.formulario').querySelector('.badge');

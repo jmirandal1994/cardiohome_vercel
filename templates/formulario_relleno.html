@@ -505,16 +505,16 @@
                             <input type="hidden" name="fecha_nacimiento" value="{{ est.fecha_nacimiento_formato }}"> {# Usar el formato ya procesado #}
                             <input type="hidden" name="edad" value="{{ est.edad }}">
                             <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
-                            {# AQUI ESTA EL CAMBIO: VUELVE EL SELECT DE SEXO #}
+                            
                             <label>Sexo:</label>
-                            <select name="sexo" required>
+                            <select name="sexo" required onchange="updatePreview(this.form)"> {# Added onchange for instant preview update #}
                                 <option value="M" {% if est.sexo_inferido == 'M' %}selected{% endif %}>Masculino</option>
                                 <option value="F" {% if est.sexo_inferido == 'F' %}selected{% endif %}>Femenino</option>
                             </select>
 
                             <p class="info"><strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento_formato }} ({{ est.edad }})</p>
                             <p class="info"><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</p>
-                            <p class="info"><strong>Sexo (Inferido):</strong> {{ est.sexo_inferido }}</p> {# Puedes dejar esta línea para mostrar el inferido si deseas #}
+                            {# Removed the redundant "Sexo (Inferido)" line from the main form #}
 
 
                             <label>Estado general del alumno:</label>
@@ -570,7 +570,7 @@
                         <p><strong>Diagnóstico:</strong> <span class="prev-diagnostico">-</span></p>
                         <p><strong>Fecha Reevaluación:</strong> <span class="prev-reevaluacion">-</span></p>
                         <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">-</span></p>
-                        <p><strong>Sexo:</strong> <span class="prev-sexo">-</span></p> {# Nuevo span para la vista previa del sexo #}
+                        <p><strong>Sexo:</strong> <span class="prev-sexo">-</span></p> {# This span will be updated by JS #}
 
 
                         <img src="/static/formulario_muestra.png" alt="Ejemplo Formulario" class="preview-img" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=Imagen+No+Disponible';" />
@@ -643,7 +643,7 @@
                 const month = String(futureDate.getMonth() + 1).padStart(2, '0');
                 const day = String(futureDate.getDate()).padStart(2, '0');
 
-                fechaReevaluacionInput.value = `${year}-${month}-${day}`; // Formato YYYY-MM-DD para input type="date"
+                fechaReevaluacionInput.value = `${year}-${month}-${day}`; // Formato Canberra-MM-DD para input type="date"
             } else {
                 fechaReevaluacionInput.value = ''; // Limpiar si no es una selección válida
             }

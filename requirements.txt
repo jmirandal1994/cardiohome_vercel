@@ -5,3 +5,4 @@ PyPDF2
 openpyxl
 pandas
 pypdf
+python-dateutil 

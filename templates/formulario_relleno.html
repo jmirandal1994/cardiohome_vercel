@@ -529,8 +529,11 @@
                                 <option value="4">4 años</option>
                                 <option value="5">5 años</option>
                             </select>
-                            {# Nuevo campo de solo lectura para la fecha calculada #}
-                            <input type="text" id="calculated_reevaluation_date_{{ estudiante.id }}" name="calculated_reevaluation_date_display" readonly placeholder="Fecha de reevaluación calculada" class="mt-[-15px]"/>
+                            {# Campo de solo lectura para la fecha calculada #}
+                            <input type="text" id="calculated_reevaluation_date_{{ estudiante.id }}" readonly placeholder="Fecha de reevaluación calculada" class="mt-[-15px]"/>
+                            {# Campo oculto para enviar la fecha formateada al backend #}
+                            <input type="hidden" id="fecha_reevaluacion_calculated_backend_{{ estudiante.id }}" name="fecha_reevaluacion_final_display" value="" />
+
 
                             <label for="derivaciones_{{ estudiante.id }}">Derivaciones:</label>
                             <textarea id="derivaciones_{{ estudiante.id }}" name="derivaciones" rows="2" placeholder="Detalles de derivaciones..."></textarea>
@@ -564,6 +567,7 @@
         function updateReevaluationDate(estudianteId) {
             const selectElement = document.getElementById(`fecha_reevaluacion_${estudianteId}`);
             const displayElement = document.getElementById(`calculated_reevaluation_date_${estudianteId}`);
+            const hiddenBackendElement = document.getElementById(`fecha_reevaluacion_calculated_backend_${estudianteId}`);
             const years = parseInt(selectElement.value);
 
             if (!isNaN(years) && years > 0) {
@@ -574,9 +578,13 @@
                 const day = String(futureDate.getDate()).padStart(2, '0');
                 const month = String(futureDate.getMonth() + 1).padStart(2, '0'); // Meses son 0-indexados
                 const year = futureDate.getFullYear();
-                displayElement.value = `${day}/${month}/${year}`;
+                const formattedDate = `${day}/${month}/${year}`;
+                
+                displayElement.value = formattedDate;
+                hiddenBackendElement.value = formattedDate; // Actualizar el campo oculto también
             } else {
                 displayElement.value = ''; // Limpiar si no hay una selección válida
+                hiddenBackendElement.value = ''; // Limpiar el campo oculto
             }
         }
 

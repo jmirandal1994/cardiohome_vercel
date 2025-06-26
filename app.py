@@ -4,27 +4,26 @@ import requests
 import base64
 from werkzeug.utils import secure_filename
 from datetime import datetime, date
-from openpyxl import load_workbook # Asumo que aún la necesitas para alguna parte, si no, puedes quitarla
+from openpyxl import load_workbook
 from PyPDF2 import PdfReader, PdfWriter
 from PyPDF2.generic import BooleanObject, NameObject, NumberObject, DictionaryObject
 import mimetypes
 import io
 import uuid
 import json
-import pandas as pd
-import unicodedata
-from dateutil.relativedelta import relativedelta # Importación necesaria para cálculo de fechas
+import pandas as pd # Importado para un manejo más robusto de Excel/CSV
+import unicodedata # Necesario para la función normalizar
 
 app = Flask(__name__)
 # ¡IMPORTANTE! Cambia esta clave por una cadena larga y aleatoria en producción.
 app.secret_key = 'clave_super_segura_cardiohome_2025'
-ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'xls', 'xlsx', 'csv'}
-# Usar el nombre de archivo PDF base que el usuario confirmó que funciona
-PDF_BASE = 'FORMULARIO.pdf' # ¡CORREGIDO! Vuelve a ser FORMULARIO.pdf
+ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'xls', 'xlsx', 'csv'} # Añadido 'csv' para las nóminas
+PDF_BASE = 'FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE.pdf' # Asegúrate de que este archivo exista en la carpeta 'static'
 
 # -------------------- Supabase Configuration --------------------
 # Estas variables serán inyectadas por el entorno de Canvas o tomadas de .env local
-firebaseConfig = json.loads(os.getenv("FIREBASE_CONFIG", "{}")) 
+# Se usa un fallback con las claves directas, pero en producción, SIEMPRE usar variables de entorno.
+firebaseConfig = json.loads(os.getenv("FIREBASE_CONFIG", "{}")) # Cargar desde variable de entorno
 SUPABASE_URL = os.getenv("SUPABASE_URL") or firebaseConfig.get("SUPABASE_URL", "https://rbzxolreglwndvsrxhmg.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY") or firebaseConfig.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDE3ODcsImV4cCI6MjA2MzExNzc4N30.BbzsUhed1Y_dJYWFKLAHqtV4cXdvjF_ihGdQ_Bpov3Y")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or firebaseConfig.get("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzU0MTc4NywiZXhwIjoyMDYzMTE3Nzg3fQ.i3ixl5ws3Z3QTxIcZNjI29ZknRmJwwQfUyLmX0Z0khc")
@@ -34,7 +33,7 @@ SUPABASE_HEADERS = {
     "Authorization": f"Bearer {SUPABASE_KEY}",
     "Content-Type": "application/json"
 }
-SUPABASE_SERVICE_HEADERS = {
+SUPABASE_SERVICE_HEADERS = { # Cabeceras para service_role (permisos elevados, ¡usar solo en el backend!)
     "apikey": SUPABASE_SERVICE_KEY,
     "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
     "Content-Type": "application/json"
@@ -63,21 +62,9 @@ def calculate_age(birth_date):
 
 def guess_gender(name):
     """Intenta adivinar el género basado en el nombre (heurística simple)."""
-    name = str(name).lower().strip()
-    # Nombres comunes femeninos que no terminan en 'a' pero son conocidos
-    female_names = ['giselle', 'nicole', 'evelyn', 'loreto', 'carmen', 'margaret', 'ruth', 'izaskun']
-    # Nombres comunes masculinos que terminan en 'a' pero son conocidos
-    male_names = ['nicolas', 'mateo', 'andrea', 'patricio']
-
-    first_word = name.split(' ')[0] # Considera solo la primera palabra del nombre
-
-    if first_word in female_names:
-        return "F"
-    if first_word in male_names:
-        return "M"
-
-    # Heurística simple: nombres que terminan en 'a' suelen ser femeninos, el resto masculinos
-    if first_word.endswith("a"):
+    name = name.lower()
+    # Heurística simple: nombres que terminan en 'a' o contienen 'maria' suelen ser femeninos.
+    if name.endswith("a") or "maria" in name:
         return "F"
     return "M"
 
@@ -135,23 +122,20 @@ def relleno_formularios(nomina_id):
     """
     Muestra el formulario de relleno para una nómina específica.
     Carga los estudiantes asociados a la `nomina_id` desde Supabase.
-    También obtiene el conteo de formularios ya completados para esta nómina por el usuario actual.
     """
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
-    usuario_id = session.get('usuario_id')
     print(f"DEBUG: Accediendo a /relleno_formularios con nomina_id: {nomina_id}")
-    print(f"DEBUG: ID de usuario en sesión (doctora) para /relleno_formularios: {usuario_id}")
+    print(f"DEBUG: ID de usuario en sesión (doctora) para /relleno_formularios: {session.get('usuario_id')}")
 
 
     # 1. Obtener la información de la nómina específica (nombre, tipo, etc.)
-    nomina = None
     try:
         url_nomina = f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}&select=nombre_nomina,tipo_nomina"
         print(f"DEBUG: URL para obtener nómina en /relleno_formularios: {url_nomina}")
         res_nomina = requests.get(url_nomina, headers=SUPABASE_HEADERS)
-        res_nomina.raise_for_status()
+        res_nomina.raise_for_status() # Lanza excepción para errores HTTP (4xx o 5xx)
         nomina_data = res_nomina.json()
         print(f"DEBUG: Datos de la nómina recibidos en /relleno_formularios: {nomina_data}")
 
@@ -198,12 +182,6 @@ def relleno_formularios(nomina_id):
                 est['fecha_nacimiento_formato'] = 'N/A'
                 est['edad'] = 'N/A'
 
-            # Auto-inferir sexo
-            if 'nombre' in est and est['nombre']:
-                est['sexo_inferido'] = guess_gender(est['nombre']) # Pasa el nombre completo a guess_gender
-            else:
-                est['sexo_inferido'] = 'M' # Default to Male if name is not available
-
             estudiantes.append(est)
         print(f"DEBUG: Estudiantes procesados para plantilla en /relleno_formularios: {estudiantes}")
 
@@ -217,202 +195,103 @@ def relleno_formularios(nomina_id):
         flash('Error inesperado al cargar la lista de estudiantes.', 'error')
         estudiantes = []
 
-    # 3. Obtener el conteo de formularios completados para esta nómina por el usuario actual
-    total_forms_completed_for_nomina = 0
-    if usuario_id and nomina_id:
-        try:
-            forms_completed_count_url = (
-                f"{SUPABASE_URL}/rest/v1/formularios_subidos?select=id&"
-                f"doctoras_id=eq.{usuario_id}&"
-                f"establecimientos_id=eq.{nomina_id}" # establecimientos_id en esta tabla se usa para el nomina_id
-            )
-            res_forms_completed_count = requests.get(forms_completed_count_url, headers={
-                **SUPABASE_HEADERS,
-                "Prefer": "count=exact"
-            })
-            res_forms_completed_count.raise_for_status()
-
-            if 'content-range' in res_forms_completed_count.headers:
-                content_range = res_forms_completed_count.headers['content-range']
-                total_forms_completed_for_nomina = int(content_range.split('/')[-1])
-            else:
-                total_forms_completed_for_nomina = len(res_forms_completed_count.json())
-            print(f"DEBUG: Forms completed for current nomina ({nomina_id}) by doctor ({usuario_id}): {total_forms_completed_for_nomina}")
-
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Error al obtener el conteo de formularios completados: {e}")
-            print(f"Response text: {res_forms_completed_count.text if 'res_forms_completed_count' in locals() else 'No response'}")
-            total_forms_completed_for_nomina = 0
-        except Exception as e:
-            print(f"❌ Error inesperado al obtener el conteo de formularios: {e}")
-            total_forms_completed_for_nomina = 0
-
-
-    return render_template('formulario_relleno.html', estudiantes=estudiantes, total_forms_completed_for_nomina=total_forms_completed_for_nomina)
+    return render_template('formulario_relleno.html', estudiantes=estudiantes)
 
 
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
-    """
-    Genera un archivo PDF rellenado con los datos del formulario,
-    lo sube a Supabase Storage y registra la finalización en formularios_subidos.
-    """
+    """Genera un archivo PDF rellenado con los datos del formulario."""
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
     # Datos del formulario recibidos del POST
     nombre = request.form.get('nombre')
     rut = request.form.get('rut')
-    fecha_nac = request.form.get('fecha_nacimiento')
+    fecha_nac = request.form.get('fecha_nacimiento') # Viene ya formateado desde el HTML
     edad = request.form.get('edad')
     nacionalidad = request.form.get('nacionalidad')
     sexo = request.form.get('sexo')
     estado = request.form.get('estado')
     diagnostico = request.form.get('diagnostico')
-    
-    # Campo para la reevaluación en años
-    reeval_anos_str = request.form.get('fecha_reevaluacion_anos')
-    derivaciones = request.form.get('derivaciones') # Reincorporado
-    
-    fecha_eval_dt = datetime.now() # Fecha de evaluación actual
-    fecha_eval_formatted = fecha_eval_dt.strftime('%d/%m/%Y')
+    fecha_reeval = request.form.get('fecha_reevaluacion')
+    derivaciones = request.form.get('derivaciones')
+    fecha_eval = datetime.today().strftime('%d/%m/%Y') # Fecha de la evaluación actual
 
-    # Calcular fecha de reevaluación basada en los años seleccionados
-    fecha_reeval_formatted = ""
-    try:
-        # El valor del select es un número entero ("1", "2", etc.)
-        reeval_cantidad_anos = int(reeval_anos_str) 
-        if reeval_cantidad_anos > 0:
-            future_date = fecha_eval_dt + relativedelta(years=reeval_cantidad_anos)
-            fecha_reeval_formatted = future_date.strftime('%d/%m/%Y')
-    except (ValueError, TypeError):
-        print(f"DEBUG: Valor no válido para años de reevaluación: '{reeval_anos_str}'. Estableciendo a 'N/A'.")
-        fecha_reeval_formatted = "N/A" # Manejar si el input es inválido o no se seleccionó
-
-    # IDs para registro en Supabase
-    estudiante_id = request.form.get('estudiante_id')
-    nomina_id = session.get('current_nomina_id') # Obtener de sesión, más seguro
-    doctora_id = session.get('usuario_id')
-
-    # Añadir más DEBUG prints para los IDs antes de construir la URL de subida
-    print(f"DEBUG: Valores para Supabase upload: estudiante_id='{estudiante_id}', nomina_id='{nomina_id}', doctora_id='{doctora_id}'")
-    print(f"DEBUG: Datos de formulario para PDF: nombre='{nombre}', rut='{rut}', fecha_nac='{fecha_nac}', edad='{edad}', sexo='{sexo}', diagnostico='{diagnostico}', fecha_reeval_formatted='{fecha_reeval_formatted}', derivaciones='{derivaciones}'")
+    print(f"DEBUG: generar_pdf - Datos recibidos: nombre={nombre}, rut={rut}, fecha_nac={fecha_nac}")
 
 
-    if not all([estudiante_id, nomina_id, doctora_id, nombre, rut, fecha_nac]):
-        flash("❌ Error: Faltan datos esenciales para generar y guardar el formulario. Asegúrate de que todos los campos del estudiante están cargados.", 'error')
-        if 'current_nomina_id' in session:
-            return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
-        return redirect(url_for('dashboard'))
-
+    # Reformatear fecha de reevaluación a DD/MM/YYYY si viene en formato YYYY-MM-DD (del date input HTML)
+    if fecha_reeval and "-" in fecha_reeval:
+        try:
+            fecha_reeval = datetime.strptime(fecha_reeval, '%Y-%m-%d').strftime('%d/%m/%Y')
+        except ValueError:
+            pass # Si ya está en formato correcto o no es una fecha válida, se deja como está.
 
     # Ruta al archivo PDF base (debe estar en la carpeta 'static')
-    ruta_pdf_base = os.path.join("static", PDF_BASE)
-    if not os.path.exists(ruta_pdf_base):
-        flash(f"❌ Error: El archivo base '{PDF_BASE}' no se encontró en la carpeta 'static'.", 'error')
+    ruta_pdf = os.path.join("static", "FORMULARIO.pdf")
+    if not os.path.exists(ruta_pdf):
+        flash("❌ Error: El archivo 'FORMULARIO.pdf' no se encontró en la carpeta 'static'.", 'error')
+        # Intentar redirigir a la nómina actual si está en sesión
         if 'current_nomina_id' in session:
             return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
         return redirect(url_for('dashboard'))
 
-    output_buffer = io.BytesIO() # Buffer para el PDF generado en memoria
-    nombre_archivo_generado = f"Formulario_{normalizar(nombre)}_{normalizar(rut)}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
-
     try:
-        reader = PdfReader(ruta_pdf_base)
+        reader = PdfReader(ruta_pdf)
         writer = PdfWriter()
-        writer.add_page(reader.pages[0])
+        writer.add_page(reader.pages[0]) # Añadir la primera página del PDF base
 
+        # Diccionario de campos a rellenar en el PDF.
+        # ¡Asegúrate de que las claves aquí (ej. "nombre", "rut") coincidan exactamente con los nombres de los campos en tu PDF editable!
         campos = {
-            "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac,
-            "nacionalidad": nacionalidad, "edad": edad, 
-            "diagnostico_1": diagnostico, # Ahora del desplegable
+            "nombre": nombre,
+            "rut": rut,
+            "fecha_nacimiento": fecha_nac,
+            "nacionalidad": nacionalidad,
+            "edad": edad,
+            "diagnostico_1": diagnostico,
             "diagnostico_2": diagnostico, # Si tienes un campo secundario para el mismo diagnóstico
             "estado_general": estado,
-            "fecha_evaluacion": fecha_eval_formatted,
-            "fecha_reevaluacion": fecha_reeval_formatted, # Fecha calculada y formateada
-            "derivaciones": derivaciones, # Campo derivaciones
-            "sexo_f": "X" if sexo == "F" else "",
-            "sexo_m": "X" if sexo == "M" else "",
+            "fecha_evaluacion": fecha_eval,
+            "fecha_reevaluacion": fecha_reeval,
+            "derivaciones": derivaciones,
+            "sexo_f": "X" if sexo == "F" else "", # Marcar casilla de sexo femenino
+            "sexo_m": "X" if sexo == "M" else "", # Marcar casilla de sexo masculino
         }
+        print(f"DEBUG: Fields to fill in PDF: {campos}")
+
+
+        # Asegurarse de que /AcroForm exista en el objeto raíz del PDF
+        if "/AcroForm" not in writer._root_object:
+            writer._root_object.update({
+                NameObject("/AcroForm"): DictionaryObject()
+            })
+
+        # Actualizar los valores de los campos del formulario en la página
         writer.update_page_form_field_values(writer.pages[0], campos)
-        writer._root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
 
-        writer.write(output_buffer)
-        output_buffer.seek(0) # Reset buffer position for reading/uploading
+        # Forzar la visualización de los campos rellenados sin necesidad de hacer clic
+        writer._root_object["/AcroForm"].update({
+            NameObject("/NeedAppearances"): BooleanObject(True)
+        })
 
-        # 📤 1. Subir el PDF generado a Supabase Storage
-        unique_file_uuid = str(uuid.uuid4())
-        upload_path_corrected = f"formularios_completados_estudiantes/{nomina_id}/{estudiante_id}/{unique_file_uuid}_{nombre_archivo_generado}"
-        upload_url = f"{SUPABASE_URL}/storage/v1/object/{upload_path_corrected}"
-        
-        # Headers específicos para la subida de archivos (Content-Type y x-upsert)
-        upload_headers = {
-            "apikey": SUPABASE_SERVICE_KEY,
-            "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
-            "Content-Type": "application/pdf", # ¡CRÍTICO! Especificar el tipo de contenido del archivo.
-            "x-upsert": "true" # Sobrescribir si el archivo ya existe (opcional, pero útil)
-        }
+        # Generar el PDF final en memoria
+        output = io.BytesIO()
+        writer.write(output)
+        output.seek(0) # Mover el cursor al inicio del stream
 
-        print(f"DEBUG: Iniciando subida de PDF a Supabase Storage.")
-        print(f"DEBUG: URL de subida: {upload_url}")
-        # Truncar la clave de autorización para no mostrarla completa en los logs
-        auth_header_for_log = f"Bearer {SUPABASE_SERVICE_KEY[:10]}..." if SUPABASE_SERVICE_KEY else "No Key"
-        print(f"DEBUG: Encabezados de subida (Autorización truncada): {{'apikey': '...', 'Authorization': '{auth_header_for_log}', 'Content-Type': 'application/pdf', 'x-upsert': 'true'}}") 
-        print(f"DEBUG: Tamaño de los datos del PDF a subir: {len(output_buffer.getvalue())} bytes")
+        # Preparar el nombre del archivo para la descarga
+        nombre_archivo_descarga = f"{nombre.replace(' ', '_')}_{rut}_formulario.pdf"
+        print(f"DEBUG: PDF generado y listo para descarga: {nombre_archivo_descarga}")
+        return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
 
-        try:
-            res_upload = requests.put(upload_url, headers=upload_headers, data=output_buffer.getvalue())
-            # *** Add more detailed logging here BEFORE raise_for_status() ***
-            print(f"DEBUG: Raw response status from Supabase Storage: {res_upload.status_code}")
-            print(f"DEBUG: Raw response headers from Supabase Storage: {res_upload.headers}")
-            print(f"DEBUG: Raw response text from Supabase Storage: {res_upload.text[:500]}..." if res_upload.text else "No response body (raw text)") # Print first 500 chars, handle empty text
-
-            res_upload.raise_for_status() # Esto levantará una excepción HTTPError si el status code es 4xx o 5xx
-            print(f"DEBUG: Subida a Supabase Storage exitosa. Código de estado: {res_upload.status_code}")
-
-            url_publica_generado = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path_corrected}"
-            print(f"DEBUG: PDF generado y subido, URL pública: {url_publica_generado}")
-
-            # 📝 2. Registrar en la tabla 'formularios_subidos'
-            data_registro_formulario = {
-                "doctoras_id": doctora_id,
-                "establecimientos_id": nomina_id, # Usamos nomina_id aquí para el conteo de rendimiento
-                "nombre_archivo": nombre_archivo_generado,
-                "url_archivo": url_publica_generado
-            }
-            print(f"DEBUG: Payload para registrar formulario en formularios_subidos: {data_registro_formulario}")
-
-            res_insert_registro = requests.post(
-                f"{SUPABASE_URL}/rest/v1/formularios_subidos",
-                headers=SUPABASE_HEADERS,
-                json=data_registro_formulario
-            )
-            res_insert_registro.raise_for_status()
-            print(f"DEBUG: Registro en formularios_subidos (status): {res_insert_registro.status_code}")
-            print(f"DEBUG: Registro en formularios_subidos (text): {res_insert_registro.text}")
-
-            flash(f"✅ Formulario de {nombre} guardado y generado exitosamente.", 'success')
-
-            # Devolver el PDF para descarga al usuario
-            output_buffer.seek(0)
-            return send_file(output_buffer, as_attachment=True, download_name=nombre_archivo_generado, mimetype='application/pdf')
-
-        except requests.exceptions.RequestException as e:
-            error_msg = f"❌ Error al interactuar con Supabase (generar_pdf): {e}. Detalle: "
-            if e.response:
-                error_msg += f"Response Status: {e.response.status_code} | Response Headers: {e.response.headers} | Response Body: {e.response.text[:500]}..."
-            else:
-                error_msg += "No response object available in exception."
-            print(error_msg)
-            flash(error_msg, 'error')
-        except Exception as e:
-            error_msg = f"❌ Error inesperado al generar o guardar el PDF: {e}"
-            print(error_msg)
-            flash(error_msg, 'error')
-
-    if 'current_nomina_id' in session:
-        return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
-    return redirect(url_for('dashboard'))
+    except Exception as e:
+        print(f"❌ Error al generar PDF: {e}")
+        flash(f"❌ Error al generar el PDF: {e}. Verifique el archivo base o los campos.", 'error')
+        # Redirigir de vuelta a la página de relleno si es posible
+        if 'current_nomina_id' in session:
+            return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
+        return redirect(url_for('dashboard'))
 
 
 @app.route('/')
@@ -429,13 +308,14 @@ def login():
     print(f"DEBUG: Intento de login para usuario: {usuario}, URL: {url}")
     try:
         res = requests.get(url, headers=SUPABASE_HEADERS)
-        res.raise_for_status()
+        res.raise_for_status() # Lanza una excepción para errores HTTP
         data = res.json()
         print(f"DEBUG: Respuesta Supabase login: {data}")
         if data:
             session['usuario'] = usuario
-            session['usuario_id'] = data[0]['id']
+            session['usuario_id'] = data[0]['id'] # <-- ID de la doctora/admin que inicia sesión
             print(f"DEBUG: Sesión iniciada: usuario={session['usuario']}, usuario_id={session['usuario_id']}")
+            flash(f'¡Bienvenido, {usuario}!', 'success')
             return redirect(url_for('dashboard'))
         flash('Usuario o contraseña incorrecta.', 'error')
         return redirect(url_for('index'))
@@ -454,23 +334,26 @@ def dashboard():
     usuario_id = session.get('usuario_id')
     print(f"DEBUG: Accediendo a dashboard para usuario: {usuario}, ID: {usuario_id}")
 
+    # --- Inicialización de variables para evitar UnboundLocalError ---
     doctoras = []
     establecimientos_admin_list = []
     admin_nominas_cargadas = []
     conteo = {}
-    my_forms_completed_count = 0 # Inicializar para doctores normales
+
 
     # --- Lógica para Eventos/Establecimientos (Visitas Programadas) ---
-    campos_establecimientos = "id,nombre,fecha,horario,observaciones,cantidad_alumnos,url_archivo,nombre_archivo,doctora_id"
+    campos_establecimientos = "id,nombre,fecha,horario,observaciones,cantidad_alumnos,url_archivo,nombre_archivo,doctora_id" # Added doctora_id
     eventos = []
     try:
         if usuario != 'admin':
+            # Para doctores, solo sus eventos asignados
             url_eventos = (
                 f"{SUPABASE_URL}/rest/v1/establecimientos"
-                f"?doctora_id=eq.{usuario_id}"
+                f"?doctora_id=eq.{usuario_id}" # Filtra por el ID de la doctora logueada
                 f"&select={campos_establecimientos}"
             )
         else:
+            # Para admin, todos los eventos
             url_eventos = f"{SUPABASE_URL}/rest/v1/establecimientos?select={campos_establecimientos}"
         
         print(f"DEBUG: URL para obtener eventos: {url_eventos}")
@@ -480,6 +363,7 @@ def dashboard():
         print(f"DEBUG: Eventos recibidos: {eventos}")
 
         if isinstance(eventos, list):
+            # Ordenar por horario si existe y es válido
             eventos.sort(key=lambda e: e.get('horario', '').split(' - ')[0] if e.get('horario') else '')
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener eventos: {e}")
@@ -495,12 +379,6 @@ def dashboard():
         res_formularios.raise_for_status()
         formularios = res_formularios.json()
         print(f"DEBUG: Formularios subidos recibidos: {formularios}")
-
-        if usuario != 'admin':
-            # Conteo de formularios completados por el usuario logueado (doctora)
-            my_forms_completed_count = len([f for f in formularios if f.get('doctoras_id') == usuario_id])
-            print(f"DEBUG: Formularios completados por {usuario}: {my_forms_completed_count}")
-
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener formularios subidos: {e}")
         print(f"Response text: {res_formularios.text if 'res_formularios' in locals() else 'No response'}")
@@ -512,8 +390,8 @@ def dashboard():
         try:
             url_nominas_asignadas = (
                 f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-                f"?doctora_id=eq.{usuario_id}"
-                f"&select=id,nombre_nomina,tipo_nomina,doctora_id"
+                f"?doctora_id=eq.{usuario_id}" # Filtra por el ID de la doctora logueada
+                f"&select=id,nombre_nomina,tipo_nomina,doctora_id" # Added doctora_id for debugging
             )
             print(f"DEBUG: URL para obtener nóminas asignadas (doctor): {url_nominas_asignadas}")
             res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_HEADERS)
@@ -525,7 +403,7 @@ def dashboard():
                 display_name = nom['tipo_nomina'].replace('_', ' ').title()
                 assigned_nominations.append({
                     'id': nom['id'],
-                    'nombre_establecimiento': nom['nombre_nomina'],
+                    'nombre_establecimiento': nom['nombre_nomina'], # Renamed for consistency in the template
                     'tipo_nomina_display': display_name
                 })
             print(f"DEBUG: Nóminas asignadas procesadas para plantilla: {assigned_nominations}")
@@ -534,33 +412,23 @@ def dashboard():
             print(f"Response text: {res_nominas_asignadas.text if 'res_nominas_asignadas' in locals() else 'No response'}")
             flash('Error al cargar sus nóminas asignadas.', 'error')
 
-    # --- Lógica específica del Administrador (mostrar listas de doctores y conteos de rendimiento) ---
-    doctor_performance_data = [] # Siempre inicializar aquí
+    # --- Lógica específica del Administrador (mostrar listas de doctores y conteos) ---
     if usuario == 'admin':
         try:
+            # Obtener lista completa de doctoras
             url_doctoras = f"{SUPABASE_URL}/rest/v1/doctoras"
             print(f"DEBUG: URL para obtener doctoras (admin): {url_doctoras}")
             res_doctoras = requests.get(url_doctoras, headers=SUPABASE_HEADERS)
             res_doctoras.raise_for_status()
             doctoras = res_doctoras.json()
             print(f"DEBUG: Doctoras recibidas (admin): {doctoras}")
-
-            # Calcular el rendimiento de cada doctora
-            if doctoras and formularios:
-                for doc in doctoras:
-                    forms_by_doc = [f for f in formularios if f.get('doctoras_id') == doc['id']]
-                    doctor_performance_data.append({
-                        'doctor_name': doc['usuario'],
-                        'completed_forms_count': len(forms_by_doc)
-                    })
-            print(f"DEBUG: Datos de rendimiento por doctora (admin): {doctor_performance_data}")
-
         except requests.exceptions.RequestException as e:
             print(f"❌ Error al obtener doctoras: {e}")
             print(f"Response text: {res_doctoras.text if 'res_doctoras' in locals() else 'No response'}")
             flash('Error al cargar la lista de doctoras para administración.', 'error')
 
         try:
+            # Obtener todos los establecimientos (no solo los del admin logueado)
             url_establecimientos_admin = f"{SUPABASE_URL}/rest/v1/establecimientos?select=id,nombre"
             print(f"DEBUG: URL para obtener establecimientos (admin): {url_establecimientos_admin}")
             res_establecimientos = requests.get(url_establecimientos_admin, headers=SUPABASE_HEADERS)
@@ -572,6 +440,14 @@ def dashboard():
             print(f"Response text: {res_establecimientos.text if 'res_establecimientos' in locals() else 'No response'}")
 
 
+        # Contar formularios subidos por establecimiento
+        for f in formularios:
+            if isinstance(f, dict) and 'establecimientos_id' in f:
+                est_id = f['establecimientos_id']
+                conteo[est_id] = conteo.get(est_id, 0) + 1
+        print(f"DEBUG: Conteo de formularios por establecimiento: {conteo}")
+
+        # NEW: Obtener nóminas cargadas por el admin (todas las nóminas)
         try:
             url_admin_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina,tipo_nomina,doctora_id,url_excel_original,nombre_excel_original"
             print(f"DEBUG: URL para obtener nóminas cargadas por admin: {url_admin_nominas}")
@@ -589,21 +465,19 @@ def dashboard():
         'dashboard.html',
         usuario=usuario,
         eventos=eventos,
-        doctoras=doctoras,
-        establecimientos=establecimientos_admin_list,
-        formularios=formularios,
+        doctoras=doctoras, # Lista de doctoras para admin (ahora siempre inicializada)
+        establecimientos=establecimientos_admin_list, # Lista de establecimientos para admin (ahora siempre inicializada)
+        formularios=formularios, # Formularios subidos por las doctoras
         conteo=conteo,
-        assigned_nominations=assigned_nominations,
-        admin_nominas_cargadas=admin_nominas_cargadas,
-        my_forms_completed_count=my_forms_completed_count,
-        doctor_performance_data=doctor_performance_data
+        assigned_nominations=assigned_nominations, # Nóminas asignadas a la doctora logueada
+        admin_nominas_cargadas=admin_nominas_cargadas # ¡NUEVO! Nóminas cargadas por el admin (ahora siempre inicializada)
     )
 
 @app.route('/logout')
 def logout():
     """Cierra la sesión del usuario."""
     session.clear()
-    # flash('Has cerrado sesión correctamente.', 'info') # Eliminado para evitar mensajes inesperados
+    flash('Has cerrado sesión correctamente.', 'info')
     return redirect(url_for('index'))
 
 @app.route('/admin/agregar', methods=['POST'])
@@ -620,7 +494,7 @@ def admin_agregar():
     fecha = request.form.get('fecha')
     horario = request.form.get('horario')
     obs = request.form.get('obs')
-    doctora_id_from_form = request.form.get('doctora', '').strip()
+    doctora_id_from_form = request.form.get('doctora', '').strip() # <-- Obtiene el ID seleccionado del formulario
     cantidad_alumnos = request.form.get('alumnos')
     archivo = request.files.get('formulario') # Archivo PDF o DOCX base
 
@@ -700,7 +574,7 @@ def admin_cargar_nomina():
 
     tipo_nomina = request.form.get('tipo_nomina')
     nombre_especifico = request.form.get('nombre_especifico')
-    doctora_id_from_form = request.form.get('doctora', '').strip()
+    doctora_id_from_form = request.form.get('doctora', '').strip() # <-- Obtiene el ID seleccionado del formulario
     excel_file = request.files.get('excel')
 
     print(f"DEBUG: admin_cargar_nomina - Datos recibidos: tipo_nomina={tipo_nomina}, nombre_especifico={nombre_especifico}, doctora_id_from_form={doctora_id_from_form}, archivo_presente={bool(excel_file)}")
@@ -720,12 +594,13 @@ def admin_cargar_nomina():
 
     # 1. Subir el archivo Excel/CSV original a Supabase Storage
     try:
-        # Usar el nombre de bucket 'nominas-medicas' (con guion medio)
+        # CAMBIO CRUCIAL: Usar 'nominas-medicas' (con guion medio)
         upload_path = f"nominas-medicas/{nomina_id}/{excel_filename}" 
         upload_url = f"{SUPABASE_URL}/storage/v1/object/{upload_path}"
         print(f"DEBUG: Subiendo archivo Excel a Storage: {upload_url}")
         res_upload = requests.put(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=excel_file_data)
         res_upload.raise_for_status()
+        # CAMBIO CRUCIAL: Usar 'nominas-medicas' (con guion medio)
         url_excel_publica = f"{SUPABASE_URL}/storage/v1/object/public/nominas-medicas/{upload_path}" 
         print(f"DEBUG: Archivo Excel subido, URL pública: {url_excel_publica}")
     except requests.exceptions.RequestException as e:
@@ -757,9 +632,10 @@ def admin_cargar_nomina():
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al guardar nómina en DB: {e} - {res_insert_nomina.text if 'res_insert_nomina' in locals() else ''}")
         flash("❌ Error al guardar los datos de la nómina en la base de datos.", 'error')
+        # Considera limpiar el archivo de Storage si la inserción en DB falla
         return redirect(url_for('dashboard'))
 
-    # 3. Procesar el archivo Excel/CSV y subir los estudiantes a 'estudiantes_nomina'
+    # 3. Leer y procesar el contenido del Excel/CSV para guardar estudiantes
     try:
         excel_data_io = io.BytesIO(excel_file_data)
         if excel_filename.lower().endswith(('.xlsx', '.xls')):
@@ -770,12 +646,10 @@ def admin_cargar_nomina():
             raise ValueError("Formato de archivo no soportado para lectura (solo .xls, .xlsx, .csv).")
 
         estudiantes_a_insertar = []
-        # Normalizar los nombres de las columnas para asegurar coincidencia
         df.columns = [normalizar(col) for col in df.columns]
         print(f"DEBUG: Columnas del Excel normalizadas: {df.columns.tolist()}")
 
         for index, row in df.iterrows():
-            # Intentar obtener los datos con nombres de columna comunes
             nombre = row.get('nombre') or row.get('nombres') or row.get('alumno')
             rut = row.get('rut')
             fecha_nac_excel = row.get('fecha_nacimiento') or row.get('fecha_nac')
@@ -786,7 +660,6 @@ def admin_cargar_nomina():
                 continue
 
             try:
-                # Convertir la fecha de nacimiento a formato ISO (YYYY-MM-DD)
                 fecha_nac_obj = pd.to_datetime(fecha_nac_excel).date()
                 fecha_nac_str = fecha_nac_obj.isoformat()
                 edad = calculate_age(fecha_nac_obj)
@@ -795,7 +668,7 @@ def admin_cargar_nomina():
                 flash(f"⚠️ Atención: Fecha de nacimiento inválida en la fila {index+2} del Excel. Se omitirá esa entrada.", 'warning')
                 continue
 
-            sexo = guess_gender(str(nombre).split()[0]) # Usar la función de inferencia
+            sexo = guess_gender(str(nombre).split()[0])
 
             estudiantes_a_insertar.append({
                 "nomina_id": nomina_id,
@@ -810,6 +683,7 @@ def admin_cargar_nomina():
         print(f"DEBUG: Estudiantes listos para insertar ({len(estudiantes_a_insertar)}): {estudiantes_a_insertar}")
 
 
+        # Insertar todos los estudiantes en un solo lote (Supabase lo soporta con un array de objetos)
         if estudiantes_a_insertar:
             res_insert_estudiantes = requests.post(
                 f"{SUPABASE_URL}/rest/v1/estudiantes_nomina",
@@ -826,6 +700,8 @@ def admin_cargar_nomina():
     except Exception as e:
         print(f"❌ Error al procesar el archivo Excel o insertar estudiantes: {e}")
         flash('❌ Error al procesar el archivo de la nómina. Verifique que el formato de las columnas ("nombre", "rut", "fecha_nacimiento") sea correcto.', 'error')
+        # Si la carga de estudiantes falla catastróficamente, podrías considerar eliminar la entrada de la nómina creada
+        # requests.delete(f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}", headers=SUPABASE_SERVICE_HEADERS)
         
     return redirect(url_for('dashboard'))
 
@@ -834,13 +710,12 @@ def admin_cargar_nomina():
 def subir(establecimiento):
     """
     Ruta para que la doctora suba formularios completados (PDF, Word, Excel)
-    asociados a un establecimiento específico. Esta ruta es para subida manual
-    de archivos, diferente a la generación automática de PDF en /generar_pdf.
+    asociados a un establecimiento específico.
     """
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
-    archivos = request.files.getlist('archivo')
+    archivos = request.files.getlist('archivo') # Obtener todos los archivos seleccionados
     print(f"DEBUG: subir - Establecimiento ID: {establecimiento}, Cantidad de archivos: {len(archivos)}")
     print(f"DEBUG: ID de usuario en sesión (doctora) para /subir: {session.get('usuario_id')}")
 
@@ -858,27 +733,30 @@ def subir(establecimiento):
             file_data = archivo.read()
             mime_type = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
 
+            # Generar un ID único para cada archivo, para evitar colisiones de nombres
             unique_file_id = str(uuid.uuid4())
 
-            upload_path = f"formularios_subidos_manual/{establecimiento}/{unique_file_id}/{filename}"
+            # 📤 1. Subir archivo a Supabase Storage usando service_role
+            upload_path = f"formularios_completados/{establecimiento}/{unique_file_id}/{filename}"
             upload_url = f"{SUPABASE_URL}/storage/v1/object/{upload_path}"
-            
-            print(f"DEBUG: Subiendo archivo completado manualmente a Storage: {upload_url}")
+            print(f"DEBUG: Subiendo archivo completado a Storage: {upload_url}")
             
             try:
                 res_upload = requests.put(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=file_data)
-                res_upload.raise_for_status()
+                res_upload.raise_for_status() # Lanza excepción para errores HTTP (4xx o 5xx)
                 
+                # 🌐 2. Construir URL pública del archivo
                 url_publica = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path}"
                 print(f"DEBUG: Archivo completado subido, URL pública: {url_publica}")
 
+                # 📝 3. Guardar metadatos en la tabla 'formularios_subidos'
                 data = {
-                    "doctoras_id": usuario_id,
-                    "establecimientos_id": establecimiento,
+                    "doctoras_id": usuario_id, # <-- ID de la doctora que sube el archivo
+                    "establecimientos_id": establecimiento, # ID del establecimiento asociado
                     "nombre_archivo": filename,
                     "url_archivo": url_publica
                 }
-                print(f"DEBUG: Payload para insertar formulario subido manualmente en DB: {data}")
+                print(f"DEBUG: Payload para insertar formulario subido en DB: {data}")
 
                 res_insert = requests.post(
                     f"{SUPABASE_URL}/rest/v1/formularios_subidos",
@@ -901,19 +779,24 @@ def subir(establecimiento):
         else:
             mensajes.append(f"⚠️ Archivo '{archivo.filename}' no permitido.")
     
+    # Después de procesar todos los archivos, usar flash para mostrar todos los mensajes
     for msg in mensajes:
         flash(msg, 'success' if '✅' in msg else 'error' if '❌' in msg else 'warning')
 
     return redirect(url_for('dashboard'))
 
+# Nueva ruta para el admin para ver detalles de colegios evaluados (si existe en tu navbar)
 @app.route('/colegios')
 def colegios():
     if session.get('usuario') != 'admin':
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
     
-    return render_template('colegios.html')
+    # Aquí puedes añadir la lógica para cargar y mostrar datos relevantes a los colegios evaluados
+    # Por ahora, solo renderiza una plantilla de ejemplo.
+    return render_template('colegios.html') # Asegúrate de tener este archivo de plantilla
 
+# Nueva ruta para que la doctora vea solo sus nóminas asignadas
 @app.route('/mis_nominas')
 def mis_nominas():
     if 'usuario' not in session:
@@ -932,8 +815,8 @@ def mis_nominas():
     try:
         url_nominas_asignadas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?doctora_id=eq.{usuario_id}"
-            f"&select=id,nombre_nomina,tipo_nomina,doctora_id"
+            f"?doctora_id=eq.{usuario_id}" # Filtra por el ID de la doctora logueada
+            f"&select=id,nombre_nomina,tipo_nomina,doctora_id" # Added doctora_id for debugging
         )
         print(f"DEBUG: URL para mis_nominas: {url_nominas_asignadas}")
         res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_HEADERS)
@@ -958,6 +841,9 @@ def mis_nominas():
         print(f"❌ Error inesperado al procesar mis nóminas: {e}")
         flash('Error inesperado al cargar sus nóminas asignadas.', 'error')
 
+
+    # Es importante renderizar una plantilla que muestre estas nóminas, por ejemplo, una versión simplificada
+    # o reutilizando la sección de nóminas asignadas de dashboard.
     return render_template('mis_nominas.html', assigned_nominations=assigned_nominations)
 
 @app.route('/evaluados/<establecimiento>', methods=['POST'])
@@ -971,12 +857,14 @@ def evaluados(establecimiento):
     print(f"DEBUG: ID de usuario en sesión (doctora) para /evaluados: {session.get('usuario_id')}")
 
 
+    # Aquí debes actualizar la tabla 'establecimientos' para registrar la cantidad de alumnos evaluados
+    # Suponiendo que hay una columna 'alumnos_evaluados' en tu tabla 'establecimientos'
     data_update = {
         "cantidad_alumnos_evaluados": int(alumnos_evaluados) if alumnos_evaluados else 0
     }
 
     try:
-        response_db = requests.patch(
+        response_db = requests.patch( # Usamos PATCH para actualizar un registro existente
             f"{SUPABASE_URL}/rest/v1/establecimientos?id=eq.{establecimiento}",
             headers=SUPABASE_HEADERS,
             json=data_update
@@ -992,4 +880,4 @@ def evaluados(establecimiento):
         print(f"❌ Error inesperado al registrar alumnos evaluados: {e}")
         flash("❌ Error inesperado al registrar la cantidad de alumnos evaluados.", 'error')
 
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('dashboard')) # Redirige al dashboard o a la página específica del establecimiento si existe

@@ -200,107 +200,100 @@ def relleno_formularios(nomina_id):
 
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
-    if 'user_id' not in session:
-        flash('Debes iniciar sesión para acceder a esta página.', 'danger')
-        return redirect(url_for('login'))
+    """Genera un archivo PDF rellenado con los datos del formulario."""
+    if 'usuario' not in session:
+        return redirect(url_for('index'))
 
-    # 1. Obtener datos del formulario
-    estudiante_id = request.form.get('estudiante_id')
-    nomina_id = request.form.get('nomina_id')
+    # Datos del formulario recibidos del POST
     nombre = request.form.get('nombre')
     rut = request.form.get('rut')
-    fecha_nacimiento = request.form.get('fecha_nacimiento')
+    fecha_nac = request.form.get('fecha_nacimiento') # Viene ya formateado desde el HTML
     edad = request.form.get('edad')
     nacionalidad = request.form.get('nacionalidad')
-
-    # CAMPOS EDITABLES A GUARDAR
-    sexo = request.form.get('sexo') # Ahora viene del <select>
-    estado_general = request.form.get('estado')
+    sexo = request.form.get('sexo')
+    estado = request.form.get('estado')
     diagnostico = request.form.get('diagnostico')
-    plazo_reevaluacion = request.form.get('plazo') # Este es el valor numérico (1, 2, 3, 4, 5)
-    fecha_reevaluacion = request.form.get('fecha_reevaluacion') # Ya viene en YYYY-MM-DD
+    fecha_reeval = request.form.get('fecha_reevaluacion')
     derivaciones = request.form.get('derivaciones')
+    fecha_eval = datetime.today().strftime('%d/%m/%Y') # Fecha de la evaluación actual
 
-    if not all([estudiante_id, nomina_id, nombre, rut, fecha_nacimiento, edad, nacionalidad, sexo, estado_general, diagnostico, fecha_reevaluacion, derivaciones]):
-        flash('Faltan datos requeridos en el formulario.', 'danger')
-        return redirect(url_for('relleno_formularios', nomina_id=nomina_id))
+    print(f"DEBUG: generar_pdf - Datos recibidos: nombre={nombre}, rut={rut}, fecha_nac={fecha_nac}")
+
+
+    # Reformatear fecha de reevaluación a DD/MM/YYYY si viene en formato YYYY-MM-DD (del date input HTML)
+    if fecha_reeval and "-" in fecha_reeval:
+        try:
+            fecha_reeval = datetime.strptime(fecha_reeval, '%Y-%m-%d').strftime('%d/%m/%Y')
+        except ValueError:
+            pass # Si ya está en formato correcto o no es una fecha válida, se deja como está.
+
+    # Ruta al archivo PDF base (debe estar en la carpeta 'static')
+    ruta_pdf = os.path.join("static", "FORMULARIO.pdf")
+    if not os.path.exists(ruta_pdf):
+        flash("❌ Error: El archivo 'FORMULARIO.pdf' no se encontró en la carpeta 'static'.", 'error')
+        # Intentar redirigir a la nómina actual si está en sesión
+        if 'current_nomina_id' in session:
+            return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
+        return redirect(url_for('dashboard'))
 
     try:
-        # Convertir fecha_reevaluacion a objeto date si es necesario para Supabase
-        # Supabase suele manejar las fechas como strings en formato ISO 8601 (YYYY-MM-DD)
-        # Así que, si ya viene en YYYY-MM-DD, no necesita conversión compleja.
-        # Solo asegúrate de que no sea una cadena vacía.
-        fecha_reevaluacion_db = fecha_reevaluacion if fecha_reevaluacion else None
+        reader = PdfReader(ruta_pdf)
+        writer = PdfWriter()
+        writer.add_page(reader.pages[0]) # Añadir la primera página del PDF base
 
-        # 2. Actualizar el registro del estudiante en Supabase
-        update_data = {
-            'sexo': sexo,
-            'estado_general': estado_general,
-            'diagnostico': diagnostico,
-            'fecha_reevaluacion': fecha_reevaluacion_db,
-            'derivaciones': derivaciones,
-            'fecha_relleno': str(date.today()) # Marcar la fecha actual de llenado
+        # Diccionario de campos a rellenar en el PDF.
+        # ¡Asegúrate de que las claves aquí (ej. "nombre", "rut") coincidan exactamente con los nombres de los campos en tu PDF editable!
+        campos = {
+            "nombre": nombre,
+            "rut": rut,
+            "fecha_nacimiento": fecha_nac,
+            "nacionalidad": nacionalidad,
+            "edad": edad,
+            "diagnostico_1": diagnostico,
+            "diagnostico_2": diagnostico, # Si tienes un campo secundario para el mismo diagnóstico
+            "estado_general": estado,
+            "fecha_evaluacion": fecha_eval,
+            "fecha_reevaluacion": fecha_reeval,
+            "derivaciones": derivaciones,
+            "sexo_f": "X" if sexo == "F" else "", # Marcar casilla de sexo femenino
+            "sexo_m": "X" if sexo == "M" else "", # Marcar casilla de sexo masculino
         }
-        
-        response = supabase.table('estudiantes_nomina').update(update_data).eq('id', estudiante_id).execute()
+        print(f"DEBUG: Fields to fill in PDF: {campos}")
 
-        if response.data:
-            print(f"DEBUG: Estudiante {estudiante_id} actualizado en Supabase.")
-            flash('Formulario guardado y PDF generado con éxito.', 'success')
-            # Aquí generas el PDF usando todos los datos, incluidos los actualizados.
-            # Puedes pasar todos los datos como un diccionario al template para generar el PDF
-            estudiante_data = {
-                'nombre': nombre,
-                'rut': rut,
-                'fecha_nacimiento': fecha_nacimiento,
-                'edad': edad,
-                'nacionalidad': nacionalidad,
-                'sexo': sexo,
-                'estado_general': estado_general,
-                'diagnostico': diagnostico,
-                'fecha_reevaluacion': fecha_reevaluacion,
-                'derivaciones': derivaciones,
-                'fecha_relleno': str(date.today()) # Usa la fecha de relleno actual
-            }
-            # En un caso real, podrías llamar a una función que genere el PDF y lo devuelva.
-            # Por ahora, redirigimos o renderizamos una confirmación.
-            return redirect(url_for('relleno_formularios', nomina_id=nomina_id))
-        else:
-            flash('Error al guardar el formulario en la base de datos.', 'danger')
-            print(f"ERROR: No se pudo actualizar el estudiante en Supabase: {response.status_code} - {response.text}")
-            return redirect(url_for('relleno_formularios', nomina_id=nomina_id))
+
+        # Asegurarse de que /AcroForm exista en el objeto raíz del PDF
+        if "/AcroForm" not in writer._root_object:
+            writer._root_object.update({
+                NameObject("/AcroForm"): DictionaryObject()
+            })
+
+        # Actualizar los valores de los campos del formulario en la página
+        writer.update_page_form_field_values(writer.pages[0], campos)
+
+        # Forzar la visualización de los campos rellenados sin necesidad de hacer clic
+        writer._root_object["/AcroForm"].update({
+            NameObject("/NeedAppearances"): BooleanObject(True)
+        })
+
+        # Generar el PDF final en memoria
+        output = io.BytesIO()
+        writer.write(output)
+        output.seek(0) # Mover el cursor al inicio del stream
+
+        # Preparar el nombre del archivo para la descarga
+        nombre_archivo_descarga = f"{nombre.replace(' ', '_')}_{rut}_formulario.pdf"
+        print(f"DEBUG: PDF generado y listo para descarga: {nombre_archivo_descarga}")
+        return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
 
     except Exception as e:
-        flash(f'Ocurrió un error inesperado: {str(e)}', 'danger')
-        print(f"ERROR: Error en generar_pdf: {e}")
-        return redirect(url_for('relleno_formularios', nomina_id=nomina_id))
+        print(f"❌ Error al generar PDF: {e}")
+        flash(f"❌ Error al generar el PDF: {e}. Verifique el archivo base o los campos.", 'error')
+        # Redirigir de vuelta a la página de relleno si es posible
+        if 'current_nomina_id' in session:
+            return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
+        return redirect(url_for('dashboard'))
 
-@app.route('/marcar_evaluado', methods=['POST'])
-def marcar_evaluado():
-    if 'user_id' not in session:
-        return jsonify({"success": False, "message": "No autorizado"}), 401
 
-    estudiante_id = request.form.get('estudiante_id')
-    nomina_id = request.form.get('nomina_id')
-
-    if not estudiante_id or not nomina_id:
-        return jsonify({"success": False, "message": "Datos de estudiante o nómina faltantes"}), 400
-
-    try:
-        response = supabase.table('estudiantes_nomina').update({
-            'fecha_relleno': str(date.today())
-        }).eq('id', estudiante_id).execute()
-
-        if response.data:
-            return jsonify({"success": True, "message": "Estudiante marcado como evaluado"})
-        else:
-            print(f"ERROR: No se pudo actualizar el estudiante al marcar como evaluado: {response.status_code} - {response.text}")
-            return jsonify({"success": False, "message": "No se pudo actualizar el estudiante"}), 500
-
-    except Exception as e:
-        print(f"ERROR: Error al marcar estudiante como evaluado: {e}")
-        return jsonify({"success": False, "message": f"Error interno del servidor: {str(e)}"}), 500
-        
 @app.route('/')
 def index():
     """Muestra la página de inicio de sesión."""

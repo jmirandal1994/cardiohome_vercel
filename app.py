@@ -651,26 +651,28 @@ def dashboard():
     if usuario == 'admin':
         try:
             url_doctoras = f"{SUPABASE_URL}/rest/v1/doctoras"
-            print(f"DEBUG: URL para obtener doctoras (admin): {url_doctoras}")
-            res_doctoras = requests.get(url_doctoras, headers=SUPABASE_HEADERS)
+            print(f"DEBUG: URL para obtener doctoras (admin con service key): {url_doctoras}") # DEBUG
+            res_doctoras = requests.get(url_doctoras, headers=SUPABASE_SERVICE_HEADERS) # <-- Usar SERVICE_HEADERS
             res_doctoras.raise_for_status()
             doctoras = res_doctoras.json()
             print(f"DEBUG: Doctoras recibidas (admin): {doctoras}")
         except requests.exceptions.RequestException as e:
-            print(f"❌ Error al obtener doctoras: {e}")
-            print(f"Response text: {res_doctoras.text if 'res_doctoras' in locals() else 'No response'}")
-            flash('Error al cargar la lista de doctoras para administración.', 'error')
+            print(f"❌ ERROR AL OBTENER DOCTORAS (ADMIN DASHBOARD) CON SERVICE KEY: {e} - {res_doctoras.text if 'res_doctoras' in locals() else ''}")
+            flash('Error crítico al cargar doctoras en el panel de administrador. Verifique su SUPABASE_SERVICE_KEY.', 'error')
+            doctoras = [] # Ensure it's an empty list on error
 
         try:
             url_establecimientos_admin = f"{SUPABASE_URL}/rest/v1/establecimientos?select=id,nombre"
-            print(f"DEBUG: URL para obtener establecimientos (admin): {url_establecimientos_admin}")
-            res_establecimientos = requests.get(url_establecimientos_admin, headers=SUPABASE_HEADERS)
+            print(f"DEBUG: URL para obtener establecimientos (admin con service key): {url_establecimientos_admin}") # DEBUG
+            res_establecimientos = requests.get(url_establecimientos_admin, headers=SUPABASE_SERVICE_HEADERS) # <-- Usar SERVICE_HEADERS
             res_establecimientos.raise_for_status()
             establecimientos_admin_list = res_establecimientos.json()
             print(f"DEBUG: Establecimientos recibidos (admin): {establecimientos_admin_list}")
         except requests.exceptions.RequestException as e:
-            print(f"❌ Error al obtener establecimientos para conteo: {e}")
+            print(f"❌ Error al obtener establecimientos (ADMIN DASHBOARD) CON SERVICE KEY: {e}")
             print(f"Response text: {res_establecimientos.text if 'res_establecimientos' in locals() else 'No response'}")
+            flash('Error crítico al cargar establecimientos en el panel de administrador. Verifique su SUPABASE_SERVICE_KEY.', 'error')
+            establecimientos_admin_list = [] # Ensure empty on error
 
 
         for f in formularios:
@@ -699,8 +701,8 @@ def dashboard():
                 try:
                     # Consulta a Supabase para contar formularios con fecha_relleno no nula
                     url_doctor_forms = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?doctora_evaluadora_id=eq.{doctor_id}&fecha_relleno.not.is.null&select=count"
-                    print(f"DEBUG: URL para rendimiento de doctora {doc['usuario']}: {url_doctor_forms}")
-                    res_doctor_forms = requests.get(url_doctor_forms, headers=SUPABASE_HEADERS)
+                    print(f"DEBUG: URL para rendimiento de doctora {doc['usuario']} con service key: {url_doctor_forms}") # DEBUG
+                    res_doctor_forms = requests.get(url_doctor_forms, headers=SUPABASE_SERVICE_HEADERS) # <-- Usar SERVICE_HEADERS
                     res_doctor_forms.raise_for_status()
                     count_range = res_doctor_forms.headers.get('Content-Range')
                     if count_range:
@@ -709,7 +711,7 @@ def dashboard():
                         doctor_performance_data[doctor_id] = 0
                     print(f"DEBUG: Doctora {doc['usuario']} (ID: {doctor_id}) ha completado {doctor_performance_data[doctor_id]} formularios.")
                 except requests.exceptions.RequestException as e:
-                    print(f"❌ Error al obtener formularios completados para doctora {doc['usuario']}: {e}")
+                    print(f"❌ ERROR AL OBTENER FORMULARIOS COMPLETADOS PARA DOCTORA {doc['usuario']} CON SERVICE KEY: {e}")
                     doctor_performance_data[doctor_id] = 0 # Establecer a 0 en caso de error para que no falle la app
                 except Exception as e:
                     print(f"❌ Error inesperado al procesar rendimiento de doctora {doc['usuario']}: {e}")
@@ -843,7 +845,8 @@ def admin_cargar_nomina():
         res_upload = requests.put(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=excel_file_data)
         res_upload.raise_for_status()
         
-        url_excel_publica = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path}"
+        # Corrección aquí: La URL pública necesita el prefijo del bucket 'nominas-medicas' después de 'public/'
+        url_excel_publica = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path}" # Corregido para que incluya el path completo
         print(f"DEBUG: Archivo Excel subido, URL pública: {url_excel_publica}")
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al subir archivo Excel a Storage: {e} - {res_upload.text if 'res_upload' in locals() else ''}")
@@ -1116,5 +1119,6 @@ def enviar_formulario_a_drive():
     except Exception as e:
         print(f"ERROR: Error al procesar y subir formulario a Drive: {e}")
         return jsonify({"success": False, "message": f"Error interno del servidor al procesar y subir a Drive: {str(e)}"}), 500
+
 
 

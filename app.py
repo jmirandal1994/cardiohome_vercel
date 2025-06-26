@@ -535,7 +535,8 @@ def login():
     url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario}&password=eq.{clave}"
     print(f"DEBUG: Intento de login para usuario: {usuario}, URL: {url}")
     try:
-        res = requests.get(url, headers=SUPABASE_HEADERS)
+        # --- CAMBIO IMPORTANTE AQUÍ: Usar SUPABASE_SERVICE_HEADERS para el login ---
+        res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS) 
         res.raise_for_status()
         data = res.json()
         print(f"DEBUG: Respuesta Supabase login: {data}")
@@ -690,27 +691,29 @@ def dashboard():
             print(f"Response text: {res_admin_nominas.text if 'res_admin_nominas' in locals() else 'No response'}")
             flash('Error al cargar la lista de nóminas en la vista de administrador.', 'error')
         
-        # --- NUEVA LÓGICA: Obtener rendimiento por doctora (para admin) ---
-        for doc in doctoras:
-            doctor_id = doc['id']
-            try:
-                # Query to count completed forms for this specific doctor
-                url_doctor_forms = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?doctora_evaluadora_id=eq.{doctor_id}&fecha_relleno.not.is.null&select=count"
-                print(f"DEBUG: URL para rendimiento de doctora {doc['usuario']}: {url_doctor_forms}")
-                res_doctor_forms = requests.get(url_doctor_forms, headers=SUPABASE_HEADERS)
-                res_doctor_forms.raise_for_status()
-                count_range = res_doctor_forms.headers.get('Content-Range')
-                if count_range:
-                    doctor_performance_data[doctor_id] = int(count_range.split('/')[-1])
-                else:
+        # --- LÓGICA DE RENDIMIENTO POR DOCTORA PARA ADMIN ---
+        # Asegúrate de que 'doctoras' esté poblado antes de este bucle
+        if doctoras: # Solo si hay doctoras para procesar
+            for doc in doctoras:
+                doctor_id = doc['id']
+                try:
+                    # Consulta a Supabase para contar formularios con fecha_relleno no nula
+                    url_doctor_forms = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?doctora_evaluadora_id=eq.{doctor_id}&fecha_relleno.not.is.null&select=count"
+                    print(f"DEBUG: URL para rendimiento de doctora {doc['usuario']}: {url_doctor_forms}")
+                    res_doctor_forms = requests.get(url_doctor_forms, headers=SUPABASE_HEADERS)
+                    res_doctor_forms.raise_for_status()
+                    count_range = res_doctor_forms.headers.get('Content-Range')
+                    if count_range:
+                        doctor_performance_data[doctor_id] = int(count_range.split('/')[-1])
+                    else:
+                        doctor_performance_data[doctor_id] = 0
+                    print(f"DEBUG: Doctora {doc['usuario']} (ID: {doctor_id}) ha completado {doctor_performance_data[doctor_id]} formularios.")
+                except requests.exceptions.RequestException as e:
+                    print(f"❌ Error al obtener formularios completados para doctora {doc['usuario']}: {e}")
+                    doctor_performance_data[doctor_id] = 0 # Establecer a 0 en caso de error para que no falle la app
+                except Exception as e:
+                    print(f"❌ Error inesperado al procesar rendimiento de doctora {doc['usuario']}: {e}")
                     doctor_performance_data[doctor_id] = 0
-                print(f"DEBUG: Doctora {doc['usuario']} (ID: {doctor_id}) ha completado {doctor_performance_data[doctor_id]} formularios.")
-            except requests.exceptions.RequestException as e:
-                print(f"❌ Error al obtener formularios completados para doctora {doc['usuario']}: {e}")
-                doctor_performance_data[doctor_id] = 0 # Set to 0 on error
-            except Exception as e:
-                print(f"❌ Error inesperado al procesar rendimiento de doctora {doc['usuario']}: {e}")
-                doctor_performance_data[doctor_id] = 0
 
 
     return render_template(
@@ -723,8 +726,8 @@ def dashboard():
         conteo=conteo,
         assigned_nominations=assigned_nominations,
         admin_nominas_cargadas=admin_nominas_cargadas,
-        evaluaciones_doctora=evaluaciones_doctora, # For individual doctor (non-admin)
-        doctor_performance_data=doctor_performance_data # NEW! For admin view
+        evaluaciones_doctora=evaluaciones_doctora, # Para la vista individual de la doctora
+        doctor_performance_data=doctor_performance_data # ¡NUEVO! Para la vista del administrador
     )
 
 @app.route('/logout')
@@ -1113,4 +1116,5 @@ def enviar_formulario_a_drive():
     except Exception as e:
         print(f"ERROR: Error al procesar y subir formulario a Drive: {e}")
         return jsonify({"success": False, "message": f"Error interno del servidor al procesar y subir a Drive: {str(e)}"}), 500
+
 

@@ -1,8 +1,11 @@
-flask
-gunicorn
-requests
-PyPDF2
-openpyxl
-pandas
-pypdf
-python-dateutil 
+Flask==2.3.2 # O la versión que estés usando
+requests==2.31.0 # O una versión reciente
+google-api-python-client==2.130.0 # Versión reciente o la que prefieras
+google-auth-oauthlib==1.2.0 # Versión reciente o la que prefieras
+google-auth-httplib2==0.2.0 # Versión reciente o la que prefieras
+PyPDF2==3.0.1 # O una versión reciente
+openpyxl==3.1.2 # O una versión reciente
+pandas==2.2.2 # O una versión reciente
+numpy==1.26.4 # Pandas a menudo depende de numpy
+unicorn==2.0.0.post1 # Para el servidor web en Vercel
+gunicorn==20.1.0 # Servidor WSGI para Flask en Vercel

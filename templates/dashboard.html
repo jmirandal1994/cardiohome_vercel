@@ -4,11 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - CardioHome</title>
-    <!-- Fuentes de Google Fonts para un aspecto más profesional -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Font Awesome para íconos -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Tailwind CSS CDN para estilos modernos y responsivos -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Variables CSS personalizadas */
         :root {
             --primary-dark: hsl(210, 29%, 24%); /* Deep Slate Blue */
             --primary-medium: hsl(210, 15%, 35%); /* Darker Grayish Blue */
@@ -28,8 +27,14 @@
             --gap-base: 25px;
         }
 
+        /* Fuentes de Google Fonts para un aspecto más profesional */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+        /* Font Awesome para íconos */
+        @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
+
+        /* Estilos generales del cuerpo */
         body {
-            margin: 0;
             font-family: 'Inter', sans-serif;
             background-color: var(--background-accent);
             color: var(--text-dark);
@@ -42,10 +47,11 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
+        /* Estilos del header */
         header {
             background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-medium) 100%);
             color: var(--text-light);
-            padding: var(--padding-base) 0 80px 0;
+            padding: 1.5rem 0; /* Ajustado para un diseño más compacto */
             text-align: center;
             box-shadow: 0 6px 20px var(--shadow-strong);
             position: relative;
@@ -57,35 +63,36 @@
         }
 
         header img {
-            width: 100px;
+            width: 80px; /* Tamaño un poco más pequeño para el logo */
             height: auto;
             filter: brightness(0) invert(1);
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
 
         header h1 {
             font-family: 'Montserrat', sans-serif;
-            font-size: 32px;
+            font-size: 28px; /* Tamaño de fuente ajustado */
             margin-top: 0;
-            margin-bottom: 20px;
+            margin-bottom: 0;
             font-weight: 800;
             letter-spacing: 0.8px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
+        /* Botón de cerrar sesión */
         .logout-btn {
             background-color: var(--accent-red);
             color: var(--text-light);
             border: none;
-            padding: 12px 25px;
+            padding: 10px 20px; /* Ajustado el padding */
             border-radius: var(--border-radius-base);
             cursor: pointer;
             font-weight: 600;
-            font-size: 15px;
+            font-size: 14px; /* Ajustado el tamaño de fuente */
             transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
             position: absolute;
-            top: 20px;
-            right: 25px;
+            top: 15px;
+            right: 20px;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -94,25 +101,155 @@
 
         .logout-btn:hover {
             background-color: hsl(0, 70%, 45%);
-            transform: translateY(-3px);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+            transform: translateY(-2px); /* Menos movimiento */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); /* Sombra ajustada */
         }
         .logout-btn i {
-            font-size: 16px;
+            font-size: 15px; /* Icono un poco más pequeño */
         }
 
-        .container {
-            padding: var(--gap-base);
-            max-width: 1280px;
-            margin: -40px auto var(--gap-base) auto;
-            display: grid;
-            gap: var(--gap-base);
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        /* Botón de menú para móviles */
+        .menu-toggle-btn {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 24px;
+            cursor: pointer;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100; /* Asegura que esté por encima de todo */
+            display: none; /* Oculto por defecto en desktop */
+        }
+
+        /* Wrapper principal del dashboard */
+        .dashboard-wrapper {
+            display: flex;
+            flex: 1;
+            padding-top: var(--gap-base); /* Espacio superior para el contenido */
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background-color: var(--primary-dark);
+            color: var(--text-light);
+            padding: var(--padding-base);
+            box-shadow: 4px 0 15px var(--shadow-medium);
+            flex-shrink: 0; /* No permitir que se encoja */
+            transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
+            position: sticky;
+            top: 0;
+            height: calc(100vh - 80px); /* Ajuste de altura para sticky */
+            overflow-y: auto; /* Para scroll si hay muchos elementos */
+            border-radius: 0 var(--border-radius-base) var(--border-radius-base) 0;
+        }
+
+        .sidebar.collapsed {
+            width: 0;
+            transform: translateX(-250px); /* Ocultar completamente */
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-nav li {
+            margin-bottom: 10px;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            color: var(--text-light);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            font-weight: 500;
+        }
+
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background-color: var(--primary-medium);
+            color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .sidebar-nav a i {
+            font-size: 18px;
+        }
+
+        /* Contenido principal del dashboard */
+        .dashboard-content {
             flex-grow: 1;
-            align-items: start;
-            z-index: 5;
+            padding: 0 var(--gap-base) var(--gap-base) var(--gap-base);
+            transition: margin-left 0.3s ease-in-out;
         }
 
+        /* Ajuste cuando el sidebar está colapsado */
+        .dashboard-wrapper.sidebar-active .dashboard-content {
+            margin-left: 250px; /* Para que el contenido no se superponga al sidebar */
+        }
+
+        /* Sección de contenido */
+        .content-section {
+            display: none; /* Oculto por defecto */
+            animation: fadeIn 0.5s ease-out forwards; /* Animación de aparición */
+        }
+
+        .content-section.active {
+            display: block; /* Visible cuando está activo */
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Tarjetas de estadísticas */
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--gap-base);
+            margin-bottom: var(--gap-base);
+        }
+
+        .summary .card {
+            text-align: center;
+            font-weight: 600;
+            font-size: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .summary .card p {
+            font-size: 30px;
+            margin: 10px 0 0;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .summary .card:nth-child(1) { background-color: hsl(140, 50%, 90%); color: var(--accent-green); border: 1px solid hsl(140, 50%, 80%); }
+        .summary .card:nth-child(2) { background-color: hsl(0, 60%, 92%); color: var(--accent-red); border: 1px solid hsl(0, 60%, 85%); }
+        .summary .card:nth-child(3) { background-color: hsl(200, 70%, 90%); color: var(--accent-blue); border: 1px solid hsl(200, 70%, 85%); }
+
+        .summary .card h3 i {
+            font-size: 22px;
+            margin-right: 8px;
+            color: inherit;
+        }
+
+        /* Cards generales */
         .card {
             background: white;
             padding: var(--padding-base);
@@ -123,6 +260,7 @@
             flex-direction: column;
             border: 1px solid var(--border-color);
             position: relative;
+            margin-bottom: var(--gap-base); /* Espacio entre tarjetas en el contenido principal */
         }
 
         .card:hover {
@@ -148,59 +286,7 @@
             font-size: 1.2em;
         }
 
-        .summary {
-            grid-column: 1 / -1;
-            display: flex;
-            justify-content: space-around;
-            gap: var(--gap-base);
-            flex-wrap: wrap;
-            margin-top: 20px;
-        }
-
-        .summary .card {
-            flex: 1;
-            min-width: 250px;
-            text-align: center;
-            font-weight: 600;
-            font-size: 18px;
-            padding: 25px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .summary .card p {
-            font-size: 32px;
-            margin: 10px 0 0;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-        }
-
-        .summary .card:nth-child(1) {
-            background-color: hsl(140, 50%, 90%);
-            color: var(--accent-green);
-            border: 1px solid hsl(140, 50%, 80%);
-        }
-        .summary .card:nth-child(2) {
-            background-color: hsl(0, 60%, 92%);
-            color: var(--accent-red);
-            border: 1px solid hsl(0, 60%, 85%);
-        }
-        .summary .card:nth-child(3) {
-            background-color: hsl(200, 70%, 90%);
-            color: var(--accent-blue);
-            border: 1px solid hsl(200, 70%, 85%);
-        }
-
-        .summary .card h3 i {
-            font-size: 24px;
-            margin-right: 10px;
-            color: inherit;
-        }
-
+        /* Formularios */
         form {
             display: flex;
             flex-direction: column;
@@ -208,35 +294,35 @@
         }
         form label {
             font-weight: 500;
-            margin-bottom: -10px; /* Ajuste para acercar el label al input */
+            margin-bottom: -10px;
             color: var(--text-dark);
             font-size: 0.95em;
         }
-        form input, form select {
-            padding: 14px 18px;
+        form input, form select, form textarea {
+            padding: 12px 15px; /* Ajustado el padding */
             margin: 0;
             width: 100%;
             border-radius: 8px;
             border: 1px solid var(--border-color);
-            font-size: 16px;
+            font-size: 15px; /* Ajustado el tamaño de fuente */
             box-sizing: border-box;
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
 
-        form input:focus, form select:focus {
+        form input:focus, form select:focus, form textarea:focus {
             border-color: var(--accent-blue);
             box-shadow: 0 0 0 4px hsla(200, 60%, 50%, 0.2);
             outline: none;
         }
         form button {
-            padding: 14px 30px;
+            padding: 12px 25px; /* Ajustado el padding */
             background-color: var(--primary-dark);
             color: var(--text-light);
             border: none;
             border-radius: var(--border-radius-base);
             cursor: pointer;
             font-weight: 700;
-            font-size: 17px;
+            font-size: 16px; /* Ajustado el tamaño de fuente */
             transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
             margin-top: 15px;
             width: auto;
@@ -249,8 +335,8 @@
 
         form button:hover {
             background-color: var(--primary-medium);
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px var(--shadow-medium);
+            transform: translateY(-2px); /* Menos movimiento */
+            box-shadow: 0 4px 10px var(--shadow-medium); /* Sombra ajustada */
         }
 
         .filter-buttons {
@@ -265,19 +351,12 @@
             align-self: stretch;
         }
 
-        #descargarExcel {
-            background-color: var(--accent-green);
-        }
-        #descargarExcel:hover {
-            background-color: hsl(140, 60%, 30%);
-        }
-        #limpiarFiltros {
-            background-color: hsl(210, 10%, 50%);
-        }
-        #limpiarFiltros:hover {
-            background-color: hsl(210, 10%, 40%);
-        }
+        #descargarExcel { background-color: var(--accent-green); }
+        #descargarExcel:hover { background-color: hsl(140, 60%, 30%); }
+        #limpiarFiltros { background-color: hsl(210, 10%, 50%); }
+        #limpiarFiltros:hover { background-color: hsl(210, 10%, 40%); }
 
+        /* Lista de elementos (visitas, nóminas, formularios subidos) */
         .lista-items {
             list-style: none;
             padding: 0;
@@ -292,7 +371,7 @@
             padding: 15px 20px;
             margin-bottom: 12px;
             display: flex;
-            flex-direction: column; /* Cambiado a columna para mejor apilamiento de info */
+            flex-direction: column;
             gap: 8px;
             box-shadow: 0 1px 5px rgba(0,0,0,0.05);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -307,7 +386,7 @@
             align-items: center;
             font-weight: 600;
             color: var(--primary-dark);
-            margin-bottom: 5px; /* Espacio entre header y detalles */
+            margin-bottom: 5px;
         }
         .item-card-details {
             font-size: 0.9em;
@@ -317,178 +396,148 @@
             gap: 10px;
         }
         .item-card-action-link {
-            display: inline-block;
+            display: inline-flex; /* Usar inline-flex para alinear el icono y el texto */
+            align-items: center;
+            gap: 6px; /* Espacio entre icono y texto */
             background-color: var(--accent-blue);
             color: white;
-            padding: 6px 12px;
-            border-radius: 5px;
+            padding: 8px 15px; /* Ajustado el padding */
+            border-radius: 8px; /* Más redondeado */
             text-decoration: none;
             font-size: 0.9em;
             margin-top: 10px;
-            align-self: flex-end; /* Alinea el botón a la derecha */
+            align-self: flex-start; /* Alinea el botón a la izquierda por defecto */
             transition: background-color 0.3s ease;
         }
         .item-card-action-link:hover {
             background-color: hsl(200, 60%, 40%);
         }
 
-        /* Colores específicos para listas de movimientos */
-        .movimiento {
-            border-left: 6px solid;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            margin-bottom: 12px;
-            border-radius: var(--border-radius-base);
-            font-size: 16px;
-            background-color: white;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.05);
-            transition: background-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .movimiento:hover {
-            background-color: var(--background-accent);
-            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
-        }
-        .movement-details {
-            display: flex;
-            align-items: baseline;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .movimiento .monto {
-            font-weight: 700;
-            font-size: 1.2em;
-        }
-        .movimiento .descripcion {
-            font-weight: 500;
-        }
-        .movimiento .categoria {
-            font-style: normal;
-            font-weight: 400;
-            color: hsl(210, 5%, 45%);
-            padding: 2px 8px;
-            border-radius: 4px;
-            background-color: hsla(210, 10%, 80%, 0.4);
-            font-size: 0.9em;
-        }
-        .movimiento .fecha {
-            color: hsl(210, 5%, 60%);
-            font-size: 0.85em;
-        }
-        .ingreso {
-            border-color: var(--accent-green);
-        }
-        .gasto {
-            border-color: var(--accent-red);
-        }
-        .delete-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: hsl(210, 10%, 50%);
-            font-size: 20px;
-            transition: color 0.2s ease, transform 0.1s ease;
-        }
-        .delete-btn:hover {
-            color: var(--accent-red);
-            transform: scale(1.15);
-        }
-
-        .graficos {
-            grid-column: 1 / -1;
-            display: flex;
-            gap: var(--gap-base);
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .graficos .card {
-            flex: 1 1 calc(50% - var(--gap-base) / 2);
-            min-width: 320px;
-            height: 450px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            box-sizing: border-box;
-            padding: var(--padding-base);
-        }
-
         /* Flash Messages */
         .flash-messages {
             list-style: none;
             padding: 0;
-            margin: 20px 0;
+            margin: 20px auto; /* Centrado */
             text-align: center;
-            grid-column: 1 / -1; /* Ocupa todo el ancho */
+            width: fit-content; /* Ajuste al contenido */
+            max-width: 90%; /* Máximo ancho para no desbordar */
+            grid-column: 1 / -1; /* Ocupa todo el ancho si está en el grid */
         }
         .flash-messages li {
             padding: 12px 20px;
             margin-bottom: 10px;
             border-radius: 8px;
-            display: inline-block;
+            display: block; /* Cada mensaje en su propia línea */
             font-weight: 500;
             font-size: 0.95em;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        .flash-messages .success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+        .flash-messages .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .flash-messages .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .flash-messages .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .flash-messages .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+
+        /* Welcome Section Specific Styles */
+        .welcome-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-height: 400px; /* Altura mínima para que se vea bien */
+            background: linear-gradient(145deg, #e0f2f7, #c1e4f0); /* Degradado suave */
+            border: 2px solid var(--accent-blue);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: var(--padding-base);
+            border-radius: var(--border-radius-base);
+            animation: slideInFromTop 0.8s ease-out; /* Animación al aparecer */
         }
-        .flash-messages .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+
+        .welcome-card img {
+            width: 150px; /* Tamaño más grande para el logo en la bienvenida */
+            height: auto;
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3)); /* Sombra para el logo */
+            margin-bottom: 25px;
+            animation: bounceIn 1s ease-out; /* Animación de rebote para el logo */
         }
-        .flash-messages .info {
-            background-color: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+
+        .welcome-card h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 44px; /* Tamaño de título grande */
+            font-weight: 800;
+            color: var(--primary-dark);
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+            animation: fadeInText 1.2s ease-out 0.3s forwards; /* Animación para el texto */
+            opacity: 0; /* Oculto inicialmente para la animación */
         }
-        .flash-messages .warning {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeeba;
+
+        .welcome-card p {
+            font-family: 'Inter', sans-serif;
+            font-size: 20px;
+            color: var(--text-dark);
+            max-width: 600px;
+            margin-bottom: 30px;
+            animation: fadeInText 1.2s ease-out 0.6s forwards; /* Animación para el texto */
+            opacity: 0; /* Oculto inicialmente para la animación */
+        }
+
+        @keyframes slideInFromTop {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 1; }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes fadeInText {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
 
         /* Responsive adjustments */
         @media (max-width: 768px) {
-            header {
-                padding-top: 90px;
-                padding-bottom: 50px;
+            .menu-toggle-btn {
+                display: block; /* Mostrar botón de menú en móviles */
             }
-            .logout-btn {
-                top: 20px;
-                right: 20px;
+            .sidebar {
+                position: fixed; /* Fijo para que se deslice por encima */
+                left: 0;
+                top: 0;
+                bottom: 0;
+                z-index: 99;
+                transform: translateX(-100%); /* Oculto por defecto */
+                width: 250px;
+                padding: var(--padding-base);
+                box-shadow: 4px 0 15px var(--shadow-strong);
+                height: 100vh; /* Ocupar toda la altura */
             }
-            .container {
-                padding: 15px;
-                margin-top: -30px;
+            .sidebar.active {
+                transform: translateX(0); /* Mostrar sidebar */
             }
-            .summary .card, .graficos .card {
-                flex-basis: 100%;
-                min-width: unset;
+            .dashboard-wrapper {
+                flex-direction: column; /* Apilar sidebar y contenido en móviles */
             }
-            form input, form select {
-                width: calc(100% - 20px);
+            .dashboard-content {
+                padding: 15px; /* Ajustar padding para móviles */
+                margin-left: 0; /* Eliminar margen del contenido */
             }
-            .filter-buttons {
-                flex-direction: column;
+            .summary {
+                grid-template-columns: 1fr; /* Una columna en móviles */
             }
-            .filter-buttons button {
-                width: 100%;
+            .card {
+                padding: 20px; /* Ajuste de padding en tarjetas */
             }
-            .card h3 {
-                font-size: 20px;
+            form input, form select, form textarea {
+                font-size: 14px; /* Fuentes más pequeñas en formularios */
             }
-            .summary .card p {
-                font-size: 28px;
-            }
-            .summary .card {
-                padding: 20px;
+            form button {
+                font-size: 15px;
             }
             .item-card-header {
                 flex-direction: column;
@@ -497,265 +546,426 @@
             .item-card-action-link {
                 align-self: flex-start;
             }
+            .welcome-card h2 {
+                font-size: 32px; /* Reducir tamaño de título en móviles */
+            }
+            .welcome-card p {
+                font-size: 16px; /* Reducir tamaño de párrafo en móviles */
+            }
+            .welcome-card img {
+                width: 100px; /* Reducir tamaño del logo en móviles */
+            }
+        }
+        /* Para evitar el doble scroll y asegurar el diseño sticky del sidebar */
+        html {
+            overflow-y: hidden;
+        }
+        body {
+            overflow-y: auto;
         }
 
-        @media (min-width: 769px) and (max-width: 1024px) {
-            .graficos .card {
-                flex-basis: calc(50% - var(--gap-base) / 2);
-            }
-            .summary .card {
-                min-width: 200px;
-            }
-            .container {
-                padding: 20px;
-            }
-        }
-        @media (min-width: 1025px) {
-            .container {
-                grid-template-columns: 1fr 1fr;
-            }
-            /* Orden explícito de las tarjetas para pantallas grandes */
-            .card.admin-form:nth-of-type(1) { grid-column: 1; grid-row: 1; } /* Agregar Establecimiento */
-            .card.admin-form:nth-of-type(2) { grid-column: 2; grid-row: 1; } /* Cargar Nómina Médica */
-            .card.admin-list:nth-of-type(1) { grid-column: 1 / -1; grid-row: 2; } /* Visitas Programadas (Admin) */
-            .card.admin-list:nth-of-type(2) { grid-column: 1 / -1; grid-row: 3; } /* Nóminas Cargadas (Admin) */
-        }
     </style>
 </head>
 <body>
     <header>
-        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo COAFIN" />
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo CardioHome" />
         <h1>Bienvenido a tu Panel de CardioHome</h1>
-        <button class="logout-btn" onclick="cerrarSesion()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</button>
+        <button class="logout-btn" onclick="cerrarSesion()">
+            <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
+        </button>
+        <button class="menu-toggle-btn" id="menuToggle">
+            <i class="fa-solid fa-bars"></i>
+        </button>
     </header>
 
-    <div class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <ul class="flash-messages">
-                    {% for category, message in messages %}
-                        <li class="{{ category }}">{{ message }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        {% endwith %}
-
-        {% if usuario == 'admin' %}
-            <!-- Sección para Administrador -->
-            <div class="card admin-form">
-                <h3><i class="fa-solid fa-calendar-plus"></i> Agregar Visita Programada</h3>
-                <form action="{{ url_for('admin_agregar') }}" method="POST" enctype="multipart/form-data">
-                    <label for="nombre_establecimiento">Nombre Establecimiento:</label>
-                    <input type="text" id="nombre_establecimiento" name="nombre" placeholder="Ej: Liceo Bicentenario" required />
-
-                    <label for="fecha_establecimiento">Fecha:</label>
-                    <input type="date" id="fecha_establecimiento" name="fecha" required />
-
-                    <label for="horario_establecimiento">Horario:</label>
-                    <input type="text" id="horario_establecimiento" name="horario" placeholder="Ej: 09:00 - 11:00" required />
-
-                    <label for="doctora_establecimiento">Asignar a Doctora:</label>
-                    <select id="doctora_establecimiento" name="doctora" required>
-                        <option value="">Selecciona una doctora</option>
-                        {% for doc in doctoras %}
-                            <option value="{{ doc.id }}">{{ doc.usuario }}</option>
-                        {% endfor %}
-                    </select>
-
-                    <label for="alumnos_establecimiento">Cantidad de Alumnos:</label>
-                    <input type="number" id="alumnos_establecimiento" name="alumnos" min="0" placeholder="Ej: 30" />
-
-                    <label for="obs_establecimiento">Observaciones:</label>
-                    <textarea id="obs_establecimiento" name="obs" rows="3" placeholder="Notas adicionales..."></textarea>
-
-                    <label for="formulario_base">Formulario Base (PDF/DOCX):</label>
-                    <input type="file" id="formulario_base" name="formulario" accept=".pdf,.docx,.doc" required />
-                    
-                    <button type="submit"><i class="fa-solid fa-plus"></i> Agregar Visita</button>
-                </form>
-            </div>
-
-            <div class="card admin-form">
-                <h3><i class="fa-solid fa-file-excel"></i> Cargar Nómina Médica (Excel/CSV)</h3>
-                <form action="{{ url_for('admin_cargar_nomina') }}" method="POST" enctype="multipart/form-data">
-                    <label for="tipo_nomina">Tipo de Nómina:</label>
-                    <input type="text" id="tipo_nomina" name="tipo_nomina" placeholder="Ej: General, Dental, Oftalmológica" required />
-
-                    <label for="nombre_especifico">Nombre Específico (Ej: Liceo X - Nómina Mayo):</label>
-                    <input type="text" id="nombre_especifico" name="nombre_especifico" placeholder="Nombre único para esta nómina" required />
-
-                    <label for="doctora_nomina">Asignar a Doctora:</label>
-                    <select id="doctora_nomina" name="doctora" required>
-                        <option value="">Selecciona una doctora</option>
-                        {% for doc in doctoras %}
-                            <option value="{{ doc.id }}">{{ doc.usuario }}</option>
-                        {% endfor %}
-                    </select>
-
-                    <label for="excel_nomina">Archivo Excel/CSV de la Nómina:</label>
-                    <input type="file" id="excel_nomina" name="excel" accept=".xls,.xlsx,.csv" required />
-                    
-                    <button type="submit"><i class="fa-solid fa-upload"></i> Cargar Nómina</button>
-                </form>
-            </div>
-
-            <!-- Sección para el administrador: Visitas Programadas (todos los eventos) -->
-            <div class="card admin-list">
-                <h3><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas Programadas</h3>
-                <ul class="lista-items">
-                    {% if eventos %}
-                        {% for evento in eventos %}
-                            <li class="item-card">
-                                <div class="item-card-header">
-                                    <span>{{ evento.nombre }} ({{ evento.fecha }})</span>
-                                    <span>{{ evento.horario }}</span>
-                                </div>
-                                <div class="item-card-details">
-                                    <span>Alumnos: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
-                                    <span>Doc: {{ (doctoras | selectattr('id', 'equalto', evento.doctora_id) | first).usuario if evento.doctora_id else 'N/A' }}</span>
-                                    <span>Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
-                                </div>
-                                {% if evento.url_archivo %}
-                                    <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
-                                        <i class="fa-solid fa-file-alt"></i> Ver Formulario Base
-                                    </a>
-                                {% endif %}
-                            </li>
-                        {% endfor %}
+    <div class="dashboard-wrapper">
+        <aside class="sidebar" id="sidebar">
+            <nav>
+                <ul class="sidebar-nav">
+                    <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical"></i> Bienvenida</a></li>
+                    {% if usuario == 'admin' %}
+                        <li><a href="#" class="nav-link" data-section="admin-summary"><i class="fa-solid fa-chart-line"></i> Resumen Admin</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-add-visit"><i class="fa-solid fa-calendar-plus"></i> Agregar Visita</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-upload-nomina"><i class="fa-solid fa-file-excel"></i> Cargar Nómina</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-visits-list"><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-nominas-list"><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Cargadas</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-uploaded-forms-all"><i class="fa-solid fa-folder-open"></i> Formularios Subidos</a></li>
                     {% else %}
-                        <p style="text-align: center; color: #777;">No hay visitas programadas.</p>
+                        <li><a href="#" class="nav-link" data-section="doctor-visits"><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-nominas"><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Asignadas</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-uploaded-forms"><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</a></li>
                     {% endif %}
                 </ul>
-            </div>
+            </nav>
+        </aside>
 
-            <!-- NUEVA SECCIÓN para el administrador: Nóminas Cargadas -->
-            <div class="card admin-list">
-                <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Médicas Cargadas</h3>
-                <ul class="lista-items">
-                    {% if admin_nominas_cargadas %} {# Se asume que 'admin_nominas_cargadas' se pasa desde Flask #}
-                        {% for nomina in admin_nominas_cargadas %}
-                            <li class="item-card">
-                                <div class="item-card-header">
-                                    <span>{{ nomina.nombre_nomina }} ({{ nomina.tipo_nomina.replace('_', ' ').title() }})</span>
-                                    <span>Asignada a: {{ (doctoras | selectattr('id', 'equalto', nomina.doctora_id) | first).usuario if nomina.doctora_id else 'N/A' }}</span>
-                                </div>
-                                <div class="item-card-details">
-                                    <span>Archivo Original: {{ nomina.nombre_excel_original }}</span>
-                                </div>
-                                {% if nomina.url_excel_original %}
-                                    <a href="{{ nomina.url_excel_original }}" target="_blank" class="item-card-action-link">
-                                        <i class="fa-solid fa-file-excel"></i> Ver Excel Original
-                                    </a>
-                                {% endif %}
-                                <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="item-card-action-link" style="background-color: var(--accent-green);">
-                                    <i class="fa-solid fa-list-ul"></i> Ver Estudiantes
-                                </a>
-                            </li>
+        <main class="dashboard-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <ul class="flash-messages">
+                        {% for category, message in messages %}
+                            <li class="{{ category }}">{{ message }}</li>
                         {% endfor %}
-                    {% else %}
-                        <p style="text-align: center; color: #777;">No hay nóminas médicas cargadas.</p>
-                    {% endif %}
-                </ul>
+                    </ul>
+                {% endif %}
+            {% endwith %}
+
+            <!-- NUEVA SECCIÓN DE BIENVENIDA -->
+            <div id="welcome-section" class="content-section active">
+                <div class="card welcome-card">
+                    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo CardioHome" />
+                    <h2>¡Bienvenido a CardioHome!</h2>
+                    <p>Tu plataforma integral para la gestión eficiente de visitas médicas, nóminas de pacientes y formularios. Aquí podrás optimizar tu trabajo y asegurar un seguimiento completo de cada caso.</p>
+                </div>
             </div>
 
+            {% if usuario == 'admin' %}
+                <!-- Sección para Administrador: Resumen -->
+                <div id="admin-summary" class="content-section">
+                    <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Resumen del Administrador</h2>
+                    <div class="summary">
+                        <div class="card">
+                            <h3><i class="fa-solid fa-school"></i> Colegios Asignados</h3>
+                            <p>{{ eventos|length }}</p>
+                        </div>
+                        <div class="card">
+                            <h3><i class="fa-solid fa-file-import"></i> Formularios Subidos Total</h3>
+                            <p>{{ formularios|length }}</p>
+                        </div>
+                        <div class="card">
+                            <h3><i class="fa-solid fa-user-doctor"></i> Total Doctoras</h3>
+                            <p>{{ doctoras|length }}</p>
+                        </div>
+                    </div>
+                </div>
 
-        {% else %}
-            <!-- Sección para Doctores -->
-            <div class="card">
-                <h3><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</h3>
-                <ul class="lista-items">
-                    {% if eventos %}
-                        {% for evento in eventos %}
-                            <li class="item-card">
-                                <div class="item-card-header">
-                                    <span>{{ evento.nombre }} ({{ evento.fecha }})</span>
-                                    <span>{{ evento.horario }}</span>
-                                </div>
-                                <div class="item-card-details">
-                                    <span>Alumnos esperados: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
-                                    <span>Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
-                                </div>
-                                {% if evento.url_archivo %}
-                                    <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
-                                        <i class="fa-solid fa-file-alt"></i> Descargar Formulario Base
-                                    </a>
-                                {% endif %}
-                                <form action="{{ url_for('subir', establecimiento=evento.id) }}" method="POST" enctype="multipart/form-data" style="margin-top: 10px;">
-                                    <label for="archivo_{{ loop.index }}">Subir Formulario Completado:</label>
-                                    <input type="file" id="archivo_{{ loop.index }}" name="archivo" accept=".pdf,.docx,.doc,.xls,.xlsx,.csv" required />
-                                    <button type="submit" style="background-color: var(--accent-green);"><i class="fa-solid fa-upload"></i> Subir Formulario</button>
-                                </form>
-                                <form action="{{ url_for('evaluados', establecimiento=evento.id) }}" method="POST" style="margin-top: 10px;">
-                                    <label for="alumnos_evaluados_{{ loop.index }}">Alumnos Evaluados:</label>
-                                    <input type="number" id="alumnos_evaluados_{{ loop.index }}" name="alumnos" min="0" placeholder="N° de alumnos evaluados" required />
-                                    <button type="submit" style="background-color: var(--accent-blue);"><i class="fa-solid fa-check"></i> Registrar Evaluados</button>
-                                </form>
-                            </li>
-                        {% endfor %}
-                    {% else %}
-                        <p style="text-align: center; color: #777;">No tienes visitas programadas.</p>
-                    {% endif %}
-                </ul>
-            </div>
+                <!-- Sección para Administrador: Agregar Visita Programada -->
+                <div id="admin-add-visit" class="content-section">
+                    <div class="card admin-form">
+                        <h3><i class="fa-solid fa-calendar-plus"></i> Agregar Visita Programada</h3>
+                        <form action="{{ url_for('admin_agregar') }}" method="POST" enctype="multipart/form-data">
+                            <label for="nombre_establecimiento">Nombre Establecimiento:</label>
+                            <input type="text" id="nombre_establecimiento" name="nombre" placeholder="Ej: Liceo Bicentenario" required />
 
-            <div class="card">
-                <h3><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Médicas Asignadas</h3>
-                <ul class="lista-items">
-                    {% if assigned_nominations %}
-                        {% for nomina in assigned_nominations %}
-                            <li class="item-card">
-                                <div class="item-card-header">
-                                    <span>{{ nomina.nombre_establecimiento }}</span>
-                                    <span>Tipo: {{ nomina.tipo_nomina_display }}</span>
-                                </div>
-                                <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="item-card-action-link">
-                                    <i class="fa-solid fa-edit"></i> Rellenar y Ver Estudiantes
-                                </a>
-                            </li>
-                        {% endfor %}
-                    {% else %}
-                        <p style="text-align: center; color: #777;">No tienes nóminas médicas asignadas en este momento.</p>
-                    {% endif %}
-                </ul>
-            </div>
+                            <label for="fecha_establecimiento">Fecha:</label>
+                            <input type="date" id="fecha_establecimiento" name="fecha" required />
 
-            <!-- Sección de Formularios Subidos (para la doctora) -->
-            <div class="card">
-                <h3><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</h3>
-                <ul class="lista-items">
-                    {% if formularios %}
-                        {% for form_subido in formularios %}
-                            {% if form_subido.doctoras_id == usuario_id %} {# Filtra los formularios subidos por la doctora actual #}
-                                <li class="item-card">
-                                    <div class="item-card-header">
-                                        <span>{{ form_subido.nombre_archivo }}</span>
-                                        <span>Fecha: {{ form_subido.fecha_subida.strftime('%d-%m-%Y') if form_subido.fecha_subida else 'N/A' }}</span>
-                                    </div>
-                                    <div class="item-card-details">
-                                        <span>Establecimiento: 
-                                            {% set est = establecimientos | selectattr('id', 'equalto', form_subido.establecimientos_id) | first %}
-                                            {{ est.nombre if est else 'Desconocido' }}
-                                        </span>
-                                    </div>
-                                    <a href="{{ form_subido.url_archivo }}" target="_blank" class="item-card-action-link" style="background-color: var(--primary-medium);">
-                                        <i class="fa-solid fa-eye"></i> Ver Archivo
-                                    </a>
-                                </li>
+                            <label for="horario_establecimiento">Horario:</label>
+                            <input type="text" id="horario_establecimiento" name="horario" placeholder="Ej: 09:00 - 11:00" required />
+
+                            <label for="doctora_establecimiento">Asignar a Doctora:</label>
+                            <select id="doctora_establecimiento" name="doctora" required>
+                                <option value="">Selecciona una doctora</option>
+                                {% for doc in doctoras %}
+                                    <option value="{{ doc.id }}">{{ doc.usuario }}</option>
+                                {% endfor %}
+                            </select>
+
+                            <label for="alumnos_establecimiento">Cantidad de Alumnos:</label>
+                            <input type="number" id="alumnos_establecimiento" name="alumnos" min="0" placeholder="Ej: 30" />
+
+                            <label for="obs_establecimiento">Observaciones:</label>
+                            <textarea id="obs_establecimiento" name="obs" rows="3" placeholder="Notas adicionales..."></textarea>
+
+                            <label for="formulario_base">Formulario Base (PDF/DOCX):</label>
+                            <input type="file" id="formulario_base" name="formulario" accept=".pdf,.docx,.doc" required />
+                            
+                            <button type="submit"><i class="fa-solid fa-plus"></i> Agregar Visita</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Sección para Administrador: Cargar Nómina Médica -->
+                <div id="admin-upload-nomina" class="content-section">
+                    <div class="card admin-form">
+                        <h3><i class="fa-solid fa-file-excel"></i> Cargar Nómina Médica (Excel/CSV)</h3>
+                        <form action="{{ url_for('admin_cargar_nomina') }}" method="POST" enctype="multipart/form-data">
+                            <label for="tipo_nomina">Tipo de Nómina:</label>
+                            <input type="text" id="tipo_nomina" name="tipo_nomina" placeholder="Ej: General, Dental, Oftalmológica" required />
+
+                            <label for="nombre_especifico">Nombre Específico (Ej: Liceo X - Nómina Mayo):</label>
+                            <input type="text" id="nombre_especifico" name="nombre_especifico" placeholder="Nombre único para esta nómina" required />
+
+                            <label for="doctora_nomina">Asignar a Doctora:</label>
+                            <select id="doctora_nomina" name="doctora" required>
+                                <option value="">Selecciona una doctora</option>
+                                {% for doc in doctoras %}
+                                    <option value="{{ doc.id }}">{{ doc.usuario }}</option>
+                                {% endfor %}
+                            </select>
+
+                            <label for="excel_nomina">Archivo Excel/CSV de la Nómina:</label>
+                            <input type="file" id="excel_nomina" name="excel" accept=".xls,.xlsx,.csv" required />
+                            
+                            <button type="submit"><i class="fa-solid fa-upload"></i> Cargar Nómina</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Sección para el administrador: Visitas Programadas (todos los eventos) -->
+                <div id="admin-visits-list" class="content-section">
+                    <div class="card admin-list">
+                        <h3><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas Programadas</h3>
+                        <ul class="lista-items">
+                            {% if eventos %}
+                                {% for evento in eventos %}
+                                    <li class="item-card">
+                                        <div class="item-card-header">
+                                            <span>{{ evento.nombre }} ({{ evento.fecha }})</span>
+                                            <span>{{ evento.horario }}</span>
+                                        </div>
+                                        <div class="item-card-details">
+                                            <span>Alumnos: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
+                                            <span>Doc: {{ (doctoras | selectattr('id', 'equalto', evento.doctora_id) | first).nombre if evento.doctora_id else 'N/A' }}</span>
+                                            <span>Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
+                                        </div>
+                                        {% if evento.url_archivo %}
+                                            <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
+                                                <i class="fa-solid fa-file-alt"></i> Ver Formulario Base
+                                            </a>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            {% else %}
+                                <p style="text-align: center; color: #777;">No hay visitas programadas.</p>
                             {% endif %}
-                        {% endfor %}
-                    {% else %}
-                        <p style="text-align: center; color: #777;">No has subido ningún formulario aún.</p>
-                    {% endif %}
-                </ul>
-            </div>
+                        </ul>
+                    </div>
+                </div>
 
-        {% endif %}
+                <!-- NUEVA SECCIÓN para el administrador: Nóminas Cargadas -->
+                <div id="admin-nominas-list" class="content-section">
+                    <div class="card admin-list">
+                        <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Médicas Cargadas</h3>
+                        <ul class="lista-items">
+                            {% if admin_nominas_cargadas %}
+                                {% for nomina in admin_nominas_cargadas %}
+                                    <li class="item-card">
+                                        <div class="item-card-header">
+                                            <span>{{ nomina.nombre_nomina }} ({{ nomina.tipo_nomina.replace('_', ' ').title() }})</span>
+                                            <span>Asignada a: {{ (doctoras | selectattr('id', 'equalto', nomina.doctora_id) | first).nombre if nomina.doctora_id else 'N/A' }}</span>
+                                        </div>
+                                        <div class="item-card-details">
+                                            <span>Archivo Original: {{ nomina.nombre_excel_original }}</span>
+                                        </div>
+                                        {% if nomina.url_excel_original %}
+                                            <a href="{{ nomina.url_excel_original }}" target="_blank" class="item-card-action-link">
+                                                <i class="fa-solid fa-file-excel"></i> Ver Excel Original
+                                            </a>
+                                        {% endif %}
+                                        <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="item-card-action-link" style="background-color: var(--accent-green);">
+                                            <i class="fa-solid fa-list-ul"></i> Rellenar y Ver Estudiantes
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                            {% else %}
+                                <p style="text-align: center; color: #777;">No hay nóminas médicas cargadas.</p>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Sección para el administrador: Todos los Formularios Subidos -->
+                <div id="admin-uploaded-forms-all" class="content-section">
+                    <div class="card">
+                        <h3><i class="fa-solid fa-folder-open"></i> Todos los Formularios Subidos</h3>
+                        <ul class="lista-items">
+                            {% if formularios %}
+                                {% for form_subido in formularios %}
+                                    <li class="item-card">
+                                        <div class="item-card-header">
+                                            <span>{{ form_subido.nombre_archivo }}</span>
+                                            <span>Fecha: {{ form_subido.fecha_subida.strftime('%d-%m-%Y') if form_subido.fecha_subida else 'N/A' }}</span>
+                                        </div>
+                                        <div class="item-card-details">
+                                            <span>Doctora: {% set doc_info = (doctoras | selectattr('id', 'equalto', form_subido.doctoras_id) | first) %}{{ doc_info.nombre if doc_info else 'Desconocida' }}</span>
+                                            <span>Establecimiento: {% set est_info = (establecimientos | selectattr('id', 'equalto', form_subido.establecimientos_id) | first) %}{{ est_info.nombre if est_info else 'Desconocido' }}</span>
+                                        </div>
+                                        <a href="{{ form_subido.url_archivo }}" target="_blank" class="item-card-action-link" style="background-color: var(--primary-medium);">
+                                            <i class="fa-solid fa-eye"></i> Ver Archivo
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                            {% else %}
+                                <p style="text-align: center; color: #777;">No hay formularios subidos aún.</p>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+
+            {% else %}
+                <!-- Sección para Doctores: Mis Próximas Visitas -->
+                <div id="doctor-visits" class="content-section">
+                    <div class="card">
+                        <h3><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</h3>
+                        <ul class="lista-items">
+                            {% if eventos %}
+                                {% for evento in eventos %}
+                                    <li class="item-card">
+                                        <div class="item-card-header">
+                                            <span>{{ evento.nombre }} ({{ evento.fecha }})</span>
+                                            <span>{{ evento.horario }}</span>
+                                        </div>
+                                        <div class="item-card-details">
+                                            <span>Alumnos esperados: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
+                                            <span>Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
+                                        </div>
+                                        {% if evento.url_archivo %}
+                                            <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
+                                                <i class="fa-solid fa-file-alt"></i> Descargar Formulario Base
+                                            </a>
+                                        {% endif %}
+                                        <form action="{{ url_for('subir', establecimiento=evento.id) }}" method="POST" enctype="multipart/form-data" class="mt-4">
+                                            <label for="archivo_{{ loop.index }}">Subir Formulario Completado:</label>
+                                            <input type="file" id="archivo_{{ loop.index }}" name="archivo" accept=".pdf,.docx,.doc,.xls,.xlsx,.csv" required />
+                                            <button type="submit" style="background-color: var(--accent-green);"><i class="fa-solid fa-upload"></i> Subir Formulario</button>
+                                        </form>
+                                        <form action="{{ url_for('evaluados', establecimiento=evento.id) }}" method="POST" class="mt-4">
+                                            <label for="alumnos_evaluados_{{ loop.index }}">Alumnos Evaluados:</label>
+                                            <input type="number" id="alumnos_evaluados_{{ loop.index }}" name="alumnos" min="0" placeholder="N° de alumnos evaluados" required />
+                                            <button type="submit" style="background-color: var(--accent-blue);"><i class="fa-solid fa-check"></i> Registrar Evaluados</button>
+                                        </form>
+                                    </li>
+                                {% endfor %}
+                            {% else %}
+                                <p style="text-align: center; color: #777;">No tienes visitas programadas.</p>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Sección para Doctores: Mis Nóminas Médicas Asignadas -->
+                <div id="doctor-nominas" class="content-section">
+                    <div class="card">
+                        <h3><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Médicas Asignadas</h3>
+                        <ul class="lista-items">
+                            {% if assigned_nominations %}
+                                {% for nomina in assigned_nominations %}
+                                    <li class="item-card">
+                                        <div class="item-card-header">
+                                            <span>{{ nomina.nombre_establecimiento }}</span>
+                                            <span>Tipo: {{ nomina.tipo_nomina_display }}</span>
+                                        </div>
+                                        <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="item-card-action-link">
+                                            <i class="fa-solid fa-edit"></i> Rellenar y Ver Estudiantes
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                            {% else %}
+                                <p style="text-align: center; color: #777;">No tienes nóminas médicas asignadas en este momento.</p>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Sección para Doctores: Mis Formularios Subidos -->
+                <div id="doctor-uploaded-forms" class="content-section">
+                    <div class="card">
+                        <h3><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</h3>
+                        <ul class="lista-items">
+                            {% if formularios %}
+                                {% for form_subido in formularios %}
+                                    {% if form_subido.doctoras_id == usuario_id %} {# Filtra los formularios subidos por la doctora actual #}
+                                        <li class="item-card">
+                                            <div class="item-card-header">
+                                                <span>{{ form_subido.nombre_archivo }}</span>
+                                                <span>Fecha: {{ form_subido.fecha_subida.strftime('%d-%m-%Y') if form_subido.fecha_subida else 'N/A' }}</span>
+                                            </div>
+                                            <div class="item-card-details">
+                                                <span>Establecimiento: 
+                                                    {% set est = (eventos | selectattr('id', 'equalto', form_subido.establecimientos_id) | first) %}
+                                                    {{ est.nombre if est else 'Desconocido' }}
+                                                </span>
+                                            </div>
+                                            <a href="{{ form_subido.url_archivo }}" target="_blank" class="item-card-action-link" style="background-color: var(--primary-medium);">
+                                                <i class="fa-solid fa-eye"></i> Ver Archivo
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <p style="text-align: center; color: #777;">No has subido ningún formulario aún.</p>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            {% endif %}
+        </main>
     </div>
 
     <script>
         function cerrarSesion() {
-            window.location.href = "/logout"; // Asegúrate de que esta ruta existe en Flask para limpiar la sesión
+            window.location.href = "/logout";
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const menuToggle = document.getElementById('menuToggle');
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+            const dashboardWrapper = document.querySelector('.dashboard-wrapper');
+
+            // Función para activar una sección y desactivar las demás
+            function showSection(sectionId) {
+                contentSections.forEach(section => {
+                    section.classList.remove('active');
+                });
+                const activeSection = document.getElementById(sectionId);
+                if (activeSection) {
+                    activeSection.classList.add('active');
+                    // Scroll to top of the content section
+                    activeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+
+            // Manejar clics en los enlaces de navegación
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(event) {
+                    event.preventDefault(); // Evitar la recarga de la página
+                    navLinks.forEach(item => item.classList.remove('active')); // Desactivar todos los enlaces
+                    this.classList.add('active'); // Activar el enlace clicado
+
+                    const sectionId = this.dataset.section; // Obtener el ID de la sección del atributo data-section
+                    showSection(sectionId);
+
+                    // En móviles, colapsar el sidebar después de la selección
+                    if (window.innerWidth <= 768) {
+                        sidebar.classList.remove('active');
+                        dashboardWrapper.classList.remove('sidebar-active');
+                    }
+                });
+            });
+
+            // Manejar el botón de menú para móviles
+            if (menuToggle) {
+                menuToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('active');
+                    dashboardWrapper.classList.toggle('sidebar-active'); // Toggle class for wrapper
+                });
+            }
+
+            // Ocultar el sidebar si se hace clic fuera en móviles
+            document.addEventListener('click', function(event) {
+                if (window.innerWidth <= 768 && sidebar.classList.contains('active')) {
+                    const isClickInsideSidebar = sidebar.contains(event.target);
+                    const isClickOnMenuToggle = menuToggle && menuToggle.contains(event.target);
+                    if (!isClickInsideSidebar && !isClickOnMenuToggle) {
+                        sidebar.classList.remove('active');
+                        dashboardWrapper.classList.remove('sidebar-active');
+                    }
+                }
+            });
+
+            // Inicializar mostrando la primera sección activa por defecto (en este caso, la bienvenida)
+            const initialActiveLink = document.querySelector('.nav-link.active');
+            if (initialActiveLink) {
+                showSection(initialActiveLink.dataset.section);
+            } else if (navLinks.length > 0) {
+                // Si no hay ninguno activo por defecto, activar el primero
+                navLinks[0].classList.add('active');
+                showSection(navLinks[0].dataset.section);
+            }
+        });
     </script>
 </body>
 </html>

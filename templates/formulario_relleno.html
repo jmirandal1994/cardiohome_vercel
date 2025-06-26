@@ -337,6 +337,48 @@
             transform: scale(1.05); /* Ligeramente agrandar al pasar el ratón */
         }
 
+        /* Estilo para el contador de evaluaciones */
+        .evaluation-counter {
+            background: linear-gradient(90deg, #e0f7fa, #b2ebf2);
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 1.1em;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 30px;
+            flex-wrap: wrap; /* Permitir que los elementos se envuelvan */
+        }
+        .evaluation-counter i {
+            font-size: 1.4em;
+            color: var(--accent-blue);
+        }
+        .evaluation-counter span {
+            color: var(--accent-green);
+            font-size: 1.2em;
+            margin-left: 5px;
+        }
+        .evaluation-counter button {
+            background-color: var(--accent-blue);
+            color: var(--text-light);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-left: 15px;
+            transition: background-color 0.2s ease;
+        }
+        .evaluation-counter button:hover {
+            background-color: hsl(200, 70%, 45%);
+        }
+
+
         @media (max-width: 768px) {
             header {
                 padding: 1.5rem 0;
@@ -384,6 +426,15 @@
             .preview-section {
                 min-height: 120px; /* Menor altura en móvil */
             }
+            .evaluation-counter {
+                flex-direction: column;
+                text-align: center;
+            }
+            .evaluation-counter button {
+                margin-left: 0;
+                margin-top: 10px;
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -409,6 +460,13 @@
         {% if session.get('establecimiento') %}
             <h2 class="text-3xl font-extrabold text-primary-dark mb-8 text-center font-['Montserrat']">Nómina: {{ session['establecimiento'] }}</h2>
         {% endif %}
+
+        {# Nuevo contador de evaluaciones #}
+        <div class="evaluation-counter">
+            <i class="fa-solid fa-clipboard-check"></i>
+            <span>Evaluaciones completadas para esta nómina: <strong>{{ total_forms_completed_for_nomina }}</strong></span>
+            <button onclick="window.location.reload();">Actualizar Conteo</button> {# Botón simple para refrescar el conteo #}
+        </div>
 
         {% if estudiantes %}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -443,8 +501,8 @@
 
                             <label for="sexo_{{ estudiante.id }}">Sexo:</label>
                             <select id="sexo_{{ estudiante.id }}" name="sexo" required>
-                                <option value="M" {% if estudiante.sexo == 'M' %}selected{% endif %}>Masculino</option>
-                                <option value="F" {% if estudiante.sexo == 'F' %}selected{% endif %}>Femenino</option>
+                                <option value="M" {% if estudiante.sexo_inferido == 'M' %}selected{% endif %}>Masculino</option>
+                                <option value="F" {% if estudiante.sexo_inferido == 'F' %}selected{% endif %}>Femenino</option>
                             </select>
 
                             <label for="estado_{{ estudiante.id }}">Estado General:</label>
@@ -471,6 +529,9 @@
                                 <option value="4">4 años</option>
                                 <option value="5">5 años</option>
                             </select>
+
+                            <label for="derivaciones_{{ estudiante.id }}">Derivaciones:</label>
+                            <textarea id="derivaciones_{{ estudiante.id }}" name="derivaciones" rows="2" placeholder="Detalles de derivaciones..."></textarea>
                             
                             <div class="button-group">
                                 <button type="submit" class="save-pdf-button">

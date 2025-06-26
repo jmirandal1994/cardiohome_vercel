@@ -1,601 +1,371 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rellenar Formulario - CardioHome</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Variables CSS personalizadas */
-        :root {
-            --primary-dark: hsl(210, 29%, 18%); /* Azul pizarra muy oscuro */
-            --primary-medium: hsl(210, 15%, 28%); /* Azul pizarra medio */
-            --primary-light: hsl(210, 16%, 92%); /* Gris azulado muy claro */
-            --background-body: linear-gradient(135deg, hsl(200, 20%, 98%) 0%, hsl(210, 15%, 96%) 100%); /* Degradado suave para el cuerpo */
-            --accent-green: hsl(140, 65%, 45%); /* Verde vibrante */
-            --accent-red: hsl(0, 75%, 58%); /* Rojo intenso */
-            --accent-blue: hsl(200, 70%, 55%); /* Azul cielo brillante */
-            --google-drive-blue: #4285F4; /* Azul de Google Drive */
-            --signature-purple: #8B5CF6; /* Púrpura para firma */
-            --text-dark: hsl(210, 10%, 15%);
-            --text-light: hsl(0, 0%, 99%);
-            --border-color: hsl(210, 10%, 82%); /* Borde más definido */
-            --shadow-subtle: rgba(0, 0, 0, 0.08);
-            --shadow-medium: rgba(0, 0, 0, 0.15);
-            --shadow-strong: rgba(0, 0, 0, 0.25);
-            --border-radius-base: 14px;
-            --padding-base: 28px;
-            --gap-base: 30px;
-        }
+  <meta charset="UTF-8">
+  <title>Formulario de Relleno - CardioHome</title>
+  <!-- SweetAlert2 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f0f4f8;
+      padding: 40px;
+    }
 
-        /* Fuentes de Google Fonts para un aspecto más profesional */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap');
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
 
-        /* Font Awesome para íconos */
-        @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
+    header img {
+      max-width: 200px;
+    }
 
-        /* Estilos generales del cuerpo */
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--background-body);
-            color: var(--text-dark);
-            line-height: 1.7; /* Mejor legibilidad */
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
+    header h1 {
+      font-size: 1.2rem;
+      color: #555;
+      margin-top: 10px;
+    }
 
-        /* Estilos del header */
-        header {
-            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-medium) 100%);
-            color: var(--text-light);
-            padding: 2rem 0; /* Mayor padding */
-            text-align: center;
-            box-shadow: 0 10px 30px var(--shadow-strong); /* Sombra más pronunciada */
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-        }
+    .breadcrumb {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #888;
+      margin-bottom: 30px;
+    }
 
-        header img {
-            width: 140px; /* Logo aún más grande en el encabezado */
-            height: auto;
-            filter: brightness(0) invert(1) drop-shadow(0 5px 15px rgba(0,0,0,0.4)); /* Sombra para el logo */
-            margin-bottom: 10px;
-            transition: transform 0.4s ease-out;
-        }
-        header img:hover {
-            transform: scale(1.1); /* Efecto de zoom más dinámico */
-        }
+    #buscador {
+      width: 100%;
+      max-width: 400px;
+      display: block;
+      margin: 0 auto 30px;
+      padding: 12px 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
 
-        header h1 {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 36px; /* Título aún más grande */
-            margin-top: 0;
-            margin-bottom: 0;
-            font-weight: 800;
-            letter-spacing: 1.2px; /* Mayor espaciado entre letras */
-            text-shadow: 3px 4px 6px rgba(0,0,0,0.5); /* Sombra de texto más profunda */
-        }
+    details {
+      margin-bottom: 30px;
+      animation: fadeIn 0.5s ease;
+    }
 
-        .back-button, .logout-btn {
-            background: linear-gradient(45deg, var(--accent-blue) 0%, hsl(200, 60%, 45%) 100%); /* Degradado para botones */
-            color: var(--text-light);
-            border: none;
-            padding: 14px 25px; /* Mayor padding */
-            border-radius: 18px; /* Más redondeado */
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 16px; /* Tamaño de fuente ligeramente más grande */
-            transition: all 0.3s ease-out; /* Transición global para todos los efectos */
-            position: absolute;
-            top: 25px; /* Ajuste de posición */
-            display: flex;
-            align-items: center;
-            gap: 12px; /* Mayor espacio entre icono y texto */
-            box-shadow: 0 5px 15px var(--shadow-medium); /* Sombra más notable */
-            text-decoration: none;
-        }
+    summary {
+      background: #1a73e8;  /* azul uniforme para todos */
+      color: #fff;
+      padding: 15px 20px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      user-select: none;
+    }
 
-        .back-button {
-            left: 30px; /* Ajuste de posición */
-        }
-        .logout-btn {
-            right: 30px; /* Ajuste de posición */
-            background: linear-gradient(45deg, var(--accent-red) 0%, hsl(0, 65%, 50%) 100%); /* Degradado para cerrar sesión */
-        }
+    .container {
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
 
-        .back-button:hover, .logout-btn:hover {
-            transform: translateY(-5px) scale(1.03); /* Efecto 3D de elevación y ligero zoom */
-            box-shadow: 0 10px 25px var(--shadow-strong); /* Sombra más grande en hover */
-        }
+    .formulario {
+      flex: 1 1 500px;
+      background: #ffffff;
+      border-left: 6px solid #1a73e8;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      padding: 30px;
+      position: relative;
+    }
 
-        .container {
-            padding: var(--gap-base) 50px; /* Mayor padding horizontal */
-            max-width: 1500px; /* Mayor ancho máximo */
-            margin: var(--gap-base) auto;
-            flex-grow: 1;
-        }
+    .badge {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      background: #34a853;
+      color: #fff;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
 
-        .card {
-            background: linear-gradient(160deg, #ffffff 0%, #f7fcff 100%); /* Degradado suave para las tarjetas */
-            padding: var(--padding-base);
-            border-radius: 20px; /* Más redondeado */
-            box-shadow: 0 12px 35px rgba(0,0,0,0.18), 0 4px 8px rgba(0,0,0,0.1); /* Doble sombra para profundidad */
-            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s ease; /* Transición más suave */
-            border: 1px solid hsl(210, 10%, 85%); /* Borde sutil y más claro */
-            margin-bottom: var(--gap-base);
-            position: relative;
-            overflow: hidden; /* Para contener efectos internos */
-        }
-        .card:hover {
-            transform: translateY(-10px); /* Elevación más pronunciada */
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 8px 15px rgba(0,0,0,0.18); /* Sombra en hover */
-        }
-        .card::before { /* Efecto de onda de fondo */
-            content: '';
-            position: absolute;
-            top: -50px;
-            left: -50px;
-            width: 200px;
-            height: 200px;
-            background: radial-gradient(circle, rgba(200,230,255,0.3) 0%, transparent 70%);
-            border-radius: 50%;
-            transition: transform 0.5s ease-out;
-            z-index: 0;
-            opacity: 0.8;
-        }
-        .card:hover::before {
-            transform: scale(1.5);
-            opacity: 0;
-        }
+    .badge.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
 
+    .preview {
+      flex: 1 1 350px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      padding: 30px;
+      border-left: 6px solid #1a73e8;
+      position: relative;
+      overflow: hidden;
+      transition: box-shadow 0.3s ease, transform 0.2s ease;
+    }
 
-        .card h3 {
-            font-family: 'Montserrat', sans-serif;
-            margin-top: 0;
-            margin-bottom: 30px; /* Mayor espacio debajo del título */
-            color: var(--primary-dark);
-            font-size: 26px; /* Título de tarjeta más grande */
-            font-weight: 800; /* Más peso para el título */
-            border-bottom: 4px solid var(--accent-blue); /* Borde inferior más grueso y de color principal */
-            padding-bottom: 20px; /* Mayor padding debajo del borde */
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            position: relative;
-            z-index: 1; /* Asegurar que esté por encima del pseudo-elemento */
-        }
-        .card h3 i {
-            color: var(--accent-blue);
-            font-size: 1.4em; /* Icono más grande */
-        }
-        .card h3::after { /* Efecto decorativo bajo el título */
-            content: '';
-            position: absolute;
-            left: 0;
-            bottom: -4px; /* Alineado con el borde */
-            width: 70px; /* Ancho del subrayado de acento */
-            height: 4px;
-            background: linear-gradient(90deg, var(--accent-green) 0%, transparent 100%); /* Degradado para el subrayado */
-            border-radius: 2px;
-        }
+    .preview:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    }
 
-        form {
-            display: flex;
-            flex-direction: column;
-            gap: 25px; /* Mayor espacio entre campos */
-            position: relative;
-            z-index: 1;
-        }
-        form label {
-            font-weight: 600;
-            margin-bottom: -18px; /* Ajuste para espacio */
-            color: var(--text-dark);
-            font-size: 1.05em; /* Ligeramente más grande */
-            display: block;
-        }
-        form input, form select, form textarea {
-            padding: 15px 20px; /* Mayor padding */
-            margin: 0;
-            width: 100%;
-            border-radius: 12px; /* Más redondeado */
-            border: 1px solid var(--border-color);
-            font-size: 17px; /* Tamaño de fuente ligeramente más grande */
-            box-sizing: border-box;
-            transition: all 0.3s ease;
-            background-color: var(--primary-light); /* Fondo suave */
-            color: var(--text-dark);
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); /* Sombra interna sutil */
-        }
+    .preview h3 {
+      margin-top: 0;
+      font-size: 1.4rem;
+      color: #1a73e8;
+      border-bottom: 2px solid #1a73e8;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
 
-        form input:focus, form select:focus, form textarea:focus {
-            border-color: var(--accent-blue);
-            box-shadow: 0 0 0 6px hsla(200, 70%, 55%, 0.25), inset 0 1px 3px rgba(0,0,0,0.1); /* Sombra de enfoque más grande y notoria */
-            outline: none;
-            background-color: white; /* Fondo blanco al enfocar */
-        }
-        form input[readonly] {
-            background-color: #f0f0f0; /* Fondo más oscuro para campos de solo lectura */
-            cursor: not-allowed;
-            border-style: solid; /* Borde sólido */
-            border-color: hsl(210, 10%, 80%);
-            color: #555;
-            box-shadow: none;
-        }
+    .preview p {
+      margin: 12px 0;
+      font-size: 1rem;
+      color: #333;
+    }
 
-        .button-group {
-            display: flex;
-            flex-wrap: wrap; /* Permite que los botones se envuelvan en pantallas pequeñas */
-            gap: 15px; /* Espacio entre botones */
-            margin-top: 30px;
-            justify-content: center; /* Centrar botones */
-        }
+    .preview p strong {
+      display: inline-block;
+      width: 180px;
+      color: #1a73e8;
+    }
 
-        .button-group button {
-            flex-grow: 1; /* Permite que los botones crezcan para ocupar espacio */
-            padding: 18px 25px; /* Ajustado el padding para botones dentro del grupo */
-            font-size: 17px; /* Tamaño de fuente ajustado */
-            min-width: 180px; /* Ancho mínimo para cada botón */
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        .button-group button:hover {
-            transform: translateY(-3px); /* Menos elevación para botones agrupados */
-            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-        }
+    .preview span {
+      font-weight: 500;
+      color: #555;
+    }
 
-        .save-pdf-button {
-            background: linear-gradient(135deg, var(--accent-green) 0%, hsl(140, 75%, 35%) 100%);
-            color: var(--text-light);
-        }
-        .save-pdf-button:hover {
-            background: linear-gradient(135deg, hsl(140, 75%, 35%) 0%, var(--accent-green) 100%);
-        }
+    .preview-img {
+      display: block;
+      width: 100%;
+      margin-top: 25px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
 
-        .drive-button {
-            background: linear-gradient(135deg, var(--google-drive-blue) 0%, hsl(217, 70%, 40%) 100%);
-            color: var(--text-light);
-        }
-        .drive-button:hover {
-            background: linear-gradient(135deg, hsl(217, 70%, 40%) 0%, var(--google-drive-blue) 100%);
-        }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: 600;
+      color: #333;
+    }
 
-        .signature-button {
-            background: linear-gradient(135deg, var(--signature-purple) 0%, hsl(260, 60%, 40%) 100%);
-            color: var(--text-light);
-        }
-        .signature-button:hover {
-            background: linear-gradient(135deg, hsl(260, 60%, 40%) 0%, var(--signature-purple) 100%);
-        }
+    input, textarea, select {
+      width: 100%;
+      padding: 10px 12px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
 
-        /* Flash Messages */
-        .flash-messages {
-            list-style: none;
-            padding: 0;
-            margin: 30px auto;
-            text-align: center;
-            width: fit-content;
-            max-width: 90%;
-            background-color: white;
-            border-radius: 14px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
-            overflow: hidden; /* Asegurar bordes redondeados */
-        }
-        .flash-messages li {
-            padding: 18px 30px;
-            margin-bottom: 0;
-            font-weight: 600;
-            font-size: 1.05em;
-            display: block;
-            border: 1px solid transparent;
-            position: relative;
-            animation: slideInMessage 0.5s ease-out forwards;
-        }
-        .flash-messages li:not(:last-child) {
-            border-bottom: 1px solid rgba(0,0,0,0.08);
-        }
-        @keyframes slideInMessage {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .flash-messages .success { background-color: #e0fff2; color: #28a745; border-color: #a7f0c3; }
-        .flash-messages .error { background-color: #ffe0e0; color: #dc3545; border-color: #f0a7a7; }
-        .flash-messages .info { background-color: #e0f2ff; color: #007bff; border-color: #a7d9f0; }
-        .flash-messages .warning { background-color: #fff9e0; color: #ffc107; border-color: #f0e6a7; }
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
 
-        /* Estilos para la vista previa de imagen */
-        .preview-section {
-            background-color: hsl(210, 16%, 95%);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            margin-top: 25px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 200px; /* Mayor altura para la imagen */
-            overflow: hidden; /* Asegurar que la imagen no se desborde */
-            position: relative;
-            box-shadow: inset 0 2px 8px rgba(0,0,0,0.05); /* Sombra interna para profundidad */
-        }
-        .preview-section img {
-            max-width: 100%;
-            max-height: 100%; /* Ajustar la altura para que la imagen quepa */
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease-in-out;
-        }
-        .preview-section img:hover {
-            transform: scale(1.05); /* Ligeramente agrandar al pasar el ratón */
-        }
+    button {
+      flex: 1;
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      padding: 12px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
 
-        /* Estilo para el contador de evaluaciones */
-        .evaluation-counter {
-            background: linear-gradient(90deg, #e0f7fa, #b2ebf2);
-            padding: 15px 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            font-size: 1.1em;
-            font-weight: 700;
-            color: var(--primary-dark);
-            margin-bottom: 30px;
-            flex-wrap: wrap; /* Permitir que los elementos se envuelvan */
-        }
-        .evaluation-counter i {
-            font-size: 1.4em;
-            color: var(--accent-blue);
-        }
-        .evaluation-counter span {
-            color: var(--accent-green);
-            font-size: 1.2em;
-            margin-left: 5px;
-        }
-        .evaluation-counter button {
-            background-color: var(--accent-blue);
-            color: var(--text-light);
-            border: none;
-            padding: 8px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9em;
-            font-weight: 600;
-            margin-left: 15px;
-            transition: background-color 0.2s ease;
-        }
-        .evaluation-counter button:hover {
-            background-color: hsl(200, 70%, 45%);
-        }
+    button:hover {
+      background: #155ab6;
+    }
 
+    button.secondary {
+      background: #34a853;
+    }
 
-        @media (max-width: 768px) {
-            header {
-                padding: 1.5rem 0;
-            }
-            header img {
-                width: 100px;
-            }
-            header h1 {
-                font-size: 28px;
-            }
-            .back-button, .logout-btn {
-                font-size: 14px;
-                padding: 10px 18px;
-                top: 15px;
-                left: 15px;
-                right: 15px;
-                gap: 8px;
-            }
-            .logout-btn {
-                top: 70px; /* Para que no se superponga con el botón de volver en móviles */
-                left: auto;
-            }
-            .container {
-                padding: 15px;
-            }
-            .card {
-                padding: 20px;
-            }
-            .card h3 {
-                font-size: 22px;
-                margin-bottom: 20px;
-            }
-            form input, form select, form textarea {
-                font-size: 15px;
-                padding: 12px 15px;
-            }
-            .button-group {
-                flex-direction: column; /* Apilar botones en móvil */
-            }
-            .button-group button {
-                width: 100%; /* Ocupar todo el ancho disponible */
-                min-width: unset; /* Reiniciar min-width */
-                padding: 15px 20px; /* Ajustar padding */
-            }
-            .preview-section {
-                min-height: 120px; /* Menor altura en móvil */
-            }
-            .evaluation-counter {
-                flex-direction: column;
-                text-align: center;
-            }
-            .evaluation-counter button {
-                margin-left: 0;
-                margin-top: 10px;
-                width: 100%;
-            }
-        }
-    </style>
+    button.secondary:hover {
+      background: #2c8c46;
+    }
+
+    p.info {
+      margin: 5px 0;
+      font-weight: 500;
+      color: #555;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 50px;
+      color: #888;
+      font-size: 0.9rem;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
 </head>
 <body>
-    <header>
-        <a href="{{ url_for('dashboard') }}" class="back-button"><i class="fa-solid fa-arrow-left"></i> Volver al Dashboard</a>
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo CardioHome" />
-        <h1>Rellenar Formularios</h1>
-        <button class="logout-btn" onclick="cerrarSesion()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</button>
-    </header>
+  <header>
+    <img src="/static/cardiohome.png" alt="CardioHome Logo">
+    <h1>Dra. Adriana Valenzuela — Relleno de Formularios</h1>
+  </header>
 
+  <div class="breadcrumb">🏠 Inicio > Relleno de Formularios > {{ session['establecimiento'] }}</div>
+
+  <input type="text" id="buscador" placeholder="Buscar estudiante por nombre...">
+
+  {% for est in estudiantes %}
+  <details class="estudiante" data-nombre="{{ est.nombre | lower }}">
+    <summary>{{ est.nombre }}</summary>
     <div class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <ul class="flash-messages">
-                    {% for category, message in messages %}
-                        <li class="{{ category }}">{{ message }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        {% endwith %}
+      <div class="formulario">
+        <span class="badge">Guardado</span>
+        <form action="/generar_pdf" method="POST" oninput="updatePreview(this)">
+          <label>Nombre:</label>
+          <input type="text" name="nombre" value="{{ est.nombre }}" required>
 
-        {% if session.get('establecimiento') %}
-            <h2 class="text-3xl font-extrabold text-primary-dark mb-8 text-center font-['Montserrat']">Nómina: {{ session['establecimiento'] }}</h2>
-        {% endif %}
+          <label>RUT:</label>
+          <input type="text" name="rut" value="{{ est.rut }}" required>
 
-        {# Nuevo contador de evaluaciones #}
-        <div class="evaluation-counter">
-            <i class="fa-solid fa-clipboard-check"></i>
-            <span>Evaluaciones completadas para esta nómina: <strong>{{ total_forms_completed_for_nomina }}</strong></span>
-            <button onclick="window.location.reload();">Actualizar Conteo</button> {# Botón simple para refrescar el conteo #}
-        </div>
+          <input type="hidden" name="fecha_nacimiento" value="{{ est.fecha_nacimiento }}">
+          <input type="hidden" name="edad" value="{{ est.edad }}">
+          <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
+          <input type="hidden" name="sexo" value="{{ est.sexo }}">
 
-        {% if estudiantes %}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {% for estudiante in estudiantes %}
-                    <div class="card">
-                        <h3><i class="fa-solid fa-user-injured"></i> {{ estudiante.nombre }}</h3>
-                        
-                        {# Sección para la vista previa de imagen #}
-                        <div class="preview-section">
-                            <img src="{{ url_for('static', filename='formulario_muestra.png') }}" alt="Vista Previa del Formulario" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=Imagen+No+Disponible';" />
-                        </div>
+          <p class="info"><strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento }} ({{ est.edad }})</p>
+          <p class="info"><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</p>
+          <p class="info"><strong>Sexo:</strong> {{ est.sexo }}</p>
 
-                        <form action="{{ url_for('generar_pdf') }}" method="POST">
-                            {# Campos ocultos para pasar el ID del estudiante y la nómina al backend #}
-                            <input type="hidden" name="estudiante_id" value="{{ estudiante.id }}">
-                            <input type="hidden" name="nomina_id" value="{{ session['current_nomina_id'] }}">
+          <label>Estado general del alumno:</label>
+          <textarea name="estado" rows="3" required></textarea>
 
-                            <label for="nombre_{{ estudiante.id }}">Nombre Completo:</label>
-                            <input type="text" id="nombre_{{ estudiante.id }}" name="nombre" value="{{ estudiante.nombre }}" required readonly />
+          <label>Diagnóstico:</label>
+          <select name="diagnostico" required>
+            <option value="">Seleccionar diagnóstico</option>
+            <option value="Trastorno del espectro autista">Trastorno del espectro autista</option>
+            <option value="GARC">GARC</option>
+            <option value="Trastorno por deficit de atención">Trastorno por déficit de atención</option>
+            <option value="Trastorno por deficit de atención e hiperactividad">Trastorno por déficit de atención e hiperactividad</option>
+          </select>
 
-                            <label for="rut_{{ estudiante.id }}">RUT:</label>
-                            <input type="text" id="rut_{{ estudiante.id }}" name="rut" value="{{ estudiante.rut }}" required readonly />
+          <label>Plazo de reevaluación:</label>
+          <select name="plazo" onchange="setFechaReevaluacion(this)">
+            <option value="">Seleccionar plazo</option>
+            <option value="4">Trastorno Espectro Autista - 4 años</option>
+            <option value="3">Trastorno Espectro Autista - 3 años</option>
+            <option value="2">TDA - 2 años</option>
+            <option value="2">TDAH - 2 años</option>
+          </select>
 
-                            <label for="fecha_nacimiento_{{ estudiante.id }}">Fecha de Nacimiento:</label>
-                            <input type="text" id="fecha_nacimiento_{{ estudiante.id }}" name="fecha_nacimiento" value="{{ estudiante.fecha_nacimiento_formato }}" required readonly />
+          <label>Fecha de reevaluación:</label>
+          <input type="date" name="fecha_reevaluacion" required>
 
-                            <label for="edad_{{ estudiante.id }}">Edad:</label>
-                            <input type="text" id="edad_{{ estudiante.id }}" name="edad" value="{{ estudiante.edad }}" required readonly />
+          <label>Derivaciones:</label>
+          <textarea name="derivaciones" rows="2" required></textarea>
 
-                            <label for="nacionalidad_{{ estudiante.id }}">Nacionalidad:</label>
-                            <input type="text" id="nacionalidad_{{ estudiante.id }}" name="nacionalidad" value="{{ estudiante.nacionalidad }}" required />
+          <div class="button-group">
+            <button type="submit" onclick="mostrarExito()">Generar PDF</button>
+            <button type="button" class="secondary" onclick="enviarADrive()">Enviar a Drive</button>
+            <button type="button" class="secondary" onclick="insertarFirma()">Insertar Firma</button>
+          </div>
+        </form>
+      </div>
 
-                            <label for="sexo_{{ estudiante.id }}">Sexo:</label>
-                            <select id="sexo_{{ estudiante.id }}" name="sexo" required>
-                                <option value="M" {% if estudiante.sexo_inferido == 'M' %}selected{% endif %}>Masculino</option>
-                                <option value="F" {% if estudiante.sexo_inferido == 'F' %}selected{% endif %}>Femenino</option>
-                            </select>
+      <div class="preview">
+        <h3>Vista Previa</h3>
+        <p><strong>Nombre:</strong> <span class="prev-nombre">{{ est.nombre }}</span></p>
+        <p><strong>RUT:</strong> <span class="prev-rut">{{ est.rut }}</span></p>
+        <p><strong>Estado:</strong> <span class="prev-estado">-</span></p>
+        <p><strong>Diagnóstico:</strong> <span class="prev-diagnostico">-</span></p>
+        <p><strong>Fecha Reevaluación:</strong> <span class="prev-reevaluacion">-</span></p>
+        <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">-</span></p>
 
-                            <label for="estado_{{ estudiante.id }}">Estado General:</label>
-                            <textarea id="estado_{{ estudiante.id }}" name="estado" rows="2" placeholder="Observaciones del estado general..." required></textarea>
+        <img src="/static/formulario_muestra.png" alt="Ejemplo Formulario" class="preview-img">
 
-                            <label for="diagnostico_{{ estudiante.id }}">Diagnóstico:</label>
-                            <select id="diagnostico_{{ estudiante.id }}" name="diagnostico" required>
-                                <option value="">Selecciona un diagnóstico</option>
-                                <option value="Trastorno espectro autista">Trastorno espectro autista</option>
-                                <option value="GARC">GARC</option>
-                                <option value="Trastorno por deficit de atención">Trastorno por deficit de atención</option>
-                                <option value="TDAH">TDAH</option>
-                                <option value="FIL">FIL</option>
-                                <option value="DIL">DIL</option>
-                                <option value="Sindrome de Down">Sindrome de Down</option>
-                            </select>
-
-                            <label for="fecha_reevaluacion_{{ estudiante.id }}">Fecha de Reevaluación (en años):</label>
-                            <select id="fecha_reevaluacion_{{ estudiante.id }}" name="fecha_reevaluacion_anos" required onchange="updateReevaluationDate('{{ estudiante.id }}')">
-                                <option value="">Selecciona años</option>
-                                <option value="1">1 año</option>
-                                <option value="2">2 años</option>
-                                <option value="3">3 años</option>
-                                <option value="4">4 años</option>
-                                <option value="5">5 años</option>
-                            </select>
-                            {# Campo de solo lectura para la fecha calculada #}
-                            <input type="text" id="calculated_reevaluation_date_{{ estudiante.id }}" readonly placeholder="Fecha de reevaluación calculada" class="mt-[-15px]"/>
-                            {# Campo oculto para enviar la fecha formateada al backend #}
-                            <input type="hidden" id="fecha_reevaluacion_calculated_backend_{{ estudiante.id }}" name="fecha_reevaluacion_final_display" value="" />
-
-
-                            <label for="derivaciones_{{ estudiante.id }}">Derivaciones:</label>
-                            <textarea id="derivaciones_{{ estudiante.id }}" name="derivaciones" rows="2" placeholder="Detalles de derivaciones..."></textarea>
-                            
-                            <div class="button-group">
-                                <button type="submit" class="save-pdf-button">
-                                    <i class="fa-solid fa-save"></i> Guardar y Generar PDF
-                                </button>
-                                <button type="button" class="drive-button" onclick="alert('Funcionalidad de Enviar a Drive por configurar')">
-                                    <i class="fa-brands fa-google-drive"></i> Enviar al Drive
-                                </button>
-                                <button type="button" class="signature-button" onclick="alert('Funcionalidad de Asignar Firma por configurar')">
-                                    <i class="fa-solid fa-signature"></i> Asignar Firma
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <p class="text-center text-gray-600">No hay estudiantes en esta nómina o ha ocurrido un error al cargarlos.</p>
-        {% endif %}
+        <button onclick="window.print()" style="margin-top: 20px; width: 100%;">🖨️ Imprimir Vista Previa</button>
+      </div>
     </div>
+  </details>
+  {% endfor %}
 
-    <script>
-        function cerrarSesion() {
-            window.location.href = "/logout";
-        }
+  <footer>
+    © 2025 CardioHome · Todos los derechos reservados.
+  </footer>
 
-        // Función para actualizar la fecha de reevaluación calculada
-        function updateReevaluationDate(estudianteId) {
-            const selectElement = document.getElementById(`fecha_reevaluacion_${estudianteId}`);
-            const displayElement = document.getElementById(`calculated_reevaluation_date_${estudianteId}`);
-            const hiddenBackendElement = document.getElementById(`fecha_reevaluacion_calculated_backend_${estudianteId}`);
-            const years = parseInt(selectElement.value);
+  <script>
+    const input = document.getElementById('buscador');
+    input.addEventListener('input', function () {
+      const estudiantes = document.querySelectorAll('.estudiante');
+      estudiantes.forEach(detail => {
+        const nombre = detail.getAttribute('data-nombre');
+        detail.style.display = nombre.includes(this.value.toLowerCase()) ? '' : 'none';
+      });
+    });
 
-            if (!isNaN(years) && years > 0) {
-                const today = new Date();
-                const futureDate = new Date(today.getFullYear() + years, today.getMonth(), today.getDate());
-                
-                // Formatear la fecha como DD/MM/YYYY
-                const day = String(futureDate.getDate()).padStart(2, '0');
-                const month = String(futureDate.getMonth() + 1).padStart(2, '0'); // Meses son 0-indexados
-                const year = futureDate.getFullYear();
-                const formattedDate = `${day}/${month}/${year}`;
-                
-                displayElement.value = formattedDate;
-                hiddenBackendElement.value = formattedDate; // Actualizar el campo oculto también
-            } else {
-                displayElement.value = ''; // Limpiar si no hay una selección válida
-                hiddenBackendElement.value = ''; // Limpiar el campo oculto
-            }
-        }
+    function setFechaReevaluacion(select) {
+      const años = parseInt(select.value);
+      if (!años) return;
+      const today = new Date();
+      today.setFullYear(today.getFullYear() + años);
+      const fecha = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+      const container = select.closest('.estudiante');
+      container.querySelector('input[name="fecha_reevaluacion"]').value = fecha;
+    }
 
-        // Inicializar las fechas de reevaluación al cargar la página para cada estudiante
-        document.addEventListener('DOMContentLoaded', () => {
-            const studentCards = document.querySelectorAll('.card');
-            studentCards.forEach(card => {
-                const estudianteId = card.querySelector('input[name="estudiante_id"]').value;
-                updateReevaluationDate(estudianteId); // Llamar para inicializar
-            });
+    function updatePreview(form) {
+      const container = form.closest('.container');
+      container.querySelector('.prev-nombre').textContent = form.nombre.value;
+      container.querySelector('.prev-rut').textContent = form.rut.value;
+      container.querySelector('.prev-estado').textContent = form.estado.value;
+      container.querySelector('.prev-diagnostico').textContent = form.diagnostico.value;
+      container.querySelector('.prev-reevaluacion').textContent = form.fecha_reevaluacion.value;
+      container.querySelector('.prev-derivaciones').textContent = form.derivaciones.value;
+
+      const badge = form.closest('.formulario').querySelector('.badge');
+      badge.classList.add('show');
+      badge.textContent = "Guardando...";
+      clearTimeout(badge.timeout);
+      badge.timeout = setTimeout(() => {
+        badge.textContent = "Guardado";
+      }, 800);
+    }
+
+    function mostrarExito() {
+      setTimeout(() => {
+        Swal.fire({
+          icon: 'success',
+          title: 'PDF generado correctamente',
+          showConfirmButton: false,
+          timer: 1500
         });
-    </script>
+      }, 1000);
+    }
+
+    function enviarADrive() {
+      Swal.fire({
+        icon: 'info',
+        title: 'Próximamente',
+        text: 'Aquí se conectará con Google Drive.'
+      });
+    }
+
+    function insertarFirma() {
+      Swal.fire({
+        icon: 'info',
+        title: 'Próximamente',
+        text: 'Se insertará la firma según la doctora que corresponda.'
+      });
+    }
+  </script>
 </body>
 </html>

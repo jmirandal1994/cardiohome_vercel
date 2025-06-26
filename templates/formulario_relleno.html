@@ -6,33 +6,38 @@
     <title>Rellenar Formulario - CardioHome</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Variables CSS personalizadas */
         :root {
-            --primary-dark: hsl(210, 29%, 24%); /* Deep Slate Blue */
-            --primary-medium: hsl(210, 15%, 35%); /* Darker Grayish Blue */
-            --primary-light: hsl(210, 16%, 95%); /* Light Gray-Blue */
-            --background-accent: hsl(210, 16%, 98%); /* Very Light Gray-Blue */
-            --accent-green: hsl(140, 60%, 40%); /* Forest Green */
-            --accent-red: hsl(0, 70%, 55%); /* Vibrant Red */
-            --accent-blue: hsl(200, 60%, 50%); /* Sky Blue */
-            --text-dark: hsl(210, 10%, 20%);
-            --text-light: hsl(0, 0%, 98%);
-            --border-color: hsl(210, 10%, 88%);
-            --shadow-light: rgba(0, 0, 0, 0.06);
-            --shadow-medium: rgba(0, 0, 0, 0.12);
-            --shadow-strong: rgba(0, 0, 0, 0.2);
-            --border-radius-base: 12px;
-            --padding-base: 25px;
-            --gap-base: 25px;
+            --primary-dark: hsl(210, 29%, 18%); /* Azul pizarra muy oscuro */
+            --primary-medium: hsl(210, 15%, 28%); /* Azul pizarra medio */
+            --primary-light: hsl(210, 16%, 92%); /* Gris azulado muy claro */
+            --background-body: linear-gradient(135deg, hsl(200, 20%, 98%) 0%, hsl(210, 15%, 96%) 100%); /* Degradado suave para el cuerpo */
+            --accent-green: hsl(140, 65%, 45%); /* Verde vibrante */
+            --accent-red: hsl(0, 75%, 58%); /* Rojo intenso */
+            --accent-blue: hsl(200, 70%, 55%); /* Azul cielo brillante */
+            --text-dark: hsl(210, 10%, 15%);
+            --text-light: hsl(0, 0%, 99%);
+            --border-color: hsl(210, 10%, 82%); /* Borde más definido */
+            --shadow-subtle: rgba(0, 0, 0, 0.08);
+            --shadow-medium: rgba(0, 0, 0, 0.15);
+            --shadow-strong: rgba(0, 0, 0, 0.25);
+            --border-radius-base: 14px;
+            --padding-base: 28px;
+            --gap-base: 30px;
         }
 
+        /* Fuentes de Google Fonts para un aspecto más profesional */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+        /* Font Awesome para íconos */
         @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
 
+        /* Estilos generales del cuerpo */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--background-accent);
+            background: var(--background-body);
             color: var(--text-dark);
-            line-height: 1.6;
+            line-height: 1.7; /* Mejor legibilidad */
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -41,12 +46,13 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
+        /* Estilos del header */
         header {
             background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-medium) 100%);
             color: var(--text-light);
-            padding: 1.5rem 0;
+            padding: 2rem 0; /* Mayor padding */
             text-align: center;
-            box-shadow: 0 6px 20px var(--shadow-strong);
+            box-shadow: 0 10px 30px var(--shadow-strong); /* Sombra más pronunciada */
             position: relative;
             display: flex;
             flex-direction: column;
@@ -56,216 +62,320 @@
         }
 
         header img {
-            width: 80px;
+            width: 140px; /* Logo aún más grande en el encabezado */
             height: auto;
-            filter: brightness(0) invert(1);
-            margin-bottom: 5px;
+            filter: brightness(0) invert(1) drop-shadow(0 5px 15px rgba(0,0,0,0.4)); /* Sombra para el logo */
+            margin-bottom: 10px;
+            transition: transform 0.4s ease-out;
+        }
+        header img:hover {
+            transform: scale(1.1); /* Efecto de zoom más dinámico */
         }
 
         header h1 {
             font-family: 'Montserrat', sans-serif;
-            font-size: 28px;
+            font-size: 36px; /* Título aún más grande */
             margin-top: 0;
             margin-bottom: 0;
             font-weight: 800;
-            letter-spacing: 0.8px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            letter-spacing: 1.2px; /* Mayor espaciado entre letras */
+            text-shadow: 3px 4px 6px rgba(0,0,0,0.5); /* Sombra de texto más profunda */
+        }
+
+        .back-button, .logout-btn {
+            background: linear-gradient(45deg, var(--accent-blue) 0%, hsl(200, 60%, 45%) 100%); /* Degradado para botones */
+            color: var(--text-light);
+            border: none;
+            padding: 14px 25px; /* Mayor padding */
+            border-radius: 18px; /* Más redondeado */
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px; /* Tamaño de fuente ligeramente más grande */
+            transition: all 0.3s ease-out; /* Transición global para todos los efectos */
+            position: absolute;
+            top: 25px; /* Ajuste de posición */
+            display: flex;
+            align-items: center;
+            gap: 12px; /* Mayor espacio entre icono y texto */
+            box-shadow: 0 5px 15px var(--shadow-medium); /* Sombra más notable */
+            text-decoration: none;
         }
 
         .back-button {
-            background-color: var(--accent-blue);
-            color: var(--text-light);
-            border: none;
-            padding: 10px 20px;
-            border-radius: var(--border-radius-base);
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-            position: absolute;
-            top: 15px;
-            left: 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            text-decoration: none; /* Make it look like a button */
+            left: 30px; /* Ajuste de posición */
         }
-
-        .back-button:hover {
-            background-color: hsl(200, 60%, 40%);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
         .logout-btn {
-            background-color: var(--accent-red);
-            color: var(--text-light);
-            border: none;
-            padding: 10px 20px;
-            border-radius: var(--border-radius-base);
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            right: 30px; /* Ajuste de posición */
+            background: linear-gradient(45deg, var(--accent-red) 0%, hsl(0, 65%, 50%) 100%); /* Degradado para cerrar sesión */
         }
 
-        .logout-btn:hover {
-            background-color: hsl(0, 70%, 45%);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        .back-button:hover, .logout-btn:hover {
+            transform: translateY(-5px) scale(1.03); /* Efecto 3D de elevación y ligero zoom */
+            box-shadow: 0 10px 25px var(--shadow-strong); /* Sombra más grande en hover */
         }
 
         .container {
-            padding: var(--gap-base);
-            max-width: 1280px;
+            padding: var(--gap-base) 50px; /* Mayor padding horizontal */
+            max-width: 1500px; /* Mayor ancho máximo */
             margin: var(--gap-base) auto;
             flex-grow: 1;
         }
 
         .card {
-            background: white;
+            background: linear-gradient(160deg, #ffffff 0%, #f7fcff 100%); /* Degradado suave para las tarjetas */
             padding: var(--padding-base);
-            border-radius: var(--border-radius-base);
-            box-shadow: 0 4px 18px var(--shadow-medium);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            border: 1px solid var(--border-color);
+            border-radius: 20px; /* Más redondeado */
+            box-shadow: 0 12px 35px rgba(0,0,0,0.18), 0 4px 8px rgba(0,0,0,0.1); /* Doble sombra para profundidad */
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s ease; /* Transición más suave */
+            border: 1px solid hsl(210, 10%, 85%); /* Borde sutil y más claro */
             margin-bottom: var(--gap-base);
+            position: relative;
+            overflow: hidden; /* Para contener efectos internos */
         }
         .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px var(--shadow-strong);
+            transform: translateY(-10px); /* Elevación más pronunciada */
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 8px 15px rgba(0,0,0,0.18); /* Sombra en hover */
         }
+        .card::before { /* Efecto de onda de fondo */
+            content: '';
+            position: absolute;
+            top: -50px;
+            left: -50px;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(200,230,255,0.3) 0%, transparent 70%);
+            border-radius: 50%;
+            transition: transform 0.5s ease-out;
+            z-index: 0;
+            opacity: 0.8;
+        }
+        .card:hover::before {
+            transform: scale(1.5);
+            opacity: 0;
+        }
+
 
         .card h3 {
             font-family: 'Montserrat', sans-serif;
             margin-top: 0;
-            margin-bottom: 20px;
+            margin-bottom: 30px; /* Mayor espacio debajo del título */
             color: var(--primary-dark);
-            font-size: 22px;
-            font-weight: 700;
-            border-bottom: 2px solid var(--border-color);
-            padding-bottom: 15px;
+            font-size: 26px; /* Título de tarjeta más grande */
+            font-weight: 800; /* Más peso para el título */
+            border-bottom: 4px solid var(--accent-blue); /* Borde inferior más grueso y de color principal */
+            padding-bottom: 20px; /* Mayor padding debajo del borde */
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 15px;
+            position: relative;
+            z-index: 1; /* Asegurar que esté por encima del pseudo-elemento */
         }
         .card h3 i {
             color: var(--accent-blue);
-            font-size: 1.2em;
+            font-size: 1.4em; /* Icono más grande */
+        }
+        .card h3::after { /* Efecto decorativo bajo el título */
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -4px; /* Alineado con el borde */
+            width: 70px; /* Ancho del subrayado de acento */
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-green) 0%, transparent 100%); /* Degradado para el subrayado */
+            border-radius: 2px;
         }
 
         form {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 25px; /* Mayor espacio entre campos */
+            position: relative;
+            z-index: 1;
         }
         form label {
-            font-weight: 500;
-            margin-bottom: -10px;
+            font-weight: 600;
+            margin-bottom: -18px; /* Ajuste para espacio */
             color: var(--text-dark);
-            font-size: 0.95em;
+            font-size: 1.05em; /* Ligeramente más grande */
+            display: block;
         }
         form input, form select, form textarea {
-            padding: 12px 15px;
+            padding: 15px 20px; /* Mayor padding */
             margin: 0;
             width: 100%;
-            border-radius: 8px;
+            border-radius: 12px; /* Más redondeado */
             border: 1px solid var(--border-color);
-            font-size: 15px;
+            font-size: 17px; /* Tamaño de fuente ligeramente más grande */
             box-sizing: border-box;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            transition: all 0.3s ease;
+            background-color: var(--primary-light); /* Fondo suave */
+            color: var(--text-dark);
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); /* Sombra interna sutil */
         }
 
         form input:focus, form select:focus, form textarea:focus {
             border-color: var(--accent-blue);
-            box-shadow: 0 0 0 4px hsla(200, 60%, 50%, 0.2);
+            box-shadow: 0 0 0 6px hsla(200, 70%, 55%, 0.25), inset 0 1px 3px rgba(0,0,0,0.1); /* Sombra de enfoque más grande y notoria */
             outline: none;
+            background-color: white; /* Fondo blanco al enfocar */
         }
+        form input[readonly] {
+            background-color: #f0f0f0; /* Fondo más oscuro para campos de solo lectura */
+            cursor: not-allowed;
+            border-style: solid; /* Borde sólido */
+            border-color: hsl(210, 10%, 80%);
+            color: #555;
+            box-shadow: none;
+        }
+
         form button {
-            padding: 14px 30px;
-            background-color: var(--primary-dark);
+            padding: 18px 40px; /* Mayor padding para botones principales */
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-medium) 100%); /* Degradado para botones */
             color: var(--text-light);
             border: none;
             border-radius: var(--border-radius-base);
             cursor: pointer;
             font-weight: 700;
-            font-size: 17px;
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-            margin-top: 15px;
+            font-size: 19px; /* Texto de botón más grande */
+            transition: all 0.3s ease-out; /* Transición global para todos los efectos */
+            margin-top: 30px; /* Mayor margen superior */
             width: auto;
-            align-self: flex-start;
+            align-self: center; /* Centrar el botón */
             display: flex;
             align-items: center;
-            gap: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            gap: 12px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.25); /* Sombra más prominente */
+            letter-spacing: 0.8px; /* Ligero espaciado de letras */
+            text-transform: uppercase; /* Texto en mayúsculas */
         }
 
         form button:hover {
-            background-color: var(--primary-medium);
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px var(--shadow-medium);
+            background: linear-gradient(135deg, var(--primary-medium) 0%, var(--primary-dark) 100%); /* Invertir degradado */
+            transform: translateY(-5px) scale(1.03); /* Efecto 3D de elevación y ligero zoom */
+            box-shadow: 0 12px 30px rgba(0,0,0,0.4); /* Sombra más grande en hover */
         }
 
         .save-pdf-button {
-            background-color: var(--accent-green); /* Color verde para guardar */
+            background: linear-gradient(135deg, var(--accent-green) 0%, hsl(140, 75%, 35%) 100%); /* Degradado verde para guardar */
+            align-self: flex-start; /* Alinear a la izquierda */
         }
         .save-pdf-button:hover {
-            background-color: hsl(140, 60%, 30%);
+            background: linear-gradient(135deg, hsl(140, 75%, 35%) 0%, var(--accent-green) 100%); /* Invertir degradado */
+            transform: translateY(-5px) scale(1.03);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.4);
         }
 
         /* Flash Messages */
         .flash-messages {
             list-style: none;
             padding: 0;
-            margin: 20px 0;
+            margin: 30px auto;
             text-align: center;
+            width: fit-content;
+            max-width: 90%;
+            background-color: white;
+            border-radius: 14px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+            overflow: hidden; /* Asegurar bordes redondeados */
         }
         .flash-messages li {
-            padding: 12px 20px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            display: inline-block;
-            font-weight: 500;
-            font-size: 0.95em;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 18px 30px;
+            margin-bottom: 0;
+            font-weight: 600;
+            font-size: 1.05em;
+            display: block;
+            border: 1px solid transparent;
+            position: relative;
+            animation: slideInMessage 0.5s ease-out forwards;
         }
-        .flash-messages .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .flash-messages .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .flash-messages .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
-        .flash-messages .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .flash-messages li:not(:last-child) {
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+        }
+        @keyframes slideInMessage {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .flash-messages .success { background-color: #e0fff2; color: #28a745; border-color: #a7f0c3; }
+        .flash-messages .error { background-color: #ffe0e0; color: #dc3545; border-color: #f0a7a7; }
+        .flash-messages .info { background-color: #e0f2ff; color: #007bff; border-color: #a7d9f0; }
+        .flash-messages .warning { background-color: #fff9e0; color: #ffc107; border-color: #f0e6a7; }
+
+        /* Estilos para la vista previa conceptual */
+        .preview-section {
+            background-color: hsl(210, 16%, 95%);
+            border: 1px dashed var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 150px;
+            color: #777;
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+        .preview-section i {
+            font-size: 40px;
+            color: var(--accent-blue);
+            margin-bottom: 10px;
+        }
+        .preview-section p {
+            max-width: 80%;
+            margin: 0 auto;
+        }
 
         @media (max-width: 768px) {
+            header {
+                padding: 1.5rem 0;
+            }
+            header img {
+                width: 100px;
+            }
+            header h1 {
+                font-size: 28px;
+            }
+            .back-button, .logout-btn {
+                font-size: 14px;
+                padding: 10px 18px;
+                top: 15px;
+                left: 15px;
+                right: 15px;
+                gap: 8px;
+            }
+            .logout-btn {
+                top: 70px; /* Para que no se superponga con el botón de volver en móviles */
+                left: auto;
+            }
             .container {
                 padding: 15px;
             }
             .card {
                 padding: 20px;
             }
-            header h1 {
-                font-size: 24px;
+            .card h3 {
+                font-size: 22px;
+                margin-bottom: 20px;
             }
-            .back-button, .logout-btn {
-                font-size: 13px;
-                padding: 8px 15px;
+            form input, form select, form textarea {
+                font-size: 15px;
+                padding: 12px 15px;
             }
             form button {
-                font-size: 15px;
-                padding: 10px 20px;
+                font-size: 17px;
+                padding: 14px 30px;
+            }
+            .save-pdf-button {
+                align-self: stretch; /* Ocupa todo el ancho en móvil */
             }
         }
     </style>
 </head>
 <body>
     <header>
-        <a href="{{ url_for('dashboard') }}" class="back-button"><i class="fa-solid fa-arrow-left"></i> Volver</a>
+        <a href="{{ url_for('dashboard') }}" class="back-button"><i class="fa-solid fa-arrow-left"></i> Volver al Dashboard</a>
         <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo CardioHome" />
         <h1>Rellenar Formularios</h1>
         <button class="logout-btn" onclick="cerrarSesion()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</button>
@@ -283,7 +393,7 @@
         {% endwith %}
 
         {% if session.get('establecimiento') %}
-            <h2 class="text-2xl font-bold text-primary-dark mb-6 text-center">Nómina: {{ session['establecimiento'] }}</h2>
+            <h2 class="text-3xl font-extrabold text-primary-dark mb-8 text-center font-['Montserrat']">Nómina: {{ session['establecimiento'] }}</h2>
         {% endif %}
 
         {% if estudiantes %}
@@ -291,6 +401,13 @@
                 {% for estudiante in estudiantes %}
                     <div class="card">
                         <h3><i class="fa-solid fa-user-injured"></i> {{ estudiante.nombre }}</h3>
+                        
+                        {# Sección para la vista previa conceptual #}
+                        <div class="preview-section">
+                            <i class="fa-solid fa-file-pdf"></i>
+                            <p>Aquí se generará una vista previa del formulario en PDF una vez que presiones "Guardar". El archivo se descargará automáticamente.</p>
+                        </div>
+
                         <form action="{{ url_for('generar_pdf') }}" method="POST">
                             {# Campos ocultos para pasar el ID del estudiante y la nómina al backend #}
                             <input type="hidden" name="estudiante_id" value="{{ estudiante.id }}">

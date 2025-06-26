@@ -81,12 +81,7 @@
             font-weight: 700;
         }
 
-        .breadcrumb {
-            text-align: center;
-            font-size: 0.9rem;
-            color: #888;
-            margin: 20px 0; /* Ajuste de margen */
-        }
+        /* Eliminado: .breadcrumb */
 
         /* Estilos para los botones del header */
         .header-btn {
@@ -483,17 +478,18 @@
         <a href="{{ url_for('dashboard') }}" class="header-btn back-to-dashboard-btn">
             <i class="fas fa-arrow-left"></i> Volver al Dashboard
         </a>
-        {# CORRECTED LOGO PATH HERE #}
+        {# CORRECTED LOGO PATH AND EFFECT HERE #}
         <img src="{{ url_for('static', filename='logo.png') }}" alt="CardioHome Logo">
-        <h1>Dra. Adriana Valenzuela — Relleno de Formularios</h1>
+        {# REPLACED DOCTOR'S NAME WITH ESTABLISHMENT NAME #}
+        <h1>{{ session['establecimiento'] }} — Relleno de Formularios</h1>
         <button class="header-btn logout-btn" onclick="cerrarSesion()">
             <i class="fas fa-sign-out-alt"></i> Cerrar sesión
         </button>
     </header>
 
     <div class="main-content-wrapper">
-        <div class="breadcrumb">🏠 Inicio > Relleno de Formularios > {{ session['establecimiento'] }}</div>
-
+        {# REMOVED BREADCRUMB NAVIGATION #}
+        
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -539,11 +535,18 @@
                             <input type="hidden" name="fecha_nacimiento" value="{{ est.fecha_nacimiento_formato }}"> {# Usar el formato ya procesado #}
                             <input type="hidden" name="edad" value="{{ est.edad }}">
                             <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
-                            <input type="hidden" name="sexo" value="{{ est.sexo }}"> {# SEXO: Mantenido tal cual #}
+                            
+                            {# SEXO: Changed from hidden input to select for editability, pre-selected with est.sexo #}
+                            <label>Sexo:</label>
+                            <select name="sexo" required onchange="updatePreview(this.form)">
+                                <option value="M" {% if est.sexo == 'M' %}selected{% endif %}>Masculino</option>
+                                <option value="F" {% if est.sexo == 'F' %}selected{% endif %}>Femenino</option>
+                            </select>
 
                             <p class="info"><strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento_formato }} ({{ est.edad }})</p>
                             <p class="info"><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</p>
-                            <p class="info"><strong>Sexo:</strong> {{ est.sexo }}</p> {# SEXO: Mantenido tal cual #}
+                            {# Sexo display below, now reflecting the selected value, not just the hidden one #}
+                            <p class="info"><strong>Sexo:</strong> <span class="prev-sexo-info">{{ 'Masculino' if est.sexo == 'M' else 'Femenino' }}</span></p>
 
 
                             <label>Estado general del alumno:</label>
@@ -599,7 +602,8 @@
                         <p><strong>Diagnóstico:</strong> <span class="prev-diagnostico">-</span></p>
                         <p><strong>Fecha Reevaluación:</strong> <span class="prev-reevaluacion">-</span></p>
                         <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">-</span></p>
-                        <p><strong>Sexo:</strong> <span class="prev-sexo">{{ est.sexo }}</span></p> {# SEXO: Mantenido tal cual #}
+                        {# Updated prev-sexo span to reflect the <select> value, not the hidden input #}
+                        <p><strong>Sexo:</strong> <span class="prev-sexo"></span></p> 
 
 
                         <img src="/static/formulario_muestra.png" alt="Ejemplo Formulario" class="preview-img" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=Imagen+No+Disponible';" />
@@ -673,7 +677,7 @@
                 const month = String(futureDate.getMonth() + 1).padStart(2, '0');
                 const day = String(futureDate.getDate()).padStart(2, '0');
 
-                fechaReevaluacionInput.value = `${year}-${month}-${day}`; // Formato Canberra-MM-DD para input type="date"
+                fechaReevaluacionInput.value = `${year}-${month}-${day}`; // Formato YYYY-MM-DD para input type="date"
             } else {
                 fechaReevaluacionInput.value = ''; // Limpiar si no es una selección válida
             }
@@ -694,17 +698,17 @@
             // La fecha de reevaluación la tomamos del input type="date"
             const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');
             if (fechaReevaluacionInput && fechaReevaluacionInput.value) {
-                // Si el formato es Canberra-MM-DD, lo convertimos a DD/MM/YYYY para mostrar
+                // Si el formato es YYYY-MM-DD, lo convertimos a DD/MM/YYYY para mostrar
                 const [year, month, day] = fechaReevaluacionInput.value.split('-');
                 container.querySelector('.prev-reevaluacion').textContent = `${day}/${month}/${year}`;
             } else {
                 container.querySelector('.prev-reevaluacion').textContent = '-';
             }
 
-            // Actualizar el campo de sexo en la vista previa (mantenido original)
-            const sexoInput = form.querySelector('input[name="sexo"]');
-            if (sexoInput) {
-                container.querySelector('.prev-sexo').textContent = sexoInput.value; // Display raw value ('M' or 'F')
+            // Actualizar el campo de sexo en la vista previa (ahora del select)
+            const sexoSelect = form.querySelector('select[name="sexo"]');
+            if (sexoSelect) {
+                container.querySelector('.prev-sexo').textContent = sexoSelect.value === 'M' ? 'Masculino' : 'Femenino';
             } else {
                 container.querySelector('.prev-sexo').textContent = '-';
             }

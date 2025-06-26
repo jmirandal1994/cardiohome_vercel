@@ -220,7 +220,7 @@ def generar_pdf():
     print(f"DEBUG: generar_pdf - Datos recibidos: nombre={nombre}, rut={rut}, fecha_nac={fecha_nac}")
 
 
-    # Reformatear fecha de reevaluación a DD/MM/YYYY si viene en formato Wayback-MM-DD (del date input HTML)
+    # Reformatear fecha de reevaluación a DD/MM/YYYY si viene en formato YYYY-MM-DD (del date input HTML)
     if fecha_reeval and "-" in fecha_reeval:
         try:
             fecha_reeval = datetime.strptime(fecha_reeval, '%Y-%m-%d').strftime('%d/%m/%Y')
@@ -334,6 +334,12 @@ def dashboard():
     usuario_id = session.get('usuario_id')
     print(f"DEBUG: Accediendo a dashboard para usuario: {usuario}, ID: {usuario_id}")
 
+    # --- Inicialización de variables para evitar UnboundLocalError ---
+    doctoras = []
+    establecimientos_admin_list = []
+    admin_nominas_cargadas = []
+    conteo = {}
+
 
     # --- Lógica para Eventos/Establecimientos (Visitas Programadas) ---
     campos_establecimientos = "id,nombre,fecha,horario,observaciones,cantidad_alumnos,url_archivo,nombre_archivo,doctora_id" # Added doctora_id
@@ -406,11 +412,7 @@ def dashboard():
             print(f"Response text: {res_nominas_asignadas.text if 'res_nominas_asignadas' in locals() else 'No response'}")
             flash('Error al cargar sus nóminas asignadas.', 'error')
 
-    # --- Admin-specific Logic (display doctor lists and counts) ---
-    doctoras = []
-    establecimientos_admin_list = [] # Una lista separada para el admin con todos los establecimientos
-    conteo = {} # Conteo de formularios por establecimiento
-
+    # --- Lógica específica del Administrador (mostrar listas de doctores y conteos) ---
     if usuario == 'admin':
         try:
             # Obtener lista completa de doctoras
@@ -445,8 +447,7 @@ def dashboard():
                 conteo[est_id] = conteo.get(est_id, 0) + 1
         print(f"DEBUG: Conteo de formularios por establecimiento: {conteo}")
 
-        # NEW: Get nominations loaded by the admin (all nominations)
-        admin_nominas_cargadas = []
+        # NEW: Obtener nóminas cargadas por el admin (todas las nóminas)
         try:
             url_admin_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina,tipo_nomina,doctora_id,url_excel_original,nombre_excel_original"
             print(f"DEBUG: URL para obtener nóminas cargadas por admin: {url_admin_nominas}")
@@ -464,17 +465,17 @@ def dashboard():
         'dashboard.html',
         usuario=usuario,
         eventos=eventos,
-        doctoras=doctoras, # List of doctors for admin
-        establecimientos=establecimientos_admin_list, # List of establishments for admin
-        formularios=formularios, # Uploaded forms by doctors
+        doctoras=doctoras, # Lista de doctoras para admin (ahora siempre inicializada)
+        establecimientos=establecimientos_admin_list, # Lista de establecimientos para admin (ahora siempre inicializada)
+        formularios=formularios, # Formularios subidos por las doctoras
         conteo=conteo,
-        assigned_nominations=assigned_nominations, # Nominations assigned to the logged-in doctor
-        admin_nominas_cargadas=admin_nominas_cargadas # NEW! Nominations loaded by the admin
+        assigned_nominations=assigned_nominations, # Nóminas asignadas a la doctora logueada
+        admin_nominas_cargadas=admin_nominas_cargadas # ¡NUEVO! Nóminas cargadas por el admin (ahora siempre inicializada)
     )
 
 @app.route('/logout')
 def logout():
-    """Closes the user's session."""
+    """Cierra la sesión del usuario."""
     session.clear()
     flash('Has cerrado sesión correctamente.', 'info')
     return redirect(url_for('index'))
@@ -482,8 +483,8 @@ def logout():
 @app.route('/admin/agregar', methods=['POST'])
 def admin_agregar():
     """
-    Route for the **administrator** to add a new **establishment**
-    (a scheduled visit) and upload an associated base form.
+    Ruta para que el **administrador** agregue un nuevo **establecimiento**
+    (una visita programada) y suba un formulario base asociado.
     """
     if session.get('usuario') != 'admin':
         flash('Acceso denegado.', 'error')
@@ -493,9 +494,9 @@ def admin_agregar():
     fecha = request.form.get('fecha')
     horario = request.form.get('horario')
     obs = request.form.get('obs')
-    doctora_id_from_form = request.form.get('doctora', '').strip() # <-- Gets the selected ID from the form
+    doctora_id_from_form = request.form.get('doctora', '').strip() # <-- Obtiene el ID seleccionado del formulario
     cantidad_alumnos = request.form.get('alumnos')
-    archivo = request.files.get('formulario') # Base PDF or DOCX file
+    archivo = request.files.get('formulario') # Archivo PDF o DOCX base
 
     print(f"DEBUG: admin_agregar - Datos recibidos: nombre={nombre}, fecha={fecha}, horario={horario}, doctora_id_from_form={doctora_id_from_form}, alumnos={cantidad_alumnos}, archivo_presente={bool(archivo)}")
 
@@ -507,18 +508,18 @@ def admin_agregar():
         flash("❌ Archivo de formulario base no válido o no seleccionado.", 'error')
         return redirect(url_for('dashboard'))
 
-    nuevo_id = str(uuid.uuid4()) # Unique ID for the establishment
+    nuevo_id = str(uuid.uuid4()) # ID único para el establecimiento
     filename = secure_filename(archivo.filename)
     file_data = archivo.read()
     mime_type = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
 
-    # 1. Upload the base form file to Supabase Storage
+    # 1. Subir el archivo de formulario base a Supabase Storage
     try:
         upload_path = f"formularios/{nuevo_id}/{filename}"
         upload_url = f"{SUPABASE_URL}/storage/v1/object/{upload_path}"
         print(f"DEBUG: Subiendo archivo a Storage: {upload_url}")
         res_upload = requests.put(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=file_data)
-        res_upload.raise_for_status() # Raises exception if upload fails
+        res_upload.raise_for_status() # Lanza excepción si la subida falla
 
         url_publica = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path}"
         print(f"DEBUG: Archivo subido, URL pública: {url_publica}")
@@ -527,14 +528,14 @@ def admin_agregar():
         flash("❌ Error al subir el archivo del formulario base.", 'error')
         return redirect(url_for('dashboard'))
 
-    # 2. Insert establishment data into the 'establecimientos' table
+    # 2. Insertar los datos del establecimiento en la tabla 'establecimientos'
     data_establecimiento = {
         "id": nuevo_id,
         "nombre": nombre,
         "fecha": fecha,
         "horario": horario,
         "observaciones": obs,
-        "doctora_id": doctora_id_from_form, # <-- Uses the ID from the form
+        "doctora_id": doctora_id_from_form, # <-- Usa el ID del formulario
         "cantidad_alumnos": int(cantidad_alumnos) if cantidad_alumnos else None,
         "url_archivo": url_publica,
         "nombre_archivo": filename
@@ -544,10 +545,10 @@ def admin_agregar():
     try:
         response_db = requests.post(
             f"{SUPABASE_URL}/rest/v1/establecimientos",
-            headers=SUPABASE_HEADERS, # SUPABASE_HEADERS is used because RLS must allow insertion
+            headers=SUPABASE_HEADERS, # Se usan SUPABASE_HEADERS porque RLS debe permitir la inserción
             json=data_establecimiento
         )
-        response_db.raise_for_status() # Raises exception if DB insertion fails
+        response_db.raise_for_status() # Lanza excepción si la inserción en DB falla
         print(f"DEBUG: Respuesta de Supabase al insertar establecimiento (status): {response_db.status_code}")
         print(f"DEBUG: Respuesta de Supabase al insertar establecimiento (text): {response_db.text}")
         flash("✅ Establecimiento y formulario base agregado correctamente.", 'success')
@@ -564,8 +565,8 @@ def admin_agregar():
 @app.route('/admin/cargar_nomina', methods=['POST'])
 def admin_cargar_nomina():
     """
-    Route for the **administrator** to upload a student roster
-    from an Excel file and assign it to a doctor.
+    Ruta para que el **administrador** suba una lista de estudiantes
+    desde un archivo Excel y la asigne a una doctora.
     """
     if session.get('usuario') != 'admin':
         flash('Acceso denegado.', 'error')
@@ -573,7 +574,7 @@ def admin_cargar_nomina():
 
     tipo_nomina = request.form.get('tipo_nomina')
     nombre_especifico = request.form.get('nombre_especifico')
-    doctora_id_from_form = request.form.get('doctora', '').strip() # <-- Gets the selected ID from the form
+    doctora_id_from_form = request.form.get('doctora', '').strip() # <-- Obtiene el ID seleccionado del formulario
     excel_file = request.files.get('excel')
 
     print(f"DEBUG: admin_cargar_nomina - Datos recibidos: tipo_nomina={tipo_nomina}, nombre_especifico={nombre_especifico}, doctora_id_from_form={doctora_id_from_form}, archivo_presente={bool(excel_file)}")
@@ -586,9 +587,9 @@ def admin_cargar_nomina():
         flash('❌ Archivo Excel o CSV no válido. Extensiones permitidas: .xls, .xlsx, .csv', 'error')
         return redirect(url_for('dashboard'))
 
-    nomina_id = str(uuid.uuid4()) # Unique ID for this nomination
+    nomina_id = str(uuid.uuid4()) # ID único para esta nómina
     excel_filename = secure_filename(excel_file.filename)
-    excel_file_data = excel_file.read() # Read binary content of the file
+    excel_file_data = excel_file.read() # Leer contenido binario del archivo
     mime_type = mimetypes.guess_type(excel_filename)[0] or 'application/octet-stream'
 
     # 1. Subir el archivo Excel/CSV original a Supabase Storage
@@ -607,12 +608,12 @@ def admin_cargar_nomina():
         flash("❌ Error al subir el archivo de la nómina.", 'error')
         return redirect(url_for('dashboard'))
 
-    # 2. Insert the nomination entry into the 'nominas_medicas' table
+    # 2. Insertar la entrada de la nómina en la tabla 'nominas_medicas'
     data_nomina = {
         "id": nomina_id,
         "nombre_nomina": nombre_especifico,
         "tipo_nomina": tipo_nomina,
-        "doctora_id": doctora_id_from_form, # <-- Uses the ID from the form
+        "doctora_id": doctora_id_from_form, # <-- Usa el ID del formulario
         "url_excel_original": url_excel_publica,
         "nombre_excel_original": excel_filename
     }
@@ -621,7 +622,7 @@ def admin_cargar_nomina():
     try:
         res_insert_nomina = requests.post(
             f"{SUPABASE_URL}/rest/v1/nominas_medicas",
-            headers=SUPABASE_HEADERS, # SUPABASE_HEADERS is used because RLS must allow insertion
+            headers=SUPABASE_HEADERS, # Se usan SUPABASE_HEADERS porque RLS debe permitir la inserción
             json=data_nomina
         )
         res_insert_nomina.raise_for_status()
@@ -631,10 +632,10 @@ def admin_cargar_nomina():
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al guardar nómina en DB: {e} - {res_insert_nomina.text if 'res_insert_nomina' in locals() else ''}")
         flash("❌ Error al guardar los datos de la nómina en la base de datos.", 'error')
-        # Consider cleaning up the file from Storage if DB insertion fails
+        # Considera limpiar el archivo de Storage si la inserción en DB falla
         return redirect(url_for('dashboard'))
 
-    # 3. Read and process Excel/CSV content to save students
+    # 3. Leer y procesar el contenido del Excel/CSV para guardar estudiantes
     try:
         excel_data_io = io.BytesIO(excel_file_data)
         if excel_filename.lower().endswith(('.xlsx', '.xls')):
@@ -642,7 +643,7 @@ def admin_cargar_nomina():
         elif excel_filename.lower().endswith('.csv'):
             df = pd.read_csv(excel_data_io)
         else:
-            raise ValueError("File format not supported for reading (only .xls, .xlsx, .csv).")
+            raise ValueError("Formato de archivo no soportado para lectura (solo .xls, .xlsx, .csv).")
 
         estudiantes_a_insertar = []
         df.columns = [normalizar(col) for col in df.columns]
@@ -682,7 +683,7 @@ def admin_cargar_nomina():
         print(f"DEBUG: Estudiantes listos para insertar ({len(estudiantes_a_insertar)}): {estudiantes_a_insertar}")
 
 
-        # Insert all students in a single batch (Supabase supports this with an array of objects)
+        # Insertar todos los estudiantes en un solo lote (Supabase lo soporta con un array de objetos)
         if estudiantes_a_insertar:
             res_insert_estudiantes = requests.post(
                 f"{SUPABASE_URL}/rest/v1/estudiantes_nomina",

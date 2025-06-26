@@ -515,8 +515,8 @@
 
                             <p class="info"><strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento_formato }} ({{ est.edad }})</p>
                             <p class="info"><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</p>
-                            {# Changed to display the selected value from the dropdown, not the inferred DB value #}
-                            <p class="info"><strong>Sexo:</strong> <span class="prev-sexo-info">{{ est.sexo == 'M' ? 'Masculino' : 'Femenino' }}</span></p>
+                            {# Fixed Jinja2 syntax here to display the inferred sex #}
+                            <p class="info"><strong>Sexo:</strong> <span class="prev-sexo-info">{{ 'Masculino' if est.sexo == 'M' else 'Femenino' }}</span></p>
 
 
                             <label>Estado general del alumno:</label>
@@ -646,7 +646,7 @@
                 const month = String(futureDate.getMonth() + 1).padStart(2, '0');
                 const day = String(futureDate.getDate()).padStart(2, '0');
 
-                fechaReevaluacionInput.value = `${year}-${month}-${day}`; // Formato YYYY-MM-DD para input type="date"
+                fechaReevaluacionInput.value = `${year}-${month}-${day}`; // Formato Canberra-MM-DD para input type="date"
             } else {
                 fechaReevaluacionInput.value = ''; // Limpiar si no es una selección válida
             }
@@ -667,7 +667,7 @@
             // La fecha de reevaluación la tomamos del input type="date"
             const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');
             if (fechaReevaluacionInput && fechaReevaluacionInput.value) {
-                // Si el formato es YYYY-MM-DD, lo convertimos a DD/MM/YYYY para mostrar
+                // Si el formato es Canberra-MM-DD, lo convertimos a DD/MM/YYYY para mostrar
                 const [year, month, day] = fechaReevaluacionInput.value.split('-');
                 container.querySelector('.prev-reevaluacion').textContent = `${day}/${month}/${year}`;
             } else {

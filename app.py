@@ -20,14 +20,14 @@ app = Flask(__name__)
 app.secret_key = 'clave_super_segura_cardiohome_2025'
 ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'xls', 'xlsx', 'csv'}
 # Usar el nombre de archivo PDF base que el usuario confirmó que funciona
-PDF_BASE = 'FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE.pdf' 
+PDF_BASE = 'FORMULARIO.pdf' # ¡CORREGIDO! Vuelve a ser FORMULARIO.pdf
 
 # -------------------- Supabase Configuration --------------------
 # Estas variables serán inyectadas por el entorno de Canvas o tomadas de .env local
 firebaseConfig = json.loads(os.getenv("FIREBASE_CONFIG", "{}")) 
 SUPABASE_URL = os.getenv("SUPABASE_URL") or firebaseConfig.get("SUPABASE_URL", "https://rbzxolreglwndvsrxhmg.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY") or firebaseConfig.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDE3ODcsImV4cCI6MjA2MzExNzc4N30.BbzsUhed1Y_dJYWFKLAHqtV4cXdvjF_ihGdQ_Bpov3Y")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or firebaseConfig.get("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzU0MTc4NywiZXhwIjoyMDYzMTE3Nzg3fQ.i3ixl5ws3Z3QTxIcZNjI29ZknRmJwwQfUyLmX0Z0khc")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or firebaseConfig.get("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzU0MTc4NywiZXhwIjoyMDYzMTE3Nzg3fQ.i3ixl5ws3Z3QTxIcZNjI29ZsnRmJwwQfUyLmX0Z0khc")
 
 SUPABASE_HEADERS = {
     "apikey": SUPABASE_KEY,
@@ -281,7 +281,8 @@ def generar_pdf():
     fecha_reeval_formatted = ""
     try:
         # Extraer el número de años de la cadena (ej. "1 año" -> 1)
-        reeval_cantidad_anos = int(reeval_anos_str.split(' ')[0])
+        # Se asume que el valor del select es "1", "2", etc., no "1 año"
+        reeval_cantidad_anos = int(reeval_anos_str) # Cambiado para parsear directamente el entero
         if reeval_cantidad_anos > 0:
             future_date = fecha_eval_dt + relativedelta(years=reeval_cantidad_anos)
             fecha_reeval_formatted = future_date.strftime('%d/%m/%Y')
@@ -291,7 +292,7 @@ def generar_pdf():
 
     # IDs para registro en Supabase
     estudiante_id = request.form.get('estudiante_id')
-    nomina_id = request.form.get('nomina_id') # Obtenido de campo oculto en formulario_relleno.html
+    nomina_id = session.get('current_nomina_id') # Obtener de sesión, más seguro
     doctora_id = session.get('usuario_id')
 
     print(f"DEBUG: generar_pdf - Datos recibidos: nombre={nombre}, rut={rut}, estudiante_id={estudiante_id}, nomina_id={nomina_id}, fecha_reeval_anos={reeval_anos_str}, derivaciones={derivaciones}, fecha_reeval_formatted={fecha_reeval_formatted}")

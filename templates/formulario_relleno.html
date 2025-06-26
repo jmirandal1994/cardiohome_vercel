@@ -521,7 +521,7 @@
                             </select>
 
                             <label for="fecha_reevaluacion_{{ estudiante.id }}">Fecha de Reevaluación (en años):</label>
-                            <select id="fecha_reevaluacion_{{ estudiante.id }}" name="fecha_reevaluacion_anos" required>
+                            <select id="fecha_reevaluacion_{{ estudiante.id }}" name="fecha_reevaluacion_anos" required onchange="updateReevaluationDate('{{ estudiante.id }}')">
                                 <option value="">Selecciona años</option>
                                 <option value="1">1 año</option>
                                 <option value="2">2 años</option>
@@ -529,6 +529,8 @@
                                 <option value="4">4 años</option>
                                 <option value="5">5 años</option>
                             </select>
+                            {# Nuevo campo de solo lectura para la fecha calculada #}
+                            <input type="text" id="calculated_reevaluation_date_{{ estudiante.id }}" name="calculated_reevaluation_date_display" readonly placeholder="Fecha de reevaluación calculada" class="mt-[-15px]"/>
 
                             <label for="derivaciones_{{ estudiante.id }}">Derivaciones:</label>
                             <textarea id="derivaciones_{{ estudiante.id }}" name="derivaciones" rows="2" placeholder="Detalles de derivaciones..."></textarea>
@@ -557,6 +559,35 @@
         function cerrarSesion() {
             window.location.href = "/logout";
         }
+
+        // Función para actualizar la fecha de reevaluación calculada
+        function updateReevaluationDate(estudianteId) {
+            const selectElement = document.getElementById(`fecha_reevaluacion_${estudianteId}`);
+            const displayElement = document.getElementById(`calculated_reevaluation_date_${estudianteId}`);
+            const years = parseInt(selectElement.value);
+
+            if (!isNaN(years) && years > 0) {
+                const today = new Date();
+                const futureDate = new Date(today.getFullYear() + years, today.getMonth(), today.getDate());
+                
+                // Formatear la fecha como DD/MM/YYYY
+                const day = String(futureDate.getDate()).padStart(2, '0');
+                const month = String(futureDate.getMonth() + 1).padStart(2, '0'); // Meses son 0-indexados
+                const year = futureDate.getFullYear();
+                displayElement.value = `${day}/${month}/${year}`;
+            } else {
+                displayElement.value = ''; // Limpiar si no hay una selección válida
+            }
+        }
+
+        // Inicializar las fechas de reevaluación al cargar la página para cada estudiante
+        document.addEventListener('DOMContentLoaded', () => {
+            const studentCards = document.querySelectorAll('.card');
+            studentCards.forEach(card => {
+                const estudianteId = card.querySelector('input[name="estudiante_id"]').value;
+                updateReevaluationDate(estudianteId); // Llamar para inicializar
+            });
+        });
     </script>
 </body>
 </html>

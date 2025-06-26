@@ -27,7 +27,7 @@ PDF_BASE = 'FORMULARIO.pdf' # ¡CORREGIDO! Vuelve a ser FORMULARIO.pdf
 firebaseConfig = json.loads(os.getenv("FIREBASE_CONFIG", "{}")) 
 SUPABASE_URL = os.getenv("SUPABASE_URL") or firebaseConfig.get("SUPABASE_URL", "https://rbzxolreglwndvsrxhmg.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY") or firebaseConfig.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDE3ODcsImV4cCI6MjA2MzExNzc4N30.BbzsUhed1Y_dJYWFKLAHqtV4cXdvjF_ihGdQ_Bpov3Y")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or firebaseConfig.get("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzU0MTc4NywiZXhwIjoyMDYzMTE3Nzg3fQ.i3ixl5ws3Z3QTxIcZNjI29ZsnRmJwwQfUyLmX0Z0khc")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or firebaseConfig.get("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzU0MTc4NywiZXhwIjoyMDYzMTE3Nzg3fQ.i3ixl5ws3Z3QTxIcZNjI29ZknRmJwwQfUyLmX0Z0khc")
 
 SUPABASE_HEADERS = {
     "apikey": SUPABASE_KEY,
@@ -270,7 +270,7 @@ def generar_pdf():
     estado = request.form.get('estado')
     diagnostico = request.form.get('diagnostico')
     
-    # Campo para la reevaluación en años (ahora es un string como "1 año", "2 años")
+    # Campo para la reevaluación en años
     reeval_anos_str = request.form.get('fecha_reevaluacion_anos')
     derivaciones = request.form.get('derivaciones') # Reincorporado
     
@@ -280,14 +280,13 @@ def generar_pdf():
     # Calcular fecha de reevaluación basada en los años seleccionados
     fecha_reeval_formatted = ""
     try:
-        # Extraer el número de años de la cadena (ej. "1 año" -> 1)
-        # Se asume que el valor del select es "1", "2", etc., no "1 año"
-        reeval_cantidad_anos = int(reeval_anos_str) # Cambiado para parsear directamente el entero
+        # El valor del select es un número entero ("1", "2", etc.)
+        reeval_cantidad_anos = int(reeval_anos_str) 
         if reeval_cantidad_anos > 0:
             future_date = fecha_eval_dt + relativedelta(years=reeval_cantidad_anos)
             fecha_reeval_formatted = future_date.strftime('%d/%m/%Y')
-    except (ValueError, TypeError, IndexError):
-        print(f"DEBUG: Valor no válido para años de reevaluación: {reeval_anos_str}. Estableciendo a 'N/A'.")
+    except (ValueError, TypeError):
+        print(f"DEBUG: Valor no válido para años de reevaluación: '{reeval_anos_str}'. Estableciendo a 'N/A'.")
         fecha_reeval_formatted = "N/A" # Manejar si el input es inválido o no se seleccionó
 
     # IDs para registro en Supabase
@@ -295,7 +294,10 @@ def generar_pdf():
     nomina_id = session.get('current_nomina_id') # Obtener de sesión, más seguro
     doctora_id = session.get('usuario_id')
 
-    print(f"DEBUG: generar_pdf - Datos recibidos: nombre={nombre}, rut={rut}, estudiante_id={estudiante_id}, nomina_id={nomina_id}, fecha_reeval_anos={reeval_anos_str}, derivaciones={derivaciones}, fecha_reeval_formatted={fecha_reeval_formatted}")
+    # Añadir más DEBUG prints para los IDs antes de construir la URL de subida
+    print(f"DEBUG: Valores para Supabase upload: estudiante_id='{estudiante_id}', nomina_id='{nomina_id}', doctora_id='{doctora_id}'")
+    print(f"DEBUG: Datos de formulario para PDF: nombre='{nombre}', rut='{rut}', fecha_nac='{fecha_nac}', edad='{edad}', sexo='{sexo}', diagnostico='{diagnostico}', fecha_reeval_formatted='{fecha_reeval_formatted}', derivaciones='{derivaciones}'")
+
 
     if not all([estudiante_id, nomina_id, doctora_id, nombre, rut, fecha_nac]):
         flash("❌ Error: Faltan datos esenciales para generar y guardar el formulario. Asegúrate de que todos los campos del estudiante están cargados.", 'error')
@@ -351,48 +353,62 @@ def generar_pdf():
             "x-upsert": "true" # Sobrescribir si el archivo ya existe (opcional, pero útil)
         }
 
-        print(f"DEBUG: Subiendo PDF generado a Storage (URL): {upload_url}")
-        print(f"DEBUG: Subiendo PDF generado a Storage (Headers): {upload_headers}")
-        print(f"DEBUG: Subiendo PDF generado a Storage (Data length): {len(output_buffer.getvalue())}")
+        print(f"DEBUG: Iniciando subida de PDF a Supabase Storage.")
+        print(f"DEBUG: URL de subida: {upload_url}")
+        # Truncar la clave de autorización para no mostrarla completa en los logs
+        auth_header_for_log = f"Bearer {SUPABASE_SERVICE_KEY[:10]}..." if SUPABASE_SERVICE_KEY else "No Key"
+        print(f"DEBUG: Encabezados de subida (Autorización truncada): {{'apikey': '...', 'Authorization': '{auth_header_for_log}', 'Content-Type': 'application/pdf', 'x-upsert': 'true'}}") 
+        print(f"DEBUG: Tamaño de los datos del PDF a subir: {len(output_buffer.getvalue())} bytes")
 
-        res_upload = requests.put(upload_url, headers=upload_headers, data=output_buffer.getvalue())
-        res_upload.raise_for_status() # Esto levantará una excepción HTTPError si el status code es 4xx o 5xx
-        
-        url_publica_generado = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path_corrected}"
-        print(f"DEBUG: PDF generado subido, URL pública: {url_publica_generado}")
+        try:
+            res_upload = requests.put(upload_url, headers=upload_headers, data=output_buffer.getvalue())
+            # *** Add more detailed logging here BEFORE raise_for_status() ***
+            print(f"DEBUG: Raw response status from Supabase Storage: {res_upload.status_code}")
+            print(f"DEBUG: Raw response headers from Supabase Storage: {res_upload.headers}")
+            print(f"DEBUG: Raw response text from Supabase Storage: {res_upload.text[:500]}..." if res_upload.text else "No response body (raw text)") # Print first 500 chars, handle empty text
 
-        # 📝 2. Registrar en la tabla 'formularios_subidos'
-        data_registro_formulario = {
-            "doctoras_id": doctora_id,
-            "establecimientos_id": nomina_id, # Usamos nomina_id aquí para el conteo de rendimiento
-            "nombre_archivo": nombre_archivo_generado,
-            "url_archivo": url_publica_generado
-        }
-        print(f"DEBUG: Payload para registrar formulario en formularios_subidos: {data_registro_formulario}")
+            res_upload.raise_for_status() # Esto levantará una excepción HTTPError si el status code es 4xx o 5xx
+            print(f"DEBUG: Subida a Supabase Storage exitosa. Código de estado: {res_upload.status_code}")
 
-        res_insert_registro = requests.post(
-            f"{SUPABASE_URL}/rest/v1/formularios_subidos",
-            headers=SUPABASE_HEADERS,
-            json=data_registro_formulario
-        )
-        res_insert_registro.raise_for_status()
-        print(f"DEBUG: Registro en formularios_subidos (status): {res_insert_registro.status_code}")
-        print(f"DEBUG: Registro en formularios_subidos (text): {res_insert_registro.text}")
+            url_publica_generado = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path_corrected}"
+            print(f"DEBUG: PDF generado y subido, URL pública: {url_publica_generado}")
 
-        flash(f"✅ Formulario de {nombre} guardado y generado exitosamente.", 'success')
+            # 📝 2. Registrar en la tabla 'formularios_subidos'
+            data_registro_formulario = {
+                "doctoras_id": doctora_id,
+                "establecimientos_id": nomina_id, # Usamos nomina_id aquí para el conteo de rendimiento
+                "nombre_archivo": nombre_archivo_generado,
+                "url_archivo": url_publica_generado
+            }
+            print(f"DEBUG: Payload para registrar formulario en formularios_subidos: {data_registro_formulario}")
 
-        # Devolver el PDF para descarga al usuario
-        output_buffer.seek(0)
-        return send_file(output_buffer, as_attachment=True, download_name=nombre_archivo_generado, mimetype='application/pdf')
+            res_insert_registro = requests.post(
+                f"{SUPABASE_URL}/rest/v1/formularios_subidos",
+                headers=SUPABASE_HEADERS,
+                json=data_registro_formulario
+            )
+            res_insert_registro.raise_for_status()
+            print(f"DEBUG: Registro en formularios_subidos (status): {res_insert_registro.status_code}")
+            print(f"DEBUG: Registro en formularios_subidos (text): {res_insert_registro.text}")
 
-    except requests.exceptions.RequestException as e:
-        error_msg = f"❌ Error al interactuar con Supabase (generar_pdf): {e}. Detalle: {e.response.text if e.response else 'No response body'}"
-        print(error_msg)
-        flash(error_msg, 'error')
-    except Exception as e:
-        error_msg = f"❌ Error inesperado al generar o guardar el PDF: {e}"
-        print(error_msg)
-        flash(error_msg, 'error')
+            flash(f"✅ Formulario de {nombre} guardado y generado exitosamente.", 'success')
+
+            # Devolver el PDF para descarga al usuario
+            output_buffer.seek(0)
+            return send_file(output_buffer, as_attachment=True, download_name=nombre_archivo_generado, mimetype='application/pdf')
+
+        except requests.exceptions.RequestException as e:
+            error_msg = f"❌ Error al interactuar con Supabase (generar_pdf): {e}. Detalle: "
+            if e.response:
+                error_msg += f"Response Status: {e.response.status_code} | Response Headers: {e.response.headers} | Response Body: {e.response.text[:500]}..."
+            else:
+                error_msg += "No response object available in exception."
+            print(error_msg)
+            flash(error_msg, 'error')
+        except Exception as e:
+            error_msg = f"❌ Error inesperado al generar o guardar el PDF: {e}"
+            print(error_msg)
+            flash(error_msg, 'error')
 
     if 'current_nomina_id' in session:
         return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))

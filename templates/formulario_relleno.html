@@ -1,371 +1,706 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Formulario de Relleno - CardioHome</title>
-  <!-- SweetAlert2 CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f0f4f8;
-      padding: 40px;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rellenar Formulario - CardioHome</title>
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Font Awesome para íconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Estilos base para el cuerpo */
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f0f4f8;
+            padding: 20px; /* Reducido para mejor visualización en pantallas pequeñas */
+            margin: 0; /* Asegura que no haya márgenes no deseados */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
 
-    header {
-      text-align: center;
-      margin-bottom: 20px;
-    }
+        /* Contenedor principal para centrar el contenido */
+        .main-content-wrapper {
+            max-width: 1200px; /* Ancho máximo para el contenido principal */
+            margin: 20px auto; /* Centrar y añadir margen superior/inferior */
+            padding: 0 20px; /* Espaciado interno */
+            flex-grow: 1; /* Permite que el wrapper crezca y ocupe espacio disponible */
+        }
 
-    header img {
-      max-width: 200px;
-    }
+        header {
+            background-color: #f0f4f8; /* Fondo del header para consistencia */
+            padding: 20px 0;
+            text-align: center;
+            position: relative; /* Para posicionar los botones */
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); /* Sombra suave */
+        }
 
-    header h1 {
-      font-size: 1.2rem;
-      color: #555;
-      margin-top: 10px;
-    }
+        header img {
+            max-width: 150px; /* Tamaño más consistente */
+            margin-bottom: 10px;
+        }
 
-    .breadcrumb {
-      text-align: center;
-      font-size: 0.9rem;
-      color: #888;
-      margin-bottom: 30px;
-    }
+        header h1 {
+            font-size: 1.8rem; /* Tamaño de fuente más grande */
+            color: #333; /* Color de texto más oscuro */
+            margin-top: 5px;
+            font-weight: 700;
+        }
 
-    #buscador {
-      width: 100%;
-      max-width: 400px;
-      display: block;
-      margin: 0 auto 30px;
-      padding: 12px 15px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 1rem;
-    }
+        .breadcrumb {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #888;
+            margin: 20px 0; /* Ajuste de margen */
+        }
 
-    details {
-      margin-bottom: 30px;
-      animation: fadeIn 0.5s ease;
-    }
+        /* Estilos para los botones del header */
+        .header-btn {
+            position: absolute;
+            top: 20px;
+            padding: 10px 18px;
+            border-radius: 25px; /* Más redondeado */
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
 
-    summary {
-      background: #1a73e8;  /* azul uniforme para todos */
-      color: #fff;
-      padding: 15px 20px;
-      border-radius: 8px;
-      font-weight: bold;
-      cursor: pointer;
-      user-select: none;
-    }
+        .back-to-dashboard-btn {
+            left: 20px;
+            background-color: #6c757d; /* Gris */
+            color: #fff;
+        }
+        .back-to-dashboard-btn:hover {
+            background-color: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+        }
 
-    .container {
-      display: flex;
-      gap: 40px;
-      flex-wrap: wrap;
-      margin-top: 20px;
-    }
+        .logout-btn {
+            right: 20px;
+            background-color: #dc3545; /* Rojo */
+            color: #fff;
+        }
+        .logout-btn:hover {
+            background-color: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+        }
 
-    .formulario {
-      flex: 1 1 500px;
-      background: #ffffff;
-      border-left: 6px solid #1a73e8;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-      padding: 30px;
-      position: relative;
-    }
+        /* Contador de evaluaciones */
+        .evaluation-counter {
+            background-color: #e6f7ff; /* Azul claro */
+            border: 1px solid #99d6ff;
+            border-radius: 10px;
+            padding: 15px 25px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a73e8; /* Azul del tema */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            flex-wrap: wrap; /* Para responsividad */
+        }
+        .evaluation-counter i {
+            color: #1a73e8;
+            font-size: 1.3em;
+        }
+        .evaluation-counter strong {
+            color: #34a853; /* Verde de éxito */
+            font-size: 1.1em;
+        }
+        .evaluation-counter button {
+            background-color: #1a73e8;
+            color: #fff;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-left: 15px;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .evaluation-counter button:hover {
+            background-color: #155ab6;
+            transform: translateY(-2px);
+        }
 
-    .badge {
-      position: absolute;
-      top: 20px;
-      right: 30px;
-      background: #34a853;
-      color: #fff;
-      padding: 5px 12px;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      opacity: 0;
-      transform: translateY(-10px);
-      transition: opacity 0.3s ease, transform 0.3s ease;
-    }
+        #buscador {
+            width: 100%;
+            max-width: 500px; /* Un poco más ancho para búsquedas */
+            display: block;
+            margin: 0 auto 30px;
+            padding: 12px 15px;
+            border: 1px solid #b0c2d4; /* Borde más suave */
+            border-radius: 8px;
+            font-size: 1rem;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        #buscador:focus {
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.3);
+            outline: none;
+        }
 
-    .badge.show {
-      opacity: 1;
-      transform: translateY(0);
-    }
+        details {
+            margin-bottom: 25px; /* Más espacio entre estudiantes */
+            border-radius: 12px;
+            overflow: hidden; /* Asegura bordes redondeados */
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08); /* Sombra para el detalle */
+            transition: all 0.3s ease;
+        }
+        details[open] {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15); /* Sombra más fuerte al abrir */
+        }
 
-    .preview {
-      flex: 1 1 350px;
-      background: #ffffff;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      padding: 30px;
-      border-left: 6px solid #1a73e8;
-      position: relative;
-      overflow: hidden;
-      transition: box-shadow 0.3s ease, transform 0.2s ease;
-    }
+        summary {
+            background: #1a73e8; /* azul uniforme para todos */
+            color: #fff;
+            padding: 18px 25px; /* Más padding */
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            display: flex; /* Para alinear icono y texto */
+            align-items: center;
+            justify-content: space-between;
+            font-size: 1.15rem; /* Texto de sumario más grande */
+            transition: background 0.3s ease;
+        }
+        summary:hover {
+            background: #155ab6;
+        }
+        summary::marker { /* Ocultar el marcador predeterminado */
+            display: none;
+            content: "";
+        }
+        summary::-webkit-details-marker { /* Para Webkit */
+            display: none;
+        }
+        summary:focus {
+            outline: none; /* Eliminar el contorno de enfoque */
+        }
+        details[open] summary {
+            border-bottom: 1px solid rgba(255,255,255,0.2); /* Separador cuando abierto */
+        }
+        summary .chevron-icon {
+            transition: transform 0.3s ease;
+        }
+        details[open] summary .chevron-icon {
+            transform: rotate(90deg);
+        }
 
-    .preview:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-    }
+        .container {
+            display: flex;
+            gap: 30px; /* Menos espacio para mejor uso del ancho */
+            flex-wrap: wrap;
+            padding: 25px; /* Padding interno del contenedor */
+            background-color: #ffffff;
+            border-top: none; /* Eliminar el borde superior duplicado */
+            border-radius: 0 0 12px 12px; /* Solo esquinas inferiores redondeadas */
+        }
 
-    .preview h3 {
-      margin-top: 0;
-      font-size: 1.4rem;
-      color: #1a73e8;
-      border-bottom: 2px solid #1a73e8;
-      padding-bottom: 10px;
-      margin-bottom: 20px;
-    }
+        .formulario {
+            flex: 1 1 500px; /* Base más flexible */
+            background: #ffffff;
+            border-left: 6px solid #1a73e8;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            padding: 30px;
+            position: relative;
+        }
 
-    .preview p {
-      margin: 12px 0;
-      font-size: 1rem;
-      color: #333;
-    }
+        .badge {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            background: #34a853;
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
 
-    .preview p strong {
-      display: inline-block;
-      width: 180px;
-      color: #1a73e8;
-    }
+        .badge.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
 
-    .preview span {
-      font-weight: 500;
-      color: #555;
-    }
+        .preview {
+            flex: 1 1 350px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            padding: 30px;
+            border-left: 6px solid #1a73e8;
+            position: relative;
+            overflow: hidden;
+            transition: box-shadow 0.3s ease, transform 0.2s ease;
+        }
 
-    .preview-img {
-      display: block;
-      width: 100%;
-      margin-top: 25px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
+        .preview:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
 
-    label {
-      display: block;
-      margin-top: 15px;
-      font-weight: 600;
-      color: #333;
-    }
+        .preview h3 {
+            margin-top: 0;
+            font-size: 1.4rem;
+            color: #1a73e8;
+            border-bottom: 2px solid #1a73e8;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
 
-    input, textarea, select {
-      width: 100%;
-      padding: 10px 12px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 1rem;
-    }
+        .preview p {
+            margin: 12px 0;
+            font-size: 1rem;
+            color: #333;
+        }
 
-    .button-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 20px;
-    }
+        .preview p strong {
+            display: inline-block;
+            width: 180px;
+            color: #1a73e8;
+        }
 
-    button {
-      flex: 1;
-      background: #1a73e8;
-      color: #fff;
-      border: none;
-      padding: 12px 15px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: background 0.3s;
-    }
+        .preview span {
+            font-weight: 500;
+            color: #555;
+        }
 
-    button:hover {
-      background: #155ab6;
-    }
+        .preview-img {
+            display: block;
+            width: 100%;
+            height: auto; /* Asegura que la imagen se adapte */
+            margin-top: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
 
-    button.secondary {
-      background: #34a853;
-    }
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: 600;
+            color: #333;
+        }
 
-    button.secondary:hover {
-      background: #2c8c46;
-    }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px 12px;
+            margin-top: 5px;
+            border: 1px solid #b0c2d4; /* Borde más suave */
+            border-radius: 6px;
+            font-size: 1rem;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.3);
+            outline: none;
+        }
+        input[type="date"] {
+            -webkit-appearance: none; /* Quitar estilo nativo en Webkit */
+            -moz-appearance: none; /* Quitar estilo nativo en Mozilla */
+            appearance: none;
+            background-color: #fff;
+            padding-right: 30px; /* Espacio para el icono del calendario */
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="%231a73e8"><path d="M20 3h-1V1h-2v2H7V1H5v2H4c-1.11 0-1.99.89-1.99 2L2 21c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm0 18H4V8h16v13z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 20px;
+        }
 
-    p.info {
-      margin: 5px 0;
-      font-weight: 500;
-      color: #555;
-    }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px; /* Más espacio entre botones */
+            margin-top: 25px; /* Más margen superior */
+            justify-content: center; /* Centrar botones */
+        }
 
-    footer {
-      text-align: center;
-      margin-top: 50px;
-      color: #888;
-      font-size: 0.9rem;
-    }
+        button {
+            flex: 1 1 auto; /* Permitir que los botones se adapten al contenido y se envuelvan */
+            background: #1a73e8;
+            color: #fff;
+            border: none;
+            padding: 14px 20px; /* Más padding */
+            border-radius: 8px; /* Ligeramente más redondeado */
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.05rem; /* Un poco más grande */
+            transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
+        button:hover {
+            background: #155ab6;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+        }
+
+        button.secondary {
+            background: #34a853; /* Verde para acciones secundarias */
+        }
+
+        button.secondary:hover {
+            background: #2c8c46;
+        }
+        
+        button.signature-button {
+            background: #8B5CF6; /* Púrpura para firma */
+        }
+        button.signature-button:hover {
+            background: #7A3FEE;
+        }
+
+        p.info {
+            margin: 5px 0;
+            font-weight: 500;
+            color: #555;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            color: #888;
+            font-size: 0.9rem;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsividad */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+            .main-content-wrapper {
+                margin: 15px auto;
+                padding: 0 10px;
+            }
+            header h1 {
+                font-size: 1.5rem;
+            }
+            .header-btn {
+                position: static; /* Quitar posicionamiento absoluto */
+                margin-bottom: 10px; /* Espacio entre botones */
+                width: calc(100% - 40px); /* Ocupar casi todo el ancho */
+                margin-left: auto;
+                margin-right: auto;
+                display: block;
+                text-align: center;
+            }
+            .back-to-dashboard-btn { order: 1; }
+            .logout-btn { order: 2; }
+            header {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            #buscador {
+                max-width: 100%;
+            }
+            .container {
+                flex-direction: column;
+                gap: 20px;
+                padding: 15px;
+            }
+            .formulario, .preview {
+                flex: 1 1 100%; /* Ocupar todo el ancho */
+                padding: 20px;
+            }
+            .button-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+            button {
+                width: 100%;
+                font-size: 1rem;
+                padding: 12px 15px;
+            }
+            .preview p strong {
+                width: 120px; /* Reducir el ancho en móvil */
+            }
+        }
+
+    </style>
 </head>
 <body>
-  <header>
-    <img src="/static/cardiohome.png" alt="CardioHome Logo">
-    <h1>Dra. Adriana Valenzuela — Relleno de Formularios</h1>
-  </header>
+    <header>
+        <a href="{{ url_for('dashboard') }}" class="header-btn back-to-dashboard-btn">
+            <i class="fas fa-arrow-left"></i> Volver al Dashboard
+        </a>
+        <img src="/static/cardiohome.png" alt="CardioHome Logo">
+        <h1>Dra. Adriana Valenzuela — Relleno de Formularios</h1>
+        <button class="header-btn logout-btn" onclick="cerrarSesion()">
+            <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+        </button>
+    </header>
 
-  <div class="breadcrumb">🏠 Inicio > Relleno de Formularios > {{ session['establecimiento'] }}</div>
+    <div class="main-content-wrapper">
+        <div class="breadcrumb">🏠 Inicio > Relleno de Formularios > {{ session['establecimiento'] }}</div>
 
-  <input type="text" id="buscador" placeholder="Buscar estudiante por nombre...">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flash-messages">
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+        
+        {# Contador de evaluaciones #}
+        <div class="evaluation-counter">
+            <i class="fas fa-clipboard-check"></i>
+            <span>Evaluaciones completadas para esta nómina: <strong>{{ total_forms_completed_for_nomina }}</strong></span>
+            <button onclick="window.location.reload();">Actualizar Conteo</button>
+        </div>
 
-  {% for est in estudiantes %}
-  <details class="estudiante" data-nombre="{{ est.nombre | lower }}">
-    <summary>{{ est.nombre }}</summary>
-    <div class="container">
-      <div class="formulario">
-        <span class="badge">Guardado</span>
-        <form action="/generar_pdf" method="POST" oninput="updatePreview(this)">
-          <label>Nombre:</label>
-          <input type="text" name="nombre" value="{{ est.nombre }}" required>
+        <input type="text" id="buscador" placeholder="Buscar estudiante por nombre...">
 
-          <label>RUT:</label>
-          <input type="text" name="rut" value="{{ est.rut }}" required>
+        {% if estudiantes %}
+            {% for est in estudiantes %}
+            <details class="estudiante" data-nombre="{{ est.nombre | lower }}">
+                <summary>
+                    <span>{{ est.nombre }}</span>
+                    <i class="fas fa-chevron-right chevron-icon"></i>
+                </summary>
+                <div class="container">
+                    <div class="formulario">
+                        <span class="badge">Guardado</span>
+                        <form action="{{ url_for('generar_pdf') }}" method="POST" oninput="updatePreview(this)">
+                            <!-- Campos ocultos para pasar el ID del estudiante y la nómina al backend -->
+                            <input type="hidden" name="estudiante_id" value="{{ est.id }}">
+                            <input type="hidden" name="nomina_id" value="{{ session['current_nomina_id'] }}">
 
-          <input type="hidden" name="fecha_nacimiento" value="{{ est.fecha_nacimiento }}">
-          <input type="hidden" name="edad" value="{{ est.edad }}">
-          <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
-          <input type="hidden" name="sexo" value="{{ est.sexo }}">
+                            <label>Nombre:</label>
+                            <input type="text" name="nombre" value="{{ est.nombre }}" required readonly>
 
-          <p class="info"><strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento }} ({{ est.edad }})</p>
-          <p class="info"><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</p>
-          <p class="info"><strong>Sexo:</strong> {{ est.sexo }}</p>
+                            <label>RUT:</label>
+                            <input type="text" name="rut" value="{{ est.rut }}" required readonly>
 
-          <label>Estado general del alumno:</label>
-          <textarea name="estado" rows="3" required></textarea>
+                            <!-- Campos ocultos que ya se pre-rellenan -->
+                            <input type="hidden" name="fecha_nacimiento" value="{{ est.fecha_nacimiento_formato }}"> {# Usar el formato ya procesado #}
+                            <input type="hidden" name="edad" value="{{ est.edad }}">
+                            <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
+                            <input type="hidden" name="sexo" value="{{ est.sexo_inferido }}"> {# Usar el inferido #}
 
-          <label>Diagnóstico:</label>
-          <select name="diagnostico" required>
-            <option value="">Seleccionar diagnóstico</option>
-            <option value="Trastorno del espectro autista">Trastorno del espectro autista</option>
-            <option value="GARC">GARC</option>
-            <option value="Trastorno por deficit de atención">Trastorno por déficit de atención</option>
-            <option value="Trastorno por deficit de atención e hiperactividad">Trastorno por déficit de atención e hiperactividad</option>
-          </select>
+                            <p class="info"><strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento_formato }} ({{ est.edad }})</p>
+                            <p class="info"><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</p>
+                            <p class="info"><strong>Sexo:</strong> {{ est.sexo_inferido }}</p>
 
-          <label>Plazo de reevaluación:</label>
-          <select name="plazo" onchange="setFechaReevaluacion(this)">
-            <option value="">Seleccionar plazo</option>
-            <option value="4">Trastorno Espectro Autista - 4 años</option>
-            <option value="3">Trastorno Espectro Autista - 3 años</option>
-            <option value="2">TDA - 2 años</option>
-            <option value="2">TDAH - 2 años</option>
-          </select>
+                            <label>Estado general del alumno:</label>
+                            <textarea name="estado" rows="3" placeholder="Observaciones del estado general..." required>{{ est.estado_general if est.estado_general is not none else '' }}</textarea>
 
-          <label>Fecha de reevaluación:</label>
-          <input type="date" name="fecha_reevaluacion" required>
+                            <label>Diagnóstico:</label>
+                            <select name="diagnostico" required>
+                                <option value="">Seleccionar diagnóstico</option>
+                                <option value="Trastorno espectro autista" {% if est.diagnostico == 'Trastorno espectro autista' %}selected{% endif %}>Trastorno espectro autista</option>
+                                <option value="GARC" {% if est.diagnostico == 'GARC' %}selected{% endif %}>GARC</option>
+                                <option value="Trastorno por deficit de atención" {% if est.diagnostico == 'Trastorno por deficit de atención' %}selected{% endif %}>Trastorno por deficit de atención</option>
+                                <option value="Trastorno por deficit de atención e hiperactividad" {% if est.diagnostico == 'Trastorno por deficit de atención e hiperactividad' %}selected{% endif %}>Trastorno por deficit de atención e hiperactividad</option>
+                                <option value="FIL" {% if est.diagnostico == 'FIL' %}selected{% endif %}>FIL</option>
+                                <option value="DIL" {% if est.diagnostico == 'DIL' %}selected{% endif %}>DIL</option>
+                                <option value="Sindrome de Down" {% if est.diagnostico == 'Sindrome de Down' %}selected{% endif %}>Sindrome de Down</option>
+                            </select>
 
-          <label>Derivaciones:</label>
-          <textarea name="derivaciones" rows="2" required></textarea>
+                            <label>Plazo de reevaluación:</label>
+                            <select name="plazo" onchange="setFechaReevaluacion(this)">
+                                <option value="">Seleccionar plazo</option>
+                                <option value="1">1 año</option>
+                                <option value="2">2 años</option>
+                                <option value="3">3 años</option>
+                                <option value="4">4 años</option>
+                                <option value="5">5 años</option>
+                            </select>
 
-          <div class="button-group">
-            <button type="submit" onclick="mostrarExito()">Generar PDF</button>
-            <button type="button" class="secondary" onclick="enviarADrive()">Enviar a Drive</button>
-            <button type="button" class="secondary" onclick="insertarFirma()">Insertar Firma</button>
-          </div>
-        </form>
-      </div>
+                            <label>Fecha de reevaluación:</label>
+                            <input type="date" name="fecha_reevaluacion" required>
 
-      <div class="preview">
-        <h3>Vista Previa</h3>
-        <p><strong>Nombre:</strong> <span class="prev-nombre">{{ est.nombre }}</span></p>
-        <p><strong>RUT:</strong> <span class="prev-rut">{{ est.rut }}</span></p>
-        <p><strong>Estado:</strong> <span class="prev-estado">-</span></p>
-        <p><strong>Diagnóstico:</strong> <span class="prev-diagnostico">-</span></p>
-        <p><strong>Fecha Reevaluación:</strong> <span class="prev-reevaluacion">-</span></p>
-        <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">-</span></p>
+                            <label>Derivaciones:</label>
+                            <textarea name="derivaciones" rows="2" placeholder="Detalles de derivaciones...">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
 
-        <img src="/static/formulario_muestra.png" alt="Ejemplo Formulario" class="preview-img">
+                            <div class="button-group">
+                                <button type="submit">
+                                    <i class="fas fa-file-pdf"></i> Guardar y Generar PDF
+                                </button>
+                                <button type="button" class="secondary" onclick="enviarADrive()">
+                                    <i class="fab fa-google-drive"></i> Enviar a Drive
+                                </button>
+                                <button type="button" class="secondary signature-button" onclick="insertarFirma()">
+                                    <i class="fas fa-signature"></i> Insertar Firma
+                                </button>
+                            </div>
+                        </form>
+                    </div>
 
-        <button onclick="window.print()" style="margin-top: 20px; width: 100%;">🖨️ Imprimir Vista Previa</button>
-      </div>
+                    <div class="preview">
+                        <h3>Vista Previa</h3>
+                        <p><strong>Nombre:</strong> <span class="prev-nombre">{{ est.nombre }}</span></p>
+                        <p><strong>RUT:</strong> <span class="prev-rut">{{ est.rut }}</span></p>
+                        <p><strong>Estado:</strong> <span class="prev-estado">-</span></p>
+                        <p><strong>Diagnóstico:</strong> <span class="prev-diagnostico">-</span></p>
+                        <p><strong>Fecha Reevaluación:</strong> <span class="prev-reevaluacion">-</span></p>
+                        <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">-</span></p>
+
+                        <img src="/static/formulario_muestra.png" alt="Ejemplo Formulario" class="preview-img" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=Imagen+No+Disponible';" />
+
+                        <button onclick="window.print()" style="margin-top: 20px; width: 100%;">
+                            <i class="fas fa-print"></i> Imprimir Vista Previa
+                        </button>
+                    </div>
+                </div>
+            </details>
+            {% endfor %}
+        {% else %}
+            <p style="text-align: center; color: #888; font-size: 1.1rem; margin-top: 50px;">No hay estudiantes en esta nómina o ha ocurrido un error al cargarlos.</p>
+        {% endif %}
     </div>
-  </details>
-  {% endfor %}
 
-  <footer>
-    © 2025 CardioHome · Todos los derechos reservados.
-  </footer>
+    <footer>
+        © 2025 CardioHome · Todos los derechos reservados.
+    </footer>
 
-  <script>
-    const input = document.getElementById('buscador');
-    input.addEventListener('input', function () {
-      const estudiantes = document.querySelectorAll('.estudiante');
-      estudiantes.forEach(detail => {
-        const nombre = detail.getAttribute('data-nombre');
-        detail.style.display = nombre.includes(this.value.toLowerCase()) ? '' : 'none';
-      });
-    });
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const buscador = document.getElementById('buscador');
+            if (buscador) {
+                buscador.addEventListener('input', function() {
+                    const estudiantes = document.querySelectorAll('.estudiante');
+                    const searchTerm = this.value.toLowerCase().trim();
+                    estudiantes.forEach(detail => {
+                        const nombre = detail.getAttribute('data-nombre');
+                        if (nombre.includes(searchTerm)) {
+                            detail.style.display = '';
+                        } else {
+                            detail.style.display = 'none';
+                        }
+                    });
+                });
+            }
 
-    function setFechaReevaluacion(select) {
-      const años = parseInt(select.value);
-      if (!años) return;
-      const today = new Date();
-      today.setFullYear(today.getFullYear() + años);
-      const fecha = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-      const container = select.closest('.estudiante');
-      container.querySelector('input[name="fecha_reevaluacion"]').value = fecha;
-    }
-
-    function updatePreview(form) {
-      const container = form.closest('.container');
-      container.querySelector('.prev-nombre').textContent = form.nombre.value;
-      container.querySelector('.prev-rut').textContent = form.rut.value;
-      container.querySelector('.prev-estado').textContent = form.estado.value;
-      container.querySelector('.prev-diagnostico').textContent = form.diagnostico.value;
-      container.querySelector('.prev-reevaluacion').textContent = form.fecha_reevaluacion.value;
-      container.querySelector('.prev-derivaciones').textContent = form.derivaciones.value;
-
-      const badge = form.closest('.formulario').querySelector('.badge');
-      badge.classList.add('show');
-      badge.textContent = "Guardando...";
-      clearTimeout(badge.timeout);
-      badge.timeout = setTimeout(() => {
-        badge.textContent = "Guardado";
-      }, 800);
-    }
-
-    function mostrarExito() {
-      setTimeout(() => {
-        Swal.fire({
-          icon: 'success',
-          title: 'PDF generado correctamente',
-          showConfirmButton: false,
-          timer: 1500
+            // Inicializar las previsualizaciones y el select de reevaluación al cargar
+            document.querySelectorAll('.formulario form').forEach(form => {
+                updatePreview(form); // Actualiza la vista previa con los valores iniciales
+                const selectPlazo = form.querySelector('select[name="plazo"]');
+                const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');
+                // Si ya hay un valor de fecha de reevaluación desde la base de datos, úsalo
+                if (fechaReevaluacionInput && fechaReevaluacionInput.value) {
+                    // No hacer nada, la fecha ya está pre-cargada
+                } else if (selectPlazo && selectPlazo.value) {
+                    // Si no hay fecha pre-cargada, pero sí hay un plazo seleccionado, calcula
+                    setFechaReevaluacion(selectPlazo);
+                }
+            });
         });
-      }, 1000);
-    }
 
-    function enviarADrive() {
-      Swal.fire({
-        icon: 'info',
-        title: 'Próximamente',
-        text: 'Aquí se conectará con Google Drive.'
-      });
-    }
+        function cerrarSesion() {
+            window.location.href = "/logout";
+        }
 
-    function insertarFirma() {
-      Swal.fire({
-        icon: 'info',
-        title: 'Próximamente',
-        text: 'Se insertará la firma según la doctora que corresponda.'
-      });
-    }
-  </script>
+        function setFechaReevaluacion(select) {
+            const anos = parseInt(select.value);
+            const form = select.closest('form');
+            const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');
+            
+            if (!isNaN(anos) && anos > 0) {
+                const today = new Date();
+                // Usar el día actual para evitar problemas con fines de mes (ej. 31 de Enero + 1 mes = 2 de Marzo)
+                const futureDate = new Date(today.getFullYear() + anos, today.getMonth(), today.getDate()); 
+
+                const year = futureDate.getFullYear();
+                // Los meses en JavaScript son de 0-11, por eso +1
+                const month = String(futureDate.getMonth() + 1).padStart(2, '0');
+                const day = String(futureDate.getDate()).padStart(2, '0');
+
+                fechaReevaluacionInput.value = `${year}-${month}-${day}`; // Formato YYYY-MM-DD para input type="date"
+            } else {
+                fechaReevaluacionInput.value = ''; // Limpiar si no es una selección válida
+            }
+            updatePreview(form); // Actualizar vista previa inmediatamente
+        }
+
+        function updatePreview(form) {
+            const container = form.closest('.container');
+            if (!container) return; // Salir si no encuentra el contenedor
+
+            // Actualizar campos de vista previa
+            container.querySelector('.prev-nombre').textContent = form.nombre.value;
+            container.querySelector('.prev-rut').textContent = form.rut.value;
+            container.querySelector('.prev-estado').textContent = form.estado ? form.estado.value : '-';
+            container.querySelector('.prev-diagnostico').textContent = form.diagnostico ? form.diagnostico.value : '-';
+            container.querySelector('.prev-derivaciones').textContent = form.derivaciones ? form.derivaciones.value : '-';
+            
+            // La fecha de reevaluación la tomamos del input type="date"
+            const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');
+            if (fechaReevaluacionInput && fechaReevaluacionInput.value) {
+                // Si el formato es YYYY-MM-DD, lo convertimos a DD/MM/YYYY para mostrar
+                const [year, month, day] = fechaReevaluacionInput.value.split('-');
+                container.querySelector('.prev-reevaluacion').textContent = `${day}/${month}/${year}`;
+            } else {
+                container.querySelector('.prev-reevaluacion').textContent = '-';
+            }
+
+            // Lógica del badge "Guardado"
+            const badge = form.closest('.formulario').querySelector('.badge');
+            if (badge) {
+                badge.classList.add('show');
+                badge.textContent = "Modificando..."; // Cambiado para indicar que se está editando
+                clearTimeout(badge.timeout);
+                badge.timeout = setTimeout(() => {
+                    badge.textContent = "Guardado";
+                }, 800);
+            }
+        }
+
+        function mostrarExito() {
+            setTimeout(() => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'PDF generado correctamente',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            }, 100); // Pequeño delay para que la acción del formulario inicie primero
+        }
+
+        function enviarADrive() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Próximamente',
+                text: 'Aquí se conectará con Google Drive.'
+            });
+        }
+
+        function insertarFirma() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Próximamente',
+                text: 'Se insertará la firma según la doctora que corresponda.'
+            });
+        }
+    </script>
 </body>
 </html>

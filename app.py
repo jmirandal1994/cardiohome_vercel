@@ -337,20 +337,24 @@ def generar_pdf():
 
         # 📤 1. Subir el PDF generado a Supabase Storage
         unique_file_uuid = str(uuid.uuid4())
-        # Corregir la URL de subida, quitando el primer "/" extra si existe, y asegurando que la ruta es correcta.
-        # Supabase Storage ya maneja los prefijos de bucket. La URL completa debe ser limpia.
-        # Example: {SUPABASE_URL}/storage/v1/object/bucketName/path/to/file.pdf
-        # Mi path es "formularios_completados_estudiantes/{nomina_id}/{estudiante_id}/{unique_file_uuid}_{nombre_archivo_generado}"
-        # Se asume que "formularios_completados_estudiantes" es el nombre del bucket o una subcarpeta directa de un bucket.
-        # Basado en la URL de error anterior, parece que "formularios_completados_estudiantes" es el bucket.
         upload_path_corrected = f"formularios_completados_estudiantes/{nomina_id}/{estudiante_id}/{unique_file_uuid}_{nombre_archivo_generado}"
         upload_url = f"{SUPABASE_URL}/storage/v1/object/{upload_path_corrected}"
         
-        print(f"DEBUG: Subiendo PDF generado a Storage (corrected path): {upload_url}")
-        res_upload = requests.put(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=output_buffer.getvalue())
-        res_upload.raise_for_status()
+        # Headers específicos para la subida de archivos (Content-Type y x-upsert)
+        upload_headers = {
+            "apikey": SUPABASE_SERVICE_KEY,
+            "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+            "Content-Type": "application/pdf", # ¡CRÍTICO! Especificar el tipo de contenido del archivo.
+            "x-upsert": "true" # Sobrescribir si el archivo ya existe (opcional, pero útil)
+        }
+
+        print(f"DEBUG: Subiendo PDF generado a Storage (URL): {upload_url}")
+        print(f"DEBUG: Subiendo PDF generado a Storage (Headers): {upload_headers}")
+        print(f"DEBUG: Subiendo PDF generado a Storage (Data length): {len(output_buffer.getvalue())}")
+
+        res_upload = requests.put(upload_url, headers=upload_headers, data=output_buffer.getvalue())
+        res_upload.raise_for_status() # Esto levantará una excepción HTTPError si el status code es 4xx o 5xx
         
-        # La URL pública siempre usa "public" después del "v1/object/", no importa si es service_role o anon.
         url_publica_generado = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path_corrected}"
         print(f"DEBUG: PDF generado subido, URL pública: {url_publica_generado}")
 
@@ -379,7 +383,7 @@ def generar_pdf():
         return send_file(output_buffer, as_attachment=True, download_name=nombre_archivo_generado, mimetype='application/pdf')
 
     except requests.exceptions.RequestException as e:
-        error_msg = f"❌ Error al interactuar con Supabase (generar_pdf): {e}. Detalle: {e.response.text if e.response else 'No response'}"
+        error_msg = f"❌ Error al interactuar con Supabase (generar_pdf): {e}. Detalle: {e.response.text if e.response else 'No response body'}" # Mejorado el mensaje de detalle
         print(error_msg)
         flash(error_msg, 'error')
     except Exception as e:

@@ -15,6 +15,8 @@
             --accent-green: hsl(140, 65%, 45%); /* Verde vibrante */
             --accent-red: hsl(0, 75%, 58%); /* Rojo intenso */
             --accent-blue: hsl(200, 70%, 55%); /* Azul cielo brillante */
+            --google-drive-blue: #4285F4; /* Azul de Google Drive */
+            --signature-purple: #8B5CF6; /* Púrpura para firma */
             --text-dark: hsl(210, 10%, 15%);
             --text-light: hsl(0, 0%, 99%);
             --border-color: hsl(210, 10%, 82%); /* Borde más definido */
@@ -228,41 +230,48 @@
             box-shadow: none;
         }
 
-        form button {
-            padding: 18px 40px; /* Mayor padding para botones principales */
-            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-medium) 100%); /* Degradado para botones */
-            color: var(--text-light);
-            border: none;
-            border-radius: var(--border-radius-base);
-            cursor: pointer;
-            font-weight: 700;
-            font-size: 19px; /* Texto de botón más grande */
-            transition: all 0.3s ease-out; /* Transición global para todos los efectos */
-            margin-top: 30px; /* Mayor margen superior */
-            width: auto;
-            align-self: center; /* Centrar el botón */
+        .button-group {
             display: flex;
-            align-items: center;
-            gap: 12px;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.25); /* Sombra más prominente */
-            letter-spacing: 0.8px; /* Ligero espaciado de letras */
-            text-transform: uppercase; /* Texto en mayúsculas */
+            flex-wrap: wrap; /* Permite que los botones se envuelvan en pantallas pequeñas */
+            gap: 15px; /* Espacio entre botones */
+            margin-top: 30px;
+            justify-content: center; /* Centrar botones */
         }
 
-        form button:hover {
-            background: linear-gradient(135deg, var(--primary-medium) 0%, var(--primary-dark) 100%); /* Invertir degradado */
-            transform: translateY(-5px) scale(1.03); /* Efecto 3D de elevación y ligero zoom */
-            box-shadow: 0 12px 30px rgba(0,0,0,0.4); /* Sombra más grande en hover */
+        .button-group button {
+            flex-grow: 1; /* Permite que los botones crezcan para ocupar espacio */
+            padding: 18px 25px; /* Ajustado el padding para botones dentro del grupo */
+            font-size: 17px; /* Tamaño de fuente ajustado */
+            min-width: 180px; /* Ancho mínimo para cada botón */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .button-group button:hover {
+            transform: translateY(-3px); /* Menos elevación para botones agrupados */
+            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
         }
 
         .save-pdf-button {
-            background: linear-gradient(135deg, var(--accent-green) 0%, hsl(140, 75%, 35%) 100%); /* Degradado verde para guardar */
-            align-self: flex-start; /* Alinear a la izquierda */
+            background: linear-gradient(135deg, var(--accent-green) 0%, hsl(140, 75%, 35%) 100%);
+            color: var(--text-light);
         }
         .save-pdf-button:hover {
-            background: linear-gradient(135deg, hsl(140, 75%, 35%) 0%, var(--accent-green) 100%); /* Invertir degradado */
-            transform: translateY(-5px) scale(1.03);
-            box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+            background: linear-gradient(135deg, hsl(140, 75%, 35%) 0%, var(--accent-green) 100%);
+        }
+
+        .drive-button {
+            background: linear-gradient(135deg, var(--google-drive-blue) 0%, hsl(217, 70%, 40%) 100%);
+            color: var(--text-light);
+        }
+        .drive-button:hover {
+            background: linear-gradient(135deg, hsl(217, 70%, 40%) 0%, var(--google-drive-blue) 100%);
+        }
+
+        .signature-button {
+            background: linear-gradient(135deg, var(--signature-purple) 0%, hsl(260, 60%, 40%) 100%);
+            color: var(--text-light);
+        }
+        .signature-button:hover {
+            background: linear-gradient(135deg, hsl(260, 60%, 40%) 0%, var(--signature-purple) 100%);
         }
 
         /* Flash Messages */
@@ -300,10 +309,10 @@
         .flash-messages .info { background-color: #e0f2ff; color: #007bff; border-color: #a7d9f0; }
         .flash-messages .warning { background-color: #fff9e0; color: #ffc107; border-color: #f0e6a7; }
 
-        /* Estilos para la vista previa conceptual */
+        /* Estilos para la vista previa de imagen */
         .preview-section {
             background-color: hsl(210, 16%, 95%);
-            border: 1px dashed var(--border-color);
+            border: 1px solid var(--border-color);
             border-radius: 10px;
             padding: 20px;
             text-align: center;
@@ -312,19 +321,20 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 150px;
-            color: #777;
-            font-size: 0.95em;
-            line-height: 1.4;
+            min-height: 200px; /* Mayor altura para la imagen */
+            overflow: hidden; /* Asegurar que la imagen no se desborde */
+            position: relative;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.05); /* Sombra interna para profundidad */
         }
-        .preview-section i {
-            font-size: 40px;
-            color: var(--accent-blue);
-            margin-bottom: 10px;
+        .preview-section img {
+            max-width: 100%;
+            max-height: 100%; /* Ajustar la altura para que la imagen quepa */
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease-in-out;
         }
-        .preview-section p {
-            max-width: 80%;
-            margin: 0 auto;
+        .preview-section img:hover {
+            transform: scale(1.05); /* Ligeramente agrandar al pasar el ratón */
         }
 
         @media (max-width: 768px) {
@@ -363,12 +373,16 @@
                 font-size: 15px;
                 padding: 12px 15px;
             }
-            form button {
-                font-size: 17px;
-                padding: 14px 30px;
+            .button-group {
+                flex-direction: column; /* Apilar botones en móvil */
             }
-            .save-pdf-button {
-                align-self: stretch; /* Ocupa todo el ancho en móvil */
+            .button-group button {
+                width: 100%; /* Ocupar todo el ancho disponible */
+                min-width: unset; /* Reiniciar min-width */
+                padding: 15px 20px; /* Ajustar padding */
+            }
+            .preview-section {
+                min-height: 120px; /* Menor altura en móvil */
             }
         }
     </style>
@@ -402,10 +416,9 @@
                     <div class="card">
                         <h3><i class="fa-solid fa-user-injured"></i> {{ estudiante.nombre }}</h3>
                         
-                        {# Sección para la vista previa conceptual #}
+                        {# Sección para la vista previa de imagen #}
                         <div class="preview-section">
-                            <i class="fa-solid fa-file-pdf"></i>
-                            <p>Aquí se generará una vista previa del formulario en PDF una vez que presiones "Guardar". El archivo se descargará automáticamente.</p>
+                            <img src="{{ url_for('static', filename='formulario_muestra.png') }}" alt="Vista Previa del Formulario" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=Imagen+No+Disponible';" />
                         </div>
 
                         <form action="{{ url_for('generar_pdf') }}" method="POST">
@@ -438,17 +451,38 @@
                             <textarea id="estado_{{ estudiante.id }}" name="estado" rows="2" placeholder="Observaciones del estado general..." required></textarea>
 
                             <label for="diagnostico_{{ estudiante.id }}">Diagnóstico:</label>
-                            <textarea id="diagnostico_{{ estudiante.id }}" name="diagnostico" rows="3" placeholder="Diagnóstico médico..." required></textarea>
+                            <select id="diagnostico_{{ estudiante.id }}" name="diagnostico" required>
+                                <option value="">Selecciona un diagnóstico</option>
+                                <option value="Trastorno espectro autista">Trastorno espectro autista</option>
+                                <option value="GARC">GARC</option>
+                                <option value="Trastorno por deficit de atención">Trastorno por deficit de atención</option>
+                                <option value="TDAH">TDAH</option>
+                                <option value="FIL">FIL</option>
+                                <option value="DIL">DIL</option>
+                                <option value="Sindrome de Down">Sindrome de Down</option>
+                            </select>
 
-                            <label for="fecha_reevaluacion_{{ estudiante.id }}">Fecha de Reevaluación:</label>
-                            <input type="date" id="fecha_reevaluacion_{{ estudiante.id }}" name="fecha_reevaluacion" required />
-
-                            <label for="derivaciones_{{ estudiante.id }}">Derivaciones:</label>
-                            <textarea id="derivaciones_{{ estudiante.id }}" name="derivaciones" rows="2" placeholder="Detalles de derivaciones..."></textarea>
+                            <label for="fecha_reevaluacion_{{ estudiante.id }}">Fecha de Reevaluación (en años):</label>
+                            <select id="fecha_reevaluacion_{{ estudiante.id }}" name="fecha_reevaluacion_anos" required>
+                                <option value="">Selecciona años</option>
+                                <option value="1">1 año</option>
+                                <option value="2">2 años</option>
+                                <option value="3">3 años</option>
+                                <option value="4">4 años</option>
+                                <option value="5">5 años</option>
+                            </select>
                             
-                            <button type="submit" class="save-pdf-button">
-                                <i class="fa-solid fa-save"></i> Guardar y Generar PDF
-                            </button>
+                            <div class="button-group">
+                                <button type="submit" class="save-pdf-button">
+                                    <i class="fa-solid fa-save"></i> Guardar y Generar PDF
+                                </button>
+                                <button type="button" class="drive-button" onclick="alert('Funcionalidad de Enviar a Drive por configurar')">
+                                    <i class="fa-brands fa-google-drive"></i> Enviar al Drive
+                                </button>
+                                <button type="button" class="signature-button" onclick="alert('Funcionalidad de Asignar Firma por configurar')">
+                                    <i class="fa-solid fa-signature"></i> Asignar Firma
+                                </button>
+                            </div>
                         </form>
                     </div>
                 {% endfor %}

@@ -568,7 +568,7 @@
 </head>
 <body>
     <header>
-        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo CardioHome" />
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo CardioHome" />
         <h1>Bienvenido a tu Panel de CardioHome</h1>
         <button class="logout-btn" onclick="cerrarSesion()">
             <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
@@ -613,7 +613,7 @@
             <!-- NUEVA SECCIÓN DE BIENVENIDA -->
             <div id="welcome-section" class="content-section active">
                 <div class="card welcome-card">
-                    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo CardioHome" />
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo CardioHome" />
                     <h2>¡Bienvenido a CardioHome!</h2>
                     <p>Tu plataforma integral para la gestión eficiente de visitas médicas, nóminas de pacientes y formularios. Aquí podrás optimizar tu trabajo y asegurar un seguimiento completo de cada caso.</p>
                 </div>
@@ -717,7 +717,6 @@
                                         <div class="item-card-details">
                                             <span>Alumnos: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
                                             <span>Doc: {{ (doctoras | selectattr('id', 'equalto', evento.doctora_id) | first).nombre if evento.doctora_id else 'N/A' }}</span>
-                                            <span>Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
                                         </div>
                                         {% if evento.url_archivo %}
                                             <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">

@@ -63,7 +63,7 @@
         }
 
         header img {
-            width: 80px; /* Tamaño un poco más pequeño para el logo */
+            width: 100px; /* Agrandado el logo */
             height: auto;
             filter: brightness(0) invert(1);
             margin-bottom: 5px;
@@ -414,28 +414,8 @@
         }
 
         /* Flash Messages */
-        .flash-messages {
-            list-style: none;
-            padding: 0;
-            margin: 20px auto; /* Centrado */
-            text-align: center;
-            width: fit-content; /* Ajuste al contenido */
-            max-width: 90%; /* Máximo ancho para no desbordar */
-            grid-column: 1 / -1; /* Ocupa todo el ancho si está en el grid */
-        }
-        .flash-messages li {
-            padding: 12px 20px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            display: block; /* Cada mensaje en su propia línea */
-            font-weight: 500;
-            font-size: 0.95em;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .flash-messages .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .flash-messages .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .flash-messages .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
-        .flash-messages .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        /* HE ELIMINADO ESTOS ESTILOS Y EL BLOQUE DE HTML QUE LOS USA */
+
 
         /* Welcome Section Specific Styles */
         .welcome-card {
@@ -454,7 +434,7 @@
         }
 
         .welcome-card img {
-            width: 150px; /* Tamaño más grande para el logo en la bienvenida */
+            width: 180px; /* Agrandado el logo en la bienvenida */
             height: auto;
             filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3)); /* Sombra para el logo */
             margin-bottom: 25px;
@@ -481,6 +461,31 @@
             animation: fadeInText 1.2s ease-out 0.6s forwards; /* Animación para el texto */
             opacity: 0; /* Oculto inicialmente para la animación */
         }
+
+        /* Tarjeta de rendimiento de doctoras para admin */
+        .doctor-performance-list {
+            margin-top: 20px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+        .doctor-performance-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            background-color: var(--background-accent);
+            border-radius: 8px;
+            font-weight: 500;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .doctor-performance-item span:first-child {
+            color: var(--primary-dark);
+        }
+        .doctor-performance-item span:last-child {
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
+
 
         @keyframes slideInFromTop {
             from { transform: translateY(-50px); opacity: 0; }
@@ -584,13 +589,14 @@
                 <ul class="sidebar-nav">
                     <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical"></i> Bienvenida</a></li>
                     {% if usuario == 'admin' %}
-                        <li><a href="#" class="nav-link" data-section="admin-summary"><i class="fa-solid fa-chart-line"></i> Resumen Admin</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-performance"><i class="fa-solid fa-chart-line"></i> Rendimiento Admin</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-add-visit"><i class="fa-solid fa-calendar-plus"></i> Agregar Visita</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-upload-nomina"><i class="fa-solid fa-file-excel"></i> Cargar Nómina</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-visits-list"><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-nominas-list"><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Cargadas</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-uploaded-forms-all"><i class="fa-solid fa-folder-open"></i> Formularios Subidos</a></li>
                     {% else %}
+                        <li><a href="#" class="nav-link" data-section="doctor-performance"><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-visits"><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-nominas"><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Asignadas</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-uploaded-forms"><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</a></li>
@@ -600,17 +606,9 @@
         </aside>
 
         <main class="dashboard-content">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    <ul class="flash-messages">
-                        {% for category, message in messages %}
-                            <li class="{{ category }}">{{ message }}</li>
-                        {% endfor %}
-                    </ul>
-                {% endif %}
-            {% endwith %}
+            {# Los mensajes flash se han eliminado de la interfaz por petición del usuario #}
 
-            <!-- NUEVA SECCIÓN DE BIENVENIDA -->
+            <!-- SECCIÓN DE BIENVENIDA -->
             <div id="welcome-section" class="content-section active">
                 <div class="card welcome-card">
                     <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo CardioHome" />
@@ -620,22 +618,38 @@
             </div>
 
             {% if usuario == 'admin' %}
-                <!-- Sección para Administrador: Resumen -->
-                <div id="admin-summary" class="content-section">
-                    <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Resumen del Administrador</h2>
+                <!-- Sección para Administrador: Rendimiento -->
+                <div id="admin-performance" class="content-section">
+                    <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento del Administrador</h2>
                     <div class="summary">
                         <div class="card">
                             <h3><i class="fa-solid fa-school"></i> Colegios Asignados</h3>
                             <p>{{ eventos|length }}</p>
                         </div>
                         <div class="card">
-                            <h3><i class="fa-solid fa-file-import"></i> Formularios Subidos Total</h3>
-                            <p>{{ formularios|length }}</p>
+                            <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Médicas Asignadas</h3> {# Actualizado #}
+                            <p>{{ admin_nominas_cargadas|length }}</p> {# Conteo de nóminas cargadas #}
                         </div>
                         <div class="card">
                             <h3><i class="fa-solid fa-user-doctor"></i> Total Doctoras</h3>
                             <p>{{ doctoras|length }}</p>
                         </div>
+                    </div>
+
+                    <div class="card mt-8"> {# Nueva tarjeta para el desglose por doctora #}
+                        <h3><i class="fa-solid fa-chart-pie"></i> Rendimiento por Doctora (Formularios Completados)</h3>
+                        {% if doctor_performance_data %}
+                            <div class="doctor-performance-list">
+                                {% for perf in doctor_performance_data %}
+                                    <div class="doctor-performance-item">
+                                        <span>{{ perf.doctor_name }}</span>
+                                        <span>{{ perf.completed_forms_count }} formularios</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p style="text-align: center; color: #777;">No hay datos de rendimiento de doctoras disponibles.</p>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -643,7 +657,7 @@
                 <div id="admin-add-visit" class="content-section">
                     <div class="card admin-form">
                         <h3><i class="fa-solid fa-calendar-plus"></i> Agregar Visita Programada</h3>
-                        <form action="{{ url_for('admin_agregar') }}" method="POST" enctype="multipart/form-data">
+                        <form action="{{ url_for('admin_agregar') }}" method="POST"> {# Ya no necesitamos enctype="multipart/form-data" si no hay archivos #}
                             <label for="nombre_establecimiento">Nombre Establecimiento:</label>
                             <input type="text" id="nombre_establecimiento" name="nombre" placeholder="Ej: Liceo Bicentenario" required />
 
@@ -666,9 +680,10 @@
 
                             <label for="obs_establecimiento">Observaciones:</label>
                             <textarea id="obs_establecimiento" name="obs" rows="3" placeholder="Notas adicionales..."></textarea>
-
-                            <label for="formulario_base">Formulario Base (PDF/DOCX):</label>
-                            <input type="file" id="formulario_base" name="formulario" accept=".pdf,.docx,.doc" required />
+                            
+                            {# ELIMINADO: Ya no se sube un formulario base aquí #}
+                            {# <label for="formulario_base">Formulario Base (PDF/DOCX):</label>
+                            <input type="file" id="formulario_base" name="formulario" accept=".pdf,.docx,.doc" required /> #}
                             
                             <button type="submit"><i class="fa-solid fa-plus"></i> Agregar Visita</button>
                         </form>
@@ -716,7 +731,8 @@
                                         </div>
                                         <div class="item-card-details">
                                             <span>Alumnos: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
-                                            <span>Doc: {{ (doctoras | selectattr('id', 'equalto', evento.doctora_id) | first).nombre if evento.doctora_id else 'N/A' }}</span>
+                                            <span>Doc: {{ (doctoras | selectattr('id', 'equalto', evento.doctora_id) | first).usuario if evento.doctora_id else 'N/A' }}</span> {# Cambiado de .nombre a .usuario #}
+                                            <span>Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
                                         </div>
                                         {% if evento.url_archivo %}
                                             <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
@@ -742,7 +758,7 @@
                                     <li class="item-card">
                                         <div class="item-card-header">
                                             <span>{{ nomina.nombre_nomina }} ({{ nomina.tipo_nomina.replace('_', ' ').title() }})</span>
-                                            <span>Asignada a: {{ (doctoras | selectattr('id', 'equalto', nomina.doctora_id) | first).nombre if nomina.doctora_id else 'N/A' }}</span>
+                                            <span>Asignada a: {{ (doctoras | selectattr('id', 'equalto', nomina.doctora_id) | first).usuario if nomina.doctora_id else 'N/A' }}</span> {# Cambiado de .nombre a .usuario #}
                                         </div>
                                         <div class="item-card-details">
                                             <span>Archivo Original: {{ nomina.nombre_excel_original }}</span>
@@ -777,7 +793,7 @@
                                             <span>Fecha: {{ form_subido.fecha_subida.strftime('%d-%m-%Y') if form_subido.fecha_subida else 'N/A' }}</span>
                                         </div>
                                         <div class="item-card-details">
-                                            <span>Doctora: {% set doc_info = (doctoras | selectattr('id', 'equalto', form_subido.doctoras_id) | first) %}{{ doc_info.nombre if doc_info else 'Desconocida' }}</span>
+                                            <span>Doctora: {% set doc_info = (doctoras | selectattr('id', 'equalto', form_subido.doctoras_id) | first) %}{{ doc_info.usuario if doc_info else 'Desconocida' }}</span> {# Cambiado de .nombre a .usuario #}
                                             <span>Establecimiento: {% set est_info = (establecimientos | selectattr('id', 'equalto', form_subido.establecimientos_id) | first) %}{{ est_info.nombre if est_info else 'Desconocido' }}</span>
                                         </div>
                                         <a href="{{ form_subido.url_archivo }}" target="_blank" class="item-card-action-link" style="background-color: var(--primary-medium);">
@@ -793,6 +809,17 @@
                 </div>
 
             {% else %}
+                <!-- Sección para Doctores: Mi Rendimiento -->
+                <div id="doctor-performance" class="content-section">
+                    <div class="card">
+                        <h3><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento</h3>
+                        <p class="text-center text-4xl font-extrabold text-accent-blue my-8">
+                            {{ my_forms_completed_count }}
+                        </p>
+                        <p class="text-center text-lg text-gray-600">Formularios Completados</p>
+                    </div>
+                </div>
+
                 <!-- Sección para Doctores: Mis Próximas Visitas -->
                 <div id="doctor-visits" class="content-section">
                     <div class="card">

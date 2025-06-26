@@ -9,15 +9,42 @@
     <!-- Font Awesome para íconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Estilos base para el cuerpo */
+        /* Variables CSS para una gestión de colores y espaciado más fácil */
+        :root {
+            --primary-dark: hsl(210, 29%, 18%); /* Azul pizarra muy oscuro */
+            --primary-medium: hsl(210, 15%, 28%); /* Azul pizarra medio */
+            --primary-light: hsl(210, 16%, 92%); /* Gris azulado muy claro */
+            --background-body: linear-gradient(135deg, hsl(200, 20%, 98%) 0%, hsl(210, 15%, 96%) 100%); /* Degradado suave para el cuerpo */
+            --accent-green: hsl(140, 65%, 45%); /* Verde vibrante */
+            --accent-red: hsl(0, 75%, 58%); /* Rojo intenso */
+            --accent-blue: hsl(200, 70%, 55%); /* Azul cielo brillante */
+            --google-drive-blue: #4285F4; /* Azul de Google Drive */
+            --signature-purple: #8B5CF6; /* Púrpura para firma */
+            --text-dark: hsl(210, 10%, 15%);
+            --text-light: hsl(0, 0%, 99%);
+            --border-color: hsl(210, 10%, 82%); /* Borde más definido */
+            --shadow-subtle: rgba(0, 0, 0, 0.08);
+            --shadow-medium: rgba(0, 0, 0, 0.15);
+            --shadow-strong: rgba(0, 0, 0, 0.25);
+            --border-radius-base: 14px;
+            --padding-base: 28px;
+            --gap-base: 30px;
+        }
+
+        /* Estilos generales del cuerpo */
         body {
             font-family: 'Segoe UI', sans-serif;
-            background-color: #f0f4f8;
-            padding: 20px; /* Reducido para mejor visualización en pantallas pequeñas */
-            margin: 0; /* Asegura que no haya márgenes no deseados */
+            background: var(--background-body); /* Fondo degradado */
+            color: var(--text-dark);
+            line-height: 1.6;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            padding: 20px; /* Reducido para mejor visualización en pantallas pequeñas */
+            margin: 0; /* Asegura que no haya márgenes no deseados */
         }
 
         /* Contenedor principal para centrar el contenido */
@@ -39,6 +66,12 @@
         header img {
             max-width: 150px; /* Tamaño más consistente */
             margin-bottom: 10px;
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out; /* Efecto al pasar el mouse */
+        }
+
+        header img:hover {
+            transform: scale(1.05); /* Ligeramente más grande */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2); /* Sombra al pasar el mouse */
         }
 
         header h1 {
@@ -450,7 +483,8 @@
         <a href="{{ url_for('dashboard') }}" class="header-btn back-to-dashboard-btn">
             <i class="fas fa-arrow-left"></i> Volver al Dashboard
         </a>
-        <img src="/static/cardiohome.png" alt="CardioHome Logo">
+        {# CORRECTED LOGO PATH HERE #}
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="CardioHome Logo">
         <h1>Dra. Adriana Valenzuela — Relleno de Formularios</h1>
         <button class="header-btn logout-btn" onclick="cerrarSesion()">
             <i class="fas fa-sign-out-alt"></i> Cerrar sesión
@@ -505,25 +539,18 @@
                             <input type="hidden" name="fecha_nacimiento" value="{{ est.fecha_nacimiento_formato }}"> {# Usar el formato ya procesado #}
                             <input type="hidden" name="edad" value="{{ est.edad }}">
                             <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
-                            
-                            <label>Sexo:</label>
-                            <select name="sexo" required onchange="updatePreview(this.form)">
-                                {# Using est.sexo for initial selection, as it seems to hold the correct inferred value from DB #}
-                                <option value="M" {% if est.sexo == 'M' %}selected{% endif %}>Masculino</option>
-                                <option value="F" {% if est.sexo == 'F' %}selected{% endif %}>Femenino</option>
-                            </select>
+                            <input type="hidden" name="sexo" value="{{ est.sexo }}"> {# SEXO: Mantenido tal cual #}
 
                             <p class="info"><strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento_formato }} ({{ est.edad }})</p>
                             <p class="info"><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</p>
-                            {# Fixed Jinja2 syntax here to display the inferred sex #}
-                            <p class="info"><strong>Sexo:</strong> <span class="prev-sexo-info">{{ 'Masculino' if est.sexo == 'M' else 'Femenino' }}</span></p>
+                            <p class="info"><strong>Sexo:</strong> {{ est.sexo }}</p> {# SEXO: Mantenido tal cual #}
 
 
                             <label>Estado general del alumno:</label>
                             <textarea name="estado" rows="3" placeholder="Observaciones del estado general..." required>{{ est.estado_general if est.estado_general is not none else '' }}</textarea>
 
                             <label>Diagnóstico:</label>
-                            <select name="diagnostico" required onchange="updatePreview(this.form)"> {# Added onchange #}
+                            <select name="diagnostico" required onchange="updatePreview(this.form)">
                                 <option value="">Seleccionar diagnóstico</option>
                                 <option value="Trastorno espectro autista" {% if est.diagnostico == 'Trastorno espectro autista' %}selected{% endif %}>Trastorno espectro autista</option>
                                 <option value="GARC" {% if est.diagnostico == 'GARC' %}selected{% endif %}>GARC</option>
@@ -572,7 +599,7 @@
                         <p><strong>Diagnóstico:</strong> <span class="prev-diagnostico">-</span></p>
                         <p><strong>Fecha Reevaluación:</strong> <span class="prev-reevaluacion">-</span></p>
                         <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">-</span></p>
-                        <p><strong>Sexo:</strong> <span class="prev-sexo">-</span></p> {# This span will be updated by JS #}
+                        <p><strong>Sexo:</strong> <span class="prev-sexo">{{ est.sexo }}</span></p> {# SEXO: Mantenido tal cual #}
 
 
                         <img src="/static/formulario_muestra.png" alt="Ejemplo Formulario" class="preview-img" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=Imagen+No+Disponible';" />
@@ -674,13 +701,14 @@
                 container.querySelector('.prev-reevaluacion').textContent = '-';
             }
 
-            // Actualizar el campo de sexo en la vista previa
-            const sexoSelect = form.querySelector('select[name="sexo"]');
-            if (sexoSelect) {
-                container.querySelector('.prev-sexo').textContent = sexoSelect.value === 'M' ? 'Masculino' : 'Femenino';
+            // Actualizar el campo de sexo en la vista previa (mantenido original)
+            const sexoInput = form.querySelector('input[name="sexo"]');
+            if (sexoInput) {
+                container.querySelector('.prev-sexo').textContent = sexoInput.value; // Display raw value ('M' or 'F')
             } else {
                 container.querySelector('.prev-sexo').textContent = '-';
             }
+
 
             // Lógica del badge "Guardado"
             const badge = form.closest('.formulario').querySelector('.badge');

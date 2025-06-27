@@ -394,10 +394,10 @@ def generar_pdf():
         }
         
         print(f"DEBUG: Datos a actualizar en Supabase para estudiante {estudiante_id}: {update_data}")
-        # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para la actualización del estudiante
+        # Usar SUPABASE_SERVICE_HEADERS para la actualización del estudiante
         response_db = requests.patch(
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}",
-            headers=SUPABASE_SERVICE_HEADERS, # <-- USAR SERVICE_HEADERS AQUI
+            headers=SUPABASE_SERVICE_HEADERS, 
             json=update_data
         )
         response_db.raise_for_status()
@@ -496,6 +496,7 @@ def marcar_evaluado():
     print(f"DEBUG: Recibida solicitud para marcar como evaluado: estudiante_id={estudiante_id}, nomina_id={nomina_id}, doctora_id={doctora_id}")
 
     if not estudiante_id or not nomina_id or not doctora_id:
+        print(f"ERROR: Datos faltantes en /marcar_evaluado. Estudiante ID: {estudiante_id}, Nomina ID: {nomina_id}, Doctora ID: {doctora_id}")
         return jsonify({"success": False, "message": "Datos de estudiante, nómina o doctora faltantes"}), 400
 
     try:
@@ -504,24 +505,28 @@ def marcar_evaluado():
             'doctora_evaluadora_id': doctora_id
         }
         
-        # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para la actualización
+        print(f"DEBUG: Intentando PATCH a estudiantes_nomina con ID: {estudiante_id}. Payload: {update_data}")
         response = requests.patch(
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}",
-            headers=SUPABASE_SERVICE_HEADERS, # <-- USAR SERVICE_HEADERS AQUI para evitar RLS en update
+            headers=SUPABASE_SERVICE_HEADERS, 
             json=update_data
         )
-        response.raise_for_status()
         
-        if response.status_code == 200 or response.status_code == 204:
-            print(f"DEBUG: Estudiante {estudiante_id} marcado como evaluado y guardado en Supabase.")
-            return jsonify({"success": True, "message": "Estudiante marcado como evaluado."})
-        else:
-            print(f"ERROR: No se pudo actualizar el estudiante al marcar como evaluado: {response.status_code} - {response.text}")
-            return jsonify({"success": False, "message": "No se pudo actualizar el estudiante."}), response.status_code
+        # En lugar de raise_for_status(), manejamos el error manualmente para obtener el texto completo
+        if response.status_code >= 400: 
+            print(f"ERROR: Supabase PATCH falló en /marcar_evaluado.")
+            print(f"ERROR: Estado HTTP: {response.status_code}")
+            print(f"ERROR: Cuerpo de la respuesta de Supabase: {response.text}")
+            return jsonify({"success": False, "message": f"Error al actualizar estudiante: {response.text}"}), response.status_code
+
+        print(f"DEBUG: Estudiante {estudiante_id} marcado como evaluado y guardado en Supabase. Status: {response.status_code}")
+        print(f"DEBUG: Respuesta exitosa de Supabase: {response.text}")
+        return jsonify({"success": True, "message": "Estudiante marcado como evaluado."})
 
     except requests.exceptions.RequestException as e:
-        print(f"ERROR: Error de solicitud al marcar estudiante como evaluado: {e} - {response.text if 'response' in locals() else 'No response'}")
-        return jsonify({"success": False, "message": f"Error de conexión: {str(e)}"}), 500
+        print(f"ERROR: Error de solicitud al marcar estudiante como evaluado: {e}")
+        # Si la excepción ocurrió antes de obtener una respuesta (ej. problema de red)
+        return jsonify({"success": False, "message": f"Error de conexión con Supabase: {str(e)}"}), 500
     except Exception as e:
         print(f"ERROR: Error inesperado al marcar estudiante como evaluado: {e}")
         return jsonify({"success": False, "message": f"Error interno del servidor: {str(e)}"}), 500
@@ -656,7 +661,7 @@ def dashboard():
         try:
             url_doctoras = f"{SUPABASE_URL}/rest/v1/doctoras"
             print(f"DEBUG: URL para obtener doctoras (admin con service key): {url_doctoras}") 
-            res_doctoras = requests.get(url_doctoras, headers=SUPABASE_SERVICE_HEADERS) # <-- Usar SERVICE_HEADERS
+            res_doctoras = requests.get(url_doctoras, headers=SUPABASE_SERVICE_HEADERS) # Usar SERVICE_HEADERS para asegurar acceso
             res_doctoras.raise_for_status()
             doctoras = res_doctoras.json()
             print(f"DEBUG: Doctoras recibidas (admin): {doctoras}")
@@ -668,7 +673,7 @@ def dashboard():
         try:
             url_establecimientos_admin = f"{SUPABASE_URL}/rest/v1/establecimientos?select=id,nombre"
             print(f"DEBUG: URL para obtener establecimientos (admin con service key): {url_establecimientos_admin}") 
-            res_establecimientos = requests.get(url_establecimientos_admin, headers=SUPABASE_SERVICE_HEADERS) # <-- Usar SERVICE_HEADERS
+            res_establecimientos = requests.get(url_establecimientos_admin, headers=SUPABASE_SERVICE_HEADERS) # Usar SERVICE_HEADERS
             res_establecimientos.raise_for_status()
             establecimientos_admin_list = res_establecimientos.json()
             print(f"DEBUG: Establecimientos recibidos (admin): {establecimientos_admin_list}")
@@ -704,7 +709,7 @@ def dashboard():
                 try:
                     url_doctor_forms = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?doctora_evaluadora_id=eq.{doctor_id}&fecha_relleno.not.is.null&select=count"
                     print(f"DEBUG: URL para rendimiento de doctora {doc['usuario']} con service key: {url_doctor_forms}") 
-                    res_doctor_forms = requests.get(url_doctor_forms, headers=SUPABASE_SERVICE_HEADERS) # <-- Usar SERVICE_HEADERS
+                    res_doctor_forms = requests.get(url_doctor_forms, headers=SUPABASE_SERVICE_HEADERS) # Usar SERVICE_HEADERS
                     res_doctor_forms.raise_for_status()
                     count_range = res_doctor_forms.headers.get('Content-Range')
                     if count_range:
@@ -797,10 +802,10 @@ def admin_agregar():
     print(f"DEBUG: Payload para insertar establecimiento: {data_establecimiento}")
 
     try:
-        # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para la inserción
+        # Usar SUPABASE_SERVICE_HEADERS para la inserción
         response_db = requests.post(
             f"{SUPABASE_URL}/rest/v1/establecimientos",
-            headers=SUPABASE_SERVICE_HEADERS, # <-- USAR SERVICE_HEADERS AQUI
+            headers=SUPABASE_SERVICE_HEADERS, 
             json=data_establecimiento
         )
         response_db.raise_for_status()
@@ -868,10 +873,10 @@ def admin_cargar_nomina():
     print(f"DEBUG: Payload para insertar nómina en nominas_medicas: {data_nomina}")
 
     try:
-        # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para la inserción
+        # Usar SUPABASE_SERVICE_HEADERS para la inserción
         res_insert_nomina = requests.post(
             f"{SUPABASE_URL}/rest/v1/nominas_medicas",
-            headers=SUPABASE_SERVICE_HEADERS, # <-- USAR SERVICE_HEADERS AQUI
+            headers=SUPABASE_SERVICE_HEADERS, 
             json=data_nomina
         )
         res_insert_nomina.raise_for_status()
@@ -988,10 +993,10 @@ def admin_cargar_nomina():
 
     print(f"DEBUG: Preparados para insertar {len(estudiantes_a_insertar)} estudiantes.")
     try:
-        # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para la inserción
+        # Usar SUPABASE_SERVICE_HEADERS para la inserción
         res_insert_estudiantes = requests.post(
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina",
-            headers=SUPABASE_SERVICE_HEADERS, # <-- USAR SERVICE_HEADERS AQUI
+            headers=SUPABASE_SERVICE_HEADERS, 
             json=estudiantes_a_insertar
         )
         res_insert_estudiantes.raise_for_status()
@@ -1168,10 +1173,10 @@ def subir(establecimiento):
                 }
                 print(f"DEBUG: Payload para insertar formulario subido en DB: {data}")
 
-                # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para la inserción en formularios_subidos
+                # Usar SUPABASE_SERVICE_HEADERS para la inserción en formularios_subidos
                 res_insert = requests.post(
                     f"{SUPABASE_URL}/rest/v1/formularios_subidos",
-                    headers=SUPABASE_SERVICE_HEADERS, # <-- USAR SERVICE_HEADERS AQUI
+                    headers=SUPABASE_SERVICE_HEADERS, 
                     json=data
                 )
                 res_insert.raise_for_status()
@@ -1266,10 +1271,10 @@ def evaluados(establecimiento):
     }
 
     try:
-        # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para la actualización
+        # Usar SUPABASE_SERVICE_HEADERS para la actualización
         response_db = requests.patch(
             f"{SUPABASE_URL}/rest/v1/establecimientos?id=eq.{establecimiento}",
-            headers=SUPABASE_SERVICE_HEADERS, # <-- USAR SERVICE_HEADERS AQUI
+            headers=SUPABASE_SERVICE_HEADERS, 
             json=data_update
         )
         response_db.raise_for_status()
@@ -1333,8 +1338,15 @@ def doctor_performance(doctor_id):
             
             # Obtener el nombre de la nómina directamente del join
             nomina_nombre = "Nómina Desconocida"
-            if student.get('nominas_medicas') and student['nominas_medicas'][0] and 'nombre_nomina' in student['nominas_medicas'][0]:
-                nomina_nombre = student['nominas_medicas'][0]['nombre_nomina']
+            # Supabase devuelve un arreglo de objetos para el join si hay múltiples resultados
+            # o si el join no es 1 a 1. Aquí se espera un objeto único dentro del arreglo.
+            if student.get('nominas_medicas') and isinstance(student['nominas_medicas'], list) and student['nominas_medicas']:
+                if 'nombre_nomina' in student['nominas_medicas'][0]:
+                    nomina_nombre = student['nominas_medicas'][0]['nombre_nomina']
+                # Si el join regresa un objeto directo (no lista anidada), lo manejamos también
+                elif isinstance(student['nominas_medicas'], dict) and 'nombre_nomina' in student['nominas_medicas']:
+                    nomina_nombre = student['nominas_medicas']['nombre_nomina']
+
 
             evaluated_students.append({
                 'nombre': student.get('nombre'),
@@ -1353,5 +1365,4 @@ def doctor_performance(doctor_id):
     return render_template('doctor_performance.html', 
                            doctor_name=doctor_name, 
                            evaluated_students=evaluated_students)
-
 

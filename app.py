@@ -507,7 +507,7 @@ def marcar_evaluado():
         # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para la actualización
         response = requests.patch(
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}",
-            headers=SUPABASE_SERVICE_HEADERS, # <-- USAR SERVICE_HEADERS AQUI
+            headers=SUPABASE_SERVICE_HEADERS, # <-- USAR SERVICE_HEADERS AQUI para evitar RLS en update
             json=update_data
         )
         response.raise_for_status()
@@ -569,7 +569,7 @@ def dashboard():
     establecimientos_admin_list = []
     admin_nominas_cargadas = []
     conteo = {}
-    evaluaciones_doctora = 0 # Esta variable es para el conteo de la doctora individual
+    evaluaciones_doctora_actual = 0 # Esta variable es para el conteo de la doctora individual
 
 
     campos_establecimientos = "id,nombre,fecha,horario,observaciones,cantidad_alumnos,url_archivo,nombre_archivo,doctora_id"
@@ -635,17 +635,17 @@ def dashboard():
             print(f"DEBUG: Nóminas asignadas procesadas para plantilla: {assigned_nominations}")
             
             # Conteo de evaluaciones solo para la doctora loggeada (no admin)
-            url_evaluaciones_doctora = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?doctora_evaluadora_id=eq.{usuario_id}&fecha_relleno.not.is.null&select=count"
-            print(f"DEBUG: URL para contar evaluaciones de doctora: {url_evaluaciones_doctora}")
-            res_evaluaciones_doctora = requests.get(url_evaluaciones_doctora, headers=SUPABASE_HEADERS)
-            res_evaluaciones_doctora.raise_for_status()
-            content_range = res_evaluaciones_doctora.headers.get('Content-Range')
+            url_evaluaciones_doctora_actual = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?doctora_evaluadora_id=eq.{usuario_id}&fecha_relleno.not.is.null&select=count"
+            print(f"DEBUG: URL para contar evaluaciones de doctora actual: {url_evaluaciones_doctora_actual}")
+            res_evaluaciones_doctora_actual = requests.get(url_evaluaciones_doctora_actual, headers=SUPABASE_HEADERS)
+            res_evaluaciones_doctora_actual.raise_for_status()
+            content_range = res_evaluaciones_doctora_actual.headers.get('Content-Range')
             if content_range:
                 try:
-                    evaluaciones_doctora = int(content_range.split('/')[-1])
+                    evaluaciones_doctora_actual = int(content_range.split('/')[-1])
                 except ValueError:
-                    evaluaciones_doctora = 0
-            print(f"DEBUG: Total de evaluaciones para doctora {usuario_id}: {evaluaciones_doctora}")
+                    evaluaciones_doctora_actual = 0
+            print(f"DEBUG: Total de evaluaciones para doctora {usuario_id}: {evaluaciones_doctora_actual}")
 
         except requests.exceptions.RequestException as e:
             print(f"❌ Error al obtener nóminas asignadas o contar evaluaciones: {e}")
@@ -730,7 +730,7 @@ def dashboard():
         conteo=conteo,
         assigned_nominations=assigned_nominations,
         admin_nominas_cargadas=admin_nominas_cargadas,
-        evaluaciones_doctora=evaluaciones_doctora, 
+        evaluaciones_doctora=evaluaciones_doctora_actual, 
         doctor_performance_data=doctor_performance_data 
     )
 
@@ -1285,5 +1285,73 @@ def evaluados(establecimiento):
 
     return redirect(url_for('dashboard'))
 
+@app.route('/doctor_performance/<doctor_id>')
+def doctor_performance(doctor_id):
+    """
+    Ruta para que el administrador vea el detalle de los formularios evaluados por una doctora.
+    """
+    if session.get('usuario') != 'admin':
+        flash('Acceso denegado.', 'error')
+        return redirect(url_for('dashboard'))
+
+    doctor_name = "Doctora Desconocida"
+    evaluated_students = []
+
+    try:
+        # Obtener el nombre de la doctora
+        url_doctora = f"{SUPABASE_URL}/rest/v1/doctoras?id=eq.{doctor_id}&select=usuario"
+        res_doctora = requests.get(url_doctora, headers=SUPABASE_SERVICE_HEADERS)
+        res_doctora.raise_for_status()
+        doctor_data = res_doctora.json()
+        if doctor_data:
+            doctor_name = doctor_data[0]['usuario']
+        print(f"DEBUG: Obteniendo rendimiento para doctora: {doctor_name} (ID: {doctor_id})")
+
+        # Obtener estudiantes evaluados por esta doctora
+        # Seleccionamos también 'nombre_nomina' de la tabla 'nominas_medicas' usando join implícito
+        url_students = (
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            f"?doctora_evaluadora_id=eq.{doctor_id}"
+            f"&fecha_relleno.not.is.null" # Solo los que tienen fecha de relleno
+            f"&select=nombre,rut,fecha_relleno,nomina_id,nominas_medicas(nombre_nomina)" # Incluye el nombre de la nómina
+            f"&order=fecha_relleno.desc" # Ordenar por fecha más reciente
+        )
+        print(f"DEBUG: URL para obtener estudiantes evaluados: {url_students}")
+        res_students = requests.get(url_students, headers=SUPABASE_SERVICE_HEADERS)
+        res_students.raise_for_status()
+        students_raw = res_students.json()
+        print(f"DEBUG: Estudiantes evaluados recibidos: {students_raw}")
+
+        for student in students_raw:
+            # Formatear la fecha para visualización si es necesario
+            formatted_date = student.get('fecha_relleno')
+            if formatted_date and isinstance(formatted_date, str):
+                try:
+                    formatted_date = datetime.strptime(formatted_date, '%Y-%m-%d').strftime('%d-%m-%Y')
+                except ValueError:
+                    pass # Keep as is if not in expected format
+            
+            # Obtener el nombre de la nómina directamente del join
+            nomina_nombre = "Nómina Desconocida"
+            if student.get('nominas_medicas') and student['nominas_medicas'][0] and 'nombre_nomina' in student['nominas_medicas'][0]:
+                nomina_nombre = student['nominas_medicas'][0]['nombre_nomina']
+
+            evaluated_students.append({
+                'nombre': student.get('nombre'),
+                'rut': student.get('rut'),
+                'fecha_relleno': formatted_date,
+                'nomina_nombre': nomina_nombre # Usar el nombre de la nómina
+            })
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error al obtener el rendimiento de la doctora: {e} - {res_students.text if 'res_students' in locals() else 'No response'}")
+        flash('Error al cargar el detalle de rendimiento de la doctora.', 'error')
+    except Exception as e:
+        print(f"❌ Error inesperado al cargar rendimiento de doctora: {e}")
+        flash('Error inesperado al cargar el detalle de rendimiento de la doctora.', 'error')
+
+    return render_template('doctor_performance.html', 
+                           doctor_name=doctor_name, 
+                           evaluated_students=evaluated_students)
 
 

@@ -497,19 +497,52 @@ def marcar_evaluado():
     nomina_id = request.form.get('nomina_id')
     doctora_id = session.get('usuario_id')
 
-    print(f"DEBUG: Recibida solicitud para marcar como evaluado: estudiante_id={estudiante_id}, nomina_id={nomina_id}, doctora_id={doctora_id}")
+    # Obtener todos los campos del formulario, asumiendo que el frontend los envía
+    nombre = request.form.get('nombre')
+    rut = request.form.get('rut')
+    fecha_nac = request.form.get('fecha_nacimiento')
+    edad = request.form.get('edad')
+    nacionalidad = request.form.get('nacionalidad')
+    sexo = request.form.get('sexo')
+    estado_general = request.form.get('estado')
+    diagnostico = request.form.get('diagnostico')
+    fecha_reeval = request.form.get('fecha_reevaluacion')
+    derivaciones = request.form.get('derivaciones')
 
-    if not estudiante_id or not nomina_id or not doctora_id:
-        print(f"ERROR: Datos faltantes en /marcar_evaluado. Estudiante ID: {estudiante_id}, Nomina ID: {nomina_id}, Doctora ID: {doctora_id}")
-        return jsonify({"success": False, "message": "Datos de estudiante, nómina o doctora faltantes"}), 400
+    print(f"DEBUG: Recibida solicitud para marcar como evaluado: estudiante_id={estudiante_id}, nomina_id={nomina_id}, doctora_id={doctora_id}")
+    print(f"DEBUG: Datos completos recibidos para guardar: nombre={nombre}, rut={rut}, sexo={sexo}, diagnostico={diagnostico}, fecha_reeval={fecha_reeval}")
+
+
+    if not all([estudiante_id, nomina_id, doctora_id, nombre, rut, fecha_nac, edad, nacionalidad, sexo, estado_general, diagnostico, fecha_reeval, derivaciones]):
+        print(f"ERROR: Datos faltantes en /marcar_evaluado. Estudiante ID: {estudiante_id}, Nomina ID: {nomina_id}, Doctora ID: {doctora_id}. Campos del formulario: {request.form.to_dict()}")
+        return jsonify({"success": False, "message": "Faltan datos obligatorios para marcar y guardar la evaluación."}), 400
 
     try:
+        # Formatear la fecha de reevaluación para la base de datos (YYYY-MM-DD)
+        fecha_reevaluacion_db = fecha_reeval
+        if fecha_reeval and "/" in fecha_reeval:
+            try:
+                fecha_reevaluacion_db = datetime.strptime(fecha_reeval, '%d/%m/%Y').strftime('%Y-%m-%d')
+            except ValueError:
+                pass # Si el formato no es DD/MM/YYYY, se mantiene como está.
+        elif fecha_reeval and "-" in fecha_reeval:
+             # Si ya viene en YYYY-MM-DD, no se necesita formatear
+            pass
+
+
         update_data = {
-            # ¡CRÍTICO! Esta clave ('doctora_evaluadora_id') debe coincidir EXACTAMENTE
-            # con el nombre de la columna en tu tabla estudiantes_nomina en Supabase.
-            # Según tu último error y captura, es probable que esta columna no exista.
-            'doctora_evaluadora_id': doctora_id, 
-            'fecha_relleno': str(date.today())
+            'nombre': nombre, # Guardar nombre
+            'rut': rut, # Guardar rut
+            'fecha_nacimiento': fecha_nac, # Guardar fecha de nacimiento
+            'edad': edad, # Guardar edad
+            'nacionalidad': nacionalidad, # Guardar nacionalidad
+            'sexo': sexo, # Guardar sexo
+            'estado_general': estado_general, # Guardar estado_general
+            'diagnostico': diagnostico, # Guardar diagnostico
+            'fecha_reevaluacion': fecha_reevaluacion_db, # Guardar fecha_reevaluacion
+            'derivaciones': derivaciones, # Guardar derivaciones
+            'doctora_evaluadora_id': doctora_id, # Asignar la ID de la doctora evaluadora
+            'fecha_relleno': str(date.today()) # Marcar la fecha de evaluación
         }
         
         print(f"DEBUG: Intentando PATCH a estudiantes_nomina con ID: {estudiante_id}. Payload: {update_data}")
@@ -519,7 +552,6 @@ def marcar_evaluado():
             json=update_data
         )
         
-        # En lugar de raise_for_status(), manejamos el error manualmente para obtener el texto completo
         if response.status_code >= 400: 
             print(f"ERROR: Supabase PATCH falló en /marcar_evaluado.")
             print(f"ERROR: Estado HTTP: {response.status_code}")
@@ -528,11 +560,10 @@ def marcar_evaluado():
 
         print(f"DEBUG: Estudiante {estudiante_id} marcado como evaluado y guardado en Supabase. Status: {response.status_code}")
         print(f"DEBUG: Respuesta exitosa de Supabase: {response.text}")
-        return jsonify({"success": True, "message": "Estudiante marcado como evaluado."})
+        return jsonify({"success": True, "message": "Estudiante marcado como evaluado y datos guardados."})
 
     except requests.exceptions.RequestException as e:
         print(f"ERROR: Error de solicitud al marcar estudiante como evaluado: {e}")
-        # Si la excepción ocurrió antes de obtener una respuesta (ej. problema de red)
         return jsonify({"success": False, "message": f"Error de conexión con Supabase: {str(e)}"}), 500
     except Exception as e:
         print(f"ERROR: Error inesperado al marcar estudiante como evaluado: {e}")
@@ -1375,4 +1406,3 @@ def doctor_performance(doctor_id):
     return render_template('doctor_performance.html', 
                            doctor_name=doctor_name, 
                            evaluated_students=evaluated_students)
-

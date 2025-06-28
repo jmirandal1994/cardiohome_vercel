@@ -388,7 +388,6 @@ def generar_pdf():
 
         update_data = {
             'sexo': sexo,
-            # ¡IMPORTANTE! Asegúrate de que 'estado_general' coincida con tu DB. Si se llama 'estado_genera', cámbialo aquí.
             'estado_general': estado_general, 
             'diagnostico': diagnostico,
             'fecha_reevaluacion': fecha_reevaluacion_db,
@@ -445,13 +444,11 @@ def generar_pdf():
         campos = {
             "nombre": nombre,
             "rut": rut,
-            # Usar el formato de fecha que va al PDF
             "fecha_nacimiento": request.form.get('fecha_nacimiento_formato'), 
             "nacionalidad": nacionalidad,
             "edad": edad,
             "diagnostico_1": diagnostico,
             "diagnostico_2": diagnostico,
-            # ¡IMPORTANTE! Asegúrate de que 'estado_general' coincida con tu DB. Si se llama 'estado_genera', cámbialo aquí.
             "estado_general": estado_general, 
             "fecha_evaluacion": fecha_eval,
             "fecha_reevaluacion": fecha_reeval_pdf,
@@ -504,8 +501,7 @@ def marcar_evaluado():
     fecha_nac_original = request.form.get('fecha_nacimiento_original') # Usamos el original para guardar en DB
     edad = request.form.get('edad')
     nacionalidad = request.form.get('nacionalidad')
-    comuna = request.form.get('comuna') # Asegurarse de que este campo se envíe desde el HTML
-    direccion = request.form.get('direccion') # Asegurarse de que este campo se envíe desde el HTML
+    # Eliminadas comuna y direccion de aquí para evitar el error de columna faltante
     sexo = request.form.get('sexo')
     estado_general = request.form.get('estado')
     diagnostico = request.form.get('diagnostico')
@@ -516,7 +512,7 @@ def marcar_evaluado():
     print(f"DEBUG: Datos completos recibidos para guardar: nombre={nombre}, rut={rut}, sexo={sexo}, diagnostico={diagnostico}, fecha_reeval={fecha_reeval}")
 
 
-    # Validar campos obligatorios antes de proceder
+    # Validar campos obligatorios antes de proceder (excepto comuna y direccion)
     if not all([estudiante_id, nomina_id, doctora_id, nombre, rut, fecha_nac_original, edad, nacionalidad, sexo, estado_general, diagnostico, fecha_reeval, derivaciones]):
         print(f"ERROR: Datos faltantes en /marcar_evaluado. Estudiante ID: {estudiante_id}, Nomina ID: {nomina_id}, Doctora ID: {doctora_id}. Campos del formulario: {request.form.to_dict()}")
         return jsonify({"success": False, "message": "Faltan datos obligatorios para marcar y guardar la evaluación."}), 400
@@ -538,8 +534,8 @@ def marcar_evaluado():
             'fecha_nacimiento': fecha_nac_original, # Usamos el original del hidden input
             'edad': edad,
             'nacionalidad': nacionalidad,
-            'comuna': comuna, # Guardar comuna
-            'direccion': direccion, # Guardar direccion
+            # 'comuna': comuna, # REMOVIDO: Descomentar solo si la columna existe en Supabase
+            # 'direccion': direccion, # REMOVIDO: Descomentar solo si la columna existe en Supabase
             'sexo': sexo,
             'estado_general': estado_general,
             'diagnostico': diagnostico,
@@ -955,8 +951,8 @@ def admin_cargar_nomina():
         # ¡IMPORTANTE! Asegúrate de que 'fecha_nacimiento' coincida con tu DB. Si se llama 'fecha_nacimie', cámbialo aquí.
         'fecha_nacimiento': ['fecha_nacimiento', 'fecha_de_nacimiento', 'fnac'], 
         'nacionalidad': ['nacionalidad'],
-        'comuna': ['comuna'],
-        'direccion': ['direccion', 'dirección']
+        # 'comuna': ['comuna'], # REMOVIDO: Descomentar solo si la columna existe en Supabase
+        # 'direccion': ['direccion', 'dirección'] # REMOVIDO: Descomentar solo si la columna existe en Supabase
     }
     
     col_map = {}
@@ -1008,13 +1004,11 @@ def admin_cargar_nomina():
                 "nomina_id": nomina_id,
                 "nombre": str(nombre_completo_raw).strip(),
                 "rut": rut_limpio,
-                # ¡IMPORTANTE! Asegúrate de que 'fecha_nacimiento' coincida con tu DB.
                 "fecha_nacimiento": fecha_nac_str, 
                 "nacionalidad": str(row.get(col_map.get('nacionalidad'), 'Chilena')).strip(),
-                "comuna": str(row.get(col_map.get('comuna'), 'No especificada')).strip(),
-                "direccion": str(row.get(col_map.get('direccion'), 'No especificada')).strip(),
+                # "comuna": str(row.get(col_map.get('comuna'), 'No especificada')).strip(), # REMOVIDO
+                # "direccion": str(row.get(col_map.get('direccion'), 'No especificada')).strip(), # REMOVIDO
                 "sexo": sexo_adivinado,
-                # ¡IMPORTANTE! Asegúrate de que 'estado_general' coincida con tu DB.
                 "estado_general": None, 
                 "diagnostico": None,
                 "fecha_reevaluacion": None,
@@ -1131,13 +1125,11 @@ def enviar_formulario_a_drive():
         campos = {
             "nombre": nombre,
             "rut": rut,
-            # Usar el formato de fecha para PDF
             "fecha_nacimiento": fecha_nac_formato, 
             "nacionalidad": nacionalidad,
             "edad": edad,
             "diagnostico_1": diagnostico,
             "diagnostico_2": diagnostico,
-            # ¡IMPORTANTE! Asegúrate de que 'estado_general' coincida con tu DB.
             "estado_general": estado_general, 
             "fecha_evaluacion": fecha_eval,
             "fecha_reevaluacion": fecha_reeval_pdf,
@@ -1416,22 +1408,17 @@ def descargar_excel_evaluados(nomina_id):
     if 'usuario' not in session:
         return jsonify({"success": False, "message": "No autorizado"}), 401
     
-    # Solo el admin o la doctora asignada a la nómina pueden descargar el Excel.
-    # En este caso, permitiremos que cualquier doctora (o admin) que vea el formulario lo descargue,
-    # ya que la sesión no está atada a una sola nómina.
-    # Si deseas restringir, puedes agregar lógica para verificar 'session.get('usuario_id')' y la 'doctora_id' de la nomina.
-
     try:
         # Obtener los datos de los estudiantes evaluados para la nómina específica
-        # Seleccionamos todos los campos relevantes para el Excel
+        # Seleccionamos SOLO los campos relevantes para el Excel
         url_students = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?nomina_id=eq.{nomina_id}"
             f"&fecha_relleno.not.is.null" # Solo formularios completados/evaluados
-            f"&select=nombre,rut,fecha_nacimiento,edad,nacionalidad,sexo,estado_general,diagnostico,fecha_reevaluacion,derivaciones,fecha_relleno"
+            f"&select=nombre,rut,fecha_nacimiento,fecha_relleno" # Campos solicitados
             f"&order=nombre.asc" # Ordenar por nombre para mejor presentación
         )
-        print(f"DEBUG: URL para descargar Excel de evaluados: {url_students}")
+        print(f"DEBUG: URL para descargar Excel de evaluados (simplificado): {url_students}")
         res_students = requests.get(url_students, headers=SUPABASE_SERVICE_HEADERS)
         res_students.raise_for_status()
         evaluated_students_data = res_students.json()
@@ -1448,26 +1435,26 @@ def descargar_excel_evaluados(nomina_id):
             'nombre': 'Nombre Completo',
             'rut': 'RUT',
             'fecha_nacimiento': 'Fecha de Nacimiento',
-            'edad': 'Edad',
-            'nacionalidad': 'Nacionalidad',
-            'sexo': 'Sexo',
-            'estado_general': 'Estado General',
-            'diagnostico': 'Diagnóstico',
-            'fecha_reevaluacion': 'Fecha de Reevaluación',
-            'derivaciones': 'Derivaciones',
             'fecha_relleno': 'Fecha de Evaluación'
         }, inplace=True)
 
-        # Convertir fechas a formato legible si es necesario (ya deberían venir como YYYY-MM-DD)
-        # Puedes añadir una conversión a DD/MM/YYYY si lo prefieres para la visualización en Excel
-        for col in ['Fecha de Nacimiento', 'Fecha de Reevaluación', 'Fecha de Evaluación']:
+        # Formatear la 'Fecha de Nacimiento' y 'Fecha de Evaluación'
+        # Usamos errors='coerce' para manejar cualquier valor no convertible a fecha como NaT (Not a Time)
+        # Luego, convertimos a string en el formato deseado, dejando vacío si es NaT
+        for col in ['Fecha de Nacimiento', 'Fecha de Evaluación']:
             if col in df.columns:
-                df[col] = df[col].apply(lambda x: datetime.strptime(x, '%Y-%m-%d').strftime('%d/%m/%Y') if pd.notnull(x) and isinstance(x, str) else x)
+                df[col] = pd.to_datetime(df[col], errors='coerce').dt.strftime('%d/%m/%Y').fillna('')
+        
+        # Añadir la columna "Estado de Evaluación"
+        df['Estado de Evaluación'] = df['Fecha de Evaluación'].apply(lambda x: 'Evaluado' if pd.notnull(x) and x != '' else 'Pendiente')
+
+        # Reordenar columnas para que "Estado de Evaluación" esté al final
+        df = df[['Nombre Completo', 'RUT', 'Fecha de Nacimiento', 'Estado de Evaluación']]
 
         output = io.BytesIO()
         writer = pd.ExcelWriter(output, engine='xlsxwriter')
         df.to_excel(writer, index=False, sheet_name='Formularios Evaluados')
-        writer.close() # Usa .close() para xlsxwriter
+        writer.close() 
         output.seek(0)
 
         # Obtener el nombre del establecimiento para el nombre del archivo

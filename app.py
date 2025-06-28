@@ -473,7 +473,7 @@ def marcar_evaluado():
 
     estudiante_id = request.form.get('estudiante_id')
     nomina_id = request.form.get('nomina_id')
-    doctora_id = session.get('usuario_id')
+    doctora_id = session.get('usuario_id') # ID de la doctora que está realizando la evaluación
 
     nombre = request.form.get('nombre')
     rut = request.form.get('rut')
@@ -515,7 +515,7 @@ def marcar_evaluado():
             'diagnostico': diagnostico,
             'fecha_reevaluacion': fecha_reevaluacion_db,
             'derivaciones': derivaciones,
-            'doctora_evaluadora_id': doctora_id, 
+            'doctora_evaluadora_id': doctora_id, # Esto es clave para el rendimiento
             'fecha_relleno': str(date.today()) 
         }
         
@@ -584,7 +584,7 @@ def dashboard():
     establecimientos_admin_list = []
     admin_nominas_cargadas = []
     conteo = {}
-    evaluaciones_doctora_actual = 0 
+    
     doctor_performance_data = {} # Para admin: conteo de formularios por cada doctora
     doctor_performance_data_single_doctor = {'completed': 0, 'pending': 0, 'total': 0} # Para doctora individual
 
@@ -650,28 +650,57 @@ def dashboard():
                 })
             print(f"DEBUG: Nóminas asignadas procesadas para plantilla: {assigned_nominations}")
             
-            # Conteo de evaluaciones para la doctora loggeada (no admin)
-            # Fetch all students for the logged-in doctor to calculate completed, pending, total
-            url_all_students_for_doctor = (
-                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                f"?nominas_medicas.doctora_id=eq.{usuario_id}" # Filtrar por nominas_medicas.doctora_id
-                f"&select=id,fecha_relleno,nomina_id"
-            )
-            print(f"DEBUG: URL para obtener todos los estudiantes de las nóminas de la doctora: {url_all_students_for_doctor}")
-            res_all_students = requests.get(url_all_students_for_doctor, headers=SUPABASE_HEADERS)
-            res_all_students.raise_for_status()
-            all_students_for_doctor = res_all_students.json()
+            # --- LÓGICA DE RENDIMIENTO PARA DOCTORA INDIVIDUAL ---
+            # 1. Obtener todas las nóminas asignadas a esta doctora para determinar el "total" de alumnos a evaluar
+            nomina_ids_for_doctor = [n['id'] for n in raw_nominas]
+            
+            total_students_in_assigned_nominas = 0
+            if nomina_ids_for_doctor:
+                nomina_ids_str = ",".join(nomina_ids_for_doctor)
+                url_total_students_assigned_to_doctor_nominations = (
+                    f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                    f"?nomina_id=in.({nomina_ids_str})"
+                    f"&select=count"
+                )
+                print(f"DEBUG: URL para contar todos los estudiantes en nóminas asignadas a doctora {usuario_id}: {url_total_students_assigned_to_doctor_nominations}")
+                res_total_students = requests.get(url_total_students_assigned_to_doctor_nominations, headers=SUPABASE_HEADERS)
+                res_total_students.raise_for_status()
+                total_students_count_range = res_total_students.headers.get('Content-Range')
+                if total_students_count_range:
+                    try:
+                        total_students_in_assigned_nominas = int(total_students_count_range.split('/')[-1])
+                    except ValueError:
+                        pass
+                print(f"DEBUG: Total de estudiantes en nóminas asignadas para doctora {usuario_id}: {total_students_in_assigned_nominas}")
 
-            completed_count = sum(1 for s in all_students_for_doctor if s.get('fecha_relleno') is not None)
-            total_count = len(all_students_for_doctor)
-            pending_count = total_count - completed_count
+
+            # 2. Contar los estudiantes que esta DOCTORA ESPECÍFICA ha evaluado
+            url_completed_by_this_doctor = (
+                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                f"?doctora_evaluadora_id=eq.{usuario_id}" # Filtrar por la doctora que evaluó
+                f"&fecha_relleno.not.is.null" # Que el formulario haya sido rellenado
+                f"&select=count"
+            )
+            print(f"DEBUG: URL para contar formularios completados por doctora {usuario_id}: {url_completed_by_this_doctor}")
+            # Usar SERVICE_HEADERS para el conteo de evaluaciones, ya que accede a datos de 'fecha_relleno' y 'doctora_evaluadora_id'
+            res_completed_by_this_doctor = requests.get(url_completed_by_this_doctor, headers=SUPABASE_SERVICE_HEADERS) 
+            res_completed_by_this_doctor.raise_for_status()
+            completed_forms_count_range = res_completed_by_this_doctor.headers.get('Content-Range')
+            completed_count_by_doctor = 0
+            if completed_forms_count_range:
+                try:
+                    completed_count_by_doctor = int(completed_forms_count_range.split('/')[-1])
+                except ValueError:
+                    pass
+            print(f"DEBUG: Formularios completados por doctora {usuario_id}: {completed_count_by_doctor}")
+
 
             doctor_performance_data_single_doctor = {
-                'completed': completed_count,
-                'pending': pending_count,
-                'total': total_count
+                'completed': completed_count_by_doctor,
+                'total': total_students_in_assigned_nominas,
+                'pending': total_students_in_assigned_nominas - completed_count_by_doctor if total_students_in_assigned_nominas >= completed_count_by_doctor else 0
             }
-            print(f"DEBUG: Rendimiento para doctora {usuario_id}: {doctor_performance_data_single_doctor}")
+            print(f"DEBUG: Rendimiento final para doctora {usuario_id}: {doctor_performance_data_single_doctor}")
 
 
         except requests.exceptions.RequestException as e:
@@ -686,7 +715,7 @@ def dashboard():
             res_doctoras = requests.get(url_doctoras, headers=SUPABASE_SERVICE_HEADERS) 
             res_doctoras.raise_for_status()
             doctoras_raw = res_doctoras.json()
-            doctoras = [] # Inicializar lista de doctoras para pasar a la plantilla
+            doctoras = []
             for doc in doctoras_raw:
                 doctoras.append({'id': doc['id'], 'usuario': doc['usuario']})
             print(f"DEBUG: Doctoras recibidas (admin): {doctoras}")
@@ -735,12 +764,12 @@ def dashboard():
                 try:
                     url_doctor_forms_count = (
                         f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                        f"?doctora_evaluadora_id=eq.{doctor_id}" 
-                        f"&fecha_relleno.not.is.null"
+                        f"?doctora_evaluadora_id=eq.{doctor_id}" # Filtrar por la doctora que evaluó
+                        f"&fecha_relleno.not.is.null" # Que el formulario haya sido rellenado
                         f"&select=count" 
                     )
                     print(f"DEBUG: URL para contar formularios de doctora {doctor_name} (admin view): {url_doctor_forms_count}")
-                    res_doctor_forms = requests.get(url_doctor_forms_count, headers=SUPABASE_SERVICE_HEADERS) 
+                    res_doctor_forms = requests.get(url_doctor_forms_count, headers=SUPABASE_SERVICE_HEADERS) # Usar SERVICE_HEADERS
                     res_doctor_forms.raise_for_status()
                     count_range = res_doctor_forms.headers.get('Content-Range')
                     completed_forms_count = 0
@@ -765,7 +794,7 @@ def dashboard():
         'dashboard.html',
         usuario=usuario,
         eventos=eventos,
-        doctoras=doctoras, # Ahora contiene dicts con 'id' y 'usuario'
+        doctoras=doctoras,
         establecimientos=establecimientos_admin_list,
         formularios=formularios,
         conteo=conteo,
@@ -793,7 +822,7 @@ def admin_agregar():
     obs = request.form.get('obs')
     doctora_id_from_form = request.form.get('doctora', '').strip()
     cantidad_alumnos = request.form.get('alumnos')
-    # archivo = request.files.get('formulario') # Este ya no se usa, el base se sube por separado
+    
 
     print(f"DEBUG: admin_agregar - Datos recibidos: nombre={nombre}, fecha={fecha}, horario={horario}, doctora_id_from_form={doctora_id_from_form}, alumnos={cantidad_alumnos}")
 
@@ -801,14 +830,7 @@ def admin_agregar():
         flash("❌ Faltan campos obligatorios para el establecimiento.", 'error')
         return redirect(url_for('dashboard'))
 
-    # Ya no se sube un formulario base al agregar establecimiento.
-    # Si quieres que un establecimiento tenga un formulario base, este se asociaría por `nomina_id`
-    # O tendrías una tabla 'formularios_base_establecimiento'
-
     nuevo_id = str(uuid.uuid4())
-    # Removido lógica de carga de archivo aquí, ya que el archivo base no se sube directamente con el establecimiento.
-    # Mantener el campo 'url_archivo' y 'nombre_archivo' como None o vacío si no se usa para esta entidad,
-    # o si se llena a través de la carga de nómina.
     
     data_establecimiento = {
         "id": nuevo_id,
@@ -818,8 +840,8 @@ def admin_agregar():
         "observaciones": obs,
         "doctora_id": doctora_id_from_form,
         "cantidad_alumnos": int(cantidad_alumnos) if cantidad_alumnos else None,
-        "url_archivo": None, # No se sube archivo base aquí.
-        "nombre_archivo": None # No se sube archivo base aquí.
+        "url_archivo": None,
+        "nombre_archivo": None
     }
     print(f"DEBUG: Payload para insertar establecimiento: {data_establecimiento}")
 
@@ -976,6 +998,7 @@ def admin_cargar_nomina():
                     fecha_nac_str = None
             
             sexo_adivinado = guess_gender(str(nombre_completo_raw))
+            # Asegurar que nacionalidad siempre tenga un valor
             nacionalidad_valor = str(row.get(col_map.get('nacionalidad'), 'Chilena')).strip()
 
 
@@ -990,7 +1013,7 @@ def admin_cargar_nomina():
                 "diagnostico": None,
                 "fecha_reevaluacion": None,
                 "derivaciones": None,
-                "fecha_relleno": None
+                "fecha_relleno": None # Este se rellena cuando la doctora evalúa
             }
             estudiantes_a_insertar.append(estudiante)
             
@@ -1101,7 +1124,7 @@ def enviar_formulario_a_drive():
             "nacionalidad": nacionalidad,
             "edad": edad,
             "diagnostico_1": diagnostico,
-            "diagnostico_2": diagnostico,
+            "diagnostico_2": diagnostico, 
             "estado_general": estado_general, 
             "fecha_evaluacion": fecha_eval,
             "fecha_reevaluacion": fecha_reeval_pdf,
@@ -1298,7 +1321,7 @@ def evaluados(establecimiento):
     return redirect(url_for('dashboard'))
 
 @app.route('/doctor_performance/<doctor_id>')
-def doctor_performance_detail(doctor_id): # Renombrado para evitar conflicto si tuvieras otra función con el mismo nombre en la misma ruta
+def doctor_performance_detail(doctor_id):
     """
     Ruta para que el administrador vea el detalle de los formularios evaluados por una doctora.
     """
@@ -1398,7 +1421,6 @@ def descargar_excel_evaluados(nomina_id):
 
         for col in ['Fecha de Nacimiento', 'Fecha de Evaluación']:
             if col in df.columns:
-                # Usar .dt.date para obtener solo la fecha antes de formatear a string, si no es NaT
                 df[col] = pd.to_datetime(df[col], errors='coerce').dt.strftime('%d/%m/%Y').fillna('')
         
         df['Estado de Evaluación'] = df['Fecha de Evaluación'].apply(lambda x: 'Evaluado' if pd.notnull(x) and x != '' else 'Pendiente')
@@ -1538,11 +1560,6 @@ def eliminar_establecimiento(establecimiento_id):
     print(f"DEBUG: Intentando eliminar establecimiento con ID: {establecimiento_id}")
 
     try:
-        # Primero, verificar si existen nóminas asociadas a este establecimiento
-        # Esto asume que tienes una forma de relacionar nóminas con establecimientos,
-        # si tu modelo es diferente, adapta esta parte.
-        # Por ahora, nos centraremos en la tabla de 'establecimientos' directamente.
-        
         # Eliminar el establecimiento
         res_delete_est = requests.delete(
             f"{SUPABASE_URL}/rest/v1/establecimientos?id=eq.{establecimiento_id}",
@@ -1600,4 +1617,3 @@ def eliminar_nomina(nomina_id):
     except Exception as e:
         print(f"ERROR: Error inesperado al eliminar nómina: {e}")
         return jsonify({"success": False, "message": f"Error interno del servidor al eliminar nómina: {str(e)}"}), 500
-

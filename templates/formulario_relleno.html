@@ -707,13 +707,13 @@
         <!-- Nuevos botones de acción -->
         <div class="action-buttons">
             <button onclick="imprimirTodosLosFormularios()">
-                <i class="fas fa-print"></i> Imprimir Formularios Visibles
+                <i class="fas fa-print"></i> Imprimir Formularios Visibles (HTML)
             </button>
             <button onclick="descargarExcelCompletados('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
                 <i class="fas fa-file-excel"></i> Descargar Excel de Evaluados
             </button>
-            <button onclick="descargarPDFsVisibles('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
-                <i class="fas fa-file-pdf"></i> Descargar PDFs Visibles
+            <button onclick="generarEImprimirPDFsVisibles('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
+                <i class="fas fa-file-pdf"></i> Generar y Abrir PDFs Visibles (para Imprimir)
             </button>
         </div>
 
@@ -965,7 +965,6 @@
 
         async function marcarComoEvaluado(buttonElement) {
             const form = buttonElement.closest('form');
-            // NO necesitamos estudianteId y nominaId por separado, FormData los tiene.
             
             const requiredInputs = form.querySelectorAll('input[required], select[required], textarea[required]');
             let allFilled = true;
@@ -1081,10 +1080,10 @@
             });
         }
 
-        // Función para imprimir todos los formularios visibles
+        // Función para imprimir todos los formularios visibles (HTML)
         function imprimirTodosLosFormularios() {
             Swal.fire({
-                title: 'Preparando impresión...',
+                title: 'Preparando impresión de HTML...',
                 text: 'Esto puede tardar un momento.',
                 allowOutsideClick: false,
                 didOpen: () => {
@@ -1220,8 +1219,8 @@
                 });
         }
 
-        // NUEVA FUNCIÓN: Descargar un único PDF de todos los formularios visibles
-        async function descargarPDFsVisibles(nominaId, establecimientoNombre) {
+        // FUNCIÓN MODIFICADA: Generar y abrir PDF para imprimir
+        async function generarEImprimirPDFsVisibles(nominaId, establecimientoNombre) {
             const visibleStudentIds = [];
             document.querySelectorAll('details.estudiante:not([style*="display: none"])').forEach(detail => {
                 visibleStudentIds.push(detail.getAttribute('data-estudiante-id'));
@@ -1231,7 +1230,7 @@
                 Swal.fire({
                     icon: 'info',
                     title: 'No hay formularios visibles',
-                    text: 'Ajusta los filtros para ver formularios y luego intenta descargar.',
+                    text: 'Ajusta los filtros para ver formularios y luego intenta imprimir.',
                     confirmButtonText: 'Entendido'
                 });
                 return;
@@ -1239,7 +1238,7 @@
 
             Swal.fire({
                 title: 'Generando PDF combinado...',
-                text: 'Esto puede tardar un momento si hay muchos formularios.',
+                html: 'Esto puede tardar un momento si hay muchos formularios. <br><br> <i class="fas fa-spinner fa-spin"></i>',
                 allowOutsideClick: false,
                 didOpen: () => {
                     Swal.showLoading();
@@ -1265,28 +1264,30 @@
 
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = `Formularios_Visibles_${establecimientoNombre.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
+                
+                const printWindow = window.open(url, '_blank');
+                printWindow.onload = () => {
+                    printWindow.print();
+                    printWindow.onafterprint = () => {
+                        window.URL.revokeObjectURL(url); // Liberar el objeto URL
+                        printWindow.close(); // Cerrar la ventana después de la impresión
+                    };
+                };
 
                 Swal.fire({
                     icon: 'success',
-                    title: 'PDF Combinado Descargado',
-                    text: 'El archivo PDF con los formularios visibles se ha descargado correctamente.',
+                    title: 'PDFs Abiertos para Imprimir',
+                    text: 'Se ha abierto una nueva ventana con los formularios listos para imprimir.',
                     showConfirmButton: false,
-                    timer: 2000
+                    timer: 3000
                 });
 
             } catch (error) {
-                console.error('Error al descargar PDFs visibles:', error);
+                console.error('Error al generar e imprimir PDFs visibles:', error);
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error de descarga',
-                    text: error.message || 'No se pudo descargar el PDF combinado. Intente de nuevo más tarde.',
+                    title: 'Error de impresión',
+                    text: error.message || 'No se pudo generar o abrir los PDFs para imprimir. Intente de nuevo más tarde.',
                 });
             } finally {
                 Swal.close();

@@ -312,7 +312,8 @@ def relleno_formularios(nomina_id):
 
 
         for est in estudiantes_raw:
-            if 'fecha_nacimiento' in est and isinstance(est['fecha_nacimiento'], str):
+            # ¡IMPORTANTE! Asegúrate de que 'fecha_nacimiento' coincida con tu DB. Si se llama 'fecha_nacimie', cámbialo aquí.
+            if 'fecha_nacimiento' in est and isinstance(est['fecha_nacimiento'], str): 
                 try:
                     fecha_nac_obj = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
                     est['edad'] = calculate_age(fecha_nac_obj)
@@ -380,13 +381,14 @@ def generar_pdf():
         fecha_reevaluacion_db = fecha_reeval
         if fecha_reeval and "/" in fecha_reeval:
             try:
-                fecha_reevaluacion_db = datetime.strptime(fecha_reeval, '%d/%m/%Y').strftime('%Y-%m-%d')
+                fecha_reevaluacion_db = datetime.strptime(fecha_reeval, '%Y-%m-%d').strftime('%Y-%m-%d')
             except ValueError:
                 pass
 
         update_data = {
             'sexo': sexo,
-            'estado_general': estado_general,
+            # ¡IMPORTANTE! Asegúrate de que 'estado_general' coincida con tu DB. Si se llama 'estado_genera', cámbialo aquí.
+            'estado_general': estado_general, 
             'diagnostico': diagnostico,
             'fecha_reevaluacion': fecha_reevaluacion_db,
             'derivaciones': derivaciones,
@@ -442,12 +444,14 @@ def generar_pdf():
         campos = {
             "nombre": nombre,
             "rut": rut,
-            "fecha_nacimiento": fecha_nac,
+            # ¡IMPORTANTE! Asegúrate de que 'fecha_nacimiento' coincida con tu DB. Si se llama 'fecha_nacimie', cámbialo aquí.
+            "fecha_nacimiento": fecha_nac, 
             "nacionalidad": nacionalidad,
             "edad": edad,
             "diagnostico_1": diagnostico,
             "diagnostico_2": diagnostico,
-            "estado_general": estado_general,
+            # ¡IMPORTANTE! Asegúrate de que 'estado_general' coincida con tu DB. Si se llama 'estado_genera', cámbialo aquí.
+            "estado_general": estado_general, 
             "fecha_evaluacion": fecha_eval,
             "fecha_reevaluacion": fecha_reeval_pdf,
             "derivaciones": derivaciones,
@@ -501,8 +505,11 @@ def marcar_evaluado():
 
     try:
         update_data = {
-            'fecha_relleno': str(date.today()),
-            'doctora_evaluadora_id': doctora_id
+            # ¡CRÍTICO! Esta clave ('doctora_evaluadora_id') debe coincidir EXACTAMENTE
+            # con el nombre de la columna en tu tabla estudiantes_nomina en Supabase.
+            # Según tu último error y captura, es probable que esta columna no exista.
+            'doctora_evaluadora_id': doctora_id, 
+            'fecha_relleno': str(date.today())
         }
         
         print(f"DEBUG: Intentando PATCH a estudiantes_nomina con ID: {estudiante_id}. Payload: {update_data}")
@@ -640,7 +647,8 @@ def dashboard():
             print(f"DEBUG: Nóminas asignadas procesadas para plantilla: {assigned_nominations}")
             
             # Conteo de evaluaciones solo para la doctora loggeada (no admin)
-            url_evaluaciones_doctora_actual = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?doctora_evaluadora_id=eq.{usuario_id}&fecha_relleno.not.is.null&select=count"
+            # ¡IMPORTANTE! Asegúrate de que 'doctora_evaluadora_id' coincida con tu DB.
+            url_evaluaciones_doctora_actual = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?doctora_evaluadora_id=eq.{usuario_id}&fecha_relleno.not.is.null&select=count" 
             print(f"DEBUG: URL para contar evaluaciones de doctora actual: {url_evaluaciones_doctora_actual}")
             res_evaluaciones_doctora_actual = requests.get(url_evaluaciones_doctora_actual, headers=SUPABASE_HEADERS)
             res_evaluaciones_doctora_actual.raise_for_status()
@@ -707,7 +715,8 @@ def dashboard():
             for doc in doctoras:
                 doctor_id = doc['id']
                 try:
-                    url_doctor_forms = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?doctora_evaluadora_id=eq.{doctor_id}&fecha_relleno.not.is.null&select=count"
+                    # ¡IMPORTANTE! Asegúrate de que 'doctora_evaluadora_id' coincida con tu DB.
+                    url_doctor_forms = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?doctora_evaluadora_id=eq.{doctor_id}&fecha_relleno.not.is.null&select=count" 
                     print(f"DEBUG: URL para rendimiento de doctora {doc['usuario']} con service key: {url_doctor_forms}") 
                     res_doctor_forms = requests.get(url_doctor_forms, headers=SUPABASE_SERVICE_HEADERS) # Usar SERVICE_HEADERS
                     res_doctor_forms.raise_for_status()
@@ -908,7 +917,8 @@ def admin_cargar_nomina():
     column_mapping = {
         'nombre_completo': ['nombre_completo', 'nombre_y_apellido', 'nombre'],
         'rut': ['rut'],
-        'fecha_nacimiento': ['fecha_nacimiento', 'fecha_de_nacimiento', 'fnac'],
+        # ¡IMPORTANTE! Asegúrate de que 'fecha_nacimiento' coincida con tu DB. Si se llama 'fecha_nacimie', cámbialo aquí.
+        'fecha_nacimiento': ['fecha_nacimiento', 'fecha_de_nacimiento', 'fnac'], 
         'nacionalidad': ['nacionalidad'],
         'comuna': ['comuna'],
         'direccion': ['direccion', 'dirección']
@@ -963,12 +973,14 @@ def admin_cargar_nomina():
                 "nomina_id": nomina_id,
                 "nombre": str(nombre_completo_raw).strip(),
                 "rut": rut_limpio,
-                "fecha_nacimiento": fecha_nac_str,
+                # ¡IMPORTANTE! Asegúrate de que 'fecha_nacimiento' coincida con tu DB.
+                "fecha_nacimiento": fecha_nac_str, 
                 "nacionalidad": str(row.get(col_map.get('nacionalidad'), 'Chilena')).strip(),
                 "comuna": str(row.get(col_map.get('comuna'), 'No especificada')).strip(),
                 "direccion": str(row.get(col_map.get('direccion'), 'No especificada')).strip(),
                 "sexo": sexo_adivinado,
-                "estado_general": None,
+                # ¡IMPORTANTE! Asegúrate de que 'estado_general' coincida con tu DB.
+                "estado_general": None, 
                 "diagnostico": None,
                 "fecha_reevaluacion": None,
                 "derivaciones": None,
@@ -1084,12 +1096,14 @@ def enviar_formulario_a_drive():
         campos = {
             "nombre": nombre,
             "rut": rut,
-            "fecha_nacimiento": fecha_nac,
+            # ¡IMPORTANTE! Asegúrate de que 'fecha_nacimiento' coincida con tu DB.
+            "fecha_nacimiento": fecha_nac, 
             "nacionalidad": nacionalidad,
             "edad": edad,
             "diagnostico_1": diagnostico,
             "diagnostico_2": diagnostico,
-            "estado_general": estado_general,
+            # ¡IMPORTANTE! Asegúrate de que 'estado_general' coincida con tu DB.
+            "estado_general": estado_general, 
             "fecha_evaluacion": fecha_eval,
             "fecha_reevaluacion": fecha_reeval_pdf,
             "derivaciones": derivaciones,
@@ -1313,13 +1327,14 @@ def doctor_performance(doctor_id):
         print(f"DEBUG: Obteniendo rendimiento para doctora: {doctor_name} (ID: {doctor_id})")
 
         # Obtener estudiantes evaluados por esta doctora
-        # Seleccionamos también 'nombre_nomina' de la tabla 'nominas_medicas' usando join implícito
+        # ¡CRÍTICO! Esta columna ('doctora_evaluadora_id') debe coincidir EXACTAMENTE
+        # con el nombre de la columna en tu tabla estudiantes_nomina en Supabase.
         url_students = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-            f"?doctora_evaluadora_id=eq.{doctor_id}"
-            f"&fecha_relleno.not.is.null" # Solo los que tienen fecha de relleno
-            f"&select=nombre,rut,fecha_relleno,nomina_id,nominas_medicas(nombre_nomina)" # Incluye el nombre de la nómina
-            f"&order=fecha_relleno.desc" # Ordenar por fecha más reciente
+            f"?doctora_evaluadora_id=eq.{doctor_id}" 
+            f"&fecha_relleno.not.is.null" 
+            f"&select=nombre,rut,fecha_relleno,nomina_id,nominas_medicas(nombre_nomina)" 
+            f"&order=fecha_relleno.desc" 
         )
         print(f"DEBUG: URL para obtener estudiantes evaluados: {url_students}")
         res_students = requests.get(url_students, headers=SUPABASE_SERVICE_HEADERS)
@@ -1328,22 +1343,17 @@ def doctor_performance(doctor_id):
         print(f"DEBUG: Estudiantes evaluados recibidos: {students_raw}")
 
         for student in students_raw:
-            # Formatear la fecha para visualización si es necesario
             formatted_date = student.get('fecha_relleno')
             if formatted_date and isinstance(formatted_date, str):
                 try:
                     formatted_date = datetime.strptime(formatted_date, '%Y-%m-%d').strftime('%d-%m-%Y')
                 except ValueError:
-                    pass # Keep as is if not in expected format
+                    pass 
             
-            # Obtener el nombre de la nómina directamente del join
             nomina_nombre = "Nómina Desconocida"
-            # Supabase devuelve un arreglo de objetos para el join si hay múltiples resultados
-            # o si el join no es 1 a 1. Aquí se espera un objeto único dentro del arreglo.
             if student.get('nominas_medicas') and isinstance(student['nominas_medicas'], list) and student['nominas_medicas']:
                 if 'nombre_nomina' in student['nominas_medicas'][0]:
                     nomina_nombre = student['nominas_medicas'][0]['nombre_nomina']
-                # Si el join regresa un objeto directo (no lista anidada), lo manejamos también
                 elif isinstance(student['nominas_medicas'], dict) and 'nombre_nomina' in student['nominas_medicas']:
                     nomina_nombre = student['nominas_medicas']['nombre_nomina']
 
@@ -1352,7 +1362,7 @@ def doctor_performance(doctor_id):
                 'nombre': student.get('nombre'),
                 'rut': student.get('rut'),
                 'fecha_relleno': formatted_date,
-                'nomina_nombre': nomina_nombre # Usar el nombre de la nómina
+                'nomina_nombre': nomina_nombre 
             })
 
     except requests.exceptions.RequestException as e:

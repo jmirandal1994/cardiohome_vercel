@@ -199,7 +199,7 @@
             width: 100%;
             max-width: 500px; /* Un poco más ancho para búsquedas */
             display: block;
-            margin: 0 auto 30px;
+            margin: 0 auto 20px; /* Reducido margen inferior */
             padding: 12px 15px;
             border: 1px solid #b0c2d4; /* Borde más suave */
             border-radius: 8px;
@@ -212,6 +212,62 @@
             box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.3);
             outline: none;
         }
+
+        /* Estilos para el nuevo filtro de estado */
+        .filter-group {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-bottom: 30px; /* Más espacio */
+            background-color: #f9f9f9;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            flex-wrap: wrap;
+        }
+        .filter-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #555;
+            transition: color 0.2s ease;
+        }
+        .filter-group label:hover {
+            color: #1a73e8;
+        }
+        .filter-group input[type="radio"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #bbb;
+            border-radius: 50%;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s ease, background-color 0.2s ease;
+            position: relative;
+            flex-shrink: 0; /* Evita que el radio button se comprima */
+        }
+        .filter-group input[type="radio"]:checked {
+            border-color: #1a73e8;
+            background-color: #1a73e8;
+        }
+        .filter-group input[type="radio"]:checked::before {
+            content: '';
+            display: block;
+            width: 10px;
+            height: 10px;
+            background-color: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
 
         details {
             margin-bottom: 25px; /* Más espacio entre estudiantes */
@@ -469,7 +525,7 @@
                 padding: 0;
                 margin: 0;
             }
-            header, footer, .main-content-wrapper .evaluation-counter, #buscador, .action-buttons, .back-to-dashboard-btn, .logout-btn {
+            header, footer, .main-content-wrapper .evaluation-counter, #buscador, .action-buttons, .back-to-dashboard-btn, .logout-btn, .filter-group {
                 display: none !important; /* Ocultar elementos no deseados al imprimir */
             }
             .main-content-wrapper {
@@ -573,6 +629,11 @@
             .action-buttons button {
                 width: 100%; /* Ajustar al 100% en móvil */
             }
+            .filter-group {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
             .back-to-dashboard-btn { order: 1; }
             .logout-btn { order: 2; }
             header {
@@ -651,10 +712,27 @@
             <button onclick="descargarExcelCompletados('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
                 <i class="fas fa-file-excel"></i> Descargar Excel de Evaluados
             </button>
+            <button onclick="descargarPDFsVisibles('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
+                <i class="fas fa-file-pdf"></i> Descargar PDFs Visibles
+            </button>
         </div>
 
 
-        <input type="text" id="buscador" placeholder="Buscar estudiante por nombre...">
+        <input type="text" id="buscador" placeholder="Buscar estudiante por nombre..." oninput="aplicarFiltros()">
+
+        <!-- Nuevo filtro de estado de evaluación -->
+        <div class="filter-group">
+            <label>
+                <input type="radio" name="evaluation_filter" value="all" checked onchange="aplicarFiltros()"> Todos
+            </label>
+            <label>
+                <input type="radio" name="evaluation_filter" value="evaluated" onchange="aplicarFiltros()"> Evaluados
+            </label>
+            <label>
+                <input type="radio" name="evaluation_filter" value="not_evaluated" onchange="aplicarFiltros()"> No Evaluados
+            </label>
+        </div>
+
 
         {% if estudiantes %}
             {% for est in estudiantes %}
@@ -683,15 +761,15 @@
                             <input type="hidden" name="fecha_nacimiento_formato" value="{{ est.fecha_nacimiento_formato }}"> {# Keep formatted for display #}
                             <input type="hidden" name="edad" value="{{ est.edad }}">
                             <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
-                            <input type="hidden" name="comuna" value="{{ est.comuna }}">
-                            <input type="hidden" name="direccion" value="{{ est.direccion }}">
+                            <input type="hidden" name="comuna" value="{{ est.comuna if est.comuna is not none else '' }}"> {# Asegurarse de que el campo exista en el HTML #}
+                            <input type="hidden" name="direccion" value="{{ est.direccion if est.direccion is not none else '' }}"> {# Asegurarse de que el campo exista en el HTML #}
                             
                             {# SEXO: Changed from hidden input to select for editability, pre-selected with est.sexo #}
                             <label>Sexo:</label>
                             <select name="sexo" required onchange="updatePreview(this.form)">
+                                <option value="">Seleccionar</option>
                                 <option value="M" {% if est.sexo == 'M' %}selected{% endif %}>Masculino</option>
                                 <option value="F" {% if est.sexo == 'F' %}selected{% endif %}>Femenino</option>
-                                <option value="" {% if not est.sexo %}selected{% endif %}>Seleccionar</option>
                             </select>
 
                             <p class="info"><strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento_formato }} ({{ est.edad }})</p>
@@ -792,36 +870,37 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const buscador = document.getElementById('buscador');
-            if (buscador) {
-                buscador.addEventListener('input', function() {
-                    const estudiantes = document.querySelectorAll('.estudiante');
-                    const searchTerm = this.value.toLowerCase().trim();
-                    estudiantes.forEach(detail => {
-                        const nombre = detail.getAttribute('data-nombre');
-                        if (nombre.includes(searchTerm)) {
-                            detail.style.display = '';
-                        } else {
-                            detail.style.display = 'none';
-                        }
-                    });
-                });
-            }
-
-            // Inicializar las previsualizaciones y el select de reevaluación al cargar
+            // Inicializar filtros y previsualizaciones al cargar
+            aplicarFiltros(); // Aplica el filtro inicial (Todos)
             document.querySelectorAll('.formulario form').forEach(form => {
                 updatePreview(form); // Actualiza la vista previa con los valores iniciales
                 const selectPlazo = form.querySelector('select[name="plazo"]');
                 const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');
                 
-                // Si la fecha de reevaluación ya viene pre-cargada del servidor (ej. de DB), la mostramos.
-                // De lo contrario, intentamos calcularla si hay un plazo ya seleccionado.
                 if (fechaReevaluacionInput && fechaReevaluacionInput.value) {
                     // La fecha ya está en el input, no hacemos nada más con el plazo.
                 } else if (selectPlazo && selectPlazo.value) {
                     setFechaReevaluacion(selectPlazo);
                 }
             });
+
+            // Inicializar el valor de la fecha_reevaluacion con la fecha actual + 1 año si está vacío
+            document.querySelectorAll('input[type="date"]').forEach(input => {
+                if (!input.value) { 
+                    const today = new Date();
+                    const nextYear = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
+                    const yyyy = nextYear.getFullYear();
+                    const mm = String(nextYear.getMonth() + 1).padStart(2, '0');
+                    const dd = String(nextYear.getDate()).padStart(2, '0');
+                    input.value = `${yyyy}-${mm}-${dd}`;
+                }
+            });
+
+            // Event listener para el buscador
+            const buscador = document.getElementById('buscador');
+            if (buscador) {
+                buscador.addEventListener('input', aplicarFiltros);
+            }
         });
 
         function cerrarSesion() {
@@ -835,56 +914,48 @@
             
             if (!isNaN(anos) && anos > 0) {
                 const today = new Date();
-                // Usar el día actual para evitar problemas con fines de mes (ej. 31 de Enero + 1 mes = 2 de Marzo)
                 const futureDate = new Date(today.getFullYear() + anos, today.getMonth(), today.getDate()); 
 
                 const year = futureDate.getFullYear();
-                // Los meses en JavaScript son de 0-11, por eso +1
                 const month = String(futureDate.getMonth() + 1).padStart(2, '0');
                 const day = String(futureDate.getDate()).padStart(2, '0');
 
-                fechaReevaluacionInput.value = `${year}-${month}-${day}`; // Formato YYYY-MM-DD para input type="date"
+                fechaReevaluacionInput.value = `${year}-${month}-${day}`; 
             } else {
-                fechaReevaluacionInput.value = ''; // Limpiar si no es una selección válida
+                fechaReevaluacionInput.value = ''; 
             }
-            updatePreview(form); // Actualizar vista previa inmediatamente
+            updatePreview(form); 
         }
 
         function updatePreview(form) {
             const container = form.closest('.container');
-            if (!container) return; // Salir si no encuentra el contenedor
+            if (!container) return; 
 
-            // Actualizar campos de vista previa
             container.querySelector('.prev-nombre').textContent = form.nombre.value;
             container.querySelector('.prev-rut').textContent = form.rut.value;
             container.querySelector('.prev-estado').textContent = form.estado ? form.estado.value : '-';
             container.querySelector('.prev-diagnostico').textContent = form.diagnostico ? form.diagnostico.value : '-';
             container.querySelector('.prev-derivaciones').textContent = form.derivaciones ? form.derivaciones.value : '-';
             
-            // La fecha de reevaluación la tomamos del input type="date"
             const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');
             if (fechaReevaluacionInput && fechaReevaluacionInput.value) {
-                // Si el formato es YYYY-MM-DD, lo convertimos a DD/MM/YYYY para mostrar
                 const [year, month, day] = fechaReevaluacionInput.value.split('-');
                 container.querySelector('.prev-reevaluacion').textContent = `${day}/${month}/${year}`;
             } else {
                 container.querySelector('.prev-reevaluacion').textContent = '-';
             }
 
-            // Actualizar el campo de sexo en la vista previa (ahora del select)
             const sexoSelect = form.querySelector('select[name="sexo"]');
             if (sexoSelect) {
-                container.querySelector('.prev-sexo').textContent = sexoSelect.value === 'M' ? 'Masculino' : 'Femenino';
+                container.querySelector('.prev-sexo').textContent = sexoSelect.value === 'M' ? 'Masculino' : (sexoSelect.value === 'F' ? 'Femenino' : 'N/A');
             } else {
                 container.querySelector('.prev-sexo').textContent = '-';
             }
 
-
-            // Lógica del badge "Guardado"
             const badge = form.closest('.formulario').querySelector('.badge');
             if (badge) {
                 badge.classList.add('show');
-                badge.textContent = "Modificando..."; // Cambiado para indicar que se está editando
+                badge.textContent = "Modificando..."; 
                 clearTimeout(badge.timeout);
                 badge.timeout = setTimeout(() => {
                     badge.textContent = "Guardado";
@@ -894,24 +965,27 @@
 
         async function marcarComoEvaluado(buttonElement) {
             const form = buttonElement.closest('form');
-            const estudianteId = form.querySelector('input[name="estudiante_id"]').value;
-            const nominaId = form.querySelector('input[name="nomina_id"]').value;
-
-            // Validar campos obligatorios antes de enviar
+            // NO necesitamos estudianteId y nominaId por separado, FormData los tiene.
+            
             const requiredInputs = form.querySelectorAll('input[required], select[required], textarea[required]');
             let allFilled = true;
             requiredInputs.forEach(input => {
                 if (!input.value.trim()) {
                     allFilled = false;
-                    input.style.borderColor = 'var(--accent-red)'; // Resaltar campos vacíos
+                    input.style.borderColor = 'var(--accent-red)';
                 } else {
-                    input.style.borderColor = 'var(--border-color)'; // Restaurar borde normal
+                    input.style.borderColor = 'var(--border-color)';
                 }
             });
 
             if (!allFilled) {
-                showCustomMessage('Faltan datos obligatorios para marcar y guardar la evaluación.', 'error');
-                return; // Detener la ejecución
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Faltan datos',
+                    text: 'Faltan datos obligatorios para marcar y guardar la evaluación.',
+                    confirmButtonText: 'Entendido'
+                });
+                return;
             }
 
             Swal.fire({
@@ -926,18 +1000,11 @@
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     try {
-                        const formData = new FormData(form); // Recopila todos los campos del formulario
+                        const formData = new FormData(form); 
                         
-                        // Si fecha_nacimiento_formato es lo que usamos para mostrar y no el original,
-                        // asegura que 'fecha_nacimiento' en el backend reciba el formato YYYY-MM-DD
-                        // del input hidden 'fecha_nacimiento_original'.
-                        // O, si el input visible de fecha_nacimiento es el que se usa,
-                        // asegúrate de que su valor esté en YYYY-MM-DD.
-                        // Ya tenemos 'fecha_nacimiento_original' como hidden input.
-
                         const response = await fetch('/marcar_evaluado', {
                             method: 'POST',
-                            body: formData // Envía todos los datos del formulario
+                            body: formData 
                         });
                         const data = await response.json();
 
@@ -949,7 +1016,7 @@
                                 timer: 1500,
                                 showConfirmButton: false
                             }).then(() => {
-                                window.location.reload(); // Recargar la página para actualizar el conteo y los botones
+                                window.location.reload(); 
                             });
                         } else {
                             Swal.fire({
@@ -978,11 +1045,40 @@
             const li = document.createElement('li');
             li.className = type;
             li.textContent = message;
-            flashMessagesContainer.prepend(li); // Añadir al principio
+            flashMessagesContainer.prepend(li); 
 
             setTimeout(() => {
                 li.remove();
-            }, 5000); // Eliminar el mensaje después de 5 segundos
+            }, 5000); 
+        }
+
+        // Función para aplicar filtros de búsqueda y estado de evaluación
+        function aplicarFiltros() {
+            const estudiantes = document.querySelectorAll('.estudiante');
+            const searchTerm = document.getElementById('buscador').value.toLowerCase().trim();
+            const evaluationFilter = document.querySelector('input[name="evaluation_filter"]:checked').value;
+
+            estudiantes.forEach(detail => {
+                const nombre = detail.getAttribute('data-nombre');
+                const isEvaluated = detail.getAttribute('data-evaluated-status') === 'true';
+
+                const matchesSearch = nombre.includes(searchTerm);
+                let matchesFilter = false;
+
+                if (evaluationFilter === 'all') {
+                    matchesFilter = true;
+                } else if (evaluationFilter === 'evaluated') {
+                    matchesFilter = isEvaluated;
+                } else if (evaluationFilter === 'not_evaluated') {
+                    matchesFilter = !isEvaluated;
+                }
+
+                if (matchesSearch && matchesFilter) {
+                    detail.style.display = ''; // Mostrar
+                } else {
+                    detail.style.display = 'none'; // Ocultar
+                }
+            });
         }
 
         // Función para imprimir todos los formularios visibles
@@ -996,10 +1092,9 @@
                 }
             });
 
-            setTimeout(() => { // Pequeño retraso para que SweetAlert se muestre
+            setTimeout(() => { 
                 const printWindow = window.open('', '_blank');
                 printWindow.document.write('<html><head><title>Imprimir Formularios</title>');
-                // Copiar estilos relevantes para impresión
                 printWindow.document.write('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">');
                 printWindow.document.write('<style>');
                 printWindow.document.write(`
@@ -1011,6 +1106,20 @@
                     /* Ocultar elementos de UI para impresión */
                     .formulario .button-group, .formulario label, .formulario input:not([readonly]), .formulario textarea, .formulario select, .preview button, .preview-img, .badge { display: none !important; }
                     .formulario input[readonly] { border: none; background-color: transparent; }
+
+                    /* Asegurar que los inputs y textareas muestren su valor como texto normal */
+                    input, textarea, select {
+                        border: none !important;
+                        box-shadow: none !important;
+                        background-color: transparent !important;
+                        -webkit-print-color-adjust: exact; 
+                        color-adjust: exact;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                    }
+                    textarea {
+                        resize: none !important;
+                    }
                 `);
                 printWindow.document.write('</style></head><body>');
 
@@ -1030,7 +1139,6 @@
                     const studentName = detail.querySelector('summary span').textContent;
                     const previewContent = detail.querySelector('.preview').cloneNode(true);
                     
-                    // Asegurarse de que solo se imprima el contenido de texto visible y no los inputs editables
                     const formElements = previewContent.querySelectorAll('input, textarea, select');
                     formElements.forEach(el => {
                         const p = document.createElement('p');
@@ -1043,7 +1151,6 @@
                         el.parentNode.replaceChild(p, el);
                     });
 
-                    // Ocultar botones y otros elementos de UI que no queremos en la impresión
                     const buttons = previewContent.querySelectorAll('button');
                     buttons.forEach(btn => btn.style.display = 'none');
                     const img = previewContent.querySelector('.preview-img');
@@ -1051,19 +1158,19 @@
 
                     printWindow.document.write(`<div class="print-form-container">`);
                     printWindow.document.write(`<h3>Formulario de ${studentName}</h3>`);
-                    printWindow.document.write(previewContent.innerHTML); // Inyectar el contenido de la vista previa modificada
+                    printWindow.document.write(previewContent.innerHTML); 
                     printWindow.document.write(`</div>`);
                 });
 
                 printWindow.document.write('</body></html>');
-                printWindow.document.close(); // Cierra el documento para finalizar la escritura
-                printWindow.focus(); // Enfoca la ventana de impresión
-                printWindow.print(); // Inicia la impresión
+                printWindow.document.close(); 
+                printWindow.focus(); 
+                printWindow.print(); 
                 printWindow.onafterprint = function() {
-                    printWindow.close(); // Cierra la ventana después de imprimir
-                    Swal.close(); // Cerrar el SweetAlert de carga
+                    printWindow.close(); 
+                    Swal.close(); 
                 };
-            }, 500); // Pequeño retraso para UX
+            }, 500); 
         }
 
         // Función para descargar Excel de formularios completados
@@ -1084,7 +1191,7 @@
                             throw new Error(errorData.message || 'Error al descargar el Excel.');
                         });
                     }
-                    return response.blob(); // Obtener el archivo como Blob
+                    return response.blob(); 
                 })
                 .then(blob => {
                     const url = window.URL.createObjectURL(blob);
@@ -1113,22 +1220,95 @@
                 });
         }
 
+        // NUEVA FUNCIÓN: Descargar un único PDF de todos los formularios visibles
+        async function descargarPDFsVisibles(nominaId, establecimientoNombre) {
+            const visibleStudentIds = [];
+            document.querySelectorAll('details.estudiante:not([style*="display: none"])').forEach(detail => {
+                visibleStudentIds.push(detail.getAttribute('data-estudiante-id'));
+            });
 
-        // Inicializar el valor de la fecha_reevaluacion con la fecha actual + 1 año
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('input[type="date"]').forEach(input => {
-                // Si el campo ya tiene un valor de la DB, no lo sobrescribimos.
-                if (!input.value) { 
-                    const today = new Date();
-                    const nextYear = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
-                    const yyyy = nextYear.getFullYear();
-                    const mm = String(nextYear.getMonth() + 1).padStart(2, '0'); // Enero es 0!
-                    const dd = String(nextYear.getDate()).padStart(2, '0');
-                    input.value = `${yyyy}-${mm}-${dd}`;
+            if (visibleStudentIds.length === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'No hay formularios visibles',
+                    text: 'Ajusta los filtros para ver formularios y luego intenta descargar.',
+                    confirmButtonText: 'Entendido'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Generando PDF combinado...',
+                text: 'Esto puede tardar un momento si hay muchos formularios.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
                 }
             });
-        });
 
+            try {
+                const response = await fetch('/generar_pdfs_visibles', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        nomina_id: nominaId,
+                        student_ids: visibleStudentIds 
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Error al generar el PDF combinado.');
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `Formularios_Visibles_${establecimientoNombre.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'PDF Combinado Descargado',
+                    text: 'El archivo PDF con los formularios visibles se ha descargado correctamente.',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+
+            } catch (error) {
+                console.error('Error al descargar PDFs visibles:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de descarga',
+                    text: error.message || 'No se pudo descargar el PDF combinado. Intente de nuevo más tarde.',
+                });
+            } finally {
+                Swal.close();
+            }
+        }
+
+
+        function enviarADrive() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Próximamente',
+                text: 'Aquí se conectará con Google Drive.'
+            });
+        }
+
+        function insertarFirma() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Próximamente',
+                text: 'Se insertará la firma según la doctora que corresponda.'
+            });
+        }
     </script>
 </body>
 </html>

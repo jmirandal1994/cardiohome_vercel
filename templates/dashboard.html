@@ -429,7 +429,7 @@
             align-items: center;
             gap: 6px;
             transition: background-color 0.3s ease, transform 0.2s ease;
-            margin-top: 10px; /* Separación de otros elementos */
+            margin-top: 10px;
             align-self: flex-start;
         }
         .delete-btn:hover {
@@ -505,7 +505,7 @@
         /* Estilos para el contenedor del gráfico */
         .chart-container {
             position: relative;
-            height: 400px; /* Altura fija para el gráfico */
+            height: 400px;
             width: 100%;
             margin-top: 20px;
         }
@@ -584,7 +584,7 @@
                 width: 100px;
             }
             .chart-container {
-                height: 300px; /* Ajustar altura para móvil */
+                height: 300px;
             }
         }
         /* Para evitar el doble scroll y asegurar el diseño sticky del sidebar */
@@ -822,11 +822,6 @@
                                         <a href="{{ form_subido.url_archivo }}" target="_blank" class="item-card-action-link" style="background-color: var(--primary-medium);">
                                             <i class="fa-solid fa-eye"></i> Ver Archivo
                                         </a>
-                                        <!-- NOTA: La eliminación de formularios individuales subidos es más compleja (afecta Storage).
-                                            Por simplicidad y dado que la eliminación de nóminas ya borra estudiantes,
-                                            no se añade aquí un botón de borrar para formularios subidos.
-                                            Si se necesita, se puede implementar borrando de Storage y de la tabla `formularios_subidos`.
-                                        -->
                                     </li>
                                 {% endfor %}
                             {% else %}
@@ -1141,7 +1136,7 @@
                             color: '#333'
                         },
                         legend: {
-                            display: false // No necesitamos leyenda para un solo dataset
+                            display: false
                         }
                     },
                     scales: {
@@ -1154,7 +1149,7 @@
                                 color: '#555'
                             },
                             ticks: {
-                                precision: 0 // Asegura que los ticks sean números enteros
+                                precision: 0
                             }
                         },
                         x: {
@@ -1187,8 +1182,7 @@
             }
 
             if (!doctorPerformanceDataSingleDoctor || doctorPerformanceDataSingleDoctor.total === 0) {
-                 // Si no hay datos, mostrar un mensaje en lugar del gráfico
-                 ctx.style.display = 'none'; // Ocultar el canvas
+                 ctx.style.display = 'none';
                  const parent = ctx.closest('.chart-container');
                  if (parent) {
                     let noDataMsg = parent.querySelector('.no-data-message');
@@ -1202,13 +1196,13 @@
                  return;
             } else {
                  const noDataMsg = ctx.closest('.chart-container').querySelector('.no-data-message');
-                 if (noDataMsg) noDataMsg.remove(); // Remover mensaje si hay datos
-                 ctx.style.display = 'block'; // Mostrar el canvas
+                 if (noDataMsg) noDataMsg.remove();
+                 ctx.style.display = 'block';
             }
 
 
             const completed = doctorPerformanceDataSingleDoctor.completed;
-            const pending = doctorPerformanceDataSingleDoctor.pending;
+            const pending = doctorPerformanceDataSingleDoctor.total - completed; // Calculated dynamically from total
 
             window.doctorChartInstance = new Chart(ctx, {
                 type: 'pie',

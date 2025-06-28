@@ -112,7 +112,7 @@
             border: 1px solid var(--glass-border);
             box-shadow: 0 25px 45px var(--glass-shadow);
             color: white;
-            text-align: center;
+            text-align: center; /* Asegura que el texto y los elementos inline-block se centren */
             overflow: hidden;
             animation: fadeInScale 0.8s ease-out; /* Animación de entrada */
         }
@@ -126,7 +126,8 @@
         /* Logo */
         .glass-container img {
             max-width: 160px; /* Ligeramente más grande */
-            margin-bottom: 1.5rem; /* Más espacio */
+            margin: 0 auto 1.5rem auto; /* Centra el logo horizontalmente y mantiene el margen inferior */
+            display: block; /* Asegura que la imagen se comporte como un bloque para poder centrarse con margin: auto */
             filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3)); /* Sombra para el logo */
         }
 

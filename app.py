@@ -498,10 +498,14 @@ def marcar_evaluado():
     # Obtener TODOS los campos del formulario
     nombre = request.form.get('nombre')
     rut = request.form.get('rut')
-    fecha_nac_original = request.form.get('fecha_nacimiento_original') # Usamos el original para guardar en DB
+    fecha_nac_original = request.form.get('fecha_nacimiento_original') 
     edad = request.form.get('edad')
     nacionalidad = request.form.get('nacionalidad')
-    # Eliminadas comuna y direccion de aquí para evitar el error de columna faltante
+    # Las columnas 'comuna' y 'direccion' se han eliminado intencionalmente aquí
+    # para evitar errores si no existen en la tabla de Supabase.
+    # Si las añades a Supabase, puedes descomentar estas líneas:
+    # comuna = request.form.get('comuna') 
+    # direccion = request.form.get('direccion') 
     sexo = request.form.get('sexo')
     estado_general = request.form.get('estado')
     diagnostico = request.form.get('diagnostico')
@@ -512,7 +516,8 @@ def marcar_evaluado():
     print(f"DEBUG: Datos completos recibidos para guardar: nombre={nombre}, rut={rut}, sexo={sexo}, diagnostico={diagnostico}, fecha_reeval={fecha_reeval}")
 
 
-    # Validar campos obligatorios antes de proceder (excepto comuna y direccion)
+    # Validar campos obligatorios antes de proceder
+    # Se ha eliminado comuna y direccion de la validación
     if not all([estudiante_id, nomina_id, doctora_id, nombre, rut, fecha_nac_original, edad, nacionalidad, sexo, estado_general, diagnostico, fecha_reeval, derivaciones]):
         print(f"ERROR: Datos faltantes en /marcar_evaluado. Estudiante ID: {estudiante_id}, Nomina ID: {nomina_id}, Doctora ID: {doctora_id}. Campos del formulario: {request.form.to_dict()}")
         return jsonify({"success": False, "message": "Faltan datos obligatorios para marcar y guardar la evaluación."}), 400
@@ -531,7 +536,7 @@ def marcar_evaluado():
         update_data = {
             'nombre': nombre,
             'rut': rut,
-            'fecha_nacimiento': fecha_nac_original, # Usamos el original del hidden input
+            'fecha_nacimiento': fecha_nac_original, 
             'edad': edad,
             'nacionalidad': nacionalidad,
             # 'comuna': comuna, # REMOVIDO: Descomentar solo si la columna existe en Supabase
@@ -612,7 +617,7 @@ def dashboard():
     establecimientos_admin_list = []
     admin_nominas_cargadas = []
     conteo = {}
-    evaluaciones_doctora_actual = 0 # Esta variable es para el conteo de la doctora individual
+    evaluaciones_doctora_actual = 0 
 
 
     campos_establecimientos = "id,nombre,fecha,horario,observaciones,cantidad_alumnos,url_archivo,nombre_archivo,doctora_id"
@@ -654,7 +659,7 @@ def dashboard():
         flash('Error al cargar los formularios subidos.', 'error')
 
     assigned_nominations = []
-    doctor_performance_data = {} # Initialize for admin view
+    doctor_performance_data = {} 
     if usuario != 'admin':
         try:
             url_nominas_asignadas = (
@@ -677,8 +682,6 @@ def dashboard():
                 })
             print(f"DEBUG: Nóminas asignadas procesadas para plantilla: {assigned_nominations}")
             
-            # Conteo de evaluaciones solo para la doctora loggeada (no admin)
-            # ¡IMPORTANTE! Asegúrate de que 'doctora_evaluadora_id' coincida con tu DB.
             url_evaluaciones_doctora_actual = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?doctora_evaluadora_id=eq.{usuario_id}&fecha_relleno.not.is.null&select=count" 
             print(f"DEBUG: URL para contar evaluaciones de doctora actual: {url_evaluaciones_doctora_actual}")
             res_evaluaciones_doctora_actual = requests.get(url_evaluaciones_doctora_actual, headers=SUPABASE_HEADERS)
@@ -700,7 +703,7 @@ def dashboard():
         try:
             url_doctoras = f"{SUPABASE_URL}/rest/v1/doctoras"
             print(f"DEBUG: URL para obtener doctoras (admin con service key): {url_doctoras}") 
-            res_doctoras = requests.get(url_doctoras, headers=SUPABASE_SERVICE_HEADERS) # Usar SERVICE_HEADERS para asegurar acceso
+            res_doctoras = requests.get(url_doctoras, headers=SUPABASE_SERVICE_HEADERS) 
             res_doctoras.raise_for_status()
             doctoras = res_doctoras.json()
             print(f"DEBUG: Doctoras recibidas (admin): {doctoras}")
@@ -712,7 +715,7 @@ def dashboard():
         try:
             url_establecimientos_admin = f"{SUPABASE_URL}/rest/v1/establecimientos?select=id,nombre"
             print(f"DEBUG: URL para obtener establecimientos (admin con service key): {url_establecimientos_admin}") 
-            res_establecimientos = requests.get(url_establecimientos_admin, headers=SUPABASE_SERVICE_HEADERS) # Usar SERVICE_HEADERS
+            res_establecimientos = requests.get(url_establecimientos_admin, headers=SUPABASE_SERVICE_HEADERS) 
             res_establecimientos.raise_for_status()
             establecimientos_admin_list = res_establecimientos.json()
             print(f"DEBUG: Establecimientos recibidos (admin): {establecimientos_admin_list}")
@@ -746,10 +749,9 @@ def dashboard():
             for doc in doctoras:
                 doctor_id = doc['id']
                 try:
-                    # ¡IMPORTANTE! Asegúrate de que 'doctora_evaluadora_id' coincida con tu DB.
                     url_doctor_forms = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?doctora_evaluadora_id=eq.{doctor_id}&fecha_relleno.not.is.null&select=count" 
                     print(f"DEBUG: URL para rendimiento de doctora {doc['usuario']} con service key: {url_doctor_forms}") 
-                    res_doctor_forms = requests.get(url_doctor_forms, headers=SUPABASE_SERVICE_HEADERS) # Usar SERVICE_HEADERS
+                    res_doctor_forms = requests.get(url_doctor_forms, headers=SUPABASE_SERVICE_HEADERS) 
                     res_doctor_forms.raise_for_status()
                     count_range = res_doctor_forms.headers.get('Content-Range')
                     if count_range:
@@ -948,11 +950,10 @@ def admin_cargar_nomina():
     column_mapping = {
         'nombre_completo': ['nombre_completo', 'nombre_y_apellido', 'nombre'],
         'rut': ['rut'],
-        # ¡IMPORTANTE! Asegúrate de que 'fecha_nacimiento' coincida con tu DB. Si se llama 'fecha_nacimie', cámbialo aquí.
         'fecha_nacimiento': ['fecha_nacimiento', 'fecha_de_nacimiento', 'fnac'], 
         'nacionalidad': ['nacionalidad'],
-        # 'comuna': ['comuna'], # REMOVIDO: Descomentar solo si la columna existe en Supabase
-        # 'direccion': ['direccion', 'dirección'] # REMOVIDO: Descomentar solo si la columna existe en Supabase
+        # 'comuna': ['comuna'], # REMOVIDO
+        # 'direccion': ['direccion', 'dirección'] # REMOVIDO
     }
     
     col_map = {}
@@ -1070,10 +1071,10 @@ def enviar_formulario_a_drive():
 
     # Recopilar datos del formulario para generar el PDF
     estudiante_id = request.form.get('estudiante_id')
-    nomina_id = request.form.get('nomina_id') # Necesitamos la nomina_id para obtener el nombre del colegio/establecimiento
+    nomina_id = request.form.get('nomina_id') 
     nombre = request.form.get('nombre')
     rut = request.form.get('rut')
-    fecha_nac_formato = request.form.get('fecha_nacimiento_formato') # Usar el formato para PDF
+    fecha_nac_formato = request.form.get('fecha_nacimiento_formato') 
     edad = request.form.get('edad')
     nacionalidad = request.form.get('nacionalidad')
     sexo = request.form.get('sexo')
@@ -1083,11 +1084,11 @@ def enviar_formulario_a_drive():
     derivaciones = request.form.get('derivaciones')
     fecha_eval = datetime.today().strftime('%d/%m/%Y')
 
-    if not all([estudiante_id, nomina_id, nombre, rut]): # Campos mínimos para identificar y nombrar el archivo
+    if not all([estudiante_id, nomina_id, nombre, rut]): 
         return jsonify({"success": False, "message": "Faltan datos esenciales del formulario para subir a Drive."}), 400
 
     # Obtener el nombre del colegio/establecimiento para crear la carpeta
-    establecimiento_nombre = "Formularios Varios" # Nombre por defecto si no se encuentra
+    establecimiento_nombre = "Formularios Varios" 
     try:
         res_nomina = requests.get(
             f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}&select=nombre_nomina",
@@ -1354,8 +1355,6 @@ def doctor_performance(doctor_id):
         print(f"DEBUG: Obteniendo rendimiento para doctora: {doctor_name} (ID: {doctor_id})")
 
         # Obtener estudiantes evaluados por esta doctora
-        # ¡CRÍTICO! Esta columna ('doctora_evaluadora_id') debe coincidir EXACTAMENTE
-        # con el nombre de la columna en tu tabla estudiantes_nomina en Supabase.
         url_students = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?doctora_evaluadora_id=eq.{doctor_id}" 
@@ -1409,8 +1408,6 @@ def descargar_excel_evaluados(nomina_id):
         return jsonify({"success": False, "message": "No autorizado"}), 401
     
     try:
-        # Obtener los datos de los estudiantes evaluados para la nómina específica
-        # Seleccionamos SOLO los campos relevantes para el Excel
         url_students = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?nomina_id=eq.{nomina_id}"
@@ -1439,8 +1436,6 @@ def descargar_excel_evaluados(nomina_id):
         }, inplace=True)
 
         # Formatear la 'Fecha de Nacimiento' y 'Fecha de Evaluación'
-        # Usamos errors='coerce' para manejar cualquier valor no convertible a fecha como NaT (Not a Time)
-        # Luego, convertimos a string en el formato deseado, dejando vacío si es NaT
         for col in ['Fecha de Nacimiento', 'Fecha de Evaluación']:
             if col in df.columns:
                 df[col] = pd.to_datetime(df[col], errors='coerce').dt.strftime('%d/%m/%Y').fillna('')
@@ -1469,4 +1464,118 @@ def descargar_excel_evaluados(nomina_id):
     except Exception as e:
         print(f"ERROR: Error inesperado al generar Excel: {e}")
         return jsonify({"success": False, "message": f"Error interno del servidor al generar el Excel: {str(e)}"}), 500
+
+@app.route('/generar_pdfs_visibles', methods=['POST'])
+def generar_pdfs_visibles():
+    if 'usuario' not in session:
+        return jsonify({"success": False, "message": "No autorizado"}), 401
+
+    data = request.get_json()
+    nomina_id = data.get('nomina_id')
+    student_ids = data.get('student_ids')
+
+    if not nomina_id or not student_ids or not isinstance(student_ids, list):
+        return jsonify({"success": False, "message": "Datos de entrada inválidos para la generación de PDFs."}), 400
+
+    merged_pdf_writer = PdfWriter()
+    ruta_pdf_base = os.path.join("static", "FORMULARIO.pdf")
+
+    if not os.path.exists(ruta_pdf_base):
+        return jsonify({"success": False, "message": "Error interno: Archivo base del formulario no encontrado en el servidor."}), 500
+
+    try:
+        for student_id in student_ids:
+            # 1. Obtener los datos del estudiante de Supabase
+            url_student_data = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{student_id}&select=*"
+            res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
+            res_student.raise_for_status()
+            student_data = res_student.json()
+
+            if not student_data:
+                print(f"ADVERTENCIA: Estudiante con ID {student_id} no encontrado. Saltando.")
+                continue
+
+            est = student_data[0] # Tomar el primer (y único) resultado
+
+            # Re-procesar fechas y edades si no están en el formato esperado, similar a relleno_formularios
+            fecha_nac_obj = None
+            if 'fecha_nacimiento' in est and isinstance(est['fecha_nacimiento'], str):
+                try:
+                    fecha_nac_obj = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
+                    est['edad'] = calculate_age(fecha_nac_obj)
+                    est['fecha_nacimiento_formato'] = fecha_nac_obj.strftime("%d-%m-%Y")
+                except ValueError:
+                    est['fecha_nacimiento_formato'] = 'Fecha Inválida'
+                    est['edad'] = 'N/A'
+            else:
+                est['fecha_nacimiento_formato'] = 'N/A'
+                est['edad'] = 'N/A'
+
+            # Formatear fecha de reevaluación para el PDF
+            fecha_reeval_pdf = est.get('fecha_reevaluacion')
+            if fecha_reeval_pdf and "-" in fecha_reeval_pdf:
+                try:
+                    fecha_reeval_pdf = datetime.strptime(fecha_reeval_pdf, '%Y-%m-%d').strftime('%d/%m/%Y')
+                except ValueError:
+                    pass # Ya está en un formato que no es ISO estándar, se usará tal cual.
+
+            # 2. Rellenar el PDF individualmente
+            reader = PdfReader(ruta_pdf_base)
+            writer_single_pdf = PdfWriter()
+            writer_single_pdf.add_page(reader.pages[0])
+
+            campos = {
+                "nombre": est.get('nombre', ''),
+                "rut": est.get('rut', ''),
+                "fecha_nacimiento": est.get('fecha_nacimiento_formato', ''),
+                "nacionalidad": est.get('nacionalidad', ''),
+                "edad": est.get('edad', ''),
+                "diagnostico_1": est.get('diagnostico', ''),
+                "diagnostico_2": est.get('diagnostico', ''), # Duplicado por si hay dos campos
+                "estado_general": est.get('estado_general', ''),
+                "fecha_evaluacion": est.get('fecha_relleno', ''), # Usar fecha_relleno como fecha de evaluación
+                "fecha_reevaluacion": fecha_reeval_pdf,
+                "derivaciones": est.get('derivaciones', ''),
+                "sexo_f": "X" if est.get('sexo') == "F" else "",
+                "sexo_m": "X" if est.get('sexo') == "M" else "",
+            }
+
+            if "/AcroForm" not in writer_single_pdf._root_object:
+                writer_single_pdf._root_object.update({
+                    NameObject("/AcroForm"): DictionaryObject()
+                })
+            writer_single_pdf.update_page_form_field_values(writer_single_pdf.pages[0], campos)
+            writer_single_pdf._root_object["/AcroForm"].update({
+                NameObject("/NeedAppearances"): BooleanObject(True)
+            })
+
+            # Guardar el PDF individual en un BytesIO para luego fusionarlo
+            temp_output = io.BytesIO()
+            writer_single_pdf.write(temp_output)
+            temp_output.seek(0)
+
+            # 3. Añadir el PDF rellenado al escritor principal de fusión
+            # Usar PdfReader para añadir páginas de un BytesIO a otro PdfWriter
+            temp_reader = PdfReader(temp_output)
+            for page_num in range(len(temp_reader.pages)):
+                merged_pdf_writer.add_page(temp_reader.pages[page_num])
+
+        # Escribir el PDF combinado final
+        final_output_pdf = io.BytesIO()
+        merged_pdf_writer.write(final_output_pdf)
+        final_output_pdf.seek(0)
+
+        # Obtener el nombre del establecimiento para el nombre del archivo
+        establecimiento_nombre = session.get('establecimiento_nombre', 'Nomina_Desconocida').replace(' ', '_')
+        pdf_filename = f"Formularios_Visibles_{establecimiento_nombre}_{date.today().strftime('%Y%m%d')}.pdf"
+
+        return send_file(final_output_pdf, as_attachment=True, download_name=pdf_filename, mimetype='application/pdf')
+
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR: Error de solicitud al obtener datos de estudiante para PDF combinado: {e}")
+        return jsonify({"success": False, "message": f"Error de conexión con Supabase al generar PDF: {str(e)}"}), 500
+    except Exception as e:
+        print(f"ERROR: Error inesperado al generar PDFs visibles: {e}")
+        return jsonify({"success": False, "message": f"Error interno del servidor al generar PDFs: {str(e)}"}), 500
+
 

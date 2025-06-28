@@ -1,111 +1,336 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - CardioHome</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1950&q=80') no-repeat center center fixed;
-      background-size: cover;
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso - CardioHome</title>
+    <!-- Tailwind CSS CDN para estilos modernos y responsivos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter para texto general y Montserrat para títulos -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- SweetAlert2 CDN para mensajes de éxito/error -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Font Awesome para íconos médicos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Variables CSS para una gestión de colores y espaciado más fácil */
+        :root {
+            --primary-dark: hsl(210, 29%, 18%); /* Azul pizarra muy oscuro */
+            --primary-medium: hsl(210, 15%, 28%); /* Azul pizarra medio */
+            --primary-light: hsl(210, 16%, 92%); /* Gris azulado muy claro */
+            --accent-blue: hsl(200, 70%, 55%); /* Azul cielo brillante */
+            --accent-hover-blue: hsl(200, 70%, 45%); /* Azul cielo más oscuro al hover */
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --glass-shadow: rgba(0, 0, 0, 0.4);
+            --input-bg: rgba(255, 255, 255, 0.9); /* Ligeramente menos transparente */
+            --input-placeholder: #555;
+            --medical-icon-color: rgba(255, 255, 255, 0.25); /* Color de los íconos flotantes */
+        }
 
-    .glass-container {
-      position: relative;
-      width: 350px;
-      padding: 40px;
-      border-radius: 20px;
-      backdrop-filter: blur(15px);
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.4);
-      box-shadow: 0 25px 45px rgba(0, 0, 0, 0.4);
-      color: white;
-      text-align: center;
-      z-index: 10;
-      overflow: hidden;
-    }
+        /* Estilos generales del cuerpo */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif; /* Fuente principal */
+            background: linear-gradient(135deg, hsl(200, 70%, 50%) 0%, hsl(240, 60%, 40%) 100%); /* Degradado de fondo */
+            background-size: cover;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden; /* Evita barras de desplazamiento innecesarias */
+            position: relative; /* Para los elementos flotantes */
+            -webkit-font-smoothing: antialiased; /* Mejor renderizado de fuentes */
+            -moz-osx-font-smoothing: grayscale;
+        }
 
-    .glass-container img {
-      max-width: 150px;
-      margin-bottom: 1rem;
-    }
+        /* Contenedor de elementos médicos flotantes */
+        .medical-elements-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1; /* Detrás del contenedor de login */
+        }
+        .medical-elements-container div {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05); /* Fondo sutil para cada ícono */
+            border-radius: 50%; /* Circular */
+            animation: floatAndFade 25s linear infinite; /* Animación de flotación y desvanecimiento */
+            bottom: -150px; /* Punto de inicio de la animación: fuera de la pantalla, abajo */
+        }
+        .medical-elements-container div i {
+            color: var(--medical-icon-color); /* Color del ícono */
+            font-size: 30px; /* Tamaño por defecto */
+            text-shadow: 0 0 10px rgba(0,0,0,0.1); /* Sombra suave para el ícono */
+        }
 
-    .glass-container h1 {
-      font-size: 1.8rem;
-      margin-bottom: 1.5rem;
-    }
+        /* Posiciones y tamaños individuales para un efecto disperso */
+        .medical-elements-container div:nth-child(1) { left: 25%; width: 80px; height: 80px; animation-delay: 0s; }
+        .medical-elements-container div:nth-child(1) i { font-size: 50px; } /* Ajuste de tamaño para el ícono */
+        .medical-elements-container div:nth-child(2) { left: 10%; width: 50px; height: 50px; animation-delay: 2s; animation-duration: 12s; }
+        .medical-elements-container div:nth-child(2) i { font-size: 30px; }
+        .medical-elements-container div:nth-child(3) { left: 70%; width: 60px; height: 60px; animation-delay: 4s; animation-duration: 18s; }
+        .medical-elements-container div:nth-child(3) i { font-size: 35px; }
+        .medical-elements-container div:nth-child(4) { left: 40%; width: 90px; height: 90px; animation-delay: 0s; animation-duration: 20s; }
+        .medical-elements-container div:nth-child(4) i { font-size: 60px; }
+        .medical-elements-container div:nth-child(5) { left: 65%; width: 45px; height: 45px; animation-delay: 3s; animation-duration: 10s; }
+        .medical-elements-container div:nth-child(5) i { font-size: 28px; }
+        .medical-elements-container div:nth-child(6) { left: 75%; width: 100px; height: 100px; animation-delay: 1s; animation-duration: 22s; }
+        .medical-elements-container div:nth-child(6) i { font-size: 65px; }
+        .medical-elements-container div:nth-child(7) { left: 35%; width: 70px; height: 70px; animation-delay: 5s; animation-duration: 14s; }
+        .medical-elements-container div:nth-child(7) i { font-size: 40px; }
+        .medical-elements-container div:nth-child(8) { left: 50%; width: 55px; height: 55px; animation-delay: 8s; animation-duration: 16s; }
+        .medical-elements-container div:nth-child(8) i { font-size: 32px; }
+        .medical-elements-container div:nth-child(9) { left: 20%; width: 110px; height: 110px; animation-delay: 6s; animation-duration: 28s; }
+        .medical-elements-container div:nth-child(9) i { font-size: 70px; }
+        .medical-elements-container div:nth-child(10) { left: 85%; width: 75px; height: 75px; animation-delay: 2s; animation-duration: 19s; }
+        .medical-elements-container div:nth-child(10) i { font-size: 45px; }
 
-    input[type="text"],
-    input[type="password"] {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 1rem;
-      border: none;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.8);
-      font-size: 1rem;
-      color: #000;
-    }
 
-    input::placeholder {
-      color: #555;
-    }
+        @keyframes floatAndFade {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; border-radius: 50%; }
+            100% { transform: translateY(-1000px) rotate(720deg); opacity: 0; border-radius: 50%; }
+        }
 
-    button {
-      width: 100%;
-      padding: 12px;
-      background: #1a73e8;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
+        /* Contenedor principal de la tarjeta de login (Glassmorphism) */
+        .glass-container {
+            position: relative;
+            z-index: 10; /* Adelante de los elementos flotantes */
+            width: 90%; /* Más flexible */
+            max-width: 400px; /* Ancho máximo para el diseño */
+            padding: 2.5rem; /* Aumento del padding */
+            border-radius: 20px;
+            backdrop-filter: blur(15px); /* Efecto de desenfoque */
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 25px 45px var(--glass-shadow);
+            color: white;
+            text-align: center;
+            overflow: hidden;
+            animation: fadeInScale 0.8s ease-out; /* Animación de entrada */
+        }
 
-    button:hover {
-      background: #0f5ac2;
-    }
+        /* Animación de entrada para el contenedor */
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
 
-    .forgot {
-      display: block;
-      margin-top: 1rem;
-      font-size: 0.9rem;
-      color: #ddd;
-      text-decoration: none;
-    }
+        /* Logo */
+        .glass-container img {
+            max-width: 160px; /* Ligeramente más grande */
+            margin-bottom: 1.5rem; /* Más espacio */
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3)); /* Sombra para el logo */
+        }
 
-    .forgot:hover {
-      color: #fff;
-      text-decoration: underline;
-    }
+        /* Título */
+        .glass-container h1 {
+            font-family: 'Montserrat', sans-serif; /* Fuente para título */
+            font-size: 2.2rem; /* Tamaño de fuente más grande */
+            font-weight: 800; /* Más audaz */
+            margin-bottom: 2rem; /* Más espacio */
+            letter-spacing: 0.5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
 
-    @media (max-width: 400px) {
-      .glass-container {
-        width: 90%;
-        padding: 30px;
-      }
-    }
-  </style>
+        /* Inputs */
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 14px; /* Más padding */
+            margin-bottom: 1.25rem; /* Más espacio */
+            border: none;
+            border-radius: 10px; /* Más redondeado */
+            background: var(--input-bg);
+            font-size: 1.05rem; /* Ligeramente más grande */
+            color: var(--primary-dark); /* Texto oscuro para contraste */
+            transition: all 0.3s ease; /* Transición suave en foco */
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05); /* Sombra interna sutil */
+        }
+
+        input::placeholder {
+            color: var(--input-placeholder);
+            opacity: 0.7; /* Ligeramente menos opaco */
+        }
+
+        input:focus {
+            background: white; /* Fondo blanco al enfocar */
+            box-shadow: 0 0 0 3px var(--accent-blue), inset 0 2px 5px rgba(0,0,0,0.1); /* Sombra de foco */
+            outline: none; /* Eliminar contorno por defecto */
+        }
+
+        /* Botón de Ingresar */
+        button {
+            width: 100%;
+            padding: 14px; /* Más padding */
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 10px; /* Más redondeado */
+            font-size: 1.1rem; /* Más grande */
+            font-weight: 700; /* Más audaz */
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2); /* Sombra para el botón */
+        }
+
+        button:hover {
+            background: var(--accent-hover-blue);
+            transform: translateY(-3px); /* Efecto "lift" */
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        button:active {
+            transform: translateY(0); /* Al presionar, vuelve a su posición normal */
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+
+        /* Enlace de Olvidaste contraseña */
+        .forgot {
+            display: block;
+            margin-top: 1.5rem; /* Más espacio */
+            font-size: 0.95rem; /* Ligeramente más grande */
+            color: var(--primary-light);
+            text-decoration: none;
+            transition: color 0.3s ease, text-shadow 0.3s ease;
+        }
+
+        .forgot:hover {
+            color: white;
+            text-decoration: underline;
+            text-shadow: 0 0 8px rgba(255,255,255,0.5);
+        }
+
+        /* Estilos para mensajes flash de Flask (SweetAlert2) */
+        .flash-messages {
+            list-style: none;
+            padding: 0;
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000; /* Asegura que estén encima de todo */
+        }
+        .flash-messages li {
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-weight: 500;
+            color: #333;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            animation: slideInTop 0.5s ease-out;
+            max-width: 350px;
+            text-align: center;
+        }
+        .flash-messages li.success { border-left: 5px solid #28a745; color: #28a745; }
+        .flash-messages li.error { border-left: 5px solid #dc3545; color: #dc3545; }
+        .flash-messages li.info { border-left: 5px solid #17a2b8; color: #17a2b8; }
+        .flash-messages li.warning { border-left: 5px solid #ffc107; color: #ffc107; }
+
+        @keyframes slideInTop {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .glass-container {
+                padding: 2rem;
+                border-radius: 15px;
+            }
+            .glass-container h1 {
+                font-size: 2rem;
+            }
+            .glass-container img {
+                max-width: 120px;
+            }
+            input[type="text"],
+            input[type="password"] {
+                padding: 12px;
+                font-size: 1rem;
+                margin-bottom: 1rem;
+            }
+            button {
+                padding: 12px;
+                font-size: 1rem;
+            }
+            .forgot {
+                font-size: 0.85rem;
+                margin-top: 1rem;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="glass-container">
-    <img src="/static/logo.png" alt="Logo CardioHome">
-    <h1>Acceso a CardioHome</h1>
-    <form method="POST" action="/login">
-      <input type="text" name="username" placeholder="Usuario" required>
-      <input type="password" name="password" placeholder="Contraseña" required>
-      <button type="submit">Ingresar</button>
-    </form>
-    <a href="#" class="forgot">¿Olvidaste tu contraseña?</a>
-  </div>
+    <!-- Elementos médicos flotantes de fondo -->
+    <div class="medical-elements-container">
+        <div><i class="fa-solid fa-heart-pulse"></i></div> <!-- Corazón / ECG -->
+        <div><i class="fa-solid fa-brain"></i></div>       <!-- Cerebro -->
+        <div><i class="fa-solid fa-pills"></i></div>       <!-- Píldoras -->
+        <div><i class="fa-solid fa-stethoscope"></i></div>  <!-- Estetoscopio -->
+        <div><i class="fa-solid fa-dna"></i></div>         <!-- ADN -->
+        <div><i class="fa-solid fa-heart-pulse"></i></div>
+        <div><i class="fa-solid fa-brain"></i></div>
+        <div><i class="fa-solid fa-pills"></i></div>
+        <div><i class="fa-solid fa-stethoscope"></i></div>
+        <div><i class="fa-solid fa-dna"></i></div>
+    </div>
+
+    <div class="glass-container">
+        <img src="/static/logo.png" alt="Logo CardioHome">
+        <h1>Acceso a CardioHome</h1>
+        <form method="POST" action="/login">
+            <input type="text" name="username" placeholder="Usuario" required>
+            <input type="password" name="password" placeholder="Contraseña" required>
+            <button type="submit">Ingresar</button>
+        </form>
+        <a href="#" class="forgot">¿Olvidaste tu contraseña?</a>
+    </div>
+
+    <!-- Script para SweetAlert2 y manejo de mensajes flash -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verificar si hay mensajes flash de Flask para mostrar con SweetAlert2
+            const flashMessages = document.querySelectorAll('.flash-messages li');
+            flashMessages.forEach(msg => {
+                let icon = 'info';
+                if (msg.classList.contains('success')) {
+                    icon = 'success';
+                } else if (msg.classList.contains('error')) {
+                    icon = 'error';
+                } else if (msg.classList.contains('warning')) {
+                    icon = 'warning';
+                }
+
+                Swal.fire({
+                    icon: icon,
+                    title: msg.textContent,
+                    showConfirmButton: false,
+                    timer: 3000,
+                    toast: true,
+                    position: 'top-end', // Muestra la notificación en la esquina superior derecha
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.addEventListener('mouseenter', Swal.stopTimer);
+                        toast.addEventListener('mouseleave', Swal.resumeTimer);
+                    }
+                });
+            });
+
+            // Limpiar los mensajes del DOM después de mostrarlos con SweetAlert2
+            const flashContainer = document.querySelector('.flash-messages');
+            if (flashContainer) {
+                flashContainer.innerHTML = '';
+            }
+        });
+    </script>
 </body>
 </html>

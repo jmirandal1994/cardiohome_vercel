@@ -72,7 +72,7 @@ def calculate_age(birth_date):
     today = date.today()
     years = today.year - birth_date.year
     months = today.month - birth_date.month
-    if months < 0 or (months === 0 and today.day < birth_date.day):
+    if months < 0 or (months == 0 and today.day < birth_date.day): # Corrected: === to ==
         years -= 1
         months += 12
     return f"{years} años con {months} meses"
@@ -216,7 +216,7 @@ def find_or_create_drive_folder(service, folder_name, parent_folder_id=None):
         print(f"ERROR: Error al buscar o crear carpeta en Google Drive: {error}")
         return None
     except Exception as e:
-        print(f"ERROR: Error inesperado en find_or_or_create_drive_folder: {e}")
+        print(f"ERROR: Error inesperado en find_or_create_drive_folder: {e}")
         return None
 
 def upload_pdf_to_google_drive(creds, file_content_io, file_name, folder_id=None):
@@ -385,20 +385,6 @@ def generar_pdf():
             "derivaciones": form_data.get('derivaciones', ''),
             "sexo_f": "X" if form_data.get('sexo') == "F" else "",
             "sexo_m": "X" if form_data.get('sexo') == "M" else "",
-            # Campos específicos de neurología, si existen en tu PDF editable
-            # "motivo_consulta": form_data.get('motivo_consulta', ''),
-            # "antecedentes_personales": form_data.get('antecedentes_personales', ''),
-            # "antecedentes_familiares": form_data.get('antecedentes_familiares', ''),
-            # "desarrollo_psicomotor": form_data.get('desarrollo_psicomotor', ''),
-            # "examen_neurologico": form_data.get('examen_neurologico', ''),
-            # "observaciones": form_data.get('observaciones', ''),
-            # "requiere_pie": "X" if form_data.get('requiere_pie') == "on" else "",
-            # "fonoaudiologo": "X" if form_data.get('fonoaudiologo') == "on" else "",
-            # "terapeuta_ocupacional": "X" if form_data.get('terapeuta_ocupacional') == "on" else "",
-            # "psicologo": "X" if form_data.get('psicologo') == "on" else "",
-            # "kinesiologo": "X" if form_data.get('kinesiologo') == "on" else "",
-            # "psicopedagogo": "X" if form_data.get('psicopedagogo') == "on" else "",
-            # "educador_diferencial": "X" if form_data.get('educador_diferencial') == "on" else "",
         }
     elif form_type == 'medicina_familiar':
         ruta_pdf_base = os.path.join("static", PDF_FAMILIAR_BASE)
@@ -540,7 +526,7 @@ def marcar_evaluado():
     for date_field in ['fecha_nacimiento', 'fecha_reevaluacion', 'fecha_evaluacion']:
         if date_field in update_data and update_data[date_field]:
             try:
-                # Intenta parsear YYYY-MM-DD (desde el input type="date" o Supabase)
+                # Intenta parsear YYYY-MM-DD (desde el input type="date")
                 datetime.strptime(update_data[date_field], '%Y-%m-%d').date()
             except ValueError:
                 try:
@@ -1071,22 +1057,6 @@ def admin_cargar_nomina():
                 "fecha_relleno": None, # Este se rellena cuando la doctora evalúa
                 "doctora_evaluadora_id": None,
 
-                # Campos específicos de neurología (inicializados a None)
-                # Estos campos se eliminaron ya que no están en los formularios proporcionados
-                # "motivo_consulta": None,
-                # "antecedentes_personales": None,
-                # "antecedentes_familiares": None,
-                # "desarrollo_psicomotor": None,
-                # "examen_neurologico": None,
-                # "observaciones": None, # Este es el campo 'observaciones' para neurología
-                # "requiere_pie": None,
-                # "fonoaudiologo": None,
-                # "terapeuta_ocupacional": None,
-                # "psicologo": None,
-                # "kinesiologo": None,
-                # "psicopedagogo": None,
-                # "educador_diferencial": None,
-
                 # Campos específicos de medicina familiar (inicializados a None)
                 "fecha_evaluacion": None,
                 "diagnostico_1": None, # Este es el campo 'diagnostico_1' para medicina familiar
@@ -1232,20 +1202,6 @@ def enviar_formulario_a_drive():
             "derivaciones": form_data.get('derivaciones', ''),
             "sexo_f": "X" if form_data.get('sexo') == "F" else "",
             "sexo_m": "X" if form_data.get('sexo') == "M" else "",
-            # Campos específicos de neurología, si existen en tu PDF editable
-            # "motivo_consulta": form_data.get('motivo_consulta', ''),
-            # "antecedentes_personales": form_data.get('antecedentes_personales', ''),
-            # "antecedentes_familiares": form_data.get('antecedentes_familiares', ''),
-            # "desarrollo_psicomotor": form_data.get('desarrollo_psicomotor', ''),
-            # "examen_neurologico": form_data.get('examen_neurologico', ''),
-            # "observaciones": form_data.get('observaciones', ''),
-            # "requiere_pie": "X" if form_data.get('requiere_pie') == "on" else "",
-            # "fonoaudiologo": "X" if form_data.get('fonoaudiologo') == "on" else "",
-            # "terapeuta_ocupacional": "X" if form_data.get('terapeuta_ocupacional') == "on" else "",
-            # "psicologo": "X" if form_data.get('psicologo') == "on" else "",
-            # "kinesiologo": "X" if form_data.get('kinesiologo') == "on" else "",
-            # "psicopedagogo": "X" if form_data.get('psicopedagogo') == "on" else "",
-            # "educador_diferencial": "X" if form_data.get('educador_diferencial') == "on" else "",
         }
     elif form_type == 'medicina_familiar':
         ruta_pdf_base = os.path.join("static", PDF_FAMILIAR_BASE)
@@ -1594,9 +1550,6 @@ def descargar_excel_evaluados(nomina_id):
     
     if form_type == 'neurologia':
         select_fields += ",sexo,estado_general,diagnostico,fecha_reevaluacion,derivaciones"
-        # Campos específicos de neurología que realmente existen en tu esquema
-        # (Si no tienes estos campos en Supabase para neurología, no los incluyas)
-        # select_fields += ",motivo_consulta,antecedentes_personales,antecedentes_familiares,desarrollo_psicomotor,examen_neurologico,observaciones,requiere_pie,fonoaudiologo,terapeuta_ocupacional,psicologo,kinesiologo,psicopedagogo,educador_diferencial"
     elif form_type == 'medicina_familiar':
         select_fields += ",genero_f,genero_m,fecha_evaluacion,diagnostico_1,diagnostico_2,diagnostico_complementario,derivaciones,fecha_reevaluacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,altura,peso,imc,clasificacion,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemai,check_esquemac,check_alergiano,check_alergiasi,check_cirugiano,check_cirugiasi,check_visionsinalteracion,check_visionrefraccion,check_hipoacusia,check_retenciondental,check_hipertrofia,check_frenillolingual,check_sinhallazgos,check_caries,check_audicionnormal,check_tapondecerumen,check_apinamientodental"
     
@@ -1630,21 +1583,7 @@ def descargar_excel_evaluados(nomina_id):
             'diagnostico': 'Diagnóstico (Neuro)',
             'fecha_reevaluacion': 'Fecha Reevaluación (Neuro)',
             'derivaciones': 'Derivaciones (Neuro)',
-            # Campos de Neurología que se eliminaron de la lista anterior
-            # 'motivo_consulta': 'Motivo Consulta (Neuro)',
-            # 'antecedentes_personales': 'Ant. Personales (Neuro)',
-            # 'antecedentes_familiares': 'Ant. Familiares (Neuro)',
-            # 'desarrollo_psicomotor': 'Desarrollo Psicomotor (Neuro)',
-            # 'examen_neurologico': 'Examen Neurológico (Neuro)',
-            # 'observaciones': 'Observaciones (Neuro)',
-            # 'requiere_pie': 'Requiere PIE (Neuro)',
-            # 'fonoaudiologo': 'Fonoaudiólogo (Neuro)',
-            # 'terapeuta_ocupacional': 'Terapeuta Ocupacional (Neuro)',
-            # 'psicologo': 'Psicólogo (Neuro)',
-            # 'kinesiologo': 'Kinesiólogo (Neuro)',
-            # 'psicopedagogo': 'Psicopedagogo (Neuro)',
-            # 'educador_diferencial': 'Educador Diferencial (Neuro)',
-
+            
             'genero_f': 'Género Femenino (Familiar)',
             'genero_m': 'Género Masculino (Familiar)',
             'fecha_evaluacion': 'Fecha Evaluación (Familiar)',
@@ -1709,10 +1648,6 @@ def descargar_excel_evaluados(nomina_id):
         ordered_cols = [
             'Nombre Completo', 'RUT', 'Fecha de Nacimiento (Original)', 'Fecha de Evaluación',
             'Género (Neuro)', 'Estado General (Neuro)', 'Diagnóstico (Neuro)', 'Fecha Reevaluación (Neuro)', 'Derivaciones (Neuro)',
-            # Campos de Neurología que se eliminaron de la lista anterior
-            # 'Motivo Consulta (Neuro)', 'Ant. Personales (Neuro)', 'Ant. Familiares (Neuro)', 'Desarrollo Psicomotor (Neuro)',
-            # 'Examen Neurológico (Neuro)', 'Observaciones (Neuro)', 'Requiere PIE (Neuro)', 'Fonoaudiólogo (Neuro)',
-            # 'Terapeuta Ocupacional (Neuro)', 'Psicólogo (Neuro)', 'Kinesiólogo (Neuro)', 'Psicopedagogo (Neuro)', 'Educador Diferencial (Neuro)',
             
             'Género Femenino (Familiar)', 'Género Masculino (Familiar)', 'Fecha Evaluación (Familiar)',
             'Diagnóstico 1 (Familiar)', 'Diagnóstico 2 (Familiar)', 'Diagnóstico Complementario (Familiar)',
@@ -1850,20 +1785,6 @@ def generar_pdfs_visibles():
                     "derivaciones": est.get('derivaciones', ''),
                     "sexo_f": "X" if est.get('sexo') == "F" else "",
                     "sexo_m": "X" if est.get('sexo') == "M" else "",
-                    # Campos específicos de neurología que se eliminaron
-                    # "motivo_consulta": est.get('motivo_consulta', ''),
-                    # "antecedentes_personales": est.get('antecedentes_personales', ''),
-                    # "antecedentes_familiares": est.get('antecedentes_familiares', ''),
-                    # "desarrollo_psicomotor": est.get('desarrollo_psicomotor', ''),
-                    # "examen_neurologico": est.get('examen_neurologico', ''),
-                    # "observaciones": est.get('observaciones', ''),
-                    # "requiere_pie": "X" if est.get('requiere_pie') else "",
-                    # "fonoaudiologo": "X" if est.get('fonoaudiologo') else "",
-                    # "terapeuta_ocupacional": "X" if est.get('terapeuta_ocupacional') else "",
-                    # "psicologo": "X" if est.get('psicologo') else "",
-                    # "kinesiologo": "X" if est.get('kinesiologo') else "",
-                    # "psicopedagogo": "X" if est.get('psicopedagogo') else "",
-                    # "educador_diferencial": "X" if est.get('educador_diferencial') else "",
                 }
             elif form_type == 'medicina_familiar':
                 campos = {
@@ -1905,15 +1826,15 @@ def generar_pdfs_visibles():
                     "check_cirugiasi": "X" if est.get('check_cirugiasi') else "",
                     "check_visionsinalteracion": "X" if est.get('check_visionsinalteracion') else "",
                     "check_visionrefraccion": "X" if est.get('check_visionrefraccion') else "",
-                    "check_hipoacusia": "X" if est.get('check_hipoacusia') else "",
+                    "check_hipoacusia": "X" if est.get('hipoacusia') else "",
                     "check_retenciondental": "X" if est.get('check_retenciondental') else "",
                     "check_hipertrofia": "X" if est.get('check_hipertrofia') else "",
                     "check_frenillolingual": "X" if est.get('check_frenillolingual') else "",
                     "check_sinhallazgos": "X" if est.get('check_sinhallazgos') else "",
-                    "check_caries": "X" if est.get('check_caries') else "",
-                    "check_audicionnormal": "X" if est.get('check_audicionnormal') else "",
-                    "check_tapondecerumen": "X" if est.get('check_tapondecerumen') else "",
-                    "check_apinamientodental": "X" if est.get('check_apinamientodental') else "",
+                    "check_caries": "X" if est.get('caries') else "",
+                    "check_audicionnormal": "X" if est.get('audicionnormal') else "",
+                    "check_tapondecerumen": "X" if est.get('tapondecerumen') else "",
+                    "check_apinamientodental": "X" if est.get('apinamientodental') else "",
                 }
 
             if "/AcroForm" not in writer_single_pdf._root_object:

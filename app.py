@@ -275,7 +275,7 @@ def subir_estudiantes(nomina_id):
                 rut_normalized = unicodedata.normalize('NFKD', rut).encode('ascii', 'ignore').decode('utf-8')
                 rut_normalized = rut_normalized.replace('.', '').replace('-', '').upper()
 
-                # Convertir fecha de nacimiento a formato YYYY-MM-DD
+                # Convertir fecha de nacimiento a formatoYYYY-MM-DD
                 fecha_nacimiento_str = None
                 if isinstance(fecha_nacimiento_excel, datetime):
                     fecha_nacimiento_str = fecha_nacimiento_excel.strftime('%Y-%m-%d')
@@ -283,17 +283,17 @@ def subir_estudiantes(nomina_id):
                     fecha_nacimiento_str = fecha_nacimiento_excel.strftime('%Y-%m-%d')
                 elif isinstance(fecha_nacimiento_excel, str):
                     try:
-                        # Intentar parsear varios formatos comunes (DD-MM-YYYY, DD/MM/YYYY, YYYY-MM-DD)
+                        # Intentar parsear varios formatos comunes (DD-MM-YYYY, DD/MM/YYYY,YYYY-MM-DD)
                         if '/' in fecha_nacimiento_excel:
                             fecha_nacimiento_str = datetime.strptime(fecha_nacimiento_excel, '%d/%m/%Y').strftime('%Y-%m-%d')
                         elif '-' in fecha_nacimiento_excel:
-                            # Puede ser YYYY-MM-DD o DD-MM-YYYY, intentar ambos
+                            # Puede serYYYY-MM-DD o DD-MM-YYYY, intentar ambos
                             try:
                                 fecha_nacimiento_str = datetime.strptime(fecha_nacimiento_excel, '%Y-%m-%d').strftime('%Y-%m-%d')
                             except ValueError:
                                 fecha_nacimiento_str = datetime.strptime(fecha_nacimiento_excel, '%d-%m-%Y').strftime('%Y-%m-%d')
                         else:
-                            # Si es solo una cadena de números, intentar como YYYYMMDD o DDMMYYYY
+                            # Si es solo una cadena de números, intentar comoYYYYMMDD o DDMMYYYY
                             if len(fecha_nacimiento_excel) == 8:
                                 try:
                                     fecha_nacimiento_str = datetime.strptime(fecha_nacimiento_excel, '%Y%m%d').strftime('%Y-%m-%d')
@@ -370,7 +370,7 @@ def relleno_formularios(nomina_id):
         print(f"DEBUG: URL para obtener nómina en /relleno_formularios: {nomina_url}")
         nomina_res = requests.get(nomina_url, headers=SUPABASE_SERVICE_HEADERS)
         nomina_res.raise_for_status()
-        nomina_data = nominas_res.json()
+        nomina_data = nomina_res.json()
 
         if not nomina_data:
             flash("Nómina no encontrada.", "error")
@@ -420,7 +420,7 @@ def relleno_formularios(nomina_id):
                 "nomina_id": est['nomina_id'],
                 "nombre": est['nombre'],
                 "rut": est['rut'],
-                "fecha_nacimiento": est['fecha_nacimiento'], # YYYY-MM-DD para el backend
+                "fecha_nacimiento": est['fecha_nacimiento'], #YYYY-MM-DD para el backend
                 "fecha_nacimiento_formato": fecha_nacimiento_formato, # DD/MM/YYYY para display
                 "edad": edad_str,
                 "nacionalidad": est.get('nacionalidad', 'N/A'),
@@ -627,7 +627,7 @@ def marcar_evaluado():
         
         # Fechas específicas de Medicina Familiar
         update_data["fecha_evaluacion"] = request.form.get('fecha_evaluacion')
-        update_data["fecha_reevaluacion"] = request.form.get('fecha_reevaluacion') # Fecha calculada YYYY-MM-DD
+        update_data["fecha_reevaluacion"] = request.form.get('fecha_reevaluacion') # Fecha calculadaYYYY-MM-DD
         update_data["fecha_reevaluacion_select"] = request.form.get('fecha_reevaluacion_select') # Valor del select (1, 2, 3 años)
 
 
@@ -753,16 +753,14 @@ def generar_pdf():
                                 fecha_eval_obj = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').date() if est.get('fecha_evaluacion') else None
                                 writer.update_page_form_field_values(writer.pages[page_num], {"Fecha evaluación": fecha_eval_obj.strftime('%d/%m/%Y') if fecha_eval_obj else ''})
                             elif field_name == "Fecha reevaluación":
-                                # Usar el campo fecha_reevaluacion que ya debe estar en formato YYYY-MM-DD
+                                # Usar el campo fecha_reevaluacion que ya debe estar en formatoYYYY-MM-DD
                                 # y convertirlo a DD/MM/YYYY para el PDF
                                 fecha_reeval_obj = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').date() if est.get('fecha_reevaluacion') else None
                                 writer.update_page_form_field_values(writer.pages[page_num], {"Fecha reevaluación": fecha_reeval_obj.strftime('%d/%m/%Y') if fecha_reeval_obj else ''})
 
                             # Observaciones (OBS1 a OBS7)
-                            # This block needs to be an 'if' or part of the main elif chain
-                            # A simple way to integrate it is to check if field_name starts with 'OBS'
-                            elif field_name.startswith("OBS"):
-                                obs_index = int(field_name.replace("OBS", ""))
+                            elif field_name.startswith("OBS") and len(field_name) == 4 and field_name[3].isdigit():
+                                obs_index = int(field_name[3])
                                 if 1 <= obs_index <= 7:
                                     writer.update_page_form_field_values(writer.pages[page_num], {field_name: est.get(f'observacion_{obs_index}', '')})
                             
@@ -864,7 +862,6 @@ def generar_pdf():
                                 doctor_reg = doctor_info[0]['registro_profesional'] if doctor_info and doctor_info[0].get('registro_profesional') else 'N/A'
                                 writer.update_page_form_field_values(writer.pages[page_num], {"Nº Registro Profesional": doctor_reg})
                             elif field_name == "Especialidad":
-                                # Asumiendo que la especialidad está en la tabla de usuarios
                                 doctor_url = f"{SUPABASE_URL}/rest/v1/usuarios?id=eq.{est.get('doctora_evaluadora_id')}&select=especialidad"
                                 doctor_res = requests.get(doctor_url, headers=SUPABASE_SERVICE_HEADERS)
                                 doctor_res.raise_for_status()
@@ -872,7 +869,6 @@ def generar_pdf():
                                 doctor_esp = doctor_info[0]['especialidad'] if doctor_info and doctor_info[0].get('especialidad') else 'N/A'
                                 writer.update_page_form_field_values(writer.pages[page_num], {"Especialidad": doctor_esp})
                             elif field_name == "Fono/E-Mail Contacto":
-                                # Asumiendo que el email está en la tabla de usuarios
                                 doctor_url = f"{SUPABASE_URL}/rest/v1/usuarios?id=eq.{est.get('doctora_evaluadora_id')}&select=email"
                                 doctor_res = requests.get(doctor_url, headers=SUPABASE_SERVICE_HEADERS)
                                 doctor_res.raise_for_status()
@@ -888,7 +884,6 @@ def generar_pdf():
                             elif field_name == "Otro" and est.get('procedencia_otro'):
                                 writer.update_page_form_field_values(writer.pages[page_num], {"Otro": "/Yes"})
 
-        # Guardar el PDF en un buffer en memoria
         output_pdf = io.BytesIO()
         writer.write(output_pdf)
         output_pdf.seek(0)
@@ -1146,13 +1141,12 @@ def generar_pdfs_visibles():
                                     fecha_eval_obj = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').date() if est.get('fecha_evaluacion') else None
                                     combined_writer.update_page_form_field_values(new_page, {"Fecha evaluación": fecha_eval_obj.strftime('%d/%m/%Y') if fecha_eval_obj else ''})
                                 elif field_name == "Fecha reevaluación":
-                                    # Usar el campo fecha_reevaluacion que ya debe estar en formato YYYY-MM-DD
+                                    # Usar el campo fecha_reevaluacion que ya debe estar en formatoYYYY-MM-DD
                                     # y convertirlo a DD/MM/YYYY para el PDF
                                     fecha_reeval_obj = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').date() if est.get('fecha_reevaluacion') else None
                                     combined_writer.update_page_form_field_values(new_page, {"Fecha reevaluación": fecha_reeval_obj.strftime('%d/%m/%Y') if fecha_reeval_obj else ''})
 
-                                # Observaciones (OBS1 a OBS7) - Corrected logic
-                                # Instead of a for loop here, check if the field_name matches any OBS field
+                                # Observaciones (OBS1 a OBS7)
                                 elif field_name.startswith("OBS") and len(field_name) == 4 and field_name[3].isdigit():
                                     obs_index = int(field_name[3])
                                     if 1 <= obs_index <= 7:
@@ -1388,7 +1382,7 @@ def enviar_formulario_a_drive():
                                 fecha_reeval_obj = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').date() if est.get('fecha_reevaluacion') else None
                                 writer.update_page_form_field_values(writer.pages[page_num], {"Fecha reevaluación": fecha_reeval_obj.strftime('%d/%m/%Y') if fecha_reeval_obj else ''})
 
-                            # Observaciones (OBS1 a OBS7) - Corrected logic
+                            # Observaciones (OBS1 a OBS7)
                             elif field_name.startswith("OBS") and len(field_name) == 4 and field_name[3].isdigit():
                                 obs_index = int(field_name[3])
                                 if 1 <= obs_index <= 7:
@@ -1485,876 +1479,6 @@ def enviar_formulario_a_drive():
                                 writer.update_page_form_field_values(writer.pages[page_num], {"Rut_Doctor": doctor_rut})
                             elif field_name == "Nº Registro Profesional":
                                 # Asumiendo que el número de registro está en la tabla de usuarios
-                                doctor_url = f"{SUPABASE_URL}/rest/v1/usuarios?id=eq.{est.get('doctora_evaluadora_id')}&select=registro_profesional"
-                                doctor_res = requests.get(doctor_url, headers=SUPABASE_SERVICE_HEADERS)
-                                doctor_res.raise_for_status()
-                                doctor_info = doctor_res.json()
-                                doctor_reg = doctor_info[0]['registro_profesional'] if doctor_info and doctor_info[0].get('registro_profesional') else 'N/A'
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Nº Registro Profesional": doctor_reg})
-                            elif field_name == "Especialidad":
-                                # Asumiendo que la especialidad está en la tabla de usuarios
-                                doctor_url = f"{SUPABASE_URL}/rest/v1/usuarios?id=eq.{est.get('doctora_evaluadora_id')}&select=especialidad"
-                                doctor_res = requests.get(doctor_url, headers=SUPABASE_SERVICE_HEADERS)
-                                doctor_res.raise_for_status()
-                                doctor_info = doctor_res.json()
-                                doctor_esp = doctor_info[0]['especialidad'] if doctor_info and doctor_info[0].get('especialidad') else 'N/A'
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Especialidad": doctor_esp})
-                            elif field_name == "Fono/E-Mail Contacto":
-                                # Asumiendo que el email está en la tabla de usuarios
-                                doctor_url = f"{SUPABASE_URL}/rest/v1/usuarios?id=eq.{est.get('doctora_evaluadora_id')}&select=email"
-                                doctor_res = requests.get(doctor_url, headers=SUPABASE_SERVICE_HEADERS)
-                                doctor_res.raise_for_status()
-                                doctor_info = doctor_res.json()
-                                doctor_email = doctor_info[0]['email'] if doctor_info and doctor_info[0].get('email') else 'N/A'
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Fono/E-Mail Contacto": doctor_email})
-                            elif field_name == "Salud pública" and est.get('procedencia_salud_publica'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Salud pública": "/Yes"})
-                            elif field_name == "Particular" and est.get('procedencia_particular'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Particular": "/Yes"})
-                            elif field_name == "Escuela" and est.get('procedencia_escuela'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Escuela": "/Yes"})
-                            elif field_name == "Otro" and est.get('procedencia_otro'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Otro": "/Yes"})
-
-        output_pdf = io.BytesIO()
-        writer.write(output_pdf)
-        output_pdf.seek(0)
-
-        # Enviar el PDF como respuesta
-        filename = f"formulario_{est.get('nombre', 'sin_nombre').replace(' ', '_')}_{form_type}.pdf"
-        return send_file(output_pdf, download_name=filename, as_attachment=False, mimetype='application/pdf')
-
-    except requests.exceptions.RequestException as e:
-        flash(f"Error de conexión con la base de datos al generar PDF: {e}", "error")
-        print(f"ERROR: Error en /generar_pdf (Supabase): {e}")
-        return redirect(url_for('relleno_formularios', nomina_id=session.get('current_nomina_id')))
-    except Exception as e:
-        flash(f"Ocurrió un error inesperado al generar el PDF: {e}", "error")
-        print(f"ERROR: Error inesperado en /generar_pdf: {e}")
-        return redirect(url_for('relleno_formularios', nomina_id=session.get('current_nomina_id')))
-
-
-@app.route('/descargar_excel_evaluados/<nomina_id>', methods=['GET'])
-@login_required
-def descargar_excel_evaluados(nomina_id):
-    user_id = session.get('user_id')
-    if not user_id:
-        flash("No autorizado.", "error")
-        return redirect(url_for('login'))
-
-    try:
-        # Obtener estudiantes de la nómina que han sido evaluados
-        estudiantes_url = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nomina_id}&fecha_relleno=not.is.null&select=*"
-        estudiantes_res = requests.get(estudiantes_url, headers=SUPABASE_SERVICE_HEADERS)
-        estudiantes_res.raise_for_status()
-        estudiantes_data = estudiantes_res.json()
-
-        if not estudiantes_data:
-            flash("No hay estudiantes evaluados en esta nómina para descargar.", "info")
-            return redirect(url_for('relleno_formularios', nomina_id=nomina_id))
-
-        # Convertir la lista de diccionarios a un DataFrame de pandas
-        df = pd.DataFrame(estudiantes_data)
-
-        # Seleccionar y reordenar columnas para el Excel
-        # Asegúrate de incluir TODAS las columnas que quieres en el Excel, tanto de Neurología como Familiar
-        columns_order = [
-            'nombre', 'rut', 'fecha_nacimiento', 'edad', 'nacionalidad', 'sexo',
-            'fecha_relleno', 'doctora_evaluadora_id',
-            # Campos de Neurología
-            'estado_general', 'diagnostico', 'fecha_reevaluacion', 'derivaciones',
-            # Campos de Medicina Familiar
-            'genero_f', 'genero_m', 'diagnostico_1', 'diagnostico_2', 'clasificacion',
-            'fecha_evaluacion', 'fecha_reevaluacion_select', 'diagnostico_complementario',
-            'observacion_1', 'observacion_2', 'observacion_3', 'observacion_4',
-            'observacion_5', 'observacion_6', 'observacion_7',
-            'altura', 'peso', 'imc', 'clasificacion_imc',
-            'check_cesarea', 'check_atermino', 'check_vaginal', 'check_prematuro',
-            'check_acorde', 'check_retrasogeneralizado', 'check_esquemac', 'check_esquemai',
-            'check_alergiano', 'check_alergiasi', 'check_cirugiano', 'check_cirugiasi',
-            'check_visionsinalteracion', 'check_visionrefraccion', 'check_audicionnormal',
-            'check_hipoacusia', 'check_tapondecerumen', 'check_sinhallazgos', 'check_caries',
-            'check_apinamientodental', 'check_retenciondental', 'check_frenillolingual', 'check_hipertrofia'
-        ]
-        
-        # Filtrar columnas que realmente existen en el DataFrame para evitar errores
-        existing_columns = [col for col in columns_order if col in df.columns]
-        df = df[existing_columns]
-
-        # Renombrar columnas para que sean más legibles en el Excel
-        df.rename(columns={
-            'nombre': 'Nombre Completo',
-            'rut': 'RUT',
-            'fecha_nacimiento': 'Fecha de Nacimiento',
-            'nacionalidad': 'Nacionalidad',
-            'sexo': 'Sexo (General)', # Para distinguir del género_f/m
-            'fecha_relleno': 'Fecha de Evaluación',
-            'doctora_evaluadora_id': 'ID Doctora Evaluadora',
-            'estado_general': 'Estado General (Neurología)',
-            'diagnostico': 'Diagnóstico (Neurología)',
-            'fecha_reevaluacion': 'Fecha Reevaluación (Neurología)',
-            'derivaciones': 'Derivaciones (Neurología/Familiar)',
-            'genero_f': 'Género Femenino (Familiar)',
-            'genero_m': 'Género Masculino (Familiar)',
-            'diagnostico_1': 'Diagnóstico 1 (Familiar)',
-            'diagnostico_2': 'Diagnóstico 2 (Familiar)',
-            'clasificacion': 'Clasificación (Familiar)',
-            'fecha_evaluacion': 'Fecha Evaluación (Familiar)',
-            'fecha_reevaluacion_select': 'Reevaluación Años (Familiar)',
-            'diagnostico_complementario': 'Diagnóstico Complementario (Familiar)',
-            'observacion_1': 'Observación 1',
-            'observacion_2': 'Observación 2',
-            'observacion_3': 'Observación 3',
-            'observacion_4': 'Observación 4',
-            'observacion_5': 'Observación 5',
-            'observacion_6': 'Observación 6',
-            'observacion_7': 'Observación 7',
-            'altura': 'Altura (cm)',
-            'peso': 'Peso (kg)',
-            'imc': 'IMC',
-            'clasificacion_imc': 'Clasificación IMC',
-            'check_cesarea': 'Cesárea',
-            'check_atermino': 'A Término',
-            'check_vaginal': 'Vaginal',
-            'check_prematuro': 'Prematuro',
-            'check_acorde': 'DSM Acorde a Edad',
-            'check_retrasogeneralizado': 'DSM Retraso Generalizado',
-            'check_esquemac': 'Esquema Vacunas Completo',
-            'check_esquemai': 'Esquema Vacunas Incompleto',
-            'check_alergiano': 'No Alergias',
-            'check_alergiasi': 'Sí Alergias',
-            'check_cirugiano': 'No Hospitalizaciones/Cirugías',
-            'check_cirugiasi': 'Sí Hospitalizaciones/Cirugías',
-            'check_visionsinalteracion': 'Visión Sin Alteración',
-            'check_visionrefraccion': 'Visión Vicios Refracción',
-            'check_audicionnormal': 'Audición Normal',
-            'check_hipoacusia': 'Audición Hipoacusia',
-            'check_tapondecerumen': 'Audición Tapón Cerumen',
-            'check_sinhallazgos': 'Bucodental Sin Hallazgos',
-            'check_caries': 'Bucodental Caries',
-            'check_apinamientodental': 'Bucodental Apiñamiento Dental',
-            'check_retenciondental': 'Bucodental Retención Dental',
-            'check_frenillolingual': 'Bucodental Frenillo Lingual',
-            'check_hipertrofia': 'Bucodental Hipertrofia Amigdalina'
-        }, inplace=True)
-
-        # Crear un archivo Excel en memoria
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name='Estudiantes Evaluados')
-        output.seek(0)
-
-        nomina_info_url = f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}&select=nombre_nomina"
-        nomina_info_res = requests.get(nomina_info_url, headers=SUPABASE_SERVICE_HEADERS)
-        nomina_info_res.raise_for_status()
-        nomina_nombre = nomina_info_res.json()[0]['nombre_nomina'] if nomina_info_res.json() else 'Nomina'
-
-        filename = f"Evaluaciones_{nomina_nombre.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.xlsx"
-
-        return send_file(output, download_name=filename, as_attachment=True, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-
-    except requests.exceptions.RequestException as e:
-        flash(f"Error de conexión con la base de datos al descargar Excel: {e}", "error")
-        print(f"ERROR: Error en /descargar_excel_evaluados (Supabase): {e}")
-        return redirect(url_for('relleno_formularios', nomina_id=nomina_id))
-    except Exception as e:
-        flash(f"Ocurrió un error inesperado al generar el Excel: {e}", "error")
-        print(f"ERROR: Error inesperado en /descargar_excel_evaluados: {e}")
-        return redirect(url_for('relleno_formularios', nomina_id=nomina_id))
-
-
-@app.route('/generar_pdfs_visibles', methods=['POST'])
-@login_required
-def generar_pdfs_visibles():
-    data = request.get_json()
-    nomina_id = data.get('nomina_id')
-    student_ids = data.get('student_ids', [])
-
-    if not nomina_id or not student_ids:
-        return jsonify({"success": False, "message": "Datos incompletos para generar PDFs combinados."}), 400
-
-    try:
-        # Obtener el tipo de formulario de la nómina
-        nomina_url = f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}&select=form_type"
-        nomina_res = requests.get(nomina_url, headers=SUPABASE_SERVICE_HEADERS)
-        nomina_res.raise_for_status()
-        nomina_info = nomina_res.json()
-        form_type = nomina_info[0].get('form_type', 'neurologia')
-
-        pdf_base_path = ''
-        if form_type == 'neurologia':
-            pdf_base_path = PDF_BASE_NEUROLOGIA
-        elif form_type == 'medicina_familiar':
-            pdf_base_path = PDF_BASE_FAMILIAR
-        else:
-            return jsonify({"success": False, "message": "Tipo de formulario no reconocido para generar PDF."}), 400
-
-        combined_writer = PdfWriter()
-
-        for student_id in student_ids:
-            # Obtener datos completos del estudiante desde Supabase
-            estudiante_url = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{student_id}&select=*"
-            estudiante_res = requests.get(estudiante_url, headers=SUPABASE_SERVICE_HEADERS)
-            estudiante_res.raise_for_status()
-            estudiante_data = estudiante_res.json()
-
-            if not estudiante_data:
-                print(f"WARNING: Estudiante {student_id} no encontrado, saltando.")
-                continue # Saltar al siguiente estudiante si no se encuentra
-
-            est = estudiante_data[0]
-
-            # Abrir el PDF base para cada estudiante
-            reader = PdfReader(pdf_base_path)
-            
-            for page_num in range(len(reader.pages)):
-                page = reader.pages[page_num]
-                
-                # Crear una nueva página para el combined_writer
-                # Esto es crucial para que cada formulario sea independiente
-                new_page = combined_writer.add_blank_page(page.mediabox.width, page.mediabox.height)
-                new_page.merge_page(page) # Merge el contenido de la página original
-
-                # Obtener campos del formulario PDF y rellenar
-                if "/AcroForm" in page and "/Fields" in page["/AcroForm"]:
-                    for field in page["/AcroForm"]["/Fields"]:
-                        field_name = field.get("/T")
-                        if field_name:
-                            field_name = str(field_name)
-
-                            # Rellenar campos comunes
-                            if field_name == "Nombres y Apellidos":
-                                combined_writer.update_page_form_field_values(new_page, {"Nombres y Apellidos": est.get('nombre', '')})
-                            elif field_name == "RUN":
-                                combined_writer.update_page_form_field_values(new_page, {"RUN": est.get('rut', '')})
-                            elif field_name == "Fecha nacimiento (dd/mm/aaaa)":
-                                fecha_nac_obj = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date() if est.get('fecha_nacimiento') else None
-                                combined_writer.update_page_form_field_values(new_page, {"Fecha nacimiento (dd/mm/aaaa)": fecha_nac_obj.strftime('%d/%m/%Y') if fecha_nac_obj else ''})
-                            elif field_name == "Edad (en años y meses)":
-                                years, months = calculate_age(est.get('fecha_nacimiento'))
-                                combined_writer.update_page_form_field_values(new_page, {"Edad (en años y meses)": f"{years} años {months} meses" if years is not None else ''})
-                            elif field_name == "Nacionalidad":
-                                combined_writer.update_page_form_field_values(new_page, {"Nacionalidad": est.get('nacionalidad', '')})
-                            
-                            # Campos específicos de Neurología
-                            elif form_type == 'neurologia':
-                                if field_name == "Sexo":
-                                    combined_writer.update_page_form_field_values(new_page, {"Sexo": est.get('sexo', '')})
-                                elif field_name == "Estado general del alumno":
-                                    combined_writer.update_page_form_field_values(new_page, {"Estado general del alumno": est.get('estado_general', '')})
-                                elif field_name == "Diagnostico":
-                                    combined_writer.update_page_form_field_values(new_page, {"Diagnostico": est.get('diagnostico', '')})
-                                elif field_name == "Fecha reevaluacion":
-                                    fecha_reeval_obj = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').date() if est.get('fecha_reevaluacion') else None
-                                    combined_writer.update_page_form_field_values(new_page, {"Fecha reevaluacion": fecha_reeval_obj.strftime('%d/%m/%Y') if fecha_reeval_obj else ''})
-                                elif field_name == "Derivaciones":
-                                    combined_writer.update_page_form_field_values(new_page, {"Derivaciones": est.get('derivaciones', '')})
-                            
-                            # Campos específicos de Medicina Familiar
-                            elif form_type == 'medicina_familiar':
-                                # Género (checkboxes en PDF)
-                                if field_name == "F" and est.get('genero_f'):
-                                    combined_writer.update_page_form_field_values(new_page, {"F": "/Yes"})
-                                elif field_name == "M" and est.get('genero_m'):
-                                    combined_writer.update_page_form_field_values(new_page, {"M": "/Yes"})
-                                
-                                # Motivo de Consulta
-                                elif field_name == "DIAGNOSTICO": # Campo para diagnostico_1
-                                    combined_writer.update_page_form_field_values(new_page, {"DIAGNOSTICO": est.get('diagnostico_1', '')})
-                                elif field_name == "DIAGNÓSTICO COMPLEMENTARIO": # Campo para diagnostico_complementario (o diagnostico_2 si se mapea así)
-                                    combined_writer.update_page_form_field_values(new_page, {"DIAGNÓSTICO COMPLEMENTARIO": est.get('diagnostico_complementario', '')})
-                                elif field_name == "Clasificación":
-                                    combined_writer.update_page_form_field_values(new_page, {"Clasificación": est.get('clasificacion', '')})
-                                elif field_name == "INDICACIONES": # Campo para derivaciones
-                                    combined_writer.update_page_form_field_values(new_page, {"INDICACIONES": est.get('derivaciones', '')})
-                                
-                                # Fechas
-                                elif field_name == "Fecha evaluación":
-                                    fecha_eval_obj = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').date() if est.get('fecha_evaluacion') else None
-                                    combined_writer.update_page_form_field_values(new_page, {"Fecha evaluación": fecha_eval_obj.strftime('%d/%m/%Y') if fecha_eval_obj else ''})
-                                elif field_name == "Fecha reevaluación":
-                                    # Usar el campo fecha_reevaluacion que ya debe estar en formato YYYY-MM-DD
-                                    # y convertirlo a DD/MM/YYYY para el PDF
-                                    fecha_reeval_obj = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').date() if est.get('fecha_reevaluacion') else None
-                                    combined_writer.update_page_form_field_values(new_page, {"Fecha reevaluación": fecha_reeval_obj.strftime('%d/%m/%Y') if fecha_reeval_obj else ''})
-
-                                # Observaciones (OBS1 a OBS7) - Corrected logic
-                                # Instead of a for loop here, check if the field_name matches any OBS field
-                                # This ensures it remains part of the elif chain
-                                elif field_name.startswith("OBS") and len(field_name) == 4 and field_name[3].isdigit():
-                                    obs_index = int(field_name[3])
-                                    if 1 <= obs_index <= 7: # Ensure index is valid
-                                        combined_writer.update_page_form_field_values(new_page, {field_name: est.get(f'observacion_{obs_index}', '')})
-                                
-                                # Antecedentes Perinatales (checkboxes)
-                                elif field_name == "CESAREA" and est.get('check_cesarea'):
-                                    combined_writer.update_page_form_field_values(new_page, {"CESAREA": "/Yes"})
-                                elif field_name == "A TÉRMINO" and est.get('check_atermino'):
-                                    combined_writer.update_page_form_field_values(new_page, {"A TÉRMINO": "/Yes"})
-                                elif field_name == "VAGINAL" and est.get('check_vaginal'):
-                                    combined_writer.update_page_form_field_values(new_page, {"VAGINAL": "/Yes"})
-                                elif field_name == "PREMATURO" and est.get('check_prematuro'):
-                                    combined_writer.update_page_form_field_values(new_page, {"PREMATURO": "/Yes"})
-                                
-                                # DSM (checkboxes)
-                                elif field_name == "LOGRADO ACORDE A LA EDAD" and est.get('check_acorde'):
-                                    combined_writer.update_page_form_field_values(new_page, {"LOGRADO ACORDE A LA EDAD": "/Yes"})
-                                elif field_name == "RETRASO GENERALIZADO DEL DESARROLLO" and est.get('check_retrasogeneralizado'):
-                                    combined_writer.update_page_form_field_values(new_page, {"RETRASO GENERALIZADO DEL DESARROLLO": "/Yes"})
-
-                                # Vacunas (checkboxes)
-                                elif field_name == "ESQUEMA COMPLETO" and est.get('check_esquemac'):
-                                    combined_writer.update_page_form_field_values(new_page, {"ESQUEMA COMPLETO": "/Yes"})
-                                elif field_name == "ESQUEMA INCOMPLETO" and est.get('check_esquemai'):
-                                    combined_writer.update_page_form_field_values(new_page, {"ESQUEMA INCOMPLETO": "/Yes"})
-                                
-                                # Alergias (checkboxes)
-                                elif field_name == "NO" and est.get('check_alergiano'): # Alergias NO
-                                    combined_writer.update_page_form_field_values(new_page, {"NO": "/Yes"})
-                                elif field_name == "SI" and est.get('check_alergiasi'): # Alergias SI
-                                    combined_writer.update_page_form_field_values(new_page, {"SI": "/Yes"})
-
-                                # Hospitalizaciones/Cirugías (checkboxes)
-                                elif field_name == "NO_2" and est.get('check_cirugiano'): # Hospitalizaciones NO
-                                    combined_writer.update_page_form_field_values(new_page, {"NO_2": "/Yes"})
-                                elif field_name == "SI_2" and est.get('check_cirugiasi'): # Hospitalizaciones SI
-                                    combined_writer.update_page_form_field_values(new_page, {"SI_2": "/Yes"})
-
-                                # Visión (checkboxes)
-                                elif field_name == "SIN ALTERACIÓN" and est.get('check_visionsinalteracion'):
-                                    combined_writer.update_page_form_field_values(new_page, {"SIN ALTERACIÓN": "/Yes"})
-                                elif field_name == "VICIOS DE REFRACCIÓN" and est.get('check_visionrefraccion'):
-                                    combined_writer.update_page_form_field_values(new_page, {"VICIOS DE REFRACCIÓN": "/Yes"})
-
-                                # Audición (checkboxes)
-                                elif field_name == "NORMAL" and est.get('check_audicionnormal'):
-                                    combined_writer.update_page_form_field_values(new_page, {"NORMAL": "/Yes"})
-                                elif field_name == "HIPOACUSIA" and est.get('check_hipoacusia'):
-                                    combined_writer.update_page_form_field_values(new_page, {"HIPOACUSIA": "/Yes"})
-                                elif field_name == "TAPÓN DE CERUMEN" and est.get('check_tapondecerumen'):
-                                    combined_writer.update_page_form_field_values(new_page, {"TAPÓN DE CERUMEN": "/Yes"})
-
-                                # Salud Bucodental (checkboxes)
-                                elif field_name == "SIN HALLAZGOS" and est.get('check_sinhallazgos'):
-                                    combined_writer.update_page_form_field_values(new_page, {"SIN HALLAZGOS": "/Yes"})
-                                elif field_name == "CARIES" and est.get('check_caries'):
-                                    combined_writer.update_page_form_field_values(new_page, {"CARIES": "/Yes"})
-                                elif field_name == "APIÑAMIENTO DENTAL" and est.get('check_apinamientodental'):
-                                    combined_writer.update_page_form_field_values(new_page, {"APIÑAMIENTO DENTAL": "/Yes"})
-                                elif field_name == "RETENCIÓN DENTAL" and est.get('check_retenciondental'):
-                                    combined_writer.update_page_form_field_values(new_page, {"RETENCIÓN DENTAL": "/Yes"})
-                                elif field_name == "FRENILLO LINGUAL" and est.get('check_frenillolingual'):
-                                    combined_writer.update_page_form_field_values(new_page, {"FRENILLO LINGUAL": "/Yes"})
-                                elif field_name == "HIPERTROFIA AMIGDALINA" and est.get('check_hipertrofia'):
-                                    combined_writer.update_page_form_field_values(new_page, {"HIPERTROFIA AMIGDALINA": "/Yes"})
-
-                                # Medidas Antropométricas
-                                elif field_name == "Altura":
-                                    combined_writer.update_page_form_field_values(new_page, {"Altura": str(est.get('altura', ''))})
-                                elif field_name == "Peso":
-                                    combined_writer.update_page_form_field_values(new_page, {"Peso": str(est.get('peso', ''))})
-                                elif field_name == "I.M.C":
-                                    combined_writer.update_page_form_field_values(new_page, {"I.M.C": est.get('imc', '')})
-                                elif field_name == "Clasificación_IMC":
-                                    combined_writer.update_page_form_field_values(new_page, {"Clasificación_IMC": est.get('clasificacion_imc', '')})
-                                
-                                # Información del profesional (se asume que se rellena con datos de la doctora logeada)
-                                elif field_name == "Nombres y Apellidos_Doctor":
-                                    doctor_url = f"{SUPABASE_URL}/rest/v1/usuarios?id=eq.{est.get('doctora_evaluadora_id')}&select=username"
-                                    doctor_res = requests.get(doctor_url, headers=SUPABASE_SERVICE_HEADERS)
-                                    doctor_res.raise_for_status()
-                                    doctor_info = doctor_res.json()
-                                    doctor_name = doctor_info[0]['username'] if doctor_info else 'N/A'
-                                    combined_writer.update_page_form_field_values(new_page, {"Nombres y Apellidos_Doctor": doctor_name})
-                                elif field_name == "Rut_Doctor":
-                                    doctor_url = f"{SUPABASE_URL}/rest/v1/usuarios?id=eq.{est.get('doctora_evaluadora_id')}&select=rut"
-                                    doctor_res = requests.get(doctor_url, headers=SUPABASE_SERVICE_HEADERS)
-                                    doctor_res.raise_for_status()
-                                    doctor_info = doctor_res.json()
-                                    doctor_rut = doctor_info[0]['rut'] if doctor_info and doctor_info[0].get('rut') else 'N/A'
-                                    combined_writer.update_page_form_field_values(new_page, {"Rut_Doctor": doctor_rut})
-                                elif field_name == "Nº Registro Profesional":
-                                    doctor_url = f"{SUPABASE_URL}/rest/v1/usuarios?id=eq.{est.get('doctora_evaluadora_id')}&select=registro_profesional"
-                                    doctor_res = requests.get(doctor_url, headers=SUPABASE_SERVICE_HEADERS)
-                                    doctor_res.raise_for_status()
-                                    doctor_info = doctor_res.json()
-                                    doctor_reg = doctor_info[0]['registro_profesional'] if doctor_info and doctor_info[0].get('registro_profesional') else 'N/A'
-                                    combined_writer.update_page_form_field_values(new_page, {"Nº Registro Profesional": doctor_reg})
-                                elif field_name == "Especialidad":
-                                    doctor_url = f"{SUPABASE_URL}/rest/v1/usuarios?id=eq.{est.get('doctora_evaluadora_id')}&select=especialidad"
-                                    doctor_res = requests.get(doctor_url, headers=SUPABASE_SERVICE_HEADERS)
-                                    doctor_res.raise_for_status()
-                                    doctor_info = doctor_res.json()
-                                    doctor_esp = doctor_info[0]['especialidad'] if doctor_info and doctor_info[0].get('especialidad') else 'N/A'
-                                    combined_writer.update_page_form_field_values(new_page, {"Especialidad": doctor_esp})
-                                elif field_name == "Fono/E-Mail Contacto":
-                                    doctor_url = f"{SUPABASE_URL}/rest/v1/usuarios?id=eq.{est.get('doctora_evaluadora_id')}&select=email"
-                                    doctor_res = requests.get(doctor_url, headers=SUPABASE_SERVICE_HEADERS)
-                                    doctor_res.raise_for_status()
-                                    doctor_info = doctor_res.json()
-                                    doctor_email = doctor_info[0]['email'] if doctor_info and doctor_info[0].get('email') else 'N/A'
-                                    combined_writer.update_page_form_field_values(new_page, {"Fono/E-Mail Contacto": doctor_email})
-                                elif field_name == "Salud pública" and est.get('procedencia_salud_publica'):
-                                    combined_writer.update_page_form_field_values(new_page, {"Salud pública": "/Yes"})
-                                elif field_name == "Particular" and est.get('procedencia_particular'):
-                                    combined_writer.update_page_form_field_values(new_page, {"Particular": "/Yes"})
-                                elif field_name == "Escuela" and est.get('procedencia_escuela'):
-                                    combined_writer.update_page_form_field_values(new_page, {"Escuela": "/Yes"})
-                                elif field_name == "Otro" and est.get('procedencia_otro'):
-                                    combined_writer.update_page_form_field_values(new_page, {"Otro": "/Yes"})
-
-        output_pdf = io.BytesIO()
-        combined_writer.write(output_pdf)
-        output_pdf.seek(0)
-
-        filename = f"Formularios_Combinados_{nomina_id}.pdf"
-        return send_file(output_pdf, download_name=filename, as_attachment=False, mimetype='application/pdf')
-
-    except requests.exceptions.RequestException as e:
-        print(f"ERROR: Error de conexión con la base de datos al generar PDFs visibles: {e}")
-        return jsonify({"success": False, "message": f"Error de conexión con la base de datos: {str(e)}"}), 500
-    except Exception as e:
-        print(f"ERROR: Error inesperado al generar PDFs visibles: {e}")
-        return jsonify({"success": False, "message": f"Error interno del servidor: {str(e)}"}), 500
-
-@app.route('/enviar_formulario_a_drive', methods=['POST'])
-@login_required
-def enviar_formulario_a_drive():
-    estudiante_id = request.form.get('estudiante_id')
-    nomina_id = request.form.get('nomina_id')
-
-    if not estudiante_id or not nomina_id:
-        return jsonify({"success": False, "message": "Datos incompletos para enviar a Google Drive."}), 400
-
-    try:
-        # Obtener datos completos del estudiante desde Supabase
-        estudiante_url = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}&select=*"
-        estudiante_res = requests.get(estudiante_url, headers=SUPABASE_SERVICE_HEADERS)
-        estudiante_res.raise_for_status()
-        est = estudiante_res.json()[0]
-
-        # Obtener el tipo de formulario de la nómina
-        nomina_url = f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}&select=form_type"
-        nomina_res = requests.get(nomina_url, headers=SUPABASE_SERVICE_HEADERS)
-        nomina_res.raise_for_status()
-        nomina_info = nomina_res.json()
-        form_type = nomina_info[0].get('form_type', 'neurologia')
-
-        pdf_base_path = ''
-        if form_type == 'neurologia':
-            pdf_base_path = PDF_BASE_NEUROLOGIA
-        elif form_type == 'medicina_familiar':
-            pdf_base_path = PDF_BASE_FAMILIAR
-        else:
-            return jsonify({"success": False, "message": "Tipo de formulario no reconocido para generar PDF."}), 400
-
-        # Generar el PDF en memoria (similar a generar_pdf)
-        reader = PdfReader(pdf_base_path)
-        writer = PdfWriter()
-
-        for page_num in range(len(reader.pages)):
-            page = reader.pages[page_num]
-            writer.add_page(page)
-
-            if "/AcroForm" in page and "/Fields" in page["/AcroForm"]:
-                for field in page["/AcroForm"]["/Fields"]:
-                    field_name = field.get("/T")
-                    if field_name:
-                        field_name = str(field_name)
-
-                        # Rellenar campos comunes
-                        if field_name == "Nombres y Apellidos":
-                            writer.update_page_form_field_values(writer.pages[page_num], {"Nombres y Apellidos": est.get('nombre', '')})
-                        elif field_name == "RUN":
-                            writer.update_page_form_field_values(writer.pages[page_num], {"RUN": est.get('rut', '')})
-                        elif field_name == "Fecha nacimiento (dd/mm/aaaa)":
-                            fecha_nac_obj = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date() if est.get('fecha_nacimiento') else None
-                            writer.update_page_form_field_values(writer.pages[page_num], {"Fecha nacimiento (dd/mm/aaaa)": fecha_nac_obj.strftime('%d/%m/%Y') if fecha_nac_obj else ''})
-                        elif field_name == "Edad (en años y meses)":
-                            years, months = calculate_age(est.get('fecha_nacimiento'))
-                            writer.update_page_form_field_values(writer.pages[page_num], {"Edad (en años y meses)": f"{years} años {months} meses" if years is not None else ''})
-                        elif field_name == "Nacionalidad":
-                            writer.update_page_form_field_values(writer.pages[page_num], {"Nacionalidad": est.get('nacionalidad', '')})
-                        
-                        # Campos específicos de Neurología
-                        elif form_type == 'neurologia':
-                            if field_name == "Sexo":
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Sexo": est.get('sexo', '')})
-                            elif field_name == "Estado general del alumno":
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Estado general del alumno": est.get('estado_general', '')})
-                            elif field_name == "Diagnostico":
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Diagnostico": est.get('diagnostico', '')})
-                            elif field_name == "Fecha reevaluacion":
-                                fecha_reeval_obj = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').date() if est.get('fecha_reevaluacion') else None
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Fecha reevaluacion": fecha_reeval_obj.strftime('%d/%m/%Y') if fecha_reeval_obj else ''})
-                            elif field_name == "Derivaciones":
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Derivaciones": est.get('derivaciones', '')})
-                        
-                        # Campos específicos de Medicina Familiar
-                        elif form_type == 'medicina_familiar':
-                            # Género (checkboxes en PDF)
-                            if field_name == "F" and est.get('genero_f'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"F": "/Yes"})
-                            elif field_name == "M" and est.get('genero_m'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"M": "/Yes"})
-                            
-                            # Motivo de Consulta
-                            elif field_name == "DIAGNOSTICO": # Campo para diagnostico_1
-                                writer.update_page_form_field_values(writer.pages[page_num], {"DIAGNOSTICO": est.get('diagnostico_1', '')})
-                            elif field_name == "DIAGNÓSTICO COMPLEMENTARIO": # Campo para diagnostico_complementario (o diagnostico_2 si se mapea así)
-                                writer.update_page_form_field_values(writer.pages[page_num], {"DIAGNÓSTICO COMPLEMENTARIO": est.get('diagnostico_complementario', '')})
-                            elif field_name == "Clasificación":
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Clasificación": est.get('clasificacion', '')})
-                            elif field_name == "INDICACIONES": # Campo para derivaciones
-                                writer.update_page_form_field_values(writer.pages[page_num], {"INDICACIONES": est.get('derivaciones', '')})
-                            
-                            # Fechas
-                            elif field_name == "Fecha evaluación":
-                                fecha_eval_obj = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').date() if est.get('fecha_evaluacion') else None
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Fecha evaluación": fecha_eval_obj.strftime('%d/%m/%Y') if fecha_eval_obj else ''})
-                            elif field_name == "Fecha reevaluación":
-                                fecha_reeval_obj = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').date() if est.get('fecha_reevaluacion') else None
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Fecha reevaluación": fecha_reeval_obj.strftime('%d/%m/%Y') if fecha_reeval_obj else ''})
-
-                            # Observaciones (OBS1 a OBS7) - Corrected logic
-                            elif field_name.startswith("OBS") and len(field_name) == 4 and field_name[3].isdigit():
-                                obs_index = int(field_name[3])
-                                if 1 <= obs_index <= 7:
-                                    writer.update_page_form_field_values(writer.pages[page_num], {field_name: est.get(f'observacion_{obs_index}', '')})
-
-                            # Antecedentes Perinatales (checkboxes)
-                            elif field_name == "CESAREA" and est.get('check_cesarea'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"CESAREA": "/Yes"})
-                            elif field_name == "A TÉRMINO" and est.get('check_atermino'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"A TÉRMINO": "/Yes"})
-                            elif field_name == "VAGINAL" and est.get('check_vaginal'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"VAGINAL": "/Yes"})
-                            elif field_name == "PREMATURO" and est.get('check_prematuro'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"PREMATURO": "/Yes"})
-                            
-                            # DSM (checkboxes)
-                            elif field_name == "LOGRADO ACORDE A LA EDAD" and est.get('check_acorde'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"LOGRADO ACORDE A LA EDAD": "/Yes"})
-                            elif field_name == "RETRASO GENERALIZADO DEL DESARROLLO" and est.get('check_retrasogeneralizado'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"RETRASO GENERALIZADO DEL DESARROLLO": "/Yes"})
-
-                            # Vacunas (checkboxes)
-                            elif field_name == "ESQUEMA COMPLETO" and est.get('check_esquemac'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"ESQUEMA COMPLETO": "/Yes"})
-                            elif field_name == "ESQUEMA INCOMPLETO" and est.get('check_esquemai'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"ESQUEMA INCOMPLETO": "/Yes"})
-                            
-                            # Alergias (checkboxes)
-                            elif field_name == "NO" and est.get('check_alergiano'): # Alergias NO
-                                writer.update_page_form_field_values(writer.pages[page_num], {"NO": "/Yes"})
-                            elif field_name == "SI" and est.get('check_alergiasi'): # Alergias SI
-                                writer.update_page_form_field_values(writer.pages[page_num], {"SI": "/Yes"})
-
-                            # Hospitalizaciones/Cirugías (checkboxes)
-                            elif field_name == "NO_2" and est.get('check_cirugiano'): # Hospitalizaciones NO
-                                writer.update_page_form_field_values(writer.pages[page_num], {"NO_2": "/Yes"})
-                            elif field_name == "SI_2" and est.get('check_cirugiasi'): # Hospitalizaciones SI
-                                writer.update_page_form_field_values(writer.pages[page_num], {"SI_2": "/Yes"})
-
-                            # Visión (checkboxes)
-                            elif field_name == "SIN ALTERACIÓN" and est.get('check_visionsinalteracion'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"SIN ALTERACIÓN": "/Yes"})
-                            elif field_name == "VICIOS DE REFRACCIÓN" and est.get('check_visionrefraccion'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"VICIOS DE REFRACCIÓN": "/Yes"})
-
-                            # Audición (checkboxes)
-                            elif field_name == "NORMAL" and est.get('check_audicionnormal'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"NORMAL": "/Yes"})
-                            elif field_name == "HIPOACUSIA" and est.get('check_hipoacusia'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"HIPOACUSIA": "/Yes"})
-                            elif field_name == "TAPÓN DE CERUMEN" and est.get('check_tapondecerumen'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"TAPÓN DE CERUMEN": "/Yes"})
-
-                            # Salud Bucodental (checkboxes)
-                            elif field_name == "SIN HALLAZGOS" and est.get('check_sinhallazgos'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"SIN HALLAZGOS": "/Yes"})
-                            elif field_name == "CARIES" and est.get('check_caries'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"CARIES": "/Yes"})
-                            elif field_name == "APIÑAMIENTO DENTAL" and est.get('check_apinamientodental'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"APIÑAMIENTO DENTAL": "/Yes"})
-                            elif field_name == "RETENCIÓN DENTAL" and est.get('check_retenciondental'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"RETENCIÓN DENTAL": "/Yes"})
-                            elif field_name == "FRENILLO LINGUAL" and est.get('check_frenillolingual'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"FRENILLO LINGUAL": "/Yes"})
-                            elif field_name == "HIPERTROFIA AMIGDALINA" and est.get('check_hipertrofia'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"HIPERTROFIA AMIGDALINA": "/Yes"})
-
-                            # Medidas Antropométricas
-                            elif field_name == "Altura":
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Altura": str(est.get('altura', ''))})
-                            elif field_name == "Peso":
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Peso": str(est.get('peso', ''))})
-                            elif field_name == "I.M.C":
-                                writer.update_page_form_field_values(writer.pages[page_num], {"I.M.C": est.get('imc', '')})
-                            elif field_name == "Clasificación_IMC": # Asumiendo un campo para la clasificación del IMC
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Clasificación_IMC": est.get('clasificacion_imc', '')})
-                            
-                            # Información del profesional (se asume que se rellena con datos de la doctora logeada)
-                            elif field_name == "Nombres y Apellidos_Doctor":
-                                # Obtener nombre de la doctora
-                                doctor_url = f"{SUPABASE_URL}/rest/v1/usuarios?id=eq.{est.get('doctora_evaluadora_id')}&select=username"
-                                doctor_res = requests.get(doctor_url, headers=SUPABASE_SERVICE_HEADERS)
-                                doctor_res.raise_for_status()
-                                doctor_info = doctor_res.json()
-                                doctor_name = doctor_info[0]['username'] if doctor_info else 'N/A'
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Nombres y Apellidos_Doctor": doctor_name})
-                            elif field_name == "Rut_Doctor":
-                                # Asumiendo que el RUT de la doctora también está en la tabla de usuarios
-                                doctor_url = f"{SUPABASE_URL}/rest/v1/usuarios?id=eq.{est.get('doctora_evaluadora_id')}&select=rut"
-                                doctor_res = requests.get(doctor_url, headers=SUPABASE_SERVICE_HEADERS)
-                                doctor_res.raise_for_status()
-                                doctor_info = doctor_res.json()
-                                doctor_rut = doctor_info[0]['rut'] if doctor_info and doctor_info[0].get('rut') else 'N/A'
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Rut_Doctor": doctor_rut})
-                            elif field_name == "Nº Registro Profesional":
-                                # Asumiendo que el número de registro está en la tabla de usuarios
-                                doctor_url = f"{SUPABASE_URL}/rest/v1/usuarios?id=eq.{est.get('doctora_evaluadora_id')}&select=registro_profesional"
-                                doctor_res = requests.get(doctor_url, headers=SUPABASE_SERVICE_HEADERS)
-                                doctor_res.raise_for_status()
-                                doctor_info = doctor_res.json()
-                                doctor_reg = doctor_info[0]['registro_profesional'] if doctor_info and doctor_info[0].get('registro_profesional') else 'N/A'
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Nº Registro Profesional": doctor_reg})
-                            elif field_name == "Especialidad":
-                                # Asumiendo que la especialidad está en la tabla de usuarios
-                                doctor_url = f"{SUPABASE_URL}/rest/v1/usuarios?id=eq.{est.get('doctora_evaluadora_id')}&select=especialidad"
-                                doctor_res = requests.get(doctor_url, headers=SUPABASE_SERVICE_HEADERS)
-                                doctor_res.raise_for_status()
-                                doctor_info = doctor_res.json()
-                                doctor_esp = doctor_info[0]['especialidad'] if doctor_info and doctor_info[0].get('especialidad') else 'N/A'
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Especialidad": doctor_esp})
-                            elif field_name == "Fono/E-Mail Contacto":
-                                # Asumiendo que el email está en la tabla de usuarios
-                                doctor_url = f"{SUPABASE_URL}/rest/v1/usuarios?id=eq.{est.get('doctora_evaluadora_id')}&select=email"
-                                doctor_res = requests.get(doctor_url, headers=SUPABASE_SERVICE_HEADERS)
-                                doctor_res.raise_for_status()
-                                doctor_info = doctor_res.json()
-                                doctor_email = doctor_info[0]['email'] if doctor_info and doctor_info[0].get('email') else 'N/A'
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Fono/E-Mail Contacto": doctor_email})
-                            elif field_name == "Salud pública" and est.get('procedencia_salud_publica'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Salud pública": "/Yes"})
-                            elif field_name == "Particular" and est.get('procedencia_particular'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Particular": "/Yes"})
-                            elif field_name == "Escuela" and est.get('procedencia_escuela'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Escuela": "/Yes"})
-                            elif field_name == "Otro" and est.get('procedencia_otro'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Otro": "/Yes"})
-
-        output_pdf = io.BytesIO()
-        writer.write(output_pdf)
-        output_pdf.seek(0)
-
-        # Enviar el PDF como respuesta
-        filename = f"formulario_{est.get('nombre', 'sin_nombre').replace(' ', '_')}_{form_type}.pdf"
-        return send_file(output_pdf, download_name=filename, as_attachment=False, mimetype='application/pdf')
-
-    except requests.exceptions.RequestException as e:
-        flash(f"Error de conexión con la base de datos al generar PDF: {e}", "error")
-        print(f"ERROR: Error en /generar_pdf (Supabase): {e}")
-        return redirect(url_for('relleno_formularios', nomina_id=session.get('current_nomina_id')))
-    except Exception as e:
-        flash(f"Ocurrió un error inesperado al generar el PDF: {e}", "error")
-        print(f"ERROR: Error inesperado en /generar_pdf: {e}")
-        return redirect(url_for('relleno_formularios', nomina_id=session.get('current_nomina_id')))
-
-
-@app.route('/enviar_formulario_a_drive', methods=['POST'])
-@login_required
-def enviar_formulario_a_drive():
-    estudiante_id = request.form.get('estudiante_id')
-    nomina_id = request.form.get('nomina_id')
-
-    if not estudiante_id or not nomina_id:
-        return jsonify({"success": False, "message": "Datos incompletos para enviar a Google Drive."}), 400
-
-    try:
-        # Obtener datos completos del estudiante desde Supabase
-        estudiante_url = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}&select=*"
-        estudiante_res = requests.get(estudiante_url, headers=SUPABASE_SERVICE_HEADERS)
-        estudiante_res.raise_for_status()
-        est = estudiante_res.json()[0]
-
-        # Obtener el tipo de formulario de la nómina
-        nomina_url = f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}&select=form_type"
-        nomina_res = requests.get(nomina_url, headers=SUPABASE_SERVICE_HEADERS)
-        nomina_res.raise_for_status()
-        nomina_info = nomina_res.json()
-        form_type = nomina_info[0].get('form_type', 'neurologia')
-
-        pdf_base_path = ''
-        if form_type == 'neurologia':
-            pdf_base_path = PDF_BASE_NEUROLOGIA
-        elif form_type == 'medicina_familiar':
-            pdf_base_path = PDF_BASE_FAMILIAR
-        else:
-            return jsonify({"success": False, "message": "Tipo de formulario no reconocido para generar PDF."}), 400
-
-        # Generar el PDF en memoria (similar a generar_pdf)
-        reader = PdfReader(pdf_base_path)
-        writer = PdfWriter()
-
-        for page_num in range(len(reader.pages)):
-            page = reader.pages[page_num]
-            writer.add_page(page)
-
-            if "/AcroForm" in page and "/Fields" in page["/AcroForm"]:
-                for field in page["/AcroForm"]["/Fields"]:
-                    field_name = field.get("/T")
-                    if field_name:
-                        field_name = str(field_name)
-
-                        # Rellenar campos comunes
-                        if field_name == "Nombres y Apellidos":
-                            writer.update_page_form_field_values(writer.pages[page_num], {"Nombres y Apellidos": est.get('nombre', '')})
-                        elif field_name == "RUN":
-                            writer.update_page_form_field_values(writer.pages[page_num], {"RUN": est.get('rut', '')})
-                        elif field_name == "Fecha nacimiento (dd/mm/aaaa)":
-                            fecha_nac_obj = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date() if est.get('fecha_nacimiento') else None
-                            writer.update_page_form_field_values(writer.pages[page_num], {"Fecha nacimiento (dd/mm/aaaa)": fecha_nac_obj.strftime('%d/%m/%Y') if fecha_nac_obj else ''})
-                        elif field_name == "Edad (en años y meses)":
-                            years, months = calculate_age(est.get('fecha_nacimiento'))
-                            writer.update_page_form_field_values(writer.pages[page_num], {"Edad (en años y meses)": f"{years} años {months} meses" if years is not None else ''})
-                        elif field_name == "Nacionalidad":
-                            writer.update_page_form_field_values(writer.pages[page_num], {"Nacionalidad": est.get('nacionalidad', '')})
-                        
-                        # Campos específicos de Neurología
-                        elif form_type == 'neurologia':
-                            if field_name == "Sexo":
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Sexo": est.get('sexo', '')})
-                            elif field_name == "Estado general del alumno":
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Estado general del alumno": est.get('estado_general', '')})
-                            elif field_name == "Diagnostico":
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Diagnostico": est.get('diagnostico', '')})
-                            elif field_name == "Fecha reevaluacion":
-                                fecha_reeval_obj = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').date() if est.get('fecha_reevaluacion') else None
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Fecha reevaluacion": fecha_reeval_obj.strftime('%d/%m/%Y') if fecha_reeval_obj else ''})
-                            elif field_name == "Derivaciones":
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Derivaciones": est.get('derivaciones', '')})
-                        
-                        # Campos específicos de Medicina Familiar
-                        elif form_type == 'medicina_familiar':
-                            # Género (checkboxes en PDF)
-                            if field_name == "F" and est.get('genero_f'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"F": "/Yes"})
-                            elif field_name == "M" and est.get('genero_m'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"M": "/Yes"})
-                            
-                            # Motivo de Consulta
-                            elif field_name == "DIAGNOSTICO": # Campo para diagnostico_1
-                                writer.update_page_form_field_values(writer.pages[page_num], {"DIAGNOSTICO": est.get('diagnostico_1', '')})
-                            elif field_name == "DIAGNÓSTICO COMPLEMENTARIO": # Campo para diagnostico_complementario (o diagnostico_2 si se mapea así)
-                                writer.update_page_form_field_values(writer.pages[page_num], {"DIAGNÓSTICO COMPLEMENTARIO": est.get('diagnostico_complementario', '')})
-                            elif field_name == "Clasificación":
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Clasificación": est.get('clasificacion', '')})
-                            elif field_name == "INDICACIONES": # Campo para derivaciones
-                                writer.update_page_form_field_values(writer.pages[page_num], {"INDICACIONES": est.get('derivaciones', '')})
-                            
-                            # Fechas
-                            elif field_name == "Fecha evaluación":
-                                fecha_eval_obj = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').date() if est.get('fecha_evaluacion') else None
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Fecha evaluación": fecha_eval_obj.strftime('%d/%m/%Y') if fecha_eval_obj else ''})
-                            elif field_name == "Fecha reevaluación":
-                                fecha_reeval_obj = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').date() if est.get('fecha_reevaluacion') else None
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Fecha reevaluación": fecha_reeval_obj.strftime('%d/%m/%Y') if fecha_reeval_obj else ''})
-
-                            # Observaciones (OBS1 a OBS7) - Corrected logic
-                            elif field_name.startswith("OBS") and len(field_name) == 4 and field_name[3].isdigit():
-                                obs_index = int(field_name[3])
-                                if 1 <= obs_index <= 7:
-                                    writer.update_page_form_field_values(writer.pages[page_num], {field_name: est.get(f'observacion_{obs_index}', '')})
-
-                            # Antecedentes Perinatales (checkboxes)
-                            elif field_name == "CESAREA" and est.get('check_cesarea'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"CESAREA": "/Yes"})
-                            elif field_name == "A TÉRMINO" and est.get('check_atermino'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"A TÉRMINO": "/Yes"})
-                            elif field_name == "VAGINAL" and est.get('check_vaginal'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"VAGINAL": "/Yes"})
-                            elif field_name == "PREMATURO" and est.get('check_prematuro'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"PREMATURO": "/Yes"})
-                            
-                            # DSM (checkboxes)
-                            elif field_name == "LOGRADO ACORDE A LA EDAD" and est.get('check_acorde'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"LOGRADO ACORDE A LA EDAD": "/Yes"})
-                            elif field_name == "RETRASO GENERALIZADO DEL DESARROLLO" and est.get('check_retrasogeneralizado'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"RETRASO GENERALIZADO DEL DESARROLLO": "/Yes"})
-
-                            # Vacunas (checkboxes)
-                            elif field_name == "ESQUEMA COMPLETO" and est.get('check_esquemac'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"ESQUEMA COMPLETO": "/Yes"})
-                            elif field_name == "ESQUEMA INCOMPLETO" and est.get('check_esquemai'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"ESQUEMA INCOMPLETO": "/Yes"})
-                            
-                            # Alergias (checkboxes)
-                            elif field_name == "NO" and est.get('check_alergiano'): # Alergias NO
-                                writer.update_page_form_field_values(writer.pages[page_num], {"NO": "/Yes"})
-                            elif field_name == "SI" and est.get('check_alergiasi'): # Alergias SI
-                                writer.update_page_form_field_values(writer.pages[page_num], {"SI": "/Yes"})
-
-                            # Hospitalizaciones/Cirugías (checkboxes)
-                            elif field_name == "NO_2" and est.get('check_cirugiano'): # Hospitalizaciones NO
-                                writer.update_page_form_field_values(writer.pages[page_num], {"NO_2": "/Yes"})
-                            elif field_name == "SI_2" and est.get('check_cirugiasi'): # Hospitalizaciones SI
-                                writer.update_page_form_field_values(writer.pages[page_num], {"SI_2": "/Yes"})
-
-                            # Visión (checkboxes)
-                            elif field_name == "SIN ALTERACIÓN" and est.get('check_visionsinalteracion'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"SIN ALTERACIÓN": "/Yes"})
-                            elif field_name == "VICIOS DE REFRACCIÓN" and est.get('check_visionrefraccion'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"VICIOS DE REFRACCIÓN": "/Yes"})
-
-                            # Audición (checkboxes)
-                            elif field_name == "NORMAL" and est.get('check_audicionnormal'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"NORMAL": "/Yes"})
-                            elif field_name == "HIPOACUSIA" and est.get('check_hipoacusia'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"HIPOACUSIA": "/Yes"})
-                            elif field_name == "TAPÓN DE CERUMEN" and est.get('check_tapondecerumen'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"TAPÓN DE CERUMEN": "/Yes"})
-
-                            # Salud Bucodental (checkboxes)
-                            elif field_name == "SIN HALLAZGOS" and est.get('check_sinhallazgos'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"SIN HALLAZGOS": "/Yes"})
-                            elif field_name == "CARIES" and est.get('check_caries'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"CARIES": "/Yes"})
-                            elif field_name == "APIÑAMIENTO DENTAL" and est.get('check_apinamientodental'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"APIÑAMIENTO DENTAL": "/Yes"})
-                            elif field_name == "RETENCIÓN DENTAL" and est.get('check_retenciondental'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"RETENCIÓN DENTAL": "/Yes"})
-                            elif field_name == "FRENILLO LINGUAL" and est.get('check_frenillolingual'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"FRENILLO LINGUAL": "/Yes"})
-                            elif field_name == "HIPERTROFIA AMIGDALINA" and est.get('check_hipertrofia'):
-                                writer.update_page_form_field_values(writer.pages[page_num], {"HIPERTROFIA AMIGDALINA": "/Yes"})
-
-                            # Medidas Antropométricas
-                            elif field_name == "Altura":
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Altura": str(est.get('altura', ''))})
-                            elif field_name == "Peso":
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Peso": str(est.get('peso', ''))})
-                            elif field_name == "I.M.C":
-                                writer.update_page_form_field_values(writer.pages[page_num], {"I.M.C": est.get('imc', '')})
-                            elif field_name == "Clasificación_IMC":
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Clasificación_IMC": est.get('clasificacion_imc', '')})
-                            
-                            # Información del profesional (se asume que se rellena con datos de la doctora logeada)
-                            elif field_name == "Nombres y Apellidos_Doctor":
-                                doctor_url = f"{SUPABASE_URL}/rest/v1/usuarios?id=eq.{est.get('doctora_evaluadora_id')}&select=username"
-                                doctor_res = requests.get(doctor_url, headers=SUPABASE_SERVICE_HEADERS)
-                                doctor_res.raise_for_status()
-                                doctor_info = doctor_res.json()
-                                doctor_name = doctor_info[0]['username'] if doctor_info else 'N/A'
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Nombres y Apellidos_Doctor": doctor_name})
-                            elif field_name == "Rut_Doctor":
-                                doctor_url = f"{SUPABASE_URL}/rest/v1/usuarios?id=eq.{est.get('doctora_evaluadora_id')}&select=rut"
-                                doctor_res = requests.get(doctor_url, headers=SUPABASE_SERVICE_HEADERS)
-                                doctor_res.raise_for_status()
-                                doctor_info = doctor_res.json()
-                                doctor_rut = doctor_info[0]['rut'] if doctor_info and doctor_info[0].get('rut') else 'N/A'
-                                writer.update_page_form_field_values(writer.pages[page_num], {"Rut_Doctor": doctor_rut})
-                            elif field_name == "Nº Registro Profesional":
                                 doctor_url = f"{SUPABASE_URL}/rest/v1/usuarios?id=eq.{est.get('doctora_evaluadora_id')}&select=registro_profesional"
                                 doctor_res = requests.get(doctor_url, headers=SUPABASE_SERVICE_HEADERS)
                                 doctor_res.raise_for_status()

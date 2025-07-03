@@ -13,7 +13,7 @@
     <!-- Chart.js CDN para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
     <style>
-        /* Variables CSS personalizadas */
+        /* Custom CSS variables */
         :root {
             --primary-dark: hsl(210, 29%, 24%); /* Deep Slate Blue */
             --primary-medium: hsl(210, 15%, 35%); /* Darker Grayish Blue */
@@ -33,10 +33,10 @@
             --gap-base: 25px;
         }
 
-        /* Fuentes de Google Fonts para un aspecto más profesional */
+        /* Google Fonts for a more professional look */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap');
 
-        /* Estilos generales del cuerpo */
+        /* General body styles */
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--background-accent);
@@ -50,18 +50,18 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
-        /* Estilos del header */
+        /* Header styles */
         header {
             background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-medium) 100%);
             color: var(--text-light);
             padding: 1.5rem 0;
-            text-align: center;
+            text-align: center; /* Centers the h1 and other inline elements */
             box-shadow: 0 6px 20px var(--shadow-strong);
             position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            display: flex; /* Using flex to help with vertical alignment if needed */
+            flex-direction: column; /* Stack children vertically */
+            align-items: center; /* Center children horizontally in a column */
+            justify-content: center; /* Center children vertically if space allows */
             z-index: 10;
         }
 
@@ -69,7 +69,8 @@
             width: 100px;
             height: auto;
             filter: brightness(0) invert(1);
-            margin-bottom: 5px;
+            margin: 0 auto 5px auto; /* This line centers the image horizontally */
+            display: block; /* Ensures the image behaves as a block element for margin:auto to work */
         }
 
         header h1 {
@@ -82,7 +83,7 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
-        /* Botón de cerrar sesión */
+        /* Logout button */
         .logout-btn {
             background-color: var(--accent-red);
             color: var(--text-light);
@@ -111,7 +112,7 @@
             font-size: 15px;
         }
 
-        /* Botón de menú para móviles */
+        /* Menu button for mobile */
         .menu-toggle-btn {
             background: none;
             border: none;
@@ -125,7 +126,7 @@
             display: none;
         }
 
-        /* Wrapper principal del dashboard */
+        /* Main dashboard wrapper */
         .dashboard-wrapper {
             display: flex;
             flex: 1;
@@ -188,19 +189,19 @@
             font-size: 18px;
         }
 
-        /* Contenido principal del dashboard */
+        /* Main dashboard content */
         .dashboard-content {
             flex-grow: 1;
             padding: 0 var(--gap-base) var(--gap-base) var(--gap-base);
             transition: margin-left 0.3s ease-in-out;
         }
 
-        /* Ajuste cuando el sidebar está colapsado */
+        /* Adjustment when sidebar is collapsed */
         .dashboard-wrapper.sidebar-active .dashboard-content {
             margin-left: 250px;
         }
 
-        /* Sección de contenido */
+        /* Content section */
         .content-section {
             display: none;
             animation: fadeIn 0.5s ease-out forwards;
@@ -215,7 +216,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Tarjetas de estadísticas */
+        /* Statistics cards */
         .summary {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -252,7 +253,7 @@
             color: inherit;
         }
 
-        /* Cards generales */
+        /* General cards */
         .card {
             background: white;
             padding: var(--padding-base);
@@ -289,7 +290,7 @@
             font-size: 1.2em;
         }
 
-        /* Formularios */
+        /* Forms */
         form {
             display: flex;
             flex-direction: column;
@@ -359,7 +360,7 @@
         #limpiarFiltros { background-color: hsl(210, 10%, 50%); }
         #limpiarFiltros:hover { background-color: hsl(210, 10%, 40%); }
 
-        /* Lista de elementos (visitas, nóminas, formularios subidos) */
+        /* Item list (visits, nominations, uploaded forms) */
         .lista-items {
             list-style: none;
             padding: 0;
@@ -415,7 +416,7 @@
         .item-card-action-link:hover {
             background-color: hsl(200, 60%, 40%);
         }
-        /* Estilo para el botón de eliminar */
+        /* Style for delete button */
         .delete-btn {
             background-color: var(--accent-red);
             color: white;
@@ -483,7 +484,7 @@
             opacity: 0;
         }
 
-        /* Tarjeta de rendimiento de doctoras para admin */
+        /* Doctor performance card for admin */
         .doctor-performance-item {
             display: flex;
             justify-content: space-between;
@@ -502,7 +503,7 @@
             color: var(--accent-blue);
         }
 
-        /* Estilos para el contenedor del gráfico */
+        /* Chart container styles */
         .chart-container {
             position: relative;
             height: 400px;
@@ -587,7 +588,7 @@
                 height: 300px;
             }
         }
-        /* Para evitar el doble scroll y asegurar el diseño sticky del sidebar */
+        /* To prevent double scroll and ensure sticky sidebar design */
         html {
             overflow-y: hidden;
         }
@@ -632,7 +633,7 @@
         </aside>
 
         <main class="dashboard-content">
-            <!-- SECCIÓN DE BIENVENIDA -->
+            <!-- WELCOME SECTION -->
             <div id="welcome-section" class="content-section active">
                 <div class="card welcome-card">
                     <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo CardioHome" />
@@ -642,7 +643,7 @@
             </div>
 
             {% if usuario == 'admin' %}
-                <!-- Sección para Administrador: Rendimiento -->
+                <!-- Admin Section: Performance -->
                 <div id="admin-performance" class="content-section">
                     <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento del Administrador</h2>
                     <div class="summary">
@@ -672,7 +673,7 @@
                     </div>
                 </div>
 
-                <!-- Sección para Administrador: Agregar Visita Programada -->
+                <!-- Admin Section: Add Scheduled Visit -->
                 <div id="admin-add-visit" class="content-section">
                     <div class="card admin-form">
                         <h3><i class="fa-solid fa-calendar-plus"></i> Agregar Visita Programada</h3>
@@ -705,7 +706,7 @@
                     </div>
                 </div>
 
-                <!-- Sección para Administrador: Cargar Nómina Médica -->
+                <!-- Admin Section: Upload Medical Roster -->
                 <div id="admin-upload-nomina" class="content-section">
                     <div class="card admin-form">
                         <h3><i class="fa-solid fa-file-excel"></i> Cargar Nómina Médica (Excel/CSV)</h3>
@@ -724,6 +725,14 @@
                                 {% endfor %}
                             </select>
 
+                            <!-- NEW: Select for Form Type -->
+                            <label for="form_type_nomina">Tipo de Formulario Asociado:</label>
+                            <select id="form_type_nomina" name="form_type" required>
+                                <option value="">Selecciona el tipo de formulario</option>
+                                <option value="neurologia">Neurología</option>
+                                <option value="medicina_familiar">Medicina Familiar</option>
+                            </select>
+
                             <label for="excel_nomina">Archivo Excel/CSV de la Nómina:</label>
                             <input type="file" id="excel_nomina" name="excel" accept=".xls,.xlsx,.csv" required />
                             
@@ -732,7 +741,7 @@
                     </div>
                 </div>
 
-                <!-- Sección para el administrador: Visitas Programadas (todos los eventos) -->
+                <!-- Admin Section: All Scheduled Visits -->
                 <div id="admin-visits-list" class="content-section">
                     <div class="card admin-list">
                         <h3><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas Programadas</h3>
@@ -754,7 +763,7 @@
                                                 <i class="fa-solid fa-file-alt"></i> Ver Formulario Base
                                             </a>
                                         {% endif %}
-                                        <!-- Botón de eliminar colegio/establecimiento -->
+                                        <!-- Button to delete school/establishment -->
                                         <button class="delete-btn" onclick="confirmDelete('establecimiento', '{{ evento.id }}', '{{ evento.nombre }}')">
                                             <i class="fas fa-trash"></i> Eliminar Colegio
                                         </button>
@@ -767,7 +776,7 @@
                     </div>
                 </div>
 
-                <!-- NUEVA SECCIÓN para el administrador: Nóminas Cargadas -->
+                <!-- NEW SECTION for admin: Uploaded Rosters -->
                 <div id="admin-nominas-list" class="content-section">
                     <div class="card admin-list">
                         <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Médicas Cargadas</h3>
@@ -781,16 +790,19 @@
                                         </div>
                                         <div class="item-card-details">
                                             <span>Archivo Original: {{ nomina.nombre_excel_original }}</span>
+                                            <!-- Display the associated form type -->
+                                            <span>Tipo de Formulario: {{ nomina.form_type | default('No especificado') | capitalize }}</span>
                                         </div>
                                         {% if nomina.url_excel_original %}
                                             <a href="{{ nomina.url_excel_original }}" target="_blank" class="item-card-action-link">
                                                 <i class="fa-solid fa-file-excel"></i> Ver Excel Original
                                             </a>
                                         {% endif %}
+                                        <!-- The link to fill the form should now pass the form_type -->
                                         <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="item-card-action-link" style="background-color: var(--accent-green);">
                                             <i class="fa-solid fa-list-ul"></i> Rellenar y Ver Estudiantes
                                         </a>
-                                        <!-- Botón de eliminar nómina (y sus estudiantes) -->
+                                        <!-- Button to delete roster (and its students) -->
                                         <button class="delete-btn" onclick="confirmDelete('nomina', '{{ nomina.id }}', '{{ nomina.nombre_nomina }}')">
                                             <i class="fas fa-trash"></i> Eliminar Nómina y Estudiantes
                                         </button>
@@ -803,7 +815,7 @@
                     </div>
                 </div>
 
-                <!-- Sección para el administrador: Todos los Formularios Subidos -->
+                <!-- Admin Section: All Uploaded Forms -->
                 <div id="admin-uploaded-forms-all" class="content-section">
                     <div class="card">
                         <h3><i class="fa-solid fa-folder-open"></i> Todos los Formularios Subidos</h3>
@@ -832,7 +844,7 @@
                 </div>
 
             {% else %}
-                <!-- Sección para Doctores: Mi Rendimiento -->
+                <!-- Doctor Section: My Performance -->
                 <div id="doctor-performance" class="content-section">
                     <div class="card">
                         <h3><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento (Formularios)</h3>
@@ -853,7 +865,7 @@
                     </div>
                 </div>
 
-                <!-- Sección para Doctores: Mis Próximas Visitas -->
+                <!-- Doctor Section: My Upcoming Visits -->
                 <div id="doctor-visits" class="content-section">
                     <div class="card">
                         <h3><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</h3>
@@ -893,7 +905,7 @@
                     </div>
                 </div>
 
-                <!-- Sección para Doctores: Mis Nóminas Médicas Asignadas -->
+                <!-- Doctor Section: My Assigned Rosters -->
                 <div id="doctor-nominas" class="content-section">
                     <div class="card">
                         <h3><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Médicas Asignadas</h3>
@@ -905,6 +917,7 @@
                                             <span>{{ nomina.nombre_establecimiento }}</span>
                                             <span>Tipo: {{ nomina.tipo_nomina_display }}</span>
                                         </div>
+                                        <!-- The link to fill the form should now pass the form_type -->
                                         <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="item-card-action-link">
                                             <i class="fa-solid fa-edit"></i> Rellenar y Ver Estudiantes
                                         </a>
@@ -917,7 +930,7 @@
                     </div>
                 </div>
 
-                <!-- Sección para Doctores: Mis Formularios Subidos -->
+                <!-- Doctor Section: My Uploaded Forms -->
                 <div id="doctor-uploaded-forms" class="content-section">
                     <div class="card">
                         <h3><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</h3>
@@ -964,7 +977,7 @@
             const contentSections = document.querySelectorAll('.content-section');
             const dashboardWrapper = document.querySelector('.dashboard-wrapper');
 
-            // Función para activar una sección y desactivar las demás
+            // Function to activate a section and deactivate others
             function showSection(sectionId) {
                 contentSections.forEach(section => {
                     section.classList.remove('active');
@@ -974,7 +987,7 @@
                     activeSection.classList.add('active');
                     activeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-                    // Si es la sección de rendimiento, renderiza el gráfico
+                    // If it's the performance section, render the chart
                     if (sectionId === 'admin-performance') {
                         renderAdminPerformanceChart();
                     } else if (sectionId === 'doctor-performance') {
@@ -983,7 +996,7 @@
                 }
             }
 
-            // Manejar clics en los enlaces de navegación
+            // Handle clicks on navigation links
             navLinks.forEach(link => {
                 link.addEventListener('click', function(event) {
                     event.preventDefault();
@@ -1000,7 +1013,7 @@
                 });
             });
 
-            // Manejar el botón de menú para móviles
+            // Handle menu button for mobile
             if (menuToggle) {
                 menuToggle.addEventListener('click', function() {
                     sidebar.classList.toggle('active');
@@ -1008,7 +1021,7 @@
                 });
             }
 
-            // Ocultar el sidebar si se hace clic fuera en móviles
+            // Hide sidebar if clicked outside on mobile
             document.addEventListener('click', function(event) {
                 if (window.innerWidth <= 768 && sidebar.classList.contains('active')) {
                     const isClickInsideSidebar = sidebar.contains(event.target);
@@ -1020,7 +1033,7 @@
                 }
             });
 
-            // Inicializar mostrando la primera sección activa por defecto
+            // Initialize by showing the first active section by default
             const initialActiveLink = document.querySelector('.nav-link.active');
             if (initialActiveLink) {
                 showSection(initialActiveLink.dataset.section);
@@ -1030,7 +1043,7 @@
             }
         });
 
-        // Función para confirmar y realizar la eliminación
+        // Function to confirm and perform deletion
         function confirmDelete(type, id, name) {
             Swal.fire({
                 title: `¿Estás seguro de eliminar ${type === 'establecimiento' ? 'el colegio' : 'la nómina'} "${name}"?`,
@@ -1057,7 +1070,7 @@
                                 data.message,
                                 'success'
                             ).then(() => {
-                                window.location.reload(); // Recargar para actualizar la lista
+                                window.location.reload(); // Reload to update the list
                             });
                         } else {
                             Swal.fire(
@@ -1080,8 +1093,8 @@
         }
 
 
-        // Datos de rendimiento de doctoras para Chart.js (Admin)
-        // Se inyecta desde Flask en el template
+        // Doctor performance data for Chart.js (Admin)
+        // Injected from Flask into the template
         const adminPerformanceData = {{ doctor_performance_data | tojson }};
 
         function renderAdminPerformanceChart() {
@@ -1091,7 +1104,7 @@
                 return;
             }
 
-            // Destruir cualquier instancia de gráfico existente para evitar duplicados
+            // Destroy any existing chart instance to avoid duplicates
             if (window.adminChartInstance) {
                 window.adminChartInstance.destroy();
             }
@@ -1107,12 +1120,12 @@
                         label: 'Formularios Completados',
                         data: data,
                         backgroundColor: [
-                            'rgba(75, 192, 192, 0.6)', // Greenish-blue
-                            'rgba(153, 102, 255, 0.6)', // Purple
-                            'rgba(255, 159, 64, 0.6)',  // Orange
-                            'rgba(54, 162, 235, 0.6)',  // Blue
-                            'rgba(255, 99, 132, 0.6)',  // Red
-                            'rgba(201, 203, 207, 0.6)'  // Grey
+                            'rgba(75, 192, 192, 0.6)', /* Greenish-blue */
+                            'rgba(153, 102, 255, 0.6)', /* Purple */
+                            'rgba(255, 159, 64, 0.6)',  /* Orange */
+                            'rgba(54, 162, 235, 0.6)',  /* Blue */
+                            'rgba(255, 99, 132, 0.6)',  /* Red */
+                            'rgba(201, 203, 207, 0.6)'  /* Grey */
                         ],
                         borderColor: [
                             'rgba(75, 192, 192, 1)',
@@ -1165,8 +1178,8 @@
             });
         }
 
-        // Datos de rendimiento de la doctora loggeada (si es doctora)
-        // Se inyecta desde Flask en el template
+        /* Doctor's own performance data (if doctor is logged in) */
+        /* Injected from Flask into the template */
         const doctorPerformanceDataSingleDoctor = {{ doctor_performance_data_single_doctor | tojson }};
 
         function renderDoctorPerformanceChart() {
@@ -1176,7 +1189,7 @@
                 return;
             }
 
-            // Destruir cualquier instancia de gráfico existente para evitar duplicados
+            // Destroy any existing chart instance to avoid duplicates
             if (window.doctorChartInstance) {
                 window.doctorChartInstance.destroy();
             }
@@ -1202,7 +1215,7 @@
 
 
             const completed = doctorPerformanceDataSingleDoctor.completed;
-            const pending = doctorPerformanceDataSingleDoctor.total - completed; // Calculated dynamically from total
+            const pending = doctorPerformanceDataSingleDoctor.total - completed; /* Calculated dynamically from total */
 
             window.doctorChartInstance = new Chart(ctx, {
                 type: 'pie',
@@ -1212,8 +1225,8 @@
                         label: 'Formularios',
                         data: [completed, pending],
                         backgroundColor: [
-                            'rgba(54, 162, 235, 0.6)', // Azul para completados
-                            'rgba(255, 99, 132, 0.6)'  // Rojo claro para pendientes
+                            'rgba(54, 162, 235, 0.6)', /* Blue for completed */
+                            'rgba(255, 99, 132, 0.6)'  /* Light red for pending */
                         ],
                         borderColor: [
                             'rgba(54, 162, 235, 1)',

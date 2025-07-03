@@ -594,7 +594,7 @@ def marcar_evaluado():
     # Campos comunes o que se pueden actualizar en ambos formularios
     update_data['nombre'] = request.form.get('nombre')
     update_data['rut'] = request.form.get('rut')
-    update_data['fecha_nacimiento'] = request.form.get('fecha_nacimiento_original') # Formato YYYY-MM-DD
+    update_data['fecha_nacimiento'] = request.form.get('fecha_nacimiento_original') # FormatoYYYY-MM-DD
     update_data['nacionalidad'] = request.form.get('nacionalidad')
     update_data['edad'] = request.form.get('edad') # Guardar la cadena de edad calculada
 
@@ -604,7 +604,7 @@ def marcar_evaluado():
             'sexo': request.form.get('sexo'),
             'estado_general': request.form.get('estado'),
             'diagnostico': request.form.get('diagnostico'),
-            'fecha_reevaluacion': request.form.get('fecha_reevaluacion'), # Formato YYYY-MM-DD
+            'fecha_reevaluacion': request.form.get('fecha_reevaluacion'), # FormatoYYYY-MM-DD
             'derivaciones': request.form.get('derivaciones'),
         })
     elif form_type == 'medicina_familiar':
@@ -636,8 +636,8 @@ def marcar_evaluado():
             "peso": float(request.form.get('peso')) if request.form.get('peso') else None,
             "imc": request.form.get('imc'),
             "clasificacion_imc": request.form.get('clasificacion_imc'),
-            "fecha_evaluacion": request.form.get('fecha_evaluacion'), # Formato YYYY-MM-DD
-            "fecha_reevaluacion": request.form.get('fecha_reevaluacion'), # Formato YYYY-MM-DD
+            "fecha_evaluacion": request.form.get('fecha_evaluacion'), # FormatoYYYY-MM-DD
+            "fecha_reevaluacion": request.form.get('fecha_reevaluacion'), # FormatoYYYY-MM-DD
             "fecha_reevaluacion_select": request.form.get('fecha_reevaluacion_select'), # Valor del select (1, 2, 3 años)
             "diagnostico_complementario": request.form.get('diagnostico_complementario'),
             # Checkboxes - Asegúrate de que los nombres de los campos en HTML coincidan
@@ -1028,7 +1028,7 @@ def admin_cargar_nomina():
 
     # Determinar el form_type basado en tipo_nomina
     form_type = None
-    if tipo_nomina == 'Neurología':
+    if tipo_nomina == 'Neurología' or tipo_nomina == 'COLEGIO2': # AÑADIDO: Mapear COLEGIO2 a neurologia
         form_type = 'neurologia'
     elif tipo_nomina == 'FAMILIAR': # Asumiendo que 'FAMILIAR' es para medicina_familiar
         form_type = 'medicina_familiar'
@@ -1927,4 +1927,5 @@ def eliminar_nomina(nomina_id):
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+
 

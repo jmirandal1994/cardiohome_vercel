@@ -30,6 +30,7 @@ PDF_NEUROLOGIA_BASE = 'FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE.pdf'
 PDF_FAMILIAR_BASE = 'formulario_familiar.pdf' # Asegúrate de que este archivo exista en static/
 
 # -------------------- Supabase Configuration --------------------
+# ¡¡¡IMPORTANTE: REVISA ESTAS CLAVES EN TUS VARIABLES DE ENTORNO!!!
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://rbzxolreglwndvsrxhmg.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDE3ODcsImV4cCI6MjA2MzExNzc4N30.BbzsUhed1Y_dJYWFKLAHqtV4cXdvjF_ihGdQ_Bpov3Y")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IlNJUDU4IiwicmVmIjoiYnhzbnFmZml4d2pkcWl2eGJrZXkiLCJyb2xlIjoic2VydmljZV9yb2xlIiwiaWF0IjoxNzE5Mjg3MzI1LCJleHAiOjE3NTA4MjMzMjV9.qNlSg_p4_u1O5xQ9s6bN0K2Z0f0v_N9s8k0k0k0k0k") # ASEGÚRATE DE USAR TU SERVICE_KEY REAL
@@ -1520,10 +1521,10 @@ def doctor_performance_detail(doctor_id):
             })
 
     except requests.exceptions.RequestException as e:
-        print(f"❌ Error al obtener el rendimiento de la doctora: {e} - {res_students.text if 'res_students' in locals() else 'No response'}")
+        print(f"ERROR: Error al obtener el rendimiento de la doctora: {e} - {res_students.text if 'res_students' in locals() else 'No response'}")
         flash('Error al cargar el detalle de rendimiento de la doctora.', 'error')
     except Exception as e:
-        print(f"❌ Error inesperado al cargar rendimiento de doctora: {e}")
+        print(f"ERROR: Error inesperado al cargar rendimiento de doctora: {e}")
         flash('Error inesperado al cargar el detalle de rendimiento de la doctora.', 'error')
 
     return render_template('doctor_performance.html', 

@@ -466,72 +466,71 @@ def generar_pdf():
                 "derivaciones": derivaciones,
                 "sexo_f": "X" if sexo == "F" else "",
                 "sexo_m": "X" if sexo == "M" else "",
- # --- dentro de generar_pdf(), después de definir reader y writer ---
-    elif form_type == 'medicina_familiar':
-    campos = {
-        # Datos básicos
-        "nombre_apellido": nombre,
-        "rut": rut,
-        "fecha_nacimiento": request.form.get("fecha_nacimiento_formato"),
-        "edad": edad,
-        "nacionalidad": nacionalidad,
-        "fecha_evaluacion": fecha_eval,          # generada en tu código
-        "fecha_reevaluacion": fecha_reeval_pdf,  # ya la tienes arriba
+            }
+        elif form_type == 'medicina_familiar':
+            # Aquí deberías mapear los campos específicos de tu formulario de Medicina Familiar
+            # Basado en los campos que esperas en formulario_medicina_familiar.html
+            # Por ejemplo:
 
-        # Diagnósticos y observaciones
-        "diagnostico_1": request.form.get("diagnostico_1", ""),
-        "diagnostico_2": request.form.get("diagnostico_2", ""),
-        "diagnostico_complementario": request.form.get("diagnostico_complementario", ""),
-        "derivaciones": request.form.get("derivaciones", ""),
-        "observacion_1": request.form.get("observacion_1", ""),
-        "observacion_2": request.form.get("observacion_2", ""),
-        "observacion_3": request.form.get("observacion_3", ""),
-        "observacion_4": request.form.get("observacion_4", ""),
-        "observacion_5": request.form.get("observacion_5", ""),
-        "observacion_6": request.form.get("observacion_6", ""),
-        "observacion_7": request.form.get("observacion_7", ""),
+            campos = {
+                # Datos básicos
+                "nombre_apellido": nombre,
+                "rut": rut,
+                "fecha_nacimiento": request.form.get('fecha_nacimiento_formato'),
+                "edad": edad,
+                "nacionalidad": nacionalidad,
+                "fecha_evaluacion": fecha_eval,
+                # Género
+                "genero_f": "X" if sexo == "F" else "",
+                "genero_m": "X" if sexo == "M" else "",
+                # Diagnósticos
+                "diagnostico_1": request.form.get('diagnostico_1', ''),
+                "diagnostico_2": request.form.get('diagnostico_2', ''),
+                "diagnostico_complementario": request.form.get('diagnostico_complementario', ''),
+                "derivaciones": request.form.get('derivaciones', ''),
+                "fecha_reevaluacion": fecha_reeval_pdf,
+                # Observaciones
+                "observacion_1": request.form.get('observacion_1', ''),
+                "observacion_2": request.form.get('observacion_2', ''),
+                "observacion_3": request.form.get('observacion_3', ''),
+                "observacion_4": request.form.get('observacion_4', ''),
+                "observacion_5": request.form.get('observacion_5', ''),
+                "observacion_6": request.form.get('observacion_6', ''),
+                "observacion_7": request.form.get('observacion_7', ''),
+                # Antropometría
+                "altura": request.form.get('altura', ''),
+                "peso": request.form.get('peso', ''),
+                "imc": request.form.get('imc', ''),
+                "clasificacion": request.form.get('clasificacion', ''),
+                # Antecedentes perinatales
+                "check_cesarea": "/Yes" if request.form.get('check_cesarea') else "",
+                "check_atermino": "/Yes" if request.form.get('check_atermino') else "",
+                "check_vaginal": "/Yes" if request.form.get('check_vaginal') else "",
+                "check_prematuro": "/Yes" if request.form.get('check_prematuro') else "",
+                # Desarrollo y vacunas
+                "check_acorde": "/Yes" if request.form.get('check_acorde') else "",
+                "check_retrasogeneralizado": "/Yes" if request.form.get('check_retrasogeneralizado') else "",
+                "check_esquemac": "/Yes" if request.form.get('check_esquemac') else "",
+                "check_esquemai": "/Yes" if request.form.get('check_esquemai') else "",
+                # Alergias y cirugías
+                "check_alergiano": "/Yes" if request.form.get('check_alergiano') else "",
+                "check_alergiasi": "/Yes" if request.form.get('check_alergiasi') else "",
+                "check_cirugiano": "/Yes" if request.form.get('check_cirugiano') else "",
+                "check_cirugiasi": "/Yes" if request.form.get('check_cirugiasi') else "",
+                # Examen físico
+                "check_visionsinalteracion": "/Yes" if request.form.get('check_visionsinalteracion') else "",
+                "check_visionrefraccion": "/Yes" if request.form.get('check_visionrefraccion') else "",
+                "check_audicionnormal": "/Yes" if request.form.get('check_audicionnormal') else "",
+                "check_tapondecerumen": "/Yes" if request.form.get('check_tapondecerumen') else "",
+                "check_hipoacusia": "/Yes" if request.form.get('check_hipoacusia') else "",
+                "check_retenciondental": "/Yes" if request.form.get('check_retenciondental') else "",
+                "check_hipertrofia": "/Yes" if request.form.get('check_hipertrofia') else "",
+                "check_frenillolingual": "/Yes" if request.form.get('check_frenillolingual') else "",
+                "check_sinhallazgos": "/Yes" if request.form.get('check_sinhallazgos') else "",
+                "check_caries": "/Yes" if request.form.get('check_caries') else "",
+                "check_apinamientodental": "/Yes" if request.form.get('check_apinamientodental') else "",
+            }
 
-        # Antropometría
-        "altura": request.form.get("altura", ""),
-        "peso": request.form.get("peso", ""),
-        "imc": request.form.get("imc", ""),
-        "clasificacion": request.form.get("clasificacion", ""),
-
-        # Género (marcar solo uno)
-        "genero_f": "X" if sexo == "F" else "",
-        "genero_m": "X" if sexo == "M" else "",
-
-        # Casillas perinatales
-        "check_cesarea": "/Yes" if request.form.get("check_cesarea") else "",
-        "check_atermino": "/Yes" if request.form.get("check_atermino") else "",
-        "check_vaginal": "/Yes" if request.form.get("check_vaginal") else "",
-        "check_prematuro": "/Yes" if request.form.get("check_prematuro") else "",
-
-        # Desarrollo y vacunas
-        "check_acorde": "/Yes" if request.form.get("check_acorde") else "",
-        "check_retrasogeneralizado": "/Yes" if request.form.get("check_retrasogeneralizado") else "",
-        "check_esquemac": "/Yes" if request.form.get("check_esquemac") else "",
-        "check_esquemai": "/Yes" if request.form.get("check_esquemai") else "",
-
-        # Alergias y cirugías
-        "check_alergiano": "/Yes" if request.form.get("check_alergiano") else "",
-        "check_alergiasi": "/Yes" if request.form.get("check_alergiasi") else "",
-        "check_cirugiano": "/Yes" if request.form.get("check_cirugiano") else "",
-        "check_cirugiasi": "/Yes" if request.form.get("check_cirugiasi") else "",
-
-        # Visión / audición / dental
-        "check_visionsinalteracion": "/Yes" if request.form.get("check_visionsinalteracion") else "",
-        "check_visionrefraccion": "/Yes" if request.form.get("check_visionrefraccion") else "",
-        "check_audicionnormal": "/Yes" if request.form.get("check_audicionnormal") else "",
-        "check_tapondecerumen": "/Yes" if request.form.get("check_tapondecerumen") else "",
-        "check_hipoacusia": "/Yes" if request.form.get("check_hipoacusia") else "",
-        "check_retenciondental": "/Yes" if request.form.get("check_retenciondental") else "",
-        "check_hipertrofia": "/Yes" if request.form.get("check_hipertrofia") else "",
-        "check_caries": "/Yes" if request.form.get("check_caries") else "",
-        "check_apinamientodental": "/Yes" if request.form.get("check_apinamientodental") else "",
-        "check_sinhallazgos": "/Yes" if request.form.get("check_sinhallazgos") else "",
-        "check_frenillolingual": "/Yes" if request.form.get("check_frenillolingual") else "",
-    }
 
         print(f"DEBUG: Fields to fill in PDF for {form_type} form: {campos}")
 
@@ -1835,72 +1834,66 @@ def generar_pdfs_visibles():
                     "OBS2": est.get('observacion_2', ''),
                     "OBS3": est.get('observacion_3', ''),
                     "OBS4": est.get('observacion_4', ''),
-                    "OBS5": est.get('observacion_5', ''),
-                    "OBS6": est.get('observacion_6', ''),
-                    "OBS7": est.get('observacion_7', ''),
-                    "CESAREA": "/Yes" if est.get('check_cesarea') else "",
-                    "A TÉRMINO": "/Yes" if est.get('check_atermino') else "",
-                    "VAGINAL": "/Yes" if est.get('check_vaginal') else "",
-                    "PREMATURO": "/Yes" if est.get('check_prematuro') else "",
-                    "LOGRADO ACORDE A LA EDAD": "/Yes" if est.get('check_acorde') else "",
-                    "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if est.get('check_retrasogeneralizado') else "",
-                    "ESQUEMA COMPLETO": "/Yes" if est.get('check_esquemac') else "",
-                    "ESQUEMA INCOMPLETO": "/Yes" if est.get('check_esquemai') else "",
-                    "NO": "/Yes" if est.get('check_alergiano') else "",
-                    "SI": "/Yes" if est.get('check_alergiasi') else "",
-                    "NO_2": "/Yes" if est.get('check_cirugiano') else "",
-                    "SI_2": "/Yes" if est.get('check_cirugiasi') else "",
-                    "SIN ALTERACIÓN": "/Yes" if est.get('check_visionsinalteracion') else "",
-                    "VICIOS DE REFRACCION": "/Yes" if est.get('check_visionrefraccion') else "",
-                    "NORMAL": "/Yes" if est.get('check_audicionnormal') else "",
-                    "HIPOACUSIA": "/Yes" if est.get('check_hipoacusia') else "",
-                    "TAPÓN DE CERUMEN": "/Yes" if est.get('check_tapondecerumen') else "",
-                    "SIN HALLAZGOS": "/Yes" if est.get('check_sinhallazgos') else "",
-                    "CARIES": "/Yes" if est.get('check_caries') else "",
-                    "APIÑAMIENTO DENTAL": "/Yes" if est.get('check_apinamientodental') else "",
-                    "RETENCIÓN DENTAL": "/Yes" if est.get('check_retenciondental') else "",
-                    "FRENILLO LINGUAL": "/Yes" if est.get('check_frenillolingual') else "",
-                    "HIPERTROFIA AMIGDALINA": "/Yes" if est.get('check_hipertrofia') else "",
-                    "Altura": est.get('altura', ''),
-                    "Peso": est.get('peso', ''),
-                    "I.M.C": est.get('imc', ''),
-                    "Clasificación_IMC": est.get('clasificacion_imc', ''),
-                    "Nombres y Apellidos_Doctor": est.get('doctor_nombre', ''), # Estos campos deben venir de la DB
-                    "Rut_Doctor": est.get('doctor_rut', ''),
-                    "Nº Registro Profesional": est.get('doctor_registro', ''),
-                    "Especialidad": est.get('doctor_especialidad', ''),
-                    "Fono/E-Mail Contacto": est.get('doctor_email', ''),
-                    "Salud pública": "/Yes" if est.get('procedencia_salud_publica') else "",
-                    "Particular": "/Yes" if est.get('procedencia_particular') else "",
-                    "Escuela": "/Yes" if est.get('procedencia_escuela') else "",
-                    "Otro": "/Yes" if est.get('procedencia_otro') else "",
+
+                campos = {
+                    # Datos básicos
+                    "nombre_apellido": est.get('nombre', ''),
+                    "rut": est.get('rut', ''),
+                    "fecha_nacimiento": est.get('fecha_nacimiento_formato', ''),
+                    "edad": est.get('edad', ''),
+                    "nacionalidad": est.get('nacionalidad', ''),
+                    "fecha_evaluacion": est.get('fecha_evaluacion', ''),
+                    # Género
+                    "genero_f": "X" if est.get('sexo') == "F" else "",
+                    "genero_m": "X" if est.get('sexo') == "M" else "",
+                    # Diagnósticos
+                    "diagnostico_1": est.get('diagnostico_1', ''),
+                    "diagnostico_2": est.get('diagnostico_2', ''),
+                    "diagnostico_complementario": est.get('diagnostico_complementario', ''),
+                    "derivaciones": est.get('derivaciones', ''),
+                    "fecha_reevaluacion": est.get('fecha_reevaluacion', ''),
+                    # Observaciones
+                    "observacion_1": est.get('observacion_1', ''),
+                    "observacion_2": est.get('observacion_2', ''),
+                    "observacion_3": est.get('observacion_3', ''),
+                    "observacion_4": est.get('observacion_4', ''),
+                    "observacion_5": est.get('observacion_5', ''),
+                    "observacion_6": est.get('observacion_6', ''),
+                    "observacion_7": est.get('observacion_7', ''),
+                    # Antropometría
+                    "altura": est.get('altura', ''),
+                    "peso": est.get('peso', ''),
+                    "imc": est.get('imc', ''),
+                    "clasificacion": est.get('clasificacion', ''),
+                    # Antecedentes perinatales
+                    "check_cesarea": "/Yes" if est.get('check_cesarea') else "",
+                    "check_atermino": "/Yes" if est.get('check_atermino') else "",
+                    "check_vaginal": "/Yes" if est.get('check_vaginal') else "",
+                    "check_prematuro": "/Yes" if est.get('check_prematuro') else "",
+                    # Desarrollo y vacunas
+                    "check_acorde": "/Yes" if est.get('check_acorde') else "",
+                    "check_retrasogeneralizado": "/Yes" if est.get('check_retrasogeneralizado') else "",
+                    "check_esquemac": "/Yes" if est.get('check_esquemac') else "",
+                    "check_esquemai": "/Yes" if est.get('check_esquemai') else "",
+                    # Alergias y cirugías
+                    "check_alergiano": "/Yes" if est.get('check_alergiano') else "",
+                    "check_alergiasi": "/Yes" if est.get('check_alergiasi') else "",
+                    "check_cirugiano": "/Yes" if est.get('check_cirugiano') else "",
+                    "check_cirugiasi": "/Yes" if est.get('check_cirugiasi') else "",
+                    # Examen físico
+                    "check_visionsinalteracion": "/Yes" if est.get('check_visionsinalteracion') else "",
+                    "check_visionrefraccion": "/Yes" if est.get('check_visionrefraccion') else "",
+                    "check_audicionnormal": "/Yes" if est.get('check_audicionnormal') else "",
+                    "check_tapondecerumen": "/Yes" if est.get('check_tapondecerumen') else "",
+                    "check_hipoacusia": "/Yes" if est.get('check_hipoacusia') else "",
+                    "check_retenciondental": "/Yes" if est.get('check_retenciondental') else "",
+                    "check_hipertrofia": "/Yes" if est.get('check_hipertrofia') else "",
+                    "check_frenillolingual": "/Yes" if est.get('check_frenillolingual') else "",
+                    "check_sinhallazgos": "/Yes" if est.get('check_sinhallazgos') else "",
+                    "check_caries": "/Yes" if est.get('check_caries') else "",
+                    "check_apinamientodental": "/Yes" if est.get('check_apinamientodental') else "",
                 }
-
-            if "/AcroForm" not in writer_single_pdf._root_object:
-                writer_single_pdf._root_object.update({
-                    NameObject("/AcroForm"): DictionaryObject()
-                })
-            writer_single_pdf.update_page_form_field_values(writer_single_pdf.pages[0], campos)
-            writer_single_pdf._root_object["/AcroForm"].update({
-                NameObject("/NeedAppearances"): BooleanObject(True)
-            })
-
-            temp_output = io.BytesIO()
-            writer_single_pdf.write(temp_output)
-            temp_output.seek(0)
-
-            temp_reader = PdfReader(temp_output)
-            for page_num in range(len(temp_reader.pages)):
-                merged_pdf_writer.add_page(temp_reader.pages[page_num])
-
-        final_output_pdf = io.BytesIO()
-        merged_pdf_writer.write(final_output_pdf)
-        final_output_pdf.seek(0)
-
-        establecimiento_nombre = session.get('establecimiento_nombre', 'Nomina_Desconocida').replace(' ', '_')
-        pdf_filename = f"Formularios_Visibles_{establecimiento_nombre}_{date.today().strftime('%Y%m%d')}.pdf"
-
-        return send_file(final_output_pdf, as_attachment=False, download_name=pdf_filename, mimetype='application/pdf')
+ent=False, download_name=pdf_filename, mimetype='application/pdf')
 
     except requests.exceptions.RequestException as e:
         print(f"ERROR: Error de solicitud al obtener datos de estudiante para PDF combinado: {e}")
@@ -1980,3 +1973,7 @@ def eliminar_nomina(nomina_id):
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+
+
+
+

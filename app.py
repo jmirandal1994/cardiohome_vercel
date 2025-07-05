@@ -33,7 +33,7 @@ PDF_BASE_FAMILIAR = 'formulario_familiar.pdf'
 # -------------------- Supabase Configuration --------------------
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://rbzxolreglwndvsrxhmg.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDE3ODcsImV4cCI6MjA2MzExNzc4N30.BbzsUhed1Y_dJYWFKLAHqtV4cXdvjF_ihGdQ_Bpov3Y")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IlNJUDU4IiwicmVmIjoiYnhzbnFmZml4d2pkcWl2eGJrZXkiLCJyb2xlIjoic2VydmljZV9yb2xlIiwiaWF0IjoxNzE5Mjg3MzI1LCJleHAiOjE3NTA4MjMzMjV9.qNl_p4_u1O5xQ9s6bN0K2Z0f0v_N9s8k0k0k0k0k") # ASEGÚRATE DE USAR TU SERVICE_KEY REAL
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IlNJUDU4IiwicmVmIjoiYnhzbnFmZml4d2pkcWl2eGJrZXkiLCJyb2xlIjoic2VydmljZV9yb2xlIiwiaWF0IjoxNzE5Mjg3MzI1LCJleHAiOjE3NTA4MjMzMjV9.qNlS_p4_u1O5xQ9s6bN0K2Z0f0v_N9s8k0k0k0k0k") # ASEGÚRATE DE USAR TU SERVICE_KEY REAL
 
 SUPABASE_HEADERS = {
     "apikey": SUPABASE_KEY,
@@ -624,6 +624,14 @@ def generar_pdf():
                 "DIAGNÓSTICO COMPLEMENTARIO": diagnostico_complementario,
                 "DERIVACIONES": derivaciones,
                 # Campos de observación (necesitaríamos nombres únicos si se rellenan individualmente)
+                # Por ahora, mapeo a los nombres genéricos si existen o se usan
+                # Si hay múltiples campos OBS: sin nombres únicos, PyPDF2 podría tener problemas.
+                # Se asume que 'observacion_1' a 'observacion_7' del formulario HTML
+                # mapean a campos con nombres específicos en el PDF si existen.
+                # Si no, se pueden mapear a los campos OBS: genéricos si hay un orden claro.
+                # Para este ejemplo, usaré los nombres genéricos si no hay un mapeo 1:1
+                # Si los campos OBS: en tu PDF tienen nombres como "OBS_1", "OBS_2", etc.
+                # deberás usar esos nombres exactos.
                 "OBS:_1": observacion_1, # Ejemplo si el PDF tiene OBS_1
                 "OBS:_2": observacion_2, # Ejemplo si el PDF tiene OBS_2
                 "OBS:_3": observacion_3,
@@ -644,12 +652,13 @@ def generar_pdf():
                 "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if check_retrasogeneralizado else "",
                 "ESQUEMA INCOMPLETO": "/Yes" if check_esquemai else "",
                 "ESQUEMA COMPLETO": "/Yes" if check_esquemac else "",
-                "NO": "/Yes" if check_alergiano else "", # Checkbox para ALERGIAS
-                "NO_2": "/Yes" if check_cirugiano else "", # Checkbox para HOSPITALIZACIONES/CIRUGIAS
-                "ST": "/Yes" if check_cirugiasi else "", # Checkbox para HOSPITALIZACIONES/CIRUGIAS
+                "NO": "/Yes" if check_alergiano else "", # Este es el 'NO' para ALERGIAS
+                # "ALERGIAS_SI" no existe como campo en el PDF, solo "ALERGIAS" y el checkbox "NO"
+                "NO_2": "/Yes" if check_cirugiano else "", # Este es el 'NO' para HOSPITALIZACIONES/CIRUGIAS
+                "ST": "/Yes" if check_cirugiasi else "", # Este es el 'ST' para HOSPITALIZACIONES/CIRUGIAS
                 "SIN ALTERACIÓN": "/Yes" if check_visionsinalteracion else "",
                 "VICIOS DE REFRACCIÓN": "/Yes" if check_visionrefraccion else "",
-                "NORMAL": "/Yes" if check_audicionnormal else "", # Checkbox para AUDICIÓN
+                "NORMAL": "/Yes" if check_audicionnormal else "", # Este es el 'NORMAL' para AUDICIÓN
                 "TAPÓN DE CERUMEN": "/Yes" if check_tapondecerumen else "",
                 "HIPOACUSIA": "/Yes" if check_hipoacusia else "",
                 "SIN HALLAZGOS": "/Yes" if check_sinhallazgos else "",
@@ -658,9 +667,22 @@ def generar_pdf():
                 "RETENCIÓN DENTAL.": "/Yes" if check_retenciondental else "", # Con punto
                 "FRENILLO LINGUAL": "/Yes" if check_frenillolingual else "",
                 "HIPERTROFIA AMIGDALINA": "/Yes" if check_hipertrofia else "",
+                # Otros campos fijos del PDF que no se rellenan desde el formulario, pero existen como campos:
+                # "ADRIANA LUGO PEREZ": "ADRIANA LUGO PEREZ",
+                # "14.692.266-K": "14.692.266-K",
+                # "62598": "62598",
+                # "MEDICINA FAMILIAR": "MEDICINA FAMILIAR",
+                # "contacto@cardiohome.cl": "contacto@cardiohome.cl",
+                # "Salud pública": "/Yes" if some_condition else "", # Si quieres rellenar este checkbox
+                # "Particular X Escuela": "/Yes" if some_condition else "", # Si quieres rellenar este checkbox
+                # "Otro:_2": "/Yes" if some_condition else "", # Si quieres rellenar este checkbox
+                # "REQUIERE RECIBIR APOYO DEL PROGRAMA DE INTEGRACIÓN ESCOLAR": "/Yes" if some_condition else "",
+                # "FIRMA Y TIMBRE DEL PROFESIONAL": "" # Campo para firma/imagen
             }
 
+        print(f"DEBUG: Fields to fill in PDF for {form_type} form: {campos}")
         print(f"DEBUG: Campos a rellenar en PDF (JSON): {json.dumps(campos, indent=2)}")
+
 
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({
@@ -669,38 +691,9 @@ def generar_pdf():
 
         writer.update_page_form_field_values(writer.pages[0], campos)
 
-        # Forzar la regeneración de la apariencia para que los campos se muestren
         writer._root_object["/AcroForm"].update({
             NameObject("/NeedAppearances"): BooleanObject(True)
         })
-
-        # --- INICIO LÓGICA DE APLANADO EXPLÍCITO CON PyPDF2 ---
-        # Iterar sobre las anotaciones de la página para "aplanar" los campos.
-        # Esto los convierte en contenido estático y asegura su visibilidad.
-        # Advertencia: Los campos ya no serán editables después de esto.
-        page = writer.pages[0]
-        if "/Annots" in page:
-            for i in range(len(page["/Annots"])):
-                annot = page["/Annots"][i].get_object()
-                if "/FT" in annot: # Si es un campo de formulario
-                    # Eliminar la bandera de campo de formulario para que no sea interactivo
-                    if "/Ff" in annot:
-                        del annot["/Ff"]
-                    # Eliminar la apariencia (AP) para que el visor la regenere o use el valor (V)
-                    # Si el visor no la genera, el valor (V) debería ser visible
-                    if "/AP" in annot:
-                        del annot["/AP"]
-                    # Establecer el valor como el valor predeterminado para que se "imprima"
-                    # Esto a menudo ayuda a la visibilidad en algunos visores
-                    if "/V" in annot and "/DV" not in annot:
-                        annot[Name("/DV")] = annot["/V"]
-        
-        # Eliminar el diccionario AcroForm del documento si todos los campos son aplanados
-        # Esto hace que el PDF se trate como un documento estático por la mayoría de los visores.
-        if "/AcroForm" in writer._root_object:
-            del writer._root_object["/AcroForm"]
-        # --- FIN LÓGICA DE APLANADO EXPLÍCITO ---
-
 
         output = io.BytesIO()
         writer.write(output)
@@ -902,9 +895,7 @@ def marcar_evaluado():
             "check_visionrefraccion": check_visionrefraccion_familiar,
             "check_audicionnormal": check_audicionnormal_familiar,
             "check_hipoacusia": check_hipoacusia_familiar,
-            "check_retenciondental": check_retenciondental_familiar,
-            "check_hipertrofia": check_hipertrofia_familiar,
-            "check_frenillolingual": check_frenillolingual_familiar,
+            "check_tapondecerumen": check_tapondecerumen_familiar,
             "check_sinhallazgos": check_sinhallazgos_familiar,
             "check_caries": check_caries_familiar,
             "check_apinamientodental": check_apinamientodental_familiar,
@@ -1685,17 +1676,22 @@ def enviar_formulario_a_drive():
                 "DIAGNÓSTICO": diagnostico_1, # Mapeado a DIAGNOSTICO principal
                 "DIAGNÓSTICO COMPLEMENTARIO": diagnostico_complementario,
                 "DERIVACIONES": derivaciones,
-                # Campos de observación
-                "OBS:_1": observacion_1, 
-                "OBS:_2": observacion_2, 
+                # Campos de observación (necesitaríamos nombres únicos si se rellenan individualmente)
+                # Por ahora, mapeo a los nombres genéricos si existen o se usan
+                # Si hay múltiples campos OBS: sin nombres únicos, PyPDF2 podría tener problemas.
+                # Se asume que 'observacion_1' a 'observacion_7' del formulario HTML
+                # mapean a campos con nombres específicos en el PDF si existen.
+                # Para este ejemplo, usaré los nombres genéricos si no hay un mapeo 1:1
+                "OBS:_1": observacion_1, # Ejemplo si el PDF tiene OBS_1
+                "OBS:_2": observacion_2, # Ejemplo si el PDF tiene OBS_2
                 "OBS:_3": observacion_3,
                 "OBS:_4": observacion_4,
                 "OBS:_5": observacion_5,
                 "OBS:_6": observacion_6,
                 "OBS:_7": observacion_7,
-                "Altura:": altura, 
+                "Altura:": altura, # Con dos puntos
                 "Peso": peso,
-                "I.M.C": imc, 
+                "I.M.C": imc, # Con puntos
                 "Clasificación": clasificacion,
                 # Checkboxes - Usando los nombres EXACTOS del PDF y el valor "/Yes"
                 "CESAREA": "/Yes" if check_cesarea else "",
@@ -1706,18 +1702,18 @@ def enviar_formulario_a_drive():
                 "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if check_retrasogeneralizado else "",
                 "ESQUEMA INCOMPLETO": "/Yes" if check_esquemai else "",
                 "ESQUEMA COMPLETO": "/Yes" if check_esquemac else "",
-                "NO": "/Yes" if check_alergiano else "", 
-                "NO_2": "/Yes" if check_cirugiano else "", 
-                "ST": "/Yes" if check_cirugiasi else "", 
+                "NO": "/Yes" if check_alergiano else "", # Este es el 'NO' para ALERGIAS
+                "NO_2": "/Yes" if check_cirugiano else "", # Este es el 'NO' para HOSPITALIZACIONES/CIRUGIAS
+                "ST": "/Yes" if check_cirugiasi else "", # Este es el 'ST' para HOSPITALIZACIONES/CIRUGIAS
                 "SIN ALTERACIÓN": "/Yes" if check_visionsinalteracion else "",
                 "VICIOS DE REFRACCIÓN": "/Yes" if check_visionrefraccion else "",
-                "NORMAL": "/Yes" if check_audicionnormal else "", 
+                "NORMAL": "/Yes" if check_audicionnormal else "", # Este es el 'NORMAL' para AUDICIÓN
                 "TAPÓN DE CERUMEN": "/Yes" if check_tapondecerumen else "",
                 "HIPOACUSIA": "/Yes" if check_hipoacusia else "",
                 "SIN HALLAZGOS": "/Yes" if check_sinhallazgos else "",
                 "CARIES": "/Yes" if check_caries else "",
                 "APIÑAMIENTO DENTAL": "/Yes" if check_apinamientodental else "",
-                "RETENCIÓN DENTAL.": "/Yes" if check_retenciondental else "", 
+                "RETENCIÓN DENTAL.": "/Yes" if check_retenciondental else "", # Con punto
                 "FRENILLO LINGUAL": "/Yes" if check_frenillolingual else "",
                 "HIPERTROFIA AMIGDALINA": "/Yes" if check_hipertrofia else "",
             }
@@ -1726,30 +1722,6 @@ def enviar_formulario_a_drive():
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
         writer._root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
-
-        # --- INICIO LÓGICA DE APLANADO EXPLÍCITO CON PyPDF2 para Drive ---
-        # Iterar sobre las anotaciones de la página para "aplanar" los campos.
-        # Esto los convierte en contenido estático y asegura su visibilidad.
-        # Advertencia: Los campos ya no serán editables después de esto.
-        page = writer.pages[0]
-        if "/Annots" in page:
-            for i in range(len(page["/Annots"])):
-                annot = page["/Annots"][i].get_object()
-                if "/FT" in annot: # Si es un campo de formulario
-                    # Eliminar la bandera de campo de formulario para que no sea interactivo
-                    if "/Ff" in annot:
-                        del annot["/Ff"]
-                    # Eliminar la apariencia (AP) para que el visor la regenere o use el valor (V)
-                    if "/AP" in annot:
-                        del annot["/AP"]
-                    # Establecer el valor como el valor predeterminado para que se "imprima"
-                    if "/V" in annot and "/DV" not in annot:
-                        annot[Name("/DV")] = annot["/V"]
-        
-        # Eliminar el diccionario AcroForm del documento si todos los campos son aplanados
-        if "/AcroForm" in writer._root_object:
-            del writer._root_object["/AcroForm"]
-        # --- FIN LÓGICA DE APLANADO EXPLÍCITO ---
 
         output_pdf_io = io.BytesIO()
         writer.write(output_pdf_io)
@@ -2077,7 +2049,6 @@ def generar_pdfs_visibles():
         return jsonify({"success": False, "message": "Datos de entrada inválidos para la generación de PDFs."}), 400
 
     merged_pdf_writer = PdfWriter()
-
     # Obtener el form_type de la sesión para saber qué PDF base usar
     form_type = session.get('current_form_type', 'neurologia') 
 
@@ -2147,19 +2118,20 @@ def generar_pdfs_visibles():
                     "sexo_m": "X" if est.get('sexo') == "M" else "",
                 }
             elif form_type == 'medicina_familiar':
-                # Mapeo de los campos de la DB a los nombres EXACTOS encontrados en el PDF
+                # Mapeo de los campos del PDF Familiar usando los nombres EXACTOS encontrados en el PDF
                 campos = {
-                    "Nombres y Apellidos": est.get('nombre', ''),
-                    "GENERO": est.get('sexo', ''), 
+                    "Nombres y Apellidos": est.get('nombre', ''), # En la DB, 'nombre' es el nombre completo para Familiar
+                    "GENERO": est.get('sexo', ''), # Asumiendo que el campo 'sexo' en la DB es 'F' o 'M'
                     "RUN": est.get('rut', ''),
                     "Fecha nacimiento (dd/mm/aaaa)": est.get('fecha_nacimiento_formato', ''),
                     "Edad (en años y meses)": est.get('edad', ''),
                     "Nacionalidad": est.get('nacionalidad', ''),
                     "Fecha evaluación": est.get('fecha_relleno', ''),
                     "Fecha reevaluación": fecha_reeval_pdf,
-                    "DIAGNÓSTICO": est.get('diagnostico_1', ''), 
+                    "DIAGNÓSTICO": est.get('diagnostico_1', ''), # Mapeado a DIAGNOSTICO principal
                     "DIAGNÓSTICO COMPLEMENTARIO": est.get('diagnostico_complementario', ''),
                     "DERIVACIONES": est.get('derivaciones', ''),
+                    # Campos de observación
                     "OBS:_1": est.get('observacion_1', ''), 
                     "OBS:_2": est.get('observacion_2', ''), 
                     "OBS:_3": est.get('observacion_3', ''),
@@ -2167,9 +2139,9 @@ def generar_pdfs_visibles():
                     "OBS:_5": est.get('observacion_5', ''),
                     "OBS:_6": est.get('observacion_6', ''),
                     "OBS:_7": est.get('observacion_7', ''),
-                    "Altura:": est.get('altura', ''), 
+                    "Altura:": est.get('altura', ''), # Con dos puntos
                     "Peso": est.get('peso', ''),
-                    "I.M.C": est.get('imc', ''), 
+                    "I.M.C": est.get('imc', ''), # Con puntos
                     "Clasificación": est.get('clasificacion', ''),
                     # Checkboxes - Usando los nombres EXACTOS del PDF y el valor "/Yes"
                     "CESAREA": "/Yes" if est.get('check_cesarea') else "",
@@ -2180,43 +2152,30 @@ def generar_pdfs_visibles():
                     "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if est.get('check_retrasogeneralizado') else "",
                     "ESQUEMA INCOMPLETO": "/Yes" if est.get('check_esquemai') else "",
                     "ESQUEMA COMPLETO": "/Yes" if est.get('check_esquemac') else "",
-                    "NO": "/Yes" if est.get('check_alergiano') else "", 
-                    "NO_2": "/Yes" if est.get('check_cirugiano') else "", 
-                    "ST": "/Yes" if est.get('check_cirugiasi') else "", 
+                    "NO": "/Yes" if est.get('check_alergiano') else "", # Este es el 'NO' para ALERGIAS
+                    "NO_2": "/Yes" if est.get('check_cirugiano') else "", # Este es el 'NO' para HOSPITALIZACIONES/CIRUGIAS
+                    "ST": "/Yes" if est.get('check_cirugiasi') else "", # Este es el 'ST' para HOSPITALIZACIONES/CIRUGIAS
                     "SIN ALTERACIÓN": "/Yes" if est.get('check_visionsinalteracion') else "",
                     "VICIOS DE REFRACCIÓN": "/Yes" if est.get('check_visionrefraccion') else "",
-                    "NORMAL": "/Yes" if est.get('check_audicionnormal') else "", 
+                    "NORMAL": "/Yes" if est.get('check_audicionnormal') else "", # Este es el 'NORMAL' para AUDICIÓN
                     "TAPÓN DE CERUMEN": "/Yes" if est.get('check_tapondecerumen') else "",
                     "HIPOACUSIA": "/Yes" if est.get('check_hipoacusia') else "",
                     "SIN HALLAZGOS": "/Yes" if est.get('check_sinhallazgos') else "",
                     "CARIES": "/Yes" if est.get('check_caries') else "",
                     "APIÑAMIENTO DENTAL": "/Yes" if est.get('check_apinamientodental') else "",
-                    "RETENCIÓN DENTAL.": "/Yes" if est.get('check_retenciondental') else "", 
+                    "RETENCIÓN DENTAL.": "/Yes" if est.get('check_retenciondental') else "", # Con punto
                     "FRENILLO LINGUAL": "/Yes" if est.get('check_frenillolingual') else "",
                     "HIPERTROFIA AMIGDALINA": "/Yes" if est.get('check_hipertrofia') else "",
                 }
 
-            writer_single_pdf.update_page_form_field_values(writer_single_pdf.pages[0], campos)
             if "/AcroForm" not in writer_single_pdf._root_object:
-                writer_single_pdf._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
-            writer_single_pdf._root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
-
-            # --- INICIO LÓGICA DE APLANADO EXPLÍCITO CON PyPDF2 para PDF combinado ---
-            page = writer_single_pdf.pages[0]
-            if "/Annots" in page:
-                for i in range(len(page["/Annots"])):
-                    annot = page["/Annots"][i].get_object()
-                    if "/FT" in annot: # Si es un campo de formulario
-                        if "/Ff" in annot:
-                            del annot["/Ff"]
-                        if "/AP" in annot:
-                            del annot["/AP"]
-                        if "/V" in annot and "/DV" not in annot:
-                            annot[Name("/DV")] = annot["/V"]
-            
-            if "/AcroForm" in writer_single_pdf._root_object:
-                del writer_single_pdf._root_object["/AcroForm"]
-            # --- FIN LÓGICA DE APLANADO EXPLÍCITO ---
+                writer_single_pdf._root_object.update({
+                    NameObject("/AcroForm"): DictionaryObject()
+                })
+            writer_single_pdf.update_page_form_field_values(writer_single_pdf.pages[0], campos)
+            writer_single_pdf._root_object["/AcroForm"].update({
+                NameObject("/NeedAppearances"): BooleanObject(True)
+            })
 
             temp_output = io.BytesIO()
             writer_single_pdf.write(temp_output)
@@ -2344,3 +2303,4 @@ def debug_pdf_fields():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+

@@ -790,6 +790,8 @@
                             <h3 class="section-title">Identificación del Estudiante</h3>
                             <label>Nombres y Apellidos:</label>
                             <input type="text" name="nombre_apellido" value="{{ est.nombre }}" required readonly>
+                            <input type="hidden" name="nombre_original" value="{{ est.nombre }}"> {# Campo oculto para compatibilidad #}
+
 
                             <label>Género:</label>
                             <div class="checkbox-group">
@@ -803,15 +805,22 @@
 
                             <label>RUN:</label>
                             <input type="text" name="rut" value="{{ est.rut }}" required readonly>
+                            <input type="hidden" name="rut_original" value="{{ est.rut }}"> {# Campo oculto para compatibilidad #}
+
 
                             <label>Fecha de Nacimiento (dd/mm/aaaa):</label>
                             <input type="date" name="fecha_nacimiento" value="{{ est.fecha_nacimiento }}" required readonly>
-                            
+                            <input type="hidden" name="fecha_nacimiento_original" value="{{ est.fecha_nacimiento }}"> {# Campo oculto para compatibilidad #}
+
                             <label>Edad (en años y meses):</label>
                             <input type="text" name="edad" value="{{ est.edad }}" readonly>
+                            <input type="hidden" name="edad_original" value="{{ est.edad }}"> {# Campo oculto para compatibilidad #}
+
 
                             <label>Nacionalidad:</label>
                             <input type="text" name="nacionalidad" value="{{ est.nacionalidad }}" readonly>
+                            <input type="hidden" name="nacionalidad_original" value="{{ est.nacionalidad }}"> {# Campo oculto para compatibilidad #}
+
 
                             <label>Fecha Evaluación:</label>
                             <input type="date" name="fecha_evaluacion" value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}" required readonly>
@@ -1303,7 +1312,7 @@
             container.querySelector('.prev-observaciones').textContent = obsText || '-';
 
 
-            // Checkbox previews (using the actual checkbox state)
+            // Checkbox Previews (using the actual checkbox state)
             container.querySelector('.prev-check-cesarea').textContent = form.check_cesarea.checked ? 'Sí' : 'No';
             container.querySelector('.prev-check-atermino').textContent = form.check_atermino.checked ? 'Sí' : 'No';
             container.querySelector('.prev-check-vaginal').textContent = form.check_vaginal.checked ? 'Sí' : 'No';

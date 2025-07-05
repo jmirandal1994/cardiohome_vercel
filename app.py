@@ -2287,16 +2287,19 @@ def debug_pdf_fields():
         if pdf_file and pdf_file.filename.lower().endswith('.pdf'):
             try:
                 reader = PdfReader(io.BytesIO(pdf_file.read()))
-                if reader.acro_form:
-                    for field_name in reader.acro_form.get_fields():
+                
+                # Usar reader.get_fields() para versiones modernas de PyPDF2
+                # get_fields() devuelve un diccionario donde las claves son los nombres de los campos
+                all_fields = reader.get_fields() 
+                
+                if all_fields:
+                    for field_name in all_fields.keys(): # Iterar sobre las claves (nombres de campos)
                         form_fields.append(field_name)
                     form_fields.sort() # Ordenar para facilitar la revisión
                 else:
-                    flash('El PDF no contiene campos de formulario rellenables (AcroForm).', 'warning')
+                    flash('El PDF no contiene campos de formulario rellenables.', 'warning')
             except Exception as e:
-                flash(f'Error al leer el PDF: {e}', 'error')
-        else:
-            flash('El archivo no es un PDF válido.', 'error')
+                flash(f'Error al leer el PDF: {e}', 'error')  
     
     return render_template('debug_pdf_fields.html', form_fields=form_fields)
 

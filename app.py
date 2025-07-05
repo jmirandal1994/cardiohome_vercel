@@ -354,14 +354,17 @@ def generar_pdf():
     # Campos comunes que se esperan de ambos formularios
     estudiante_id = request.form.get('estudiante_id')
     nomina_id = request.form.get('nomina_id')
-    nacionalidad = request.form.get('nacionalidad')
-    edad = request.form.get('edad')
+    
+    # --- IMPORTANTE: Usar los nombres de los campos ocultos del HTML ---
+    nombre_estudiante = request.form.get('nombre_apellido') or request.form.get('nombre_original') # Para Medicina Familiar o Neurología
+    rut_estudiante = request.form.get('rut') or request.form.get('rut_original') # Para Medicina Familiar o Neurología
+    fecha_nac_formato = request.form.get('fecha_nacimiento_formato') # Viene del hidden field
+    edad = request.form.get('edad_original') # Ahora usa el nombre del campo oculto
+    nacionalidad = request.form.get('nacionalidad_original') # Ahora usa el nombre del campo oculto
+    
     fecha_eval = datetime.today().strftime('%d/%m/%Y') # Fecha de hoy para la evaluación
 
     # Campos específicos que varían según el form_type
-    nombre_estudiante = None
-    rut_estudiante = None
-    fecha_nac_formato = None
     sexo_estudiante = None
     estado_general_estudiante = None
     diagnostico_estudiante = None
@@ -369,19 +372,14 @@ def generar_pdf():
     derivaciones_estudiante = None
 
     if form_type == 'neurologia':
-        nombre_estudiante = request.form.get('nombre')
-        rut_estudiante = request.form.get('rut')
-        fecha_nac_formato = request.form.get('fecha_nacimiento_formato') # Viene del hidden field
+        # Para neurología, los campos directos son 'nombre', 'rut', 'sexo', etc.
+        # Ya se obtuvieron arriba los básicos, aquí se obtienen los específicos de neurología
         sexo_estudiante = request.form.get('sexo')
         estado_general_estudiante = request.form.get('estado')
         diagnostico_estudiante = request.form.get('diagnostico')
         fecha_reeval_estudiante = request.form.get('fecha_reevaluacion')
         derivaciones_estudiante = request.form.get('derivaciones')
     elif form_type == 'medicina_familiar':
-        nombre_estudiante = request.form.get('nombre_apellido') # Nombre del campo en formulario_medicina_familiar.html
-        rut_estudiante = request.form.get('rut')
-        fecha_nac_formato = request.form.get('fecha_nacimiento_formato') # Viene del hidden field
-        
         # Determinar sexo a partir de los checkboxes de género
         genero_f = request.form.get('genero_f') == 'Femenino'
         genero_m = request.form.get('genero_m') == 'Masculino'
@@ -397,10 +395,11 @@ def generar_pdf():
         fecha_reeval_estudiante = request.form.get('fecha_reevaluacion_pdf') # Campo específico para PDF
         derivaciones_estudiante = request.form.get('derivaciones')
 
-    print(f"DEBUG: generar_pdf - Datos recibidos para {form_type}: nombre={nombre_estudiante}, rut={rut_estudiante}, sexo={sexo_estudiante}, diagnostico={diagnostico_estudiante}, fecha_reeval={fecha_reeval_estudiante}")
+    print(f"DEBUG: generar_pdf - Datos recibidos para {form_type}: nombre={nombre_estudiante}, rut={rut_estudiante}, fecha_nac_formato={fecha_nac_formato}, edad={edad}, nacionalidad={nacionalidad}, sexo={sexo_estudiante}, diagnostico={diagnostico_estudiante}, fecha_reeval={fecha_reeval_estudiante}")
 
-    # Validar campos obligatorios
+    # Validar campos obligatorios (los básicos que siempre deben venir)
     if not all([estudiante_id, nomina_id, nombre_estudiante, rut_estudiante, fecha_nac_formato, edad, nacionalidad]):
+        print(f"ERROR: Faltan campos obligatorios para generar PDF. Datos: estudiante_id={estudiante_id}, nomina_id={nomina_id}, nombre_estudiante={nombre_estudiante}, rut_estudiante={rut_estudiante}, fecha_nac_formato={fecha_nac_formato}, edad={edad}, nacionalidad={nacionalidad}")
         flash('Faltan campos obligatorios en el formulario para generar PDF. Por favor, complete la información básica del estudiante.', 'danger')
         if 'current_nomina_id' in session:
             return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
@@ -495,7 +494,7 @@ def generar_pdf():
                 "Altura": request.form.get('altura', ''),
                 "Peso": request.form.get('peso', ''),
                 "I.M.C": request.form.get('imc', ''),
-                "Clasificación_IMC": request.form.get('clasificacion', ''), # Usar 'clasificacion' del formulario para el PDF
+                "Clasificación_IMC": request.form.get('clasificacion', ''),
                 # Campos del profesional (se asumen que vienen del formulario o se obtienen de la DB)
                 "Nombres y Apellidos_Doctor": request.form.get('doctor_nombre', ''),
                 "Rut_Doctor": request.form.get('doctor_rut', ''),
@@ -564,11 +563,11 @@ def marcar_evaluado():
 
     # Campos comunes o que se pueden actualizar en ambos formularios
     # Asegúrate de que los nombres de los campos aquí coincidan con los `name` atributos en tu HTML
-    update_data['nombre'] = request.form.get('nombre_apellido') or request.form.get('nombre') # Para Neuro o Familiar
-    update_data['rut'] = request.form.get('rut')
-    update_data['fecha_nacimiento'] = request.form.get('fecha_nacimiento') # FormatoYYYY-MM-DD
-    update_data['nacionalidad'] = request.form.get('nacionalidad')
-    update_data['edad'] = request.form.get('edad') # Guardar la cadena de edad calculada
+    update_data['nombre'] = request.form.get('nombre_apellido') or request.form.get('nombre_original') # Para Neuro o Familiar
+    update_data['rut'] = request.form.get('rut') or request.form.get('rut_original') # Para Neuro o Familiar
+    update_data['fecha_nacimiento'] = request.form.get('fecha_nacimiento_original') # Usar el campo oculto original
+    update_data['nacionalidad'] = request.form.get('nacionalidad_original') # Usar el campo oculto original
+    update_data['edad'] = request.form.get('edad_original') # Usar el campo oculto original
 
     # Lógica para campos específicos según el tipo de formulario
     if form_type == 'neurologia':
@@ -1166,7 +1165,7 @@ def admin_cargar_nomina():
             # Limpiar RUT: quitar puntos y guiones
             rut_limpio = str(rut_raw).replace('.', '').replace('-', '').strip()
             
-            # Convertir fecha de nacimiento a formato YYYY-MM-DD
+            # Convertir fecha de nacimiento a formatoYYYY-MM-DD
             fecha_nac_str = None
             if isinstance(fecha_nacimiento_raw, datetime):
                 fecha_nac_str = fecha_nacimiento_raw.strftime('%Y-%m-%d')
@@ -1269,14 +1268,17 @@ def enviar_formulario_a_drive():
     # Campos comunes que se esperan de ambos formularios
     estudiante_id = request.form.get('estudiante_id')
     nomina_id = request.form.get('nomina_id')
-    nacionalidad = request.form.get('nacionalidad')
-    edad = request.form.get('edad')
+    
+    # --- IMPORTANTE: Usar los nombres de los campos ocultos del HTML ---
+    nombre_estudiante = request.form.get('nombre_apellido') or request.form.get('nombre_original') # Para Medicina Familiar o Neurología
+    rut_estudiante = request.form.get('rut') or request.form.get('rut_original') # Para Medicina Familiar o Neurología
+    fecha_nac_formato = request.form.get('fecha_nacimiento_formato') # Viene del hidden field
+    edad = request.form.get('edad_original') # Ahora usa el nombre del campo oculto
+    nacionalidad = request.form.get('nacionalidad_original') # Ahora usa el nombre del campo oculto
+
     fecha_eval = datetime.today().strftime('%d/%m/%Y') # Fecha de hoy para la evaluación
 
     # Campos específicos que varían según el form_type
-    nombre_estudiante = None
-    rut_estudiante = None
-    fecha_nac_formato = None
     sexo_estudiante = None
     estado_general_estudiante = None
     diagnostico_estudiante = None
@@ -1284,19 +1286,13 @@ def enviar_formulario_a_drive():
     derivaciones_estudiante = None
 
     if form_type == 'neurologia':
-        nombre_estudiante = request.form.get('nombre')
-        rut_estudiante = request.form.get('rut')
-        fecha_nac_formato = request.form.get('fecha_nacimiento_formato') # Viene del hidden field
+        # Para neurología, los campos directos son 'nombre', 'rut', 'sexo', etc.
         sexo_estudiante = request.form.get('sexo')
         estado_general_estudiante = request.form.get('estado')
         diagnostico_estudiante = request.form.get('diagnostico')
         fecha_reeval_estudiante = request.form.get('fecha_reevaluacion')
         derivaciones_estudiante = request.form.get('derivaciones')
     elif form_type == 'medicina_familiar':
-        nombre_estudiante = request.form.get('nombre_apellido') # Nombre del campo en formulario_medicina_familiar.html
-        rut_estudiante = request.form.get('rut')
-        fecha_nac_formato = request.form.get('fecha_nacimiento_formato') # Viene del hidden field
-        
         # Determinar sexo a partir de los checkboxes de género
         genero_f = request.form.get('genero_f') == 'Femenino'
         genero_m = request.form.get('genero_m') == 'Masculino'
@@ -1446,7 +1442,7 @@ def enviar_formulario_a_drive():
         writer.write(output_pdf_io)
         output_pdf_io.seek(0) 
 
-        file_name = f"{nombre_estudiante.replace(' ', '_')}_{rut_estudiante}_formulario_{form_type}.pdf" # Añadir form_type al nombre del archivo
+        nombre_archivo_descarga = f"{nombre_estudiante.replace(' ', '_')}_{rut_estudiante}_formulario_{form_type}.pdf" # Añadir form_type al nombre del archivo
         
         service = build('drive', 'v3', credentials=creds)
 
@@ -1998,6 +1994,7 @@ def eliminar_nomina(nomina_id):
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+
 
 
 

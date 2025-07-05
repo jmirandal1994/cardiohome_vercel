@@ -276,7 +276,6 @@ def relleno_formularios(nomina_id):
         session['current_nomina_id'] = nomina_id
         session['establecimiento_nombre'] = nomina['nombre_nomina']
         # Guardar el form_type en la sesión para usarlo al renderizar la plantilla
-        # Asegurarse de que el form_type se obtenga de la nómina o se asigne un valor por defecto
         session['current_form_type'] = nomina.get('form_type', 'neurologia') 
 
     except requests.exceptions.RequestException as e:
@@ -301,25 +300,20 @@ def relleno_formularios(nomina_id):
 
 
         for est in estudiantes_raw:
-            # Asegurar que los campos esenciales no sean None para el HTML
-            est['nombre'] = est.get('nombre', '') 
-            est['rut'] = est.get('rut', '') 
-            est['nacionalidad'] = est.get('nacionalidad', '') # Default a cadena vacía
-
             if 'fecha_nacimiento' in est and isinstance(est['fecha_nacimiento'], str): 
                 try:
                     fecha_nac_obj = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
                     est['edad'] = calculate_age(fecha_nac_obj)
                     est['fecha_nacimiento_formato'] = fecha_nac_obj.strftime("%d-%m-%Y")
                 except ValueError:
-                    est['fecha_nacimiento_formato'] = '' # Si hay error, dejar vacío
-                    est['edad'] = '' # Si hay error, dejar vacío
+                    est['fecha_nacimiento_formato'] = 'Fecha Inválida'
+                    est['edad'] = 'N/A'
             else:
-                est['fecha_nacimiento_formato'] = '' # Si no hay fecha, dejar vacío
-                est['edad'] = '' # Si no hay edad, dejar vacío
+                est['fecha_nacimiento_formato'] = 'N/A'
+                est['edad'] = 'N/A'
             
             if est.get('fecha_relleno') is not None:
-                total_forms_completed_for_nomina += 1 
+                total_forms_completed_for_nomina += 0
 
             estudiantes.append(est)
         print(f"DEBUG: Estudiantes procesados para plantilla en /relleno_formularios: {estudiantes}")
@@ -335,11 +329,11 @@ def relleno_formularios(nomina_id):
         estudiantes = []
 
     # Determinar qué plantilla HTML renderizar según el form_type
-    template_name = 'formulario_relleno.html' # Default para neurologia
+    template_name = 'formulario_relleno.html' # Default
     if session.get('current_form_type') == 'medicina_familiar':
         template_name = 'formulario_medicina_familiar.html'
     elif session.get('current_form_type') == 'neurologia':
-        template_name = 'formulario_relleno.html' 
+        template_name = 'formulario_relleno.html' # Asumiendo que este es el de neurología
 
     return render_template(template_name, 
                            estudiantes=estudiantes, 
@@ -403,6 +397,7 @@ def generar_pdf():
     derivaciones_estudiante = ''
 
     if form_type == 'neurologia':
+        # NO TOCAR ESTA SECCIÓN - FUNCIONA PERFECTO
         sexo_estudiante = request.form.get('sexo', '')
         estado_general_estudiante = request.form.get('estado', '')
         diagnostico_estudiante = request.form.get('diagnostico', '')
@@ -410,25 +405,29 @@ def generar_pdf():
         derivaciones_estudiante = request.form.get('derivaciones', '')
     elif form_type == 'medicina_familiar':
         # Determinar sexo a partir de los checkboxes de género
-        genero_f = request.form.get('genero') == 'Femenino'
-        genero_m = request.form.get('genero') == 'Masculino'
-        if genero_f:
+        # NOTA: Los radio buttons en HTML suelen tener el mismo 'name' y diferentes 'value'.
+        # Aquí asumimos que el 'value' es 'Femenino' o 'Masculino'
+        genero_val = request.form.get('genero', '') # Obtener el valor del radio button 'genero'
+        if genero_val == 'Femenino':
             sexo_estudiante = 'F'
-        elif genero_m:
+        elif genero_val == 'Masculino':
             sexo_estudiante = 'M'
         else:
             sexo_estudiante = '' # Valor por defecto si no se selecciona
 
-        estado_general_estudiante = '' # No hay un campo directo 'estado' en familiar
+        # Los campos de Medicina Familiar se obtienen directamente del request.form
         diagnostico_estudiante = request.form.get('diagnostico_1', '') # Diagnóstico principal
-        fecha_reeval_estudiante = request.form.get('fecha_reevaluacion_pdf', '') # Campo específico para PDF
+        fecha_reeval_estudiante = request.form.get('fecha_reevaluacion', '') # Este es el campo del input date
         derivaciones_estudiante = request.form.get('derivaciones', '')
 
     print(f"DEBUG: generar_pdf - Datos procesados para {form_type}: nombre={nombre_estudiante}, rut={rut_estudiante}, fecha_nac_formato={fecha_nac_formato_pdf}, edad={edad_estudiante}, nacionalidad={nacionalidad_estudiante}, sexo={sexo_estudiante}, diagnostico={diagnostico_estudiante}, fecha_reeval={fecha_reeval_estudiante}")
 
     # Validar campos obligatorios (los básicos que siempre deben venir)
     # Ahora usamos las variables que ya contienen los valores del request.form
-    if not all([estudiante_id, nomina_id, nombre_estudiante, rut_estudiante, fecha_nacimiento_raw, edad_estudiante, nacionalidad_estudiante]):
+    # Para Familiar, 'nombre_apellido' es el campo principal del nombre
+    required_fields = [estudiante_id, nomina_id, (request.form.get('nombre_apellido') or request.form.get('nombre')), rut_estudiante, fecha_nacimiento_raw, edad_estudiante, nacionalidad_estudiante]
+    
+    if not all(required_fields):
         print(f"ERROR: Faltan campos obligatorios para generar PDF. Datos: estudiante_id={estudiante_id}, nomina_id={nomina_id}, nombre_estudiante={nombre_estudiante}, rut_estudiante={rut_estudiante}, fecha_nacimiento_raw={fecha_nacimiento_raw}, edad_estudiante={edad_estudiante}, nacionalidad_estudiante={nacionalidad_estudiante}")
         flash('Faltan campos obligatorios en el formulario para generar PDF. Por favor, complete la información básica del estudiante.', 'danger')
         if 'current_nomina_id' in session:
@@ -460,6 +459,7 @@ def generar_pdf():
 
         campos = {}
         if form_type == 'neurologia':
+            # NO TOCAR ESTA SECCIÓN - FUNCIONA PERFECTO
             campos = {
                 "nombre": nombre_estudiante,
                 "rut": rut_estudiante,
@@ -476,7 +476,7 @@ def generar_pdf():
                 "sexo_m": "X" if sexo_estudiante == "M" else "",
             }
         elif form_type == 'medicina_familiar':
-            # Mapeo de campos para formulario_medicina_familiar.html
+            # Mapeo de campos para formulario_medicina_familiar.pdf
             # NOMBRES DE CAMPOS EN EL PDF DE MEDICINA FAMILIAR (formulario_familiar.pdf)
             campos = {
                 "Nombres y Apellidos": nombre_estudiante,
@@ -484,27 +484,27 @@ def generar_pdf():
                 "Fecha nacimiento (dd/mm/aaaa)": fecha_nac_formato_pdf, 
                 "Edad (en años y meses)": edad_estudiante,
                 "Nacionalidad": nacionalidad_estudiante,
-                "F": "/Yes" if request.form.get('genero') == 'Femenino' else "Off", # Corregido: 'genero' es el name del radio
-                "M": "/Yes" if request.form.get('genero') == 'Masculino' else "Off", # Corregido: 'genero' es el name del radio
-                "DIAGNÓSTICO": request.form.get('diagnostico_1', ''), # Campo en el PDF es "DIAGNÓSTICO"
-                "DIAGNÓSTICO COMPLEMENTARIO": request.form.get('diagnostico_complementario', ''), # Campo en el PDF
-                "Clasificación": request.form.get('clasificacion', ''), # Campo en el PDF
-                "INDICACIONES": request.form.get('derivaciones', ''), # Campo en el PDF
-                "Fecha evaluación": request.form.get('fecha_evaluacion', ''), # Campo en el PDF
-                "Fecha reevaluación": request.form.get('fecha_reevaluacion_pdf', ''), # Campo en el PDF
-                "OBS:": request.form.get('observacion_1', ''), # Campo en el PDF
-                "OBS:1": request.form.get('observacion_2', ''), # Campo en el PDF
-                "OBS:2": request.form.get('observacion_3', ''), # Campo en el PDF
-                "OBS:3": request.form.get('observacion_4', ''), # Campo en el PDF
-                "OBS:4": request.form.get('observacion_5', ''), # Campo en el PDF
-                "OBS:5": request.form.get('observacion_6', ''), # Campo en el PDF
-                "OBS:6": request.form.get('observacion_7', ''), # Campo en el PDF
-                "CESAREA": "/Yes" if request.form.get('check_cesarea') == 'CESAREA' else "Off", 
+                "F": "/Yes" if request.form.get('genero') == 'Femenino' else "Off", # Asumiendo que el radio button se llama 'genero'
+                "M": "/Yes" if request.form.get('genero') == 'Masculino' else "Off", # Asumiendo que el radio button se llama 'genero'
+                "DIAGNÓSTICO": request.form.get('diagnostico_1', ''),
+                "DIAGNÓSTICO COMPLEMENTARIO": request.form.get('diagnostico_complementario', ''),
+                "Clasificación": request.form.get('clasificacion', ''),
+                "INDICACIONES": request.form.get('derivaciones', ''),
+                "Fecha evaluación": request.form.get('fecha_evaluacion', ''), # Campo fecha_evaluacion del HTML
+                "Fecha reevaluación": request.form.get('fecha_reevaluacion', ''), # Campo fecha_reevaluacion del HTML
+                "OBS:": request.form.get('observacion_1', ''),
+                "OBS:1": request.form.get('observacion_2', ''),
+                "OBS:2": request.form.get('observacion_3', ''),
+                "OBS:3": request.form.get('observacion_4', ''),
+                "OBS:4": request.form.get('observacion_5', ''),
+                "OBS:5": request.form.get('observacion_6', ''),
+                "OBS:6": request.form.get('observacion_7', ''),
+                "CESAREA": "/Yes" if request.form.get('check_cesarea') == 'CESAREA' else "Off",
                 "A TÉRMINO": "/Yes" if request.form.get('check_atermino') == 'A_TERMINO' else "Off",
                 "VAGINAL": "/Yes" if request.form.get('check_vaginal') == 'VAGINAL' else "Off",
                 "PREMATURO": "/Yes" if request.form.get('check_prematuro') == 'PREMATURO' else "Off",
                 "LOGRADO ACORDE A LA EDAD": "/Yes" if request.form.get('check_acorde') == 'LOGRADO_ACORDE_A_LA_EDAD' else "Off",
-                "RETRASO": "/Yes" if request.form.get('check_retraso') == 'RETRASO' else "Off", # Campo en el PDF
+                "RETRASO": "/Yes" if request.form.get('check_retrasogeneralizado') == 'RETRASO_GENERALIZADO_DEL_DESARROLLO' else "Off", # Corregido a 'RETRASO' si es el campo en el PDF
                 "ESQUEMA COMPLETO": "/Yes" if request.form.get('check_esquemac') == 'ESQUEMA_COMPLETO' else "Off",
                 "ESQUEMA INCOMPLETO": "/Yes" if request.form.get('check_esquemai') == 'ESQUEMA_INCOMPLETO' else "Off",
                 "NO": "/Yes" if request.form.get('check_alergiano') == 'NO_ALERGIAS' else "Off",
@@ -512,30 +512,30 @@ def generar_pdf():
                 "NO_2": "/Yes" if request.form.get('check_cirugiano') == 'NO_CIRUGIAS' else "Off",
                 "SI_2": "/Yes" if request.form.get('check_cirugiasi') == 'SI_CIRUGIAS' else "Off",
                 "SIN ALTERACIÓN": "/Yes" if request.form.get('check_visionsinalteracion') == 'SIN_ALTERACION_VISION' else "Off",
-                "VICIOS DE REFRACCIÓN": "/Yes" if request.form.get('check_visionrefraccion') == 'VICIOS_DE_REFRACCION' else "Off", # Campo en el PDF
+                "VICIOS DE REFRACCIÓN": "/Yes" if request.form.get('check_visionrefraccion') == 'VICIOS_DE_REFRACCION' else "Off",
                 "NORMAL": "/Yes" if request.form.get('check_audicionnormal') == 'NORMAL_AUDICION' else "Off",
                 "HIPOACUSIA": "/Yes" if request.form.get('check_hipoacusia') == 'HIPOACUSIA' else "Off",
-                "TAPÓN DE CERUMEN": "/Yes" if request.form.get('check_tapondecerumen') == 'TAPON_DE_CERUMEN' else "Off", # Campo en el PDF
+                "TAPÓN DE CERUMEN": "/Yes" if request.form.get('check_tapondecerumen') == 'TAPON_DE_CERUMEN' else "Off",
                 "SIN HALLAZGOS": "/Yes" if request.form.get('check_sinhallazgos') == 'SIN_HALLAZGOS' else "Off",
                 "CARIES": "/Yes" if request.form.get('check_caries') == 'CARIES' else "Off",
                 "APIÑAMIENTO DENTAL": "/Yes" if request.form.get('check_apinamientodental') == 'APINAMIENTO_DENTAL' else "Off",
-                "RETENCIÓN DENTAL.": "/Yes" if request.form.get('check_retenciondental') == 'RETENCION_DENTAL' else "Off", # Campo en el PDF
+                "RETENCIÓN DENTAL.": "/Yes" if request.form.get('check_retenciondental') == 'RETENCION_DENTAL' else "Off", # Asegurar el punto final
                 "FRENILLO LINGUAL": "/Yes" if request.form.get('check_frenillolingual') == 'FRENILLO_LINGUAL' else "Off",
                 "HIPERTROFIA AMIGDALINA": "/Yes" if request.form.get('check_hipertrofia') == 'HIPERTROFIA_AMIGDALINA' else "Off",
                 "Altura": request.form.get('altura', ''),
                 "Peso": request.form.get('peso', ''),
                 "I.M.C": request.form.get('imc', ''),
                 "Clasificación_IMC": request.form.get('clasificacion_imc', ''), 
-                # Campos del profesional (se asume que no vienen del formulario del estudiante)
-                "ADRIANA LUGO PEREZ": "ADRIANA LUGO PEREZ", # Nombre del doctor en el PDF
-                "14.692.266-K": "14.692.266-K", # RUT del doctor en el PDF
-                "62598": "62598", # N° Registro Profesional en el PDF
-                "MEDICINA FAMILIAR": "MEDICINA FAMILIAR", # Especialidad en el PDF
-                "contacto@cardiohome.cl": "contacto@cardiohome.cl", # Email en el PDF
-                "Salud pública": "Off", # Asumo que es un checkbox en el PDF
-                "Particular": "/Yes", # Asumo que es un checkbox en el PDF
-                "Escuela": "Off", # Asumo que es un checkbox en el PDF
-                "Otro:": "Off", # Asumo que es un checkbox en el PDF
+                # Campos del profesional (se asume que son estáticos en el PDF base)
+                "ADRIANA LUGO PEREZ": "ADRIANA LUGO PEREZ", 
+                "14.692.266-K": "14.692.266-K", 
+                "62598": "62598", 
+                "MEDICINA FAMILIAR": "MEDICINA FAMILIAR", 
+                "contacto@cardiohome.cl": "contacto@cardiohome.cl",
+                "Salud pública": "Off", 
+                "Particular": "/Yes", 
+                "Escuela": "Off", 
+                "Otro:": "Off", 
             }
 
         print(f"DEBUG: Fields to fill in PDF for {form_type} form: {campos}")
@@ -593,7 +593,6 @@ def marcar_evaluado():
     }
 
     # Campos comunes o que se pueden actualizar en ambos formularios
-    # Leer directamente de los campos del formulario HTML
     update_data['nombre'] = request.form.get('nombre_apellido') or request.form.get('nombre', '') 
     update_data['rut'] = request.form.get('rut', '')
     update_data['fecha_nacimiento'] = request.form.get('fecha_nacimiento', '') # FormatoYYYY-MM-DD
@@ -602,6 +601,7 @@ def marcar_evaluado():
 
     # Lógica para campos específicos según el tipo de formulario
     if form_type == 'neurologia':
+        # NO TOCAR ESTA SECCIÓN - FUNCIONA PERFECTO
         update_data.update({
             'sexo': request.form.get('sexo', ''),
             'estado_general': request.form.get('estado', ''),
@@ -611,6 +611,7 @@ def marcar_evaluado():
         })
     elif form_type == 'medicina_familiar':
         # Manejo de género (radio buttons en HTML, se guardan como booleanos en Supabase)
+        # Asumiendo que el radio button tiene name="genero" y value="Femenino" o "Masculino"
         update_data["genero_f"] = request.form.get('genero') == 'Femenino' 
         update_data["genero_m"] = request.form.get('genero') == 'Masculino' 
         
@@ -637,9 +638,9 @@ def marcar_evaluado():
             "altura": float(request.form.get('altura')) if request.form.get('altura') else None,
             "peso": float(request.form.get('peso')) if request.form.get('peso') else None,
             "imc": request.form.get('imc', ''),
-            "clasificacion_imc": request.form.get('clasificacion_imc', ''), # Corregido
+            "clasificacion_imc": request.form.get('clasificacion_imc', ''), 
             "fecha_evaluacion": request.form.get('fecha_evaluacion', ''), # FormatoYYYY-MM-DD
-            "fecha_reevaluacion": request.form.get('fecha_reevaluacion_pdf', ''), # Corregido
+            "fecha_reevaluacion": request.form.get('fecha_reevaluacion', ''), # FormatoYYYY-MM-DD
             "fecha_reevaluacion_select": request.form.get('fecha_reevaluacion_select', ''), # Valor del select (1, 2, 3 años)
             "diagnostico_complementario": request.form.get('diagnostico_complementario', ''),
             # Checkboxes - Asegúrate de que los nombres de los campos en HTML coincidan
@@ -666,8 +667,6 @@ def marcar_evaluado():
             "check_retenciondental": request.form.get('check_retenciondental') == 'RETENCION_DENTAL',
             "check_frenillolingual": request.form.get('check_frenillolingual') == 'FRENILLO_LINGUAL',
             "check_hipertrofia": request.form.get('check_hipertrofia') == 'HIPERTROFIA_AMIGDALINA',
-            # Los campos del profesional y procedencia NO se guardan aquí, ya que no vienen del formulario de llenado del estudiante.
-            # Se asume que estos se manejan de otra forma (ej. perfil de doctora, estáticos para el PDF).
         })
 
     try:
@@ -1327,6 +1326,7 @@ def enviar_formulario_a_drive():
     derivaciones_estudiante = ''
 
     if form_type == 'neurologia':
+        # NO TOCAR ESTA SECCIÓN - FUNCIONA PERFECTO
         sexo_estudiante = request.form.get('sexo', '')
         estado_general_estudiante = request.form.get('estado', '')
         diagnostico_estudiante = request.form.get('diagnostico', '')
@@ -1334,18 +1334,16 @@ def enviar_formulario_a_drive():
         derivaciones_estudiante = request.form.get('derivaciones', '')
     elif form_type == 'medicina_familiar':
         # Determinar sexo a partir de los checkboxes de género
-        genero_f = request.form.get('genero') == 'Femenino'
-        genero_m = request.form.get('genero') == 'Masculino'
-        if genero_f:
+        genero_val = request.form.get('genero', '')
+        if genero_val == 'Femenino':
             sexo_estudiante = 'F'
-        elif genero_m:
+        elif genero_val == 'Masculino':
             sexo_estudiante = 'M'
         else:
-            sexo_estudiante = '' # O un valor por defecto si no se selecciona
+            sexo_estudiante = ''
 
-        estado_general_estudiante = '' # No hay un campo directo 'estado' en familiar
-        diagnostico_estudiante = request.form.get('diagnostico_1', '') # Diagnóstico principal
-        fecha_reeval_estudiante = request.form.get('fecha_reevaluacion_pdf', '') # Campo específico para PDF
+        diagnostico_estudiante = request.form.get('diagnostico_1', '')
+        fecha_reeval_estudiante = request.form.get('fecha_reevaluacion', '') # Este es el campo del input date
         derivaciones_estudiante = request.form.get('derivaciones', '')
 
     if not all([estudiante_id, nomina_id, nombre_estudiante, rut_estudiante]): 
@@ -1396,6 +1394,7 @@ def enviar_formulario_a_drive():
 
         campos = {}
         if form_type == 'neurologia':
+            # NO TOCAR ESTA SECCIÓN - FUNCIONA PERFECTO
             campos = {
                 "nombre": nombre_estudiante,
                 "rut": rut_estudiante,
@@ -1412,7 +1411,7 @@ def enviar_formulario_a_drive():
                 "sexo_m": "X" if sexo_estudiante == "M" else "",
             }
         elif form_type == 'medicina_familiar':
-            # Mapeo de campos para formulario_medicina_familiar.html
+            # Mapeo de campos para formulario_medicina_familiar.pdf
             # NOMBRES DE CAMPOS EN EL PDF DE MEDICINA FAMILIAR (formulario_familiar.pdf)
             campos = {
                 "Nombres y Apellidos": nombre_estudiante,
@@ -1427,7 +1426,7 @@ def enviar_formulario_a_drive():
                 "Clasificación": request.form.get('clasificacion', ''),
                 "INDICACIONES": request.form.get('derivaciones', ''),
                 "Fecha evaluación": request.form.get('fecha_evaluacion', ''),
-                "Fecha reevaluación": request.form.get('fecha_reevaluacion_pdf', ''),
+                "Fecha reevaluación": request.form.get('fecha_reevaluacion', ''), # Usar el valor del input date
                 "OBS:": request.form.get('observacion_1', ''),
                 "OBS:1": request.form.get('observacion_2', ''),
                 "OBS:2": request.form.get('observacion_3', ''),
@@ -1440,7 +1439,7 @@ def enviar_formulario_a_drive():
                 "VAGINAL": "/Yes" if request.form.get('check_vaginal') == 'VAGINAL' else "Off",
                 "PREMATURO": "/Yes" if request.form.get('check_prematuro') == 'PREMATURO' else "Off",
                 "LOGRADO ACORDE A LA EDAD": "/Yes" if request.form.get('check_acorde') == 'LOGRADO_ACORDE_A_LA_EDAD' else "Off",
-                "RETRASO": "/Yes" if request.form.get('check_retraso') == 'RETRASO' else "Off",
+                "RETRASO": "/Yes" if request.form.get('check_retrasogeneralizado') == 'RETRASO_GENERALIZADO_DEL_DESARROLLO' else "Off",
                 "ESQUEMA COMPLETO": "/Yes" if request.form.get('check_esquemac') == 'ESQUEMA_COMPLETO' else "Off",
                 "ESQUEMA INCOMPLETO": "/Yes" if request.form.get('check_esquemai') == 'ESQUEMA_INCOMPLETO' else "Off",
                 "NO": "/Yes" if request.form.get('check_alergiano') == 'NO_ALERGIAS' else "Off",
@@ -1462,8 +1461,7 @@ def enviar_formulario_a_drive():
                 "Peso": request.form.get('peso', ''),
                 "I.M.C": request.form.get('imc', ''),
                 "Clasificación_IMC": request.form.get('clasificacion_imc', ''), 
-                # Campos del profesional (se asume que no vienen del formulario del estudiante)
-                # Estos son campos de texto fijos en el PDF, no se rellenan dinámicamente desde el formulario del estudiante
+                # Campos del profesional (se asume que son estáticos en el PDF base)
                 "ADRIANA LUGO PEREZ": "ADRIANA LUGO PEREZ", 
                 "14.692.266-K": "14.692.266-K", 
                 "62598": "62598", 
@@ -1475,737 +1473,319 @@ def enviar_formulario_a_drive():
                 "Otro:": "Off", 
             }
 
-        print(f"DEBUG: Fields to fill in PDF for {form_type} form: {campos}")
-
-        if "/AcroForm" not in writer._root_object:
-            writer._root_object.update({
-                NameObject("/AcroForm"): DictionaryObject()
-            })
-
         writer.update_page_form_field_values(writer.pages[0], campos)
+        if "/AcroForm" not in writer._root_object:
+            writer._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
+        writer._root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
 
-        writer._root_object["/AcroForm"].update({
-            NameObject("/NeedAppearances"): BooleanObject(True)
-        })
+        output_pdf_io = io.BytesIO()
+        writer.write(output_pdf_io)
+        output_pdf_io.seek(0) 
 
-        output = io.BytesIO()
-        writer.write(output)
-        output.seek(0)
+        file_name = f"{nombre_estudiante.replace(' ', '_')}_{rut_estudiante}_formulario_{form_type}.pdf" # Añadir form_type al nombre del archivo
+        
+        service = build('drive', 'v3', credentials=creds)
 
-        nombre_archivo_descarga = f"{nombre_estudiante.replace(' ', '_')}_{rut_estudiante}_formulario_{form_type}.pdf"
-        print(f"DEBUG: PDF generado y listo para descarga: {nombre_archivo_descarga}")
-        flash('PDF generado correctamente.', 'success')
-        return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
+        colegio_folder_id = find_or_create_drive_folder(service, establecimiento_nombre, GOOGLE_DRIVE_PARENT_FOLDER_ID)
+
+        if not colegio_folder_id:
+            return jsonify({"success": False, "message": "Error al encontrar o crear la carpeta del colegio en Google Drive."}), 500
+
+        file_id = upload_pdf_to_google_drive(creds, output_pdf_io, file_name, colegio_folder_id)
+
+        if file_id:
+            return jsonify({"success": True, "message": f"Formulario enviado a Google Drive (ID: {file_id}) en la carpeta '{establecimiento_nombre}'."})
+        else:
+            return jsonify({"success": False, "message": "Error al subir el formulario a Google Drive."}), 500
 
     except Exception as e:
-        print(f"❌ Error al generar PDF: {e}")
-        flash(f"❌ Error al generar el PDF: {e}. Verifique el archivo base o los campos.", 'error')
-        if 'current_nomina_id' in session:
-            return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
+        print(f"ERROR: Error al procesar y subir formulario a Drive: {e}")
+        return jsonify({"success": False, "message": f"Error interno del servidor al procesar y subir a Drive: {str(e)}"}), 500
+
+@app.route('/subir/<establecimiento>', methods=['POST'])
+def subir(establecimiento):
+    if 'usuario' not in session:
+        return redirect(url_for('index'))
+
+    archivos = request.files.getlist('archivo')
+    print(f"DEBUG: subir - Establecimiento ID: {establecimiento}, Cantidad de archivos: {len(archivos)}")
+    print(f"DEBUG: ID de usuario en sesión (doctora) para /subir: {session.get('usuario_id')}")
+
+
+    if not archivos or archivos[0].filename == '':
+        flash('No se seleccionó ningún archivo para subir.', 'error')
         return redirect(url_for('dashboard'))
 
+    usuario_id = session['usuario_id']
+    mensajes = []
 
-@app.route('/marcar_evaluado', methods=['POST'])
-def marcar_evaluado():
-    if 'usuario' not in session:
-        return jsonify({"success": False, "message": "No autorizado"}), 401
+    for archivo in archivos:
+        if permitido(archivo.filename):
+            filename = secure_filename(archivo.filename)
+            file_data = archivo.read()
+            mime_type = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
 
-    estudiante_id = request.form.get('estudiante_id', '')
-    nomina_id = request.form.get('nomina_id', '')
-    doctora_id = session.get('usuario_id') # ID de la doctora que está realizando la evaluación
+            unique_file_id = str(uuid.uuid4())
 
-    # Obtener el form_type de la sesión para saber qué campos actualizar
-    form_type = session.get('current_form_type', 'neurologia') 
-
-    print(f"DEBUG: Recibida solicitud para marcar como evaluado: estudiante_id={estudiante_id}, nomina_id={nomina_id}, doctora_id={doctora_id}, form_type={form_type}")
-    print(f"DEBUG: Datos completos recibidos para guardar: {request.form.to_dict()}")
-
-    if not all([estudiante_id, nomina_id, doctora_id]):
-        print(f"ERROR: Datos faltantes en /marcar_evaluado. Estudiante ID: {estudiante_id}, Nomina ID: {nomina_id}, Doctora ID: {doctora_id}. Campos del formulario: {request.form.to_dict()}")
-        return jsonify({"success": False, "message": "Faltan datos obligatorios para marcar y guardar la evaluación."}), 400
-
-    update_data = {
-        'fecha_relleno': str(date.today()), # Fecha actual de rellenado
-        'doctora_evaluadora_id': doctora_id, # Esto es clave para el rendimiento
-    }
-
-    # Campos comunes o que se pueden actualizar en ambos formularios
-    # Leer directamente de los campos del formulario HTML
-    update_data['nombre'] = request.form.get('nombre_apellido') or request.form.get('nombre', '') 
-    update_data['rut'] = request.form.get('rut', '')
-    update_data['fecha_nacimiento'] = request.form.get('fecha_nacimiento', '') # FormatoYYYY-MM-DD
-    update_data['nacionalidad'] = request.form.get('nacionalidad', '')
-    update_data['edad'] = request.form.get('edad', '') # Guardar la cadena de edad calculada
-
-    # Lógica para campos específicos según el tipo de formulario
-    if form_type == 'neurologia':
-        update_data.update({
-            'sexo': request.form.get('sexo', ''),
-            'estado_general': request.form.get('estado', ''),
-            'diagnostico': request.form.get('diagnostico', ''),
-            'fecha_reevaluacion': request.form.get('fecha_reevaluacion', ''), # FormatoYYYY-MM-DD
-            'derivaciones': request.form.get('derivaciones', ''),
-        })
-    elif form_type == 'medicina_familiar':
-        # Manejo de género (radio buttons en HTML, se guardan como booleanos en Supabase)
-        update_data["genero_f"] = request.form.get('genero') == 'Femenino' 
-        update_data["genero_m"] = request.form.get('genero') == 'Masculino' 
-        
-        # Actualizar el campo 'sexo' general basado en los radio buttons de familiar
-        if update_data["genero_f"]:
-            update_data["sexo"] = 'F'
-        elif update_data["genero_m"]:
-            update_data["sexo"] = 'M'
-        else:
-            update_data["sexo"] = '' # O un valor por defecto si ninguno está marcado
-
-        update_data.update({
-            "diagnostico_1": request.form.get('diagnostico_1', ''),
-            "diagnostico_2": request.form.get('diagnostico_2', ''),
-            "clasificacion": request.form.get('clasificacion', ''),
-            "derivaciones": request.form.get('derivaciones', ''),
-            "observacion_1": request.form.get('observacion_1', ''),
-            "observacion_2": request.form.get('observacion_2', ''),
-            "observacion_3": request.form.get('observacion_3', ''),
-            "observacion_4": request.form.get('observacion_4', ''),
-            "observacion_5": request.form.get('observacion_5', ''),
-            "observacion_6": request.form.get('observacion_6', ''),
-            "observacion_7": request.form.get('observacion_7', ''),
-            "altura": float(request.form.get('altura')) if request.form.get('altura') else None,
-            "peso": float(request.form.get('peso')) if request.form.get('peso') else None,
-            "imc": request.form.get('imc', ''),
-            "clasificacion_imc": request.form.get('clasificacion_imc', ''), # Corregido
-            "fecha_evaluacion": request.form.get('fecha_evaluacion', ''), # FormatoYYYY-MM-DD
-            "fecha_reevaluacion": request.form.get('fecha_reevaluacion_pdf', ''), # Corregido
-            "fecha_reevaluacion_select": request.form.get('fecha_reevaluacion_select', ''), # Valor del select (1, 2, 3 años)
-            "diagnostico_complementario": request.form.get('diagnostico_complementario', ''),
-            # Checkboxes - Asegúrate de que los nombres de los campos en HTML coincidan
-            "check_cesarea": request.form.get('check_cesarea') == 'CESAREA',
-            "check_atermino": request.form.get('check_atermino') == 'A_TERMINO',
-            "check_vaginal": request.form.get('check_vaginal') == 'VAGINAL',
-            "check_prematuro": request.form.get('check_prematuro') == 'PREMATURO',
-            "check_acorde": request.form.get('check_acorde') == 'LOGRADO_ACORDE_A_LA_EDAD',
-            "check_retrasogeneralizado": request.form.get('check_retrasogeneralizado') == 'RETRASO_GENERALIZADO_DEL_DESARROLLO',
-            "check_esquemac": request.form.get('check_esquemac') == 'ESQUEMA_COMPLETO',
-            "check_esquemai": request.form.get('check_esquemai') == 'ESQUEMA_INCOMPLETO',
-            "check_alergiano": request.form.get('check_alergiano') == 'NO_ALERGIAS',
-            "check_alergiasi": request.form.get('check_alergiasi') == 'SI_ALERGIAS',
-            "check_cirugiano": request.form.get('check_cirugiano') == 'NO_CIRUGIAS',
-            "check_cirugiasi": request.form.get('check_cirugiasi') == 'SI_CIRUGIAS',
-            "check_visionsinalteracion": request.form.get('check_visionsinalteracion') == 'SIN_ALTERACION_VISION',
-            "check_visionrefraccion": request.form.get('check_visionrefraccion') == 'VICIOS_DE_REFRACCION',
-            "check_audicionnormal": request.form.get('check_audicionnormal') == 'NORMAL_AUDICION',
-            "check_hipoacusia": request.form.get('check_hipoacusia') == 'HIPOACUSIA',
-            "check_tapondecerumen": request.form.get('check_tapondecerumen') == 'TAPON_DE_CERUMEN',
-            "check_sinhallazgos": request.form.get('check_sinhallazgos') == 'SIN_HALLAZGOS',
-            "check_caries": request.form.get('check_caries') == 'CARIES',
-            "check_apinamientodental": request.form.get('check_apinamientodental') == 'APINAMIENTO_DENTAL',
-            "check_retenciondental": request.form.get('check_retenciondental') == 'RETENCION_DENTAL',
-            "check_frenillolingual": request.form.get('check_frenillolingual') == 'FRENILLO_LINGUAL',
-            "check_hipertrofia": request.form.get('check_hipertrofia') == 'HIPERTROFIA_AMIGDALINA',
-            # Los campos del profesional y procedencia NO se guardan aquí, ya que no vienen del formulario de llenado del estudiante.
-            # Se asume que estos se manejan de otra forma (ej. perfil de doctora, estáticos para el PDF).
-        })
-
-    try:
-        print(f"DEBUG: Intentando PATCH a estudiantes_nomina con ID: {estudiante_id}. Payload: {update_data}")
-        response = requests.patch(
-            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}",
-            headers=SUPABASE_SERVICE_HEADERS, 
-            json=update_data
-        )
-        
-        if response.status_code >= 400: 
-            print(f"ERROR: Supabase PATCH falló en /marcar_evaluado.")
-            print(f"ERROR: Estado HTTP: {response.status_code}")
-            print(f"ERROR: Cuerpo de la respuesta de Supabase: {response.text}")
-            return jsonify({"success": False, "message": f"Error al actualizar estudiante: {response.text}"}), response.status_code
-
-        print(f"DEBUG: Estudiante {estudiante_id} marcado como evaluado y guardado en Supabase. Status: {response.status_code}")
-        print(f"DEBUG: Respuesta exitosa de Supabase: {response.text}")
-        return jsonify({"success": True, "message": "Estudiante marcado como evaluado y datos guardados."})
-
-    except requests.exceptions.RequestException as e:
-        print(f"ERROR: Error de solicitud al marcar estudiante como evaluado: {e}")
-        return jsonify({"success": False, "message": f"Error de conexión con Supabase: {str(e)}"}), 500
-    except Exception as e:
-        print(f"ERROR: Error inesperado al marcar estudiante como evaluado: {e}")
-        return jsonify({"success": False, "message": f"Error interno del servidor: {str(e)}"}), 500
-
-@app.route('/')
-def index():
-    return render_template('login.html')
-
-@app.route('/login', methods=['POST'])
-def login():
-    usuario = request.form['username']
-    clave = request.form['password']
-    url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario}&password=eq.{clave}"
-    print(f"DEBUG: Intento de login para usuario: {usuario}, URL: {url}")
-    try:
-        res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS) 
-        res.raise_for_status()
-        data = res.json()
-        print(f"DEBUG: Respuesta Supabase login: {data}")
-        if data:
-            session['usuario'] = usuario
-            session['usuario_id'] = data[0]['id']
-            print(f"DEBUG: Sesión iniciada: usuario={session['usuario']}, usuario_id={session['usuario_id']}")
-            flash(f'¡Bienvenido, {usuario}!', 'success')
-            return redirect(url_for('dashboard'))
-        flash('Usuario o contraseña incorrecta.', 'error')
-        return redirect(url_for('index'))
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Error en el login: {e} - {res.text if 'res' in locals() else ''}")
-        flash('Error de conexión al intentar iniciar sesión. Intente de nuevo.', 'error')
-        return redirect(url_for('index'))
-
-@app.route('/dashboard')
-def dashboard():
-    if 'usuario' not in session:
-        return redirect(url_for('index'))
-
-    usuario = session['usuario']
-    usuario_id = session.get('usuario_id')
-    print(f"DEBUG: Accediendo a dashboard para usuario: {usuario}, ID: {usuario_id}")
-
-    doctoras = []
-    establecimientos_admin_list = []
-    admin_nominas_cargadas = []
-    conteo = {}
-    
-    doctor_performance_data = {} # Para admin: conteo de formularios por cada doctora
-    doctor_performance_data_single_doctor = {'completed': 0, 'pending': 0, 'total': 0} # Para doctora individual
-
-
-    campos_establecimientos = "id,nombre,fecha,horario,observaciones,cantidad_alumnos,url_archivo,nombre_archivo,doctora_id"
-    eventos = []
-    try:
-        if usuario != 'admin':
-            url_eventos = (
-                f"{SUPABASE_URL}/rest/v1/establecimientos"
-                f"?doctora_id=eq.{usuario_id}"
-                f"&select={campos_establecimientos}"
-            )
-        else:
-            url_eventos = f"{SUPABASE_URL}/rest/v1/establecimientos?select={campos_establecimientos}"
+            upload_path = f"formularios_completados/{establecimiento}/{unique_file_id}/{filename}"
+            upload_url = f"{SUPABASE_URL}/storage/v1/object/{upload_path}"
+            print(f"DEBUG: Subiendo archivo completado a Storage: {upload_url}")
             
-        print(f"DEBUG: URL para obtener eventos: {url_eventos}")
-        res_eventos = requests.get(url_eventos, headers=SUPABASE_HEADERS)
-        res_eventos.raise_for_status()
-        eventos = res_eventos.json()
-        print(f"DEBUG: Eventos recibidos: {eventos}")
+            try:
+                res_upload = requests.put(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=file_data)
+                res_upload.raise_for_status()
+                
+                url_publica = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path}"
+                print(f"DEBUG: Archivo completado subido, URL pública: {url_publica}")
 
-        if isinstance(eventos, list):
-            eventos.sort(key=lambda e: e.get('horario', '').split(' - ')[0] if e.get('horario') else '')
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Error al obtener eventos: {e}")
-        print(f"Response text: {res_eventos.text if 'res_eventos' in locals() else 'No response'}")
-        flash('Error al cargar el calendario de visitas.', 'error')
+                data = {
+                    "doctoras_id": usuario_id,
+                    "establecimientos_id": establecimiento,
+                    "nombre_archivo": filename,
+                    "url_archivo": url_publica
+                }
+                print(f"DEBUG: Payload para insertar formulario subido en DB: {data}")
 
-    formularios = []
-    try:
-        url_formularios_subidos = f"{SUPABASE_URL}/rest/v1/formularios_subidos"
-        print(f"DEBUG: URL para obtener formularios subidos: {url_formularios_subidos}")
-        res_formularios = requests.get(url_formularios_subidos, headers=SUPABASE_HEADERS)
-        res_formularios.raise_for_status()
-        formularios = res_formularios.json()
-        print(f"DEBUG: Formularios subidos recibidos: {formularios}")
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Error al obtener formularios subidos: {e}")
-        print(f"Response text: {res_formularios.text if 'res_formularios' in locals() else 'No response'}")
-        flash('Error al cargar los formularios subidos.', 'error')
-
-    assigned_nominations = []
-    if usuario != 'admin':
-        try:
-            url_nominas_asignadas = (
-                f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-                f"?doctora_id=eq.{usuario_id}"
-                f"&select=id,nombre_nomina,tipo_nomina,form_type" # Incluir form_type
-            )
-            print(f"DEBUG: URL para obtener nóminas asignadas (doctor): {url_nominas_asignadas}")
-            res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_HEADERS)
-            res_nominas_asignadas.raise_for_status()
-            raw_nominas = res_nominas_asignadas.json()
-            print(f"DEBUG: Nóminas raw recibidas para doctora: {raw_nominas}")
-
-            for nom in raw_nominas:
-                display_name = nom['tipo_nomina'].replace('_', ' ').title()
-                assigned_nominations.append({
-                    'id': nom['id'],
-                    'nombre_establecimiento': nom['nombre_nomina'],
-                    'tipo_nomina_display': display_name,
-                    'form_type': nom.get('form_type') # Pasar el form_type
-                })
-            print(f"DEBUG: Nóminas asignadas procesadas para plantilla: {assigned_nominations}")
-            
-            # --- LÓGICA DE RENDIMIENTO PARA DOCTORA INDIVIDUAL ---
-            # 1. Obtener todas las nóminas asignadas a esta doctora para determinar el "total" de alumnos a evaluar
-            nomina_ids_for_doctor = [n['id'] for n in raw_nominas]
-            
-            total_students_in_assigned_nominas = 0
-            if nomina_ids_for_doctor:
-                nomina_ids_str = ",".join(nomina_ids_for_doctor)
-                url_total_students_assigned_to_doctor_nominations = (
-                    f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                    f"?nomina_id=in.({nomina_ids_str})"
-                    f"&select=count"
+                res_insert = requests.post(
+                    f"{SUPABASE_URL}/rest/v1/formularios_subidos",
+                    headers=SUPABASE_SERVICE_HEADERS, 
+                    json=data
                 )
-                print(f"DEBUG: URL para contar todos los estudiantes en nóminas asignadas a doctora {usuario_id}: {url_total_students_assigned_to_doctor_nominations}")
-                res_total_students = requests.get(url_total_students_assigned_to_doctor_nominations, headers=SUPABASE_HEADERS)
-                res_total_students.raise_for_status()
-                total_students_count_range = res_total_students.headers.get('Content-Range')
-                if total_students_count_range:
-                    try:
-                        total_students_in_assigned_nominas = int(total_students_count_range.split('/')[-1])
-                    except ValueError:
-                        pass
-                print(f"DEBUG: Total de estudiantes en nóminas asignadas para doctora {usuario_id}: {total_students_in_assigned_nominas}")
-
-
-            # 2. Contar los estudiantes que esta DOCTORA ESPECÍFICA ha evaluado
-            url_completed_by_this_doctor = (
-                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                f"?doctora_evaluadora_id=eq.{usuario_id}" # Filtrar por la doctora que evaluó
-                f"&fecha_relleno.not.is.null" # Que el formulario haya sido rellenado
-                f"&select=count"
-            )
-            print(f"DEBUG: URL para contar formularios completados por doctora {usuario_id}: {url_completed_by_this_doctor}")
-            # Usar SERVICE_HEADERS para el conteo de evaluaciones, ya que accede a datos de 'fecha_relleno' y 'doctora_evaluadora_id'
-            res_completed_by_this_doctor = requests.get(url_completed_by_this_doctor, headers=SUPABASE_SERVICE_HEADERS) 
-            res_completed_by_this_doctor.raise_for_status()
-            completed_forms_count_range = res_completed_by_this_doctor.headers.get('Content-Range')
-            completed_count_by_doctor = 0
-            if completed_forms_count_range:
-                try:
-                    completed_count_by_doctor = int(completed_forms_count_range.split('/')[-1])
-                except ValueError:
-                    pass
-            print(f"DEBUG: Formularios completados por doctora {usuario_id}: {completed_count_by_doctor}")
-
-
-            doctor_performance_data_single_doctor = {
-                'completed': completed_count_by_doctor,
-                'total': total_students_in_assigned_nominas,
-                'pending': total_students_in_assigned_nominas - completed_count_by_doctor if total_students_in_assigned_nominas >= completed_count_by_doctor else 0
-            }
-            print(f"DEBUG: Rendimiento final para doctora {usuario_id}: {doctor_performance_data_single_doctor}")
-
-
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Error al obtener nóminas asignadas o conteo de evaluaciones: {e}")
-            print(f"Response text: {res_nominas_asignadas.text if 'res_nominas_asignadas' in locals() else 'No response'}")
-            flash('Error al cargar sus nóminas asignadas o conteo de evaluaciones.', 'error')
-
-    if usuario == 'admin':
-        try:
-            url_doctoras = f"{SUPABASE_URL}/rest/v1/doctoras"
-            print(f"DEBUG: URL para obtener doctoras (admin con service key): {url_doctoras}") 
-            res_doctoras = requests.get(url_doctoras, headers=SUPABASE_SERVICE_HEADERS) 
-            res_doctoras.raise_for_status()
-            doctoras_raw = res_doctoras.json()
-            doctoras = []
-            for doc in doctoras_raw:
-                doctoras.append({'id': doc['id'], 'usuario': doc['usuario']})
-            print(f"DEBUG: Doctoras recibidas (admin): {doctoras}")
-        except requests.exceptions.RequestException as e:
-            print(f"❌ ERROR AL OBTENER DOCTORAS (ADMIN DASHBOARD) CON SERVICE KEY: {e} - {res_doctoras.text if 'res_doctoras' in locals() else ''}")
-            flash('Error crítico al cargar doctoras en el panel de administrador. Verifique su SUPABASE_SERVICE_KEY.', 'error')
-            doctoras = [] 
-
-        try:
-            url_establecimientos_admin = f"{SUPABASE_URL}/rest/v1/establecimientos?select=id,nombre"
-            print(f"DEBUG: URL para obtener establecimientos (admin con service key): {url_establecimientos_admin}") 
-            res_establecimientos = requests.get(url_establecimientos_admin, headers=SUPABASE_SERVICE_HEADERS) 
-            res_establecimientos.raise_for_status()
-            establecimientos_admin_list = res_establecimientos.json()
-            print(f"DEBUG: Establecimientos recibidos (admin): {establecimientos_admin_list}")
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Error al obtener establecimientos (ADMIN DASHBOARD) CON SERVICE KEY: {e}")
-            print(f"Response text: {res_establecimientos.text if 'res_establecimientos' in locals() else 'No response'}")
-            flash('Error crítico al cargar establecimientos en el panel de administrador. Verifique su SUPABASE_SERVICE_KEY.', 'error')
-            establecimientos_admin_list = [] 
-
-
-        for f in formularios:
-            if isinstance(f, dict) and 'establecimientos_id' in f:
-                est_id = f['establecimientos_id']
-                conteo[est_id] = conteo.get(est_id, 0) + 1
-        print(f"DEBUG: Conteo de formularios por establecimiento: {conteo}")
-
-        try:
-            # Incluir form_type en la consulta de nóminas para admin
-            url_admin_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina,tipo_nomina,doctora_id,url_excel_original,nombre_excel_original,form_type"
-            print(f"DEBUG: URL para obtener nóminas cargadas por admin: {url_admin_nominas}")
-            res_admin_nominas = requests.get(url_admin_nominas, headers=SUPABASE_HEADERS)
-            res_admin_nominas.raise_for_status()
-            admin_nominas_cargadas = res_admin_nominas.json()
-            print(f"DEBUG: Nóminas cargadas por admin recibidas: {admin_nominas_cargadas}")
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Error al obtener nóminas cargadas por admin: {e}")
-            print(f"Response text: {res_admin_nominas.text if 'res_admin_nominas' in locals() else 'No response'}")
-            flash('Error al cargar la lista de nóminas en la vista de administrador.', 'error')
-        
-        # --- LÓGICA DE RENDIMIENTO POR DOCTORA PARA ADMIN ---
-        if doctoras_raw: 
-            for doc in doctoras_raw:
-                doctor_id = doc['id']
-                doctor_name = doc['usuario']
-                try:
-                    url_doctor_forms_count = (
-                        f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                        f"?doctora_evaluadora_id=eq.{doctor_id}" # Filtrar por la doctora que evaluó
-                        f"&fecha_relleno.not.is.null" # Que el formulario haya sido rellenado
-                        f"&select=count" 
-                    )
-                    print(f"DEBUG: URL para contar formularios de doctora {doctor_name} (admin view): {url_doctor_forms_count}")
-                    res_doctor_forms = requests.get(url_doctor_forms_count, headers=SUPABASE_SERVICE_HEADERS) # Usar SERVICE_HEADERS
-                    res_doctor_forms.raise_for_status()
-                    count_range = res_doctor_forms.headers.get('Content-Range')
-                    completed_forms_count = 0
-                    if count_range:
-                        try:
-                            completed_forms_count = int(count_range.split('/')[-1])
-                        except ValueError:
-                            pass
-                    
-                    doctor_performance_data[doctor_name] = completed_forms_count
-                    print(f"DEBUG: Doctora {doctor_name} (ID: {doctor_id}) ha completado {completed_forms_count} formularios.")
-
-                except requests.exceptions.RequestException as e:
-                    print(f"❌ ERROR AL OBTENER FORMULARIOS COMPLETADOS PARA DOCTORA {doctor_name} (ADMIN VIEW): {e}")
-                    doctor_performance_data[doctor_name] = 0 
-                except Exception as e:
-                    print(f"❌ Error inesperado al procesar rendimiento de doctora {doctor_name} (admin view): {e}")
-                    doctor_performance_data[doctor_name] = 0
-
-
-    return render_template(
-        'dashboard.html',
-        usuario=usuario,
-        eventos=eventos,
-        doctoras=doctoras,
-        establecimientos=establecimientos_admin_list,
-        formularios=formularios,
-        conteo=conteo,
-        assigned_nominations=assigned_nominations,
-        admin_nominas_cargadas=admin_nominas_cargadas,
-        doctor_performance_data=doctor_performance_data, # Dict {doctor_name: count}
-        doctor_performance_data_single_doctor=doctor_performance_data_single_doctor # Dict {completed, pending, total}
-    )
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    flash('Has cerrado sesión correctamente.', 'info')
-    return redirect(url_for('index'))
-
-@app.route('/admin/agregar', methods=['POST'])
-def admin_agregar():
-    if session.get('usuario') != 'admin':
-        flash('Acceso denegado.', 'error')
-        return redirect(url_for('dashboard'))
-
-    nombre = request.form.get('nombre')
-    fecha = request.form.get('fecha')
-    horario = request.form.get('horario')
-    obs = request.form.get('obs')
-    doctora_id_from_form = request.form.get('doctora', '').strip()
-    cantidad_alumnos = request.form.get('alumnos')
+                res_insert.raise_for_status()
+                print(f"DEBUG: Respuesta de Supabase al insertar formulario subido (status): {res_insert.status_code}")
+                print(f"DEBUG: Respuesta de Supabase al insertar formulario subido (text): {res_insert.text}")
+                mensajes.append(f"✅ Archivo '{filename}' subido y registrado correctamente.")
+            
+            except requests.exceptions.RequestException as e:
+                error_msg = f"❌ Error al subir o registrar '{filename}': {e} - {res_upload.text if 'res_upload' in locals() else res_insert.text if 'res_insert' in locals() else 'No response'}"
+                print(error_msg)
+                mensajes.append(error_msg)
+            except Exception as e:
+                error_msg = f"❌ Error inesperado al procesar '{filename}': {e}"
+                print(error_msg)
+                mensajes.append(error_msg)
+        else:
+            mensajes.append(f"⚠️ Archivo '{archivo.filename}' no permitido.")
     
-
-    print(f"DEBUG: admin_agregar - Datos recibidos: nombre={nombre}, fecha={fecha}, horario={horario}, doctora_id_from_form={doctora_id_from_form}, alumnos={cantidad_alumnos}")
-
-    if not all([nombre, fecha, horario, doctora_id_from_form]):
-        flash("❌ Faltan campos obligatorios para el establecimiento.", 'error')
-        return redirect(url_for('dashboard'))
-
-    nuevo_id = str(uuid.uuid4())
-    
-    data_establecimiento = {
-        "id": nuevo_id,
-        "nombre": nombre,
-        "fecha": fecha,
-        "horario": horario,
-        "observaciones": obs,
-        "doctora_id": doctora_id_from_form,
-        "cantidad_alumnos": int(cantidad_alumnos) if cantidad_alumnos else None,
-        "url_archivo": None,
-        "nombre_archivo": None
-    }
-    print(f"DEBUG: Payload para insertar establecimiento: {data_establecimiento}")
-
-    try:
-        response_db = requests.post(
-            f"{SUPABASE_URL}/rest/v1/establecimientos",
-            headers=SUPABASE_SERVICE_HEADERS, 
-            json=data_establecimiento
-        )
-        response_db.raise_for_status()
-        print(f"DEBUG: Respuesta de Supabase al insertar establecimiento (status): {response_db.status_code}")
-        print(f"DEBUG: Respuesta de Supabase al insertar establecimiento (text): {response_db.text}")
-        flash("✅ Establecimiento agregado correctamente.", 'success')
-    except requests.exceptions.RequestException as e:
-        print(f"❌ ERROR AL GUARDAR ESTABLECIMIENTO EN DB: {e} - {response_db.text if 'response_db' in locals() else ''}")
-        flash("❌ Error al guardar el establecimiento en la base de datos.", 'error')
-    except Exception as e:
-        print(f"❌ Error inesperado al guardar establecimiento: {e}")
-        flash("❌ Error inesperado al guardar el establecimiento.", 'error')
+    for msg in mensajes:
+        flash(msg, 'success' if '✅' in msg else 'error' if '❌' in msg else 'warning')
 
     return redirect(url_for('dashboard'))
 
+@app.route('/colegios')
+def colegios():
+    if session.get('usuario') != 'admin':
+        flash('Acceso denegado.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    return render_template('colegios.html')
 
-@app.route('/admin/cargar_nomina', methods=['POST'])
-def admin_cargar_nomina():
+@app.route('/mis_nominas')
+def mis_nominas():
+    if 'usuario' not in session:
+        return redirect(url_for('index'))
+    
+    usuario_id = session.get('usuario_id')
+    assigned_nominations = []
+
+    print(f"DEBUG: Accediendo a /mis_nominas. ID de usuario en sesión: {usuario_id}")
+
+    if not usuario_id:
+        flash("No se pudo obtener el ID de usuario.", "error")
+        print(f"DEBUG: usuario_id no encontrado en sesión para /mis_nominas.")
+        return redirect(url_for('dashboard'))
+
+    try:
+        url_nominas_asignadas = (
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?doctora_id=eq.{usuario_id}"
+            f"&select=id,nombre_nomina,tipo_nomina,form_type" # Incluir form_type
+        )
+        print(f"DEBUG: URL para mis_nominas: {url_nominas_asignadas}")
+        res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_HEADERS)
+        res_nominas_asignadas.raise_for_status()
+        raw_nominas = res_nominas_asignadas.json()
+        print(f"DEBUG: Nóminas raw recibidas para mis_nominas: {raw_nominas}")
+
+        for nom in raw_nominas:
+            display_name = nom['tipo_nomina'].replace('_', ' ').title()
+            assigned_nominations.append({
+                'id': nom['id'],
+                'nombre_establecimiento': nom['nombre_nomina'],
+                'tipo_nomina_display': display_name,
+                'form_type': nom.get('form_type') # Pasar el form_type
+            })
+        print(f"DEBUG: Nóminas asignadas procesadas para plantilla /mis_nominas: {assigned_nominations}")
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error al obtener mis nóminas: {e}")
+        print(f"Response text: {res_nominas_asignadas.text if 'res_nominas_asignadas' in locals() else 'No response'}")
+        flash('Error al cargar sus nóminas asignadas.', 'error')
+    except Exception as e:
+        print(f"❌ Error inesperado al procesar mis nóminas: {e}")
+        flash('Error inesperado al cargar sus nóminas asignadas.', 'error')
+
+
+    return render_template('mis_nominas.html', assigned_nominations=assigned_nominations)
+
+@app.route('/evaluados/<establecimiento>', methods=['POST'])
+def evaluados(establecimiento):
+    if 'usuario' not in session:
+        return redirect(url_for('index'))
+
+    alumnos_evaluados = request.form.get('alumnos')
+    
+    print(f"DEBUG: evaluados - Establecimiento ID: {establecimiento}, Alumnos evaluados: {alumnos_evaluados}")
+    print(f"DEBUG: ID de usuario en sesión (doctora) para /evaluados: {session.get('usuario_id')}")
+
+
+    data_update = {
+        "cantidad_alumnos_evaluados": int(alumnos_evaluados) if alumnos_evaluados else 0
+    }
+
+    try:
+        response_db = requests.patch(
+            f"{SUPABASE_URL}/rest/v1/establecimientos?id=eq.{establecimiento}",
+            headers=SUPABASE_SERVICE_HEADERS, 
+            json=data_update
+        )
+        response_db.raise_for_status()
+        print(f"DEBUG: Respuesta de Supabase al actualizar alumnos evaluados (status): {response_db.status_code}")
+        print(f"DEBUG: Respuesta de Supabase al actualizar alumnos evaluados (text): {response_db.text}")
+        flash("✅ Cantidad de alumnos evaluados registrada correctamente.", 'success')
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error al registrar alumnos evaluados: {e} - {response_db.text if 'response_db' in locals() else ''}")
+        flash("❌ Error al registrar la cantidad de alumnos evaluados.", 'error')
+    except Exception as e:
+        print(f"❌ Error inesperado al registrar alumnos evaluados: {e}")
+        flash("❌ Error inesperado al registrar la cantidad de alumnos evaluados.", 'error')
+
+    return redirect(url_for('dashboard'))
+
+@app.route('/doctor_performance/<doctor_id>')
+def doctor_performance_detail(doctor_id):
+    """
+    Ruta para que el administrador vea el detalle de los formularios evaluados por una doctora.
+    """
     if session.get('usuario') != 'admin':
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
 
-    tipo_nomina_raw = request.form.get('tipo_nomina')
-    nombre_especifico = request.form.get('nombre_especifico')
-    doctora_id_from_form = request.form.get('doctora', '').strip()
-    excel_file = request.files.get('excel')
-
-    # Normalizar tipo_nomina para una comparación robusta (ej. "NEUROLOGIA" -> "neurologia")
-    tipo_nomina_normalized = tipo_nomina_raw.strip().lower() if tipo_nomina_raw else ''
-
-    # Determinar el form_type basado en tipo_nomina normalizado
-    form_type = None
-    if 'neurologia' in tipo_nomina_normalized: 
-        form_type = 'neurologia'
-    elif 'familiar' in tipo_nomina_normalized: 
-        form_type = 'medicina_familiar'
-    # Puedes añadir más condiciones aquí si tienes otros tipos de nómina que mapean a otros PDFs
-    # elif 'otro_tipo' in tipo_nomina_normalized:
-    #     form_type = 'otro_pdf_base'
-
-    print(f"DEBUG: admin_cargar_nomina - Datos recibidos: tipo_nomina_raw={tipo_nomina_raw}, tipo_nomina_normalized={tipo_nomina_normalized}, nombre_especifico={nombre_especifico}, doctora_id_from_form={doctora_id_from_form}, archivo_presente={bool(excel_file)}, form_type_derivado={form_type}")
-
-    # Validar campos obligatorios antes de intentar subir o insertar
-    if not all([tipo_nomina_raw, nombre_especifico, doctora_id_from_form, excel_file]):
-        flash('❌ Falta uno o más campos obligatorios para cargar la nómina (tipo, nombre, doctora, archivo).', 'error')
-        print(f"ERROR: Datos obligatorios faltantes: tipo_nomina_raw={tipo_nomina_raw}, nombre_especifico={nombre_especifico}, doctora_id_from_form={doctora_id_from_form}, excel_file_present={bool(excel_file)}")
-        return redirect(url_for('dashboard'))
-
-    # Validar que se haya podido determinar un tipo de formulario
-    if form_type is None: 
-        flash(f'❌ El tipo de nómina "{tipo_nomina_raw}" no se pudo mapear a un tipo de formulario conocido. Por favor, verifique el tipo de nómina.', 'error')
-        print(f"ERROR: Tipo de nómina no reconocido: {tipo_nomina_raw}. No se pudo derivar form_type.")
-        return redirect(url_for('dashboard'))
-
-    if not permitido(excel_file.filename):
-        flash('❌ Archivo Excel o CSV no válido. Extensiones permitidas: .xls, .xlsx, .csv', 'error')
-        return redirect(url_for('dashboard'))
-
-    nomina_id = str(uuid.uuid4())
-    excel_filename = secure_filename(excel_file.filename)
-    excel_file_data = excel_file.read()
-    mime_type = mimetypes.guess_type(excel_filename)[0] or 'application/octet-stream'
+    doctor_name = "Doctora Desconocida"
+    evaluated_students = []
 
     try:
-        upload_path = f"nominas-medicas/{nomina_id}/{excel_filename}" 
-        upload_url = f"{SUPABASE_URL}/storage/v1/object/{upload_path}"
-        print(f"DEBUG: Subiendo archivo Excel a Storage: {upload_url}")
-        res_upload = requests.put(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=excel_file_data)
-        res_upload.raise_for_status()
-        
-        url_excel_publica = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path}" 
-        print(f"DEBUG: Archivo Excel subido, URL pública: {url_excel_publica}")
-    except requests.exceptions.RequestException as e:
-        error_detail = res_upload.text if 'res_upload' in locals() else 'No response from Supabase Storage.'
-        print(f"❌ Error al subir archivo Excel a Storage: {e} - Detalles de Supabase Storage: {error_detail}")
-        flash(f"❌ Error al subir el archivo de la nómina a Supabase Storage: {error_detail}", 'error')
-        return redirect(url_for('dashboard'))
+        url_doctora = f"{SUPABASE_URL}/rest/v1/doctoras?id=eq.{doctor_id}&select=usuario"
+        res_doctora = requests.get(url_doctora, headers=SUPABASE_SERVICE_HEADERS)
+        res_doctora.raise_for_status()
+        doctor_data = res_doctora.json()
+        if doctor_data:
+            doctor_name = doctor_data[0]['usuario']
+        print(f"DEBUG: Obteniendo rendimiento para doctora: {doctor_name} (ID: {doctor_id})")
 
-    data_nomina = {
-        "id": nomina_id,
-        "nombre_nomina": nombre_especifico,
-        "tipo_nomina": tipo_nomina_raw, # Guardamos el tipo_nomina original del formulario
-        "doctora_id": doctora_id_from_form,
-        "url_excel_original": url_excel_publica,
-        "nombre_excel_original": excel_filename,
-        "form_type": form_type # Guardar el form_type derivado en la nómina
-    }
-    print(f"DEBUG: Payload para insertar nómina en nominas_medicas: {data_nomina}")
-
-    try:
-        res_insert_nomina = requests.post(
-            f"{SUPABASE_URL}/rest/v1/nominas_medicas",
-            headers=SUPABASE_SERVICE_HEADERS, 
-            json=data_nomina
+        url_students = (
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            f"?doctora_evaluadora_id=eq.{doctor_id}" 
+            f"&fecha_relleno.not.is.null" 
+            f"&select=nombre,rut,fecha_relleno,nomina_id,nominas_medicas(nombre_nomina)" 
+            f"&order=fecha_relleno.desc" 
         )
-        res_insert_nomina.raise_for_status()
-        print(f"DEBUG: Respuesta de Supabase al insertar nómina (status): {res_insert_nomina.status_code}")
-        print(f"DEBUG: Respuesta de Supabase al insertar nómina (text): {res_insert_nomina.text}")
+        print(f"DEBUG: URL para obtener estudiantes evaluados: {url_students}")
+        res_students = requests.get(url_students, headers=SUPABASE_SERVICE_HEADERS)
+        res_students.raise_for_status()
+        students_raw = res_students.json()
+        print(f"DEBUG: Estudiantes evaluados recibidos: {students_raw}")
 
-    except requests.exceptions.RequestException as e:
-        error_detail = res_insert_nomina.text if 'res_insert_nomina' in locals() else 'No response from Supabase.'
-        print(f"❌ Error al guardar nómina en DB: {e} - Detalles de Supabase: {error_detail}")
-        flash(f"❌ Error al guardar los datos de la nómina en la base de datos: {error_detail}", 'error')
-        # Intentar limpiar el archivo subido si falla la inserción en la DB
-        try:
-            requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
-            print("DEBUG: Archivo subido limpiado después de fallo en inserción de nómina.")
-        except Exception as cleanup_e:
-            print(f"ERROR: Fallo al limpiar archivo subido: {cleanup_e}")
-        return redirect(url_for('dashboard'))
-
-    excel_data_stream = io.BytesIO(excel_file_data)
-    
-    if excel_filename.endswith(('.xls', '.xlsx')):
-        df = pd.read_excel(excel_data_stream)
-        print("DEBUG: Archivo leído como Excel.")
-    elif excel_filename.endswith('.csv'):
-        df = pd.read_csv(excel_data_stream, encoding='utf-8')
-        print("DEBUG: Archivo leído como CSV.")
-    else:
-        flash('❌ Formato de archivo no soportado para la nómina.', 'error')
-        # Intentar limpiar el archivo subido y la entrada de la nómina si el formato no es soportado
-        try:
-            requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
-            requests.delete(f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}", headers=SUPABASE_SERVICE_HEADERS)
-            print("DEBUG: Rollback completo después de formato de archivo no soportado.")
-        except Exception as rollback_e:
-            print(f"❌ Error durante el rollback: {rollback_e}")
-        return redirect(url_for('dashboard'))
-
-    estudiantes_a_insertar = []
-    # Normalizar los nombres de las columnas del DataFrame para que coincidan con el mapeo
-    df.columns = [normalizar(col) for col in df.columns]
-
-    print(f"DEBUG: Columnas del archivo normalizadas: {df.columns}")
-
-    # Mapeo de los nombres de columna del Excel a los nombres de campo de la base de datos
-    # Basado en la imagen de tu Excel
-    column_mapping = {
-        'nombre_completo': ['nombre_completo', 'nombre_del_estudiante', 'nombre'], # "Nombre Completo"
-        'rut': ['rut'], # "rut"
-        'fecha_nacimiento': ['fecha_nacimiento', 'fecha_de_nacimiento'], # "fecha_nacimiento"
-        'nacionalidad': ['nacionalidad'], # "nacionalidad"
-        # 'sexo' no está en tu Excel, se adivina o es nulo
-    }
-    
-    col_map = {}
-    for key, possible_names in column_mapping.items():
-        for name in possible_names:
-            if name in df.columns:
-                col_map[key] = name
-                break
-    
-    print(f"DEBUG: Mapeo de columnas encontrado: {col_map}")
-
-    # Validar que las columnas críticas existan en el Excel
-    required_columns_excel = ['nombre_completo', 'rut', 'fecha_nacimiento']
-    if not all(k in col_map for k in required_columns_excel):
-        missing_cols = [col for col in required_columns_excel if col not in col_map]
-        print(f"ERROR: No se encontraron columnas críticas en el Excel: {missing_cols}. Columnas esperadas: {column_mapping.keys()}. Columnas encontradas: {df.columns.tolist()}")
-        flash(f"❌ El archivo no contiene las columnas necesarias: {', '.join(missing_cols)}. Verifique que los encabezados sean 'Nombre Completo', 'rut', y 'fecha nacimiento' exactamente.", 'error')
-        try:
-            # Rollback: eliminar la nómina y el archivo subido si falla la lectura del Excel
-            requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
-            requests.delete(f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}", headers=SUPABASE_SERVICE_HEADERS)
-            print("DEBUG: Rollback completado.")
-        except Exception as rollback_e:
-            print(f"❌ Error durante el rollback: {rollback_e}")
-        return redirect(url_for('dashboard'))
-        
-    for index, row in df.iterrows():
-        try:
-            nombre_completo_raw = row.get(col_map.get('nombre_completo'))
-            rut_raw = row.get(col_map.get('rut'))
-            fecha_nacimiento_raw = row.get(col_map.get('fecha_nacimiento'))
-            nacionalidad_raw = row.get(col_map.get('nacionalidad')) # Obtener nacionalidad directamente
-
-            # Validar que los datos esenciales de la fila no estén vacíos
-            if pd.isna(nombre_completo_raw) or pd.isna(rut_raw) or pd.isna(fecha_nacimiento_raw):
-                print(f"AVISO: Fila {index+2} ignorada por datos faltantes (Nombre, RUT o Fecha de Nacimiento). Datos: {row.to_dict()}")
-                continue
-            
-            # Limpiar RUT: quitar puntos y guiones
-            rut_limpio = str(rut_raw).replace('.', '').replace('-', '').strip()
-            
-            # Convertir fecha de nacimiento a formatoYYYY-MM-DD
-            fecha_nac_str = None
-            if isinstance(fecha_nacimiento_raw, datetime):
-                fecha_nac_str = fecha_nacimiento_raw.strftime('%Y-%m-%d')
-            elif isinstance(fecha_nacimiento_raw, date):
-                fecha_nac_str = fecha_nacimiento_raw.strftime('%Y-%m-%d')
-            else:
-                # Intentar parsear varios formatos comunes (DD-MM-YYYY, DD/MM/YYYY,YYYY-MM-DD, Excel serial)
+        for student in students_raw:
+            formatted_date = student.get('fecha_relleno')
+            if formatted_date and isinstance(formatted_date, str):
                 try:
-                    # Usar pd.to_datetime para una conversión más robusta de fechas
-                    parsed_date = pd.to_datetime(fecha_nacimiento_raw, errors='coerce')
-                    if pd.notna(parsed_date):
-                        fecha_nac_str = parsed_date.strftime('%Y-%m-%d')
-                    else:
-                        raise ValueError("Formato de fecha no reconocido o inválido.")
-                except Exception as date_e:
-                    print(f"AVISO: Error al parsear fecha de nacimiento en fila {index+2} ({fecha_nacimiento_raw}): {date_e}")
-                    fecha_nac_str = None # Asegurar que sea None si falla la conversión
-
-            # Si la fecha de nacimiento no se pudo parsear, saltar la fila
-            if fecha_nac_str is None:
-                print(f"AVISO: Fila {index+2} ignorada: Fecha de Nacimiento inválida o no parseable ({fecha_nacimiento_raw}).")
-                continue
-
-            sexo_adivinado = guess_gender(str(nombre_completo_raw))
-            # Asegurar que nacionalidad siempre tenga un valor (por defecto 'Chilena' si está vacío)
-            nacionalidad_valor = str(nacionalidad_raw).strip() if pd.notna(nacionalidad_raw) else 'Chilena'
-
-
-            estudiante = {
-                "nomina_id": nomina_id,
-                "nombre": str(nombre_completo_raw).strip(),
-                "rut": rut_limpio,
-                "fecha_nacimiento": fecha_nac_str, 
-                "nacionalidad": nacionalidad_valor,
-                "sexo": sexo_adivinado, # Puede ser None si guess_gender no adivina y la columna es NULLABLE
-                "estado_general": None, 
-                "diagnostico": None,
-                "fecha_reevaluacion": None,
-                "derivaciones": None,
-                "fecha_relleno": None # Este se rellena cuando la doctora evalúa
-                # Asegúrate de que todos los campos de Medicina Familiar que puedan estar vacíos
-                # estén inicializados a None o un valor por defecto aquí si son NOT NULL en Supabase.
-                # Si son NULLABLE en Supabase, no es necesario inicializarlos aquí si no vienen del Excel.
-            }
-            estudiantes_a_insertar.append(estudiante)
+                    formatted_date = datetime.strptime(formatted_date, '%Y-%m-%d').strftime('%d-%m-%Y')
+                except ValueError:
+                    pass 
             
-        except Exception as e:
-            print(f"❌ Error al procesar fila {index+2}: {e}. Datos de la fila: {row.to_dict()}")
-            flash(f"Error al procesar la fila {index+2} del archivo. Verifique el formato de los datos. ({e})", 'error')
-            try:
-                requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
-                requests.delete(f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}", headers=SUPABASE_SERVICE_HEADERS)
-                print("DEBUG: Rollback completado.")
-            except Exception as rollback_e:
-                print(f"❌ Error durante el rollback: {rollback_e}")
-            return redirect(url_for('dashboard'))
+            nomina_nombre = "Nómina Desconocida"
+            if student.get('nominas_medicas') and student['nominas_medicas']:
+                if isinstance(student['nominas_medicas'], list) and student['nominas_medicas']:
+                    nomina_nombre = student['nominas_medicas'][0].get('nombre_nomina', nomina_nombre)
+                elif isinstance(student['nominas_medicas'], dict):
+                    nomina_nombre = student['nominas_medicas'].get('nombre_nomina', nomina_nombre)
 
-    if not estudiantes_a_insertar:
-        flash("⚠️ El archivo Excel/CSV no contiene datos válidos para estudiantes. La nómina fue cargada, pero sin estudiantes.", 'warning')
-        return redirect(url_for('dashboard'))
 
-    print(f"DEBUG: Preparados para insertar {len(estudiantes_a_insertar)} estudiantes.")
-    try:
-        res_insert_estudiantes = requests.post(
-            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina",
-            headers=SUPABASE_SERVICE_HEADERS, 
-            json=estudiantes_a_insertar
-        )
-        res_insert_estudiantes.raise_for_status()
-        print(f"DEBUG: Respuesta de Supabase al insertar estudiantes (status): {res_insert_estudiantes.status_code}")
-        print(f"DEBUG: Respuesta de Supabase al insertar estudiantes (text): {res_insert_estudiantes.text}")
-
-        flash(f"✅ Nómina '{nombre_especifico}' cargada con éxito. Se agregaron {len(estudiantes_a_insertar)} estudiantes.", 'success')
-        return redirect(url_for('dashboard'))
+            evaluated_students.append({
+                'nombre': student.get('nombre'),
+                'rut': student.get('rut'),
+                'fecha_relleno': formatted_date,
+                'nomina_nombre': nomina_nombre 
+            })
 
     except requests.exceptions.RequestException as e:
-        error_detail = res_insert_estudiantes.text if 'res_insert_estudiantes' in locals() else 'No response from Supabase.'
-        print(f"❌ Error al insertar estudiantes en la DB: {e} - Detalles de Supabase: {error_detail}")
-        flash(f"❌ Error al guardar los estudiantes en la base de datos. La nómina fue creada, pero no se agregaron los estudiantes. ({e}). Detalles: {error_detail}", 'error')
-        return redirect(url_for('dashboard'))
+        print(f"❌ Error al obtener el rendimiento de la doctora: {e} - {res_students.text if 'res_students' in locals() else 'No response'}")
+        flash('Error al cargar el detalle de rendimiento de la doctora.', 'error')
+    except Exception as e:
+        print(f"❌ Error inesperado al cargar rendimiento de doctora: {e}")
+        flash('Error inesperado al cargar el detalle de rendimiento de la doctora.', 'error')
+
+    return render_template('doctor_performance.html', 
+                           doctor_name=doctor_name, 
+                           evaluated_students=evaluated_students)
+
+@app.route('/descargar_excel_evaluados/<nomina_id>', methods=['GET'])
+def descargar_excel_evaluados(nomina_id):
+    if 'usuario' not in session:
+        return jsonify({"success": False, "message": "No autorizado"}), 401
+    
+    try:
+        url_students = (
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            f"?nomina_id=eq.{nomina_id}"
+            f"&fecha_relleno.not.is.null" 
+            f"&select=nombre,rut,fecha_nacimiento,fecha_relleno" 
+            f"&order=nombre.asc" 
+        )
+        print(f"DEBUG: URL para descargar Excel de evaluados (simplificado): {url_students}")
+        res_students = requests.get(url_students, headers=SUPABASE_SERVICE_HEADERS)
+        res_students.raise_for_status()
+        evaluated_students_data = res_students.json()
+        print(f"DEBUG: Datos de estudiantes evaluados para Excel: {evaluated_students_data}")
+
+        if not evaluated_students_data:
+            return jsonify({"success": False, "message": "No hay formularios evaluados para esta nómina."}), 404
+
+        df = pd.DataFrame(evaluated_students_data)
+
+        df.rename(columns={
+            'nombre': 'Nombre Completo',
+            'rut': 'RUT',
+            'fecha_nacimiento': 'Fecha de Nacimiento',
+            'fecha_relleno': 'Fecha de Evaluación'
+        }, inplace=True)
+
+        for col in ['Fecha de Nacimiento', 'Fecha de Evaluación']:
+            if col in df.columns:
+                df[col] = pd.to_datetime(df[col], errors='coerce').dt.strftime('%d/%m/%Y').fillna('')
+        
+        df['Estado de Evaluación'] = df['Fecha de Evaluación'].apply(lambda x: 'Evaluado' if pd.notnull(x) and x != '' else 'Pendiente')
+
+        df = df[['Nombre Completo', 'RUT', 'Fecha de Nacimiento', 'Estado de Evaluación']]
+
+        output = io.BytesIO()
+        writer = pd.ExcelWriter(output, engine='xlsxwriter')
+        df.to_excel(writer, index=False, sheet_name='Formularios Evaluados')
+        writer.close() 
+        output.seek(0)
+
+        establecimiento_nombre = session.get('establecimiento_nombre', 'Nomina_Desconocida').replace(' ', '_')
+        excel_filename = f"Formularios_Evaluados_{establecimiento_nombre}_{date.today().strftime('%Y%m%d')}.xlsx"
+
+        return send_file(output, as_attachment=True, download_name=excel_filename, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR: Error de solicitud al descargar Excel de evaluados: {e}")
+        return jsonify({"success": False, "message": f"Error de conexión con Supabase: {str(e)}"}), 500
+    except Exception as e:
+        print(f"ERROR: Error inesperado al generar Excel: {e}")
+        return jsonify({"success": False, "message": f"Error interno del servidor al generar el Excel: {str(e)}"}), 500
 
 @app.route('/generar_pdfs_visibles', methods=['POST'])
 def generar_pdfs_visibles():
@@ -2273,6 +1853,7 @@ def generar_pdfs_visibles():
 
             campos = {}
             if form_type == 'neurologia':
+                # NO TOCAR ESTA SECCIÓN - FUNCIONA PERFECTO
                 campos = {
                     "nombre": est.get('nombre', ''),
                     "rut": est.get('rut', ''),
@@ -2289,7 +1870,7 @@ def generar_pdfs_visibles():
                     "sexo_m": "X" if est.get('sexo') == "M" else "",
                 }
             elif form_type == 'medicina_familiar':
-                # Aquí deberías mapear los campos específicos de tu formulario de Medicina Familiar
+                # Mapeo de campos para formulario_medicina_familiar.pdf
                 campos = {
                     "Nombres y Apellidos": est.get('nombre', ''),
                     "RUN": est.get('rut', ''),
@@ -2316,7 +1897,7 @@ def generar_pdfs_visibles():
                     "VAGINAL": "/Yes" if est.get('check_vaginal') else "Off",
                     "PREMATURO": "/Yes" if est.get('check_prematuro') else "Off",
                     "LOGRADO ACORDE A LA EDAD": "/Yes" if est.get('check_acorde') else "Off",
-                    "RETRASO": "/Yes" if est.get('check_retraso') else "Off",
+                    "RETRASO": "/Yes" if est.get('check_retrasogeneralizado') else "Off",
                     "ESQUEMA COMPLETO": "/Yes" if est.get('check_esquemac') else "Off",
                     "ESQUEMA INCOMPLETO": "/Yes" if est.get('check_esquemai') else "Off",
                     "NO": "/Yes" if est.get('check_alergiano') else "Off",

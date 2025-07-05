@@ -610,56 +610,74 @@ def generar_pdf():
             }
         elif form_type == 'medicina_familiar':
             # Mapeo de los campos del formulario HTML a los campos del PDF Familiar
-            # Usando los nombres proporcionados por el usuario
+            # Usando los nombres EXACTOS encontrados en el PDF
             campos = {
-                "nombre_apellido": nombre_apellido_familiar,
-                "genero_f": "/Yes" if genero_f_form == 'Femenino' else "", 
-                "genero_m": "/Yes" if genero_m_form == 'Masculino' else "", 
-                "rut": rut,
-                "fecha_nacimiento": fecha_nac_formato,
-                "edad": edad,
-                "nacionalidad": nacionalidad,
-                "fecha_evaluacion": fecha_eval,
-                "fecha_reevaluacion": fecha_reeval_pdf, 
-                "diagnostico_1": diagnostico_1,
-                "diagnostico_2": diagnostico_2,
-                "diagnostico_complementario": diagnostico_complementario,
-                "derivaciones": derivaciones,
-                "observacion_1": observacion_1,
-                "observacion_2": observacion_2,
-                "observacion_3": observacion_3,
-                "observacion_4": observacion_4,
-                "observacion_5": observacion_5,
-                "observacion_6": observacion_6,
-                "observacion_7": observacion_7,
-                "altura": altura,
-                "peso": peso,
-                "imc": imc,
-                "clasificacion": clasificacion,
-                # Checkboxes - Usando los nombres proporcionados por el usuario
-                "check_cesarea": "/Yes" if check_cesarea else "",
-                "check_atermino": "/Yes" if check_atermino else "",
-                "check_vaginal": "/Yes" if check_vaginal else "",
-                "check_prematuro": "/Yes" if check_prematuro else "",
-                "check_acorde": "/Yes" if check_acorde else "",
-                "check_retrasogeneralizado": "/Yes" if check_retrasogeneralizado else "",
-                "check_esquemac": "/Yes" if check_esquemac else "",
-                "check_esquemai": "/Yes" if check_esquemai else "",
-                "check_alergiano": "/Yes" if check_alergiano else "",
-                "check_alergiasi": "/Yes" if check_alergiasi else "",
-                "check_cirugiano": "/Yes" if check_cirugiano else "",
-                "check_cirugiasi": "/Yes" if check_cirugiasi else "",
-                "check_visionsinalteracion": "/Yes" if check_visionsinalteracion else "",
-                "check_visionrefraccion": "/Yes" if check_visionrefraccion else "",
-                "check_audicionnormal": "/Yes" if check_audicionnormal else "",
-                "check_tapondecerumen": "/Yes" if check_tapondecerumen else "",
-                "check_hipoacusia": "/Yes" if check_hipoacusia else "",
-                "check_retenciondental": "/Yes" if check_retenciondental else "",
-                "check_hipertrofia": "/Yes" if check_hipertrofia else "",
-                "check_frenillolingual": "/Yes" if check_frenillolingual else "",
-                "check_sinhallazgos": "/Yes" if check_sinhallazgos else "",
-                "check_caries": "/Yes" if check_caries else "",
-                "check_apinamientodental": "/Yes" if check_apinamientodental else ""
+                "Nombres y Apellidos": nombre_apellido_familiar,
+                "GENERO": genero_f_form if genero_f_form else genero_m_form, # Asumiendo que es un campo de texto o radio que toma 'Femenino'/'Masculino'
+                "RUN": rut,
+                "Fecha nacimiento (dd/mm/aaaa)": fecha_nac_formato,
+                "Edad (en años y meses)": edad,
+                "Nacionalidad": nacionalidad,
+                "Fecha evaluación": fecha_eval,
+                "Fecha reevaluación": fecha_reeval_pdf, 
+                "DIAGNÓSTICO": diagnostico_1, # Mapeado a DIAGNOSTICO principal
+                "DIAGNÓSTICO COMPLEMENTARIO": diagnostico_complementario,
+                "DERIVACIONES": derivaciones,
+                # Campos de observación (necesitaríamos nombres únicos si se rellenan individualmente)
+                # Por ahora, mapeo a los nombres genéricos si existen o se usan
+                # Si hay múltiples campos OBS: sin nombres únicos, PyPDF2 podría tener problemas.
+                # Se asume que 'observacion_1' a 'observacion_7' del formulario HTML
+                # mapean a campos con nombres específicos en el PDF si existen.
+                # Si no, se pueden mapear a los campos OBS: genéricos si hay un orden claro.
+                # Para este ejemplo, usaré los nombres genéricos si no hay un mapeo 1:1
+                # Si los campos OBS: en tu PDF tienen nombres como "OBS_1", "OBS_2", etc.
+                # deberás usar esos nombres exactos.
+                "OBS:_1": observacion_1, # Ejemplo si el PDF tiene OBS_1
+                "OBS:_2": observacion_2, # Ejemplo si el PDF tiene OBS_2
+                "OBS:_3": observacion_3,
+                "OBS:_4": observacion_4,
+                "OBS:_5": observacion_5,
+                "OBS:_6": observacion_6,
+                "OBS:_7": observacion_7,
+                "Altura:": altura, # Con dos puntos
+                "Peso": peso,
+                "I.M.C": imc, # Con puntos
+                "Clasificación": clasificacion,
+                # Checkboxes - Usando los nombres EXACTOS del PDF y el valor "/Yes"
+                "CESAREA": "/Yes" if check_cesarea else "",
+                "A TÉRMINO": "/Yes" if check_atermino else "",
+                "VAGINAL": "/Yes" if check_vaginal else "",
+                "PREMATURO": "/Yes" if check_prematuro else "",
+                "LOGRADO ACORDE A LA EDAD": "/Yes" if check_acorde else "",
+                "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if check_retrasogeneralizado else "",
+                "ESQUEMA INCOMPLETO": "/Yes" if check_esquemai else "",
+                "ESQUEMA COMPLETO": "/Yes" if check_esquemac else "",
+                "NO": "/Yes" if check_alergiano else "", # Este es el 'NO' para ALERGIAS
+                # "ALERGIAS_SI" no existe como campo en el PDF, solo "ALERGIAS" y el checkbox "NO"
+                "NO_2": "/Yes" if check_cirugiano else "", # Este es el 'NO' para HOSPITALIZACIONES/CIRUGIAS
+                "ST": "/Yes" if check_cirugiasi else "", # Este es el 'ST' para HOSPITALIZACIONES/CIRUGIAS
+                "SIN ALTERACIÓN": "/Yes" if check_visionsinalteracion else "",
+                "VICIOS DE REFRACCIÓN": "/Yes" if check_visionrefraccion else "",
+                "NORMAL": "/Yes" if check_audicionnormal else "", # Este es el 'NORMAL' para AUDICIÓN
+                "TAPÓN DE CERUMEN": "/Yes" if check_tapondecerumen else "",
+                "HIPOACUSIA": "/Yes" if check_hipoacusia else "",
+                "SIN HALLAZGOS": "/Yes" if check_sinhallazgos else "",
+                "CARIES": "/Yes" if check_caries else "",
+                "APIÑAMIENTO DENTAL": "/Yes" if check_apinamientodental else "",
+                "RETENCIÓN DENTAL.": "/Yes" if check_retenciondental else "", # Con punto
+                "FRENILLO LINGUAL": "/Yes" if check_frenillolingual else "",
+                "HIPERTROFIA AMIGDALINA": "/Yes" if check_hipertrofia else "",
+                # Otros campos fijos del PDF que no se rellenan desde el formulario, pero existen como campos:
+                # "ADRIANA LUGO PEREZ": "ADRIANA LUGO PEREZ",
+                # "14.692.266-K": "14.692.266-K",
+                # "62598": "62598",
+                # "MEDICINA FAMILIAR": "MEDICINA FAMILIAR",
+                # "contacto@cardiohome.cl": "contacto@cardiohome.cl",
+                # "Salud pública": "/Yes" if some_condition else "", # Si quieres rellenar este checkbox
+                # "Particular X Escuela": "/Yes" if some_condition else "", # Si quieres rellenar este checkbox
+                # "Otro:_2": "/Yes" if some_condition else "", # Si quieres rellenar este checkbox
+                # "REQUIERE RECIBIR APOYO DEL PROGRAMA DE INTEGRACIÓN ESCOLAR": "/Yes" if some_condition else "",
+                # "FIRMA Y TIMBRE DEL PROFESIONAL": "" # Campo para firma/imagen
             }
 
         print(f"DEBUG: Fields to fill in PDF for {form_type} form: {campos}")
@@ -823,12 +841,10 @@ def marcar_evaluado():
         })
     elif form_type == 'medicina_familiar':
         # Actualizar el campo 'sexo' general basado en los radio buttons de familiar
-        update_data["genero_f"] = genero_f_form == 'Femenino'
-        update_data["genero_m"] = genero_m_form == 'Masculino'
-        
-        if update_data["genero_f"]:
+        # Aquí se asume que el campo 'sexo' en la DB puede almacenar 'F' o 'M'
+        if genero_f_form == 'Femenino':
             update_data["sexo"] = 'F'
-        elif update_data["genero_m"]:
+        elif genero_m_form == 'Masculino':
             update_data["sexo"] = 'M'
         else:
             update_data["sexo"] = None 
@@ -862,7 +878,7 @@ def marcar_evaluado():
             "clasificacion": clasificacion_familiar,
             "fecha_evaluacion": str(date.today()), 
             "fecha_reevaluacion": fecha_reeval_db, 
-            # Checkboxes
+            # Checkboxes - Estos valores se guardan como booleanos en la DB
             "check_cesarea": check_cesarea_familiar,
             "check_atermino": check_atermino_familiar,
             "check_vaginal": check_vaginal_familiar,
@@ -878,6 +894,7 @@ def marcar_evaluado():
             "check_visionsinalteracion": check_visionsinalteracion_familiar,
             "check_visionrefraccion": check_visionrefraccion_familiar,
             "check_audicionnormal": check_audicionnormal_familiar,
+            "check_hipoacusia": check_hipoacusia_familiar,
             "check_tapondecerumen": check_tapondecerumen_familiar,
             "check_sinhallazgos": check_sinhallazgos_familiar,
             "check_caries": check_caries_familiar,
@@ -1645,57 +1662,60 @@ def enviar_formulario_a_drive():
                 "sexo_m": "X" if sexo == "M" else "",
             }
         elif form_type == 'medicina_familiar':
-            # Aquí deberías mapear los campos específicos de tu formulario de Medicina Familiar
-            # Usando los nombres proporcionados por el usuario
+            # Mapeo de los campos del formulario HTML a los campos del PDF Familiar
+            # Usando los nombres EXACTOS encontrados en el PDF
             campos = {
-                "nombre_apellido": nombre_apellido_familiar,
-                "genero_f": "/Yes" if genero_f_form == 'Femenino' else "", 
-                "genero_m": "/Yes" if genero_m_form == 'Masculino' else "", 
-                "rut": rut,
-                "fecha_nacimiento": fecha_nac_formato,
-                "edad": edad,
-                "nacionalidad": nacionalidad,
-                "fecha_evaluacion": fecha_eval,
-                "fecha_reevaluacion": fecha_reeval_pdf, 
-                "diagnostico_1": diagnostico_1,
-                "diagnostico_2": diagnostico_2,
-                "diagnostico_complementario": diagnostico_complementario,
-                "derivaciones": derivaciones,
-                "observacion_1": observacion_1,
-                "observacion_2": observacion_2,
-                "observacion_3": observacion_3,
-                "observacion_4": observacion_4,
-                "observacion_5": observacion_5,
-                "observacion_6": observacion_6,
-                "observacion_7": observacion_7,
-                "altura": altura,
-                "peso": peso,
-                "imc": imc,
-                "clasificacion": clasificacion,
-                # Checkboxes - Usando los nombres proporcionados por el usuario
-                "check_cesarea": "/Yes" if check_cesarea else "",
-                "check_atermino": "/Yes" if check_atermino else "",
-                "check_vaginal": "/Yes" if check_vaginal else "",
-                "check_prematuro": "/Yes" if check_prematuro else "",
-                "check_acorde": "/Yes" if check_acorde else "",
-                "check_retrasogeneralizado": "/Yes" if check_retrasogeneralizado else "",
-                "check_esquemac": "/Yes" if check_esquemac else "",
-                "check_esquemai": "/Yes" if check_esquemai else "",
-                "check_alergiano": "/Yes" if check_alergiano else "",
-                "check_alergiasi": "/Yes" if check_alergiasi else "",
-                "check_cirugiano": "/Yes" if check_cirugiano else "",
-                "check_cirugiasi": "/Yes" if check_cirugiasi else "",
-                "check_visionsinalteracion": "/Yes" if check_visionsinalteracion else "",
-                "check_visionrefraccion": "/Yes" if check_visionrefraccion else "",
-                "check_audicionnormal": "/Yes" if check_audicionnormal else "",
-                "check_tapondecerumen": "/Yes" if check_tapondecerumen else "",
-                "check_hipoacusia": "/Yes" if check_hipoacusia else "",
-                "check_retenciondental": "/Yes" if check_retenciondental else "",
-                "check_hipertrofia": "/Yes" if check_hipertrofia else "",
-                "check_frenillolingual": "/Yes" if check_frenillolingual else "",
-                "check_sinhallazgos": "/Yes" if check_sinhallazgos else "",
-                "check_caries": "/Yes" if check_caries else "",
-                "check_apinamientodental": "/Yes" if check_apinamientodental else ""
+                "Nombres y Apellidos": nombre_apellido_familiar,
+                "GENERO": genero_f_form if genero_f_form else genero_m_form, # Asumiendo que es un campo de texto o radio que toma 'Femenino'/'Masculino'
+                "RUN": rut,
+                "Fecha nacimiento (dd/mm/aaaa)": fecha_nac_formato,
+                "Edad (en años y meses)": edad,
+                "Nacionalidad": nacionalidad,
+                "Fecha evaluación": fecha_eval,
+                "Fecha reevaluación": fecha_reeval_pdf, 
+                "DIAGNÓSTICO": diagnostico_1, # Mapeado a DIAGNOSTICO principal
+                "DIAGNÓSTICO COMPLEMENTARIO": diagnostico_complementario,
+                "DERIVACIONES": derivaciones,
+                # Campos de observación (necesitaríamos nombres únicos si se rellenan individualmente)
+                # Por ahora, mapeo a los nombres genéricos si existen o se usan
+                # Si hay múltiples campos OBS: sin nombres únicos, PyPDF2 podría tener problemas.
+                # Se asume que 'observacion_1' a 'observacion_7' del formulario HTML
+                # mapean a campos con nombres específicos en el PDF si existen.
+                # Para este ejemplo, usaré los nombres genéricos si no hay un mapeo 1:1
+                "OBS:_1": observacion_1, # Ejemplo si el PDF tiene OBS_1
+                "OBS:_2": observacion_2, # Ejemplo si el PDF tiene OBS_2
+                "OBS:_3": observacion_3,
+                "OBS:_4": observacion_4,
+                "OBS:_5": observacion_5,
+                "OBS:_6": observacion_6,
+                "OBS:_7": observacion_7,
+                "Altura:": altura, # Con dos puntos
+                "Peso": peso,
+                "I.M.C": imc, # Con puntos
+                "Clasificación": clasificacion,
+                # Checkboxes - Usando los nombres EXACTOS del PDF y el valor "/Yes"
+                "CESAREA": "/Yes" if check_cesarea else "",
+                "A TÉRMINO": "/Yes" if check_atermino else "",
+                "VAGINAL": "/Yes" if check_vaginal else "",
+                "PREMATURO": "/Yes" if check_prematuro else "",
+                "LOGRADO ACORDE A LA EDAD": "/Yes" if check_acorde else "",
+                "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if check_retrasogeneralizado else "",
+                "ESQUEMA INCOMPLETO": "/Yes" if check_esquemai else "",
+                "ESQUEMA COMPLETO": "/Yes" if check_esquemac else "",
+                "NO": "/Yes" if check_alergiano else "", # Este es el 'NO' para ALERGIAS
+                "NO_2": "/Yes" if check_cirugiano else "", # Este es el 'NO' para HOSPITALIZACIONES/CIRUGIAS
+                "ST": "/Yes" if check_cirugiasi else "", # Este es el 'ST' para HOSPITALIZACIONES/CIRUGIAS
+                "SIN ALTERACIÓN": "/Yes" if check_visionsinalteracion else "",
+                "VICIOS DE REFRACCIÓN": "/Yes" if check_visionrefraccion else "",
+                "NORMAL": "/Yes" if check_audicionnormal else "", # Este es el 'NORMAL' para AUDICIÓN
+                "TAPÓN DE CERUMEN": "/Yes" if check_tapondecerumen else "",
+                "HIPOACUSIA": "/Yes" if check_hipoacusia else "",
+                "SIN HALLAZGOS": "/Yes" if check_sinhallazgos else "",
+                "CARIES": "/Yes" if check_caries else "",
+                "APIÑAMIENTO DENTAL": "/Yes" if check_apinamientodental else "",
+                "RETENCIÓN DENTAL.": "/Yes" if check_retenciondental else "", # Con punto
+                "FRENILLO LINGUAL": "/Yes" if check_frenillolingual else "",
+                "HIPERTROFIA AMIGDALINA": "/Yes" if check_hipertrofia else "",
             }
 
         writer.update_page_form_field_values(writer.pages[0], campos)
@@ -1949,10 +1969,10 @@ def doctor_performance_detail(doctor_id):
             })
 
     except requests.exceptions.RequestException as e:
-        print(f"❌ Error al obtener el rendimiento de la doctora: {e} - {res_students.text if 'res_students' in locals() else 'No response'}")
+        print(f"ERROR: Error al obtener el rendimiento de la doctora: {e} - {res_students.text if 'res_students' in locals() else 'No response'}")
         flash('Error al cargar el detalle de rendimiento de la doctora.', 'error')
     except Exception as e:
-        print(f"❌ Error inesperado al cargar rendimiento de doctora: {e}")
+        print(f"ERROR: Error inesperado al cargar rendimiento de doctora: {e}")
         flash('Error inesperado al cargar el detalle de rendimiento de la doctora.', 'error')
 
     return render_template('doctor_performance.html', 
@@ -2098,55 +2118,54 @@ def generar_pdfs_visibles():
                     "sexo_m": "X" if est.get('sexo') == "M" else "",
                 }
             elif form_type == 'medicina_familiar':
-                # Mapeo de los campos del PDF Familiar usando los nombres proporcionados por el usuario
+                # Mapeo de los campos del PDF Familiar usando los nombres EXACTOS encontrados en el PDF
                 campos = {
-                    "nombre_apellido": est.get('nombre', ''), # En la DB, 'nombre' es el nombre completo para Familiar
-                    "rut": est.get('rut', ''),
-                    "fecha_nacimiento": est.get('fecha_nacimiento_formato', ''),
-                    "edad": est.get('edad', ''),
-                    "nacionalidad": est.get('nacionalidad', ''),
-                    "fecha_evaluacion": est.get('fecha_relleno', ''),
-                    "fecha_reevaluacion": fecha_reeval_pdf,
-                    "diagnostico_1": est.get('diagnostico_1', ''),
-                    "diagnostico_2": est.get('diagnostico_2', ''),
-                    "diagnostico_complementario": est.get('diagnostico_complementario', ''),
-                    "derivaciones": est.get('derivaciones', ''),
-                    "observacion_1": est.get('observacion_1', ''),
-                    "observacion_2": est.get('observacion_2', ''),
-                    "observacion_3": est.get('observacion_3', ''),
-                    "observacion_4": est.get('observacion_4', ''),
-                    "observacion_5": est.get('observacion_5', ''),
-                    "observacion_6": est.get('observacion_6', ''),
-                    "observacion_7": est.get('observacion_7', ''),
-                    "altura": est.get('altura', ''),
-                    "peso": est.get('peso', ''),
-                    "imc": est.get('imc', ''),
-                    "clasificacion": est.get('clasificacion', ''),
-                    "genero_f": "/Yes" if est.get('sexo') == "F" else "", 
-                    "genero_m": "/Yes" if est.get('sexo') == "M" else "", 
-                    "check_cesarea": "/Yes" if est.get('check_cesarea') else "",
-                    "check_atermino": "/Yes" if est.get('check_atermino') else "",
-                    "check_vaginal": "/Yes" if est.get('check_vaginal') else "",
-                    "check_prematuro": "/Yes" if est.get('check_prematuro') else "",
-                    "check_acorde": "/Yes" if est.get('check_acorde') else "",
-                    "check_retrasogeneralizado": "/Yes" if est.get('check_retrasogeneralizado') else "",
-                    "check_esquemac": "/Yes" if est.get('check_esquemac') else "",
-                    "check_esquemai": "/Yes" if est.get('check_esquemai') else "",
-                    "check_alergiano": "/Yes" if est.get('check_alergiano') else "",
-                    "check_alergiasi": "/Yes" if est.get('check_alergiasi') else "",
-                    "check_cirugiano": "/Yes" if est.get('check_cirugiano') else "",
-                    "check_cirugiasi": "/Yes" if est.get('check_cirugiasi') else "",
-                    "check_visionsinalteracion": "/Yes" if est.get('check_visionsinalteracion') else "",
-                    "check_visionrefraccion": "/Yes" if est.get('check_visionrefraccion') else "",
-                    "check_audicionnormal": "/Yes" if est.get('check_audicionnormal') else "",
-                    "check_tapondecerumen": "/Yes" if est.get('check_tapondecerumen') else "",
-                    "check_hipoacusia": "/Yes" if est.get('hipoacusia') else "",
-                    "check_retenciondental": "/Yes" if est.get('check_retenciondental') else "",
-                    "check_hipertrofia": "/Yes" if est.get('check_hipertrofia') else "",
-                    "check_frenillolingual": "/Yes" if est.get('check_frenillolingual') else "",
-                    "check_sinhallazgos": "/Yes" if est.get('check_sinhallazgos') else "",
-                    "check_caries": "/Yes" if est.get('check_caries') else "",
-                    "check_apinamientodental": "/Yes" if est.get('check_apinamientodental') else ""
+                    "Nombres y Apellidos": est.get('nombre', ''), # En la DB, 'nombre' es el nombre completo para Familiar
+                    "GENERO": est.get('sexo', ''), # Asumiendo que el campo 'sexo' en la DB es 'F' o 'M'
+                    "RUN": est.get('rut', ''),
+                    "Fecha nacimiento (dd/mm/aaaa)": est.get('fecha_nacimiento_formato', ''),
+                    "Edad (en años y meses)": est.get('edad', ''),
+                    "Nacionalidad": est.get('nacionalidad', ''),
+                    "Fecha evaluación": est.get('fecha_relleno', ''),
+                    "Fecha reevaluación": fecha_reeval_pdf,
+                    "DIAGNÓSTICO": est.get('diagnostico_1', ''), # Mapeado a DIAGNOSTICO principal
+                    "DIAGNÓSTICO COMPLEMENTARIO": est.get('diagnostico_complementario', ''),
+                    "DERIVACIONES": est.get('derivaciones', ''),
+                    # Campos de observación
+                    "OBS:_1": est.get('observacion_1', ''), 
+                    "OBS:_2": est.get('observacion_2', ''), 
+                    "OBS:_3": est.get('observacion_3', ''),
+                    "OBS:_4": est.get('observacion_4', ''),
+                    "OBS:_5": est.get('observacion_5', ''),
+                    "OBS:_6": est.get('observacion_6', ''),
+                    "OBS:_7": est.get('observacion_7', ''),
+                    "Altura:": est.get('altura', ''), # Con dos puntos
+                    "Peso": est.get('peso', ''),
+                    "I.M.C": est.get('imc', ''), # Con puntos
+                    "Clasificación": est.get('clasificacion', ''),
+                    # Checkboxes - Usando los nombres EXACTOS del PDF y el valor "/Yes"
+                    "CESAREA": "/Yes" if est.get('check_cesarea') else "",
+                    "A TÉRMINO": "/Yes" if est.get('check_atermino') else "",
+                    "VAGINAL": "/Yes" if est.get('check_vaginal') else "",
+                    "PREMATURO": "/Yes" if est.get('check_prematuro') else "",
+                    "LOGRADO ACORDE A LA EDAD": "/Yes" if est.get('check_acorde') else "",
+                    "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if est.get('check_retrasogeneralizado') else "",
+                    "ESQUEMA INCOMPLETO": "/Yes" if est.get('check_esquemai') else "",
+                    "ESQUEMA COMPLETO": "/Yes" if est.get('check_esquemac') else "",
+                    "NO": "/Yes" if est.get('check_alergiano') else "", # Este es el 'NO' para ALERGIAS
+                    "NO_2": "/Yes" if est.get('check_cirugiano') else "", # Este es el 'NO' para HOSPITALIZACIONES/CIRUGIAS
+                    "ST": "/Yes" if est.get('check_cirugiasi') else "", # Este es el 'ST' para HOSPITALIZACIONES/CIRUGIAS
+                    "SIN ALTERACIÓN": "/Yes" if est.get('check_visionsinalteracion') else "",
+                    "VICIOS DE REFRACCIÓN": "/Yes" if est.get('check_visionrefraccion') else "",
+                    "NORMAL": "/Yes" if est.get('check_audicionnormal') else "", # Este es el 'NORMAL' para AUDICIÓN
+                    "TAPÓN DE CERUMEN": "/Yes" if est.get('check_tapondecerumen') else "",
+                    "HIPOACUSIA": "/Yes" if est.get('check_hipoacusia') else "",
+                    "SIN HALLAZGOS": "/Yes" if est.get('check_sinhallazgos') else "",
+                    "CARIES": "/Yes" if est.get('check_caries') else "",
+                    "APIÑAMIENTO DENTAL": "/Yes" if est.get('check_apinamientodental') else "",
+                    "RETENCIÓN DENTAL.": "/Yes" if est.get('check_retenciondental') else "", # Con punto
+                    "FRENILLO LINGUAL": "/Yes" if est.get('check_frenillolingual') else "",
+                    "HIPERTROFIA AMIGDALINA": "/Yes" if est.get('check_hipertrofia') else "",
                 }
 
             if "/AcroForm" not in writer_single_pdf._root_object:
@@ -2284,5 +2303,4 @@ def debug_pdf_fields():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
-
 

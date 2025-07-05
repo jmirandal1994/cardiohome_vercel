@@ -93,14 +93,6 @@ def guess_gender(name):
     elif first_word in nombres_femeninos:
         return 'F'
     
-    # Heurísticas adicionales, pero con precaución para no devolver valores no 'M'/'F'
-    # Estas heurísticas pueden ser menos precisas que las listas de nombres
-    # y pueden ser eliminadas si causan problemas.
-    # if name_lower.endswith(('o', 'n', 'r', 'l')):
-    #     return 'M'
-    # if name_lower.endswith(('a', 'e')):
-    #     return 'F'
-    
     return None # Retorna None si no puede adivinar con certeza
 
 def normalizar(texto):
@@ -321,7 +313,7 @@ def relleno_formularios(nomina_id):
                 est['edad'] = 'N/A'
             
             if est.get('fecha_relleno') is not None:
-                total_forms_completed_for_nomina += 1
+                total_forms_completed_for_nomina += 0
 
             estudiantes.append(est)
         print(f"DEBUG: Estudiantes procesados para plantilla en /relleno_formularios: {estudiantes}")
@@ -1023,26 +1015,36 @@ def admin_cargar_nomina():
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
 
-    tipo_nomina = request.form.get('tipo_nomina')
+    tipo_nomina_raw = request.form.get('tipo_nomina')
     nombre_especifico = request.form.get('nombre_especifico')
     doctora_id_from_form = request.form.get('doctora', '').strip()
     excel_file = request.files.get('excel')
 
-    # Determinar el form_type basado en tipo_nomina
+    # Normalizar tipo_nomina para una comparación robusta (ej. "NEUROLOGIA" -> "neurologia")
+    tipo_nomina_normalized = tipo_nomina_raw.strip().lower() if tipo_nomina_raw else ''
+
+    # Determinar el form_type basado en tipo_nomina normalizado
     form_type = None
-    # Mapeo de los tipos de nómina a los tipos de formulario PDF
-    if tipo_nomina == 'Neurología' or tipo_nomina == 'COLEGIO2': # Si 'COLEGIO2' usa el formulario de Neurología
+    if 'neurologia' in tipo_nomina_normalized: 
         form_type = 'neurologia'
-    elif tipo_nomina == 'FAMILIAR': 
+    elif 'familiar' in tipo_nomina_normalized: 
         form_type = 'medicina_familiar'
     # Puedes añadir más condiciones aquí si tienes otros tipos de nómina que mapean a otros PDFs
-    # elif tipo_nomina == 'OTRO_TIPO':
+    # elif 'otro_tipo' in tipo_nomina_normalized:
     #     form_type = 'otro_pdf_base'
 
-    print(f"DEBUG: admin_cargar_nomina - Datos recibidos: tipo_nomina={tipo_nomina}, nombre_especifico={nombre_especifico}, doctora_id_from_form={doctora_id_from_form}, archivo_presente={bool(excel_file)}, form_type_derivado={form_type}")
+    print(f"DEBUG: admin_cargar_nomina - Datos recibidos: tipo_nomina_raw={tipo_nomina_raw}, tipo_nomina_normalized={tipo_nomina_normalized}, nombre_especifico={nombre_especifico}, doctora_id_from_form={doctora_id_from_form}, archivo_presente={bool(excel_file)}, form_type_derivado={form_type}")
 
-    if not all([tipo_nomina, nombre_especifico, doctora_id_from_form, excel_file, form_type]): # Añadir form_type a la validación
-        flash('❌ Falta uno o más campos obligatorios para cargar la nómina (tipo, nombre, doctora, archivo, o tipo de formulario inválido).', 'error')
+    # Validar campos obligatorios antes de intentar subir o insertar
+    if not all([tipo_nomina_raw, nombre_especifico, doctora_id_from_form, excel_file]):
+        flash('❌ Falta uno o más campos obligatorios para cargar la nómina (tipo, nombre, doctora, archivo).', 'error')
+        print(f"ERROR: Datos obligatorios faltantes: tipo_nomina_raw={tipo_nomina_raw}, nombre_especifico={nombre_especifico}, doctora_id_from_form={doctora_id_from_form}, excel_file_present={bool(excel_file)}")
+        return redirect(url_for('dashboard'))
+
+    # Validar que se haya podido determinar un tipo de formulario
+    if form_type is None: 
+        flash(f'❌ El tipo de nómina "{tipo_nomina_raw}" no se pudo mapear a un tipo de formulario conocido. Por favor, verifique el tipo de nómina.', 'error')
+        print(f"ERROR: Tipo de nómina no reconocido: {tipo_nomina_raw}. No se pudo derivar form_type.")
         return redirect(url_for('dashboard'))
 
     if not permitido(excel_file.filename):
@@ -1064,18 +1066,19 @@ def admin_cargar_nomina():
         url_excel_publica = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path}" 
         print(f"DEBUG: Archivo Excel subido, URL pública: {url_excel_publica}")
     except requests.exceptions.RequestException as e:
-        print(f"❌ Error al subir archivo Excel a Storage: {e} - {res_upload.text if 'res_upload' in locals() else ''}")
-        flash("❌ Error al subir el archivo de la nómina.", 'error')
+        error_detail = res_upload.text if 'res_upload' in locals() else 'No response from Supabase Storage.'
+        print(f"❌ Error al subir archivo Excel a Storage: {e} - Detalles de Supabase Storage: {error_detail}")
+        flash(f"❌ Error al subir el archivo de la nómina a Supabase Storage: {error_detail}", 'error')
         return redirect(url_for('dashboard'))
 
     data_nomina = {
         "id": nomina_id,
         "nombre_nomina": nombre_especifico,
-        "tipo_nomina": tipo_nomina,
+        "tipo_nomina": tipo_nomina_raw, # Guardamos el tipo_nomina original del formulario
         "doctora_id": doctora_id_from_form,
         "url_excel_original": url_excel_publica,
         "nombre_excel_original": excel_filename,
-        "form_type": form_type # Guardar el form_type en la nómina
+        "form_type": form_type # Guardar el form_type derivado en la nómina
     }
     print(f"DEBUG: Payload para insertar nómina en nominas_medicas: {data_nomina}")
 
@@ -1090,8 +1093,15 @@ def admin_cargar_nomina():
         print(f"DEBUG: Respuesta de Supabase al insertar nómina (text): {res_insert_nomina.text}")
 
     except requests.exceptions.RequestException as e:
-        print(f"❌ Error al guardar nómina en DB: {e} - {res_insert_nomina.text if 'res_insert_nomina' in locals() else ''}")
-        flash("❌ Error al guardar los datos de la nómina en la base de datos.", 'error')
+        error_detail = res_insert_nomina.text if 'res_insert_nomina' in locals() else 'No response from Supabase.'
+        print(f"❌ Error al guardar nómina en DB: {e} - Detalles de Supabase: {error_detail}")
+        flash(f"❌ Error al guardar los datos de la nómina en la base de datos: {error_detail}", 'error')
+        # Intentar limpiar el archivo subido si falla la inserción en la DB
+        try:
+            requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
+            print("DEBUG: Archivo subido limpiado después de fallo en inserción de nómina.")
+        except Exception as cleanup_e:
+            print(f"ERROR: Fallo al limpiar archivo subido: {cleanup_e}")
         return redirect(url_for('dashboard'))
 
     excel_data_stream = io.BytesIO(excel_file_data)
@@ -1104,6 +1114,13 @@ def admin_cargar_nomina():
         print("DEBUG: Archivo leído como CSV.")
     else:
         flash('❌ Formato de archivo no soportado para la nómina.', 'error')
+        # Intentar limpiar el archivo subido y la entrada de la nómina si el formato no es soportado
+        try:
+            requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
+            requests.delete(f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}", headers=SUPABASE_SERVICE_HEADERS)
+            print("DEBUG: Rollback completo después de formato de archivo no soportado.")
+        except Exception as rollback_e:
+            print(f"❌ Error durante el rollback: {rollback_e}")
         return redirect(url_for('dashboard'))
 
     estudiantes_a_insertar = []
@@ -1136,7 +1153,7 @@ def admin_cargar_nomina():
     if not all(k in col_map for k in required_columns_excel):
         missing_cols = [col for col in required_columns_excel if col not in col_map]
         print(f"ERROR: No se encontraron columnas críticas en el Excel: {missing_cols}. Columnas esperadas: {column_mapping.keys()}. Columnas encontradas: {df.columns.tolist()}")
-        flash(f"❌ El archivo no contiene las columnas necesarias: {', '.join(missing_cols)}. Verifique que los encabezados sean 'Nombre Completo', 'rut', 'fecha nacimiento' exactamente.", 'error')
+        flash(f"❌ El archivo no contiene las columnas necesarias: {', '.join(missing_cols)}. Verifique que los encabezados sean 'Nombre Completo', 'rut', y 'fecha nacimiento' exactamente.", 'error')
         try:
             # Rollback: eliminar la nómina y el archivo subido si falla la lectura del Excel
             requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
@@ -1168,27 +1185,14 @@ def admin_cargar_nomina():
             elif isinstance(fecha_nacimiento_raw, date):
                 fecha_nac_str = fecha_nacimiento_raw.strftime('%Y-%m-%d')
             else:
-                # Intentar parsear varios formatos comunes (DD-MM-YYYY, DD/MM/YYYY, YYYY-MM-DD)
+                # Intentar parsear varios formatos comunes (DD-MM-YYYY, DD/MM/YYYY, YYYY-MM-DD, Excel serial)
                 try:
-                    # Primero intentar como DD-MM-YYYY o DD/MM/YYYY
-                    if '/' in str(fecha_nacimiento_raw):
-                        fecha_nac_str = datetime.strptime(str(fecha_nacimiento_raw), '%d/%m/%Y').strftime('%Y-%m-%d')
-                    elif '-' in str(fecha_nacimiento_raw):
-                        fecha_nac_str = datetime.strptime(str(fecha_nacimiento_raw), '%d-%m-%Y').strftime('%Y-%m-%d')
-                    else: # Si no tiene guiones ni barras, intentar como YYYYMMDD o DDMMYYYY si es string
-                        if isinstance(fecha_nacimiento_raw, (int, float)): # Si viene como número (ej. Excel date serial)
-                            fecha_nac_str = datetime.fromtimestamp((fecha_nacimiento_raw - 25569) * 86400).strftime('%Y-%m-%d') # Convert Excel serial to date
-                        else: # Intentar como string sin separadores o YYYY-MM-DD
-                            try:
-                                fecha_nac_str = datetime.strptime(str(fecha_nacimiento_raw), '%Y-%m-%d').strftime('%Y-%m-%d')
-                            except ValueError:
-                                if len(str(fecha_nacimiento_raw)) == 8: # YYYYMMDD or DDMMYYYY
-                                    try:
-                                        fecha_nac_str = datetime.strptime(str(fecha_nacimiento_raw), '%Y%m%d').strftime('%Y-%m-%d')
-                                    except ValueError:
-                                        fecha_nac_str = datetime.strptime(str(fecha_nacimiento_raw), '%d%m%Y').strftime('%Y-%m-%d')
-                                else:
-                                    raise ValueError("Formato de fecha no reconocido.")
+                    # Usar pd.to_datetime para una conversión más robusta de fechas
+                    parsed_date = pd.to_datetime(fecha_nacimiento_raw, errors='coerce')
+                    if pd.notna(parsed_date):
+                        fecha_nac_str = parsed_date.strftime('%Y-%m-%d')
+                    else:
+                        raise ValueError("Formato de fecha no reconocido o inválido.")
                 except Exception as date_e:
                     print(f"AVISO: Error al parsear fecha de nacimiento en fila {index+2} ({fecha_nacimiento_raw}): {date_e}")
                     fecha_nac_str = None # Asegurar que sea None si falla la conversión
@@ -1974,6 +1978,7 @@ def eliminar_nomina(nomina_id):
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+
 
 
 

@@ -341,8 +341,8 @@ def relleno_formularios(nomina_id):
                            establecimiento_nombre=nomina['nombre_nomina'])
 
 
-@app.route('/generar_pdf', methods=['POST'])
-def generar_pdf():
+   @app.route('/generar_pdf', methods=['POST'])
+   def generar_pdf():
         if 'usuario' not in session:
         flash('Debes iniciar sesión para acceder a esta página.', 'danger')
         return redirect(url_for('index'))

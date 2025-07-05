@@ -362,53 +362,72 @@ def generar_pdf():
     derivaciones = request.form.get('derivaciones', '') # Para ambos
     fecha_eval = datetime.today().strftime('%d/%m/%Y')
 
-    # Campos específicos de Medicina Familiar
-    nombre_apellido_familiar = request.form.get('nombre_apellido', '')
-    genero_f_form = request.form.get('genero_f', '')
-    genero_m_form = request.form.get('genero_m', '')
-    diagnostico_1 = request.form.get('diagnostico_1', '')
-    diagnostico_2 = request.form.get('diagnostico_2', '')
-    diagnostico_complementario = request.form.get('diagnostico_complementario', '')
-    fecha_reevaluacion_select = request.form.get('fecha_reevaluacion_select', '')
-    observacion_1 = request.form.get('observacion_1', '')
-    observacion_2 = request.form.get('observacion_2', '')
-    observacion_3 = request.form.get('observacion_3', '')
-    observacion_4 = request.form.get('observacion_4', '')
-    observacion_5 = request.form.get('observacion_5', '')
-    observacion_6 = request.form.get('observacion_6', '')
-    observacion_7 = request.form.get('observacion_7', '')
-    altura = request.form.get('altura', '')
-    peso = request.form.get('peso', '')
-    imc = request.form.get('imc', '')
-    clasificacion = request.form.get('clasificacion', '')
+    # ... (código anterior hasta la función generar_pdf)
 
-    # Checkboxes de Medicina Familiar
-    check_cesarea = request.form.get('check_cesarea') == 'on'
-    check_atermino = request.form.get('check_atermino') == 'on'
-    check_vaginal = request.form.get('check_vaginal') == 'on'
-    check_prematuro = request.form.get('check_prematuro') == 'on'
-    check_acorde = request.form.get('check_acorde') == 'on'
-    check_retrasogeneralizado = request.form.get('check_retrasogeneralizado') == 'on'
-    check_esquemai = request.form.get('check_esquemai') == 'on'
-    check_esquemac = request.form.get('check_esquemac') == 'on'
-    check_alergiano = request.form.get('check_alergiano') == 'on'
-    check_alergiasi = request.form.get('check_alergiasi') == 'on'
-    check_cirugiano = request.form.get('check_cirugiano') == 'on'
-    check_cirugiasi = request.form.get('check_cirugiasi') == 'on'
-    check_visionsinalteracion = request.form.get('check_visionsinalteracion') == 'on'
-    check_visionrefraccion = request.form.get('check_visionrefraccion') == 'on'
-    check_hipoacusia = request.form.get('check_hipoacusia') == 'on'
-    check_retenciondental = request.form.get('check_retenciondental') == 'on'
-    check_hipertrofia = request.form.get('check_hipertrofia') == 'on'
-    check_frenillolingual = request.form.get('check_frenillolingual') == 'on'
-    check_sinhallazgos = request.form.get('check_sinhallazgos') == 'on'
-    check_caries = request.form.get('check_caries') == 'on'
-    check_audicionnormal = request.form.get('check_audicionnormal') == 'on'
-    check_tapondecerumen = request.form.get('check_tapondecerumen') == 'on'
-    check_apinamientodental = request.form.get('check_apinamientodental') == 'on'
+        elif form_type == 'medicina_familiar':
+            # Mapeo de los campos del formulario HTML a los campos del PDF Familiar
+            # Usando los nombres EXACTOS de los campos que tu depurador encontró en formulario_familiar.pdf
 
+            campos = {
+                "nombre": nombre_apellido_familiar,
+                "sexo_f": "/Yes" if genero_f_form else "", # Asumo que es el checkbox 'F'
+                "sexo_m": "/Yes" if genero_m_form else "", # Asumo que es el checkbox 'M'
+                "rut": rut,
+                "fecha_nacimiento": fecha_nac_formato,
+                "edad": edad,
+                "nacionalidad": nacionalidad,
+                "fecha_evaluacion": fecha_eval,
+                "fecha_reevaluacion": fecha_reeval_pdf,
+                "diagnostico_1": diagnostico_1,
+                "diagnostico_complementario": diagnostico_complementario,
+                "derivaciones": derivaciones,
+                
+                # Campos de observación:
+                "observacion_1": observacion_1, 
+                "observacion_2": observacion_2,
+                "observacion_3": observacion_3,
+                "observacion_4": observacion_4,
+                "observacion_5": observacion_5,
+                "observacion_6": observacion_6,
+                "observacion_7": observacion_7,
+                
+                "altura": altura, 
+                "peso": peso,
+                "imc": imc, 
+                "clasificacion": clasificacion,
 
-    # Obtener el form_type de la sesión para saber qué PDF base usar
+                # Checkboxes - Usando los nombres EXACTOS del PDF y el valor "/Yes"
+                "check_cesarea": "/Yes" if check_cesarea else "",
+                "check_atermino": "/Yes" if check_atermino else "",
+                "check_vaginal": "/Yes" if check_vaginal else "",
+                "check_prematuro": "/Yes" if check_prematuro else "",
+                "check_acorde": "/Yes" if check_acorde else "",
+                "check_retrasogeneralizado": "/Yes" if check_retrasogeneralizado else "",
+                "check_esquemai": "/Yes" if check_esquemai else "",
+                "check_esquemac": "/Yes" if check_esquemac else "",
+                "check_alergiano": "/Yes" if check_alergiano else "", 
+                "check_alergiasi": "/Yes" if check_alergiasi else "", # Asegúrate de que este campo exista si lo estás usando
+                "check_cirugiano": "/Yes" if check_cirugiano else "", 
+                "check_cirugiasi": "/Yes" if check_cirugiasi else "", 
+                "check_visionsinalteracion": "/Yes" if check_visionsinalteracion else "",
+                "check_visionrefraccion": "/Yes" if check_visionrefraccion else "",
+                "check_audicionnormal": "/Yes" if check_audicionnormal else "", 
+                "check_tapondecerumen": "/Yes" if check_tapondecerumen else "",
+                "check_hipoacusia": "/Yes" if check_hipoacusia else "",
+                "check_sinhallazgos": "/Yes" if check_sinhallazgos else "",
+                "check_caries": "/Yes" if check_caries else "",
+                "check_apinamientodental": "/Yes" if check_apinamientodental else "",
+                "check_retenciondental": "/Yes" if check_retenciondental else "", 
+                "check_frenillolingual": "/Yes" if check_frenillolingual else "",
+                "check_hipertrofia": "/Yes" if check_hipertrofia else "",
+                
+                # Si hay algún campo de "diagnostico_2" en tu PDF que necesite ser rellenado
+                # y no está cubierto por "diagnostico_1" o "diagnostico_complementario",
+                # asegúrate de que el nombre del campo del PDF esté aquí:
+                # "diagnostico_2_campo_pdf": diagnostico_2, 
+            }
+
+# ... (resto de tu función generar_pdf)    # Obtener el form_type de la sesión para saber qué PDF base usar
     form_type = session.get('current_form_type', 'neurologia') 
 
     print(f"DEBUG: generar_pdf - Datos recibidos: nombre={nombre}, rut={rut}, form_type={form_type}")

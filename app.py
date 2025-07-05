@@ -5,8 +5,6 @@ import base64
 from werkzeug.utils import secure_filename
 from datetime import datetime, date, timedelta
 from openpyxl import load_workbook
-from PyPDF2 import PdfReader, PdfWriter
-from PyPDF2.generic import BooleanObject, NameObject, NumberObject, DictionaryObject
 import mimetypes
 import io
 import uuid
@@ -19,6 +17,9 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.auth.transport.requests import Request
+
+# Importación de PyPDFium2
+import pypdfium2 as pdfium
 
 
 app = Flask(__name__)
@@ -586,21 +587,22 @@ def generar_pdf():
         return redirect(url_for('dashboard'))
 
     try:
-        reader = PdfReader(pdf_base_path)
-        writer = PdfWriter()
-        writer.add_page(reader.pages[0])
+        # Cargar el PDF con PyPDFium2
+        pdf = pdfium.PdfDocument(pdf_base_path)
+        form = pdf.get_form_data()
 
-        # Los campos a rellenar deben ser específicos para cada tipo de formulario
-        campos = {}
+        # Mapeo de los campos del formulario HTML a los nombres EXACTOS encontrados en el PDF
+        # y los valores correspondientes para PyPDFium2
+        field_values = {}
         if form_type == 'neurologia':
-            campos = {
+            field_values = {
                 "nombre": nombre,
                 "rut": rut,
                 "fecha_nacimiento": fecha_nac_formato, 
                 "nacionalidad": nacionalidad,
                 "edad": edad,
                 "diagnostico_1": diagnostico,
-                "diagnostico_2": diagnostico, # Puede ser el mismo para neurología si no hay un segundo campo
+                "diagnostico_2": diagnostico, 
                 "estado_general": estado_general, 
                 "fecha_evaluacion": fecha_eval,
                 "fecha_reevaluacion": fecha_reeval_pdf,
@@ -609,79 +611,71 @@ def generar_pdf():
                 "sexo_m": "X" if sexo == "M" else "",
             }
         elif form_type == 'medicina_familiar':
-            # Mapeo de los campos del formulario HTML a los campos del PDF Familiar
-            # Usando los nombres EXACTOS encontrados en el PDF
-            campos = {
+            field_values = {
                 "Nombres y Apellidos": nombre_apellido_familiar,
-                "GENERO": genero_f_form if genero_f_form else genero_m_form, # Asumiendo que es un campo de texto o radio que toma 'Femenino'/'Masculino'
+                "GENERO": genero_f_form if genero_f_form else genero_m_form,
                 "RUN": rut,
                 "Fecha nacimiento (dd/mm/aaaa)": fecha_nac_formato,
                 "Edad (en años y meses)": edad,
                 "Nacionalidad": nacionalidad,
                 "Fecha evaluación": fecha_eval,
                 "Fecha reevaluación": fecha_reeval_pdf, 
-                "DIAGNÓSTICO": diagnostico_1, # Mapeado a DIAGNOSTICO principal
+                "DIAGNÓSTICO": diagnostico_1,
                 "DIAGNÓSTICO COMPLEMENTARIO": diagnostico_complementario,
                 "DERIVACIONES": derivaciones,
-                # Campos de observación (necesitaríamos nombres únicos si se rellenan individualmente)
-                # Por ahora, mapeo a los nombres genéricos si existen o se usan
-                # Si hay múltiples campos OBS: sin nombres únicos, PyPDF2 podría tener problemas.
-                # Se asume que 'observacion_1' a 'observacion_7' del formulario HTML
-                # mapean a campos con nombres específicos en el PDF si existen.
-                # Para este ejemplo, usaré los nombres genéricos si no hay un mapeo 1:1
-                "OBS:_1": observacion_1, # Ejemplo si el PDF tiene OBS_1
-                "OBS:_2": observacion_2, # Ejemplo si el PDF tiene OBS_2
+                "OBS:_1": observacion_1, # Asegúrate de que estos nombres coincidan con los campos de tu PDF
+                "OBS:_2": observacion_2,
                 "OBS:_3": observacion_3,
                 "OBS:_4": observacion_4,
                 "OBS:_5": observacion_5,
                 "OBS:_6": observacion_6,
                 "OBS:_7": observacion_7,
-                "Altura:": altura, # Con dos puntos
+                "Altura:": altura,
                 "Peso": peso,
-                "I.M.C": imc, # Con puntos
+                "I.M.C": imc,
                 "Clasificación": clasificacion,
-                # Checkboxes - Usando los nombres EXACTOS del PDF y el valor "/Yes"
-                "CESAREA": "/Yes" if check_cesarea else "",
-                "A TÉRMINO": "/Yes" if check_atermino else "",
-                "VAGINAL": "/Yes" if check_vaginal else "",
-                "PREMATURO": "/Yes" if check_prematuro else "",
-                "LOGRADO ACORDE A LA EDAD": "/Yes" if check_acorde else "",
-                "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if check_retrasogeneralizado else "",
-                "ESQUEMA INCOMPLETO": "/Yes" if check_esquemai else "",
-                "ESQUEMA COMPLETO": "/Yes" if check_esquemac else "",
-                "NO": "/Yes" if check_alergiano else "", # Checkbox para ALERGIAS
-                "NO_2": "/Yes" if check_cirugiano else "", # Checkbox para HOSPITALIZACIONES/CIRUGIAS
-                "ST": "/Yes" if check_cirugiasi else "", # Checkbox para HOSPITALIZACIONES/CIRUGIAS
-                "SIN ALTERACIÓN": "/Yes" if check_visionsinalteracion else "",
-                "VICIOS DE REFRACCIÓN": "/Yes" if check_visionrefraccion else "",
-                "NORMAL": "/Yes" if check_audicionnormal else "", # Checkbox para AUDICIÓN
-                "TAPÓN DE CERUMEN": "/Yes" if check_tapondecerumen else "",
-                "HIPOACUSIA": "/Yes" if check_hipoacusia else "",
-                "SIN HALLAZGOS": "/Yes" if check_sinhallazgos else "",
-                "CARIES": "/Yes" if check_caries else "",
-                "APIÑAMIENTO DENTAL": "/Yes" if check_apinamientodental else "",
-                "RETENCIÓN DENTAL.": "/Yes" if check_retenciondental else "", # Con punto
-                "FRENILLO LINGUAL": "/Yes" if check_frenillolingual else "",
-                "HIPERTROFIA AMIGDALINA": "/Yes" if check_hipertrofia else "",
+                # Checkboxes - PyPDFium2 usa "Yes" para marcado y "" para desmarcado
+                "CESAREA": "Yes" if check_cesarea else "",
+                "A TÉRMINO": "Yes" if check_atermino else "",
+                "VAGINAL": "Yes" if check_vaginal else "",
+                "PREMATURO": "Yes" if check_prematuro else "",
+                "LOGRADO ACORDE A LA EDAD": "Yes" if check_acorde else "",
+                "RETRASO GENERALIZADO DEL DESARROLLO": "Yes" if check_retrasogeneralizado else "",
+                "ESQUEMA INCOMPLETO": "Yes" if check_esquemai else "",
+                "ESQUEMA COMPLETO": "Yes" if check_esquemac else "",
+                "NO": "Yes" if check_alergiano else "", # Checkbox para ALERGIAS
+                "NO_2": "Yes" if check_cirugiano else "", # Checkbox para HOSPITALIZACIONES/CIRUGIAS
+                "ST": "Yes" if check_cirugiasi else "", # Checkbox para HOSPITALIZACIONES/CIRUGIAS
+                "SIN ALTERACIÓN": "Yes" if check_visionsinalteracion else "",
+                "VICIOS DE REFRACCIÓN": "Yes" if check_visionrefraccion else "",
+                "NORMAL": "Yes" if check_audicionnormal else "", # Checkbox para AUDICIÓN
+                "TAPÓN DE CERUMEN": "Yes" if check_tapondecerumen else "",
+                "HIPOACUSIA": "Yes" if check_hipoacusia else "",
+                "SIN HALLAZGOS": "Yes" if check_sinhallazgos else "",
+                "CARIES": "Yes" if check_caries else "",
+                "APIÑAMIENTO DENTAL": "Yes" if check_apinamientodental else "",
+                "RETENCIÓN DENTAL.": "Yes" if check_retenciondental else "",
+                "FRENILLO LINGUAL": "Yes" if check_frenillolingual else "",
+                "HIPERTROFIA AMIGDALINA": "Yes" if check_hipertrofia else "",
             }
 
-        print(f"DEBUG: Fields to fill in PDF for {form_type} form: {campos}")
-        print(f"DEBUG: Campos a rellenar en PDF (JSON): {json.dumps(campos, indent=2)}")
-
-
-        if "/AcroForm" not in writer._root_object:
-            writer._root_object.update({
-                NameObject("/AcroForm"): DictionaryObject()
-            })
-
-        writer.update_page_form_field_values(writer.pages[0], campos)
-
-        writer._root_object["/AcroForm"].update({
-            NameObject("/NeedAppearances"): BooleanObject(True)
-        })
-
+        print(f"DEBUG: Fields to fill in PDF for {form_type} form: {field_values}")
+        
+        # Rellenar los campos
+        for field in form.get_fields():
+            field_name = field.get_field_name()
+            if field_name in field_values:
+                value = field_values[field_name]
+                if field.get_field_type() == pdfium.FPDF_FORMFIELD_CHECKBOX:
+                    # Para checkboxes, set_value espera "Yes" o ""
+                    field.set_value("Yes" if value == "Yes" else "")
+                else:
+                    field.set_text(str(value))
+        
+        # Guardar el PDF en un buffer de memoria
         output = io.BytesIO()
-        writer.write(output)
+        pdf.save(output)
+        pdf.close() # Es importante cerrar el documento
         output.seek(0)
 
         nombre_para_archivo = nombre_apellido_familiar if form_type == 'medicina_familiar' else nombre
@@ -1624,14 +1618,14 @@ def enviar_formulario_a_drive():
         return jsonify({"success": False, "message": "Error interno: Archivo base del formulario no encontrado en el servidor."}), 500
 
     try:
-        reader = PdfReader(pdf_base_path)
-        writer = PdfWriter()
-        writer.add_page(reader.pages[0])
+        # Cargar el PDF con PyPDFium2
+        pdf = pdfium.PdfDocument(pdf_base_path)
+        form = pdf.get_form_data()
 
-        # Los campos a rellenar deben ser específicos para cada tipo de formulario
-        campos = {}
+        # Mapeo de los campos del formulario HTML a los nombres EXACTOS encontrados en el PDF
+        field_values = {}
         if form_type == 'neurologia':
-            campos = {
+            field_values = {
                 "nombre": nombre,
                 "rut": rut,
                 "fecha_nacimiento": fecha_nac_formato, 
@@ -1647,69 +1641,68 @@ def enviar_formulario_a_drive():
                 "sexo_m": "X" if sexo == "M" else "",
             }
         elif form_type == 'medicina_familiar':
-            # Mapeo de los campos del formulario HTML a los campos del PDF Familiar
-            # Usando los nombres EXACTOS encontrados en el PDF
-            campos = {
+            field_values = {
                 "Nombres y Apellidos": nombre_apellido_familiar,
-                "GENERO": genero_f_form if genero_f_form else genero_m_form, # Asumiendo que es un campo de texto o radio que toma 'Femenino'/'Masculino'
+                "GENERO": genero_f_form if genero_f_form else genero_m_form,
                 "RUN": rut,
                 "Fecha nacimiento (dd/mm/aaaa)": fecha_nac_formato,
                 "Edad (en años y meses)": edad,
                 "Nacionalidad": nacionalidad,
                 "Fecha evaluación": fecha_eval,
                 "Fecha reevaluación": fecha_reeval_pdf, 
-                "DIAGNÓSTICO": diagnostico_1, # Mapeado a DIAGNOSTICO principal
+                "DIAGNÓSTICO": diagnostico_1,
                 "DIAGNÓSTICO COMPLEMENTARIO": diagnostico_complementario,
                 "DERIVACIONES": derivaciones,
-                # Campos de observación (necesitaríamos nombres únicos si se rellenan individualmente)
-                # Por ahora, mapeo a los nombres genéricos si existen o se usan
-                # Si hay múltiples campos OBS: sin nombres únicos, PyPDF2 podría tener problemas.
-                # Se asume que 'observacion_1' a 'observacion_7' del formulario HTML
-                # mapean a campos con nombres específicos en el PDF si existen.
-                # Para este ejemplo, usaré los nombres genéricos si no hay un mapeo 1:1
-                "OBS:_1": observacion_1, # Ejemplo si el PDF tiene OBS_1
-                "OBS:_2": observacion_2, # Ejemplo si el PDF tiene OBS_2
+                "OBS:_1": observacion_1, 
+                "OBS:_2": observacion_2,
                 "OBS:_3": observacion_3,
                 "OBS:_4": observacion_4,
                 "OBS:_5": observacion_5,
                 "OBS:_6": observacion_6,
                 "OBS:_7": observacion_7,
-                "Altura:": altura, # Con dos puntos
+                "Altura:": altura,
                 "Peso": peso,
-                "I.M.C": imc, # Con puntos
+                "I.M.C": imc,
                 "Clasificación": clasificacion,
-                # Checkboxes - Usando los nombres EXACTOS del PDF y el valor "/Yes"
-                "CESAREA": "/Yes" if check_cesarea else "",
-                "A TÉRMINO": "/Yes" if check_atermino else "",
-                "VAGINAL": "/Yes" if check_vaginal else "",
-                "PREMATURO": "/Yes" if check_prematuro else "",
-                "LOGRADO ACORDE A LA EDAD": "/Yes" if check_acorde else "",
-                "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if check_retrasogeneralizado else "",
-                "ESQUEMA INCOMPLETO": "/Yes" if check_esquemai else "",
-                "ESQUEMA COMPLETO": "/Yes" if check_esquemac else "",
-                "NO": "/Yes" if check_alergiano else "", # Checkbox para ALERGIAS
-                "NO_2": "/Yes" if check_cirugiano else "", # Checkbox para HOSPITALIZACIONES/CIRUGIAS
-                "ST": "/Yes" if check_cirugiasi else "", # Checkbox para HOSPITALIZACIONES/CIRUGIAS
-                "SIN ALTERACIÓN": "/Yes" if check_visionsinalteracion else "",
-                "VICIOS DE REFRACCIÓN": "/Yes" if check_visionrefraccion else "",
-                "NORMAL": "/Yes" if check_audicionnormal else "", # Checkbox para AUDICIÓN
-                "TAPÓN DE CERUMEN": "/Yes" if check_tapondecerumen else "",
-                "HIPOACUSIA": "/Yes" if check_hipoacusia else "",
-                "SIN HALLAZGOS": "/Yes" if check_sinhallazgos else "",
-                "CARIES": "/Yes" if check_caries else "",
-                "APIÑAMIENTO DENTAL": "/Yes" if check_apinamientodental else "",
-                "RETENCIÓN DENTAL.": "/Yes" if check_retenciondental else "", # Con punto
-                "FRENILLO LINGUAL": "/Yes" if check_frenillolingual else "",
-                "HIPERTROFIA AMIGDALINA": "/Yes" if check_hipertrofia else "",
+                # Checkboxes - PyPDFium2 usa "Yes" para marcado y "" para desmarcado
+                "CESAREA": "Yes" if check_cesarea else "",
+                "A TÉRMINO": "Yes" if check_atermino else "",
+                "VAGINAL": "Yes" if check_vaginal else "",
+                "PREMATURO": "Yes" if check_prematuro else "",
+                "LOGRADO ACORDE A LA EDAD": "Yes" if check_acorde else "",
+                "RETRASO GENERALIZADO DEL DESARROLLO": "Yes" if check_retrasogeneralizado else "",
+                "ESQUEMA INCOMPLETO": "Yes" if check_esquemai else "",
+                "ESQUEMA COMPLETO": "Yes" if check_esquemac else "",
+                "NO": "Yes" if check_alergiano else "", 
+                "NO_2": "Yes" if check_cirugiano else "", 
+                "ST": "Yes" if check_cirugiasi else "", 
+                "SIN ALTERACIÓN": "Yes" if check_visionsinalteracion else "",
+                "VICIOS DE REFRACCIÓN": "Yes" if check_visionrefraccion else "",
+                "NORMAL": "Yes" if check_audicionnormal else "", 
+                "TAPÓN DE CERUMEN": "Yes" if check_tapondecerumen else "",
+                "HIPOACUSIA": "Yes" if check_hipoacusia else "",
+                "SIN HALLAZGOS": "Yes" if check_sinhallazgos else "",
+                "CARIES": "Yes" if check_caries else "",
+                "APIÑAMIENTO DENTAL": "Yes" if check_apinamientodental else "",
+                "RETENCIÓN DENTAL.": "Yes" if check_retenciondental else "",
+                "FRENILLO LINGUAL": "Yes" if check_frenillolingual else "",
+                "HIPERTROFIA AMIGDALINA": "Yes" if check_hipertrofia else "",
             }
 
-        writer.update_page_form_field_values(writer.pages[0], campos)
-        if "/AcroForm" not in writer._root_object:
-            writer._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
-        writer._root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
-
+        # Rellenar los campos
+        for field in form.get_fields():
+            field_name = field.get_field_name()
+            if field_name in field_values:
+                value = field_values[field_name]
+                if field.get_field_type() == pdfium.FPDF_FORMFIELD_CHECKBOX:
+                    field.set_value("Yes" if value == "Yes" else "")
+                else:
+                    field.set_text(str(value))
+        
+        # Guardar el PDF en un buffer de memoria
         output_pdf_io = io.BytesIO()
-        writer.write(output_pdf_io)
+        pdf.save(output_pdf_io)
+        pdf.close()
         output_pdf_io.seek(0) 
 
         nombre_para_archivo = nombre_apellido_familiar if form_type == 'medicina_familiar' else nombre
@@ -1954,10 +1947,10 @@ def doctor_performance_detail(doctor_id):
             })
 
     except requests.exceptions.RequestException as e:
-        print(f"❌ Error al obtener el rendimiento de la doctora: {e} - {res_students.text if 'res_students' in locals() else 'No response'}")
+        print(f"ERROR: Error al obtener el rendimiento de la doctora: {e} - {res_students.text if 'res_students' in locals() else 'No response'}")
         flash('Error al cargar el detalle de rendimiento de la doctora.', 'error')
     except Exception as e:
-        print(f"❌ Error inesperado al cargar rendimiento de doctora: {e}")
+        print(f"ERROR: Error inesperado al cargar rendimiento de doctora: {e}")
         flash('Error inesperado al cargar el detalle de rendimiento de la doctora.', 'error')
 
     return render_template('doctor_performance.html', 
@@ -2033,7 +2026,9 @@ def generar_pdfs_visibles():
     if not nomina_id or not student_ids or not isinstance(student_ids, list):
         return jsonify({"success": False, "message": "Datos de entrada inválidos para la generación de PDFs."}), 400
 
-    merged_pdf_writer = PdfWriter()
+    # Usaremos PyPDFium2 para la fusión también
+    merged_pdf = pdfium.PdfDocument.new_empty()
+
     # Obtener el form_type de la sesión para saber qué PDF base usar
     form_type = session.get('current_form_type', 'neurologia') 
 
@@ -2081,13 +2076,14 @@ def generar_pdfs_visibles():
                 except ValueError:
                     pass
 
-            reader = PdfReader(pdf_base_path)
-            writer_single_pdf = PdfWriter()
-            writer_single_pdf.add_page(reader.pages[0])
+            # Cargar el PDF base para cada estudiante
+            temp_pdf = pdfium.PdfDocument(pdf_base_path)
+            temp_form = temp_pdf.get_form_data()
 
-            campos = {}
+            # Mapeo de los campos de la DB a los nombres EXACTOS encontrados en el PDF
+            field_values_student = {}
             if form_type == 'neurologia':
-                campos = {
+                field_values_student = {
                     "nombre": est.get('nombre', ''),
                     "rut": est.get('rut', ''),
                     "fecha_nacimiento": est.get('fecha_nacimiento_formato', ''),
@@ -2103,10 +2099,9 @@ def generar_pdfs_visibles():
                     "sexo_m": "X" if est.get('sexo') == "M" else "",
                 }
             elif form_type == 'medicina_familiar':
-                # Mapeo de los campos del PDF Familiar usando los nombres EXACTOS encontrados en el PDF
-                campos = {
-                    "Nombres y Apellidos": est.get('nombre', ''), # En la DB, 'nombre' es el nombre completo para Familiar
-                    "GENERO": est.get('sexo', ''), # Asumiendo que el campo 'sexo' en la DB es 'F' o 'M'
+                field_values_student = {
+                    "Nombres y Apellidos": est.get('nombre', ''),
+                    "GENERO": est.get('sexo', ''), 
                     "RUN": est.get('rut', ''),
                     "Fecha nacimiento (dd/mm/aaaa)": est.get('fecha_nacimiento_formato', ''),
                     "Edad (en años y meses)": est.get('edad', ''),
@@ -2116,7 +2111,6 @@ def generar_pdfs_visibles():
                     "DIAGNÓSTICO": est.get('diagnostico_1', ''), 
                     "DIAGNÓSTICO COMPLEMENTARIO": est.get('diagnostico_complementario', ''),
                     "DERIVACIONES": est.get('derivaciones', ''),
-                    # Campos de observación
                     "OBS:_1": est.get('observacion_1', ''), 
                     "OBS:_2": est.get('observacion_2', ''), 
                     "OBS:_3": est.get('observacion_3', ''),
@@ -2128,50 +2122,53 @@ def generar_pdfs_visibles():
                     "Peso": est.get('peso', ''),
                     "I.M.C": est.get('imc', ''), 
                     "Clasificación": est.get('clasificacion', ''),
-                    # Checkboxes - Usando los nombres EXACTOS del PDF y el valor "/Yes"
-                    "CESAREA": "/Yes" if est.get('check_cesarea') else "",
-                    "A TÉRMINO": "/Yes" if est.get('check_atermino') else "",
-                    "VAGINAL": "/Yes" if est.get('check_vaginal') else "",
-                    "PREMATURO": "/Yes" if est.get('check_prematuro') else "",
-                    "LOGRADO ACORDE A LA EDAD": "/Yes" if est.get('check_acorde') else "",
-                    "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if est.get('check_retrasogeneralizado') else "",
-                    "ESQUEMA INCOMPLETO": "/Yes" if est.get('check_esquemai') else "",
-                    "ESQUEMA COMPLETO": "/Yes" if est.get('check_esquemac') else "",
-                    "NO": "/Yes" if est.get('check_alergiano') else "", 
-                    "NO_2": "/Yes" if est.get('check_cirugiano') else "", 
-                    "ST": "/Yes" if est.get('check_cirugiasi') else "", 
-                    "SIN ALTERACIÓN": "/Yes" if est.get('check_visionsinalteracion') else "",
-                    "VICIOS DE REFRACCIÓN": "/Yes" if est.get('check_visionrefraccion') else "",
-                    "NORMAL": "/Yes" if est.get('check_audicionnormal') else "", 
-                    "TAPÓN DE CERUMEN": "/Yes" if est.get('check_tapondecerumen') else "",
-                    "HIPOACUSIA": "/Yes" if est.get('check_hipoacusia') else "",
-                    "SIN HALLAZGOS": "/Yes" if est.get('check_sinhallazgos') else "",
-                    "CARIES": "/Yes" if est.get('check_caries') else "",
-                    "APIÑAMIENTO DENTAL": "/Yes" if est.get('check_apinamientodental') else "",
-                    "RETENCIÓN DENTAL.": "/Yes" if est.get('check_retenciondental') else "", 
-                    "FRENILLO LINGUAL": "/Yes" if est.get('check_frenillolingual') else "",
-                    "HIPERTROFIA AMIGDALINA": "/Yes" if est.get('check_hipertrofia') else "",
+                    # Checkboxes - PyPDFium2 usa "Yes" para marcado y "" para desmarcado
+                    "CESAREA": "Yes" if est.get('check_cesarea') else "",
+                    "A TÉRMINO": "Yes" if est.get('check_atermino') else "",
+                    "VAGINAL": "Yes" if est.get('check_vaginal') else "",
+                    "PREMATURO": "Yes" if est.get('check_prematuro') else "",
+                    "LOGRADO ACORDE A LA EDAD": "Yes" if est.get('check_acorde') else "",
+                    "RETRASO GENERALIZADO DEL DESARROLLO": "Yes" if est.get('check_retrasogeneralizado') else "",
+                    "ESQUEMA INCOMPLETO": "Yes" if est.get('check_esquemai') else "",
+                    "ESQUEMA COMPLETO": "Yes" if est.get('check_esquemac') else "",
+                    "NO": "Yes" if est.get('check_alergiano') else "", 
+                    "NO_2": "Yes" if est.get('check_cirugiano') else "", 
+                    "ST": "Yes" if est.get('check_cirugiasi') else "", 
+                    "SIN ALTERACIÓN": "Yes" if est.get('check_visionsinalteracion') else "",
+                    "VICIOS DE REFRACCIÓN": "Yes" if est.get('check_visionrefraccion') else "",
+                    "NORMAL": "Yes" if est.get('check_audicionnormal') else "", 
+                    "TAPÓN DE CERUMEN": "Yes" if est.get('check_tapondecerumen') else "",
+                    "HIPOACUSIA": "Yes" if est.get('check_hipoacusia') else "",
+                    "SIN HALLAZGOS": "Yes" if est.get('check_sinhallazgos') else "",
+                    "CARIES": "Yes" if est.get('check_caries') else "",
+                    "APIÑAMIENTO DENTAL": "Yes" if est.get('check_apinamientodental') else "",
+                    "RETENCIÓN DENTAL.": "Yes" if est.get('check_retenciondental') else "", 
+                    "FRENILLO LINGUAL": "Yes" if est.get('check_frenillolingual') else "",
+                    "HIPERTROFIA AMIGDALINA": "Yes" if est.get('check_hipertrofia') else "",
                 }
 
-            if "/AcroForm" not in writer_single_pdf._root_object:
-                writer_single_pdf._root_object.update({
-                    NameObject("/AcroForm"): DictionaryObject()
-                })
-            writer_single_pdf.update_page_form_field_values(writer_single_pdf.pages[0], campos)
-            writer_single_pdf._root_object["/AcroForm"].update({
-                NameObject("/NeedAppearances"): BooleanObject(True)
-            })
-
-            temp_output = io.BytesIO()
-            writer_single_pdf.write(temp_output)
-            temp_output.seek(0)
-
-            temp_reader = PdfReader(temp_output)
-            for page_num in range(len(temp_reader.pages)):
-                merged_pdf_writer.add_page(temp_reader.pages[page_num])
+            # Rellenar los campos del PDF temporal
+            for field in temp_form.get_fields():
+                field_name = field.get_field_name()
+                if field_name in field_values_student:
+                    value = field_values_student[field_name]
+                    if field.get_field_type() == pdfium.FPDF_FORMFIELD_CHECKBOX:
+                        field.set_value("Yes" if value == "Yes" else "")
+                    else:
+                        field.set_text(str(value))
+            
+            # Añadir la página del PDF temporal (ya rellenado) al PDF combinado
+            # Esto también aplanará los campos al añadir la página
+            merged_pdf.new_page(
+                width=temp_pdf.get_page_width(0), 
+                height=temp_pdf.get_page_height(0)
+            ).copy_from_pdf(temp_pdf, 0)
+            
+            temp_pdf.close() # Cerrar el documento temporal
 
         final_output_pdf = io.BytesIO()
-        merged_pdf_writer.write(final_output_pdf)
+        merged_pdf.save(final_output_pdf)
+        merged_pdf.close() # Cerrar el documento combinado
         final_output_pdf.seek(0)
 
         establecimiento_nombre = session.get('establecimiento_nombre', 'Nomina_Desconocida').replace(' ', '_')
@@ -2271,15 +2268,15 @@ def debug_pdf_fields():
         
         if pdf_file and pdf_file.filename.lower().endswith('.pdf'):
             try:
-                reader = PdfReader(io.BytesIO(pdf_file.read()))
-                if reader.acro_form:
-                    for field_name in reader.acro_form.get_fields():
-                        form_fields.append(field_name)
-                    form_fields.sort() # Ordenar para facilitar la revisión
-                else:
-                    flash('El PDF no contiene campos de formulario rellenables (AcroForm).', 'warning')
+                # Usar PyPDFium2 para depurar campos
+                pdf = pdfium.PdfDocument(pdf_file.read())
+                form = pdf.get_form_data()
+                for field in form.get_fields():
+                    form_fields.append(field.get_field_name())
+                form_fields.sort() # Ordenar para facilitar la revisión
+                pdf.close()
             except Exception as e:
-                flash(f'Error al leer el PDF: {e}', 'error')
+                flash(f'Error al leer el PDF con PyPDFium2: {e}', 'error')
         else:
             flash('El archivo no es un PDF válido.', 'error')
     

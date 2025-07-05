@@ -343,7 +343,7 @@ def relleno_formularios(nomina_id):
 
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
-    if 'usuario' not in session:
+        if 'usuario' not in session:
         flash('Debes iniciar sesión para acceder a esta página.', 'danger')
         return redirect(url_for('index'))
 
@@ -433,13 +433,13 @@ def generar_pdf():
     print(f"DEBUG: generar_pdf - Datos recibidos: nombre={nombre}, rut={rut}, form_type={form_type}")
 
     # Validaciones específicas por tipo de formulario
-    if form_type == 'neurologia':
+        if form_type == 'neurologia':
         if not all([estudiante_id, nomina_id, nombre, rut, fecha_nac_original, edad, nacionalidad, sexo, estado_general, diagnostico, request.form.get('fecha_reevaluacion'), derivaciones]):
             flash('Faltan campos obligatorios en el formulario de Neurología para guardar y generar PDF.', 'danger')
             if 'current_nomina_id' in session:
                 return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
             return redirect(url_for('dashboard'))
-    elif form_type == 'medicina_familiar':
+        elif form_type == 'medicina_familiar':
         # Validar campos específicos de Medicina Familiar
         required_familiar_fields = [
             'nombre_apellido', 'rut', 'fecha_nacimiento_original', 'edad', 'nacionalidad', 
@@ -469,7 +469,7 @@ def generar_pdf():
     fecha_reeval_db = None
     fecha_reeval_pdf = None
 
-    if form_type == 'neurologia':
+     if form_type == 'neurologia':
         fecha_reeval_db = request.form.get('fecha_reevaluacion')
         if fecha_reeval_db and "-" in fecha_reeval_db:
             try:
@@ -478,7 +478,7 @@ def generar_pdf():
                 fecha_reeval_pdf = fecha_reeval_db
         else:
             fecha_reeval_pdf = fecha_reeval_db # Si viene en otro formato, se usa tal cual
-    elif form_type == 'medicina_familiar':
+     elif form_type == 'medicina_familiar':
         if fecha_reevaluacion_select:
             try:
                 plazo_reevaluacion_years = int(fecha_reevaluacion_select)

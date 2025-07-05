@@ -533,7 +533,6 @@ def generar_pdf():
                 "check_visionsinalteracion": check_visionsinalteracion,
                 "check_visionrefraccion": check_visionrefraccion,
                 "check_audicionnormal": check_audicionnormal,
-                "check_hipoacusia": check_hipoacusia,
                 "check_tapondecerumen": check_tapondecerumen,
                 "check_sinhallazgos": check_sinhallazgos,
                 "check_caries": check_caries,
@@ -611,16 +610,17 @@ def generar_pdf():
             }
         elif form_type == 'medicina_familiar':
             # Mapeo de los campos del formulario HTML a los campos del PDF Familiar
+            # Usando los nombres proporcionados por el usuario
             campos = {
                 "nombre_apellido": nombre_apellido_familiar,
-                "genero_f": "/Yes" if genero_f_form == 'Femenino' else "", # Asumiendo que el campo es un radio button en el PDF
-                "genero_m": "/Yes" if genero_m_form == 'Masculino' else "", # Asumiendo que el campo es un radio button en el PDF
+                "genero_f": "/Yes" if genero_f_form == 'Femenino' else "", 
+                "genero_m": "/Yes" if genero_m_form == 'Masculino' else "", 
                 "rut": rut,
                 "fecha_nacimiento": fecha_nac_formato,
                 "edad": edad,
                 "nacionalidad": nacionalidad,
                 "fecha_evaluacion": fecha_eval,
-                "fecha_reevaluacion": fecha_reeval_pdf, # Usar la fecha calculada
+                "fecha_reevaluacion": fecha_reeval_pdf, 
                 "diagnostico_1": diagnostico_1,
                 "diagnostico_2": diagnostico_2,
                 "diagnostico_complementario": diagnostico_complementario,
@@ -636,7 +636,7 @@ def generar_pdf():
                 "peso": peso,
                 "imc": imc,
                 "clasificacion": clasificacion,
-                # Checkboxes
+                # Checkboxes - Usando los nombres proporcionados por el usuario
                 "check_cesarea": "/Yes" if check_cesarea else "",
                 "check_atermino": "/Yes" if check_atermino else "",
                 "check_vaginal": "/Yes" if check_vaginal else "",
@@ -766,7 +766,7 @@ def marcar_evaluado():
     check_esquemai_familiar = request.form.get('check_esquemai') == 'on'
     check_esquemac_familiar = request.form.get('check_esquemac') == 'on'
     check_alergiano_familiar = request.form.get('check_alergiano') == 'on'
-    check_alergiasi_familiar = request.form.get('check_alergiasi') == 'on'
+    check_alergiasi = request.form.get('check_alergiasi') == 'on'
     check_cirugiano_familiar = request.form.get('check_cirugiano') == 'on'
     check_cirugiasi_familiar = request.form.get('check_cirugiasi') == 'on'
     check_visionsinalteracion_familiar = request.form.get('check_visionsinalteracion') == 'on'
@@ -878,7 +878,6 @@ def marcar_evaluado():
             "check_visionsinalteracion": check_visionsinalteracion_familiar,
             "check_visionrefraccion": check_visionrefraccion_familiar,
             "check_audicionnormal": check_audicionnormal_familiar,
-            "check_hipoacusia": check_hipoacusia_familiar,
             "check_tapondecerumen": check_tapondecerumen_familiar,
             "check_sinhallazgos": check_sinhallazgos_familiar,
             "check_caries": check_caries_familiar,
@@ -1406,14 +1405,14 @@ def admin_cargar_nomina():
             # Limpiar RUT: quitar puntos y guiones
             rut_limpio = str(rut_raw).replace('.', '').replace('-', '').strip()
             
-            # Convertir fecha de nacimiento a formato YYYY-MM-DD
+            # Convertir fecha de nacimiento a formatoYYYY-MM-DD
             fecha_nac_str = None
             if isinstance(fecha_nacimiento_raw, datetime):
                 fecha_nac_str = fecha_nacimiento_raw.strftime('%Y-%m-%d')
             elif isinstance(fecha_nacimiento_raw, date):
                 fecha_nac_str = fecha_nacimiento_raw.strftime('%Y-%m-%d')
             else:
-                # Intentar parsear varios formatos comunes (DD-MM-YYYY, DD/MM/YYYY, YYYY-MM-DD, Excel serial)
+                # Intentar parsear varios formatos comunes (DD-MM-YYYY, DD/MM/YYYY,YYYY-MM-DD, Excel serial)
                 try:
                     # Usar pd.to_datetime para una conversión más robusta de fechas
                     parsed_date = pd.to_datetime(fecha_nacimiento_raw, errors='coerce')
@@ -1647,6 +1646,7 @@ def enviar_formulario_a_drive():
             }
         elif form_type == 'medicina_familiar':
             # Aquí deberías mapear los campos específicos de tu formulario de Medicina Familiar
+            # Usando los nombres proporcionados por el usuario
             campos = {
                 "nombre_apellido": nombre_apellido_familiar,
                 "genero_f": "/Yes" if genero_f_form == 'Femenino' else "", 
@@ -1672,6 +1672,7 @@ def enviar_formulario_a_drive():
                 "peso": peso,
                 "imc": imc,
                 "clasificacion": clasificacion,
+                # Checkboxes - Usando los nombres proporcionados por el usuario
                 "check_cesarea": "/Yes" if check_cesarea else "",
                 "check_atermino": "/Yes" if check_atermino else "",
                 "check_vaginal": "/Yes" if check_vaginal else "",
@@ -2097,6 +2098,7 @@ def generar_pdfs_visibles():
                     "sexo_m": "X" if est.get('sexo') == "M" else "",
                 }
             elif form_type == 'medicina_familiar':
+                # Mapeo de los campos del PDF Familiar usando los nombres proporcionados por el usuario
                 campos = {
                     "nombre_apellido": est.get('nombre', ''), # En la DB, 'nombre' es el nombre completo para Familiar
                     "rut": est.get('rut', ''),

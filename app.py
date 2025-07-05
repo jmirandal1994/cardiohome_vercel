@@ -20,6 +20,9 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.auth.transport.requests import Request
 
+# Importación para aplanar PDF
+from pdfrw import PdfReader as PdfReaderPdfrw, PdfWriter as PdfWriterPdfrw, PageMerge, IndirectPdfDict
+
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "clave_super_segura_cardiohome_2025")
@@ -586,117 +589,126 @@ def generar_pdf():
         return redirect(url_for('dashboard'))
 
     try:
-        reader = PdfReader(pdf_base_path)
-        writer = PdfWriter()
-        writer.add_page(reader.pages[0])
+        # Usar PdfReaderPdfrw para rellenar y aplanar
+        template_pdf = PdfReaderPdfrw(pdf_base_path)
+        
+        # Obtener los campos del PDF
+        annotations = template_pdf.pages[0]['/Annots']
+        if annotations:
+            for annot in annotations:
+                if annot['/Subtype'] == '/Widget' and '/T' in annot:
+                    field_name = annot['/T'].strip('()') # Eliminar paréntesis
+                    
+                    # Mapeo de los campos del formulario HTML a los nombres EXACTOS encontrados en el PDF
+                    # y los valores correspondientes
+                    value_to_set = "" # Valor por defecto
+                    
+                    if field_name == "Nombres y Apellidos":
+                        value_to_set = nombre_apellido_familiar
+                    elif field_name == "GENERO":
+                        value_to_set = genero_f_form if genero_f_form else genero_m_form
+                    elif field_name == "RUN":
+                        value_to_set = rut
+                    elif field_name == "Fecha nacimiento (dd/mm/aaaa)":
+                        value_to_set = fecha_nac_formato
+                    elif field_name == "Edad (en años y meses)":
+                        value_to_set = edad
+                    elif field_name == "Nacionalidad":
+                        value_to_set = nacionalidad
+                    elif field_name == "Fecha evaluación":
+                        value_to_set = fecha_eval
+                    elif field_name == "Fecha reevaluación":
+                        value_to_set = fecha_reeval_pdf
+                    elif field_name == "DIAGNÓSTICO":
+                        value_to_set = diagnostico_1
+                    elif field_name == "DIAGNÓSTICO COMPLEMENTARIO":
+                        value_to_set = diagnostico_complementario
+                    elif field_name == "DERIVACIONES":
+                        value_to_set = derivaciones
+                    elif field_name == "OBS:_1": # Asumiendo nombres únicos para observaciones
+                        value_to_set = observacion_1
+                    elif field_name == "OBS:_2":
+                        value_to_set = observacion_2
+                    elif field_name == "OBS:_3":
+                        value_to_set = observacion_3
+                    elif field_name == "OBS:_4":
+                        value_to_set = observacion_4
+                    elif field_name == "OBS:_5":
+                        value_to_set = observacion_5
+                    elif field_name == "OBS:_6":
+                        value_to_set = observacion_6
+                    elif field_name == "OBS:_7":
+                        value_to_set = observacion_7
+                    elif field_name == "Altura:":
+                        value_to_set = altura
+                    elif field_name == "Peso":
+                        value_to_set = peso
+                    elif field_name == "I.M.C":
+                        value_to_set = imc
+                    elif field_name == "Clasificación":
+                        value_to_set = clasificacion
+                    # Checkboxes - los nombres de los campos son las etiquetas visibles
+                    elif field_name == "CESAREA":
+                        value_to_set = "/Yes" if check_cesarea else ""
+                    elif field_name == "A TÉRMINO":
+                        value_to_set = "/Yes" if check_atermino else ""
+                    elif field_name == "VAGINAL":
+                        value_to_set = "/Yes" if check_vaginal else ""
+                    elif field_name == "PREMATURO":
+                        value_to_set = "/Yes" if check_prematuro else ""
+                    elif field_name == "LOGRADO ACORDE A LA EDAD":
+                        value_to_set = "/Yes" if check_acorde else ""
+                    elif field_name == "RETRASO GENERALIZADO DEL DESARROLLO":
+                        value_to_set = "/Yes" if check_retrasogeneralizado else ""
+                    elif field_name == "ESQUEMA INCOMPLETO":
+                        value_to_set = "/Yes" if check_esquemai else ""
+                    elif field_name == "ESQUEMA COMPLETO":
+                        value_to_set = "/Yes" if check_esquemac else ""
+                    elif field_name == "NO": # Checkbox para ALERGIAS
+                        value_to_set = "/Yes" if check_alergiano else ""
+                    elif field_name == "NO_2": # Checkbox para HOSPITALIZACIONES/CIRUGIAS
+                        value_to_set = "/Yes" if check_cirugiano else ""
+                    elif field_name == "ST": # Checkbox para HOSPITALIZACIONES/CIRUGIAS
+                        value_to_set = "/Yes" if check_cirugiasi else ""
+                    elif field_name == "SIN ALTERACIÓN":
+                        value_to_set = "/Yes" if check_visionsinalteracion else ""
+                    elif field_name == "VICIOS DE REFRACCIÓN":
+                        value_to_set = "/Yes" if check_visionrefraccion else ""
+                    elif field_name == "NORMAL": # Checkbox para AUDICIÓN
+                        value_to_set = "/Yes" if check_audicionnormal else ""
+                    elif field_name == "TAPÓN DE CERUMEN":
+                        value_to_set = "/Yes" if check_tapondecerumen else ""
+                    elif field_name == "HIPOACUSIA":
+                        value_to_set = "/Yes" if check_hipoacusia else ""
+                    elif field_name == "SIN HALLAZGOS":
+                        value_to_set = "/Yes" if check_sinhallazgos else ""
+                    elif field_name == "CARIES":
+                        value_to_set = "/Yes" if check_caries else ""
+                    elif field_name == "APIÑAMIENTO DENTAL":
+                        value_to_set = "/Yes" if check_apinamientodental else ""
+                    elif field_name == "RETENCIÓN DENTAL.":
+                        value_to_set = "/Yes" if check_retenciondental else ""
+                    elif field_name == "FRENILLO LINGUAL":
+                        value_to_set = "/Yes" if check_frenillolingual else ""
+                    elif field_name == "HIPERTROFIA AMIGDALINA":
+                        value_to_set = "/Yes" if check_hipertrofia else ""
+                    # Para los campos de texto fijos del profesional que no se rellenan
+                    # desde el formulario, no es necesario hacer nada aquí, ya que no se modifican.
+                    # Si quisieras rellenarlos, tendrías que añadirlos aquí.
+                    # Por ejemplo:
+                    # elif field_name == "ADRIANA LUGO PEREZ":
+                    #     value_to_set = "ADRIANA LUGO PEREZ" # O el valor de la DB/variable
 
-        # Los campos a rellenar deben ser específicos para cada tipo de formulario
-        campos = {}
-        if form_type == 'neurologia':
-            campos = {
-                "nombre": nombre,
-                "rut": rut,
-                "fecha_nacimiento": fecha_nac_formato, 
-                "nacionalidad": nacionalidad,
-                "edad": edad,
-                "diagnostico_1": diagnostico,
-                "diagnostico_2": diagnostico, # Puede ser el mismo para neurología si no hay un segundo campo
-                "estado_general": estado_general, 
-                "fecha_evaluacion": fecha_eval,
-                "fecha_reevaluacion": fecha_reeval_pdf,
-                "derivaciones": derivaciones,
-                "sexo_f": "X" if sexo == "F" else "",
-                "sexo_m": "X" if sexo == "M" else "",
-            }
-        elif form_type == 'medicina_familiar':
-            # Mapeo de los campos del formulario HTML a los campos del PDF Familiar
-            # Usando los nombres EXACTOS encontrados en el PDF
-            campos = {
-                "Nombres y Apellidos": nombre_apellido_familiar,
-                "GENERO": genero_f_form if genero_f_form else genero_m_form, # Asumiendo que es un campo de texto o radio que toma 'Femenino'/'Masculino'
-                "RUN": rut,
-                "Fecha nacimiento (dd/mm/aaaa)": fecha_nac_formato,
-                "Edad (en años y meses)": edad,
-                "Nacionalidad": nacionalidad,
-                "Fecha evaluación": fecha_eval,
-                "Fecha reevaluación": fecha_reeval_pdf, 
-                "DIAGNÓSTICO": diagnostico_1, # Mapeado a DIAGNOSTICO principal
-                "DIAGNÓSTICO COMPLEMENTARIO": diagnostico_complementario,
-                "DERIVACIONES": derivaciones,
-                # Campos de observación (necesitaríamos nombres únicos si se rellenan individualmente)
-                # Por ahora, mapeo a los nombres genéricos si existen o se usan
-                # Si hay múltiples campos OBS: sin nombres únicos, PyPDF2 podría tener problemas.
-                # Se asume que 'observacion_1' a 'observacion_7' del formulario HTML
-                # mapean a campos con nombres específicos en el PDF si existen.
-                # Si no, se pueden mapear a los campos OBS: genéricos si hay un orden claro.
-                # Para este ejemplo, usaré los nombres genéricos si no hay un mapeo 1:1
-                # Si los campos OBS: en tu PDF tienen nombres como "OBS_1", "OBS_2", etc.
-                # deberás usar esos nombres exactos.
-                "OBS:_1": observacion_1, # Ejemplo si el PDF tiene OBS_1
-                "OBS:_2": observacion_2, # Ejemplo si el PDF tiene OBS_2
-                "OBS:_3": observacion_3,
-                "OBS:_4": observacion_4,
-                "OBS:_5": observacion_5,
-                "OBS:_6": observacion_6,
-                "OBS:_7": observacion_7,
-                "Altura:": altura, # Con dos puntos
-                "Peso": peso,
-                "I.M.C": imc, # Con puntos
-                "Clasificación": clasificacion,
-                # Checkboxes - Usando los nombres EXACTOS del PDF y el valor "/Yes"
-                "CESAREA": "/Yes" if check_cesarea else "",
-                "A TÉRMINO": "/Yes" if check_atermino else "",
-                "VAGINAL": "/Yes" if check_vaginal else "",
-                "PREMATURO": "/Yes" if check_prematuro else "",
-                "LOGRADO ACORDE A LA EDAD": "/Yes" if check_acorde else "",
-                "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if check_retrasogeneralizado else "",
-                "ESQUEMA INCOMPLETO": "/Yes" if check_esquemai else "",
-                "ESQUEMA COMPLETO": "/Yes" if check_esquemac else "",
-                "NO": "/Yes" if check_alergiano else "", # Este es el 'NO' para ALERGIAS
-                # "ALERGIAS_SI" no existe como campo en el PDF, solo "ALERGIAS" y el checkbox "NO"
-                "NO_2": "/Yes" if check_cirugiano else "", # Este es el 'NO' para HOSPITALIZACIONES/CIRUGIAS
-                "ST": "/Yes" if check_cirugiasi else "", # Este es el 'ST' para HOSPITALIZACIONES/CIRUGIAS
-                "SIN ALTERACIÓN": "/Yes" if check_visionsinalteracion else "",
-                "VICIOS DE REFRACCIÓN": "/Yes" if check_visionrefraccion else "",
-                "NORMAL": "/Yes" if check_audicionnormal else "", # Este es el 'NORMAL' para AUDICIÓN
-                "TAPÓN DE CERUMEN": "/Yes" if check_tapondecerumen else "",
-                "HIPOACUSIA": "/Yes" if check_hipoacusia else "",
-                "SIN HALLAZGOS": "/Yes" if check_sinhallazgos else "",
-                "CARIES": "/Yes" if check_caries else "",
-                "APIÑAMIENTO DENTAL": "/Yes" if check_apinamientodental else "",
-                "RETENCIÓN DENTAL.": "/Yes" if check_retenciondental else "", # Con punto
-                "FRENILLO LINGUAL": "/Yes" if check_frenillolingual else "",
-                "HIPERTROFIA AMIGDALINA": "/Yes" if check_hipertrofia else "",
-                # Otros campos fijos del PDF que no se rellenan desde el formulario, pero existen como campos:
-                # "ADRIANA LUGO PEREZ": "ADRIANA LUGO PEREZ",
-                # "14.692.266-K": "14.692.266-K",
-                # "62598": "62598",
-                # "MEDICINA FAMILIAR": "MEDICINA FAMILIAR",
-                # "contacto@cardiohome.cl": "contacto@cardiohome.cl",
-                # "Salud pública": "/Yes" if some_condition else "", # Si quieres rellenar este checkbox
-                # "Particular X Escuela": "/Yes" if some_condition else "", # Si quieres rellenar este checkbox
-                # "Otro:_2": "/Yes" if some_condition else "", # Si quieres rellenar este checkbox
-                # "REQUIERE RECIBIR APOYO DEL PROGRAMA DE INTEGRACIÓN ESCOLAR": "/Yes" if some_condition else "",
-                # "FIRMA Y TIMBRE DEL PROFESIONAL": "" # Campo para firma/imagen
-            }
-
-        print(f"DEBUG: Fields to fill in PDF for {form_type} form: {campos}")
-        print(f"DEBUG: Campos a rellenar en PDF (JSON): {json.dumps(campos, indent=2)}")
-
-
-        if "/AcroForm" not in writer._root_object:
-            writer._root_object.update({
-                NameObject("/AcroForm"): DictionaryObject()
-            })
-
-        writer.update_page_form_field_values(writer.pages[0], campos)
-
-        writer._root_object["/AcroForm"].update({
-            NameObject("/NeedAppearances"): BooleanObject(True)
-        })
+                    if value_to_set: # Solo actualiza si hay un valor que poner
+                        annot.update(IndirectPdfDict(V=value_to_set, AP=value_to_set))
+                        annot.Ff = 1 # Set the "read-only" flag to make it appear flattened
+        
+        # Eliminar el AcroForm para aplanar completamente
+        if '/AcroForm' in template_pdf.Root:
+            del template_pdf.Root['/AcroForm']
 
         output = io.BytesIO()
-        writer.write(output)
+        PdfWriterPdfrw(output, trailer=template_pdf).write()
         output.seek(0)
 
         nombre_para_archivo = nombre_apellido_familiar if form_type == 'medicina_familiar' else nombre
@@ -1639,92 +1651,122 @@ def enviar_formulario_a_drive():
         return jsonify({"success": False, "message": "Error interno: Archivo base del formulario no encontrado en el servidor."}), 500
 
     try:
-        reader = PdfReader(pdf_base_path)
-        writer = PdfWriter()
-        writer.add_page(reader.pages[0])
-
-        # Los campos a rellenar deben ser específicos para cada tipo de formulario
-        campos = {}
-        if form_type == 'neurologia':
-            campos = {
-                "nombre": nombre,
-                "rut": rut,
-                "fecha_nacimiento": fecha_nac_formato, 
-                "nacionalidad": nacionalidad,
-                "edad": edad,
-                "diagnostico_1": diagnostico,
-                "diagnostico_2": diagnostico, 
-                "estado_general": estado_general, 
-                "fecha_evaluacion": fecha_eval,
-                "fecha_reevaluacion": fecha_reeval_pdf,
-                "derivaciones": derivaciones,
-                "sexo_f": "X" if sexo == "F" else "",
-                "sexo_m": "X" if sexo == "M" else "",
-            }
-        elif form_type == 'medicina_familiar':
-            # Mapeo de los campos del formulario HTML a los campos del PDF Familiar
-            # Usando los nombres EXACTOS encontrados en el PDF
-            campos = {
-                "Nombres y Apellidos": nombre_apellido_familiar,
-                "GENERO": genero_f_form if genero_f_form else genero_m_form, # Asumiendo que es un campo de texto o radio que toma 'Femenino'/'Masculino'
-                "RUN": rut,
-                "Fecha nacimiento (dd/mm/aaaa)": fecha_nac_formato,
-                "Edad (en años y meses)": edad,
-                "Nacionalidad": nacionalidad,
-                "Fecha evaluación": fecha_eval,
-                "Fecha reevaluación": fecha_reeval_pdf, 
-                "DIAGNÓSTICO": diagnostico_1, # Mapeado a DIAGNOSTICO principal
-                "DIAGNÓSTICO COMPLEMENTARIO": diagnostico_complementario,
-                "DERIVACIONES": derivaciones,
-                # Campos de observación (necesitaríamos nombres únicos si se rellenan individualmente)
-                # Por ahora, mapeo a los nombres genéricos si existen o se usan
-                # Si hay múltiples campos OBS: sin nombres únicos, PyPDF2 podría tener problemas.
-                # Se asume que 'observacion_1' a 'observacion_7' del formulario HTML
-                # mapean a campos con nombres específicos en el PDF si existen.
-                # Para este ejemplo, usaré los nombres genéricos si no hay un mapeo 1:1
-                "OBS:_1": observacion_1, # Ejemplo si el PDF tiene OBS_1
-                "OBS:_2": observacion_2, # Ejemplo si el PDF tiene OBS_2
-                "OBS:_3": observacion_3,
-                "OBS:_4": observacion_4,
-                "OBS:_5": observacion_5,
-                "OBS:_6": observacion_6,
-                "OBS:_7": observacion_7,
-                "Altura:": altura, # Con dos puntos
-                "Peso": peso,
-                "I.M.C": imc, # Con puntos
-                "Clasificación": clasificacion,
-                # Checkboxes - Usando los nombres EXACTOS del PDF y el valor "/Yes"
-                "CESAREA": "/Yes" if check_cesarea else "",
-                "A TÉRMINO": "/Yes" if check_atermino else "",
-                "VAGINAL": "/Yes" if check_vaginal else "",
-                "PREMATURO": "/Yes" if check_prematuro else "",
-                "LOGRADO ACORDE A LA EDAD": "/Yes" if check_acorde else "",
-                "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if check_retrasogeneralizado else "",
-                "ESQUEMA INCOMPLETO": "/Yes" if check_esquemai else "",
-                "ESQUEMA COMPLETO": "/Yes" if check_esquemac else "",
-                "NO": "/Yes" if check_alergiano else "", # Este es el 'NO' para ALERGIAS
-                "NO_2": "/Yes" if check_cirugiano else "", # Este es el 'NO' para HOSPITALIZACIONES/CIRUGIAS
-                "ST": "/Yes" if check_cirugiasi else "", # Este es el 'ST' para HOSPITALIZACIONES/CIRUGIAS
-                "SIN ALTERACIÓN": "/Yes" if check_visionsinalteracion else "",
-                "VICIOS DE REFRACCIÓN": "/Yes" if check_visionrefraccion else "",
-                "NORMAL": "/Yes" if check_audicionnormal else "", # Este es el 'NORMAL' para AUDICIÓN
-                "TAPÓN DE CERUMEN": "/Yes" if check_tapondecerumen else "",
-                "HIPOACUSIA": "/Yes" if check_hipoacusia else "",
-                "SIN HALLAZGOS": "/Yes" if check_sinhallazgos else "",
-                "CARIES": "/Yes" if check_caries else "",
-                "APIÑAMIENTO DENTAL": "/Yes" if check_apinamientodental else "",
-                "RETENCIÓN DENTAL.": "/Yes" if check_retenciondental else "", # Con punto
-                "FRENILLO LINGUAL": "/Yes" if check_frenillolingual else "",
-                "HIPERTROFIA AMIGDALINA": "/Yes" if check_hipertrofia else "",
-            }
-
-        writer.update_page_form_field_values(writer.pages[0], campos)
-        if "/AcroForm" not in writer._root_object:
-            writer._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
-        writer._root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
+        # Usar PdfReaderPdfrw para rellenar y aplanar
+        template_pdf = PdfReaderPdfrw(pdf_base_path)
+        
+        # Obtener los campos del PDF
+        annotations = template_pdf.pages[0]['/Annots']
+        if annotations:
+            for annot in annotations:
+                if annot['/Subtype'] == '/Widget' and '/T' in annot:
+                    field_name = annot['/T'].strip('()') # Eliminar paréntesis
+                    
+                    # Mapeo de los campos del formulario HTML a los nombres EXACTOS encontrados en el PDF
+                    # y los valores correspondientes
+                    value_to_set = "" # Valor por defecto
+                    
+                    if field_name == "Nombres y Apellidos":
+                        value_to_set = nombre_apellido_familiar
+                    elif field_name == "GENERO":
+                        value_to_set = genero_f_form if genero_f_form else genero_m_form
+                    elif field_name == "RUN":
+                        value_to_set = rut
+                    elif field_name == "Fecha nacimiento (dd/mm/aaaa)":
+                        value_to_set = fecha_nac_formato
+                    elif field_name == "Edad (en años y meses)":
+                        value_to_set = edad
+                    elif field_name == "Nacionalidad":
+                        value_to_set = nacionalidad
+                    elif field_name == "Fecha evaluación":
+                        value_to_set = fecha_eval
+                    elif field_name == "Fecha reevaluación":
+                        value_to_set = fecha_reeval_pdf
+                    elif field_name == "DIAGNÓSTICO":
+                        value_to_set = diagnostico_1
+                    elif field_name == "DIAGNÓSTICO COMPLEMENTARIO":
+                        value_to_set = diagnostico_complementario
+                    elif field_name == "DERIVACIONES":
+                        value_to_set = derivaciones
+                    elif field_name == "OBS:_1": # Asumiendo nombres únicos para observaciones
+                        value_to_set = observacion_1
+                    elif field_name == "OBS:_2":
+                        value_to_set = observacion_2
+                    elif field_name == "OBS:_3":
+                        value_to_set = observacion_3
+                    elif field_name == "OBS:_4":
+                        value_to_set = observacion_4
+                    elif field_name == "OBS:_5":
+                        value_to_set = observacion_5
+                    elif field_name == "OBS:_6":
+                        value_to_set = observacion_6
+                    elif field_name == "OBS:_7":
+                        value_to_set = observacion_7
+                    elif field_name == "Altura:":
+                        value_to_set = altura
+                    elif field_name == "Peso":
+                        value_to_set = peso
+                    elif field_name == "I.M.C":
+                        value_to_set = imc
+                    elif field_name == "Clasificación":
+                        value_to_set = clasificacion
+                    # Checkboxes - los nombres de los campos son las etiquetas visibles
+                    elif field_name == "CESAREA":
+                        value_to_set = "/Yes" if check_cesarea else ""
+                    elif field_name == "A TÉRMINO":
+                        value_to_set = "/Yes" if check_atermino else ""
+                    elif field_name == "VAGINAL":
+                        value_to_set = "/Yes" if check_vaginal else ""
+                    elif field_name == "PREMATURO":
+                        value_to_set = "/Yes" if check_prematuro else ""
+                    elif field_name == "LOGRADO ACORDE A LA EDAD":
+                        value_to_set = "/Yes" if check_acorde else ""
+                    elif field_name == "RETRASO GENERALIZADO DEL DESARROLLO":
+                        value_to_set = "/Yes" if check_retrasogeneralizado else ""
+                    elif field_name == "ESQUEMA INCOMPLETO":
+                        value_to_set = "/Yes" if check_esquemai else ""
+                    elif field_name == "ESQUEMA COMPLETO":
+                        value_to_set = "/Yes" if check_esquemac else ""
+                    elif field_name == "NO": # Checkbox para ALERGIAS
+                        value_to_set = "/Yes" if check_alergiano else ""
+                    elif field_name == "NO_2": # Checkbox para HOSPITALIZACIONES/CIRUGIAS
+                        value_to_set = "/Yes" if check_cirugiano else ""
+                    elif field_name == "ST": # Checkbox para HOSPITALIZACIONES/CIRUGIAS
+                        value_to_set = "/Yes" if check_cirugiasi else ""
+                    elif field_name == "SIN ALTERACIÓN":
+                        value_to_set = "/Yes" if check_visionsinalteracion else ""
+                    elif field_name == "VICIOS DE REFRACCIÓN":
+                        value_to_set = "/Yes" if check_visionrefraccion else ""
+                    elif field_name == "NORMAL": # Checkbox para AUDICIÓN
+                        value_to_set = "/Yes" if check_audicionnormal else ""
+                    elif field_name == "TAPÓN DE CERUMEN":
+                        value_to_set = "/Yes" if check_tapondecerumen else ""
+                    elif field_name == "HIPOACUSIA":
+                        value_to_set = "/Yes" if check_hipoacusia else ""
+                    elif field_name == "SIN HALLAZGOS":
+                        value_to_set = "/Yes" if check_sinhallazgos else ""
+                    elif field_name == "CARIES":
+                        value_to_set = "/Yes" if check_caries else ""
+                    elif field_name == "APIÑAMIENTO DENTAL":
+                        value_to_set = "/Yes" if check_apinamientodental else ""
+                    elif field_name == "RETENCIÓN DENTAL.":
+                        value_to_set = "/Yes" if check_retenciondental else ""
+                    elif field_name == "FRENILLO LINGUAL":
+                        value_to_set = "/Yes" if check_frenillolingual else ""
+                    elif field_name == "HIPERTROFIA AMIGDALINA":
+                        value_to_set = "/Yes" if check_hipertrofia else ""
+                    
+                    # Asignar el valor al campo
+                    if value_to_set: 
+                        annot.update(IndirectPdfDict(V=value_to_set, AP=value_to_set))
+                        # Forzar la apariencia para que se muestre el valor
+                        annot.Ff = 1 # Set the "read-only" flag to make it appear flattened
+        
+        # Eliminar el AcroForm para aplanar completamente
+        if '/AcroForm' in template_pdf.Root:
+            del template_pdf.Root['/AcroForm']
 
         output_pdf_io = io.BytesIO()
-        writer.write(output_pdf_io)
+        PdfWriterPdfrw(output_pdf_io, trailer=template_pdf).write()
         output_pdf_io.seek(0) 
 
         nombre_para_archivo = nombre_apellido_familiar if form_type == 'medicina_familiar' else nombre
@@ -1969,10 +2011,10 @@ def doctor_performance_detail(doctor_id):
             })
 
     except requests.exceptions.RequestException as e:
-        print(f"ERROR: Error al obtener el rendimiento de la doctora: {e} - {res_students.text if 'res_students' in locals() else 'No response'}")
+        print(f"❌ Error al obtener el rendimiento de la doctora: {e} - {res_students.text if 'res_students' in locals() else 'No response'}")
         flash('Error al cargar el detalle de rendimiento de la doctora.', 'error')
     except Exception as e:
-        print(f"ERROR: Error inesperado al cargar rendimiento de doctora: {e}")
+        print(f"❌ Error inesperado al cargar rendimiento de doctora: {e}")
         flash('Error inesperado al cargar el detalle de rendimiento de la doctora.', 'error')
 
     return render_template('doctor_performance.html', 
@@ -2096,94 +2138,127 @@ def generar_pdfs_visibles():
                 except ValueError:
                     pass
 
-            reader = PdfReader(pdf_base_path)
-            writer_single_pdf = PdfWriter()
-            writer_single_pdf.add_page(reader.pages[0])
+            # Usar PdfReaderPdfrw para rellenar y aplanar
+            template_pdf_single = PdfReaderPdfrw(pdf_base_path)
+            
+            # Obtener los campos del PDF
+            annotations_single = template_pdf_single.pages[0]['/Annots']
+            if annotations_single:
+                for annot in annotations_single:
+                    if annot['/Subtype'] == '/Widget' and '/T' in annot:
+                        field_name = annot['/T'].strip('()') # Eliminar paréntesis
+                        
+                        # Mapeo de los campos de la DB a los nombres EXACTOS encontrados en el PDF
+                        value_to_set = "" # Valor por defecto
+                        
+                        if field_name == "Nombres y Apellidos":
+                            value_to_set = est.get('nombre', '') 
+                        elif field_name == "GENERO":
+                            value_to_set = est.get('sexo', '') # Asumiendo que el campo 'sexo' en la DB es 'F' o 'M'
+                        elif field_name == "RUN":
+                            value_to_set = est.get('rut', '')
+                        elif field_name == "Fecha nacimiento (dd/mm/aaaa)":
+                            value_to_set = est.get('fecha_nacimiento_formato', '')
+                        elif field_name == "Edad (en años y meses)":
+                            value_to_set = est.get('edad', '')
+                        elif field_name == "Nacionalidad":
+                            value_to_set = est.get('nacionalidad', '')
+                        elif field_name == "Fecha evaluación":
+                            value_to_set = est.get('fecha_relleno', '')
+                        elif field_name == "Fecha reevaluación":
+                            value_to_set = fecha_reeval_pdf
+                        elif field_name == "DIAGNÓSTICO":
+                            value_to_set = est.get('diagnostico_1', '') 
+                        elif field_name == "DIAGNÓSTICO COMPLEMENTARIO":
+                            value_to_set = est.get('diagnostico_complementario', '')
+                        elif field_name == "DERIVACIONES":
+                            value_to_set = est.get('derivaciones', '')
+                        # Campos de observación
+                        elif field_name == "OBS:_1": 
+                            value_to_set = est.get('observacion_1', '')
+                        elif field_name == "OBS:_2":
+                            value_to_set = est.get('observacion_2', '')
+                        elif field_name == "OBS:_3":
+                            value_to_set = est.get('observacion_3', '')
+                        elif field_name == "OBS:_4":
+                            value_to_set = est.get('observacion_4', '')
+                        elif field_name == "OBS:_5":
+                            value_to_set = est.get('observacion_5', '')
+                        elif field_name == "OBS:_6":
+                            value_to_set = est.get('observacion_6', '')
+                        elif field_name == "OBS:_7":
+                            value_to_set = est.get('observacion_7', '')
+                        elif field_name == "Altura:":
+                            value_to_set = est.get('altura', '')
+                        elif field_name == "Peso":
+                            value_to_set = est.get('peso', '')
+                        elif field_name == "I.M.C":
+                            value_to_set = est.get('imc', '')
+                        elif field_name == "Clasificación":
+                            value_to_set = est.get('clasificacion', '')
+                        # Checkboxes - Usando los nombres EXACTOS del PDF y el valor "/Yes"
+                        elif field_name == "CESAREA":
+                            value_to_set = "/Yes" if est.get('check_cesarea') else ""
+                        elif field_name == "A TÉRMINO":
+                            value_to_set = "/Yes" if est.get('check_atermino') else ""
+                        elif field_name == "VAGINAL":
+                            value_to_set = "/Yes" if est.get('check_vaginal') else ""
+                        elif field_name == "PREMATURO":
+                            value_to_set = "/Yes" if est.get('check_prematuro') else ""
+                        elif field_name == "LOGRADO ACORDE A LA EDAD":
+                            value_to_set = "/Yes" if est.get('check_acorde') else ""
+                        elif field_name == "RETRASO GENERALIZADO DEL DESARROLLO":
+                            value_to_set = "/Yes" if est.get('check_retrasogeneralizado') else ""
+                        elif field_name == "ESQUEMA INCOMPLETO":
+                            value_to_set = "/Yes" if est.get('check_esquemai') else ""
+                        elif field_name == "ESQUEMA COMPLETO":
+                            value_to_set = "/Yes" if est.get('check_esquemac') else ""
+                        elif field_name == "NO": # Checkbox para ALERGIAS
+                            value_to_set = "/Yes" if est.get('check_alergiano') else ""
+                        elif field_name == "NO_2": # Checkbox para HOSPITALIZACIONES/CIRUGIAS
+                            value_to_set = "/Yes" if est.get('check_cirugiano') else ""
+                        elif field_name == "ST": # Checkbox para HOSPITALIZACIONES/CIRUGIAS
+                            value_to_set = "/Yes" if est.get('check_cirugiasi') else ""
+                        elif field_name == "SIN ALTERACIÓN":
+                            value_to_set = "/Yes" if est.get('check_visionsinalteracion') else ""
+                        elif field_name == "VICIOS DE REFRACCIÓN":
+                            value_to_set = "/Yes" if est.get('check_visionrefraccion') else ""
+                        elif field_name == "NORMAL": # Checkbox para AUDICIÓN
+                            value_to_set = "/Yes" if est.get('check_audicionnormal') else ""
+                        elif field_name == "TAPÓN DE CERUMEN":
+                            value_to_set = "/Yes" if est.get('check_tapondecerumen') else ""
+                        elif field_name == "HIPOACUSIA":
+                            value_to_set = "/Yes" if est.get('check_hipoacusia') else ""
+                        elif field_name == "SIN HALLAZGOS":
+                            value_to_set = "/Yes" if est.get('check_sinhallazgos') else ""
+                        elif field_name == "CARIES":
+                            value_to_set = "/Yes" if est.get('check_caries') else ""
+                        elif field_name == "APIÑAMIENTO DENTAL":
+                            value_to_set = "/Yes" if est.get('check_apinamientodental') else ""
+                        elif field_name == "RETENCIÓN DENTAL.":
+                            value_to_set = "/Yes" if est.get('check_retenciondental') else ""
+                        elif field_name == "FRENILLO LINGUAL":
+                            value_to_set = "/Yes" if est.get('check_frenillolingual') else ""
+                        elif field_name == "HIPERTROFIA AMIGDALINA":
+                            value_to_set = "/Yes" if est.get('check_hipertrofia') else ""
 
-            campos = {}
-            if form_type == 'neurologia':
-                campos = {
-                    "nombre": est.get('nombre', ''),
-                    "rut": est.get('rut', ''),
-                    "fecha_nacimiento": est.get('fecha_nacimiento_formato', ''),
-                    "nacionalidad": est.get('nacionalidad', ''),
-                    "edad": est.get('edad', ''),
-                    "diagnostico_1": est.get('diagnostico', ''),
-                    "diagnostico_2": est.get('diagnostico', ''), 
-                    "estado_general": est.get('estado_general', ''),
-                    "fecha_evaluacion": est.get('fecha_relleno', ''), 
-                    "fecha_reevaluacion": fecha_reeval_pdf,
-                    "derivaciones": est.get('derivaciones', ''),
-                    "sexo_f": "X" if est.get('sexo') == "F" else "",
-                    "sexo_m": "X" if est.get('sexo') == "M" else "",
-                }
-            elif form_type == 'medicina_familiar':
-                # Mapeo de los campos del PDF Familiar usando los nombres EXACTOS encontrados en el PDF
-                campos = {
-                    "Nombres y Apellidos": est.get('nombre', ''), # En la DB, 'nombre' es el nombre completo para Familiar
-                    "GENERO": est.get('sexo', ''), # Asumiendo que el campo 'sexo' en la DB es 'F' o 'M'
-                    "RUN": est.get('rut', ''),
-                    "Fecha nacimiento (dd/mm/aaaa)": est.get('fecha_nacimiento_formato', ''),
-                    "Edad (en años y meses)": est.get('edad', ''),
-                    "Nacionalidad": est.get('nacionalidad', ''),
-                    "Fecha evaluación": est.get('fecha_relleno', ''),
-                    "Fecha reevaluación": fecha_reeval_pdf,
-                    "DIAGNÓSTICO": est.get('diagnostico_1', ''), # Mapeado a DIAGNOSTICO principal
-                    "DIAGNÓSTICO COMPLEMENTARIO": est.get('diagnostico_complementario', ''),
-                    "DERIVACIONES": est.get('derivaciones', ''),
-                    # Campos de observación
-                    "OBS:_1": est.get('observacion_1', ''), 
-                    "OBS:_2": est.get('observacion_2', ''), 
-                    "OBS:_3": est.get('observacion_3', ''),
-                    "OBS:_4": est.get('observacion_4', ''),
-                    "OBS:_5": est.get('observacion_5', ''),
-                    "OBS:_6": est.get('observacion_6', ''),
-                    "OBS:_7": est.get('observacion_7', ''),
-                    "Altura:": est.get('altura', ''), # Con dos puntos
-                    "Peso": est.get('peso', ''),
-                    "I.M.C": est.get('imc', ''), # Con puntos
-                    "Clasificación": est.get('clasificacion', ''),
-                    # Checkboxes - Usando los nombres EXACTOS del PDF y el valor "/Yes"
-                    "CESAREA": "/Yes" if est.get('check_cesarea') else "",
-                    "A TÉRMINO": "/Yes" if est.get('check_atermino') else "",
-                    "VAGINAL": "/Yes" if est.get('check_vaginal') else "",
-                    "PREMATURO": "/Yes" if est.get('check_prematuro') else "",
-                    "LOGRADO ACORDE A LA EDAD": "/Yes" if est.get('check_acorde') else "",
-                    "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if est.get('check_retrasogeneralizado') else "",
-                    "ESQUEMA INCOMPLETO": "/Yes" if est.get('check_esquemai') else "",
-                    "ESQUEMA COMPLETO": "/Yes" if est.get('check_esquemac') else "",
-                    "NO": "/Yes" if est.get('check_alergiano') else "", # Este es el 'NO' para ALERGIAS
-                    "NO_2": "/Yes" if est.get('check_cirugiano') else "", # Este es el 'NO' para HOSPITALIZACIONES/CIRUGIAS
-                    "ST": "/Yes" if est.get('check_cirugiasi') else "", # Este es el 'ST' para HOSPITALIZACIONES/CIRUGIAS
-                    "SIN ALTERACIÓN": "/Yes" if est.get('check_visionsinalteracion') else "",
-                    "VICIOS DE REFRACCIÓN": "/Yes" if est.get('check_visionrefraccion') else "",
-                    "NORMAL": "/Yes" if est.get('check_audicionnormal') else "", # Este es el 'NORMAL' para AUDICIÓN
-                    "TAPÓN DE CERUMEN": "/Yes" if est.get('check_tapondecerumen') else "",
-                    "HIPOACUSIA": "/Yes" if est.get('check_hipoacusia') else "",
-                    "SIN HALLAZGOS": "/Yes" if est.get('check_sinhallazgos') else "",
-                    "CARIES": "/Yes" if est.get('check_caries') else "",
-                    "APIÑAMIENTO DENTAL": "/Yes" if est.get('check_apinamientodental') else "",
-                    "RETENCIÓN DENTAL.": "/Yes" if est.get('check_retenciondental') else "", # Con punto
-                    "FRENILLO LINGUAL": "/Yes" if est.get('check_frenillolingual') else "",
-                    "HIPERTROFIA AMIGDALINA": "/Yes" if est.get('check_hipertrofia') else "",
-                }
-
-            if "/AcroForm" not in writer_single_pdf._root_object:
-                writer_single_pdf._root_object.update({
-                    NameObject("/AcroForm"): DictionaryObject()
-                })
-            writer_single_pdf.update_page_form_field_values(writer_single_pdf.pages[0], campos)
-            writer_single_pdf._root_object["/AcroForm"].update({
-                NameObject("/NeedAppearances"): BooleanObject(True)
-            })
+                        # Asignar el valor al campo
+                        if value_to_set: 
+                            annot.update(IndirectPdfDict(V=value_to_set, AP=value_to_set))
+                            annot.Ff = 1 # Set the "read-only" flag to make it appear flattened
+            
+            # Eliminar el AcroForm para aplanar completamente
+            if '/AcroForm' in template_pdf_single.Root:
+                del template_pdf_single.Root['/AcroForm']
 
             temp_output = io.BytesIO()
-            writer_single_pdf.write(temp_output)
+            PdfWriterPdfrw(temp_output, trailer=template_pdf_single).write()
             temp_output.seek(0)
 
-            temp_reader = PdfReader(temp_output)
-            for page_num in range(len(temp_reader.pages)):
-                merged_pdf_writer.add_page(temp_reader.pages[page_num])
+            # Re-leer con PyPDF2 para añadir a merged_pdf_writer
+            temp_reader_pypdf2 = PdfReader(temp_output)
+            for page_num in range(len(temp_reader_pypdf2.pages)):
+                merged_pdf_writer.add_page(temp_reader_pypdf2.pages[page_num])
 
         final_output_pdf = io.BytesIO()
         merged_pdf_writer.write(final_output_pdf)

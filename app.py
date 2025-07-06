@@ -684,10 +684,9 @@ def generar_pdf():
         print(f"DEBUG: Fields to fill in PDF for {form_type} form: {campos}")
         print(f"DEBUG: Campos a rellenar en PDF (JSON): {json.dumps(campos, indent=2)}")
 
-        # Convertir todos los valores del diccionario 'campos' a string
-        # Esto previene errores de "string index out of range" si un valor es None o no es una cadena
-        for key, value in campos.items():
-            campos[key] = str(value) if value is not None else ""
+        # No es necesario un bucle adicional aquí, ya se hizo la conversión a str() al construir el diccionario
+        # for key, value in campos.items():
+        #     campos[key] = str(value) if value is not None else ""
 
 
         if "/AcroForm" not in writer._root_object:
@@ -1720,10 +1719,12 @@ def enviar_formulario_a_drive():
                 "check_hipertrofia": "/Yes" if check_hipertrofia else "",
             }
 
-        # Convertir todos los valores del diccionario 'campos' a string
-        # Esto previene errores de "string index out of range" si un valor es None o no es una cadena
-        for key, value in campos.items():
-            campos[key] = str(value) if value is not None else ""
+        print(f"DEBUG: Fields to fill in PDF for {form_type} form: {campos}")
+        print(f"DEBUG: Campos a rellenar en PDF (JSON): {json.dumps(campos, indent=2)}")
+
+        # No es necesario un bucle adicional aquí, ya se hizo la conversión a str() al construir el diccionario
+        # for key, value in campos.items():
+        #     campos[key] = str(value) if value is not None else ""
 
         writer.update_page_form_field_values(writer.pages[0], campos)
         if "/AcroForm" not in writer._root_object:
@@ -2176,9 +2177,9 @@ def generar_pdfs_visibles():
                     "check_frenillolingual": "/Yes" if est.get('check_frenillolingual') else "",
                     "check_hipertrofia": "/Yes" if est.get('check_hipertrofia') else "",
                 }
-            # Convertir todos los valores del diccionario 'campos' a string
-            for key, value in campos.items():
-                campos[key] = str(value) if value is not None else ""
+            # No es necesario un bucle adicional aquí, ya se hizo la conversión a str() al construir el diccionario
+            # for key, value in campos.items():
+            #     campos[key] = str(value) if value is not None else ""
 
             if "/AcroForm" not in writer_single_pdf._root_object:
                 writer_single_pdf._root_object.update({
@@ -2315,7 +2316,6 @@ def debug_pdf_fields():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
-
 
 
 

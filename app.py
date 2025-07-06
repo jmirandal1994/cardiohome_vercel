@@ -366,7 +366,8 @@ def generar_pdf():
     fecha_reevaluacion_neuro_input = request.form.get('fecha_reevaluacion', '') # Input para el date picker de neurología
 
     # Campos específicos de Medicina Familiar (se renombran a las variables solicitadas por el usuario)
-    nombre = request.form.get('nombre_apellido', '') # Renombrado a 'nombre' para Medicina Familiar
+    # CORRECCIÓN APLICADA AQUÍ: Se cambió 'nombre_apellido' a 'nombre' para que coincida con el HTML
+    nombre = request.form.get('nombre', '') # Renombrado a 'nombre' para Medicina Familiar
     genero_f = request.form.get('genero_f', '') # Renombrado a 'genero_f'
     genero_m = request.form.get('genero_m', '') # Renombrado a 'genero_m'
     diagnostico_1 = request.form.get('diagnostico_1', '')
@@ -471,7 +472,7 @@ def generar_pdf():
         # Usa la variable de input de neurología
         if fecha_reevaluacion_neuro_input and "-" in fecha_reevaluacion_neuro_input:
             try:
-                fecha_reeval_db = fecha_reevaluacion_neuro_input # Guarda en DB como YYYY-MM-DD
+                fecha_reeval_db = fecha_reevaluacion_neuro_input # Guarda en DB comoYYYY-MM-DD
                 fecha_reeval_pdf = datetime.strptime(fecha_reevaluacion_neuro_input, '%Y-%m-%d').strftime('%d/%m/%Y')
             except ValueError:
                 fecha_reeval_pdf = fecha_reevaluacion_neuro_input
@@ -737,8 +738,7 @@ def marcar_evaluado():
         return jsonify({"success": False, "message": "Faltan datos obligatorios para marcar y guardar la evaluación."}), 400
 
     update_data = {
-        'fecha_relleno': str(date.today()), 
-        'doctora_evaluadora_id': doctora_id, 
+        'fecha_relleno': str(date.today()) 
     }
 
     # Obtener campos comunes y específicos al principio para evitar NameErrors
@@ -757,7 +757,8 @@ def marcar_evaluado():
     fecha_reevaluacion_neuro_input = request.form.get('fecha_reevaluacion', '')
 
     # Campos específicos de Medicina Familiar (utilizando los nombres de variables solicitados)
-    nombre = request.form.get('nombre_apellido', '') # Nombre del formulario de medicina familiar
+    # CORRECCIÓN APLICADA AQUÍ: Se cambió 'nombre_apellido' a 'nombre' para que coincida con el HTML
+    nombre = request.form.get('nombre', '') # Nombre del formulario de medicina familiar
     genero_f = request.form.get('genero_f', '')
     genero_m = request.form.get('genero_m', '')
     diagnostico_1 = request.form.get('diagnostico_1', '')
@@ -1323,7 +1324,6 @@ def admin_cargar_nomina():
         "id": nomina_id,
         "nombre_nomina": nombre_especifico,
         "tipo_nomina": tipo_nomina_raw, # Guardamos el tipo_nomina original del formulario
-        "doctora_id": doctora_id_from_form,
         "url_excel_original": url_excel_publica,
         "nombre_excel_original": excel_filename,
         "form_type": form_type # Guardar el form_type derivado en la nómina
@@ -1542,7 +1542,8 @@ def enviar_formulario_a_drive():
     fecha_reevaluacion_neuro_input = request.form.get('fecha_reevaluacion', '') # Input para el date picker de neurología
 
     # Campos específicos de Medicina Familiar (se renombran a las variables solicitadas por el usuario)
-    nombre = request.form.get('nombre_apellido', '') # Renombrado a 'nombre' para Medicina Familiar
+    # CORRECCIÓN APLICADA AQUÍ: Se cambió 'nombre_apellido' a 'nombre' para que coincida con el HTML
+    nombre = request.form.get('nombre', '') # Renombrado a 'nombre' para Medicina Familiar
     genero_f = request.form.get('genero_f', '') # Renombrado a 'genero_f'
     genero_m = request.form.get('genero_m', '') # Renombrado a 'genero_m'
     diagnostico_1 = request.form.get('diagnostico_1', '')
@@ -2304,5 +2305,6 @@ def debug_pdf_fields():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+
 
 

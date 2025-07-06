@@ -366,7 +366,6 @@ def generar_pdf():
     fecha_reevaluacion_neuro_input = request.form.get('fecha_reevaluacion', '') # Input para el date picker de neurología
 
     # Campos específicos de Medicina Familiar (se renombran a las variables solicitadas por el usuario)
-    # CORRECCIÓN APLICADA AQUÍ: Se cambió 'nombre_apellido' a 'nombre' para que coincida con el HTML
     nombre = request.form.get('nombre', '') # Renombrado a 'nombre' para Medicina Familiar
     genero_f = request.form.get('genero_f', '') # Renombrado a 'genero_f'
     genero_m = request.form.get('genero_m', '') # Renombrado a 'genero_m'
@@ -615,17 +614,17 @@ def generar_pdf():
         campos = {}
         if form_type == 'neurologia':
             campos = {
-                "nombre": nombre_neuro, # Usa el nombre de neurología
-                "rut": rut,
-                "fecha_nacimiento": fecha_nac_formato, 
-                "nacionalidad": nacionalidad,
-                "edad": edad,
-                "diagnostico_1": diagnostico_neuro,
-                "diagnostico_2": diagnostico_neuro, # Puede ser el mismo para neurología si no hay un segundo campo
-                "estado_general": estado_general_neuro, 
-                "fecha_evaluacion": fecha_eval,
-                "fecha_reevaluacion": fecha_reeval_pdf, # Usa la fecha calculada/formateada para PDF
-                "derivaciones": derivaciones,
+                "nombre": str(nombre_neuro), # Usa el nombre de neurología
+                "rut": str(rut),
+                "fecha_nacimiento": str(fecha_nac_formato), 
+                "nacionalidad": str(nacionalidad),
+                "edad": str(edad),
+                "diagnostico_1": str(diagnostico_neuro),
+                "diagnostico_2": str(diagnostico_neuro), # Puede ser el mismo para neurología si no hay un segundo campo
+                "estado_general": str(estado_general_neuro), 
+                "fecha_evaluacion": str(fecha_eval),
+                "fecha_reevaluacion": str(fecha_reeval_pdf if fecha_reeval_pdf is not None else ""), # Explicitamente None a ""
+                "derivaciones": str(derivaciones),
                 "sexo_f": "X" if sexo_neuro == "F" else "",
                 "sexo_m": "X" if sexo_neuro == "M" else "",
             }
@@ -633,30 +632,30 @@ def generar_pdf():
             # Mapeo de los campos del formulario HTML a los campos del PDF Familiar
             # Usando los nombres EXACTOS de tus variables y campos de PDF
             campos = {
-                "nombre": nombre, # Mapea directamente la variable 'nombre' (de Medicina Familiar)
-                "rut": rut,
-                "fecha_nacimiento": fecha_nac_formato,
-                "edad": edad,
-                "nacionalidad": nacionalidad,
-                "fecha_evaluacion": fecha_eval,
-                "fecha_reevaluacion": fecha_reeval_pdf, # Usando la fecha calculada para PDF
+                "nombre": str(nombre), # Mapea directamente la variable 'nombre' (de Medicina Familiar)
+                "rut": str(rut),
+                "fecha_nacimiento": str(fecha_nac_formato),
+                "edad": str(edad),
+                "nacionalidad": str(nacionalidad),
+                "fecha_evaluacion": str(fecha_eval),
+                "fecha_reevaluacion": str(fecha_reeval_pdf if fecha_reeval_pdf is not None else ""), # Explicitamente None a ""
                 "genero_f": "X" if genero_f == "Femenino" else "", # Mapea directamente 'genero_f'
                 "genero_m": "X" if genero_m == "Masculino" else "", # Mapea directamente 'genero_m'
-                "diagnostico_1": diagnostico_1,
-                "diagnostico_2": diagnostico_2,
-                "diagnostico_complementario": diagnostico_complementario,
-                "derivaciones": derivaciones,
-                "observacion_1": observacion_1, 
-                "observacion_2": observacion_2, 
-                "observacion_3": observacion_3,
-                "observacion_4": observacion_4,
-                "observacion_5": observacion_5,
-                "observacion_6": observacion_6,
-                "observacion_7": observacion_7,
-                "altura": altura, 
-                "peso": peso,
-                "imc": imc, 
-                "clasificacion": clasificacion,
+                "diagnostico_1": str(diagnostico_1),
+                "diagnostico_2": str(diagnostico_2),
+                "diagnostico_complementario": str(diagnostico_complementario),
+                "derivaciones": str(derivaciones),
+                "observacion_1": str(observacion_1), 
+                "observacion_2": str(observacion_2), 
+                "observacion_3": str(observacion_3),
+                "observacion_4": str(observacion_4),
+                "observacion_5": str(observacion_5),
+                "observacion_6": str(observacion_6),
+                "observacion_7": str(observacion_7),
+                "altura": str(altura), 
+                "peso": str(peso),
+                "imc": str(imc), 
+                "clasificacion": str(clasificacion),
                 "check_cesarea": "/Yes" if check_cesarea else "",
                 "check_atermino": "/Yes" if check_atermino else "",
                 "check_vaginal": "/Yes" if check_vaginal else "",
@@ -762,7 +761,6 @@ def marcar_evaluado():
     fecha_reevaluacion_neuro_input = request.form.get('fecha_reevaluacion', '')
 
     # Campos específicos de Medicina Familiar (utilizando los nombres de variables solicitados)
-    # CORRECCIÓN APLICADA AQUÍ: Se cambió 'nombre_apellido' a 'nombre' para que coincida con el HTML
     nombre = request.form.get('nombre', '') # Nombre del formulario de medicina familiar
     genero_f = request.form.get('genero_f', '')
     genero_m = request.form.get('genero_m', '')
@@ -1547,7 +1545,6 @@ def enviar_formulario_a_drive():
     fecha_reevaluacion_neuro_input = request.form.get('fecha_reevaluacion', '') # Input para el date picker de neurología
 
     # Campos específicos de Medicina Familiar (se renombran a las variables solicitadas por el usuario)
-    # CORRECCIÓN APLICADA AQUÍ: Se cambió 'nombre_apellido' a 'nombre' para que coincida con el HTML
     nombre = request.form.get('nombre', '') # Renombrado a 'nombre' para Medicina Familiar
     genero_f = request.form.get('genero_f', '') # Renombrado a 'genero_f'
     genero_m = request.form.get('genero_m', '') # Renombrado a 'genero_m'
@@ -1656,17 +1653,17 @@ def enviar_formulario_a_drive():
         campos = {}
         if form_type == 'neurologia':
             campos = {
-                "nombre": nombre_neuro,
-                "rut": rut,
-                "fecha_nacimiento": fecha_nac_formato, 
-                "nacionalidad": nacionalidad,
-                "edad": edad,
-                "diagnostico_1": diagnostico_neuro,
-                "diagnostico_2": diagnostico_neuro, 
-                "estado_general": estado_general_neuro, 
-                "fecha_evaluacion": fecha_eval,
-                "fecha_reevaluacion": fecha_reeval_pdf,
-                "derivaciones": derivaciones,
+                "nombre": str(nombre_neuro),
+                "rut": str(rut),
+                "fecha_nacimiento": str(fecha_nac_formato), 
+                "nacionalidad": str(nacionalidad),
+                "edad": str(edad),
+                "diagnostico_1": str(diagnostico_neuro),
+                "diagnostico_2": str(diagnostico_neuro), 
+                "estado_general": str(estado_general_neuro), 
+                "fecha_evaluacion": str(fecha_eval),
+                "fecha_reevaluacion": str(fecha_reeval_pdf if fecha_reeval_pdf is not None else ""), # Explicitamente None a ""
+                "derivaciones": str(derivaciones),
                 "sexo_f": "X" if sexo_neuro == "F" else "",
                 "sexo_m": "X" if sexo_neuro == "M" else "",
             }
@@ -1674,30 +1671,30 @@ def enviar_formulario_a_drive():
             # Mapeo de los campos del formulario HTML a los campos del PDF Familiar
             # Usando los nombres EXACTOS de tus variables y campos de PDF
             campos = {
-                "nombre": nombre, # Mapea directamente la variable 'nombre' (de Medicina Familiar)
-                "rut": rut,
-                "fecha_nacimiento": fecha_nac_formato,
-                "edad": edad,
-                "nacionalidad": nacionalidad,
-                "fecha_evaluacion": fecha_eval,
-                "fecha_reevaluacion": fecha_reeval_pdf, # Usando la fecha calculada para PDF
+                "nombre": str(nombre), # Mapea directamente la variable 'nombre' (de Medicina Familiar)
+                "rut": str(rut),
+                "fecha_nacimiento": str(fecha_nac_formato),
+                "edad": str(edad),
+                "nacionalidad": str(nacionalidad),
+                "fecha_evaluacion": str(fecha_eval),
+                "fecha_reevaluacion": str(fecha_reeval_pdf if fecha_reeval_pdf is not None else ""), # Explicitamente None a ""
                 "genero_f": "X" if genero_f == "Femenino" else "", # Asumiendo que el campo DB 'sexo' es 'F' o 'M'
                 "genero_m": "X" if genero_m == "Masculino" else "", # Asumiendo que el campo DB 'sexo' es 'F' o 'M'
-                "diagnostico_1": diagnostico_1,
-                "diagnostico_2": diagnostico_2,
-                "diagnostico_complementario": diagnostico_complementario,
-                "derivaciones": derivaciones,
-                "observacion_1": observacion_1, 
-                "observacion_2": observacion_2, 
-                "observacion_3": observacion_3,
-                "observacion_4": observacion_4,
-                "observacion_5": observacion_5,
-                "observacion_6": observacion_6,
-                "observacion_7": observacion_7,
-                "altura": altura, 
-                "peso": peso,
-                "imc": imc, 
-                "clasificacion": clasificacion,
+                "diagnostico_1": str(diagnostico_1),
+                "diagnostico_2": str(diagnostico_2),
+                "diagnostico_complementario": str(diagnostico_complementario),
+                "derivaciones": str(derivaciones),
+                "observacion_1": str(observacion_1), 
+                "observacion_2": str(observacion_2), 
+                "observacion_3": str(observacion_3),
+                "observacion_4": str(observacion_4),
+                "observacion_5": str(observacion_5),
+                "observacion_6": str(observacion_6),
+                "observacion_7": str(observacion_7),
+                "altura": str(altura), 
+                "peso": str(peso),
+                "imc": str(imc), 
+                "clasificacion": str(clasificacion),
                 "check_cesarea": "/Yes" if check_cesarea else "",
                 "check_atermino": "/Yes" if check_atermino else "",
                 "check_vaginal": "/Yes" if check_vaginal else "",
@@ -2113,17 +2110,17 @@ def generar_pdfs_visibles():
             campos = {}
             if form_type == 'neurologia':
                 campos = {
-                    "nombre": est.get('nombre', ''),
-                    "rut": est.get('rut', ''),
-                    "fecha_nacimiento": est.get('fecha_nacimiento_formato', ''),
-                    "nacionalidad": est.get('nacionalidad', ''),
-                    "edad": est.get('edad', ''),
-                    "diagnostico_1": est.get('diagnostico', ''),
-                    "diagnostico_2": est.get('diagnostico', ''), 
-                    "estado_general": est.get('estado_general', ''),
-                    "fecha_evaluacion": est.get('fecha_relleno', ''), 
-                    "fecha_reevaluacion": fecha_reeval_pdf,
-                    "derivaciones": est.get('derivaciones', ''),
+                    "nombre": str(est.get('nombre', '')),
+                    "rut": str(est.get('rut', '')),
+                    "fecha_nacimiento": str(est.get('fecha_nacimiento_formato', '')),
+                    "nacionalidad": str(est.get('nacionalidad', '')),
+                    "edad": str(est.get('edad', '')),
+                    "diagnostico_1": str(est.get('diagnostico', '')),
+                    "diagnostico_2": str(est.get('diagnostico', '')), 
+                    "estado_general": str(est.get('estado_general', '')),
+                    "fecha_evaluacion": str(est.get('fecha_relleno', '')), 
+                    "fecha_reevaluacion": str(fecha_reeval_pdf if fecha_reeval_pdf is not None else ""), # Explicitamente None a ""
+                    "derivaciones": str(est.get('derivaciones', '')),
                     "sexo_f": "X" if est.get('sexo') == "F" else "",
                     "sexo_m": "X" if est.get('sexo') == "M" else "",
                 }
@@ -2131,30 +2128,30 @@ def generar_pdfs_visibles():
                 # Mapeo de los campos del PDF Familiar usando los nombres EXACTOS encontrados en el PDF
                 # y asumiendo que los campos de la DB coinciden con los nombres de la lista del usuario.
                 campos = {
-                    "nombre": est.get('nombre', ''), # Asumiendo que el campo DB para nombre familiar es 'nombre'
-                    "rut": est.get('rut', ''),
-                    "fecha_nacimiento": est.get('fecha_nacimiento_formato', ''),
-                    "edad": est.get('edad', ''),
-                    "nacionalidad": est.get('nacionalidad', ''),
-                    "fecha_evaluacion": est.get('fecha_relleno', ''),
-                    "fecha_reevaluacion": fecha_reeval_pdf, # This is the calculated date from DB
+                    "nombre": str(est.get('nombre', '')), # Asumiendo que el campo DB para nombre familiar es 'nombre'
+                    "rut": str(est.get('rut', '')),
+                    "fecha_nacimiento": str(est.get('fecha_nacimiento_formato', '')),
+                    "edad": str(est.get('edad', '')),
+                    "nacionalidad": str(est.get('nacionalidad', '')),
+                    "fecha_evaluacion": str(est.get('fecha_relleno', '')),
+                    "fecha_reevaluacion": str(fecha_reeval_pdf if fecha_reeval_pdf is not None else ""), # Explicitamente None a ""
                     "genero_f": "X" if est.get('sexo') == "F" else "", # Asumiendo que el campo DB 'sexo' es 'F' o 'M'
                     "genero_m": "X" if est.get('sexo') == "M" else "", # Asumiendo que el campo DB 'sexo' es 'F' o 'M'
-                    "diagnostico_1": est.get('diagnostico_1', ''),
-                    "diagnostico_2": est.get('diagnostico_2', ''),
-                    "diagnostico_complementario": est.get('diagnostico_complementario', ''),
-                    "derivaciones": est.get('derivaciones', ''),
-                    "observacion_1": est.get('observacion_1', ''), 
-                    "observacion_2": est.get('observacion_2', ''), 
-                    "observacion_3": est.get('observacion_3', ''),
-                    "observacion_4": est.get('observacion_4', ''),
-                    "observacion_5": est.get('observacion_5', ''),
-                    "observacion_6": est.get('observacion_6', ''),
-                    "observacion_7": est.get('observacion_7', ''),
-                    "altura": est.get('altura', ''), 
-                    "peso": est.get('peso', ''),
-                    "imc": est.get('imc', ''), 
-                    "clasificacion": est.get('clasificacion', ''),
+                    "diagnostico_1": str(est.get('diagnostico_1', '')),
+                    "diagnostico_2": str(est.get('diagnostico_2', '')),
+                    "diagnostico_complementario": str(est.get('diagnostico_complementario', '')),
+                    "derivaciones": str(est.get('derivaciones', '')),
+                    "observacion_1": str(est.get('observacion_1', '')), 
+                    "observacion_2": str(est.get('observacion_2', '')), 
+                    "observacion_3": str(est.get('observacion_3', '')),
+                    "observacion_4": str(est.get('observacion_4', '')),
+                    "observacion_5": str(est.get('observacion_5', '')),
+                    "observacion_6": str(est.get('observacion_6', '')),
+                    "observacion_7": str(est.get('observacion_7', '')),
+                    "altura": str(est.get('altura', '')), 
+                    "peso": str(est.get('peso', '')),
+                    "imc": str(est.get('imc', '')), 
+                    "clasificacion": str(est.get('clasificacion', '')),
                     "check_cesarea": "/Yes" if est.get('check_cesarea') else "",
                     "check_atermino": "/Yes" if est.get('check_atermino') else "",
                     "check_vaginal": "/Yes" if est.get('check_vaginal') else "",
@@ -2318,6 +2315,7 @@ def debug_pdf_fields():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+
 
 
 

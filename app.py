@@ -612,15 +612,16 @@ def generar_pdf():
             # Mapeo de los campos del formulario HTML a los campos del PDF Familiar
             # Usando los nombres EXACTOS encontrados en el PDF
             campos = {
-                "Nombres y Apellidos": nombre_apellido_familiar,
-                "GENERO": genero_f_form if genero_f_form else genero_m_form, # Asumiendo que es un campo de texto o radio que toma 'Femenino'/'Masculino'
-                "RUN": rut,
-                "Fecha nacimiento (dd/mm/aaaa)": fecha_nac_formato,
-                "Edad (en años y meses)": edad,
-                "Nacionalidad": nacionalidad,
-                "Fecha evaluación": fecha_eval,
+                "nombre": nombre,
+                "rut": rut, # Asumiendo que es un campo de texto o radio que toma 'Femenino'/'Masculino'
+                "sexo_f": "X" if sexo == "F" else "",
+                "sexo_m": "X" if sexo == "M" else "",               
+                "edad": edad,
+                "nacionalidad": nacionalidad,
+                "fecha_evaluacion": fecha_eval,
                 "Fecha reevaluación": fecha_reeval_pdf, 
-                "DIAGNÓSTICO": diagnostico_1, # Mapeado a DIAGNOSTICO principal
+                "diagnostico_1": diagnostico,
+                "diagnostico_2": diagnostico
                 "DIAGNÓSTICO COMPLEMENTARIO": diagnostico_complementario,
                 "DERIVACIONES": derivaciones,
                 # Campos de observación (necesitaríamos nombres únicos si se rellenan individualmente)
@@ -639,10 +640,10 @@ def generar_pdf():
                 "OBS:_5": observacion_5,
                 "OBS:_6": observacion_6,
                 "OBS:_7": observacion_7,
-                "Altura:": altura, # Con dos puntos
-                "Peso": peso,
-                "I.M.C": imc, # Con puntos
-                "Clasificación": clasificacion,
+                "altura:": altura, # Con dos puntos
+                "peso": peso,
+                "imc": imc, # 
+                "clasificacion": clasificacion,
                 # Checkboxes - Usando los nombres EXACTOS del PDF y el valor "/Yes"
                 "CESAREA": "/Yes" if check_cesarea else "",
                 "A TÉRMINO": "/Yes" if check_atermino else "",

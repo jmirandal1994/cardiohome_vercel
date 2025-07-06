@@ -391,7 +391,8 @@ def generar_pdf():
     check_vaginal = request.form.get('check_vaginal') == 'on'
     check_prematuro = request.form.get('check_prematuro') == 'on'
     check_acorde = request.form.get('check_acorde') == 'on'
-    check_retrasogeneralizado = request.form.get('check_retrasogeneralizado') == 'on'
+    # CORREGIDO: Usar 'check_retraso' en lugar de 'check_retrasogeneralizado'
+    check_retrasogeneralizado = request.form.get('check_retrasogeneralizado') == 'on' # Mantener para la DB si existe, pero el PDF usará 'check_retraso'
     check_esquemai = request.form.get('check_esquemai') == 'on'
     check_esquemac = request.form.get('check_esquemac') == 'on'
     check_alergiano = request.form.get('check_alergiano') == 'on'
@@ -543,7 +544,7 @@ def generar_pdf():
                 "check_vaginal": check_vaginal,
                 "check_prematuro": check_prematuro,
                 "check_acorde": check_acorde,
-                "check_retrasogeneralizado": check_retrasogeneralizado,
+                "check_retrasogeneralizado": check_retrasogeneralizado, # Mantener para la DB
                 "check_esquemac": check_esquemac,
                 "check_esquemai": check_esquemai,
                 "check_alergiano": check_alergiano,
@@ -639,8 +640,8 @@ def generar_pdf():
                 "nacionalidad": str(nacionalidad),
                 "fecha_evaluacion": str(fecha_eval),
                 "fecha_reevaluacion": str(fecha_reeval_pdf if fecha_reeval_pdf is not None else ""), # Explicitamente None a ""
-                "genero_f": "X" if genero_f == "Femenino" else "", # Mapea directamente 'genero_f'
-                "genero_m": "X" if genero_m == "Masculino" else "", # Mapea directamente 'genero_m'
+                "sexo_f": "X" if genero_f == "Femenino" else "", # CORREGIDO: Mapea a 'sexo_f'
+                "sexo_m": "X" if genero_m == "Masculino" else "", # CORREGIDO: Mapea a 'sexo_m'
                 "diagnostico_1": str(diagnostico_1),
                 "diagnostico_2": str(diagnostico_2),
                 "diagnostico_complementario": str(diagnostico_complementario),
@@ -661,7 +662,7 @@ def generar_pdf():
                 "check_vaginal": "/Yes" if check_vaginal else "",
                 "check_prematuro": "/Yes" if check_prematuro else "",
                 "check_acorde": "/Yes" if check_acorde else "",
-                "check_retrasogeneralizado": "/Yes" if check_retrasogeneralizado else "",
+                "check_retraso": "/Yes" if check_retrasogeneralizado else "", # CORREGIDO: Mapea a 'check_retraso'
                 "check_esquemai": "/Yes" if check_esquemai else "",
                 "check_esquemac": "/Yes" if check_esquemac else "",
                 "check_alergiano": "/Yes" if check_alergiano else "", 
@@ -1570,7 +1571,8 @@ def enviar_formulario_a_drive():
     check_vaginal = request.form.get('check_vaginal') == 'on'
     check_prematuro = request.form.get('check_prematuro') == 'on'
     check_acorde = request.form.get('check_acorde') == 'on'
-    check_retrasogeneralizado = request.form.get('check_retrasogeneralizado') == 'on'
+    # CORREGIDO: Usar 'check_retraso' en lugar de 'check_retrasogeneralizado'
+    check_retrasogeneralizado = request.form.get('check_retrasogeneralizado') == 'on' # Mantener para la DB si existe, pero el PDF usará 'check_retraso'
     check_esquemai = request.form.get('check_esquemai') == 'on'
     check_esquemac = request.form.get('check_esquemac') == 'on'
     check_alergiano = request.form.get('check_alergiano') == 'on'
@@ -1678,8 +1680,8 @@ def enviar_formulario_a_drive():
                 "nacionalidad": str(nacionalidad),
                 "fecha_evaluacion": str(fecha_eval),
                 "fecha_reevaluacion": str(fecha_reeval_pdf if fecha_reeval_pdf is not None else ""), # Explicitamente None a ""
-                "genero_f": "X" if genero_f == "Femenino" else "", # Asumiendo que el campo DB 'sexo' es 'F' o 'M'
-                "genero_m": "X" if genero_m == "Masculino" else "", # Asumiendo que el campo DB 'sexo' es 'F' o 'M'
+                "sexo_f": "X" if genero_f == "Femenino" else "", # CORREGIDO: Mapea a 'sexo_f'
+                "sexo_m": "X" if genero_m == "Masculino" else "", # CORREGIDO: Mapea a 'sexo_m'
                 "diagnostico_1": str(diagnostico_1),
                 "diagnostico_2": str(diagnostico_2),
                 "diagnostico_complementario": str(diagnostico_complementario),
@@ -1700,7 +1702,7 @@ def enviar_formulario_a_drive():
                 "check_vaginal": "/Yes" if check_vaginal else "",
                 "check_prematuro": "/Yes" if check_prematuro else "",
                 "check_acorde": "/Yes" if check_acorde else "",
-                "check_retrasogeneralizado": "/Yes" if check_retrasogeneralizado else "",
+                "check_retraso": "/Yes" if check_retrasogeneralizado else "", # CORREGIDO: Mapea a 'check_retraso'
                 "check_esquemai": "/Yes" if check_esquemai else "",
                 "check_esquemac": "/Yes" if check_esquemac else "",
                 "check_alergiano": "/Yes" if check_alergiano else "", 
@@ -2138,8 +2140,8 @@ def generar_pdfs_visibles():
                     "nacionalidad": str(est.get('nacionalidad', '')),
                     "fecha_evaluacion": str(est.get('fecha_relleno', '')),
                     "fecha_reevaluacion": str(fecha_reeval_pdf if fecha_reeval_pdf is not None else ""), # Explicitamente None a ""
-                    "genero_f": "X" if est.get('sexo') == "F" else "", # Asumiendo que el campo DB 'sexo' es 'F' o 'M'
-                    "genero_m": "X" if est.get('sexo') == "M" else "", # Asumiendo que el campo DB 'sexo' es 'F' o 'M'
+                    "sexo_f": "X" if est.get('sexo') == "F" else "", # CORREGIDO: Mapea a 'sexo_f'
+                    "sexo_m": "X" if est.get('sexo') == "M" else "", # CORREGIDO: Mapea a 'sexo_m'
                     "diagnostico_1": str(est.get('diagnostico_1', '')),
                     "diagnostico_2": str(est.get('diagnostico_2', '')),
                     "diagnostico_complementario": str(est.get('diagnostico_complementario', '')),
@@ -2160,7 +2162,7 @@ def generar_pdfs_visibles():
                     "check_vaginal": "/Yes" if est.get('check_vaginal') else "",
                     "check_prematuro": "/Yes" if est.get('check_prematuro') else "",
                     "check_acorde": "/Yes" if est.get('check_acorde') else "",
-                    "check_retrasogeneralizado": "/Yes" if est.get('check_retrasogeneralizado') else "",
+                    "check_retraso": "/Yes" if est.get('check_retrasogeneralizado') else "", # CORREGIDO: Mapea a 'check_retraso'
                     "check_esquemai": "/Yes" if est.get('check_esquemai') else "",
                     "check_esquemac": "/Yes" if est.get('check_esquemac') else "",
                     "check_alergiano": "/Yes" if est.get('check_alergiano') else "", 
@@ -2319,6 +2321,7 @@ def debug_pdf_fields():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+
 
 
 

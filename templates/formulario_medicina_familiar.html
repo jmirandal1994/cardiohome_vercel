@@ -789,7 +789,8 @@
                             <!-- IDENTIFICACIÓN DEL ESTUDIANTE -->
                             <h3 class="section-title">Identificación del Estudiante</h3>
                             <label>Nombres y Apellidos:</label>
-                            <input type="text" name="nombre_apellido" value="{{ est.nombre }}" required readonly>
+                            <!-- CORRECCIÓN APLICADA AQUÍ: name="nombre_apellido" CAMBIADO A name="nombre" -->
+                            <input type="text" name="nombre" value="{{ est.nombre }}" required readonly>
                             <input type="hidden" name="nombre_original" value="{{ est.nombre }}"> {# Campo oculto para compatibilidad #}
 
 
@@ -1271,7 +1272,8 @@
             const container = form.closest('.container');
             if (!container) return; 
 
-            container.querySelector('.prev-nombre').textContent = form.nombre_apellido.value;
+            // CORRECCIÓN APLICADA AQUÍ: usa form.nombre en lugar de form.nombre_apellido
+            container.querySelector('.prev-nombre').textContent = form.nombre.value;
             container.querySelector('.prev-rut').textContent = form.rut.value;
             
             const generoF = form.querySelector('input[name="genero_f"]').checked;

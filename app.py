@@ -612,12 +612,12 @@ def generar_pdf():
             # Mapeo de los campos del formulario HTML a los campos del PDF Familiar
             # Usando los nombres EXACTOS encontrados en el PDF
             campos = {
-                "Nombres y Apellidos": nombre_apellido_familiar,
+                "nombre": nombre,
                 "GENERO": genero_f_form if genero_f_form else genero_m_form, # Asumiendo que es un campo de texto o radio que toma 'Femenino'/'Masculino'
-                "RUN": rut,
+                "rut": rut,
                 "Fecha nacimiento (dd/mm/aaaa)": fecha_nac_formato,
-                "Edad (en años y meses)": edad,
-                "Nacionalidad": nacionalidad,
+                "edad": edad,
+                "nacionalidad": nacionalidad,
                 "Fecha evaluación": fecha_eval,
                 "Fecha reevaluación": fecha_reeval_pdf, 
                 "DIAGNÓSTICO": diagnostico_1, # Mapeado a DIAGNOSTICO principal

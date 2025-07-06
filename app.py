@@ -613,14 +613,15 @@ def generar_pdf():
             # Usando los nombres EXACTOS encontrados en el PDF
             campos = {
                 "nombre": nombre,
-                "GENERO": genero_f_form if genero_f_form else genero_m_form, # Asumiendo que es un campo de texto o radio que toma 'Femenino'/'Masculino'
+                "sexo_f": "X" if sexo == "F" else "",
+                "sexo_m": "X" if sexo == "M" else "",
                 "rut": rut,
-                "Fecha nacimiento (dd/mm/aaaa)": fecha_nac_formato,
+                "fecha_nacimiento": fecha_nac_formato,
                 "edad": edad,
                 "nacionalidad": nacionalidad,
-                "Fecha evaluación": fecha_eval,
-                "Fecha reevaluación": fecha_reeval_pdf, 
-                "DIAGNÓSTICO": diagnostico_1, # Mapeado a DIAGNOSTICO principal
+                "fecha_evaluacion": fecha_eval,
+                "fecha_reevaluacion": fecha_reeval_pdf, 
+                "diagnostico_1": diagnostico, # Mapeado a DIAGNOSTICO principal
                 "DIAGNÓSTICO COMPLEMENTARIO": diagnostico_complementario,
                 "DERIVACIONES": derivaciones,
                 # Campos de observación (necesitaríamos nombres únicos si se rellenan individualmente)

@@ -53,6 +53,95 @@ SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 SENDGRID_FROM = os.getenv("SENDGRID_FROM_EMAIL", 'your_sendgrid_email@example.com')
 SENDGRID_TO = os.getenv("SENDGRID_ADMIN_EMAIL", 'destination_admin_email@example.com')
 
+# -------------------- Google Drive API Configuration (Empresa) --------------------
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "YOUR_GOOGLE_CLIENT_ID") 
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "YOUR_GOOGLE_CLIENT_SECRET")
+GOOGLE_DRIVE_REFRESH_TOKEN = os.getenv("GOOGLE_DRIVE_REFRESH_TOKEN", None)
+GOOGLE_DRIVE_PARENT_FOLDER_ID = os.getenv("GOOGLE_DRIVE_PARENT_FOLDER_ID", None)
+
+SCOPES = ['https://www.googleapis.com/auth/drive.file'] 
+
+
+# -------------------- Utilidades --------------------
+def permitido(filename):
+    """Verifica si la extensión del archivo está permitida."""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def calculate_age(birth_date):
+    """Calcula la edad en años y meses a partir de una fecha de nacimiento."""
+    today = date.today()
+    years = today.year - birth_date.year
+    months = today.month - birth_date.month
+    if months < 0:
+        years -= 1
+        months += 12
+    return f"{years} años con {months} meses"
+
+def guess_gender(name):
+    """
+    Intenta adivinar el género basado en el nombre (heurística simple).
+    Retorna 'M', 'F' o None si no puede adivinar.
+    """
+    name_lower = name.lower().strip()
+    first_word = name_lower.split(' ')[0]
+
+    nombres_masculinos = ["juan", "pedro", "luis", "carlos", "jose", "manuel", "alejandro", "ignacio", "felipe", "vicente", "emilio", "cristobal", "mauricio", "diego", "jean", "agustin", "joaquin", "thomas", "martin", "angel", "alonso"]
+    nombres_femeninos = ["maria", "ana", "sofia", "laura", "paula", "trinidad", "mariana", "lizeth", "alexandra", "lisset"] 
+
+    if first_word in nombres_masculinos:
+        return 'M'
+    elif first_word in nombres_femeninos:
+        return 'F'
+    
+    return None # Retorna None si no puede adivinar con certeza
+
+def normalizar(texto):
+    """Normaliza texto: quita espacios, minúsculas, tildes y reemplaza espacios por guiones bajos."""
+    if not isinstance(texto, str):
+        return ""
+    texto = texto.strip().lower()
+    texto = unicodedata.normalize('NFKD', texto).encode('ascii', 'ignore').decode('utf-8')
+    texto = texto.replace(" ", "_")
+    return texto
+
+def enviar_correo_sendgrid(asunto, cuerpo, adjuntos=None):
+    """Envía un correo electrónico usando la API de SendGrid."""
+    if not SENDGRID_API_KEY:
+        print("Falta SENDGRID_API_KEY en variables de entorno. No se enviará correo.")
+        return
+
+    data = {
+        "personalizations": [{"to": [{"email": SENDGRID_TO}]}],
+        "from": {"email": SENDGRID_FROM},
+        "subject": asunto,
+        "content": [{"type": "text/plain", "value": cuerpo}]
+    }
+
+    if adjuntos:
+        data["attachments"] = [
+            {
+                "content": adj["content"],
+                "filename": adj["filename"],
+                "type": "application/octet-stream", 
+                "disposition": "attachment"
+            } for adj in adjuntos
+        ]
+
+    try:
+        response = requests.post(
+            "https://api.sendgrid.com/v3/mail/send",
+            headers={
+                "Authorization": f"Bearer {SENDGRID_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json=data
+        )
+        print(f"Correo enviado, status: {response.status_code}")
+        if response.status_code >= 400:
+            print(f"Error SendGrid Response: {response.text}")
+    except Exception as e:
+        print(f"Error al enviar correo con SendGrid: {e}")
+
 # -------------------- Google Drive API Functions (Empresa) --------------------
 
 _COMPANY_DRIVE_CREDS = None # Variable global para almacenar las credenciales de la empresa
@@ -158,49 +247,6 @@ def upload_pdf_to_google_drive(creds, file_content_io, file_name, folder_id=None
         print(f"ERROR: Error inesperado al subir a Google Drive: {e}")
         return None
 
-# -------------------- Utilidades --------------------
-def permitido(filename):
-    """Verifica si la extensión del archivo está permitida."""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-def calculate_age(birth_date):
-    """Calcula la edad en años y meses a partir de una fecha de nacimiento."""
-    today = date.today()
-    years = today.year - birth_date.year
-    months = today.month - birth_date.month
-    if months < 0:
-        years -= 1
-        months += 12
-    return f"{years} años con {months} meses"
-
-def guess_gender(name):
-    """
-    Intenta adivinar el género basado en el nombre (heurística simple).
-    Retorna 'M', 'F' o None si no puede adivinar.
-    """
-    name_lower = name.lower().strip()
-    first_word = name_lower.split(' ')[0]
-
-    nombres_masculinos = ["juan", "pedro", "luis", "carlos", "jose", "manuel", "alejandro", "ignacio", "felipe", "vicente", "emilio", "cristobal", "mauricio", "diego", "jean", "agustin", "joaquin", "thomas", "martin", "angel", "alonso"]
-    nombres_femeninos = ["maria", "ana", "sofia", "laura", "paula", "trinidad", "mariana", "lizeth", "alexandra", "lisset"] 
-
-    if first_word in nombres_masculinos:
-        return 'M'
-    elif first_word in nombres_femeninos:
-        return 'F'
-    
-    return None # Retorna None si no puede adivinar con certeza
-
-def normalizar(texto):
-    """Normaliza texto: quita espacios, minúsculas, tildes y reemplaza espacios por guiones bajos."""
-    if not isinstance(texto, str):
-        return ""
-    texto = texto.strip().lower()
-    texto = unicodedata.normalize('NFKD', texto).encode('ascii', 'ignore').decode('utf-8')
-    texto = texto.replace(" ", "_")
-    return texto
-
-
 # -------------------- Rutas de la Aplicación --------------------
 
 @app.route('/relleno_formularios/<nomina_id>', methods=['GET'])
@@ -226,14 +272,11 @@ def relleno_formularios(nomina_id):
             return redirect(url_for('dashboard'))
 
         nomina = nomina_data[0]
-        # Acceso más seguro a las propiedades de la nómina
-        nomina_nombre = nomina.get('nombre_nomina', 'Nombre de Nómina Desconocido')
-        nomina_tipo = nomina.get('tipo_nomina', 'Tipo Desconocido')
-
-        session['establecimiento'] = f"{nomina_nombre} ({nomina_tipo.replace('_', ' ').title()})"
+        session['establecimiento'] = f"{nomina['nombre_nomina']} ({nomina['tipo_nomina'].replace('_', ' ').title()})"
         session['current_nomina_id'] = nomina_id
-        session['establecimiento_nombre'] = nomina_nombre # Usar el nombre obtenido de forma segura
-        session['current_form_type'] = nomina.get('form_type', 'neurologia')
+        session['establecimiento_nombre'] = nomina['nombre_nomina']
+        # Guardar el form_type en la sesión para usarlo al renderizar la plantilla
+        session['current_form_type'] = nomina.get('form_type', 'neurologia') 
 
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener datos de la nómina en /relleno_formularios: {e}")
@@ -257,25 +300,20 @@ def relleno_formularios(nomina_id):
 
 
         for est in estudiantes_raw:
-            # Manejo robusto de la fecha de nacimiento y cálculo de edad
-            if 'fecha_nacimiento' in est and isinstance(est['fecha_nacimiento'], str): 
+            if 'fecha_nacimiento' in est and isinstance(est['fecha_nacimiento'], str) and est['fecha_nacimiento']: 
                 try:
                     fecha_nac_obj = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
                     est['edad'] = calculate_age(fecha_nac_obj)
                     est['fecha_nacimiento_formato'] = fecha_nac_obj.strftime("%d-%m-%Y")
                 except ValueError:
-                    # Si la fecha no se puede parsear, asigna valores por defecto seguros
                     est['fecha_nacimiento_formato'] = 'Fecha Inválida'
                     est['edad'] = 'N/A'
-                    print(f"ADVERTENCIA: Fecha de nacimiento inválida para estudiante {est.get('nombre', 'N/A')}: {est['fecha_nacimiento']}")
             else:
                 est['fecha_nacimiento_formato'] = 'N/A'
                 est['edad'] = 'N/A'
-                print(f"ADVERTENCIA: Fecha de nacimiento ausente o no es string para estudiante {est.get('nombre', 'N/A')}.")
             
-            # FIX: Correctamente incrementar total_forms_completed_for_nomina
             if est.get('fecha_relleno') is not None:
-                total_forms_completed_for_nomina += 1 
+                total_forms_completed_for_nomina += 1 # Contar si fecha_relleno existe
 
             estudiantes.append(est)
         print(f"DEBUG: Estudiantes procesados para plantilla en /relleno_formularios: {estudiantes}")
@@ -291,7 +329,7 @@ def relleno_formularios(nomina_id):
         estudiantes = []
 
     # Determinar qué plantilla HTML renderizar según el form_type
-    template_name = 'formulario_relleno.html' # Default
+    template_name = 'formulario_relleno.html' # Default para neurologia
     if session.get('current_form_type') == 'medicina_familiar':
         template_name = 'formulario_medicina_familiar.html'
     elif session.get('current_form_type') == 'neurologia':
@@ -300,7 +338,7 @@ def relleno_formularios(nomina_id):
     return render_template(template_name, 
                            estudiantes=estudiantes, 
                            total_forms_completed_for_nomina=total_forms_completed_for_nomina,
-                           establecimiento_nombre=nomina_nombre) # Pasar el nombre de la nómina obtenido de forma segura
+                           establecimiento_nombre=nomina['nombre_nomina'])
 
 
 @app.route('/generar_pdf', methods=['POST'])
@@ -309,57 +347,86 @@ def generar_pdf():
         flash('Debes iniciar sesión para acceder a esta página.', 'danger')
         return redirect(url_for('index'))
 
+    estudiante_id = request.form.get('estudiante_id')
+    nomina_id = request.form.get('nomina_id')
+    
     # Obtener el form_type de la sesión para saber qué PDF base usar
     form_type = session.get('current_form_type', 'neurologia') 
 
-    # Campos comunes que se esperan de ambos formularios
-    estudiante_id = request.form.get('estudiante_id', '')
-    nomina_id = request.form.get('nomina_id', '')
-    
-    # Para Medicina Familiar, 'nombre_apellido' es el campo principal.
-    # Para Neurología, 'nombre' es el campo principal.
-    nombre_estudiante = request.form.get('nombre_apellido') or request.form.get('nombre', '') 
-    rut_estudiante = request.form.get('rut', '') 
-    fecha_nacimiento_raw = request.form.get('fecha_nacimiento', '') # Viene en formatoYYYY-MM-DD
-    edad_estudiante = request.form.get('edad', '')
-    nacionalidad_estudiante = request.form.get('nacionalidad', '')
-    
-    # Imprimir todo el contenido de request.form para depuración
-    print(f"DEBUG: Contenido completo de request.form en generar_pdf: {request.form.to_dict()}")
+    print(f"DEBUG: generar_pdf - Solicitud para generar PDF para estudiante_id={estudiante_id}, nomina_id={nomina_id}, form_type={form_type}")
 
-    # Formatear la fecha de nacimiento para el PDF (DD/MM/YYYY)
-    fecha_nac_formato_pdf = ''
-    if fecha_nacimiento_raw:
-        try:
-            # Intentar parsear "%Y-%m-%d" (de la DB) o "%d/%m/%Y" (si ya viene así del JS)
-            if '-' in fecha_nacimiento_raw:
-                parsed_date = datetime.strptime(fecha_nacimiento_raw, '%Y-%m-%d')
-            elif '/' in fecha_nacimiento_raw: # En caso de que el JS ya lo haya formateado
-                parsed_date = datetime.strptime(fecha_nacimiento_raw, '%d/%m/%Y')
-            else:
-                parsed_date = None # No se pudo parsear
-            
-            if parsed_date:
-                fecha_nac_formato_pdf = parsed_date.strftime('%d/%m/%Y')
-            else:
-                print(f"ADVERTENCIA: Formato de fecha de nacimiento no reconocido para PDF: {fecha_nacimiento_raw}")
-                fecha_nac_formato_pdf = fecha_nacimiento_raw # Usar el raw si falla el parseo
-        except ValueError:
-            print(f"ADVERTENCIA: Error al parsear fecha de nacimiento para PDF: {fecha_nacimiento_raw}")
-            fecha_nac_formato_pdf = fecha_nacimiento_raw # Usar el raw si falla el parseo
-
-    fecha_eval = datetime.today().strftime('%d/%m/%Y') # Fecha de hoy para la evaluación
-
-    # Validar campos obligatorios (los básicos que siempre deben venir)
-    # Para Familiar, 'nombre_apellido' es el campo principal del nombre
-    required_fields = [estudiante_id, nomina_id, (request.form.get('nombre_apellido') or request.form.get('nombre')), rut_estudiante, fecha_nacimiento_raw, edad_estudiante, nacionalidad_estudiante]
-    
-    if not all(required_fields):
-        print(f"ERROR: Faltan campos obligatorios para generar PDF. Datos: estudiante_id={estudiante_id}, nomina_id={nomina_id}, nombre_estudiante={nombre_estudiante}, rut_estudiante={rut_estudiante}, fecha_nacimiento_raw={fecha_nacimiento_raw}, edad_estudiante={edad_estudiante}, nacionalidad_estudiante={nacionalidad_estudiante}")
-        flash('Faltan campos obligatorios en el formulario para generar PDF. Por favor, complete la información básica del estudiante.', 'danger')
+    if not all([estudiante_id, nomina_id]):
+        flash("❌ Faltan datos esenciales del formulario para generar PDF.", 'danger')
         if 'current_nomina_id' in session:
             return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
         return redirect(url_for('dashboard'))
+
+    # Recuperar los datos del estudiante de la base de datos para asegurar que estén actualizados
+    # y completos para la generación del PDF.
+    try:
+        url_estudiante_data = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}&select=*"
+        res_estudiante = requests.get(url_estudiante_data, headers=SUPABASE_SERVICE_HEADERS)
+        res_estudiante.raise_for_status()
+        est_data_list = res_estudiante.json()
+        if not est_data_list:
+            raise ValueError(f"Estudiante con ID {estudiante_id} no encontrado en la base de datos para generar PDF.")
+        est = est_data_list[0]
+        print(f"DEBUG: Datos del estudiante obtenidos de DB para PDF: {est}")
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ ERROR AL OBTENER DATOS DEL ESTUDIANTE DE DB para PDF: {e} - {res_estudiante.text if 'res_estudiante' in locals() else ''}")
+        flash("❌ Error al obtener los datos del estudiante para generar el PDF. Intente de nuevo.", 'error')
+        if 'current_nomina_id' in session:
+            return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
+        return redirect(url_for('dashboard'))
+    except Exception as e:
+        print(f"❌ Error inesperado al obtener datos del estudiante para PDF: {e}")
+        flash(f"❌ Error inesperado al obtener datos para el PDF: {str(e)}", 'error')
+        if 'current_nomina_id' in session:
+            return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
+        return redirect(url_for('dashboard'))
+
+    # Preparar datos para el PDF desde los datos obtenidos de la DB
+    # Asegurarse de que todos los valores sean strings, y las fechas en formato DD/MM/YYYY
+    nombre = est.get('nombre', '')
+    rut = est.get('rut', '')
+    
+    fecha_nac_formato = ''
+    if est.get('fecha_nacimiento'):
+        try:
+            fecha_nac_formato = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').strftime('%d/%m/%Y')
+        except ValueError:
+            pass 
+
+    edad = est.get('edad', '')
+    nacionalidad = est.get('nacionalidad', '')
+    
+    # Sexo para PDF (X en F/M checkboxes)
+    sexo_f_pdf = ""
+    sexo_m_pdf = ""
+
+    if form_type == 'neurologia':
+        sexo_f_pdf = "X" if est.get('sexo') == "F" else ""
+        sexo_m_pdf = "X" if est.get('sexo') == "M" else ""
+    elif form_type == 'medicina_familiar':
+        sexo_f_pdf = "X" if est.get('genero_f') else ""
+        sexo_m_pdf = "X" if est.get('genero_m') else ""
+
+    # Fecha de evaluación para PDF (fecha de relleno)
+    fecha_eval_pdf = ''
+    if est.get('fecha_relleno'): 
+        try:
+            fecha_eval_pdf = datetime.strptime(est['fecha_relleno'], '%Y-%m-%d').strftime('%d/%m/%Y')
+        except ValueError:
+            pass
+
+    # Fecha de reevaluación para PDF (convertir YYYY-MM-DD a DD/MM/YYYY)
+    fecha_reeval_pdf = ''
+    if est.get('fecha_reevaluacion'):
+        try:
+            fecha_reeval_pdf = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
+        except ValueError:
+            pass
 
     # Seleccionar el PDF base según el form_type
     pdf_base_path = ''
@@ -386,116 +453,81 @@ def generar_pdf():
 
         campos = {}
         if form_type == 'neurologia':
-            # SECCIÓN DE NEUROLOGÍA - NO TOCAR - FUNCIONA PERFECTO
-            sexo_estudiante = request.form.get('sexo', '')
-            estado_general_estudiante = request.form.get('estado', '')
-            diagnostico_estudiante = request.form.get('diagnostico', '')
-            fecha_reeval_estudiante = request.form.get('fecha_reevaluacion', '')
-            derivaciones_estudiante = request.form.get('derivaciones', '')
-
             campos = {
-                "nombre": nombre_estudiante,
-                "rut": rut_estudiante,
-                "fecha_nacimiento": fecha_nac_formato_pdf, # Usar el formato DD/MM/YYYY
-                "nacionalidad": nacionalidad_estudiante,
-                "edad": edad_estudiante,
-                "diagnostico_1": diagnostico_estudiante,
-                "diagnostico_2": diagnostico_estudiante, # Puede ser el mismo para neurología si no hay un segundo campo
-                "estado_general": estado_general_estudiante, 
-                "fecha_evaluacion": fecha_eval,
-                "fecha_reevaluacion": fecha_reeval_estudiante,
-                "derivaciones": derivaciones_estudiante,
-                "sexo_f": "X" if sexo_estudiante == "F" else "",
-                "sexo_m": "X" if sexo_estudiante == "M" else "",
+                "nombre": nombre,
+                "rut": rut,
+                "fecha_nacimiento": fecha_nac_formato, 
+                "nacionalidad": nacionalidad,
+                "edad": edad,
+                "diagnostico_1": est.get('diagnostico', ''),
+                "diagnostico_2": est.get('diagnostico', ''), 
+                "estado_general": est.get('estado_general', ''), 
+                "fecha_evaluacion": fecha_eval_pdf, 
+                "fecha_reevaluacion": fecha_reeval_pdf,
+                "derivaciones": est.get('derivaciones', ''),
+                "sexo_f": sexo_f_pdf,
+                "sexo_m": sexo_m_pdf,
             }
         elif form_type == 'medicina_familiar':
-            # SECCIÓN DE MEDICINA FAMILIAR - AJUSTES AQUÍ
-            # Determinar sexo a partir del radio button 'genero'
-            genero_val = request.form.get('genero', '') 
-            sexo_estudiante_familiar = ''
-            if genero_val == 'Femenino':
-                sexo_estudiante_familiar = 'F'
-            elif genero_val == 'Masculino':
-                sexo_estudiante_familiar = 'M'
-            
-            # Obtener la fecha de reevaluación del input directamente
-            fecha_reeval_familiar = request.form.get('fecha_reevaluacion', '')
-
             campos = {
-                # Datos básicos
-                "Nombres y Apellidos": nombre_estudiante, # Usar la variable ya procesada
-                "RUN": rut_estudiante, # Usar la variable ya procesada
-                "Fecha nacimiento (dd/mm/aaaa)": fecha_nac_formato_pdf, # Usar la variable ya procesada
-                "Edad (en años y meses)": edad_estudiante, # Usar la variable ya procesada
-                "Nacionalidad": nacionalidad_estudiante, # Usar la variable ya procesada
-                "Fecha evaluación": fecha_eval,          
-                "Fecha reevaluación": fecha_reeval_familiar,  
-
-                # Diagnósticos y observaciones
-                "DIAGNÓSTICO": request.form.get("diagnostico_1", ""),
-                "DIAGNÓSTICO COMPLEMENTARIO": request.form.get("diagnostico_complementario", ""),
-                "Clasificación": request.form.get("clasificacion", ""),
-                "INDICACIONES": request.form.get("derivaciones", ""),
-                "OBS:": request.form.get("observacion_1", ""),
-                "OBS:1": request.form.get("observacion_2", ""),
-                "OBS:2": request.form.get("observacion_3", ""),
-                "OBS:3": request.form.get("observacion_4", ""),
-                "OBS:4": request.form.get("observacion_5", ""),
-                "OBS:5": request.form.get("observacion_6", ""),
-                "OBS:6": request.form.get("observacion_7", ""),
-
-                # Antropometría
-                "Altura": request.form.get("altura", ""),
-                "Peso": request.form.get("peso", ""),
-                "I.M.C": request.form.get("imc", ""),
-                # "Clasificación_IMC" está en Supabase, no en el PDF que me enviaste, si lo necesitas en el PDF, el nombre debe ser exacto.
-                # "Clasificación_IMC": request.form.get("clasificacion_imc", ""), 
-
-                # Género (marcar solo uno)
-                "F": "/Yes" if sexo_estudiante_familiar == "F" else "Off", # Usar la variable derivada
-                "M": "/Yes" if sexo_estudiante_familiar == "M" else "Off", # Usar la variable derivada
-
-                # Casillas perinatales
-                "CESAREA": "/Yes" if request.form.get("check_cesarea") == 'CESAREA' else "Off",
-                "A TÉRMINO": "/Yes" if request.form.get("check_atermino") == 'A_TERMINO' else "Off",
-                "VAGINAL": "/Yes" if request.form.get("check_vaginal") == 'VAGINAL' else "Off",
-                "PREMATURO": "/Yes" if request.form.get("check_prematuro") == 'PREMATURO' else "Off",
-
-                # Desarrollo y vacunas
-                "LOGRADO ACORDE A LA EDAD": "/Yes" if request.form.get("check_acorde") == 'LOGRADO_ACORDE_A_LA_EDAD' else "Off",
-                "RETRASO": "/Yes" if request.form.get("check_retrasogeneralizado") == 'RETRASO_GENERALIZADO_DEL_DESARROLLO' else "Off", # El campo en PDF es "RETRASO"
-                "ESQUEMA COMPLETO": "/Yes" if request.form.get("check_esquemac") == 'ESQUEMA_COMPLETO' else "Off",
-                "ESQUEMA INCOMPLETO": "/Yes" if request.form.get("check_esquemai") == 'ESQUEMA_INCOMPLETO' else "Off",
-
-                # Alergias y cirugías
-                "NO": "/Yes" if request.form.get("check_alergiano") == 'NO_ALERGIAS' else "Off",
-                "SI": "/Yes" if request.form.get("check_alergiasi") == 'SI_ALERGIAS' else "Off",
-                "NO_2": "/Yes" if request.form.get("check_cirugiano") == 'NO_CIRUGIAS' else "Off",
-                "ST": "/Yes" if request.form.get("check_cirugiasi") == 'SI_CIRUGIAS' else "Off", # Campo en PDF es "ST"
-
-                # Visión / audición / dental
-                "SIN ALTERACIÓN": "/Yes" if request.form.get("check_visionsinalteracion") == 'SIN_ALTERACION_VISION' else "Off",
-                "VICIOS DE REFRACCIÓN": "/Yes" if request.form.get("check_visionrefraccion") == 'VICIOS_DE_REFRACCION' else "Off",
-                "NORMAL": "/Yes" if request.form.get("check_audicionnormal") == 'NORMAL_AUDICION' else "Off",
-                "TAPÓN DE CERUMEN": "/Yes" if request.form.get("check_tapondecerumen") == 'TAPON_DE_CERUMEN' else "Off",
-                "HIPOACUSIA": "/Yes" if request.form.get("check_hipoacusia") == 'HIPOACUSIA' else "Off",
-                "SIN HALLAZGOS": "/Yes" if request.form.get("check_sinhallazgos") == 'SIN_HALLAZGOS' else "Off",
-                "CARIES": "/Yes" if request.form.get("check_caries") == 'CARIES' else "Off",
-                "APIÑAMIENTO DENTAL": "/Yes" if request.form.get("check_apinamientodental") == 'APINAMIENTO_DENTAL' else "Off",
-                "RETENCIÓN DENTAL.": "/Yes" if request.form.get("check_retenciondental") == 'RETENCION_DENTAL' else "Off", # ¡Importante el punto final!
-                "FRENILLO LINGUAL": "/Yes" if request.form.get("check_frenillolingual") == 'FRENILLO_LINGUAL' else "Off",
-                "HIPERTROFIA AMIGDALINA": "/Yes" if request.form.get("check_hipertrofia") == 'HIPERTROFIA_AMIGDALINA' else "Off",
-                
-                # Campos del profesional (estáticos en el PDF base)
-                "ADRIANA LUGO PEREZ": "ADRIANA LUGO PEREZ", 
-                "14.692.266-K": "14.692.266-K", 
-                "62598": "62598", 
-                "MEDICINA FAMILIAR": "MEDICINA FAMILIAR", 
-                "contacto@cardiohome.cl": "contacto@cardiohome.cl",
-                "Salud pública": "Off", 
-                "Particular": "/Yes", 
-                "Escuela": "Off", 
-                "Otro:": "Off", 
+                "Nombres y Apellidos": nombre,
+                "RUN": rut,
+                "Fecha nacimiento (dd/mm/aaaa)": fecha_nac_formato,
+                "Edad (en años y meses)": edad,
+                "Nacionalidad": nacionalidad,
+                "F": sexo_f_pdf,
+                "M": sexo_m_pdf,
+                "DIAGNOSTICO": est.get('diagnostico_1', ''),
+                "DIAGNÓSTICO COMPLEMENTARIO": est.get('diagnostico_complementario', ''),
+                "Clasificación": est.get('clasificacion_imc', ''), # Usar clasificacion_imc de la DB
+                "INDICACIONES": est.get('derivaciones', ''),
+                "Fecha evaluación": fecha_eval_pdf,
+                "Fecha reevaluación": fecha_reeval_pdf, # Ya está en formato DD/MM/YYYY
+                "OBS1": est.get('observacion_1', ''),
+                "OBS2": est.get('observacion_2', ''),
+                "OBS3": est.get('observacion_3', ''),
+                "OBS4": est.get('observacion_4', ''),
+                "OBS5": est.get('observacion_5', ''),
+                "OBS6": est.get('observacion_6', ''),
+                "OBS7": est.get('observacion_7', ''),
+                "CESAREA": "/Yes" if est.get('check_cesarea') else "",
+                "A TÉRMINO": "/Yes" if est.get('check_atermino') else "",
+                "VAGINAL": "/Yes" if est.get('check_vaginal') else "",
+                "PREMATURO": "/Yes" if est.get('check_prematuro') else "",
+                "LOGRADO ACORDE A LA EDAD": "/Yes" if est.get('check_acorde') else "",
+                "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if est.get('check_retrasogeneralizado') else "",
+                "ESQUEMA COMPLETO": "/Yes" if est.get('check_esquemac') else "",
+                "ESQUEMA INCOMPLETO": "/Yes" if est.get('check_esquemai') else "",
+                "NO": "/Yes" if est.get('check_alergiano') else "",
+                "SI": "/Yes" if est.get('check_alergiasi') else "",
+                "NO_2": "/Yes" if est.get('check_cirugiano') else "",
+                "SI_2": "/Yes" if est.get('check_cirugiasi') else "",
+                "SIN ALTERACIÓN": "/Yes" if est.get('check_visionsinalteracion') else "",
+                "VICIOS DE REFRACCION": "/Yes" if est.get('check_visionrefraccion') else "",
+                "NORMAL": "/Yes" if est.get('check_audicionnormal') else "",
+                "HIPOACUSIA": "/Yes" if est.get('check_hipoacusia') else "",
+                "TAPÓN DE CERUMEN": "/Yes" if est.get('check_tapondecerumen') else "",
+                "SIN HALLAZGOS": "/Yes" if est.get('check_sinhallazgos') else "",
+                "CARIES": "/Yes" if est.get('check_caries') else "",
+                "APIÑAMIENTO DENTAL": "/Yes" if est.get('check_apinamientodental') else "",
+                "RETENCIÓN DENTAL": "/Yes" if est.get('check_retenciondental') else "",
+                "FRENILLO LINGUAL": "/Yes" if est.get('check_frenillolingual') else "",
+                "HIPERTROFIA AMIGDALINA": "/Yes" if est.get('check_hipertrofia') else "",
+                "Altura": est.get('altura', ''),
+                "Peso": est.get('peso', ''),
+                "I.M.C": est.get('imc', ''),
+                "Clasificación_IMC": est.get('clasificacion_imc', ''),
+                # Estos campos de doctor deben venir de la DB o ser pasados de alguna manera
+                # Por ahora, los dejo vacíos o con valores por defecto si no están en 'est'
+                "Nombres y Apellidos_Doctor": "", 
+                "Rut_Doctor": "",
+                "Nº Registro Profesional": "",
+                "Especialidad": "",
+                "Fono/E-Mail Contacto": "",
+                "Salud pública": "/Yes" if est.get('procedencia_salud_publica') else "",
+                "Particular": "/Yes" if est.get('procedencia_particular') else "",
+                "Escuela": "/Yes" if est.get('procedencia_escuela') else "",
+                "Otro": "/Yes" if est.get('procedencia_otro') else "",
             }
 
         print(f"DEBUG: Fields to fill in PDF for {form_type} form: {campos}")
@@ -515,9 +547,8 @@ def generar_pdf():
         writer.write(output)
         output.seek(0)
 
-        nombre_archivo_descarga = f"{nombre_estudiante.replace(' ', '_')}_{rut_estudiante}_formulario_{form_type}.pdf"
+        nombre_archivo_descarga = f"{nombre.replace(' ', '_')}_{rut}_formulario_{form_type}.pdf"
         print(f"DEBUG: PDF generado y listo para descarga: {nombre_archivo_descarga}")
-        flash('PDF generado correctamente.', 'success')
         return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
 
     except Exception as e:
@@ -533,11 +564,10 @@ def marcar_evaluado():
     if 'usuario' not in session:
         return jsonify({"success": False, "message": "No autorizado"}), 401
 
-    estudiante_id = request.form.get('estudiante_id', '')
-    nomina_id = request.form.get('nomina_id', '')
-    doctora_id = session.get('usuario_id') # ID de la doctora que está realizando la evaluación
+    estudiante_id = request.form.get('estudiante_id')
+    nomina_id = request.form.get('nomina_id')
+    doctora_id = session.get('usuario_id')
 
-    # Obtener el form_type de la sesión para saber qué campos actualizar
     form_type = session.get('current_form_type', 'neurologia') 
 
     print(f"DEBUG: Recibida solicitud para marcar como evaluado: estudiante_id={estudiante_id}, nomina_id={nomina_id}, doctora_id={doctora_id}, form_type={form_type}")
@@ -547,36 +577,38 @@ def marcar_evaluado():
         print(f"ERROR: Datos faltantes en /marcar_evaluado. Estudiante ID: {estudiante_id}, Nomina ID: {nomina_id}, Doctora ID: {doctora_id}. Campos del formulario: {request.form.to_dict()}")
         return jsonify({"success": False, "message": "Faltan datos obligatorios para marcar y guardar la evaluación."}), 400
 
+    # Helper function to get form value or None if empty string
+    def get_form_value_or_none(field_name):
+        value = request.form.get(field_name)
+        return value if value else None
+
     update_data = {
         'fecha_relleno': str(date.today()), # Fecha actual de rellenado
-        'doctora_evaluadora_id': doctora_id, # Esto es clave para el rendimiento
+        'doctora_evaluadora_id': doctora_id, 
     }
 
     # Campos comunes o que se pueden actualizar en ambos formularios
-    # Se usa 'nombre_apellido' para familiar, 'nombre' para neurologia
-    update_data['nombre'] = request.form.get('nombre_apellido') or request.form.get('nombre', '') 
-    update_data['rut'] = request.form.get('rut', '')
-    update_data['fecha_nacimiento'] = request.form.get('fecha_nacimiento', '') # FormatoYYYY-MM-DD
-    update_data['nacionalidad'] = request.form.get('nacionalidad', '')
-    update_data['edad'] = request.form.get('edad', '') # Guardar la cadena de edad calculada
+    update_data['nombre'] = get_form_value_or_none('nombre')
+    update_data['rut'] = get_form_value_or_none('rut')
+    # fecha_nacimiento_original ya viene como YYYY-MM-DD
+    update_data['fecha_nacimiento'] = get_form_value_or_none('fecha_nacimiento_original') 
+    update_data['nacionalidad'] = get_form_value_or_none('nacionalidad')
+    update_data['edad'] = get_form_value_or_none('edad') 
+    update_data['fecha_evaluacion'] = get_form_value_or_none('fecha_evaluacion') # YYYY-MM-DD
+    update_data['fecha_reevaluacion'] = get_form_value_or_none('fecha_reevaluacion') # YYYY-MM-DD
 
     # Lógica para campos específicos según el tipo de formulario
     if form_type == 'neurologia':
-        # SECCIÓN DE NEUROLOGÍA - NO TOCAR - FUNCIONA PERFECTO
         update_data.update({
-            'sexo': request.form.get('sexo', ''),
-            'estado_general': request.form.get('estado', ''),
-            'diagnostico': request.form.get('diagnostico', ''),
-            'fecha_reevaluacion': request.form.get('fecha_reevaluacion', ''), # FormatoYYYY-MM-DD
-            'derivaciones': request.form.get('derivaciones', ''),
+            'sexo': get_form_value_or_none('sexo'),
+            'estado_general': get_form_value_or_none('estado'),
+            'diagnostico': get_form_value_or_none('diagnostico'),
+            'derivaciones': get_form_value_or_none('derivaciones'),
         })
     elif form_type == 'medicina_familiar':
-        # SECCIÓN DE MEDICINA FAMILIAR - AJUSTES AQUÍ
         # Manejo de género (radio buttons en HTML, se guardan como booleanos en Supabase)
-        # Asumiendo que el radio button tiene name="genero" y value="Femenino" o "Masculino"
-        genero_val = request.form.get('genero')
-        update_data["genero_f"] = genero_val == 'Femenino' 
-        update_data["genero_m"] = genero_val == 'Masculino' 
+        update_data["genero_f"] = request.form.get('genero_f') == 'Femenino'
+        update_data["genero_m"] = request.form.get('genero_m') == 'Masculino'
         
         # Actualizar el campo 'sexo' general basado en los radio buttons de familiar
         if update_data["genero_f"]:
@@ -584,28 +616,26 @@ def marcar_evaluado():
         elif update_data["genero_m"]:
             update_data["sexo"] = 'M'
         else:
-            update_data["sexo"] = '' # O un valor por defecto si ninguno está marcado
+            update_data["sexo"] = None # O un valor por defecto si ninguno está marcado
 
         update_data.update({
-            "diagnostico_1": request.form.get('diagnostico_1', ''),
-            "diagnostico_2": request.form.get('diagnostico_2', ''), # Si este campo no existe en el HTML, será vacío
-            "clasificacion": request.form.get('clasificacion', ''),
-            "derivaciones": request.form.get('derivaciones', ''),
-            "observacion_1": request.form.get('observacion_1', ''),
-            "observacion_2": request.form.get('observacion_2', ''),
-            "observacion_3": request.form.get('observacion_3', ''),
-            "observacion_4": request.form.get('observacion_4', ''),
-            "observacion_5": request.form.get('observacion_5', ''),
-            "observacion_6": request.form.get('observacion_6', ''),
-            "observacion_7": request.form.get('observacion_7', ''),
+            "diagnostico_1": get_form_value_or_none('diagnostico_1'),
+            "diagnostico_2": get_form_value_or_none('diagnostico_2'),
+            "clasificacion": get_form_value_or_none('clasificacion'),
+            "derivaciones": get_form_value_or_none('derivaciones'),
+            "observacion_1": get_form_value_or_none('observacion_1'),
+            "observacion_2": get_form_value_or_none('observacion_2'),
+            "observacion_3": get_form_value_or_none('observacion_3'),
+            "observacion_4": get_form_value_or_none('observacion_4'),
+            "observacion_5": get_form_value_or_none('observacion_5'),
+            "observacion_6": get_form_value_or_none('observacion_6'),
+            "observacion_7": get_form_value_or_none('observacion_7'),
             "altura": float(request.form.get('altura')) if request.form.get('altura') else None,
             "peso": float(request.form.get('peso')) if request.form.get('peso') else None,
-            "imc": request.form.get('imc', ''),
-            "clasificacion_imc": request.form.get('clasificacion_imc', ''), 
-            "fecha_evaluacion": request.form.get('fecha_evaluacion', ''), # FormatoYYYY-MM-DD
-            "fecha_reevaluacion": request.form.get('fecha_reevaluacion', ''), # FormatoYYYY-MM-DD
-            "fecha_reevaluacion_select": request.form.get('fecha_reevaluacion_select', ''), # Valor del select (1, 2, 3 años)
-            "diagnostico_complementario": request.form.get('diagnostico_complementario', ''),
+            "imc": get_form_value_or_none('imc'),
+            "clasificacion_imc": get_form_value_or_none('clasificacion_imc'),
+            "fecha_reevaluacion_select": get_form_value_or_none('fecha_reevaluacion_select'),
+            "diagnostico_complementario": get_form_value_or_none('diagnostico_complementario'),
             # Checkboxes - Asegúrate de que los nombres de los campos en HTML coincidan
             "check_cesarea": request.form.get('check_cesarea') == 'CESAREA',
             "check_atermino": request.form.get('check_atermino') == 'A_TERMINO',
@@ -880,12 +910,12 @@ def dashboard():
                 try:
                     url_doctor_forms_count = (
                         f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                        f"?doctora_evaluadora_id=eq.{doctor_id}" # Filtrar por la doctora que evaluó
-                        f"&fecha_relleno.not.is.null" # Que el formulario haya sido rellenado
+                        f"?doctora_evaluadora_id=eq.{doctor_id}" 
+                        f"&fecha_relleno.not.is.null" 
                         f"&select=count" 
                     )
                     print(f"DEBUG: URL para contar formularios de doctora {doctor_name} (admin view): {url_doctor_forms_count}")
-                    res_doctor_forms = requests.get(url_doctor_forms_count, headers=SUPABASE_SERVICE_HEADERS) # Usar SERVICE_HEADERS
+                    res_doctor_forms = requests.get(url_doctor_forms_count, headers=SUPABASE_SERVICE_HEADERS) 
                     res_doctor_forms.raise_for_status()
                     count_range = res_doctor_forms.headers.get('Content-Range')
                     completed_forms_count = 0
@@ -916,8 +946,8 @@ def dashboard():
         conteo=conteo,
         assigned_nominations=assigned_nominations,
         admin_nominas_cargadas=admin_nominas_cargadas,
-        doctor_performance_data=doctor_performance_data, # Dict {doctor_name: count}
-        doctor_performance_data_single_doctor=doctor_performance_data_single_doctor # Dict {completed, pending, total}
+        doctor_performance_data=doctor_performance_data, 
+        doctor_performance_data_single_doctor=doctor_performance_data_single_doctor 
     )
 
 @app.route('/logout')
@@ -1150,14 +1180,14 @@ def admin_cargar_nomina():
             # Limpiar RUT: quitar puntos y guiones
             rut_limpio = str(rut_raw).replace('.', '').replace('-', '').strip()
             
-            # Convertir fecha de nacimiento a formatoYYYY-MM-DD
+            # Convertir fecha de nacimiento a formato YYYY-MM-DD
             fecha_nac_str = None
             if isinstance(fecha_nacimiento_raw, datetime):
                 fecha_nac_str = fecha_nacimiento_raw.strftime('%Y-%m-%d')
             elif isinstance(fecha_nacimiento_raw, date):
                 fecha_nac_str = fecha_nacimiento_raw.strftime('%Y-%m-%d')
             else:
-                # Intentar parsear varios formatos comunes (DD-MM-YYYY, DD/MM/YYYY,YYYY-MM-DD, Excel serial)
+                # Intentar parsear varios formatos comunes (DD-MM-YYYY, DD/MM/YYYY, YYYY-MM-DD, Excel serial)
                 try:
                     # Usar pd.to_datetime para una conversión más robusta de fechas
                     parsed_date = pd.to_datetime(fecha_nacimiento_raw, errors='coerce')
@@ -1250,36 +1280,10 @@ def enviar_formulario_a_drive():
     estudiante_id = request.form.get('estudiante_id')
     nomina_id = request.form.get('nomina_id') 
     
-    nombre_estudiante = request.form.get('nombre_apellido') or request.form.get('nombre', '') 
-    rut_estudiante = request.form.get('rut', '') 
-    fecha_nacimiento_raw = request.form.get('fecha_nacimiento', '') # Viene en formatoYYYY-MM-DD
-    edad_estudiante = request.form.get('edad', '')
-    nacionalidad_estudiante = request.form.get('nacionalidad', '')
-
     # Obtener el form_type de la sesión para saber qué PDF base usar
     form_type = session.get('current_form_type', 'neurologia') 
 
-    # Formatear la fecha de nacimiento para el PDF (DD/MM/YYYY)
-    fecha_nac_formato_pdf = ''
-    if fecha_nacimiento_raw:
-        try:
-            if '-' in fecha_nacimiento_raw:
-                parsed_date = datetime.strptime(fecha_nacimiento_raw, '%Y-%m-%d')
-            elif '/' in fecha_nacimiento_raw:
-                parsed_date = datetime.strptime(fecha_nacimiento_raw, '%d/%m/%Y')
-            else:
-                parsed_date = None
-            
-            if parsed_date:
-                fecha_nac_formato_pdf = parsed_date.strftime('%d/%m/%Y')
-            else:
-                fecha_nac_formato_pdf = fecha_nacimiento_raw
-        except ValueError:
-            fecha_nac_formato_pdf = fecha_nacimiento_raw
-
-    fecha_eval = datetime.today().strftime('%d/%m/%Y') # Fecha de hoy para la evaluación
-
-    if not all([estudiante_id, nomina_id, nombre_estudiante, rut_estudiante]): 
+    if not all([estudiante_id, nomina_id]): 
         return jsonify({"success": False, "message": "Faltan datos esenciales del formulario para subir a Drive."}), 400
 
     establecimiento_nombre = "Formularios Varios" 
@@ -1299,12 +1303,62 @@ def enviar_formulario_a_drive():
     except Exception as e:
         print(f"ERROR: Error inesperado al obtener nombre de nómina para Drive: {e}")
 
-    fecha_reeval_pdf_formatted = request.form.get('fecha_reevaluacion', '') # Obtener directamente del form
-    if fecha_reeval_pdf_formatted and "-" in fecha_reeval_pdf_formatted:
+    # Obtener los datos del estudiante de la base de datos para asegurar que estén actualizados
+    try:
+        url_estudiante_data = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}&select=*"
+        res_estudiante = requests.get(url_estudiante_data, headers=SUPABASE_SERVICE_HEADERS)
+        res_estudiante.raise_for_status()
+        est_data_list = res_estudiante.json()
+        if not est_data_list:
+            raise ValueError(f"Estudiante con ID {estudiante_id} no encontrado en la base de datos para subir a Drive.")
+        est = est_data_list[0]
+        print(f"DEBUG: Datos del estudiante obtenidos de DB para Drive PDF: {est}")
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ ERROR AL OBTENER DATOS DEL ESTUDIANTE DE DB para Drive PDF: {e} - {res_estudiante.text if 'res_estudiante' in locals() else ''}")
+        return jsonify({"success": False, "message": "Error al obtener los datos del estudiante para subir a Drive."}), 500
+    except Exception as e:
+        print(f"❌ Error inesperado al obtener datos del estudiante para Drive PDF: {e}")
+        return jsonify({"success": False, "message": f"Error inesperado al obtener datos para Drive: {str(e)}"}), 500
+
+    # Preparar datos para el PDF desde los datos obtenidos de la DB
+    nombre = est.get('nombre', '')
+    rut = est.get('rut', '')
+    
+    fecha_nac_formato = ''
+    if est.get('fecha_nacimiento'):
         try:
-            fecha_reeval_pdf_formatted = datetime.strptime(fecha_reeval_pdf_formatted, '%Y-%m-%d').strftime('%d/%m/%Y')
+            fecha_nac_formato = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').strftime('%d/%m/%Y')
+        except ValueError:
+            pass 
+
+    edad = est.get('edad', '')
+    nacionalidad = est.get('nacionalidad', '')
+    
+    sexo_f_pdf = ""
+    sexo_m_pdf = ""
+
+    if form_type == 'neurologia':
+        sexo_f_pdf = "X" if est.get('sexo') == "F" else ""
+        sexo_m_pdf = "X" if est.get('sexo') == "M" else ""
+    elif form_type == 'medicina_familiar':
+        sexo_f_pdf = "X" if est.get('genero_f') else ""
+        sexo_m_pdf = "X" if est.get('genero_m') else ""
+
+    fecha_eval_pdf = ''
+    if est.get('fecha_relleno'): 
+        try:
+            fecha_eval_pdf = datetime.strptime(est['fecha_relleno'], '%Y-%m-%d').strftime('%d/%m/%Y')
         except ValueError:
             pass
+
+    fecha_reeval_pdf = ''
+    if est.get('fecha_reevaluacion'):
+        try:
+            fecha_reeval_pdf = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
+        except ValueError:
+            pass
+
 
     # Seleccionar el PDF base según el form_type
     pdf_base_path = ''
@@ -1327,116 +1381,79 @@ def enviar_formulario_a_drive():
 
         campos = {}
         if form_type == 'neurologia':
-            # SECCIÓN DE NEUROLOGÍA - NO TOCAR - FUNCIONA PERFECTO
-            sexo_estudiante = request.form.get('sexo', '')
-            estado_general_estudiante = request.form.get('estado', '')
-            diagnostico_estudiante = request.form.get('diagnostico', '')
-            fecha_reeval_estudiante = request.form.get('fecha_reevaluacion', '')
-            derivaciones_estudiante = request.form.get('derivaciones', '')
-
             campos = {
-                "nombre": nombre_estudiante,
-                "rut": rut_estudiante,
-                "fecha_nacimiento": fecha_nac_formato_pdf, 
-                "nacionalidad": nacionalidad_estudiante,
-                "edad": edad_estudiante,
-                "diagnostico_1": diagnostico_estudiante,
-                "diagnostico_2": diagnostico_estudiante, 
-                "estado_general": estado_general_estudiante, 
-                "fecha_evaluacion": fecha_eval,
-                "fecha_reevaluacion": fecha_reeval_pdf_formatted,
-                "derivaciones": derivaciones_estudiante,
-                "sexo_f": "X" if sexo_estudiante == "F" else "",
-                "sexo_m": "X" if sexo_estudiante == "M" else "",
+                "nombre": nombre,
+                "rut": rut,
+                "fecha_nacimiento": fecha_nac_formato, 
+                "nacionalidad": nacionalidad,
+                "edad": edad,
+                "diagnostico_1": est.get('diagnostico', ''),
+                "diagnostico_2": est.get('diagnostico', ''), 
+                "estado_general": est.get('estado_general', ''), 
+                "fecha_evaluacion": fecha_eval_pdf,
+                "fecha_reevaluacion": fecha_reeval_pdf,
+                "derivaciones": est.get('derivaciones', ''),
+                "sexo_f": sexo_f_pdf,
+                "sexo_m": sexo_m_pdf,
             }
         elif form_type == 'medicina_familiar':
-            # SECCIÓN DE MEDICINA FAMILIAR - AJUSTES AQUÍ
-            genero_val = request.form.get('genero', '') 
-            sexo_estudiante_familiar = ''
-            if genero_val == 'Femenino':
-                sexo_estudiante_familiar = 'F'
-            elif genero_val == 'Masculino':
-                sexo_estudiante_familiar = 'M'
-            
-            # Obtener la fecha de reevaluación del input directamente
-            fecha_reeval_familiar = request.form.get('fecha_reevaluacion', '')
-
             campos = {
-                # Datos básicos
-                "Nombres y Apellidos": nombre_estudiante,
-                "RUN": rut_estudiante,
-                "Fecha nacimiento (dd/mm/aaaa)": fecha_nac_formato_pdf,
-                "Edad (en años y meses)": edad_estudiante,
-                "Nacionalidad": nacionalidad_estudiante,
-                "Fecha evaluación": fecha_eval,          
-                "Fecha reevaluación": fecha_reeval_familiar,  
-
-                # Diagnósticos y observaciones
-                "DIAGNÓSTICO": request.form.get("diagnostico_1", ""),
-                "DIAGNÓSTICO COMPLEMENTARIO": request.form.get("diagnostico_complementario", ""),
-                "Clasificación": request.form.get("clasificacion", ""),
-                "INDICACIONES": request.form.get("derivaciones", ""),
-                "OBS:": request.form.get("observacion_1", ""),
-                "OBS:1": request.form.get("observacion_2", ""),
-                "OBS:2": request.form.get("observacion_3", ""),
-                "OBS:3": request.form.get("observacion_4", ""),
-                "OBS:4": request.form.get("observacion_5", ""),
-                "OBS:5": request.form.get("observacion_6", ""),
-                "OBS:6": request.form.get("observacion_7", ""),
-
-                # Antropometría
-                "Altura": request.form.get("altura", ""),
-                "Peso": request.form.get("peso", ""),
-                "I.M.C": request.form.get("imc", ""),
-                # "Clasificación_IMC" no está en tu lista de campos de PDF, pero sí en la de Supabase.
-                # Si existe en el PDF, el nombre debe ser exacto.
-                # "Clasificación_IMC": request.form.get("clasificacion_imc", ""), 
-
-                # Género (marcar solo uno)
-                "F": "/Yes" if sexo_estudiante_familiar == "F" else "Off",
-                "M": "/Yes" if sexo_estudiante_familiar == "M" else "Off",
-
-                # Casillas perinatales
-                "CESAREA": "/Yes" if request.form.get("check_cesarea") == 'CESAREA' else "Off",
-                "A TÉRMINO": "/Yes" if request.form.get("check_atermino") == 'A_TERMINO' else "Off",
-                "VAGINAL": "/Yes" if request.form.get("check_vaginal") == 'VAGINAL' else "Off",
-                "PREMATURO": "/Yes" if request.form.get("check_prematuro") == 'PREMATURO' else "Off",
-
-                # Desarrollo y vacunas
-                "LOGRADO ACORDE A LA EDAD": "/Yes" if request.form.get("check_acorde") == 'LOGRADO_ACORDE_A_LA_EDAD' else "Off",
-                "RETRASO": "/Yes" if request.form.get("check_retrasogeneralizado") == 'RETRASO_GENERALIZADO_DEL_DESARROLLO' else "Off",
-                "ESQUEMA COMPLETO": "/Yes" if request.form.get("check_esquemac") == 'ESQUEMA_COMPLETO' else "Off",
-                "ESQUEMA INCOMPLETO": "/Yes" if request.form.get("check_esquemai") == 'ESQUEMA_INCOMPLETO' else "Off",
-
-                # Alergias y cirugías
-                "NO": "/Yes" if request.form.get("check_alergiano") == 'NO_ALERGIAS' else "Off",
-                "SI": "/Yes" if request.form.get("check_alergiasi") == 'SI_ALERGIAS' else "Off",
-                "NO_2": "/Yes" if request.form.get("check_cirugiano") == 'NO_CIRUGIAS' else "Off",
-                "ST": "/Yes" if request.form.get("check_cirugiasi") == 'SI_CIRUGIAS' else "Off",
-
-                # Visión / audición / dental
-                "SIN ALTERACIÓN": "/Yes" if request.form.get("check_visionsinalteracion") == 'SIN_ALTERACION_VISION' else "Off",
-                "VICIOS DE REFRACCIÓN": "/Yes" if request.form.get("check_visionrefraccion") == 'VICIOS_DE_REFRACCION' else "Off",
-                "NORMAL": "/Yes" if request.form.get("check_audicionnormal") == 'NORMAL_AUDICION' else "Off",
-                "TAPÓN DE CERUMEN": "/Yes" if request.form.get("check_tapondecerumen") == 'TAPON_DE_CERUMEN' else "Off",
-                "HIPOACUSIA": "/Yes" if request.form.get("check_hipoacusia") == 'HIPOACUSIA' else "Off",
-                "SIN HALLAZGOS": "/Yes" if request.form.get("check_sinhallazgos") == 'SIN_HALLAZGOS' else "Off",
-                "CARIES": "/Yes" if request.form.get("check_caries") == 'CARIES' else "Off",
-                "APIÑAMIENTO DENTAL": "/Yes" if request.form.get("check_apinamientodental") == 'APINAMIENTO_DENTAL' else "Off",
-                "RETENCIÓN DENTAL.": "/Yes" if request.form.get("check_retenciondental") == 'RETENCION_DENTAL' else "Off", # ¡Importante el punto final!
-                "FRENILLO LINGUAL": "/Yes" if request.form.get("check_frenillolingual") == 'FRENILLO_LINGUAL' else "Off",
-                "HIPERTROFIA AMIGDALINA": "/Yes" if request.form.get("check_hipertrofia") == 'HIPERTROFIA_AMIGDALINA' else "Off",
-                
-                # Campos del profesional (estáticos en el PDF base)
-                "ADRIANA LUGO PEREZ": "ADRIANA LUGO PEREZ", 
-                "14.692.266-K": "14.692.266-K", 
-                "62598": "62598", 
-                "MEDICINA FAMILIAR": "MEDICINA FAMILIAR", 
-                "contacto@cardiohome.cl": "contacto@cardiohome.cl",
-                "Salud pública": "Off", 
-                "Particular": "/Yes", 
-                "Escuela": "Off", 
-                "Otro:": "Off", 
+                "Nombres y Apellidos": nombre,
+                "RUN": rut,
+                "Fecha nacimiento (dd/mm/aaaa)": fecha_nac_formato,
+                "Edad (en años y meses)": edad,
+                "Nacionalidad": nacionalidad,
+                "F": sexo_f_pdf,
+                "M": sexo_m_pdf,
+                "DIAGNOSTICO": est.get('diagnostico_1', ''),
+                "DIAGNÓSTICO COMPLEMENTARIO": est.get('diagnostico_complementario', ''),
+                "Clasificación": est.get('clasificacion_imc', ''),
+                "INDICACIONES": est.get('derivaciones', ''),
+                "Fecha evaluación": fecha_eval_pdf,
+                "Fecha reevaluación": fecha_reeval_pdf,
+                "OBS1": est.get('observacion_1', ''),
+                "OBS2": est.get('observacion_2', ''),
+                "OBS3": est.get('observacion_3', ''),
+                "OBS4": est.get('observacion_4', ''),
+                "OBS5": est.get('observacion_5', ''),
+                "OBS6": est.get('observacion_6', ''),
+                "OBS7": est.get('observacion_7', ''),
+                "CESAREA": "/Yes" if est.get('check_cesarea') else "",
+                "A TÉRMINO": "/Yes" if est.get('check_atermino') else "",
+                "VAGINAL": "/Yes" if est.get('check_vaginal') else "",
+                "PREMATURO": "/Yes" if est.get('check_prematuro') else "",
+                "LOGRADO ACORDE A LA EDAD": "/Yes" if est.get('check_acorde') else "",
+                "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if est.get('check_retrasogeneralizado') else "",
+                "ESQUEMA COMPLETO": "/Yes" if est.get('check_esquemac') else "",
+                "ESQUEMA INCOMPLETO": "/Yes" if est.get('check_esquemai') else "",
+                "NO": "/Yes" if est.get('check_alergiano') else "",
+                "SI": "/Yes" if est.get('check_alergiasi') else "",
+                "NO_2": "/Yes" if est.get('check_cirugiano') else "",
+                "SI_2": "/Yes" if est.get('check_cirugiasi') else "",
+                "SIN ALTERACIÓN": "/Yes" if est.get('check_visionsinalteracion') else "",
+                "VICIOS DE REFRACCION": "/Yes" if est.get('check_visionrefraccion') else "",
+                "NORMAL": "/Yes" if est.get('check_audicionnormal') else "",
+                "HIPOACUSIA": "/Yes" if est.get('check_hipoacusia') else "",
+                "TAPÓN DE CERUMEN": "/Yes" if est.get('check_tapondecerumen') else "",
+                "SIN HALLAZGOS": "/Yes" if est.get('check_sinhallazgos') else "",
+                "CARIES": "/Yes" if est.get('check_caries') else "",
+                "APIÑAMIENTO DENTAL": "/Yes" if est.get('check_apinamientodental') else "",
+                "RETENCIÓN DENTAL": "/Yes" if est.get('check_retenciondental') else "",
+                "FRENILLO LINGUAL": "/Yes" if est.get('check_frenillolingual') else "",
+                "HIPERTROFIA AMIGDALINA": "/Yes" if est.get('check_hipertrofia') else "",
+                "Altura": est.get('altura', ''),
+                "Peso": est.get('peso', ''),
+                "I.M.C": est.get('imc', ''),
+                "Clasificación_IMC": est.get('clasificacion_imc', ''),
+                "Nombres y Apellidos_Doctor": "", 
+                "Rut_Doctor": "",
+                "Nº Registro Profesional": "",
+                "Especialidad": "",
+                "Fono/E-Mail Contacto": "",
+                "Salud pública": "/Yes" if est.get('procedencia_salud_publica') else "",
+                "Particular": "/Yes" if est.get('procedencia_particular') else "",
+                "Escuela": "/Yes" if est.get('procedencia_escuela') else "",
+                "Otro": "/Yes" if est.get('procedencia_otro') else "",
             }
 
         writer.update_page_form_field_values(writer.pages[0], campos)
@@ -1448,7 +1465,7 @@ def enviar_formulario_a_drive():
         writer.write(output_pdf_io)
         output_pdf_io.seek(0) 
 
-        file_name = f"{nombre_estudiante.replace(' ', '_')}_{rut_estudiante}_formulario_{form_type}.pdf" # Añadir form_type al nombre del archivo
+        file_name = f"{nombre.replace(' ', '_')}_{rut}_formulario_{form_type}.pdf" 
         
         service = build('drive', 'v3', credentials=creds)
 
@@ -1653,7 +1670,7 @@ def doctor_performance_detail(doctor_id):
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?doctora_evaluadora_id=eq.{doctor_id}" 
             f"&fecha_relleno.not.is.null" 
-            f"&select=nombre,rut,fecha_nacimiento,fecha_relleno,nomina_id,nominas_medicas(nombre_nomina)" 
+            f"&select=nombre,rut,fecha_relleno,nomina_id,nominas_medicas(nombre_nomina)" 
             f"&order=fecha_relleno.desc" 
         )
         print(f"DEBUG: URL para obtener estudiantes evaluados: {url_students}")
@@ -1686,10 +1703,10 @@ def doctor_performance_detail(doctor_id):
             })
 
     except requests.exceptions.RequestException as e:
-        print(f"ERROR: Error de solicitud al obtener el rendimiento de la doctora: {e} - {res_students.text if 'res_students' in locals() else 'No response'}")
+        print(f"❌ Error al obtener el rendimiento de la doctora: {e} - {res_students.text if 'res_students' in locals() else 'No response'}")
         flash('Error al cargar el detalle de rendimiento de la doctora.', 'error')
     except Exception as e:
-        print(f"ERROR: Error inesperado al cargar rendimiento de doctora: {e}")
+        print(f"❌ Error inesperado al cargar rendimiento de doctora: {e}")
         flash('Error inesperado al cargar el detalle de rendimiento de la doctora.', 'error')
 
     return render_template('doctor_performance.html', 
@@ -1793,23 +1810,41 @@ def generar_pdfs_visibles():
 
             est = student_data[0] 
 
-            fecha_nac_obj = None
-            if 'fecha_nacimiento' in est and isinstance(est['fecha_nacimiento'], str):
+            # Preparar datos para el PDF desde los datos obtenidos de la DB
+            nombre = est.get('nombre', '')
+            rut = est.get('rut', '')
+            
+            fecha_nac_formato = ''
+            if est.get('fecha_nacimiento'):
                 try:
-                    fecha_nac_obj = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
-                    est['edad'] = calculate_age(fecha_nac_obj)
-                    est['fecha_nacimiento_formato'] = fecha_nac_obj.strftime("%d-%m-%Y")
+                    fecha_nac_formato = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').strftime('%d/%m/%Y')
                 except ValueError:
-                    est['fecha_nacimiento_formato'] = 'Fecha Inválida'
-                    est['edad'] = 'N/A'
-            else:
-                est['fecha_nacimiento_formato'] = 'N/A'
-                est['edad'] = 'N/A'
+                    pass 
 
-            fecha_reeval_pdf = est.get('fecha_reevaluacion')
-            if fecha_reeval_pdf and "-" in fecha_reeval_pdf:
+            edad = est.get('edad', '')
+            nacionalidad = est.get('nacionalidad', '')
+            
+            sexo_f_pdf = ""
+            sexo_m_pdf = ""
+
+            if form_type == 'neurologia':
+                sexo_f_pdf = "X" if est.get('sexo') == "F" else ""
+                sexo_m_pdf = "X" if est.get('sexo') == "M" else ""
+            elif form_type == 'medicina_familiar':
+                sexo_f_pdf = "X" if est.get('genero_f') else ""
+                sexo_m_pdf = "X" if est.get('genero_m') else ""
+
+            fecha_eval_pdf = ''
+            if est.get('fecha_relleno'): 
                 try:
-                    fecha_reeval_pdf = datetime.strptime(fecha_reeval_pdf, '%Y-%m-%d').strftime('%d/%m/%Y')
+                    fecha_eval_pdf = datetime.strptime(est['fecha_relleno'], '%Y-%m-%d').strftime('%d/%m/%Y')
+                except ValueError:
+                    pass
+
+            fecha_reeval_pdf = ''
+            if est.get('fecha_reevaluacion'):
+                try:
+                    fecha_reeval_pdf = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
                 except ValueError:
                     pass
 
@@ -1820,80 +1855,78 @@ def generar_pdfs_visibles():
             campos = {}
             if form_type == 'neurologia':
                 campos = {
-                    "nombre": est.get('nombre', ''),
-                    "rut": est.get('rut', ''),
-                    "fecha_nacimiento": est.get('fecha_nacimiento_formato', ''),
-                    "nacionalidad": est.get('nacionalidad', ''),
-                    "edad": est.get('edad', ''),
+                    "nombre": nombre,
+                    "rut": rut,
+                    "fecha_nacimiento": fecha_nac_formato, 
+                    "nacionalidad": nacionalidad,
+                    "edad": edad,
                     "diagnostico_1": est.get('diagnostico', ''),
                     "diagnostico_2": est.get('diagnostico', ''), 
-                    "estado_general": est.get('estado_general', ''),
-                    "fecha_evaluacion": est.get('fecha_relleno', ''), 
+                    "estado_general": est.get('estado_general', ''), 
+                    "fecha_evaluacion": fecha_eval_pdf, 
                     "fecha_reevaluacion": fecha_reeval_pdf,
                     "derivaciones": est.get('derivaciones', ''),
-                    "sexo_f": "X" if est.get('sexo') == "F" else "",
-                    "sexo_m": "X" if est.get('sexo') == "M" else "",
+                    "sexo_f": sexo_f_pdf,
+                    "sexo_m": sexo_m_pdf,
                 }
             elif form_type == 'medicina_familiar':
-                # Aquí deberías mapear los campos específicos de tu formulario de Medicina Familiar
                 campos = {
-                    "Nombres y Apellidos": est.get('nombre', ''),
-                    "RUN": est.get('rut', ''),
-                    "Fecha nacimiento (dd/mm/aaaa)": est.get('fecha_nacimiento_formato', ''),
-                    "Edad (en años y meses)": est.get('edad', ''),
-                    "Nacionalidad": est.get('nacionalidad', ''),
-                    "F": "/Yes" if est.get('genero_f') else "Off", # Asumiendo que genero_f es un booleano en DB
-                    "M": "/Yes" if est.get('genero_m') else "Off", # Asumiendo que genero_m es un booleano en DB
-                    "DIAGNÓSTICO": est.get('diagnostico_1', ''),
+                    "Nombres y Apellidos": nombre,
+                    "RUN": rut,
+                    "Fecha nacimiento (dd/mm/aaaa)": fecha_nac_formato,
+                    "Edad (en años y meses)": edad,
+                    "Nacionalidad": nacionalidad,
+                    "F": sexo_f_pdf,
+                    "M": sexo_m_pdf,
+                    "DIAGNOSTICO": est.get('diagnostico_1', ''),
                     "DIAGNÓSTICO COMPLEMENTARIO": est.get('diagnostico_complementario', ''),
-                    "Clasificación": est.get('clasificacion', ''),
+                    "Clasificación": est.get('clasificacion_imc', ''), 
                     "INDICACIONES": est.get('derivaciones', ''),
-                    "Fecha evaluación": est.get('fecha_evaluacion', ''), # Si este campo se guarda en DB
-                    "Fecha reevaluación": est.get('fecha_reevaluacion', ''), # Si este campo se guarda en DB
-                    "OBS:": est.get('observacion_1', ''),
-                    "OBS:1": est.get('observacion_2', ''),
-                    "OBS:2": est.get('observacion_3', ''),
-                    "OBS:3": est.get('observacion_4', ''),
-                    "OBS:4": est.get('observacion_5', ''),
-                    "OBS:5": est.get('observacion_6', ''),
-                    "OBS:6": est.get('observacion_7', ''),
-                    "CESAREA": "/Yes" if est.get('check_cesarea') else "Off",
-                    "A TÉRMINO": "/Yes" if est.get('check_atermino') else "Off",
-                    "VAGINAL": "/Yes" if est.get('check_vaginal') else "Off",
-                    "PREMATURO": "/Yes" if est.get('check_prematuro') else "Off",
-                    "LOGRADO ACORDE A LA EDAD": "/Yes" if est.get('check_acorde') else "Off",
-                    "RETRASO": "/Yes" if est.get('check_retrasogeneralizado') else "Off",
-                    "ESQUEMA COMPLETO": "/Yes" if est.get('check_esquemac') else "Off",
-                    "ESQUEMA INCOMPLETO": "/Yes" if est.get('check_esquemai') else "Off",
-                    "NO": "/Yes" if est.get('check_alergiano') else "Off",
-                    "SI": "/Yes" if est.get('check_alergiasi') else "Off",
-                    "NO_2": "/Yes" if est.get('check_cirugiano') else "Off",
-                    "ST": "/Yes" if est.get('check_cirugiasi') else "Off",
-                    "SIN ALTERACIÓN": "/Yes" if est.get('check_visionsinalteracion') else "Off",
-                    "VICIOS DE REFRACCIÓN": "/Yes" if est.get('check_visionrefraccion') else "Off",
-                    "NORMAL": "/Yes" if est.get('check_audicionnormal') else "Off",
-                    "HIPOACUSIA": "/Yes" if est.get('check_hipoacusia') else "Off",
-                    "TAPÓN DE CERUMEN": "/Yes" if est.get('check_tapondecerumen') else "Off",
-                    "SIN HALLAZGOS": "/Yes" if est.get('check_sinhallazgos') else "Off",
-                    "CARIES": "/Yes" if est.get('check_caries') else "Off",
-                    "APIÑAMIENTO DENTAL": "/Yes" if est.get('check_apinamientodental') else "Off",
-                    "RETENCIÓN DENTAL.": "/Yes" if est.get('check_retenciondental') else "Off",
-                    "FRENILLO LINGUAL": "/Yes" if est.get('check_frenillolingual') else "Off",
-                    "HIPERTROFIA AMIGDALINA": "/Yes" if est.get('check_hipertrofia') else "Off",
+                    "Fecha evaluación": fecha_eval_pdf,
+                    "Fecha reevaluación": fecha_reeval_pdf,
+                    "OBS1": est.get('observacion_1', ''),
+                    "OBS2": est.get('observacion_2', ''),
+                    "OBS3": est.get('observacion_3', ''),
+                    "OBS4": est.get('observacion_4', ''),
+                    "OBS5": est.get('observacion_5', ''),
+                    "OBS6": est.get('observacion_6', ''),
+                    "OBS7": est.get('observacion_7', ''),
+                    "CESAREA": "/Yes" if est.get('check_cesarea') else "",
+                    "A TÉRMINO": "/Yes" if est.get('check_atermino') else "",
+                    "VAGINAL": "/Yes" if est.get('check_vaginal') else "",
+                    "PREMATURO": "/Yes" if est.get('check_prematuro') else "",
+                    "LOGRADO ACORDE A LA EDAD": "/Yes" if est.get('check_acorde') else "",
+                    "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if est.get('check_retrasogeneralizado') else "",
+                    "ESQUEMA COMPLETO": "/Yes" if est.get('check_esquemac') else "",
+                    "ESQUEMA INCOMPLETO": "/Yes" if est.get('check_esquemai') else "",
+                    "NO": "/Yes" if est.get('check_alergiano') else "",
+                    "SI": "/Yes" if est.get('check_alergiasi') else "",
+                    "NO_2": "/Yes" if est.get('check_cirugiano') else "",
+                    "SI_2": "/Yes" if est.get('check_cirugiasi') else "",
+                    "SIN ALTERACIÓN": "/Yes" if est.get('check_visionsinalteracion') else "",
+                    "VICIOS DE REFRACCION": "/Yes" if est.get('check_visionrefraccion') else "",
+                    "NORMAL": "/Yes" if est.get('check_audicionnormal') else "",
+                    "HIPOACUSIA": "/Yes" if est.get('check_hipoacusia') else "",
+                    "TAPÓN DE CERUMEN": "/Yes" if est.get('check_tapondecerumen') else "",
+                    "SIN HALLAZGOS": "/Yes" if est.get('check_sinhallazgos') else "",
+                    "CARIES": "/Yes" if est.get('check_caries') else "",
+                    "APIÑAMIENTO DENTAL": "/Yes" if est.get('check_apinamientodental') else "",
+                    "RETENCIÓN DENTAL": "/Yes" if est.get('check_retenciondental') else "",
+                    "FRENILLO LINGUAL": "/Yes" if est.get('check_frenillolingual') else "",
+                    "HIPERTROFIA AMIGDALINA": "/Yes" if est.get('check_hipertrofia') else "",
                     "Altura": est.get('altura', ''),
                     "Peso": est.get('peso', ''),
                     "I.M.C": est.get('imc', ''),
                     "Clasificación_IMC": est.get('clasificacion_imc', ''),
-                    # Campos del profesional (estáticos en el PDF base)
-                    "ADRIANA LUGO PEREZ": "ADRIANA LUGO PEREZ", 
-                    "14.692.266-K": "14.692.266-K", 
-                    "62598": "62598", 
-                    "MEDICINA FAMILIAR": "MEDICINA FAMILIAR", 
-                    "contacto@cardiohome.cl": "contacto@cardiohome.cl",
-                    "Salud pública": "Off", 
-                    "Particular": "/Yes", 
-                    "Escuela": "Off", 
-                    "Otro:": "Off", 
+                    "Nombres y Apellidos_Doctor": "", 
+                    "Rut_Doctor": "",
+                    "Nº Registro Profesional": "",
+                    "Especialidad": "",
+                    "Fono/E-Mail Contacto": "",
+                    "Salud pública": "/Yes" if est.get('procedencia_salud_publica') else "",
+                    "Particular": "/Yes" if est.get('procedencia_particular') else "",
+                    "Escuela": "/Yes" if est.get('procedencia_escuela') else "",
+                    "Otro": "/Yes" if est.get('procedencia_otro') else "",
                 }
 
             if "/AcroForm" not in writer_single_pdf._root_object:

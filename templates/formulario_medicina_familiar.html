@@ -737,7 +737,7 @@
         <!-- Contador de evaluaciones -->
         <div class="evaluation-counter">
             <i class="fas fa-clipboard-check"></i>
-            <span>Evaluaciones completadas para esta nómina: <strong>{{ total_forms_completed_for_nomina }}</strong></span>
+            <span>Evaluaciones completadas para esta nómina: <strong id="completed-forms-count">{{ total_forms_completed_for_nomina }}</strong></span>
             <button onclick="window.location.reload();">Actualizar Conteo</button>
         </div>
 
@@ -775,64 +775,63 @@
             {% for est in estudiantes %}
             <details class="estudiante" data-nombre="{{ est.nombre | lower }}" data-estudiante-id="{{ est.id }}" data-nomina-id="{{ session['current_nomina_id'] }}" data-evaluated-status="{{ 'true' if est.fecha_relleno is not none else 'false' }}">
                 <summary>
-                    <span>{{ est.nombre }}</span>
+                    <span>{{ est.nombre }} (RUT: {{ est.rut }}) - Edad: {{ est.edad }}</span>
                     <i class="fas fa-chevron-right chevron-icon"></i>
                 </summary>
                 <div class="container">
                     <div class="formulario">
                         <span class="badge">Guardado</span>
-                        <form id="form-estudiante-{{ est.id }}" action="{{ url_for('generar_pdf') }}" method="POST" oninput="updatePreview(this)">
+                        <form id="form-estudiante-{{ est.id }}" onsubmit="event.preventDefault(); submitForm(this);">
                             <!-- Campos ocultos para pasar el ID del estudiante y la nómina al backend -->
                             <input type="hidden" name="estudiante_id" value="{{ est.id }}">
                             <input type="hidden" name="nomina_id" value="{{ session['current_nomina_id'] }}">
                             
                             <!-- IDENTIFICACIÓN DEL ESTUDIANTE -->
                             <h3 class="section-title">Identificación del Estudiante</h3>
-                            <label>Nombres y Apellidos:</label>
-                            <!-- CORRECCIÓN APLICADA AQUÍ: name="nombre_apellido" CAMBIADO A name="nombre" -->
-                            <input type="text" name="nombre" id="nombre" class="form-control" value="{{ estudiante['nombre'] }}" required>
+                            <label for="nombre_{{ est.id }}">Nombres y Apellidos:</label>
+                            <input type="text" name="nombre" id="nombre_{{ est.id }}" class="form-control" value="{{ est.nombre }}" required readonly>
                             <input type="hidden" name="nombre_original" value="{{ est.nombre }}"> {# Campo oculto para compatibilidad #}
 
 
                             <label>Género:</label>
                             <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.genero_f %}checked{% endif %}">
-                                    <input type="checkbox" name="genero_f" value="Femenino" {% if est.genero_f %}checked{% endif %} onchange="handleGenderChange(this)"> Femenino
+                                    <input type="checkbox" name="genero_f" id="genero_f_{{ est.id }}" value="Femenino" {% if est.genero_f %}checked{% endif %} onchange="handleGenderChange(this)"> Femenino
                                 </label>
                                 <label class="checkbox-item {% if est.genero_m %}checked{% endif %}">
-                                    <input type="checkbox" name="genero_m" value="Masculino" {% if est.genero_m %}checked{% endif %} onchange="handleGenderChange(this)"> Masculino
+                                    <input type="checkbox" name="genero_m" id="genero_m_{{ est.id }}" value="Masculino" {% if est.genero_m %}checked{% endif %} onchange="handleGenderChange(this)"> Masculino
                                 </label>
                             </div>
 
-                            <label>RUN:</label>
-                            <input type="text" name="rut" value="{{ est.rut }}" required readonly>
+                            <label for="rut_{{ est.id }}">RUN:</label>
+                            <input type="text" name="rut" id="rut_{{ est.id }}" value="{{ est.rut }}" required readonly>
                             <input type="hidden" name="rut_original" value="{{ est.rut }}"> {# Campo oculto para compatibilidad #}
 
 
-                            <label>Fecha de Nacimiento (dd/mm/aaaa):</label>
-                            <input type="date" name="fecha_nacimiento" value="{{ est.fecha_nacimiento }}" required readonly>
+                            <label for="fecha_nacimiento_{{ est.id }}">Fecha de Nacimiento (dd/mm/aaaa):</label>
+                            <input type="date" name="fecha_nacimiento" id="fecha_nacimiento_{{ est.id }}" value="{{ est.fecha_nacimiento }}" required readonly>
                             <input type="hidden" name="fecha_nacimiento_original" value="{{ est.fecha_nacimiento }}"> {# Campo oculto para compatibilidad #}
 
-                            <label>Edad (en años y meses):</label>
-                            <input type="text" name="edad" value="{{ est.edad }}" readonly>
+                            <label for="edad_{{ est.id }}">Edad (en años y meses):</label>
+                            <input type="text" name="edad" id="edad_{{ est.id }}" value="{{ est.edad }}" readonly>
                             <input type="hidden" name="edad_original" value="{{ est.edad }}"> {# Campo oculto para compatibilidad #}
 
 
-                            <label>Nacionalidad:</label>
-                            <input type="text" name="nacionalidad" value="{{ est.nacionalidad }}" readonly>
+                            <label for="nacionalidad_{{ est.id }}">Nacionalidad:</label>
+                            <input type="text" name="nacionalidad" id="nacionalidad_{{ est.id }}" value="{{ est.nacionalidad }}" readonly>
                             <input type="hidden" name="nacionalidad_original" value="{{ est.nacionalidad }}"> {# Campo oculto para compatibilidad #}
 
 
-                            <label>Fecha Evaluación:</label>
-                            <input type="date" name="fecha_evaluacion" value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}" required readonly>
+                            <label for="fecha_evaluacion_{{ est.id }}">Fecha Evaluación:</label>
+                            <input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}" value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}" required readonly>
                             
                             <!-- EXAMEN DEL ESTADO DE SALUD GENERAL DEL ESTUDIANTE -->
                             <h3 class="section-title">Examen del Estado de Salud General del Estudiante</h3>
-                            <label>Diagnóstico (Trastorno, Déficit o Discapacidad):</label>
-                            <input type="text" name="diagnostico_1" value="{{ est.diagnostico_1 if est.diagnostico_1 is not none else '' }}" placeholder="Ej: Trastorno del Espectro Autista">
+                            <label for="diagnostico_1_{{ est.id }}">Diagnóstico (Trastorno, Déficit o Discapacidad):</label>
+                            <input type="text" name="diagnostico_1" id="diagnostico_1_{{ est.id }}" value="{{ est.diagnostico_1 if est.diagnostico_1 is not none else '' }}" placeholder="Ej: Trastorno del Espectro Autista">
 
-                            <label>Diagnóstico Específico:</label>
-                            <select name="diagnostico_2">
+                            <label for="diagnostico_2_{{ est.id }}">Diagnóstico Específico:</label>
+                            <select name="diagnostico_2" id="diagnostico_2_{{ est.id }}">
                                 <option value="">Seleccione un diagnóstico</option>
                                 <option value="TDA" {% if est.diagnostico_2 == 'TDA' %}selected{% endif %}>TDA</option>
                                 <option value="TDAH" {% if est.diagnostico_2 == 'TDAH' %}selected{% endif %}>TDAH</option>
@@ -840,14 +839,14 @@
                                 <option value="DIL" {% if est.diagnostico_2 == 'DIL' %}selected{% endif %}>DIL</option>
                             </select>
 
-                            <label>Diagnóstico Complementario:</label>
-                            <textarea name="diagnostico_complementario" rows="3" placeholder="Notas adicionales sobre el diagnóstico complementario.">{{ est.diagnostico_complementario if est.diagnostico_complementario is not none else '' }}</textarea>
+                            <label for="diagnostico_complementario_{{ est.id }}">Diagnóstico Complementario:</label>
+                            <textarea name="diagnostico_complementario" id="diagnostico_complementario_{{ est.id }}" rows="3" placeholder="Notas adicionales sobre el diagnóstico complementario.">{{ est.diagnostico_complementario if est.diagnostico_complementario is not none else '' }}</textarea>
 
-                            <label>Derivaciones:</label>
-                            <textarea name="derivaciones" rows="2" placeholder="Indique las derivaciones necesarias (ej: a especialista, terapia).">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
+                            <label for="derivaciones_{{ est.id }}">Derivaciones:</label>
+                            <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="2" placeholder="Indique las derivaciones necesarias (ej: a especialista, terapia).">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
 
-                            <label>Fecha Reevaluación (años):</label>
-                            <select name="fecha_reevaluacion_select" onchange="setFechaReevaluacion(this)">
+                            <label for="fecha_reevaluacion_select_{{ est.id }}">Fecha Reevaluación (años):</label>
+                            <select name="fecha_reevaluacion_select" id="fecha_reevaluacion_select_{{ est.id }}" onchange="setFechaReevaluacion(this)">
                                 <option value="">Seleccione años</option>
                                 <option value="1" {% if est.fecha_reevaluacion_select == '1' %}selected{% endif %}>1 año</option>
                                 <option value="2" {% if est.fecha_reevaluacion_select == '2' %}selected{% endif %}>2 años</option>
@@ -855,52 +854,52 @@
                                 <option value="4" {% if est.fecha_reevaluacion_select == '4' %}selected{% endif %}>4 años</option>
                                 <option value="5" {% if est.fecha_reevaluacion_select == '5' %}selected{% endif %}>5 años</option>
                             </select>
-                            <label>Fecha de reevaluación (calculada):</label>
-                            <input type="date" name="fecha_reevaluacion" value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}" readonly>
-                            <input type="hidden" name="fecha_reevaluacion_pdf" value=""> {# Hidden field for PDF format #}
+                            <label for="fecha_reevaluacion_input_{{ est.id }}">Fecha de reevaluación (calculada):</label>
+                            <input type="date" name="fecha_reevaluacion" id="fecha_reevaluacion_input_{{ est.id }}" value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}" readonly>
+                            <input type="hidden" name="fecha_reevaluacion_pdf" id="fecha_reevaluacion_pdf_{{ est.id }}" value=""> {# Hidden field for PDF format #}
 
-                            <label>Observaciones (se autocompletan en campos separados en el PDF):</label>
-                            <textarea name="observaciones_completas" rows="7" placeholder="Escriba aquí todas las observaciones. El texto se dividirá automáticamente en OBS1 a OBS7 para el PDF." oninput="splitObservations(this)">{{ est.observacion_1 if est.observacion_1 is not none else '' }}{{ est.observacion_2 if est.observacion_2 is not none else '' }}{{ est.observacion_3 if est.observacion_3 is not none else '' }}{{ est.observacion_4 if est.observacion_4 is not none else '' }}{{ est.observacion_5 if est.observacion_5 is not none else '' }}{{ est.observacion_6 if est.observacion_6 is not none else '' }}{{ est.observacion_7 if est.observacion_7 is not none else '' }}</textarea>
+                            <label for="observaciones_completas_{{ est.id }}">Observaciones (se autocompletan en campos separados en el PDF):</label>
+                            <textarea name="observaciones_completas" id="observaciones_completas_{{ est.id }}" rows="7" placeholder="Escriba aquí todas las observaciones. El texto se dividirá automáticamente en OBS1 a OBS7 para el PDF." oninput="splitObservations(this)">{{ est.observacion_1 if est.observacion_1 is not none else '' }}{{ est.observacion_2 if est.observacion_2 is not none else '' }}{{ est.observacion_3 if est.observacion_3 is not none else '' }}{{ est.observacion_4 if est.observacion_4 is not none else '' }}{{ est.observacion_5 if est.observacion_5 is not none else '' }}{{ est.observacion_6 if est.observacion_6 is not none else '' }}{{ est.observacion_7 if est.observacion_7 is not none else '' }}</textarea>
                             <!-- Campos ocultos para las observaciones divididas (para el backend) -->
-                            <input type="hidden" name="observacion_1" value="{{ est.observacion_1 if est.observacion_1 is not none else '' }}">
-                            <input type="hidden" name="observacion_2" value="{{ est.observacion_2 if est.observacion_2 is not none else '' }}">
-                            <input type="hidden" name="observacion_3" value="{{ est.observacion_3 if est.observacion_3 is not none else '' }}">
-                            <input type="hidden" name="observacion_4" value="{{ est.observacion_4 if est.observacion_4 is not none else '' }}">
-                            <input type="hidden" name="observacion_5" value="{{ est.observacion_5 if est.observacion_5 is not none else '' }}">
-                            <input type="hidden" name="observacion_6" value="{{ est.observacion_6 if est.observacion_6 is not none else '' }}">
-                            <input type="hidden" name="observacion_7" value="{{ est.observacion_7 if est.observacion_7 is not none else '' }}">
+                            <input type="hidden" name="observacion_1" id="observacion_1_{{ est.id }}" value="{{ est.observacion_1 if est.observacion_1 is not none else '' }}">
+                            <input type="hidden" name="observacion_2" id="observacion_2_{{ est.id }}" value="{{ est.observacion_2 if est.observacion_2 is not none else '' }}">
+                            <input type="hidden" name="observacion_3" id="observacion_3_{{ est.id }}" value="{{ est.observacion_3 if est.observacion_3 is not none else '' }}">
+                            <input type="hidden" name="observacion_4" id="observacion_4_{{ est.id }}" value="{{ est.observacion_4 if est.observacion_4 is not none else '' }}">
+                            <input type="hidden" name="observacion_5" id="observacion_5_{{ est.id }}" value="{{ est.observacion_5 if est.observacion_5 is not none else '' }}">
+                            <input type="hidden" name="observacion_6" id="observacion_6_{{ est.id }}" value="{{ est.observacion_6 if est.observacion_6 is not none else '' }}">
+                            <input type="hidden" name="observacion_7" id="observacion_7_{{ est.id }}" value="{{ est.observacion_7 if est.observacion_7 is not none else '' }}">
 
                             <!-- EXAMEN FÍSICO -->
                             <h3 class="section-title">Examen Físico</h3>
-                            <label>Altura (cm):</label>
-                            <input type="number" name="altura" step="0.1" min="0" value="{{ est.altura if est.altura is not none else '' }}" placeholder="Ej: 165.5" oninput="calculateIMC(this.form)">
-                            <label>Peso (kg):</label>
-                            <input type="number" name="peso" step="0.1" min="0" value="{{ est.peso if est.peso is not none else '' }}" placeholder="Ej: 60.2" oninput="calculateIMC(this.form)">
-                            <label>I.M.C:</label>
-                            <input type="text" name="imc" value="{{ est.imc if est.imc is not none else '' }}" readonly>
-                            <label>Clasificación:</label>
-                            <input type="text" name="clasificacion" value="{{ est.clasificacion if est.clasificacion is not none else '' }}" readonly>
+                            <label for="altura_{{ est.id }}">Altura (cm):</label>
+                            <input type="number" name="altura" id="altura_{{ est.id }}" step="0.1" min="0" value="{{ est.altura if est.altura is not none else '' }}" placeholder="Ej: 165.5" oninput="calculateIMC(this.form)">
+                            <label for="peso_{{ est.id }}">Peso (kg):</label>
+                            <input type="number" name="peso" id="peso_{{ est.id }}" step="0.1" min="0" value="{{ est.peso if est.peso is not none else '' }}" placeholder="Ej: 60.2" oninput="calculateIMC(this.form)">
+                            <label for="imc_{{ est.id }}">I.M.C:</label>
+                            <input type="text" name="imc" id="imc_{{ est.id }}" value="{{ est.imc if est.imc is not none else '' }}" readonly>
+                            <label for="clasificacion_imc_{{ est.id }}">Clasificación:</label>
+                            <input type="text" name="clasificacion_imc" id="clasificacion_imc_{{ est.id }}" value="{{ est.clasificacion_imc if est.clasificacion_imc is not none else '' }}" readonly>
 
                             <!-- ANTECEDENTES PERINATALES -->
                             <h3 class="section-title">Antecedentes Perinatales</h3>
                             <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.check_cesarea %}checked{% endif %}">
-                                    <input type="checkbox" name="check_cesarea" value="CESAREA" {% if est.check_cesarea %}checked{% endif %}> Cesárea
+                                    <input type="checkbox" name="check_cesarea" id="check_cesarea_{{ est.id }}" value="CESAREA" {% if est.check_cesarea %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Cesárea
                                 </label>
                                 <label class="checkbox-item {% if est.check_atermino %}checked{% endif %}">
-                                    <input type="checkbox" name="check_atermino" value="A_TERMINO" {% if est.check_atermino %}checked{% endif %}> A Término
+                                    <input type="checkbox" name="check_atermino" id="check_atermino_{{ est.id }}" value="A_TERMINO" {% if est.check_atermino %}checked{% endif %} onchange="updateCheckboxStyle(this)"> A Término
                                 </label>
                                 <label class="checkbox-item {% if est.check_vaginal %}checked{% endif %}">
-                                    <input type="checkbox" name="check_vaginal" value="VAGINAL" {% if est.check_vaginal %}checked{% endif %}> Vaginal
+                                    <input type="checkbox" name="check_vaginal" id="check_vaginal_{{ est.id }}" value="VAGINAL" {% if est.check_vaginal %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Vaginal
                                 </label>
                                 <label class="checkbox-item {% if est.check_prematuro %}checked{% endif %}">
-                                    <input type="checkbox" name="check_prematuro" value="PREMATURO" {% if est.check_prematuro %}checked{% endif %}> Prematuro
+                                    <input type="checkbox" name="check_prematuro" id="check_prematuro_{{ est.id }}" value="PREMATURO" {% if est.check_prematuro %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Prematuro
                                 </label>
                                 <label class="checkbox-item {% if est.check_acorde %}checked{% endif %}">
-                                    <input type="checkbox" name="check_acorde" value="LOGRADO_ACORDE_A_LA_EDAD" {% if est.check_acorde %}checked{% endif %}> Logrado Acorde a la Edad (DSM)
+                                    <input type="checkbox" name="check_acorde" id="check_acorde_{{ est.id }}" value="LOGRADO_ACORDE_A_LA_EDAD" {% if est.check_acorde %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Logrado Acorde a la Edad (DSM)
                                 </label>
                                 <label class="checkbox-item {% if est.check_retrasogeneralizado %}checked{% endif %}">
-                                    <input type="checkbox" name="check_retrasogeneralizado" value="RETRASO_GENERALIZADO_DEL_DESARROLLO" {% if est.check_retrasogeneralizado %}checked{% endif %}> Retraso Generalizado del Desarrollo
+                                    <input type="checkbox" name="check_retrasogeneralizado" id="check_retrasogeneralizado_{{ est.id }}" value="RETRASO_GENERALIZADO_DEL_DESARROLLO" {% if est.check_retrasogeneralizado %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Retraso Generalizado del Desarrollo
                                 </label>
                             </div>
 
@@ -909,28 +908,28 @@
                             <label>Vacunas:</label>
                             <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.check_esquemac %}checked{% endif %}">
-                                    <input type="checkbox" name="check_esquemac" value="ESQUEMA_COMPLETO" {% if est.check_esquemac %}checked{% endif %}> Esquema Completo
+                                    <input type="checkbox" name="check_esquemac" id="check_esquemac_{{ est.id }}" value="ESQUEMA_COMPLETO" {% if est.check_esquemac %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Esquema Completo
                                 </label>
                                 <label class="checkbox-item {% if est.check_esquemai %}checked{% endif %}">
-                                    <input type="checkbox" name="check_esquemai" value="ESQUEMA_INCOMPLETO" {% if est.check_esquemai %}checked{% endif %}> Esquema Incompleto
+                                    <input type="checkbox" name="check_esquemai" id="check_esquemai_{{ est.id }}" value="ESQUEMA_INCOMPLETO" {% if est.check_esquemai %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Esquema Incompleto
                                 </label>
                             </div>
                             <label>Alergias:</label>
                             <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.check_alergiano %}checked{% endif %}">
-                                    <input type="checkbox" name="check_alergiano" value="NO_ALERGIAS" {% if est.check_alergiano %}checked{% endif %}> No
+                                    <input type="checkbox" name="check_alergiano" id="check_alergiano_{{ est.id }}" value="NO_ALERGIAS" {% if est.check_alergiano %}checked{% endif %} onchange="updateCheckboxStyle(this)"> No
                                 </label>
                                 <label class="checkbox-item {% if est.check_alergiasi %}checked{% endif %}">
-                                    <input type="checkbox" name="check_alergiasi" value="SI_ALERGIAS" {% if est.check_alergiasi %}checked{% endif %}> Sí
+                                    <input type="checkbox" name="check_alergiasi" id="check_alergiasi_{{ est.id }}" value="SI_ALERGIAS" {% if est.check_alergiasi %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Sí
                                 </label>
                             </div>
                             <label>Hospitalizaciones/Cirugías:</label>
                             <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.check_cirugiano %}checked{% endif %}">
-                                    <input type="checkbox" name="check_cirugiano" value="NO_CIRUGIAS" {% if est.check_cirugiano %}checked{% endif %}> No
+                                    <input type="checkbox" name="check_cirugiano" id="check_cirugiano_{{ est.id }}" value="NO_CIRUGIAS" {% if est.check_cirugiano %}checked{% endif %} onchange="updateCheckboxStyle(this)"> No
                                 </label>
                                 <label class="checkbox-item {% if est.check_cirugiasi %}checked{% endif %}">
-                                    <input type="checkbox" name="check_cirugiasi" value="SI_CIRUGIAS" {% if est.check_cirugiasi %}checked{% endif %}> Sí
+                                    <input type="checkbox" name="check_cirugiasi" id="check_cirugiasi_{{ est.id }}" value="SI_CIRUGIAS" {% if est.check_cirugiasi %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Sí
                                 </label>
                             </div>
 
@@ -939,22 +938,22 @@
                             <label>Visión:</label>
                             <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.check_visionsinalteracion %}checked{% endif %}">
-                                    <input type="checkbox" name="check_visionsinalteracion" value="SIN_ALTERACION_VISION" {% if est.check_visionsinalteracion %}checked{% endif %}> Sin Alteración
+                                    <input type="checkbox" name="check_visionsinalteracion" id="check_visionsinalteracion_{{ est.id }}" value="SIN_ALTERACION_VISION" {% if est.check_visionsinalteracion %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Sin Alteración
                                 </label>
                                 <label class="checkbox-item {% if est.check_visionrefraccion %}checked{% endif %}">
-                                    <input type="checkbox" name="check_visionrefraccion" value="VICIOS_DE_REFRACCION" {% if est.check_visionrefraccion %}checked{% endif %}> Vicios de Refracción
+                                    <input type="checkbox" name="check_visionrefraccion" id="check_visionrefraccion_{{ est.id }}" value="VICIOS_DE_REFRACCION" {% if est.check_visionrefraccion %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Vicios de Refracción
                                 </label>
                             </div>
                             <label>Audición:</label>
                             <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.check_audicionnormal %}checked{% endif %}">
-                                    <input type="checkbox" name="check_audicionnormal" value="NORMAL_AUDICION" {% if est.check_audicionnormal %}checked{% endif %}> Normal
+                                    <input type="checkbox" name="check_audicionnormal" id="check_audicionnormal_{{ est.id }}" value="NORMAL_AUDICION" {% if est.check_audicionnormal %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Normal
                                 </label>
                                 <label class="checkbox-item {% if est.check_hipoacusia %}checked{% endif %}">
-                                    <input type="checkbox" name="check_hipoacusia" value="HIPOACUSIA" {% if est.check_hipoacusia %}checked{% endif %}> Hipoacusia
+                                    <input type="checkbox" name="check_hipoacusia" id="check_hipoacusia_{{ est.id }}" value="HIPOACUSIA" {% if est.check_hipoacusia %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Hipoacusia
                                 </label>
                                 <label class="checkbox-item {% if est.check_tapondecerumen %}checked{% endif %}">
-                                    <input type="checkbox" name="check_tapondecerumen" value="TAPON_DE_CERUMEN" {% if est.check_tapondecerumen %}checked{% endif %}> Tapón de Cerumen
+                                    <input type="checkbox" name="check_tapondecerumen" id="check_tapondecerumen_{{ est.id }}" value="TAPON_DE_CERUMEN" {% if est.check_tapondecerumen %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Tapón de Cerumen
                                 </label>
                             </div>
 
@@ -962,22 +961,22 @@
                             <h3 class="section-title">Salud Bucodental</h3>
                             <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.check_sinhallazgos %}checked{% endif %}">
-                                    <input type="checkbox" name="check_sinhallazgos" value="SIN_HALLAZGOS" {% if est.check_sinhallazgos %}checked{% endif %}> Sin Hallazgos
+                                    <input type="checkbox" name="check_sinhallazgos" id="check_sinhallazgos_{{ est.id }}" value="SIN_HALLAZGOS" {% if est.check_sinhallazgos %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Sin Hallazgos
                                 </label>
                                 <label class="checkbox-item {% if est.check_caries %}checked{% endif %}">
-                                    <input type="checkbox" name="check_caries" value="CARIES" {% if est.check_caries %}checked{% endif %}> Caries
+                                    <input type="checkbox" name="check_caries" id="check_caries_{{ est.id }}" value="CARIES" {% if est.check_caries %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Caries
                                 </label>
                                 <label class="checkbox-item {% if est.check_apinamientodental %}checked{% endif %}">
-                                    <input type="checkbox" name="check_apinamientodental" value="APINAMIENTO_DENTAL" {% if est.check_apinamientodental %}checked{% endif %}> Apiñamiento Dental
+                                    <input type="checkbox" name="check_apinamientodental" id="check_apinamientodental_{{ est.id }}" value="APINAMIENTO_DENTAL" {% if est.check_apinamientodental %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Apiñamiento Dental
                                 </label>
                                 <label class="checkbox-item {% if est.check_retenciondental %}checked{% endif %}">
-                                    <input type="checkbox" name="check_retenciondental" value="RETENCION_DENTAL" {% if est.check_retenciondental %}checked{% endif %}> Retención Dental
+                                    <input type="checkbox" name="check_retenciondental" id="check_retenciondental_{{ est.id }}" value="RETENCION_DENTAL" {% if est.check_retenciondental %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Retención Dental
                                 </label>
                                 <label class="checkbox-item {% if est.check_frenillolingual %}checked{% endif %}">
-                                    <input type="checkbox" name="check_frenillolingual" value="FRENILLO_LINGUAL" {% if est.check_frenillolingual %}checked{% endif %}> Frenillo Lingual
+                                    <input type="checkbox" name="check_frenillolingual" id="check_frenillolingual_{{ est.id }}" value="FRENILLO_LINGUAL" {% if est.check_frenillolingual %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Frenillo Lingual
                                 </label>
                                 <label class="checkbox-item {% if est.check_hipertrofia %}checked{% endif %}">
-                                    <input type="checkbox" name="check_hipertrofia" value="HIPERTROFIA_AMIGDALINA" {% if est.check_hipertrofia %}checked{% endif %}> Hipertrofia Amigdalina
+                                    <input type="checkbox" name="check_hipertrofia" id="check_hipertrofia_{{ est.id }}" value="HIPERTROFIA_AMIGDALINA" {% if est.check_hipertrofia %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Hipertrofia Amigdalina
                                 </label>
                             </div>
 
@@ -1025,7 +1024,7 @@
                         <p><strong>Altura:</strong> <span class="prev-altura">{{ est.altura if est.altura is not none else '-' }}</span> cm</p>
                         <p><strong>Peso:</strong> <span class="prev-peso">{{ est.peso if est.peso is not none else '-' }}</span> kg</p>
                         <p><strong>IMC:</strong> <span class="prev-imc">{{ est.imc if est.imc is not none else '-' }}</span></p>
-                        <p><strong>Clasificación:</strong> <span class="prev-clasificacion">{{ est.clasificacion if est.clasificacion is not none else '-' }}</span></p>
+                        <p><strong>Clasificación:</strong> <span class="prev-clasificacion">{{ est.clasificacion_imc if est.clasificacion_imc is not none else '-' }}</span></p>
                         <p><strong>Observaciones:</strong> <span class="prev-observaciones">{{ est.observacion_1 if est.observacion_1 is not none else '' }}{{ est.observacion_2 if est.observacion_2 is not none else '' }}{{ est.observacion_3 if est.observacion_3 is not none else '' }}{{ est.observacion_4 if est.observacion_4 is not none else '' }}{{ est.observacion_5 if est.observacion_5 is not none else '' }}{{ est.observacion_6 if est.observacion_6 is not none else '' }}{{ est.observacion_7 if est.observacion_7 is not none else '' }}</span></p>
                         
                         <!-- Checkbox Previews -->
@@ -1128,9 +1127,7 @@
 
                 // Inicializar estados de checkboxes
                 form.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(checkbox => {
-                    if (checkbox.checked) {
-                        checkbox.closest('.checkbox-item').classList.add('checked');
-                    }
+                    updateCheckboxStyle(checkbox);
                 });
             });
 
@@ -1139,6 +1136,11 @@
             if (buscador) {
                 buscador.addEventListener('input', aplicarFiltros);
             }
+
+            // Event listener para los radio buttons de filtro
+            document.querySelectorAll('input[name="evaluation_filter"]').forEach(radio => {
+                radio.addEventListener('change', aplicarFiltros);
+            });
         });
 
         function cerrarSesion() {
@@ -1148,8 +1150,8 @@
         // Manejo de cambio de género (para asegurar solo uno seleccionado)
         function handleGenderChange(changedCheckbox) {
             const form = changedCheckbox.closest('form');
-            const generoF = form.querySelector('input[name="genero_f"]');
-            const generoM = form.querySelector('input[name="genero_m"]');
+            const generoF = form.querySelector(`#genero_f_${form.querySelector('input[name="estudiante_id"]').value}`);
+            const generoM = form.querySelector(`#genero_m_${form.querySelector('input[name="estudiante_id"]').value}`);
 
             if (changedCheckbox === generoF && generoF.checked) {
                 generoM.checked = false;
@@ -1159,8 +1161,17 @@
                 generoF.closest('.checkbox-item').classList.remove('checked');
             }
             // Actualizar la clase 'checked' visualmente
-            changedCheckbox.closest('.checkbox-item').classList.toggle('checked', changedCheckbox.checked);
+            updateCheckboxStyle(changedCheckbox);
             updatePreview(form);
+        }
+
+        // Función para actualizar el estilo del checkbox
+        function updateCheckboxStyle(checkbox) {
+            if (checkbox.checked) {
+                checkbox.closest('.checkbox-item').classList.add('checked');
+            } else {
+                checkbox.closest('.checkbox-item').classList.remove('checked');
+            }
         }
 
         function setFechaReevaluacion(select) {
@@ -1204,7 +1215,7 @@
             const alturaCm = parseFloat(form.querySelector('input[name="altura"]').value);
             const pesoKg = parseFloat(form.querySelector('input[name="peso"]').value);
             const imcInput = form.querySelector('input[name="imc"]');
-            const clasificacionInput = form.querySelector('input[name="clasificacion"]');
+            const clasificacionInput = form.querySelector('input[name="clasificacion_imc"]'); // Corrected name
             const generoF = form.querySelector('input[name="genero_f"]').checked;
             const generoM = form.querySelector('input[name="genero_m"]').checked;
             
@@ -1272,72 +1283,74 @@
             const container = form.closest('.container');
             if (!container) return; 
 
-            // CORRECCIÓN APLICADA AQUÍ: usa form.nombre en lugar de form.nombre_apellido
-            container.querySelector('.prev-nombre').textContent = form.nombre.value;
-            container.querySelector('.prev-rut').textContent = form.rut.value;
-            
-            const generoF = form.querySelector('input[name="genero_f"]').checked;
-            const generoM = form.querySelector('input[name="genero_m"]').checked;
-            container.querySelector('.prev-genero').textContent = generoF ? 'Femenino' : (generoM ? 'Masculino' : '-');
+            // Get the corresponding preview elements using the form's parent container
+            const previewSection = container.querySelector('.preview');
 
-            container.querySelector('.prev-fecha-nacimiento').textContent = form.fecha_nacimiento.value;
-            container.querySelector('.prev-edad').textContent = form.edad.value;
-            container.querySelector('.prev-nacionalidad').textContent = form.nacionalidad.value;
-            container.querySelector('.prev-fecha-evaluacion').textContent = form.fecha_evaluacion.value;
+            previewSection.querySelector('.prev-nombre').textContent = form.nombre.value;
+            previewSection.querySelector('.prev-rut').textContent = form.rut.value;
             
-            container.querySelector('.prev-diagnostico-1').textContent = form.diagnostico_1 ? form.diagnostico_1.value : '-';
-            container.querySelector('.prev-diagnostico-2').textContent = form.diagnostico_2 ? form.diagnostico_2.value : '-';
-            container.querySelector('.prev-diagnostico-complementario').textContent = form.diagnostico_complementario ? form.diagnostico_complementario.value : '-';
-            container.querySelector('.prev-derivaciones').textContent = form.derivaciones ? form.derivaciones.value : '-';
+            const generoF = form.querySelector(`input[name="genero_f"]`).checked;
+            const generoM = form.querySelector(`input[name="genero_m"]`).checked;
+            previewSection.querySelector('.prev-genero').textContent = generoF ? 'Femenino' : (generoM ? 'Masculino' : '-');
+
+            previewSection.querySelector('.prev-fecha-nacimiento').textContent = form.fecha_nacimiento.value;
+            previewSection.querySelector('.prev-edad').textContent = form.edad.value;
+            previewSection.querySelector('.prev-nacionalidad').textContent = form.nacionalidad.value;
+            previewSection.querySelector('.prev-fecha-evaluacion').textContent = form.fecha_evaluacion.value;
+            
+            previewSection.querySelector('.prev-diagnostico-1').textContent = form.diagnostico_1 ? form.diagnostico_1.value : '-';
+            previewSection.querySelector('.prev-diagnostico-2').textContent = form.diagnostico_2 ? form.diagnostico_2.value : '-';
+            previewSection.querySelector('.prev-diagnostico-complementario').textContent = form.diagnostico_complementario ? form.diagnostico_complementario.value : '-';
+            previewSection.querySelector('.prev-derivaciones').textContent = form.derivaciones ? form.derivaciones.value : '-';
             
             const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');
             if (fechaReevaluacionInput && fechaReevaluacionInput.value) {
                 const [year, month, day] = fechaReevaluacionInput.value.split('-');
-                container.querySelector('.prev-fecha-reevaluacion').textContent = `${day}/${month}/${year}`;
+                previewSection.querySelector('.prev-fecha-reevaluacion').textContent = `${day}/${month}/${year}`;
             } else {
-                container.querySelector('.prev-fecha-reevaluacion').textContent = '-';
+                previewSection.querySelector('.prev-fecha-reevaluacion').textContent = '-';
             }
 
-            container.querySelector('.prev-altura').textContent = form.altura ? form.altura.value : '-';
-            container.querySelector('.prev-peso').textContent = form.peso ? form.peso.value : '-';
-            container.querySelector('.prev-imc').textContent = form.imc ? form.imc.value : '-';
-            container.querySelector('.prev-clasificacion').textContent = form.clasificacion ? form.clasificacion.value : '-';
+            previewSection.querySelector('.prev-altura').textContent = form.altura ? form.altura.value : '-';
+            previewSection.querySelector('.prev-peso').textContent = form.peso ? form.peso.value : '-';
+            previewSection.querySelector('.prev-imc').textContent = form.imc ? form.imc.value : '-';
+            previewSection.querySelector('.prev-clasificacion').textContent = form.clasificacion_imc ? form.clasificacion_imc.value : '-'; // Corrected name
 
             // Observaciones
-            const obsText = (form.querySelector('input[name="observacion_1"]').value || '') +
-                            (form.querySelector('input[name="observacion_2"]').value || '') +
-                            (form.querySelector('input[name="observacion_3"]').value || '') +
-                            (form.querySelector('input[name="observacion_4"]').value || '') +
-                            (form.querySelector('input[name="observacion_5"]').value || '') +
-                            (form.querySelector('input[name="observacion_6"]').value || '') +
-                            (form.querySelector('input[name="observacion_7"]').value || '');
-            container.querySelector('.prev-observaciones').textContent = obsText || '-';
+            const obsText = (form.querySelector(`input[name="observacion_1"]`).value || '') +
+                            (form.querySelector(`input[name="observacion_2"]`).value || '') +
+                            (form.querySelector(`input[name="observacion_3"]`).value || '') +
+                            (form.querySelector(`input[name="observacion_4"]`).value || '') +
+                            (form.querySelector(`input[name="observacion_5"]`).value || '') +
+                            (form.querySelector(`input[name="observacion_6"]`).value || '') +
+                            (form.querySelector(`input[name="observacion_7"]`).value || '');
+            previewSection.querySelector('.prev-observaciones').textContent = obsText || '-';
 
 
             // Checkbox Previews (using the actual checkbox state)
-            container.querySelector('.prev-check-cesarea').textContent = form.check_cesarea.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-atermino').textContent = form.check_atermino.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-vaginal').textContent = form.check_vaginal.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-prematuro').textContent = form.check_prematuro.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-acorde').textContent = form.check_acorde.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-retrasogeneralizado').textContent = form.check_retrasogeneralizado.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-esquemac').textContent = form.check_esquemac.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-esquemai').textContent = form.check_esquemai.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-alergiano').textContent = form.check_alergiano.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-alergiasi').textContent = form.check_alergiasi.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-cirugiano').textContent = form.check_cirugiano.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-cirugiasi').textContent = form.check_cirugiasi.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-visionsinalteracion').textContent = form.check_visionsinalteracion.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-visionrefraccion').textContent = form.check_visionrefraccion.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-hipoacusia').textContent = form.check_hipoacusia.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-retenciondental').textContent = form.check_retenciondental.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-hipertrofia').textContent = form.check_hipertrofia.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-frenillolingual').textContent = form.check_frenillolingual.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-sinhallazgos').textContent = form.check_sinhallazgos.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-caries').textContent = form.check_caries.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-audicionnormal').textContent = form.check_audicionnormal.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-tapondecerumen').textContent = form.check_tapondecerumen.checked ? 'Sí' : 'No';
-            container.querySelector('.prev-check-apinamientodental').textContent = form.check_apinamientodental.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-cesarea').textContent = form.check_cesarea.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-atermino').textContent = form.check_atermino.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-vaginal').textContent = form.check_vaginal.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-prematuro').textContent = form.check_prematuro.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-acorde').textContent = form.check_acorde.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-retrasogeneralizado').textContent = form.check_retrasogeneralizado.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-esquemac').textContent = form.check_esquemac.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-esquemai').textContent = form.check_esquemai.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-alergiano').textContent = form.check_alergiano.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-alergiasi').textContent = form.check_alergiasi.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-cirugiano').textContent = form.check_cirugiano.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-cirugiasi').textContent = form.check_cirugiasi.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-visionsinalteracion').textContent = form.check_visionsinalteracion.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-visionrefraccion').textContent = form.check_visionrefraccion.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-hipoacusia').textContent = form.check_hipoacusia.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-retenciondental').textContent = form.check_retenciondental.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-hipertrofia').textContent = form.check_hipertrofia.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-frenillolingual').textContent = form.check_frenillolingual.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-sinhallazgos').textContent = form.check_sinhallazgos.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-caries').textContent = form.check_caries.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-audicionnormal').textContent = form.check_audicionnormal.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-tapondecerumen').textContent = form.check_tapondecerumen.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-apinamientodental').textContent = form.check_apinamientodental.checked ? 'Sí' : 'No';
 
 
             const badge = form.closest('.formulario').querySelector('.badge');
@@ -1351,127 +1364,311 @@
             }
         }
 
-        async function marcarComoEvaluado(buttonElement) {
-            const form = buttonElement.closest('form');
-            
-            const requiredInputs = form.querySelectorAll('input[required], select[required], textarea[required]');
-            let allFilled = true;
-            requiredInputs.forEach(input => {
-                // Excluir checkboxes de la validación de 'required' si no es el caso (ya que no tienen .value)
-                if (input.type === 'checkbox') {
-                    // La validación de checkboxes es más compleja (ej. al menos uno de un grupo)
-                    // Para este caso, asumimos que no son estrictamente requeridos individualmente
-                    return; 
-                }
-                if (!input.value.trim()) {
-                    allFilled = false;
-                    input.style.borderColor = 'var(--accent-red)';
+        async function submitForm(form) {
+            const formData = new FormData(form);
+
+            // Convertir FormData a un objeto JSON para enviar a Flask
+            const jsonData = {};
+            formData.forEach((value, key) => {
+                // Manejar checkboxes: si no están marcados, no se envían en FormData.
+                // Si el campo ya existe y es un array (para múltiples checkboxes con el mismo nombre), añadirlo.
+                // De lo contrario, asignar el valor.
+                if (key.startsWith('check_') && form.querySelector(`#${key}_${formData.get('estudiante_id')}`) && !form.querySelector(`#${key}_${formData.get('estudiante_id')}`).checked) {
+                    jsonData[key] = false; // Si el checkbox no está marcado, enviar false
+                } else if (jsonData[key]) {
+                    if (!Array.isArray(jsonData[key])) {
+                        jsonData[key] = [jsonData[key]];
+                    }
+                    jsonData[key].push(value);
                 } else {
-                    input.style.borderColor = 'var(--border-color)';
+                    jsonData[key] = value;
                 }
             });
 
-            // Validar que al menos un género esté seleccionado
-            const generoF = form.querySelector('input[name="genero_f"]');
-            const generoM = form.querySelector('input[name="genero_m"]');
-            if (!generoF.checked && !generoM.checked) {
-                allFilled = false;
-                generoF.closest('.checkbox-group').style.border = '1px solid var(--accent-red)';
-                generoM.closest('.checkbox-group').style.border = '1px solid var(--accent-red)';
-            } else {
-                generoF.closest('.checkbox-group').style.border = 'none';
-                generoM.closest('.checkbox-group').style.border = 'none';
-            }
+            // Asegurarse de que los radio buttons de género se manejen correctamente
+            const estudianteId = formData.get('estudiante_id');
+            const generoF = form.querySelector(`#genero_f_${estudianteId}`);
+            const generoM = form.querySelector(`#genero_m_${estudianteId}`);
+            jsonData['genero_f'] = generoF ? generoF.checked : false;
+            jsonData['genero_m'] = generoM ? generoM.checked : false;
+            
+            // Eliminar el campo 'genero' si Flask lo espera como 'genero_f'/'genero_m'
+            delete jsonData['genero'];
 
 
-            if (!allFilled) {
+            Swal.fire({
+                title: 'Guardando...',
+                text: 'Por favor, espera.',
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            });
+
+            try {
+                const response = await fetch('/marcar_evaluado', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json' // Importante para enviar JSON
+                    },
+                    body: JSON.stringify(jsonData) // Enviar como JSON
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Guardado!',
+                        text: data.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    // Actualizar el estado visual de la tarjeta
+                    const studentDetail = form.closest('details.estudiante');
+                    if (studentDetail) {
+                        studentDetail.setAttribute('data-evaluated-status', 'true');
+                        const summary = studentDetail.querySelector('summary');
+                        const summaryText = summary.querySelector('span');
+                        const statusIcon = summary.querySelector('.chevron-icon'); // Reutilizando el icono para el estado
+                        
+                        // Actualizar el texto del summary para mostrar el estado
+                        const fechaRelleno = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                        summaryText.textContent = `${formData.get('nombre')} (RUT: ${formData.get('rut')}) - Edad: ${formData.get('edad')} - Completado el ${fechaRelleno}`;
+                        
+                        // Deshabilitar el botón "Marcar como Evaluado"
+                        const markEvaluatedBtn = form.querySelector('.mark-evaluated-btn');
+                        if (markEvaluatedBtn) {
+                            markEvaluatedBtn.disabled = true;
+                            markEvaluatedBtn.innerHTML = '<i class="fas fa-check-circle"></i> Evaluado';
+                        }
+                    }
+                    updateCompletedCount();
+
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error al guardar',
+                        text: data.message,
+                    });
+                }
+            } catch (error) {
+                console.error('Error al enviar el formulario:', error);
                 Swal.fire({
                     icon: 'error',
-                    title: 'Faltan datos',
-                    text: 'Faltan datos obligatorios para marcar y guardar la evaluación. Por favor, revise los campos resaltados.',
+                    title: 'Error de Conexión',
+                    text: 'No se pudo conectar con el servidor para guardar la evaluación.'
+                });
+            }
+        }
+
+        // Función para generar un PDF individual
+        async function generarPDF(form) {
+            const formData = new FormData(form);
+
+            Swal.fire({
+                title: 'Generando PDF...',
+                text: 'Por favor, espera.',
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            });
+
+            try {
+                const response = await fetch('/generar_pdf', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    // Obtener el nombre del archivo de la cabecera Content-Disposition si está disponible
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = 'formulario_evaluado.pdf';
+                    if (contentDisposition && contentDisposition.indexOf('attachment') !== -1) {
+                        const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                        const matches = filenameRegex.exec(contentDisposition);
+                        if (matches != null && matches[1]) {
+                            filename = decodeURIComponent(matches[1].replace(/['"]/g, ''));
+                        }
+                    }
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'PDF Generado',
+                        text: 'El PDF se ha descargado correctamente.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    const errorText = await response.text();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error al generar PDF',
+                        text: `No se pudo generar el PDF. ${errorText}`,
+                    });
+                }
+            } catch (error) {
+                console.error('Error al generar PDF:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de Conexión',
+                    text: 'No se pudo conectar con el servidor para generar el PDF.'
+                });
+            }
+        }
+
+        // Función para generar y abrir múltiples PDFs en una nueva ventana para imprimir
+        async function generarPDFsVisibles(nominaId, establecimientoNombre) {
+            const visibleStudentIds = [];
+            document.querySelectorAll('details.estudiante:not([style*="display: none"])').forEach(detail => {
+                visibleStudentIds.push(detail.getAttribute('data-estudiante-id'));
+            });
+
+            if (visibleStudentIds.length === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'No hay formularios visibles',
+                    text: 'Ajusta los filtros para ver formularios y luego intenta imprimir.',
                     confirmButtonText: 'Entendido'
                 });
                 return;
             }
 
             Swal.fire({
-                title: '¿Marcar como Evaluado?',
-                text: 'Esta acción registrará la evaluación del alumno y guardará todos los datos rellenados.',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Sí, marcar',
-                cancelButtonText: 'Cancelar'
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    try {
-                        const formData = new FormData(form); 
-                        
-                        // Asegurarse de que los valores de los checkboxes se incluyan correctamente
-                        form.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                            formData.set(checkbox.name, checkbox.checked ? checkbox.value : '');
-                        });
-
-                        // Asegurarse de que el campo de fecha de reevaluación para PDF esté presente
-                        const fechaReevaluacionPdfInput = form.querySelector('input[name="fecha_reevaluacion_pdf"]');
-                        if (fechaReevaluacionPdfInput) {
-                            formData.set('fecha_reevaluacion_pdf', fechaReevaluacionPdfInput.value);
-                        }
-
-                        const response = await fetch('/marcar_evaluado', {
-                            method: 'POST',
-                            body: formData 
-                        });
-                        const data = await response.json();
-
-                        if (data.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: '¡Evaluado y Guardado!',
-                                text: data.message,
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => {
-                                window.location.reload(); 
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: data.message
-                            });
-                        }
-                    } catch (error) {
-                        console.error('Error al marcar como evaluado:', error);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error de Conexión',
-                            text: 'No se pudo conectar con el servidor para marcar la evaluación.'
-                        });
-                    }
+                title: 'Generando PDF combinado...',
+                html: 'Esto puede tardar un momento si hay muchos formularios. <br><br> <i class="fas fa-spinner fa-spin"></i>',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
                 }
             });
+
+            try {
+                const response = await fetch('/generar_pdfs_visibles', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        nomina_id: nominaId,
+                        student_ids: visibleStudentIds 
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Error al generar el PDF combinado.');
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                
+                const printWindow = window.open(url, '_blank');
+                printWindow.onload = () => {
+                    printWindow.print();
+                    printWindow.onafterprint = () => {
+                        window.URL.revokeObjectURL(url); // Liberar el objeto URL
+                        printWindow.close(); // Cerrar la ventana después de la impresión
+                    };
+                };
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'PDFs Abiertos para Imprimir',
+                    text: 'Se ha abierto una nueva ventana con los formularios listos para imprimir.',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+
+            } catch (error) {
+                console.error('Error al generar e imprimir PDFs visibles:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de impresión',
+                    text: error.message || 'No se pudo generar o abrir los PDFs para imprimir. Intente de nuevo más tarde.',
+                });
+            } finally {
+                Swal.close();
+            }
         }
 
 
-        function showCustomMessage(message, type) {
-            const flashMessagesContainer = document.querySelector('.flash-messages');
-            if (!flashMessagesContainer) return;
+        function enviarADrive(form) {
+            Swal.fire({
+                title: 'Enviando a Google Drive...',
+                html: 'Esto puede tardar un momento. <br><br> <i class="fas fa-spinner fa-spin"></i>',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
 
-            const li = document.createElement('li');
-            li.className = type;
-            li.textContent = message;
-            flashMessagesContainer.prepend(li); 
+            const formData = new FormData(form);
 
-            setTimeout(() => {
-                li.remove();
-            }, 5000); 
+            // Asegurarse de que los valores de los checkboxes se incluyan correctamente
+            form.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                formData.set(checkbox.name, checkbox.checked ? checkbox.value : '');
+            });
+
+            // Asegurarse de que el campo de fecha de reevaluación para PDF esté presente
+            const fechaReevaluacionPdfInput = form.querySelector('input[name="fecha_reevaluacion_pdf"]');
+            if (fechaReevaluacionPdfInput) {
+                formData.set('fecha_reevaluacion_pdf', fechaReevaluacionPdfInput.value);
+            }
+
+            fetch('/enviar_formulario_a_drive', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Enviado a Drive!',
+                        text: data.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error al enviar a Drive',
+                        text: data.message
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error al enviar a Drive:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de Conexión',
+                    text: 'No se pudo conectar con el servidor para enviar a Google Drive.'
+                });
+            });
+        }
+
+        function insertarFirma() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Próximamente',
+                text: 'Se insertará la firma según la doctora que corresponda.'
+            });
         }
 
         // Función para aplicar filtros de búsqueda y estado de evaluación
         function aplicarFiltros() {
-            const estudiantes = document.querySelectorAll('.estudiante');
+            const estudiantes = document.querySelectorAll('details.estudiante');
             const searchTerm = document.getElementById('buscador').value.toLowerCase().trim();
             const evaluationFilter = document.querySelector('input[name="evaluation_filter"]:checked').value;
 
@@ -1635,144 +1832,14 @@
                 });
         }
 
-        // FUNCIÓN MODIFICADA: Generar y abrir PDF para imprimir
-        async function generarEImprimirPDFsVisibles(nominaId, establecimientoNombre) {
-            const visibleStudentIds = [];
-            document.querySelectorAll('details.estudiante:not([style*="display: none"])').forEach(detail => {
-                visibleStudentIds.push(detail.getAttribute('data-estudiante-id'));
-            });
-
-            if (visibleStudentIds.length === 0) {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'No hay formularios visibles',
-                    text: 'Ajusta los filtros para ver formularios y luego intenta imprimir.',
-                    confirmButtonText: 'Entendido'
-                });
-                return;
-            }
-
-            Swal.fire({
-                title: 'Generando PDF combinado...',
-                html: 'Esto puede tardar un momento si hay muchos formularios. <br><br> <i class="fas fa-spinner fa-spin"></i>',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-
-            try {
-                const response = await fetch('/generar_pdfs_visibles', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ 
-                        nomina_id: nominaId,
-                        student_ids: visibleStudentIds 
-                    })
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Error al generar el PDF combinado.');
-                }
-
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                
-                const printWindow = window.open(url, '_blank');
-                printWindow.onload = () => {
-                    printWindow.print();
-                    printWindow.onafterprint = () => {
-                        window.URL.revokeObjectURL(url); // Liberar el objeto URL
-                        printWindow.close(); // Cerrar la ventana después de la impresión
-                    };
-                };
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'PDFs Abiertos para Imprimir',
-                    text: 'Se ha abierto una nueva ventana con los formularios listos para imprimir.',
-                    showConfirmButton: false,
-                    timer: 3000
-                });
-
-            } catch (error) {
-                console.error('Error al generar e imprimir PDFs visibles:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error de impresión',
-                    text: error.message || 'No se pudo generar o abrir los PDFs para imprimir. Intente de nuevo más tarde.',
-                });
-            } finally {
-                Swal.close();
-            }
+        // Función para actualizar el contador de formularios completados en la interfaz
+        function updateCompletedCount() {
+            const completedCount = document.querySelectorAll('details.estudiante[data-evaluated-status="true"]').length;
+            document.getElementById('completed-forms-count').textContent = completedCount;
         }
 
-
-        function enviarADrive(form) {
-            Swal.fire({
-                title: 'Enviando a Google Drive...',
-                html: 'Esto puede tardar un momento. <br><br> <i class="fas fa-spinner fa-spin"></i>',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-
-            const formData = new FormData(form);
-
-            // Asegurarse de que los valores de los checkboxes se incluyan correctamente
-            form.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                formData.set(checkbox.name, checkbox.checked ? checkbox.value : '');
-            });
-
-            // Asegurarse de que el campo de fecha de reevaluación para PDF esté presente
-            const fechaReevaluacionPdfInput = form.querySelector('input[name="fecha_reevaluacion_pdf"]');
-            if (fechaReevaluacionPdfInput) {
-                formData.set('fecha_reevaluacion_pdf', fechaReevaluacionPdfInput.value);
-            }
-
-            fetch('/enviar_formulario_a_drive', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: '¡Enviado a Drive!',
-                        text: data.message,
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error al enviar a Drive',
-                        text: data.message
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Error al enviar a Drive:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error de Conexión',
-                    text: 'No se pudo conectar con el servidor para enviar a Google Drive.'
-                });
-            });
-        }
-
-        function insertarFirma() {
-            Swal.fire({
-                icon: 'info',
-                title: 'Próximamente',
-                text: 'Se insertará la firma según la doctora que corresponda.'
-            });
-        }
+        // Llamar a updateCompletedCount cuando la página se carga para asegurar que el contador sea preciso
+        document.addEventListener('DOMContentLoaded', updateCompletedCount);
     </script>
 </body>
 </html>

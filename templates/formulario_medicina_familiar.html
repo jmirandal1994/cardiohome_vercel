@@ -1217,8 +1217,9 @@
             const pesoKg = parseFloat(form.querySelector('input[name="peso"]').value);
             const imcInput = form.querySelector('input[name="imc"]');
             const clasificacionInput = form.querySelector('input[name="clasificacion_imc"]'); // Corrected name
-            const generoF = form.querySelector(`input[name="genero_f"]`).checked;
-            const generoM = form.querySelector(`input[name="genero_m"]`).checked;
+            const estudianteId = form.querySelector('input[name="estudiante_id"]').value;
+            const generoF = form.querySelector(`#genero_f_${estudianteId}`).checked;
+            const generoM = form.querySelector(`#genero_m_${estudianteId}`).checked;
             
             let gender = null;
             if (generoF) gender = 'F';
@@ -1371,8 +1372,6 @@
 
             // Manually set checkbox values if they are unchecked, as FormData doesn't include them
             form.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                // If a checkbox is not checked, explicitly set its value in formData to an empty string
-                // This ensures Flask receives a value for all checkbox names, allowing proper update to false/null
                 if (!checkbox.checked) {
                     formData.set(checkbox.name, ''); 
                 }
@@ -1385,13 +1384,13 @@
             }
 
             // Debugging: Log FormData content
-            console.log('FormData content before sending (submitForm):');
+            console.log('FormData content before sending (submitForm - Save & Generate PDF):');
             for (let pair of formData.entries()) {
                 console.log(pair[0]+ ': ' + pair[1]); 
             }
 
             Swal.fire({
-                title: 'Guardando...',
+                title: 'Guardando y Generando PDF...',
                 text: 'Por favor, espera.',
                 didOpen: () => {
                     Swal.showLoading();
@@ -1401,54 +1400,90 @@
             });
 
             try {
-                const response = await fetch('/marcar_evaluado', {
+                // Paso 1: Guardar la evaluación
+                const saveResponse = await fetch('/marcar_evaluado', {
                     method: 'POST',
-                    body: formData // Send as FormData, Flask will use request.form
+                    body: formData 
                 });
-                const data = await response.json(); // Flask still returns JSON
+                const saveData = await saveResponse.json(); 
 
-                if (data.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: '¡Guardado!',
-                        text: data.message,
-                        timer: 2000,
-                        showConfirmButton: false
+                if (saveData.success) {
+                    // Paso 2: Generar el PDF si el guardado fue exitoso
+                    const pdfResponse = await fetch('/generar_pdf', {
+                        method: 'POST',
+                        body: formData
                     });
-                    // Update UI as before
-                    const studentDetail = form.closest('details.estudiante');
-                    if (studentDetail) {
-                        studentDetail.setAttribute('data-evaluated-status', 'true');
-                        const summary = studentDetail.querySelector('summary');
-                        const summaryText = summary.querySelector('span');
-                        
-                        const fechaRelleno = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                        const nombreEstudiante = formData.get('nombre');
-                        const rutEstudiante = formData.get('rut');
-                        const edadEstudiante = formData.get('edad');
-                        summaryText.textContent = `${nombreEstudiante} (RUT: ${rutEstudiante}) - Edad: ${edadEstudiante} - Completado el ${fechaRelleno}`;
-                        
-                        const markEvaluatedBtn = form.querySelector('.mark-evaluated-btn');
-                        if (markEvaluatedBtn) {
-                            markEvaluatedBtn.disabled = true;
-                            markEvaluatedBtn.innerHTML = '<i class="fas fa-check-circle"></i> Evaluado';
-                        }
-                    }
-                    updateCompletedCount();
 
+                    if (pdfResponse.ok) {
+                        const blob = await pdfResponse.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        const contentDisposition = pdfResponse.headers.get('Content-Disposition');
+                        let filename = 'formulario_evaluado.pdf';
+                        if (contentDisposition && contentDisposition.indexOf('attachment') !== -1) {
+                            const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                            const matches = filenameRegex.exec(contentDisposition);
+                            if (matches != null && matches[1]) {
+                                filename = decodeURIComponent(matches[1].replace(/['"]/g, ''));
+                            }
+                        }
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        window.URL.revokeObjectURL(url);
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Guardado y PDF Generado!',
+                            text: 'Los datos se han guardado y el PDF se ha descargado correctamente.',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+
+                        // Actualizar UI como antes
+                        const studentDetail = form.closest('details.estudiante');
+                        if (studentDetail) {
+                            studentDetail.setAttribute('data-evaluated-status', 'true');
+                            const summary = studentDetail.querySelector('summary');
+                            const summaryText = summary.querySelector('span');
+                            
+                            const fechaRelleno = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                            const nombreEstudiante = formData.get('nombre');
+                            const rutEstudiante = formData.get('rut');
+                            const edadEstudiante = formData.get('edad');
+                            summaryText.textContent = `${nombreEstudiante} (RUT: ${rutEstudiante}) - Edad: ${edadEstudiante} - Completado el ${fechaRelleno}`;
+                            
+                            const markEvaluatedBtn = form.querySelector('.mark-evaluated-btn');
+                            if (markEvaluatedBtn) {
+                                markEvaluatedBtn.disabled = true;
+                                markEvaluatedBtn.innerHTML = '<i class="fas fa-check-circle"></i> Evaluado';
+                            }
+                        }
+                        updateCompletedCount();
+
+                    } else {
+                        const pdfErrorText = await pdfResponse.text();
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error al generar PDF',
+                            text: `Los datos se guardaron, pero no se pudo generar el PDF. ${pdfErrorText}`,
+                        });
+                    }
                 } else {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error al guardar',
-                        text: data.message,
+                        text: saveData.message,
                     });
                 }
             } catch (error) {
-                console.error('Error al enviar el formulario:', error);
+                console.error('Error en el proceso de guardar y generar PDF:', error);
                 Swal.fire({
                     icon: 'error',
                     title: 'Error de Conexión',
-                    text: 'No se pudo conectar con el servidor para guardar la evaluación.'
+                    text: 'No se pudo conectar con el servidor para guardar y generar el PDF.'
                 });
             }
         }
@@ -1563,6 +1598,8 @@
         }
 
         // Función para generar un PDF individual
+        // Esta función ya no se llama directamente desde el botón "Guardar y Generar PDF"
+        // Ahora es llamada internamente por submitForm después de guardar.
         async function generarPDF(form) {
             const formData = new FormData(form);
 
@@ -1578,15 +1615,16 @@
                 formData.set('fecha_reevaluacion_pdf', fechaReevaluacionPdfInput.value);
             }
 
-            Swal.fire({
-                title: 'Generando PDF...',
-                text: 'Por favor, espera.',
-                didOpen: () => {
-                    Swal.showLoading();
-                },
-                allowOutsideClick: false,
-                allowEscapeKey: false
-            });
+            // No se muestra SweetAlert aquí porque ya se muestra en submitForm
+            // Swal.fire({
+            //     title: 'Generando PDF...',
+            //     text: 'Por favor, espera.',
+            //     didOpen: () => {
+            //         Swal.showLoading();
+            //     },
+            //     allowOutsideClick: false,
+            //     allowEscapeKey: false
+            // });
 
             try {
                 const response = await fetch('/generar_pdf', {
@@ -1614,28 +1652,33 @@
                     a.click();
                     a.remove();
                     window.URL.revokeObjectURL(url);
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'PDF Generado',
-                        text: 'El PDF se ha descargado correctamente.',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
+                    // No se muestra SweetAlert aquí porque ya se muestra en submitForm
+                    // Swal.fire({
+                    //     icon: 'success',
+                    //     title: 'PDF Generado',
+                    //     text: 'El PDF se ha descargado correctamente.',
+                    //     timer: 2000,
+                    //     showConfirmButton: false
+                    // });
                 } else {
                     const errorText = await response.text();
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error al generar PDF',
-                        text: `No se pudo generar el PDF. ${errorText}`,
-                    });
+                    // Se maneja el error en submitForm
+                    // Swal.fire({
+                    //     icon: 'error',
+                    //     title: 'Error al generar PDF',
+                    //     text: `No se pudo generar el PDF. ${errorText}`,
+                    // });
+                    throw new Error(`PDF generation failed: ${pdfResponse.status} - ${pdfErrorText}`);
                 }
             } catch (error) {
                 console.error('Error al generar PDF:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error de Conexión',
-                    text: 'No se pudo conectar con el servidor para generar el PDF.'
-                });
+                // Se maneja el error en submitForm
+                // Swal.fire({
+                //     icon: 'error',
+                //     title: 'Error de Conexión',
+                //     text: 'No se pudo conectar con el servidor para generar el PDF.'
+                // });
+                throw error; // Re-throw to be caught by submitForm
             }
         }
 

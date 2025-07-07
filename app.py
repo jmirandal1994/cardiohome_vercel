@@ -32,7 +32,7 @@ PDF_BASE_FAMILIAR = 'formulario_familiar.pdf'
 
 # -------------------- Supabase Configuration --------------------
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://rbzxolreglwndvsrxhmg.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDE3ODcsImexZCI6MjA2MzExNzc4N30.BbzsUhed1Y_dJYWFKLAHqtV4cXdvjF_ihGdQ_Bpov3Y")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDE3ODcsImV4cCI6MjA2MzExNzc4N30.BbzsUhed1Y_dJYWFKLAHqtV4cXdvjF_ihGdQ_Bpov3Y")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IlNJUDU4IiwicmVmIjoiYnhzbnFmZml4d2pkcWl2eGJrZXkiLCJyb2xlIjoic2VydmljZV9yb2xlIiwiaWF0IjoxNzE5Mjg3MzI1LCJleHAiOjE3NTA4MjMzMjV9.qNlSg_p4_u1O5xQ9s6bN0K2Z0f0v_N9s8k0k0k0k0k") # ASEGÚRATE DE USAR TU SERVICE_KEY REAL
 
 SUPABASE_HEADERS = {
@@ -508,7 +508,7 @@ def generar_pdf():
                 "HIPOACUSIA": "/Yes" if est.get('check_hipoacusia') else "",
                 "TAPÓN DE CERUMEN": "/Yes" if est.get('check_tapondecerumen') else "",
                 "SIN HALLAZGOS": "/Yes" if est.get('check_sinhallazgos') else "",
-                "CARIES": "/Yes" if est.get('check_caries') else "",
+                "CARIES": "/Yes" if est.get('caries') else "",
                 "APIÑAMIENTO DENTAL": "/Yes" if est.get('check_apinamientodental') else "",
                 "RETENCIÓN DENTAL": "/Yes" if est.get('check_retenciondental') else "",
                 "FRENILLO LINGUAL": "/Yes" if est.get('check_frenillolingual') else "",
@@ -781,7 +781,8 @@ def dashboard():
                 f"&select=id,nombre_nomina,tipo_nomina,form_type" # Incluir form_type
             )
             print(f"DEBUG: URL para obtener nóminas asignadas (doctor): {url_nominas_asignadas}")
-            res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_HEADERS)
+            # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para que la doctora vea sus nóminas
+            res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_SERVICE_HEADERS) 
             res_nominas_asignadas.raise_for_status()
             raw_nominas = res_nominas_asignadas.json()
             print(f"DEBUG: Nóminas raw recibidas para doctora: {raw_nominas}")
@@ -809,7 +810,7 @@ def dashboard():
                     f"&select=count"
                 )
                 print(f"DEBUG: URL para contar todos los estudiantes en nóminas asignadas a doctora {usuario_id}: {url_total_students_assigned_to_doctor_nominations}")
-                res_total_students = requests.get(url_total_students_assigned_to_doctor_nominations, headers=SUPABASE_HEADERS)
+                res_total_students = requests.get(url_total_students_assigned_to_doctor_nominations, headers=SUPABASE_SERVICE_HEADERS) # Usar SERVICE_HEADERS
                 res_total_students.raise_for_status()
                 total_students_count_range = res_total_students.headers.get('Content-Range')
                 if total_students_count_range:
@@ -835,7 +836,7 @@ def dashboard():
             completed_count_by_doctor = 0
             if completed_forms_count_range:
                 try:
-                    completed_forms_count = int(completed_forms_count_range.split('/')[-1])
+                    completed_count_by_doctor = int(completed_forms_count_range.split('/')[-1])
                 except ValueError:
                     pass
             print(f"DEBUG: Formularios completados por doctora {usuario_id}: {completed_count_by_doctor}")
@@ -891,10 +892,10 @@ def dashboard():
         print(f"DEBUG: Conteo de formularios por establecimiento: {conteo}")
 
         try:
-            # Incluir form_type en la consulta de nóminas para admin
+            # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para que el admin vea todas las nóminas
             url_admin_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina,tipo_nomina,doctora_id,url_excel_original,nombre_excel_original,form_type"
             print(f"DEBUG: URL para obtener nóminas cargadas por admin: {url_admin_nominas}")
-            res_admin_nominas = requests.get(url_admin_nominas, headers=SUPABASE_HEADERS)
+            res_admin_nominas = requests.get(url_admin_nominas, headers=SUPABASE_SERVICE_HEADERS) 
             res_admin_nominas.raise_for_status()
             admin_nominas_cargadas = res_admin_nominas.json()
             print(f"DEBUG: Nóminas cargadas por admin recibidas: {admin_nominas_cargadas}")
@@ -1591,7 +1592,8 @@ def mis_nominas():
             f"&select=id,nombre_nomina,tipo_nomina,form_type" # Incluir form_type
         )
         print(f"DEBUG: URL para mis_nominas: {url_nominas_asignadas}")
-        res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_HEADERS)
+        # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para que la doctora vea sus nóminas
+        res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_SERVICE_HEADERS)
         res_nominas_asignadas.raise_for_status()
         raw_nominas = res_nominas_asignadas.json()
         print(f"DEBUG: Nóminas raw recibidas para mis_nominas: {raw_nominas}")

@@ -32,7 +32,7 @@ PDF_BASE_FAMILIAR = 'formulario_familiar.pdf'
 
 # -------------------- Supabase Configuration --------------------
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://rbzxolreglwndvsrxhmg.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDE3ODcsImV4cCI6MjA2MzExNzc4N30.BbzsUhed1Y_dJYWFKLAHqtV4cXdvjF_ihGdQ_Bpov3Y")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDE3ODcsImexZCI6MjA2MzExNzc4N30.BbzsUhed1Y_dJYWFKLAHqtV4cXdvjF_ihGdQ_Bpov3Y")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IlNJUDU4IiwicmVmIjoiYnhzbnFmZml4d2pkcWl2eGJrZXkiLCJyb2xlIjoic2VydmljZV9yb2xlIiwiaWF0IjoxNzE5Mjg3MzI1LCJleHAiOjE3NTA4MjMzMjV9.qNlSg_p4_u1O5xQ9s6bN0K2Z0f0v_N9s8k0k0k0k0k") # ASEGÚRATE DE USAR TU SERVICE_KEY REAL
 
 SUPABASE_HEADERS = {
@@ -420,7 +420,7 @@ def generar_pdf():
         except ValueError:
             pass
 
-    # Fecha de reevaluación para PDF (convertir YYYY-MM-DD a DD/MM/YYYY)
+    # Fecha de reevaluación para PDF (convertirYYYY-MM-DD a DD/MM/YYYY)
     fecha_reeval_pdf = ''
     if est.get('fecha_reevaluacion'):
         try:
@@ -604,7 +604,7 @@ def marcar_evaluado():
             'estado_general': get_form_value_or_none('estado'),
             'diagnostico': get_form_value_or_none('diagnostico'),
             'derivaciones': get_form_value_or_none('derivaciones'),
-            'plazo': get_form_value_or_none('plazo'), # Añadir el plazo para neurología
+            # 'plazo': get_form_value_or_none('plazo'), # REMOVIDO: Esta columna no existe en la DB
         })
     elif form_type == 'medicina_familiar':
         # Manejo de género (radio buttons en HTML, se guardan como booleanos en Supabase)
@@ -656,7 +656,7 @@ def marcar_evaluado():
             "check_hipoacusia": request.form.get('check_hipoacusia') == 'HIPOACUSIA',
             "check_tapondecerumen": request.form.get('check_tapondecerumen') == 'TAPON_DE_CERUMEN',
             "check_sinhallazgos": request.form.get('check_sinhallazgos') == 'SIN_HALLAZGOS',
-            "check_caries": request.form.get('check_caries') == 'CARIES',
+            "caries": request.form.get('caries') == 'CARIES',
             "check_apinamientodental": request.form.get('check_apinamientodental') == 'APINAMIENTO_DENTAL',
             "check_retenciondental": request.form.get('check_retenciondental') == 'RETENCION_DENTAL',
             "check_frenillolingual": request.form.get('check_frenillolingual') == 'FRENILLO_LINGUAL',
@@ -835,7 +835,7 @@ def dashboard():
             completed_count_by_doctor = 0
             if completed_forms_count_range:
                 try:
-                    completed_count_by_doctor = int(completed_forms_count_range.split('/')[-1])
+                    completed_forms_count = int(completed_forms_count_range.split('/')[-1])
                 except ValueError:
                     pass
             print(f"DEBUG: Formularios completados por doctora {usuario_id}: {completed_count_by_doctor}")
@@ -1438,7 +1438,7 @@ def enviar_formulario_a_drive():
                 "HIPOACUSIA": "/Yes" if est.get('check_hipoacusia') else "",
                 "TAPÓN DE CERUMEN": "/Yes" if est.get('check_tapondecerumen') else "",
                 "SIN HALLAZGOS": "/Yes" if est.get('check_sinhallazgos') else "",
-                "CARIES": "/Yes" if est.get('check_caries') else "",
+                "CARIES": "/Yes" if est.get('caries') else "",
                 "APIÑAMIENTO DENTAL": "/Yes" if est.get('check_apinamientodental') else "",
                 "RETENCIÓN DENTAL": "/Yes" if est.get('check_retenciondental') else "",
                 "FRENILLO LINGUAL": "/Yes" if est.get('check_frenillolingual') else "",
@@ -1905,7 +1905,7 @@ def generar_pdfs_visibles():
                     "HIPOACUSIA": "/Yes" if est.get('check_hipoacusia') else "",
                     "TAPÓN DE CERUMEN": "/Yes" if est.get('check_tapondecerumen') else "",
                     "SIN HALLAZGOS": "/Yes" if est.get('check_sinhallazgos') else "",
-                    "CARIES": "/Yes" if est.get('check_caries') else "",
+                    "CARIES": "/Yes" if est.get('caries') else "",
                     "APIÑAMIENTO DENTAL": "/Yes" if est.get('check_apinamientodental') else "",
                     "RETENCIÓN DENTAL": "/Yes" if est.get('check_retenciondental') else "",
                     "FRENILLO LINGUAL": "/Yes" if est.get('check_frenillolingual') else "",

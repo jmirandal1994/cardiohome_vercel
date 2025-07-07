@@ -417,22 +417,119 @@ def generar_pdf():
 
     print(f"DEBUG: generar_pdf - Datos recibidos: rut={rut}, form_type={form_type}")
     
-    # Lógica para determinar el PDF base y rellenar campos
-    pdf_base_path = ""
     if form_type == 'medicina_familiar':
-        pdf_base_path = PDF_BASE_FAMILIAR
-        # Calcular fecha_reevaluacion basada en el select de años para el PDF
-        fecha_reeval_pdf = None
-        if fecha_reevaluacion_select:
-            try:
-                plazo_reevaluacion_years = int(fecha_reevaluacion_select)
-                fecha_reeval_obj = date.today() + timedelta(days=plazo_reevaluacion_years * 365)
-                fecha_reeval_pdf = fecha_reeval_obj.strftime('%d/%m/%Y')
-            except ValueError:
-                print(f"ADVERTENCIA: Valor inválido para fecha_reevaluacion_select en generar_pdf: {fecha_reevaluacion_select}")
-                fecha_reeval_pdf = None
+        campos = {
+            "nombre": nombre,
+            "rut": rut,
+            "fecha_nacimiento": fecha_nacimiento,
+            "edad": edad,
+            "nacionalidad": nacionalidad,
+            "fecha_evaluacion": fecha_evaluacion,
+            "fecha_reevaluacion": fecha_reevaluacion,
+            "diagnostico_complementario": diagnostico_complementario,
+            "diagnostico_1": diagnostico_1,
+            "diagnostico_2": diagnostico_2,
+            "observacion_1": observacion_1,
+            "observacion_2": observacion_2,
+            "observacion_3": observacion_3,
+            "observacion_4": observacion_4,
+            "observacion_5": observacion_5,
+            "observacion_6": observacion_6,
+            "observacion_7": observacion_7,
+            "altura": altura,
+            "peso": peso,
+            "imc": imc,
+            "clasificacion": clasificacion,
+            "sexo_f": "Yes" if sexo == "F" else "Off",
+            "sexo_m": "Yes" if sexo == "M" else "Off",
+            "check_cesarea": "Yes" if cesarea else "Off",
+            "check_atermino": "Yes" if atermino else "Off",
+            "check_vaginal": "Yes" if vaginal else "Off",
+            "check_prematuro": "Yes" if prematuro else "Off",
+            "check_acorde": "Yes" if acorde else "Off",
+            "check_retraso": "Yes" if retraso else "Off",
+            "check_retrasogeneralizado": "Yes" if retrasogeneralizado else "Off",
+            "check_esquemac": "Yes" if esquema_completo else "Off",
+            "check_esquemai": "Yes" if esquema_incompleto else "Off",
+            "check_alergiano": "Yes" if alergia == "no" else "Off",
+            "check_alergiasi": "Yes" if alergia == "si" else "Off",
+            "check_cirugiano": "Yes" if cirugia == "no" else "Off",
+            "check_cirugiasi": "Yes" if cirugia == "si" else "Off",
+            "check_visionsinalteracion": "Yes" if vision == "normal" else "Off",
+            "check_visionrefraccion": "Yes" if vision == "refraccion" else "Off",
+            "check_audicionnormal": "Yes" if audicion == "normal" else "Off",
+            "check_tapondecerumen": "Yes" if audicion == "cerumen" else "Off",
+            "check_hipoacusia": "Yes" if audicion == "hipoacusia" else "Off",
+            "check_caries": "Yes" if caries else "Off",
+            "check_apinamientodental": "Yes" if apinamiento else "Off",
+            "check_retenciondental": "Yes" if retencion_dental else "Off",
+            "check_sinhallazgos": "Yes" if sinhallazgos else "Off",
+            "check_frenillolingual": "Yes" if frenillo else "Off",
+            "check_hipertrofia": "Yes" if hipertrofia else "Off",
+        }
 
+    if form_type == 'neurologia':
+        print(f"DEBUG: generar_pdf (Neurología) – nombre={nombre_neuro}, sexo={sexo_neuro}, diagnostico={diagnostico_neuro}")
+        campos = {
+            "nombre": nombre_neuro,
+            "rut": rut,
+            "fecha_nacimiento": fecha_nac_formato,
+            "edad": edad,
+            "nacionalidad": nacionalidad,
+            "fecha_evaluacion": fecha_eval,
+            "fecha_reevaluacion": fecha_reeval_pdf,
+            "diagnostico_1": diagnostico_neuro,
+            "estado_general": estado_general_neuro,
+            "derivaciones": derivaciones,
+            "sexo_f": "X" if sexo_neuro == "F" else "",
+            "sexo_m": "X" if sexo_neuro == "M" else "",
+        }
+    if form_type == 'medicina_familiar':
         print(f"DEBUG: generar_pdf (Familiar) – nombre={nombre}, genero_f={genero_f}, genero_m={genero_m}, diagnostico_1={diagnostico_1}")
+        campos = {
+            "nombre": nombre,
+            "rut": rut,
+            "fecha_nacimiento": fecha_nac_formato,
+            "edad": edad,
+            "nacionalidad": nacionalidad,
+            "fecha_evaluacion": fecha_eval,
+            "fecha_reevaluacion": fecha_reeval_pdf,
+            "diagnostico_complementario": diagnostico_complementario,
+            "diagnostico_1": diagnostico_1,
+            "diagnostico_2": diagnostico_2,
+            "observacion_1": observacion_1,
+            "observacion_2": observacion_2,
+            "observacion_3": observacion_3,
+            "observacion_4": observacion_4,
+            "observacion_5": observacion_5,
+            "observacion_6": observacion_6,
+            "observacion_7": observacion_7,
+            "altura": altura,
+            "peso": peso,
+            "imc": imc,
+            "clasificacion": clasificacion,
+            "sexo_f": "X" if genero_f == "Femenino" else "",
+            "sexo_m": "X" if genero_m == "Masculino" else "",
+        }
+        if form_type == 'neurologia':
+            campos = {
+                "nombre": str(nombre_neuro), # Usa el nombre de neurología
+                "rut": str(rut),
+                "fecha_nacimiento": str(fecha_nac_formato), 
+                "nacionalidad": str(nacionalidad),
+                "edad": str(edad),
+                "diagnostico_1": str(diagnostico_neuro),
+                "diagnostico_2": str(diagnostico_neuro), # Puede ser el mismo para neurología si no hay un segundo campo
+                "estado_general": str(estado_general_neuro), 
+                "fecha_evaluacion": str(fecha_eval),
+                "fecha_reevaluacion": str(fecha_reeval_pdf if fecha_reeval_pdf is not None else ""), # Explicitamente None a ""
+                "derivaciones": str(derivaciones),
+                "sexo_f": "X" if sexo_neuro == "F" else "",
+                "sexo_m": "X" if sexo_neuro == "M" else "",
+            }
+    if form_type == 'medicina_familiar':
+        # Mapeo de los campos del formulario HTML a los campos del PDF Familiar
+        # Usando los nombres EXACTOS de tus variables y campos de PDF
         campos = {
             "nombre": str(nombre), # Mapea directamente la variable 'nombre' (de Medicina Familiar)
             "rut": str(rut),
@@ -483,58 +580,8 @@ def generar_pdf():
             "check_hipertrofia": "/Yes" if check_hipertrofia else "",
         }
 
-    elif form_type == 'neurologia':
-        pdf_base_path = PDF_BASE_NEUROLOGIA
-        # Manejo de fecha de reevaluación para neurología
-        fecha_reeval_pdf = ""
-        if fecha_reevaluacion_neuro_input:
-            try:
-                # Asumiendo que el input esYYYY-MM-DD
-                fecha_reeval_obj = datetime.strptime(fecha_reevaluacion_neuro_input, '%Y-%m-%d').date()
-                fecha_reeval_pdf = fecha_reeval_obj.strftime('%d/%m/%Y')
-            except ValueError:
-                print(f"ADVERTENCIA: Formato de fecha de reevaluación inválido para neurología: {fecha_reevaluacion_neuro_input}")
-                fecha_reeval_pdf = ""
-
-        print(f"DEBUG: generar_pdf (Neurología) – nombre={nombre_neuro}, sexo={sexo_neuro}, diagnostico={diagnostico_neuro}")
-        campos = {
-            "nombre": str(nombre_neuro), # Usa el nombre de neurología
-            "rut": str(rut),
-            "fecha_nacimiento": str(fecha_nac_formato), 
-            "nacionalidad": str(nacionalidad),
-            "edad": str(edad),
-            "diagnostico_1": str(diagnostico_neuro),
-            "diagnostico_2": str(diagnostico_neuro), # Puede ser el mismo para neurología si no hay un segundo campo
-            "estado_general": str(estado_general_neuro), 
-            "fecha_evaluacion": str(fecha_eval),
-            "fecha_reevaluacion": str(fecha_reeval_pdf if fecha_reeval_pdf is not None else ""), # Explicitamente None a ""
-            "derivaciones": str(derivaciones),
-            "sexo_f": "X" if sexo_neuro == "F" else "",
-            "sexo_m": "X" if sexo_neuro == "M" else "",
-        }
-    else:
-        flash("Tipo de formulario no reconocido.", 'error')
-        return redirect(url_for('dashboard'))
-
-    print(f"DEBUG: Fields to fill in PDF for {form_type} form: {campos}")
-    print(f"DEBUG: Campos a rellenar en PDF (JSON): {json.dumps(campos, indent=2)}")
-
-    try:
-        # Cargar el PDF base
-        if not os.path.exists(pdf_base_path):
-            raise FileNotFoundError(f"Archivo base PDF no encontrado: {pdf_base_path}")
-        
-        reader = PdfReader(pdf_base_path)
-        writer = PdfWriter()
-
-        if reader.is_encrypted:
-            try:
-                reader.decrypt("") # Intentar desencriptar si no tiene contraseña
-            except:
-                raise Exception("El PDF está encriptado y no se pudo desencriptar.")
-
-        # Añadir la primera página del PDF base al writer
-        writer.add_page(reader.pages[0])
+        print(f"DEBUG: Fields to fill in PDF for {form_type} form: {campos}")
+        print(f"DEBUG: Campos a rellenar en PDF (JSON): {json.dumps(campos, indent=2)}")
 
         # Convertir todos los valores del diccionario 'campos' a string
         # Esto previene errores de "string index out of range" si un valor es None o no es una cadena
@@ -561,18 +608,16 @@ def generar_pdf():
         if not nombre_para_archivo: 
             nombre_para_archivo = "Desconocido"
 
-        nombre_archivo_descarga = f"{normalizar(nombre_para_archivo)}_{rut}_formulario_{form_type}.pdf"
+        nombre_archivo_descarga = f"{nombre_para_archivo.replace(' ', '_')}_{rut}_formulario_{form_type}.pdf"
         print(f"DEBUG: PDF generado y listo para descarga: {nombre_archivo_descarga}")
         flash('PDF generado correctamente.', 'success')
         return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
-
     except Exception as e:
         print(f"❌ Error al generar PDF: {e}")
         flash(f"❌ Error al generar el PDF: {e}. Verifique el archivo base o los campos.", 'error')
         if 'current_nomina_id' in session:
             return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
         return redirect(url_for('dashboard'))
-
 
 @app.route('/marcar_evaluado', methods=['POST'])
 def marcar_evaluado():
@@ -581,9 +626,7 @@ def marcar_evaluado():
 
     estudiante_id = request.form.get('estudiante_id', '')
     nomina_id = request.form.get('nomina_id', '')
-    doctora_id = session.get('usuario_id')
-
-    # Obtener el form_type de la sesión para saber qué campos actualizar
+    doctora_id = session.get('usuario_id') # Obtener el form_type de la sesión para saber qué campos actualizar
     form_type = session.get('current_form_type', 'neurologia') 
 
     print(f"DEBUG: Recibida solicitud para marcar como evaluado: estudiante_id={estudiante_id}, nomina_id={nomina_id}, doctora_id={doctora_id}, form_type={form_type}")
@@ -594,7 +637,7 @@ def marcar_evaluado():
         return jsonify({"success": False, "message": "Faltan datos obligatorios para marcar y guardar la evaluación."}), 400
 
     update_data = {
-        'fecha_relleno': str(date.today()) 
+        'fecha_relleno': str(date.today())
     }
 
     # Obtener campos comunes y específicos al principio para evitar NameErrors
@@ -620,7 +663,6 @@ def marcar_evaluado():
     diagnostico_2 = request.form.get('diagnostico_2', '')
     diagnostico_complementario = request.form.get('diagnostico_complementario', '')
     fecha_reevaluacion_select = request.form.get('fecha_reevaluacion_select', '') # Input para el select de años de Medicina Familiar
-
     observacion_1 = request.form.get('observacion_1', '')
     observacion_2 = request.form.get('observacion_2', '')
     observacion_3 = request.form.get('observacion_3', '')
@@ -639,7 +681,8 @@ def marcar_evaluado():
     check_vaginal = request.form.get('check_vaginal') == 'on'
     check_prematuro = request.form.get('check_prematuro') == 'on'
     check_acorde = request.form.get('check_acorde') == 'on'
-    check_retrasogeneralizado = request.form.get('check_retrasogeneralizado') == 'on'
+    # CORREGIDO: Usar 'check_retraso' en lugar de 'check_retrasogeneralizado'
+    check_retrasogeneralizado = request.form.get('check_retrasogeneralizado') == 'on' # Mantener para la DB si existe, pero el PDF usará 'check_retraso'
     check_esquemai = request.form.get('check_esquemai') == 'on'
     check_esquemac = request.form.get('check_esquemac') == 'on'
     check_alergiano = request.form.get('check_alergiano') == 'on'
@@ -657,222 +700,846 @@ def marcar_evaluado():
     check_audicionnormal = request.form.get('check_audicionnormal') == 'on'
     check_tapondecerumen = request.form.get('check_tapondecerumen') == 'on'
     check_apinamientodental = request.form.get('check_apinamientodental') == 'on'
-    
-    # Es crucial obtener el nombre del estudiante de la base de datos si no viene en el formulario
-    # para evitar que se ponga en 'None' si no se envía en el POST
-    try:
-        res_estudiante_actual = requests.get(
-            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}&select=nombre,rut,fecha_nacimiento,nacionalidad",
-            headers=SUPABASE_HEADERS
-        )
-        res_estudiante_actual.raise_for_status()
-        estudiante_actual_data = res_estudiante_actual.json()
 
-        if estudiante_actual_data:
-            # Si el estudiante existe, usa sus datos como base y sobrescribe con los del formulario
-            update_data['nombre'] = estudiante_actual_data[0].get('nombre')
-            update_data['rut'] = estudiante_actual_data[0].get('rut')
-            update_data['fecha_nacimiento'] = estudiante_actual_data[0].get('fecha_nacimiento')
-            update_data['nacionalidad'] = estudiante_actual_data[0].get('nacionalidad')
-        else:
-            print(f"ADVERTENCIA: Estudiante {estudiante_id} no encontrado en DB al marcar como evaluado. Usando datos del formulario POST como fallback.")
-            # Fallback a los datos del formulario POST
-            update_data['nombre'] = nombre_neuro if form_type == 'neurologia' else nombre # Usa la variable correcta según el tipo de form
-            update_data['rut'] = rut_form
-            update_data['fecha_nacimiento'] = fecha_nacimiento_original_form
-            update_data['nacionalidad'] = nacionalidad_form
-    except requests.exceptions.RequestException as e:
-        print(f"ERROR: No se pudo obtener datos actuales del estudiante {estudiante_id}: {e}. Intentando usar datos del formulario POST.")
-        update_data['nombre'] = nombre_neuro if form_type == 'neurologia' else nombre
-        update_data['rut'] = rut_form
-        update_data['fecha_nacimiento'] = fecha_nacimiento_original_form
-        update_data['nacionalidad'] = nacionalidad_form
-    
-    update_data['edad'] = edad_form # Guardar la cadena de edad calculada
-
-    # Lógica para campos específicos según el tipo de formulario
+    # Lógica condicional para actualizar campos específicos según el tipo de formulario
     if form_type == 'neurologia':
         update_data.update({
+            'nombre_estudiante': nombre_neuro,
             'sexo': sexo_neuro,
             'estado_general': estado_general_neuro,
             'diagnostico': diagnostico_neuro,
-            'fecha_reevaluacion': fecha_reevaluacion_neuro_input, # Usa el input directo para DB
+            'fecha_reevaluacion': fecha_reevaluacion_neuro_input if fecha_reevaluacion_neuro_input else None,
             'derivaciones': derivaciones_comun,
+            'rut': rut_form,
+            'fecha_nacimiento': fecha_nacimiento_original_form,
+            'nacionalidad': nacionalidad_form,
+            'edad': edad_form,
         })
     elif form_type == 'medicina_familiar':
-        # Actualizar el campo 'sexo' general basado en los radio buttons de familiar
-        if genero_f == 'Femenino': # Usa las variables renombradas
-            update_data["sexo"] = 'F'
-        elif genero_m == 'Masculino': # Usa las variables renombradas
-            update_data["sexo"] = 'M'
-        else:
-            update_data["sexo"] = None
-
-        # Calcular fecha_reevaluacion basada en el select de años
-        fecha_reeval_db_familiar = None
-        if fecha_reevaluacion_select: # Usa la variable renombrada
-            try:
-                plazo_reevaluacion_years = int(fecha_reevaluacion_select)
-                fecha_reeval_obj = date.today() + timedelta(days=plazo_reevaluacion_years * 365)
-                fecha_reeval_db_familiar = fecha_reeval_obj.strftime('%Y-%m-%d')
-            except ValueError:
-                print(f"ADVERTENCIA: Valor inválido para fecha_reevaluacion_select en marcar_evaluado: {fecha_reevaluacion_select}")
-                fecha_reeval_db_familiar = None
-
+        # Aquí se guardan los campos del formulario de Medicina Familiar
         update_data.update({
-            "diagnostico_1": diagnostico_1,
-            "diagnostico_2": diagnostico_2,
-            "diagnostico_complementario": diagnostico_complementario,
-            "derivaciones": derivaciones_comun, # Usa la variable común 'derivaciones'
-            "observacion_1": observacion_1,
-            "observacion_2": observacion_2,
-            "observacion_3": observacion_3,
-            "observacion_4": observacion_4,
-            "observacion_5": observacion_5,
-            "observacion_6": observacion_6,
-            "observacion_7": observacion_7,
-            "altura": float(altura) if altura else None,
-            "peso": float(peso) if peso else None,
-            "imc": imc,
-            "clasificacion": clasificacion,
-            "fecha_evaluacion": str(date.today()),
-            "fecha_reevaluacion": fecha_reeval_db_familiar,
-            # Checkboxes - Estos valores se guardan como booleanos en Supabase
-            "check_cesarea": check_cesarea,
-            "check_atermino": check_atermino,
-            "check_vaginal": check_vaginal,
-            "check_prematuro": check_prematuro,
-            "check_acorde": check_acorde,
-            "check_retraso": check_retrasogeneralizado, # Guarda este como el campo retraso
-            "check_esquemai": check_esquemai,
-            "check_esquemac": check_esquemac,
-            "check_alergiano": check_alergiano,
-            "check_alergiasi": check_alergiasi,
-            "check_cirugiano": check_cirugiano,
-            "check_cirugiasi": check_cirugiasi,
-            "check_visionsinalteracion": check_visionsinalteracion,
-            "check_visionrefraccion": check_visionrefraccion,
-            "check_hipoacusia": check_hipoacusia,
-            "check_retenciondental": check_retenciondental,
-            "check_hipertrofia": check_hipertrofia,
-            "check_frenillolingual": check_frenillolingual,
-            "check_sinhallazgos": check_sinhallazgos,
-            "check_caries": check_caries,
-            "check_audicionnormal": check_audicionnormal,
-            "check_tapondecerumen": check_tapondecerumen,
-            "check_apinamientodental": check_apinamientodental,
+            'nombre_estudiante': nombre,
+            'sexo': genero_f if genero_f else genero_m, # Guardar el género seleccionado
+            'diagnostico_1': diagnostico_1,
+            'diagnostico_2': diagnostico_2,
+            'diagnostico_complementario': diagnostico_complementario,
+            'fecha_reevaluacion': fecha_reevaluacion_select if fecha_reevaluacion_select else None,
+            'derivaciones': derivaciones_comun,
+            'observacion_1': observacion_1,
+            'observacion_2': observacion_2,
+            'observacion_3': observacion_3,
+            'observacion_4': observacion_4,
+            'observacion_5': observacion_5,
+            'observacion_6': observacion_6,
+            'observacion_7': observacion_7,
+            'altura': altura,
+            'peso': peso,
+            'imc': imc,
+            'clasificacion': clasificacion,
+            'rut': rut_form,
+            'fecha_nacimiento': fecha_nacimiento_original_form,
+            'nacionalidad': nacionalidad_form,
+            'edad': edad_form,
+            'check_cesarea': check_cesarea,
+            'check_atermino': check_atermino,
+            'check_vaginal': check_vaginal,
+            'check_prematuro': check_prematuro,
+            'check_acorde': check_acorde,
+            'check_retrasogeneralizado': check_retrasogeneralizado,
+            'check_esquemai': check_esquemai,
+            'check_esquemac': check_esquemac,
+            'check_alergiano': check_alergiano,
+            'check_alergiasi': check_alergiasi,
+            'check_cirugiano': check_cirugiano,
+            'check_cirugiasi': check_cirugiasi,
+            'check_visionsinalteracion': check_visionsinalteracion,
+            'check_visionrefraccion': check_visionrefraccion,
+            'check_hipoacusia': check_hipoacusia,
+            'check_retenciondental': check_retenciondental,
+            'check_hipertrofia': check_hipertrofia,
+            'check_frenillolingual': check_frenillolingual,
+            'check_sinhallazgos': check_sinhallazgos,
+            'check_caries': check_caries,
+            'check_audicionnormal': check_audicionnormal,
+            'check_tapondecerumen': check_tapondecerumen,
+            'check_apinamientodental': check_apinamientodental,
         })
-    else:
-        print(f"ADVERTENCIA: Tipo de formulario desconocido '{form_type}' al guardar datos de evaluación.")
-        return jsonify({"success": False, "message": "Tipo de formulario no reconocido para guardar la evaluación."}), 400
+    
+    # Asegúrate de que las fechas estén en formato 'YYYY-MM-DD' si se guardan como string
+    if 'fecha_nacimiento' in update_data and update_data['fecha_nacimiento']:
+        try:
+            # Si viene en 'DD-MM-YYYY', convertir a 'YYYY-MM-DD' para la DB
+            update_data['fecha_nacimiento'] = datetime.strptime(update_data['fecha_nacimiento'], '%d-%m-%Y').strftime('%Y-%m-%d')
+        except ValueError:
+            # Si ya está en 'YYYY-MM-DD' o es inválida, mantenerla o manejar el error
+            pass # No hacer nada si ya está bien o es None/vacío
 
+    if 'fecha_reevaluacion' in update_data and update_data['fecha_reevaluacion']:
+        try:
+            # Si es del date picker de neurología ('DD/MM/YYYY')
+            if '/' in update_data['fecha_reevaluacion']:
+                update_data['fecha_reevaluacion'] = datetime.strptime(update_data['fecha_reevaluacion'], '%d/%m/%Y').strftime('%Y-%m-%d')
+            # Si es del select de medicina familiar (año, asumimos fin de año)
+            elif len(update_data['fecha_reevaluacion']) == 4 and update_data['fecha_reevaluacion'].isdigit():
+                year = int(update_data['fecha_reevaluacion'])
+                update_data['fecha_reevaluacion'] = str(date(year, 12, 31))
+        except ValueError:
+            pass # No hacer nada si el formato no coincide o es inválido
 
-    # Subir el PDF generado a Google Drive antes de actualizar la DB
-    pdf_file_content = None
-    try:
-        # Re-generar el PDF para subirlo a Drive (si no se hizo ya)
-        # Se asume que esta lógica se ejecutó antes para la descarga.
-        # Si ya se generó y está en memoria (output), se podría reutilizar.
-        # Para simplificar y asegurar que se sube la versión más reciente,
-        # la lógica de generación del PDF podría invocarse aquí también.
-        # Por ahora, simulamos la obtención del contenido del PDF para Drive.
-
-        # *** ATENCIÓN: En una aplicación real, no volverías a generar el PDF aquí si ya lo hiciste arriba.
-        # Deberías pasar el 'output' (io.BytesIO) a esta función o guardarlo temporalmente.
-        # Para este ejemplo, simplificamos asumiendo que el PDF ya está "listo"
-        # y simplemente "obtenemos su contenido".
-        
-        # Simulación de obtención de contenido del PDF (reemplazar con lógica real de PyPDF2)
-        # Esto es solo un placeholder, DEBES reemplazarlo con la lógica real de PyPDF2
-        # para generar el PDF en un objeto io.BytesIO como se hace en generar_pdf().
-        # Por ejemplo:
-        # reader = PdfReader(pdf_base_path)
-        # writer = PdfWriter()
-        # writer.add_page(reader.pages[0])
-        # writer.update_page_form_field_values(writer.pages[0], campos) # 'campos' debería ser el mismo que se usó para el PDF
-        # output_for_drive = io.BytesIO()
-        # writer.write(output_for_drive)
-        # output_for_drive.seek(0)
-        # pdf_file_content = output_for_drive
-
-        # Placeholder: Crear un PDF de prueba si no hay una forma de obtener el anterior.
-        # DEBES ASEGURARTE DE QUE 'output' DEL generar_pdf SE HAGA GLOBAL O SE PASE
-        # PARA NO TENER QUE REPETIR LA LÓGICA DE GENERACIÓN.
-        # Para este ejercicio, asumiremos que 'output' está disponible o que no se subirá el PDF.
-        # Si la intención es solo corregir el error de sintaxis y no implementar la subida a Drive
-        # en esta función, puedes ignorar esta sección de Drive.
-
-        # Si realmente quieres subir el PDF aquí, tendrías que recrearlo o pasarlo desde generar_pdf
-        # ya que 'output' no es accesible directamente desde aquí.
-        # Por simplicidad para la corrección de sintaxis, no modificaremos la lógica de PDF2.
-        
-        # Asumiendo que 'output' contiene el PDF generado, esto es una simulación.
-        # En una app real, 'output' debe ser el mismo BytesIO generado en /generar_pdf
-        
-        # Para el propósito de corregir la sintaxis, esta sección se puede considerar un placeholder.
-        # Se requiere más contexto si la intención es que el PDF sea subido *aquí* después de la descarga.
-        
-        # Obtener las credenciales de la empresa
-        creds = get_company_google_credentials()
-        if not creds:
-            raise Exception("No se pudieron obtener las credenciales de Google Drive de la empresa.")
-
-        # Asegúrate de tener el ID de la carpeta padre configurado
-        if not GOOGLE_DRIVE_PARENT_FOLDER_ID:
-            print("ADVERTENCIA: GOOGLE_DRIVE_PARENT_FOLDER_ID no configurado. Subiendo a la raíz del Drive.")
-            
-        # Crear o encontrar la carpeta de la nómina
-        drive_service = build('drive', 'v3', credentials=creds)
-        nombre_carpeta_nomina = f"Nómina {session.get('establecimiento_nombre', 'Desconocida')}_{nomina_id}"
-        nomina_folder_id = find_or_create_drive_folder(drive_service, nombre_carpeta_nomina, GOOGLE_DRIVE_PARENT_FOLDER_ID)
-
-        if not nomina_folder_id:
-            raise Exception("No se pudo encontrar o crear la carpeta de la nómina en Google Drive.")
-
-        # Generar un nombre de archivo único para Drive (o usar el de descarga)
-        nombre_archivo_drive = f"{normalizar(update_data.get('nombre', 'Desconocido'))}_{update_data.get('rut', 'SinRut')}_formulario_{form_type}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
-
-        # Simulación de un io.BytesIO con contenido de prueba para subir
-        # REEMPLAZAR ESTO CON EL CONTENIDO REAL DEL PDF GENERADO
-        # Si el PDF se genera en /generar_pdf y se descarga, este io.BytesIO
-        # debería ser el mismo objeto o una copia de su contenido.
-        pdf_content_for_drive = io.BytesIO(b"Este es un PDF de prueba si el original no se pasa.") 
-        # Si 'output' de generar_pdf es accesible: pdf_content_for_drive = output
-
-        uploaded_file_id = upload_pdf_to_google_drive(creds, pdf_content_for_drive, nombre_archivo_drive, nomina_folder_id)
-
-        if uploaded_file_id:
-            update_data['google_drive_file_id'] = uploaded_file_id
-            print(f"DEBUG: PDF subido a Drive con ID: {uploaded_file_id}")
-        else:
-            print("ERROR: Falló la subida del PDF a Google Drive.")
-            flash('Error al subir el PDF a Google Drive.', 'warning')
-
-    except Exception as e:
-        print(f"ERROR al intentar subir PDF a Google Drive en marcar_evaluado: {e}")
-        # flash(f"Advertencia: No se pudo subir el PDF a Google Drive: {e}", 'warning')
-        # No se interrumpe el flujo si falla la subida a Drive
+    print(f"DEBUG: Datos a actualizar en Supabase para estudiante {estudiante_id}: {json.dumps(update_data, indent=2)}")
 
     try:
         url_update = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}"
-        print(f"DEBUG: URL de actualización para marcar evaluado: {url_update}")
-        print(f"DEBUG: Datos de actualización para Supabase: {update_data}")
+        response = requests.patch(url_update, headers=SUPABASE_HEADERS, json=update_data)
+        response.raise_for_status() 
+        print(f"DEBUG: Respuesta Supabase PATCH status: {response.status_code}")
+        print(f"DEBUG: Respuesta Supabase PATCH body: {response.text}")
 
-        res = requests.patch(url_update, headers=SUPABASE_HEADERS, json=update_data)
-        res.raise_for_status()
-
-        print(f"DEBUG: Estudiante {estudiante_id} marcado como evaluado y datos guardados. Status: {res.status_code}")
-        return jsonify({"success": True, "message": "Evaluación guardada y estudiante marcado como evaluado."}), 200
+        if response.status_code == 204: # No Content para PATCH exitoso
+            flash('Estudiante marcado como evaluado y datos guardados correctamente.', 'success')
+        else:
+            flash(f'Error al marcar como evaluado o guardar datos. Status: {response.status_code}', 'error')
+            print(f"ERROR: Respuesta de Supabase no esperada: {response.status_code}, {response.text}")
 
     except requests.exceptions.RequestException as e:
-        print(f"❌ Error al marcar estudiante como evaluado o guardar datos en Supabase: {e}")
-        print(f"Response text: {res.text if 'res' in locals() else 'No response'}")
-        return jsonify({"success": False, "message": f"Error al guardar la evaluación: {e}"}), 500
+        print(f"❌ Error de red/API al marcar estudiante: {e}")
+        flash(f'Error al conectar con la base de datos: {e}', 'error')
     except Exception as e:
-        print(f"❌ Error inesperado al marcar estudiante como evaluado: {e}")
-        return jsonify({"success": False, "message": f"Error inesperado: {e}"}), 500
+        print(f"❌ Error inesperado al marcar estudiante: {e}")
+        flash(f'Error inesperado al guardar la evaluación: {e}', 'error')
+
+    return jsonify({"success": True, "message": "Evaluación guardada y marcada."}) # Mantener esta respuesta para que AJAX funcione correctamente
+
+@app.route('/subir_documento', methods=['POST'])
+def subir_documento():
+    if 'usuario' not in session:
+        flash('Debes iniciar sesión para subir documentos.', 'danger')
+        return redirect(url_for('index'))
+
+    if 'file' not in request.files:
+        flash('No se seleccionó ningún archivo.', 'error')
+        return redirect(url_for('dashboard')) 
+
+    file = request.files['file']
+    if file.filename == '':
+        flash('No se seleccionó ningún archivo.', 'error')
+        return redirect(url_for('dashboard'))
+
+    if not permitido(file.filename):
+        flash('Tipo de archivo no permitido.', 'error')
+        return redirect(url_for('dashboard'))
+
+    # Intentar subir a Google Drive si las credenciales están configuradas
+    creds = get_company_google_credentials()
+    if creds:
+        try:
+            service = build('drive', 'v3', credentials=creds)
+            # Asegurarse de que el ID de la carpeta padre esté configurado
+            if not GOOGLE_DRIVE_PARENT_FOLDER_ID:
+                flash("Error: El ID de la carpeta padre de Google Drive no está configurado.", 'error')
+                return redirect(url_for('dashboard'))
+
+            # Crear una carpeta para el año actual si no existe
+            current_year_folder_id = find_or_create_drive_folder(service, str(datetime.now().year), GOOGLE_DRIVE_PARENT_FOLDER_ID)
+            if not current_year_folder_id:
+                flash("Error: No se pudo encontrar o crear la carpeta del año en Google Drive.", 'error')
+                return redirect(url_for('dashboard'))
+
+            # Crear una carpeta para el mes actual dentro de la del año
+            current_month_name = datetime.now().strftime("%B").capitalize() # Nombre del mes
+            current_month_folder_id = find_or_create_drive_folder(service, current_month_name, current_year_folder_id)
+            if not current_month_folder_id:
+                flash("Error: No se pudo encontrar o crear la carpeta del mes en Google Drive.", 'error')
+                return redirect(url_for('dashboard'))
+
+            # Crear una carpeta para la fecha actual (DD-MM-YYYY) dentro de la del mes
+            current_date_folder_name = datetime.now().strftime("%d-%m-%Y")
+            current_date_folder_id = find_or_create_drive_folder(service, current_date_folder_name, current_month_folder_id)
+            if not current_date_folder_id:
+                flash("Error: No se pudo encontrar o crear la carpeta de la fecha en Google Drive.", 'error')
+                return redirect(url_for('dashboard'))
+
+            file_content = file.read()
+            file_name = secure_filename(file.filename)
+            file_mime_type, _ = mimetypes.guess_type(file_name)
+            if not file_mime_type:
+                file_mime_type = 'application/octet-stream' # Tipo genérico si no se puede adivinar
+
+            file_metadata = {
+                'name': file_name,
+                'mimeType': file_mime_type,
+                'parents': [current_date_folder_id] 
+            }
+
+            media = io.BytesIO(file_content)
+
+            uploaded_file = service.files().create(
+                body=file_metadata,
+                media_body=media,
+                fields='id, webViewLink, name'
+            ).execute()
+            
+            print(f"DEBUG: Archivo subido a Google Drive: {uploaded_file.get('name')} ({uploaded_file.get('id')})")
+            
+            # Guardar información en Supabase (tabla 'documentos')
+            document_id = str(uuid.uuid4())
+            new_document = {
+                'id': document_id,
+                'nombre_archivo': uploaded_file.get('name'),
+                'tipo_archivo': uploaded_file.get('mimeType', file_mime_type),
+                'url_drive': uploaded_file.get('webViewLink'),
+                'id_drive': uploaded_file.get('id'),
+                'fecha_subida': str(date.today()),
+                'subido_por_id': session.get('usuario_id')
+            }
+            
+            supabase_doc_url = f"{SUPABASE_URL}/rest/v1/documentos"
+            res_supabase_doc = requests.post(supabase_doc_url, headers=SUPABASE_HEADERS, json=new_document)
+            res_supabase_doc.raise_for_status()
+
+            flash('Archivo subido y registrado correctamente.', 'success')
+            return redirect(url_for('dashboard'))
+
+        except HttpError as error:
+            print(f"❌ Error al interactuar con Google Drive API: {error}")
+            flash(f'Error al subir el archivo a Google Drive: {error}', 'error')
+            return redirect(url_for('dashboard'))
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Error al guardar el documento en Supabase: {e}")
+            flash(f'Error al registrar el documento en la base de datos: {e}', 'error')
+            return redirect(url_for('dashboard'))
+        except Exception as e:
+            print(f"❌ Error inesperado al subir documento: {e}")
+            flash(f'Ocurrió un error inesperado al subir el archivo: {e}', 'error')
+            return redirect(url_for('dashboard'))
+    else:
+        flash('Error: Las credenciales de Google Drive no están configuradas para la empresa.', 'error')
+        return redirect(url_for('dashboard'))
 
 
+@app.route('/dashboard')
+def dashboard():
+    if 'usuario' not in session:
+        flash('Debes iniciar sesión para acceder a la página de administración.', 'danger')
+        return redirect(url_for('index'))
+
+    print(f"DEBUG: Accediendo a /dashboard. Usuario en sesión: {session.get('usuario')}, ID: {session.get('usuario_id')}, Rol: {session.get('rol_usuario')}")
+
+    # Obtener todas las nóminas médicas
+    nominas = []
+    try:
+        url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina,tipo_nomina,fecha_creacion,creada_por,form_type"
+        res_nominas = requests.get(url_nominas, headers=SUPABASE_HEADERS)
+        res_nominas.raise_for_status()
+        nominas_raw = res_nominas.json()
+        
+        # Procesar nóminas para obtener el creador y la cantidad de estudiantes
+        for nomina in nominas_raw:
+            # Convertir fecha_creacion a formato legible
+            if 'fecha_creacion' in nomina and nomina['fecha_creacion']:
+                nomina['fecha_creacion_formato'] = datetime.strptime(nomina['fecha_creacion'], '%Y-%m-%dT%H:%M:%S.%f%z').strftime('%d/%m/%Y')
+            else:
+                nomina['fecha_creacion_formato'] = 'N/A'
+
+            # Contar estudiantes y completados para cada nómina
+            try:
+                url_est_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nomina['id']}&select=id,fecha_relleno"
+                res_est_count = requests.get(url_est_count, headers=SUPABASE_HEADERS)
+                res_est_count.raise_for_status()
+                estudiantes_nomina = res_est_count.json()
+                
+                nomina['total_estudiantes'] = len(estudiantes_nomina)
+                nomina['formularios_completados'] = sum(1 for e in estudiantes_nomina if e['fecha_relleno'] is not None)
+            except requests.exceptions.RequestException as e:
+                print(f"❌ Error al contar estudiantes para nomina {nomina['id']}: {e}")
+                nomina['total_estudiantes'] = 0
+                nomina['formularios_completados'] = 0
+            
+            nominas.append(nomina)
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error al obtener nóminas: {e}")
+        flash('Error al cargar la lista de nóminas.', 'error')
+        nominas = [] # Asegurar que sea una lista vacía si falla
+
+    # Obtener todos los documentos subidos
+    documentos = []
+    try:
+        url_documentos = f"{SUPABASE_URL}/rest/v1/documentos?select=*,subido_por_id:id_usuario(username)"
+        res_documentos = requests.get(url_documentos, headers=SUPABASE_HEADERS)
+        res_documentos.raise_for_status()
+        documentos_raw = res_documentos.json()
+        
+        for doc in documentos_raw:
+            if 'fecha_subida' in doc and doc['fecha_subida']:
+                doc['fecha_subida_formato'] = datetime.strptime(doc['fecha_subida'], '%Y-%m-%d').strftime('%d/%m/%Y')
+            else:
+                doc['fecha_subida_formato'] = 'N/A'
+            
+            # Asegurar que 'subido_por_id' tenga un 'username' y no sea solo el ID
+            if doc.get('subido_por_id') and isinstance(doc['subido_por_id'], dict):
+                doc['subido_por_username'] = doc['subido_por_id'].get('username', 'Desconocido')
+            else:
+                doc['subido_por_username'] = 'Desconocido' # Si no se pudo obtener el username
+            documentos.append(doc)
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error al obtener documentos: {e}")
+        flash('Error al cargar la lista de documentos.', 'error')
+        documentos = []
+
+    return render_template('dashboard.html', 
+                           nominas=nominas, 
+                           documentos=documentos,
+                           establecimiento_nombre=session.get('establecimiento_nombre'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+
+        try:
+            # Autenticar con Supabase Auth (Sign-in)
+            auth_url = f"{SUPABASE_URL}/auth/v1/token?grant_type=password"
+            headers_auth = SUPABASE_HEADERS.copy()
+            headers_auth["Content-Type"] = "application/json"
+            
+            data = json.dumps({"email": email, "password": password})
+            print(f"DEBUG: Intentando login para email: {email}")
+            response = requests.post(auth_url, headers=headers_auth, data=data)
+            response.raise_for_status() # Lanza excepción para códigos de estado de error
+
+            auth_data = response.json()
+            access_token = auth_data['access_token']
+            user_id = auth_data['user']['id']
+            email_returned = auth_data['user']['email']
+
+            # Ahora, usa el access_token para obtener los datos del perfil del usuario (rol)
+            # Necesitas una tabla `usuarios` en Supabase que tenga el `id_usuario` (UUID) y `rol`
+            url_profile = f"{SUPABASE_URL}/rest/v1/usuarios?id_usuario=eq.{user_id}&select=username,rol"
+            headers_profile = SUPABASE_HEADERS.copy()
+            headers_profile["Authorization"] = f"Bearer {access_token}" # Usar el token de acceso del usuario
+            
+            profile_response = requests.get(url_profile, headers=headers_profile)
+            profile_response.raise_for_status()
+
+            profile_data = profile_response.json()
+
+            if profile_data:
+                user_profile = profile_data[0]
+                session['usuario'] = user_profile['username']
+                session['usuario_id'] = user_id
+                session['rol_usuario'] = user_profile['rol'] # Guardar el rol en la sesión
+                session['access_token'] = access_token
+                flash('Has iniciado sesión exitosamente.', 'success')
+                print(f"DEBUG: Usuario {session['usuario']} ({session['rol_usuario']}) ha iniciado sesión.")
+                return redirect(url_for('dashboard'))
+            else:
+                flash('No se encontró el perfil de usuario. Contacta al administrador.', 'error')
+                print(f"ERROR: No se encontró perfil de usuario para ID: {user_id}")
+                return render_template('index.html')
+
+        except requests.exceptions.RequestException as e:
+            error_message = 'Error de autenticación. Verifica tus credenciales o intenta de nuevo.'
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                    error_json = e.response.json()
+                    if 'error_description' in error_json:
+                        error_message = error_json['error_description']
+                    elif 'msg' in error_json:
+                        error_message = error_json['msg']
+                except ValueError: # No es un JSON
+                    error_message = f"Error de red o API: {e.response.text}"
+            
+            print(f"ERROR: Error durante el login: {error_message} (Detalle: {e})")
+            flash(f'Error de login: {error_message}', 'error')
+            return render_template('index.html')
+        except Exception as e:
+            print(f"ERROR: Error inesperado durante el login: {e}")
+            flash(f'Ocurrió un error inesperado: {e}', 'error')
+            return render_template('index.html')
+
+    return render_template('index.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('usuario', None)
+    session.pop('usuario_id', None)
+    session.pop('rol_usuario', None)
+    session.pop('access_token', None)
+    session.pop('establecimiento', None)
+    session.pop('current_nomina_id', None)
+    session.pop('establecimiento_nombre', None)
+    session.pop('current_form_type', None)
+    flash('Has cerrado sesión.', 'info')
+    return redirect(url_for('index'))
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        rol = request.form['rol']
+
+        if session.get('rol_usuario') != 'admin':
+            flash('Solo los administradores pueden registrar nuevos usuarios.', 'danger')
+            return redirect(url_for('dashboard'))
+
+        try:
+            # 1. Crear el usuario en Supabase Auth
+            auth_url = f"{SUPABASE_URL}/auth/v1/signup"
+            headers_auth = {
+                "apikey": SUPABASE_SERVICE_KEY, # Usar la service_key para signup de admin
+                "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+                "Content-Type": "application/json",
+            }
+            auth_data = {
+                "email": email,
+                "password": password
+            }
+            print(f"DEBUG: Intentando registrar usuario en Auth: {email}")
+            auth_response = requests.post(auth_url, headers=headers_auth, json=auth_data)
+            auth_response.raise_for_status()
+            
+            user_auth_data = auth_response.json()
+            user_id = user_auth_data['user']['id']
+
+            # 2. Insertar el perfil del usuario en la tabla 'usuarios'
+            profile_url = f"{SUPABASE_URL}/rest/v1/usuarios"
+            profile_headers = {
+                "apikey": SUPABASE_SERVICE_KEY,
+                "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+                "Content-Type": "application/json",
+                "Prefer": "return=representation"
+            }
+            profile_data = {
+                "id_usuario": user_id,
+                "username": username,
+                "email": email,
+                "rol": rol
+            }
+            print(f"DEBUG: Intentando crear perfil de usuario en DB: {username} ({rol})")
+            profile_response = requests.post(profile_url, headers=profile_headers, json=profile_data)
+            profile_response.raise_for_status()
+
+            flash('Usuario registrado exitosamente.', 'success')
+            print(f"DEBUG: Usuario {username} registrado con rol {rol}.")
+            return redirect(url_for('admin_users'))
+
+        except requests.exceptions.RequestException as e:
+            error_message = 'Error al registrar usuario. Intenta de nuevo.'
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                    error_json = e.response.json()
+                    if 'msg' in error_json:
+                        error_message = error_json['msg']
+                    elif 'error_description' in error_json:
+                        error_message = error_json['error_description']
+                except ValueError:
+                    error_message = f"Error de red o API: {e.response.text}"
+            
+            print(f"ERROR: Error durante el registro: {error_message} (Detalle: {e})")
+            flash(f'Error de registro: {error_message}', 'error')
+            return render_template('register.html')
+        except Exception as e:
+            print(f"ERROR: Error inesperado durante el registro: {e}")
+            flash(f'Ocurrió un error inesperado: {e}', 'error')
+            return render_template('register.html')
+            
+    return render_template('register.html')
+
+@app.route('/admin_users')
+def admin_users():
+    if 'usuario' not in session or session.get('rol_usuario') != 'admin':
+        flash('Acceso denegado. Solo administradores pueden ver esta página.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    users = []
+    try:
+        url_users = f"{SUPABASE_URL}/rest/v1/usuarios?select=id_usuario,username,email,rol"
+        res_users = requests.get(url_users, headers=SUPABASE_HEADERS) # Usar headers de usuario logueado si es admin
+        res_users.raise_for_status()
+        users = res_users.json()
+    except requests.exceptions.RequestException as e:
+        flash(f'Error al cargar usuarios: {e}', 'error')
+        print(f"ERROR: Error al cargar usuarios: {e}")
+    
+    return render_template('admin_users.html', users=users)
+
+@app.route('/delete_user/<user_id>', methods=['POST'])
+def delete_user(user_id):
+    if 'usuario' not in session or session.get('rol_usuario') != 'admin':
+        flash('Acceso denegado. Solo administradores pueden eliminar usuarios.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    try:
+        # 1. Eliminar de la tabla 'usuarios'
+        url_profile = f"{SUPABASE_URL}/rest/v1/usuarios?id_usuario=eq.{user_id}"
+        headers_profile = {
+            "apikey": SUPABASE_SERVICE_KEY,
+            "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}"
+        }
+        print(f"DEBUG: Intentando eliminar perfil de usuario de DB: {user_id}")
+        profile_response = requests.delete(url_profile, headers=headers_profile)
+        profile_response.raise_for_status()
+
+        # 2. Eliminar de Supabase Auth (requiere Service Key)
+        auth_url = f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}"
+        headers_auth = {
+            "apikey": SUPABASE_SERVICE_KEY,
+            "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}"
+        }
+        print(f"DEBUG: Intentando eliminar usuario de Auth: {user_id}")
+        auth_response = requests.delete(auth_url, headers=headers_auth)
+        auth_response.raise_for_status()
+
+        flash('Usuario eliminado exitosamente.', 'success')
+        print(f"DEBUG: Usuario {user_id} eliminado completamente.")
+
+    except requests.exceptions.RequestException as e:
+        error_message = 'Error al eliminar usuario. Intenta de nuevo.'
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                error_json = e.response.json()
+                if 'msg' in error_json:
+                    error_message = error_json['msg']
+                elif 'error_description' in error_json:
+                    error_message = error_json['error_description']
+            except ValueError:
+                error_message = f"Error de red o API: {e.response.text}"
+        print(f"ERROR: Error durante la eliminación del usuario {user_id}: {error_message} (Detalle: {e})")
+        flash(f'Error al eliminar usuario: {error_message}', 'error')
+    except Exception as e:
+        print(f"ERROR: Error inesperado durante la eliminación del usuario {user_id}: {e}")
+        flash(f'Ocurrió un error inesperado al eliminar el usuario: {e}', 'error')
+
+    return redirect(url_for('admin_users'))
+
+@app.route('/create_nomina', methods=['GET', 'POST'])
+def create_nomina():
+    if 'usuario' not in session or session.get('rol_usuario') not in ['admin', 'doctora']:
+        flash('Acceso denegado. Solo administradores o doctoras pueden crear nóminas.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        nombre_nomina = request.form['nombre_nomina']
+        tipo_nomina = request.form['tipo_nomina']
+        form_type = request.form['form_type'] # Nuevo campo para el tipo de formulario
+
+        if not nombre_nomina or not tipo_nomina or not form_type:
+            flash('Todos los campos son obligatorios.', 'error')
+            return render_template('create_nomina.html')
+
+        try:
+            url_nomina = f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            headers_nomina = {
+                "apikey": SUPABASE_SERVICE_KEY,
+                "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+                "Content-Type": "application/json",
+                "Prefer": "return=representation"
+            }
+            nomina_data = {
+                "nombre_nomina": nombre_nomina,
+                "tipo_nomina": tipo_nomina,
+                "fecha_creacion": str(datetime.now()),
+                "creada_por": session.get('usuario_id'),
+                "form_type": form_type # Guardar el tipo de formulario
+            }
+            print(f"DEBUG: Intentando crear nómina: {nombre_nomina} ({tipo_nomina}, {form_type})")
+            response = requests.post(url_nomina, headers=headers_nomina, json=nomina_data)
+            response.raise_for_status()
+
+            flash('Nómina creada exitosamente.', 'success')
+            print(f"DEBUG: Nómina '{nombre_nomina}' creada.")
+            return redirect(url_for('dashboard'))
+
+        except requests.exceptions.RequestException as e:
+            error_message = 'Error al crear nómina. Intenta de nuevo.'
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                    error_json = e.response.json()
+                    if 'message' in error_json:
+                        error_message = error_json['message']
+                except ValueError:
+                    error_message = f"Error de red o API: {e.response.text}"
+            print(f"ERROR: Error durante la creación de nómina: {error_message} (Detalle: {e})")
+            flash(f'Error al crear nómina: {error_message}', 'error')
+            return render_template('create_nomina.html')
+        except Exception as e:
+            print(f"ERROR: Error inesperado durante la creación de nómina: {e}")
+            flash(f'Ocurrió un error inesperado: {e}', 'error')
+            return render_template('create_nomina.html')
+
+    return render_template('create_nomina.html')
+
+
+@app.route('/upload_estudiantes/<nomina_id>', methods=['GET', 'POST'])
+def upload_estudiantes(nomina_id):
+    if 'usuario' not in session or session.get('rol_usuario') not in ['admin', 'doctora']:
+        flash('Acceso denegado. Solo administradores o doctoras pueden subir estudiantes.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    nomina_nombre = "N/A"
+    nomina_tipo = "N/A"
+    try:
+        url_nomina = f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}&select=nombre_nomina,tipo_nomina"
+        res_nomina = requests.get(url_nomina, headers=SUPABASE_HEADERS)
+        res_nomina.raise_for_status()
+        nomina_data = res_nomina.json()
+        if nomina_data:
+            nomina_nombre = nomina_data[0]['nombre_nomina']
+            nomina_tipo = nomina_data[0]['tipo_nomina']
+    except Exception as e:
+        print(f"Error al obtener info de nómina {nomina_id}: {e}")
+        flash('Error al cargar la información de la nómina.', 'error')
+        return redirect(url_for('dashboard'))
+
+
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No se seleccionó ningún archivo.', 'error')
+            return redirect(request.url)
+        
+        file = request.files['file']
+        if file.filename == '':
+            flash('No se seleccionó ningún archivo.', 'error')
+            return redirect(request.url)
+        
+        if not permitido(file.filename):
+            flash('Tipo de archivo no permitido. Solo se permiten archivos Excel (xls, xlsx) y CSV.', 'error')
+            return redirect(request.url)
+
+        try:
+            df = None
+            if file.filename.endswith(('.xls', '.xlsx')):
+                df = pd.read_excel(file)
+            elif file.filename.endswith('.csv'):
+                df = pd.read_csv(file)
+            else:
+                flash('Formato de archivo no soportado. Por favor, sube un archivo Excel o CSV.', 'error')
+                return redirect(request.url)
+
+            expected_columns = ['nombre', 'rut', 'fecha_nacimiento', 'nacionalidad']
+            if not all(col in df.columns for col in expected_columns):
+                flash(f'El archivo debe contener las columnas: {", ".join(expected_columns)}', 'error')
+                return redirect(request.url)
+
+            estudiantes_to_insert = []
+            for index, row in df.iterrows():
+                # Normalizar la fecha de nacimiento a 'YYYY-MM-DD'
+                fecha_nac_str = None
+                if pd.notna(row['fecha_nacimiento']):
+                    try:
+                        # Intentar parsear como fecha o string
+                        if isinstance(row['fecha_nacimiento'], datetime):
+                            fecha_nac_str = row['fecha_nacimiento'].strftime('%Y-%m-%d')
+                        else: # Intentar como string con varios formatos
+                            # Formato DD/MM/YYYY o DD-MM-YYYY
+                            if isinstance(row['fecha_nacimiento'], str) and ('/' in row['fecha_nacimiento'] or '-' in row['fecha_nacimiento']):
+                                try:
+                                    fecha_nac_str = datetime.strptime(row['fecha_nacimiento'], '%d/%m/%Y').strftime('%Y-%m-%d')
+                                except ValueError:
+                                    fecha_nac_str = datetime.strptime(row['fecha_nacimiento'], '%d-%m-%Y').strftime('%Y-%m-%d')
+                            else: # Otros posibles formatos que pandas podría haber interpretado como int/float
+                                fecha_nac_str = str(row['fecha_nacimiento'])
+                    except Exception as date_e:
+                        print(f"Advertencia: No se pudo parsear la fecha de nacimiento '{row['fecha_nacimiento']}' en la fila {index+2}: {date_e}. Se guardará como NULL.")
+                        fecha_nac_str = None
+                
+                # Intentar adivinar el género si no se proporciona directamente
+                sexo_adivinado = guess_gender(str(row['nombre'])) if pd.notna(row['nombre']) else None
+
+                estudiantes_to_insert.append({
+                    'nomina_id': nomina_id,
+                    'nombre_estudiante': str(row['nombre']) if pd.notna(row['nombre']) else None,
+                    'rut': str(row['rut']) if pd.notna(row['rut']) else None,
+                    'fecha_nacimiento': fecha_nac_str,
+                    'nacionalidad': str(row['nacionalidad']) if pd.notna(row['nacionalidad']) else None,
+                    'sexo': sexo_adivinado, # Asignar el género adivinado
+                    'fecha_ingreso': str(date.today()),
+                    'estado_evaluacion': 'pendiente'
+                })
+            
+            if not estudiantes_to_insert:
+                flash('No se encontraron estudiantes válidos en el archivo.', 'warning')
+                return redirect(request.url)
+
+            # Insertar en Supabase (usando el servicio_key para inserciones bulk)
+            url_insert = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            headers_insert = {
+                "apikey": SUPABASE_SERVICE_KEY,
+                "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+                "Content-Type": "application/json",
+                "Prefer": "return=representation"
+            }
+            
+            print(f"DEBUG: Intentando insertar {len(estudiantes_to_insert)} estudiantes en Supabase.")
+            response = requests.post(url_insert, headers=headers_insert, json=estudiantes_to_insert)
+            response.raise_for_status()
+
+            flash(f'Se subieron {len(estudiantes_to_insert)} estudiantes correctamente.', 'success')
+            print(f"DEBUG: {len(estudiantes_to_insert)} estudiantes subidos exitosamente.")
+            return redirect(url_for('dashboard'))
+
+        except pd.errors.EmptyDataError:
+            flash('El archivo está vacío.', 'error')
+            return redirect(request.url)
+        except Exception as e:
+            print(f"Error al procesar archivo o subir a Supabase: {e}")
+            flash(f'Error al procesar el archivo o subir estudiantes: {e}', 'error')
+            return redirect(request.url)
+
+    return render_template('upload_estudiantes.html', nomina_id=nomina_id, nombre_nomina=nomina_nombre, tipo_nomina=nomina_tipo)
+
+
+@app.route('/delete_nomina/<nomina_id>', methods=['POST'])
+def delete_nomina(nomina_id):
+    if 'usuario' not in session or session.get('rol_usuario') != 'admin':
+        flash('Acceso denegado. Solo administradores pueden eliminar nóminas.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    try:
+        # Primero, eliminar estudiantes asociados (si hay una relación de clave externa con CASCADE DELETE no es necesario)
+        # Si no hay CASCADE DELETE en la DB, descomentar lo siguiente:
+        # url_delete_estudiantes = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nomina_id}"
+        # res_del_est = requests.delete(url_delete_estudiantes, headers=SUPABASE_SERVICE_HEADERS)
+        # res_del_est.raise_for_status()
+        # print(f"DEBUG: Estudiantes de nomina {nomina_id} eliminados.")
+
+        url_delete_nomina = f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}"
+        response = requests.delete(url_delete_nomina, headers=SUPABASE_SERVICE_HEADERS)
+        response.raise_for_status()
+
+        flash('Nómina eliminada exitosamente.', 'success')
+        print(f"DEBUG: Nómina {nomina_id} eliminada.")
+    except requests.exceptions.RequestException as e:
+        print(f"Error al eliminar nómina {nomina_id}: {e}")
+        flash(f'Error al eliminar la nómina: {e}', 'error')
+    except Exception as e:
+        print(f"Error inesperado al eliminar nómina {nomina_id}: {e}")
+        flash(f'Ocurrió un error inesperado al eliminar la nómina: {e}', 'error')
+    
+    return redirect(url_for('dashboard'))
+
+@app.route('/delete_document/<document_id>', methods=['POST'])
+def delete_document(document_id):
+    if 'usuario' not in session or session.get('rol_usuario') != 'admin':
+        flash('Acceso denegado. Solo administradores pueden eliminar documentos.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    try:
+        # 1. Obtener info del documento de Supabase para obtener id_drive
+        url_doc = f"{SUPABASE_URL}/rest/v1/documentos?id=eq.{document_id}&select=id_drive"
+        res_doc = requests.get(url_doc, headers=SUPABASE_HEADERS)
+        res_doc.raise_for_status()
+        doc_data = res_doc.json()
+
+        if not doc_data:
+            flash('Documento no encontrado en la base de datos.', 'error')
+            return redirect(url_for('dashboard'))
+        
+        drive_file_id = doc_data[0].get('id_drive')
+
+        # 2. Eliminar de Google Drive
+        if drive_file_id:
+            creds = get_company_google_credentials()
+            if creds:
+                try:
+                    service = build('drive', 'v3', credentials=creds)
+                    service.files().delete(fileId=drive_file_id).execute()
+                    print(f"DEBUG: Archivo {drive_file_id} eliminado de Google Drive.")
+                except HttpError as error:
+                    if error.resp.status == 404:
+                        print(f"Advertencia: Archivo {drive_file_id} no encontrado en Google Drive, pero se intentará eliminar de Supabase.")
+                    else:
+                        print(f"ERROR: Error al eliminar archivo de Google Drive {drive_file_id}: {error}")
+                        flash(f'Error al eliminar el archivo de Google Drive: {error}', 'error')
+                        return redirect(url_for('dashboard'))
+            else:
+                flash('Error: Las credenciales de Google Drive no están configuradas para la empresa.', 'error')
+                return redirect(url_for('dashboard'))
+        
+        # 3. Eliminar de la tabla 'documentos' en Supabase
+        url_delete_doc = f"{SUPABASE_URL}/rest/v1/documentos?id=eq.{document_id}"
+        response = requests.delete(url_delete_doc, headers=SUPABASE_SERVICE_HEADERS)
+        response.raise_for_status()
+
+        flash('Documento eliminado exitosamente.', 'success')
+        print(f"DEBUG: Documento {document_id} eliminado completamente.")
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error al eliminar documento {document_id}: {e}")
+        flash(f'Error al eliminar el documento: {e}', 'error')
+    except Exception as e:
+        print(f"Error inesperado al eliminar documento {document_id}: {e}")
+        flash(f'Ocurrió un error inesperado al eliminar el documento: {e}', 'error')
+    
+    return redirect(url_for('dashboard'))
+
+@app.route('/download_document/<document_id>', methods=['GET'])
+def download_document(document_id):
+    if 'usuario' not in session:
+        flash('Debes iniciar sesión para descargar documentos.', 'danger')
+        return redirect(url_for('index'))
+
+    try:
+        # Obtener la URL de descarga o el id_drive del documento de Supabase
+        url_doc = f"{SUPABASE_URL}/rest/v1/documentos?id=eq.{document_id}&select=id_drive,nombre_archivo,tipo_archivo"
+        res_doc = requests.get(url_doc, headers=SUPABASE_HEADERS)
+        res_doc.raise_for_status()
+        doc_data = res_doc.json()
+
+        if not doc_data:
+            flash('Documento no encontrado.', 'error')
+            return redirect(url_for('dashboard'))
+        
+        doc_info = doc_data[0]
+        drive_file_id = doc_info.get('id_drive')
+        file_name = doc_info.get('nombre_archivo', 'documento_descargado')
+        mime_type = doc_info.get('tipo_archivo', 'application/octet-stream')
+
+        if not drive_file_id:
+            flash('ID de Google Drive no encontrado para este documento.', 'error')
+            return redirect(url_for('dashboard'))
+
+        creds = get_company_google_credentials()
+        if creds:
+            service = build('drive', 'v3', credentials=creds)
+            # Para exportar Docs/Sheets/Slides de Google a PDF u otros formatos
+            # Para archivos que NO son nativos de Google, simplemente se descarga el 'content'
+            request_drive = service.files().get_media(fileId=drive_file_id)
+            
+            file_content = io.BytesIO()
+            downloader = request_drive
+            status, done = 0, False
+            while done is False:
+                status, done = downloader.next_chunk(file_content)
+                print(f"Download {int(status.progress() * 100)}%.")
+            
+            file_content.seek(0)
+            
+            response = Response(file_content.read(), mimetype=mime_type)
+            response.headers["Content-Disposition"] = f"attachment; filename={file_name}"
+            print(f"DEBUG: Enviando archivo para descarga: {file_name}")
+            return response
+
+        else:
+            flash('Error: Las credenciales de Google Drive no están configuradas para la empresa.', 'error')
+            return redirect(url_for('dashboard'))
+
+    except HttpError as error:
+        print(f"ERROR: Error al descargar desde Google Drive: {error}")
+        flash(f'Error al descargar el archivo de Google Drive: {error}', 'error')
+        return redirect(url_for('dashboard'))
+    except Exception as e:
+        print(f"ERROR: Error inesperado al descargar documento: {e}")
+        flash(f'Ocurrió un error inesperado al descargar el archivo: {e}', 'error')
+        return redirect(url_for('dashboard'))
+
+
+# -------------------- NUEVA RUTA PARA DEPURAR CAMPOS DE PDF --------------------
 @app.route('/debug_pdf_fields', methods=['GET', 'POST'])
 def debug_pdf_fields():
     form_fields = []

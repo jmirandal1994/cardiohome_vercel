@@ -473,7 +473,7 @@ elif form_type == 'medicina_familiar':
 
 if form_type == 'neurologia':
         print(f"DEBUG: generar_pdf (Neurología) - nombre={nombre_neuro}, sexo={sexo_neuro}, diagnostico={diagnostico_neuro}")
-    elif form_type == 'medicina_familiar':
+elif form_type == 'medicina_familiar':
         print(f"DEBUG: generar_pdf (Familiar) - nombre={nombre}, genero_f={genero_f}, genero_m={genero_m}, diagnostico_1={diagnostico_1}")
 
 
@@ -2376,6 +2376,5 @@ def debug_pdf_fields():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
-
 
 

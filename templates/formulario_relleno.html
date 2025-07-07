@@ -880,12 +880,15 @@
             document.querySelectorAll('.formulario form').forEach(form => {
                 // Autocompletar Fecha Evaluación con la fecha de hoy si está vacía
                 const fechaEvaluacionInput = form.querySelector('input[name="fecha_evaluacion"]');
-                if (fechaEvaluacionInput && !fechaEvaluacionInput.value) {
+                console.log(`DEBUG: Fecha Evaluación inicial para form ${form.id}: '${fechaEvaluacionInput.value}'`);
+                // Check if the value is null or an empty string after trimming whitespace
+                if (fechaEvaluacionInput && (fechaEvaluacionInput.value === null || fechaEvaluacionInput.value.trim() === '')) {
                     const today = new Date();
                     const yyyy = today.getFullYear();
                     const mm = String(today.getMonth() + 1).padStart(2, '0');
                     const dd = String(today.getDate()).padStart(2, '0');
                     fechaEvaluacionInput.value = `${yyyy}-${mm}-${dd}`;
+                    console.log(`DEBUG: Fecha Evaluación autocompletada a: '${fechaEvaluacionInput.value}'`);
                 }
 
                 updatePreview(form); // Actualiza la vista previa con los valores iniciales
@@ -894,7 +897,7 @@
                 const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');
                 
                 // Si la fecha de reevaluación ya tiene un valor (viene de la DB), no sobrescribir con el selector de años
-                if (selectPlazo && selectPlazo.value && !fechaReevaluacionInput.value) {
+                if (selectPlazo && selectPlazo.value && (fechaReevaluacionInput.value === null || fechaReevaluacionInput.value.trim() === '')) {
                     setFechaReevaluacion(selectPlazo);
                 }
             });
@@ -934,14 +937,15 @@
             }
             
             if (!isNaN(anos) && anos > 0) {
-                const evalDate = new Date(fechaEvaluacionInput.value); // Usa la fecha de evaluación para el cálculo
+                // Añadir 'T00:00:00' para asegurar que la fecha se interprete como UTC medianoche y evitar problemas de zona horaria
+                const evalDate = new Date(fechaEvaluacionInput.value + 'T00:00:00'); 
                 const futureDate = new Date(evalDate.getFullYear() + anos, evalDate.getMonth(), evalDate.getDate()); 
 
                 const year = futureDate.getFullYear();
                 const month = String(futureDate.getMonth() + 1).padStart(2, '0');
                 const day = String(futureDate.getDate()).padStart(2, '0');
 
-                fechaReevaluacionInput.value = `${year}-${month}-${day}`; 
+                fechaReevaluacionInput.value = `${year}-${month}-${dd}`; 
             } else {
                 fechaReevaluacionInput.value = ''; 
             }

@@ -418,10 +418,6 @@ def generar_pdf():
     if form_type == 'neurologia':
         print(f"DEBUG: generar_pdf (Neurología) - nombre={nombre_neuro}, sexo={sexo_neuro}, diagnostico={diagnostico_neuro}")
     if form_type == 'medicina_familiar':
-        nombre = estudiante.get('nombre', '')
-        if not nombre:
-            flash('Faltan campos obligatorios en el formulario de Medicina Familiar para guardar y generar PDF (campo: nombre)', 'danger')
-            return redirect(request.referrer or url_for('index'))
         print(f"DEBUG: generar_pdf (Familiar) - nombre={nombre}, genero_f={genero_f}, genero_m={genero_m}, diagnostico_1={diagnostico_1}")
 
 
@@ -433,10 +429,6 @@ def generar_pdf():
                 return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
             return redirect(url_for('dashboard'))
     if form_type == 'medicina_familiar':
-        nombre = estudiante.get('nombre', '')
-        if not nombre:
-            flash('Faltan campos obligatorios en el formulario de Medicina Familiar para guardar y generar PDF (campo: nombre)', 'danger')
-            return redirect(request.referrer or url_for('index'))
         # Validar campos específicos de Medicina Familiar
         required_familiar_fields = [
             'nombre', 'rut', 'fecha_nac_original', 'edad', 'nacionalidad', 
@@ -487,10 +479,6 @@ def generar_pdf():
             fecha_reeval_pdf = fecha_reevaluacion_neuro_input # Si viene en otro formato, se usa tal cual
             fecha_reeval_db = fecha_reevaluacion_neuro_input # También para la DB
     if form_type == 'medicina_familiar':
-        nombre = estudiante.get('nombre', '')
-        if not nombre:
-            flash('Faltan campos obligatorios en el formulario de Medicina Familiar para guardar y generar PDF (campo: nombre)', 'danger')
-            return redirect(request.referrer or url_for('index'))
         # Usa la variable de input de medicina familiar
         if fecha_reevaluacion_select:
             try:
@@ -523,10 +511,6 @@ def generar_pdf():
                 'derivaciones': derivaciones,
             })
         if form_type == 'medicina_familiar':
-         nombre = estudiante.get('nombre', '')
-        if not nombre:
-            flash('Faltan campos obligatorios en el formulario de Medicina Familiar para guardar y generar PDF (campo: nombre)', 'danger')
-            return redirect(request.referrer or url_for('index'))
             update_data['nombre'] = nombre # Actualizar el campo 'nombre' en Supabase con el nombre de familiar
 
             if genero_f == 'Femenino': # Usa las variables renombradas
@@ -608,10 +592,6 @@ def generar_pdf():
     if form_type == 'neurologia':
         pdf_base_path = PDF_BASE_NEUROLOGIA
     if form_type == 'medicina_familiar':
-        nombre = estudiante.get('nombre', '')
-        if not nombre:
-            flash('Faltan campos obligatorios en el formulario de Medicina Familiar para guardar y generar PDF (campo: nombre)', 'danger')
-            return redirect(request.referrer or url_for('index'))
         pdf_base_path = PDF_BASE_FAMILIAR
     else:
         flash("❌ Tipo de formulario no reconocido para generar PDF.", 'error')
@@ -649,10 +629,6 @@ def generar_pdf():
                 "sexo_m": "X" if sexo_neuro == "M" else "",
             }
         if form_type == 'medicina_familiar':
-          nombre = estudiante.get('nombre', '')
-        if not nombre:
-            flash('Faltan campos obligatorios en el formulario de Medicina Familiar para guardar y generar PDF (campo: nombre)', 'danger')
-            return redirect(request.referrer or url_for('index'))
             # Mapeo de los campos del formulario HTML a los campos del PDF Familiar
             # Usando los nombres EXACTOS de tus variables y campos de PDF
             campos = {
@@ -869,10 +845,6 @@ def marcar_evaluado():
             'derivaciones': derivaciones_comun,
         })
     if form_type == 'medicina_familiar':
-        nombre = estudiante.get('nombre', '')
-        if not nombre:
-            flash('Faltan campos obligatorios en el formulario de Medicina Familiar para guardar y generar PDF (campo: nombre)', 'danger')
-            return redirect(request.referrer or url_for('index'))
         # Actualizar el campo 'sexo' general basado en los radio buttons de familiar
         if genero_f == 'Femenino': # Usa las variables renombradas
             update_data["sexo"] = 'F'
@@ -1644,10 +1616,6 @@ def enviar_formulario_a_drive():
             except ValueError:
                 pass
     if form_type == 'medicina_familiar':
-        nombre = estudiante.get('nombre', '')
-        if not nombre:
-            flash('Faltan campos obligatorios en el formulario de Medicina Familiar para guardar y generar PDF (campo: nombre)', 'danger')
-            return redirect(request.referrer or url_for('index'))
         if fecha_reevaluacion_select:
             try:
                 plazo_reevaluacion_years = int(fecha_reevaluacion_select)
@@ -1664,10 +1632,6 @@ def enviar_formulario_a_drive():
     if form_type == 'neurologia':
         pdf_base_path = PDF_BASE_NEUROLOGIA
     if form_type == 'medicina_familiar':
-        nombre = estudiante.get('nombre', '')
-        if not nombre:
-            flash('Faltan campos obligatorios en el formulario de Medicina Familiar para guardar y generar PDF (campo: nombre)', 'danger')
-            return redirect(request.referrer or url_for('index'))
         pdf_base_path = PDF_BASE_FAMILIAR
     else:
         return jsonify({"success": False, "message": "Tipo de formulario no reconocido para generar PDF."}), 400
@@ -1701,10 +1665,6 @@ def enviar_formulario_a_drive():
                 "sexo_m": "X" if sexo_neuro == "M" else "",
             }
         if form_type == 'medicina_familiar':
-          nombre = estudiante.get('nombre', '')
-        if not nombre:
-            flash('Faltan campos obligatorios en el formulario de Medicina Familiar para guardar y generar PDF (campo: nombre)', 'danger')
-            return redirect(request.referrer or url_for('index'))
             # Mapeo de los campos del formulario HTML a los campos del PDF Familiar
             # Usando los nombres EXACTOS de tus variables y campos de PDF
             campos = {
@@ -2095,10 +2055,6 @@ def generar_pdfs_visibles():
     if form_type == 'neurologia':
         pdf_base_path = PDF_BASE_NEUROLOGIA
     if form_type == 'medicina_familiar':
-        nombre = estudiante.get('nombre', '')
-        if not nombre:
-            flash('Faltan campos obligatorios en el formulario de Medicina Familiar para guardar y generar PDF (campo: nombre)', 'danger')
-            return redirect(request.referrer or url_for('index'))
         pdf_base_path = PDF_BASE_FAMILIAR
     else:
         return jsonify({"success": False, "message": "Tipo de formulario no reconocido para generar PDF."}), 400
@@ -2161,13 +2117,9 @@ def generar_pdfs_visibles():
                     "sexo_m": "X" if est.get('sexo') == "M" else "",
                 }
             if form_type == 'medicina_familiar':
-              nombre = estudiante.get('nombre', '')
-        if not nombre:
-            flash('Faltan campos obligatorios en el formulario de Medicina Familiar para guardar y generar PDF (campo: nombre)', 'danger')
-            return redirect(request.referrer or url_for('index'))
                 # Mapeo de los campos del PDF Familiar usando los nombres EXACTOS encontrados en el PDF
                 # y asumiendo que los campos de la DB coinciden con los nombres de la lista del usuario.
-        campos = {
+                campos = {
                     "nombre": est.get('nombre', ''), # Asumiendo que el campo DB para nombre familiar es 'nombre'
                     "rut": est.get('rut', ''),
                     "fecha_nacimiento": est.get('fecha_nacimiento_formato', ''),
@@ -2217,21 +2169,21 @@ def generar_pdfs_visibles():
                     "check_hipertrofia": "/Yes" if est.get('check_hipertrofia') else "",
                 }
 
-        if "/AcroForm" not in writer_single_pdf._root_object:
+            if "/AcroForm" not in writer_single_pdf._root_object:
                 writer_single_pdf._root_object.update({
                     NameObject("/AcroForm"): DictionaryObject()
                 })
-        writer_single_pdf.update_page_form_field_values(writer_single_pdf.pages[0], campos)
-        writer_single_pdf._root_object["/AcroForm"].update({
+            writer_single_pdf.update_page_form_field_values(writer_single_pdf.pages[0], campos)
+            writer_single_pdf._root_object["/AcroForm"].update({
                 NameObject("/NeedAppearances"): BooleanObject(True)
             })
 
-        temp_output = io.BytesIO()
-        writer_single_pdf.write(temp_output)
-        temp_output.seek(0)
+            temp_output = io.BytesIO()
+            writer_single_pdf.write(temp_output)
+            temp_output.seek(0)
 
-        temp_reader = PdfReader(temp_output)
-        for page_num in range(len(temp_reader.pages)):
+            temp_reader = PdfReader(temp_output)
+            for page_num in range(len(temp_reader.pages)):
                 merged_pdf_writer.add_page(temp_reader.pages[page_num])
 
         final_output_pdf = io.BytesIO()

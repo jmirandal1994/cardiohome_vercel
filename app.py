@@ -257,17 +257,21 @@ def relleno_formularios(nomina_id):
 
 
         for est in estudiantes_raw:
+            # Manejo robusto de la fecha de nacimiento y cálculo de edad
             if 'fecha_nacimiento' in est and isinstance(est['fecha_nacimiento'], str): 
                 try:
                     fecha_nac_obj = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
                     est['edad'] = calculate_age(fecha_nac_obj)
                     est['fecha_nacimiento_formato'] = fecha_nac_obj.strftime("%d-%m-%Y")
                 except ValueError:
+                    # Si la fecha no se puede parsear, asigna valores por defecto seguros
                     est['fecha_nacimiento_formato'] = 'Fecha Inválida'
                     est['edad'] = 'N/A'
+                    print(f"ADVERTENCIA: Fecha de nacimiento inválida para estudiante {est.get('nombre', 'N/A')}: {est['fecha_nacimiento']}")
             else:
                 est['fecha_nacimiento_formato'] = 'N/A'
                 est['edad'] = 'N/A'
+                print(f"ADVERTENCIA: Fecha de nacimiento ausente o no es string para estudiante {est.get('nombre', 'N/A')}.")
             
             # FIX: Correctamente incrementar total_forms_completed_for_nomina
             if est.get('fecha_relleno') is not None:
@@ -1649,7 +1653,7 @@ def doctor_performance_detail(doctor_id):
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?doctora_evaluadora_id=eq.{doctor_id}" 
             f"&fecha_relleno.not.is.null" 
-            f"&select=nombre,rut,fecha_relleno,nomina_id,nominas_medicas(nombre_nomina)" 
+            f"&select=nombre,rut,fecha_nacimiento,fecha_relleno,nomina_id,nominas_medicas(nombre_nomina)" 
             f"&order=fecha_relleno.desc" 
         )
         print(f"DEBUG: URL para obtener estudiantes evaluados: {url_students}")

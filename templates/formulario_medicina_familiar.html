@@ -790,8 +790,8 @@
                             <h3 class="section-title">Identificación del Estudiante</h3>
                             <label>Nombres y Apellidos:</label>
                             <!-- CORRECCIÓN APLICADA AQUÍ: name="nombre_apellido" CAMBIADO A name="nombre" -->
-                            <input type="text" name="nombre" id="nombre" class="form-control" required>
-                            <input type="text" name="nombre" id="nombre" class="form-control" required> {# Campo oculto para compatibilidad #}
+                            <input type="text" name="nombre" value="{{ est.nombre }}" required readonly>
+                            <input type="hidden" name="nombre_original" value="{{ est.nombre }}"> {# Campo oculto para compatibilidad #}
 
 
                             <label>Género:</label>

@@ -416,7 +416,59 @@ def generar_pdf():
     form_type = session.get('current_form_type', 'neurologia') 
 
     print(f"DEBUG: generar_pdf - Datos recibidos: rut={rut}, form_type={form_type}")
-    if form_type == 'neurologia':
+    
+    elif form_type == 'medicina_familiar':
+        campos = {
+            "nombre": nombre,
+            "rut": rut,
+            "fecha_nacimiento": fecha_nacimiento,
+            "edad": edad,
+            "nacionalidad": nacionalidad,
+            "fecha_evaluacion": fecha_evaluacion,
+            "fecha_reevaluacion": fecha_reevaluacion,
+            "diagnostico_complementario": diagnostico_complementario,
+            "diagnostico_1": diagnostico_1,
+            "diagnostico_2": diagnostico_2,
+            "observacion_1": observacion_1,
+            "observacion_2": observacion_2,
+            "observacion_3": observacion_3,
+            "observacion_4": observacion_4,
+            "observacion_5": observacion_5,
+            "observacion_6": observacion_6,
+            "observacion_7": observacion_7,
+            "altura": altura,
+            "peso": peso,
+            "imc": imc,
+            "clasificacion": clasificacion,
+            "sexo_f": "Yes" if sexo == "F" else "Off",
+            "sexo_m": "Yes" if sexo == "M" else "Off",
+            "check_cesarea": "Yes" if cesarea else "Off",
+            "check_atermino": "Yes" if atermino else "Off",
+            "check_vaginal": "Yes" if vaginal else "Off",
+            "check_prematuro": "Yes" if prematuro else "Off",
+            "check_acorde": "Yes" if acorde else "Off",
+            "check_retraso": "Yes" if retraso else "Off",
+            "check_retrasogeneralizado": "Yes" if retrasogeneralizado else "Off",
+            "check_esquemac": "Yes" if esquema_completo else "Off",
+            "check_esquemai": "Yes" if esquema_incompleto else "Off",
+            "check_alergiano": "Yes" if alergia == "no" else "Off",
+            "check_alergiasi": "Yes" if alergia == "si" else "Off",
+            "check_cirugiano": "Yes" if cirugia == "no" else "Off",
+            "check_cirugiasi": "Yes" if cirugia == "si" else "Off",
+            "check_visionsinalteracion": "Yes" if vision == "normal" else "Off",
+            "check_visionrefraccion": "Yes" if vision == "refraccion" else "Off",
+            "check_audicionnormal": "Yes" if audicion == "normal" else "Off",
+            "check_tapondecerumen": "Yes" if audicion == "cerumen" else "Off",
+            "check_hipoacusia": "Yes" if audicion == "hipoacusia" else "Off",
+            "check_caries": "Yes" if caries else "Off",
+            "check_apinamientodental": "Yes" if apinamiento else "Off",
+            "check_retenciondental": "Yes" if retencion_dental else "Off",
+            "check_sinhallazgos": "Yes" if sinhallazgos else "Off",
+            "check_frenillolingual": "Yes" if frenillo else "Off",
+            "check_hipertrofia": "Yes" if hipertrofia else "Off",
+        }
+
+if form_type == 'neurologia':
         print(f"DEBUG: generar_pdf (Neurología) - nombre={nombre_neuro}, sexo={sexo_neuro}, diagnostico={diagnostico_neuro}")
     elif form_type == 'medicina_familiar':
         print(f"DEBUG: generar_pdf (Familiar) - nombre={nombre}, genero_f={genero_f}, genero_m={genero_m}, diagnostico_1={diagnostico_1}")
@@ -2321,6 +2373,8 @@ def debug_pdf_fields():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+
+
 
 
 

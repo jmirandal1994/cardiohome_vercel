@@ -366,7 +366,7 @@ def generar_pdf():
     fecha_reevaluacion_neuro_input = request.form.get('fecha_reevaluacion', '') # Input para el date picker de neurología
 
     # Campos específicos de Medicina Familiar (se renombran a las variables solicitadas por el usuario)
-    nombre = request.form.get('nombre', '') # Renombrado a 'nombre' para Medicina Familiar
+    nombre = request.form.get('nombre_apellido', '') # Renombrado a 'nombre' para Medicina Familiar
     genero_f = request.form.get('genero_f', '') # Renombrado a 'genero_f'
     genero_m = request.form.get('genero_m', '') # Renombrado a 'genero_m'
     diagnostico_1 = request.form.get('diagnostico_1', '')
@@ -418,7 +418,7 @@ def generar_pdf():
     if form_type == 'neurologia':
         print(f"DEBUG: generar_pdf (Neurología) - nombre={nombre_neuro}, sexo={sexo_neuro}, diagnostico={diagnostico_neuro}")
     if form_type == 'medicina_familiar':
-        print(f"DEBUG: generar_pdf (Familiar) - nombre={nombre_familiar}, genero_f={genero_f}, genero_m={genero_m}, diagnostico_1={diagnostico_1}")
+        print(f"DEBUG: generar_pdf (Familiar) - nombre={nombre}, genero_f={genero_f}, genero_m={genero_m}, diagnostico_1={diagnostico_1}")
 
 
     # Validaciones específicas por tipo de formulario

@@ -415,20 +415,32 @@ def generar_pdf():
     # Obtener el form_type de la sesión para saber qué PDF base usar
     form_type = session.get('current_form_type', 'neurologia') 
 
-    print(f"DEBUG: generar_pdf - Datos recibidos: rut={rut}, form_type={form_type}")
-    
-if form_type == 'neurologia':
-    print(f"DEBUG: generar_pdf (Neurología) - nombre={nombre_neuro}, sexo={sexo_neuro}, diagnostico={diagnostico_neuro}")
-elif form_type == 'medicina_familiar':
-    print(f"DEBUG: generar_pdf (Familiar) - nombre={nombre}, genero_f={genero_f}, genero_m={genero_m}, diagnostico_1={diagnostico_1}")
-    campos = {
-            "nombre": nombre,
+    if form_type == 'neurologia':
+        print(f"DEBUG: generar_pdf (Neurología) – nombre={nombre_neuro}, sexo={sexo_neuro}, diagnostico={diagnostico_neuro}")
+        campos = {
+            "nombre": nombre_neuro,
             "rut": rut,
-            "fecha_nacimiento": fecha_nacimiento,
+            "fecha_nacimiento": fecha_nac_formato,
             "edad": edad,
             "nacionalidad": nacionalidad,
-            "fecha_evaluacion": fecha_evaluacion,
-            "fecha_reevaluacion": fecha_reevaluacion,
+            "fecha_evaluacion": fecha_eval,
+            "fecha_reevaluacion": fecha_reeval_pdf,
+            "diagnostico_1": diagnostico_neuro,
+            "estado_general": estado_general_neuro,
+            "derivaciones": derivaciones,
+            "sexo_f": "X" if sexo_neuro == "F" else "",
+            "sexo_m": "X" if sexo_neuro == "M" else "",
+        }
+    elif form_type == 'medicina_familiar':
+        print(f"DEBUG: generar_pdf (Familiar) – nombre={nombre}, genero_f={genero_f}, genero_m={genero_m}, diagnostico_1={diagnostico_1}")
+        campos = {
+            "nombre": nombre,
+            "rut": rut,
+            "fecha_nacimiento": fecha_nac_formato,
+            "edad": edad,
+            "nacionalidad": nacionalidad,
+            "fecha_evaluacion": fecha_eval,
+            "fecha_reevaluacion": fecha_reeval_pdf,
             "diagnostico_complementario": diagnostico_complementario,
             "diagnostico_1": diagnostico_1,
             "diagnostico_2": diagnostico_2,
@@ -443,341 +455,53 @@ elif form_type == 'medicina_familiar':
             "peso": peso,
             "imc": imc,
             "clasificacion": clasificacion,
-            "sexo_f": "Yes" if sexo == "F" else "Off",
-            "sexo_m": "Yes" if sexo == "M" else "Off",
-            "check_cesarea": "Yes" if cesarea else "Off",
-            "check_atermino": "Yes" if atermino else "Off",
-            "check_vaginal": "Yes" if vaginal else "Off",
-            "check_prematuro": "Yes" if prematuro else "Off",
-            "check_acorde": "Yes" if acorde else "Off",
-            "check_retraso": "Yes" if retraso else "Off",
-            "check_retrasogeneralizado": "Yes" if retrasogeneralizado else "Off",
-            "check_esquemac": "Yes" if esquema_completo else "Off",
-            "check_esquemai": "Yes" if esquema_incompleto else "Off",
-            "check_alergiano": "Yes" if alergia == "no" else "Off",
-            "check_alergiasi": "Yes" if alergia == "si" else "Off",
-            "check_cirugiano": "Yes" if cirugia == "no" else "Off",
-            "check_cirugiasi": "Yes" if cirugia == "si" else "Off",
-            "check_visionsinalteracion": "Yes" if vision == "normal" else "Off",
-            "check_visionrefraccion": "Yes" if vision == "refraccion" else "Off",
-            "check_audicionnormal": "Yes" if audicion == "normal" else "Off",
-            "check_tapondecerumen": "Yes" if audicion == "cerumen" else "Off",
-            "check_hipoacusia": "Yes" if audicion == "hipoacusia" else "Off",
-            "check_caries": "Yes" if caries else "Off",
-            "check_apinamientodental": "Yes" if apinamiento else "Off",
-            "check_retenciondental": "Yes" if retencion_dental else "Off",
-            "check_sinhallazgos": "Yes" if sinhallazgos else "Off",
-            "check_frenillolingual": "Yes" if frenillo else "Off",
-            "check_hipertrofia": "Yes" if hipertrofia else "Off",
+            "sexo_f": "X" if genero_f == "Femenino" else "",
+            "sexo_m": "X" if genero_m == "Masculino" else "",
         }
-
 if form_type == 'neurologia':
-        print(f"DEBUG: generar_pdf (Neurología) - nombre={nombre_neuro}, sexo={sexo_neuro}, diagnostico={diagnostico_neuro}")
-elif form_type == 'medicina_familiar':
-        print(f"DEBUG: generar_pdf (Familiar) - nombre={nombre}, genero_f={genero_f}, genero_m={genero_m}, diagnostico_1={diagnostico_1}")
-
-
-    # Validaciones específicas por tipo de formulario
     if form_type == 'neurologia':
-        if not all([estudiante_id, nomina_id, nombre_neuro, rut, fecha_nac_original, edad, nacionalidad, sexo_neuro, estado_general_neuro, diagnostico_neuro, fecha_reevaluacion_neuro_input, derivaciones]):
-            flash('Faltan campos obligatorios en el formulario de Neurología para guardar y generar PDF.', 'danger')
-            if 'current_nomina_id' in session:
-                return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
-            return redirect(url_for('dashboard'))
-    elif form_type == 'medicina_familiar':
-        # Validar campos específicos de Medicina Familiar
-        required_familiar_fields = [
-            'nombre', 'rut', 'fecha_nac_original', 'edad', 'nacionalidad', 
-            'diagnostico_1', 'derivaciones'
-        ]
-        # Verificar que al menos uno de los géneros esté marcado
-        if not (genero_f or genero_m): # Usando las variables renombradas
-            flash('Debe seleccionar el género (Femenino o Masculino) en el formulario Familiar.', 'danger')
-            if 'current_nomina_id' in session:
-                return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
-            return redirect(url_for('dashboard'))
-
-        for field_name in required_familiar_fields:
-            # Aquí se usan los nombres de las variables Python, no los nombres de los campos HTML
-            # Asegurarse de que las variables 'nombre', 'fecha_nac_original' etc. tengan valor
-            if not locals().get(field_name): # Usa locals() para verificar las variables Python
-                print(f"DEBUG: Campo familiar faltante: {field_name}")
-                flash(f'Faltan campos obligatorios en el formulario de Medicina Familiar para guardar y generar PDF (campo: {field_name}).', 'danger')
-                if 'current_nomina_id' in session:
-                    return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
-                return redirect(url_for('dashboard'))
-        # Validar fecha_reevaluacion_select (que es el plazo en años)
-        if not fecha_reevaluacion_select:
-            flash('Falta seleccionar el plazo de reevaluación en el formulario Familiar.', 'danger')
-            if 'current_nomina_id' in session:
-                return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
-            return redirect(url_for('dashboard'))
-
-    else:
-        flash('Tipo de formulario no reconocido para validación.', 'danger')
-        if 'current_nomina_id' in session:
-            return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
-        return redirect(url_for('dashboard'))
-
-    # Calcular fecha_reevaluacion para la DB y PDF
-    fecha_reeval_db = None
-    fecha_reeval_pdf = None
-
-    if form_type == 'neurologia':
-        # Usa la variable de input de neurología
-        if fecha_reevaluacion_neuro_input and "-" in fecha_reevaluacion_neuro_input:
-            try:
-                fecha_reeval_db = fecha_reevaluacion_neuro_input # Guarda en DB comoYYYY-MM-DD
-                fecha_reeval_pdf = datetime.strptime(fecha_reevaluacion_neuro_input, '%Y-%m-%d').strftime('%d/%m/%Y')
-            except ValueError:
-                fecha_reeval_pdf = fecha_reevaluacion_neuro_input
-        else:
-            fecha_reeval_pdf = fecha_reevaluacion_neuro_input # Si viene en otro formato, se usa tal cual
-            fecha_reeval_db = fecha_reevaluacion_neuro_input # También para la DB
-    elif form_type == 'medicina_familiar':
-        # Usa la variable de input de medicina familiar
-        if fecha_reevaluacion_select:
-            try:
-                plazo_reevaluacion_years = int(fecha_reevaluacion_select)
-                fecha_reeval_obj = date.today() + timedelta(days=plazo_reevaluacion_years * 365) # Aproximación
-                fecha_reeval_db = fecha_reeval_obj.strftime('%Y-%m-%d')
-                fecha_reeval_pdf = fecha_reeval_obj.strftime('%d/%m/%Y')
-            except ValueError:
-                print(f"ADVERTENCIA: Valor inválido para fecha_reevaluacion_select: {fecha_reevaluacion_select}")
-                fecha_reeval_db = None
-                fecha_reeval_pdf = None
-        else:
-            fecha_reeval_db = None
-            fecha_reeval_pdf = None
-
-
-    # 1. Persistir los datos del formulario en Supabase
-    try:
-        update_data = {
-            'fecha_relleno': str(date.today()) 
+        print(f"DEBUG: generar_pdf (Neurología) – nombre={nombre_neuro}, sexo={sexo_neuro}, diagnostico={diagnostico_neuro}")
+        campos = {
+            "nombre": nombre_neuro,
+            "rut": rut,
+            "fecha_nacimiento": fecha_nac_formato,
+            "edad": edad,
+            "nacionalidad": nacionalidad,
+            "fecha_evaluacion": fecha_eval,
+            "fecha_reevaluacion": fecha_reeval_pdf,
+            "diagnostico_1": diagnostico_neuro,
+            "estado_general": estado_general_neuro,
+            "derivaciones": derivaciones,
+            "sexo_f": "X" if sexo_neuro == "F" else "",
+            "sexo_m": "X" if sexo_neuro == "M" else "",
         }
-        
-        if form_type == 'neurologia':
-            update_data.update({
-                'nombre': nombre_neuro, # Usa el nombre de neurología
-                'sexo': sexo_neuro,
-                'estado_general': estado_general_neuro, 
-                'diagnostico': diagnostico_neuro,
-                'fecha_reevaluacion': fecha_reeval_db, # Usa la fecha calculada/formateada para DB
-                'derivaciones': derivaciones,
-            })
-        elif form_type == 'medicina_familiar':
-            update_data['nombre'] = nombre # Actualizar el campo 'nombre' en Supabase con el nombre de familiar
-
-            if genero_f == 'Femenino': # Usa las variables renombradas
-                update_data["sexo"] = 'F'
-            elif genero_m == 'Masculino': # Usa las variables renombradas
-                update_data["sexo"] = 'M'
-            else:
-                update_data["sexo"] = None 
-
-            update_data.update({
-                "diagnostico_1": diagnostico_1,
-                "diagnostico_2": diagnostico_2,
-                "diagnostico_complementario": diagnostico_complementario,
-                "derivaciones": derivaciones, # Usa la variable común 'derivaciones'
-                "fecha_reevaluacion": fecha_reeval_db, # Usar la fecha calculada para DB
-                "observacion_1": observacion_1,
-                "observacion_2": observacion_2,
-                "observacion_3": observacion_3,
-                "observacion_4": observacion_4,
-                "observacion_5": observacion_5,
-                "observacion_6": observacion_6,
-                "observacion_7": observacion_7,
-                "altura": float(altura) if altura else None,
-                "peso": float(peso) if peso else None,
-                "imc": imc,
-                "clasificacion": clasificacion,
-                # Checkboxes (ya coinciden los nombres de variables)
-                "check_cesarea": check_cesarea, 
-                "check_atermino": check_atermino,
-                "check_vaginal": check_vaginal,
-                "check_prematuro": check_prematuro,
-                "check_acorde": check_acorde,
-                "check_retrasogeneralizado": check_retrasogeneralizado, # Mantener para la DB
-                "check_esquemac": check_esquemac,
-                "check_esquemai": check_esquemai,
-                "check_alergiano": check_alergiano,
-                "check_alergiasi": check_alergiasi,
-                "check_cirugiano": check_cirugiano,
-                "check_cirugiasi": check_cirugiasi,
-                "check_visionsinalteracion": check_visionsinalteracion,
-                "check_visionrefraccion": check_visionrefraccion,
-                "check_audicionnormal": check_audicionnormal,
-                "check_tapondecerumen": check_tapondecerumen,
-                "check_sinhallazgos": check_sinhallazgos,
-                "check_caries": check_caries,
-                "check_apinamientodental": check_apinamientodental,
-                "check_retenciondental": check_retenciondental,
-                "check_frenillolingual": check_frenillolingual,
-                "check_hipertrofia": check_hipertrofia,
-            })
-        
-        print(f"DEBUG: Datos a actualizar en Supabase para estudiante {estudiante_id}: {update_data}")
-        response_db = requests.patch(
-            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}",
-            headers=SUPABASE_SERVICE_HEADERS, 
-            json=update_data
-        )
-        response_db.raise_for_status()
-        print(f"DEBUG: Respuesta de Supabase al actualizar estudiante (status): {response_db.status_code}")
-        print(f"DEBUG: Respuesta de Supabase al actualizar estudiante (text): {response_db.text}")
-        flash('Formulario guardado en la base de datos.', 'success')
-
-    except requests.exceptions.RequestException as e:
-        print(f"❌ ERROR AL GUARDAR FORMULARIO EN DB: {e} - {response_db.text if 'response_db' in locals() else ''}")
-        flash("❌ Error al guardar el formulario en la base de datos. Intente de nuevo.", 'error')
-        if 'current_nomina_id' in session:
-            return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
-        return redirect(url_for('dashboard'))
-    except Exception as e:
-        print(f"❌ Error inesperado al guardar formulario en DB: {e}")
-        flash(f"❌ Error inesperado al guardar el formulario: {str(e)}", 'error')
-        if 'current_nomina_id' in session:
-            return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
-        return redirect(url_for('dashboard'))
-
-    # 2. Generar el PDF con los datos actualizados
-    # Seleccionar el PDF base según el form_type
-    pdf_base_path = ''
-    if form_type == 'neurologia':
-        pdf_base_path = PDF_BASE_NEUROLOGIA
     elif form_type == 'medicina_familiar':
-        pdf_base_path = PDF_BASE_FAMILIAR
-    else:
-        flash("❌ Tipo de formulario no reconocido para generar PDF.", 'error')
-        if 'current_nomina_id' in session:
-            return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
-        return redirect(url_for('dashboard'))
-
-    if not os.path.exists(pdf_base_path):
-        flash(f"❌ Error: El archivo '{pdf_base_path}' no se encontró en la carpeta del servidor.", 'error')
-        if 'current_nomina_id' in session:
-            return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
-        return redirect(url_for('dashboard'))
-
-    try:
-        reader = PdfReader(pdf_base_path)
-        writer = PdfWriter()
-        writer.add_page(reader.pages[0])
-
-        # Los campos a rellenar deben ser específicos para cada tipo de formulario
-        campos = {}
-        if form_type == 'neurologia':
-            campos = {
-                "nombre": str(nombre_neuro), # Usa el nombre de neurología
-                "rut": str(rut),
-                "fecha_nacimiento": str(fecha_nac_formato), 
-                "nacionalidad": str(nacionalidad),
-                "edad": str(edad),
-                "diagnostico_1": str(diagnostico_neuro),
-                "diagnostico_2": str(diagnostico_neuro), # Puede ser el mismo para neurología si no hay un segundo campo
-                "estado_general": str(estado_general_neuro), 
-                "fecha_evaluacion": str(fecha_eval),
-                "fecha_reevaluacion": str(fecha_reeval_pdf if fecha_reeval_pdf is not None else ""), # Explicitamente None a ""
-                "derivaciones": str(derivaciones),
-                "sexo_f": "X" if sexo_neuro == "F" else "",
-                "sexo_m": "X" if sexo_neuro == "M" else "",
-            }
-        elif form_type == 'medicina_familiar':
-            # Mapeo de los campos del formulario HTML a los campos del PDF Familiar
-            # Usando los nombres EXACTOS de tus variables y campos de PDF
-            campos = {
-                "nombre": str(nombre), # Mapea directamente la variable 'nombre' (de Medicina Familiar)
-                "rut": str(rut),
-                "fecha_nacimiento": str(fecha_nac_formato),
-                "edad": str(edad),
-                "nacionalidad": str(nacionalidad),
-                "fecha_evaluacion": str(fecha_eval),
-                "fecha_reevaluacion": str(fecha_reeval_pdf if fecha_reeval_pdf is not None else ""), # Explicitamente None a ""
-                "sexo_f": "X" if genero_f == "Femenino" else "", # CORREGIDO: Mapea a 'sexo_f'
-                "sexo_m": "X" if genero_m == "Masculino" else "", # CORREGIDO: Mapea a 'sexo_m'
-                "diagnostico_1": str(diagnostico_1),
-                "diagnostico_2": str(diagnostico_2),
-                "diagnostico_complementario": str(diagnostico_complementario),
-                "derivaciones": str(derivaciones),
-                "observacion_1": str(observacion_1), 
-                "observacion_2": str(observacion_2), 
-                "observacion_3": str(observacion_3),
-                "observacion_4": str(observacion_4),
-                "observacion_5": str(observacion_5),
-                "observacion_6": str(observacion_6),
-                "observacion_7": str(observacion_7),
-                "altura": str(altura), 
-                "peso": str(peso),
-                "imc": str(imc), 
-                "clasificacion": str(clasificacion),
-                "check_cesarea": "/Yes" if check_cesarea else "",
-                "check_atermino": "/Yes" if check_atermino else "",
-                "check_vaginal": "/Yes" if check_vaginal else "",
-                "check_prematuro": "/Yes" if check_prematuro else "",
-                "check_acorde": "/Yes" if check_acorde else "",
-                "check_retraso": "/Yes" if check_retrasogeneralizado else "", # CORREGIDO: Mapea a 'check_retraso'
-                "check_esquemai": "/Yes" if check_esquemai else "",
-                "check_esquemac": "/Yes" if check_esquemac else "",
-                "check_alergiano": "/Yes" if check_alergiano else "", 
-                "check_alergiasi": "/Yes" if check_alergiasi else "", 
-                "check_cirugiano": "/Yes" if check_cirugiano else "", 
-                "check_cirugiasi": "/Yes" if check_cirugiasi else "", 
-                "check_visionsinalteracion": "/Yes" if check_visionsinalteracion else "",
-                "check_visionrefraccion": "/Yes" if check_visionrefraccion else "",
-                "check_audicionnormal": "/Yes" if check_audicionnormal else "", 
-                "check_tapondecerumen": "/Yes" if check_tapondecerumen else "",
-                "check_hipoacusia": "/Yes" if check_hipoacusia else "",
-                "check_sinhallazgos": "/Yes" if check_sinhallazgos else "",
-                "check_caries": "/Yes" if check_caries else "",
-                "check_apinamientodental": "/Yes" if check_apinamientodental else "",
-                "check_retenciondental": "/Yes" if check_retenciondental else "", 
-                "check_frenillolingual": "/Yes" if check_frenillolingual else "",
-                "check_hipertrofia": "/Yes" if check_hipertrofia else "",
-            }
-
-        print(f"DEBUG: Fields to fill in PDF for {form_type} form: {campos}")
-        print(f"DEBUG: Campos a rellenar en PDF (JSON): {json.dumps(campos, indent=2)}")
-
-        # Convertir todos los valores del diccionario 'campos' a string
-        # Esto previene errores de "string index out of range" si un valor es None o no es una cadena
-        for key, value in campos.items():
-            campos[key] = str(value) if value is not None else ""
-
-
-        if "/AcroForm" not in writer._root_object:
-            writer._root_object.update({
-                NameObject("/AcroForm"): DictionaryObject()
-            })
-
-        writer.update_page_form_field_values(writer.pages[0], campos)
-
-        writer._root_object["/AcroForm"].update({
-            NameObject("/NeedAppearances"): BooleanObject(True)
-        })
-
-        output = io.BytesIO()
-        writer.write(output)
-        output.seek(0)
-
-        nombre_para_archivo = nombre if form_type == 'medicina_familiar' else nombre_neuro # Usa el nombre correcto para el archivo
-        if not nombre_para_archivo: 
-            nombre_para_archivo = "Desconocido"
-
-        nombre_archivo_descarga = f"{nombre_para_archivo.replace(' ', '_')}_{rut}_formulario_{form_type}.pdf"
-        print(f"DEBUG: PDF generado y listo para descarga: {nombre_archivo_descarga}")
-        flash('PDF generado correctamente.', 'success')
-        return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
-
-    except Exception as e:
-        print(f"❌ Error al generar PDF: {e}")
-        flash(f"❌ Error al generar el PDF: {e}. Verifique el archivo base o los campos.", 'error')
-        if 'current_nomina_id' in session:
-            return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
-        return redirect(url_for('dashboard'))
-
-
+        print(f"DEBUG: generar_pdf (Familiar) – nombre={nombre}, genero_f={genero_f}, genero_m={genero_m}, diagnostico_1={diagnostico_1}")
+        campos = {
+            "nombre": nombre,
+            "rut": rut,
+            "fecha_nacimiento": fecha_nac_formato,
+            "edad": edad,
+            "nacionalidad": nacionalidad,
+            "fecha_evaluacion": fecha_eval,
+            "fecha_reevaluacion": fecha_reeval_pdf,
+            "diagnostico_complementario": diagnostico_complementario,
+            "diagnostico_1": diagnostico_1,
+            "diagnostico_2": diagnostico_2,
+            "observacion_1": observacion_1,
+            "observacion_2": observacion_2,
+            "observacion_3": observacion_3,
+            "observacion_4": observacion_4,
+            "observacion_5": observacion_5,
+            "observacion_6": observacion_6,
+            "observacion_7": observacion_7,
+            "altura": altura,
+            "peso": peso,
+            "imc": imc,
+            "clasificacion": clasificacion,
+            "sexo_f": "X" if genero_f == "Femenino" else "",
+            "sexo_m": "X" if genero_m == "Masculino" else "",
+        }
 @app.route('/marcar_evaluado', methods=['POST'])
 def marcar_evaluado():
     if 'usuario' not in session:
@@ -2376,5 +2100,3 @@ def debug_pdf_fields():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
-
-

@@ -142,14 +142,14 @@ def enviar_correo_sendgrid(asunto, cuerpo, adjuntos=None):
     except Exception as e:
         print(f"Error al enviar correo con SendGrid: {e}")
 
-# Nuevo helper function para manejar los valores de los campos del formulario
-def get_form_field_value(field_name, return_none_if_empty=False):
+# Helper function to get form field values, converting None to empty string
+def get_form_field_value(field_name, form_data, return_none_if_empty=False):
     """
-    Retrieves a form field value from request.form.
+    Retrieves a form field value from form_data.
     If return_none_if_empty is True, returns None for empty strings.
     Otherwise, returns an empty string for empty values.
     """
-    value = request.form.get(field_name)
+    value = form_data.get(field_name)
     if value is None:
         return None # If field is not present in form data at all
     
@@ -157,6 +157,7 @@ def get_form_field_value(field_name, return_none_if_empty=False):
     if not stripped_value: # If it's an empty string after stripping
         return None if return_none_if_empty else '' # Return None for dates/numeric, empty string for text/select
     return stripped_value
+
 
 # -------------------- Google Drive API Functions (Empresa) --------------------
 
@@ -230,7 +231,7 @@ def find_or_create_drive_folder(service, folder_name, parent_folder_id=None):
         print(f"ERROR: Error al buscar o crear carpeta en Google Drive: {error}")
         return None
     except Exception as e:
-        print(f"ERROR: Error inesperado en find_or_create_drive_folder: {e}")
+        print(f"ERROR: Error inesperado en find_or_or_create_drive_folder: {e}")
         return None
 
 def upload_pdf_to_google_drive(creds, file_content_io, file_name, folder_id=None):
@@ -607,31 +608,29 @@ def marcar_evaluado():
     update_data = {
         'fecha_relleno': str(date.today()), # Fecha actual de rellenado
         'doctora_evaluadora_id': doctora_id, 
-        'nombre': get_form_field_value('nombre'),
-        'rut': get_form_field_value('rut'),
+        'nombre': get_form_field_value('nombre', request.form),
+        'rut': get_form_field_value('rut', request.form),
         # Para fechas, queremos None si están vacías para que se mapeen a NULL en la DB
-        'fecha_nacimiento': get_form_field_value('fecha_nacimiento_original', return_none_if_empty=True), 
-        'fecha_evaluacion': get_form_field_value('fecha_evaluacion', return_none_if_empty=True),
-        'fecha_reevaluacion': get_form_field_value('fecha_reevaluacion', return_none_if_empty=True),
-        'edad': get_form_field_value('edad'), # Edad también se envía desde el formulario
-        'nacionalidad': get_form_field_value('nacionalidad'), # Nacionalidad también se envía
-        'comuna': get_form_field_value('comuna'),
-        'direccion': get_form_field_value('direccion'),
+        'fecha_nacimiento': get_form_field_value('fecha_nacimiento_original', request.form, return_none_if_empty=True), 
+        'fecha_evaluacion': get_form_field_value('fecha_evaluacion', request.form, return_none_if_empty=True),
+        'fecha_reevaluacion': get_form_field_value('fecha_reevaluacion', request.form, return_none_if_empty=True),
+        'edad': get_form_field_value('edad', request.form), # Edad también se envía desde el formulario
+        'nacionalidad': get_form_field_value('nacionalidad', request.form), # Nacionalidad también se envía
     }
 
     # Lógica para campos específicos según el tipo de formulario
     if form_type == 'neurologia':
         update_data.update({
-            'sexo': get_form_field_value('sexo'),
-            'estado_general': get_form_field_value('estado'),
-            'diagnostico': get_form_field_value('diagnostico'), # Esto será '' si está vacío, no None
-            'derivaciones': get_form_field_value('derivaciones'),
-            'plazo': get_form_field_value('plazo', return_none_if_empty=True), # Plazo puede ser None si no se selecciona
+            'sexo': get_form_field_value('sexo', request.form),
+            'estado_general': get_form_field_value('estado', request.form),
+            'diagnostico': get_form_field_value('diagnostico', request.form), # Esto será '' si está vacío, no None
+            'derivaciones': get_form_field_value('derivaciones', request.form),
+            'plazo': get_form_field_value('plazo', request.form, return_none_if_empty=True), # Plazo puede ser None si no se selecciona
         })
     elif form_type == 'medicina_familiar':
         # Manejo de género (radio buttons en HTML, se guardan como booleanos en Supabase)
-        update_data["genero_f"] = get_form_field_value('genero_f') == 'Femenino'
-        update_data["genero_m"] = get_form_field_value('genero_m') == 'Masculino'
+        update_data["genero_f"] = get_form_field_value('genero_f', request.form) == 'Femenino'
+        update_data["genero_m"] = get_form_field_value('genero_m', request.form) == 'Masculino'
         
         # Actualizar el campo 'sexo' general basado en los radio buttons de familiar
         if update_data["genero_f"]:
@@ -642,47 +641,47 @@ def marcar_evaluado():
             update_data["sexo"] = None # O un valor por defecto si ninguno está marcado
 
         update_data.update({
-            "diagnostico_1": get_form_field_value('diagnostico_1'),
-            "diagnostico_2": get_form_field_value('diagnostico_2'),
-            "clasificacion": get_form_field_value('clasificacion'),
-            "derivaciones": get_form_field_value('derivaciones'),
-            "observacion_1": get_form_field_value('observacion_1'),
-            "observacion_2": get_form_field_value('observacion_2'),
-            "observacion_3": get_form_field_value('observacion_3'),
-            "observacion_4": get_form_field_value('observacion_4'),
-            "observacion_5": get_form_field_value('observacion_5'),
-            "observacion_6": get_form_field_value('observacion_6'),
-            "observacion_7": get_form_field_value('observacion_7'),
-            "altura": float(get_form_field_value('altura', return_none_if_empty=True)) if get_form_field_value('altura', return_none_if_empty=True) else None,
-            "peso": float(get_form_field_value('peso', return_none_if_empty=True)) if get_form_field_value('peso', return_none_if_empty=True) else None,
-            "imc": get_form_field_value('imc'),
-            "clasificacion_imc": get_form_field_value('clasificacion_imc'),
-            "fecha_reevaluacion_select": get_form_field_value('fecha_reevaluacion_select', return_none_if_empty=True),
-            "diagnostico_complementario": get_form_field_value('diagnostico_complementario'),
+            "diagnostico_1": get_form_field_value('diagnostico_1', request.form),
+            "diagnostico_2": get_form_field_value('diagnostico_2', request.form),
+            "clasificacion": get_form_field_value('clasificacion', request.form),
+            "derivaciones": get_form_field_value('derivaciones', request.form),
+            "observacion_1": get_form_field_value('observacion_1', request.form),
+            "observacion_2": get_form_field_value('observacion_2', request.form),
+            "observacion_3": get_form_field_value('observacion_3', request.form),
+            "observacion_4": get_form_field_value('observacion_4', request.form),
+            "observacion_5": get_form_field_value('observacion_5', request.form),
+            "observacion_6": get_form_field_value('observacion_6', request.form),
+            "observacion_7": get_form_field_value('observacion_7', request.form),
+            "altura": float(get_form_field_value('altura', request.form, return_none_if_empty=True)) if get_form_field_value('altura', request.form, return_none_if_empty=True) else None,
+            "peso": float(get_form_field_value('peso', request.form, return_none_if_empty=True)) if get_form_field_value('peso', request.form, return_none_if_empty=True) else None,
+            "imc": get_form_field_value('imc', request.form),
+            "clasificacion_imc": get_form_field_value('clasificacion_imc', request.form),
+            "fecha_reevaluacion_select": get_form_field_value('fecha_reevaluacion_select', request.form, return_none_if_empty=True),
+            "diagnostico_complementario": get_form_field_value('diagnostico_complementario', request.form),
             # Checkboxes - Asegúrate de que los nombres de los campos en HTML coincidan
-            "check_cesarea": get_form_field_value('check_cesarea') == 'CESAREA',
-            "check_atermino": get_form_field_value('check_atermino') == 'A_TERMINO',
-            "check_vaginal": get_form_field_value('check_vaginal') == 'VAGINAL',
-            "check_prematuro": get_form_field_value('check_prematuro') == 'PREMATURO',
-            "check_acorde": get_form_field_value('check_acorde') == 'LOGRADO_ACORDE_A_LA_EDAD',
-            "check_retrasogeneralizado": get_form_field_value('check_retrasogeneralizado') == 'RETRASO_GENERALIZADO_DEL_DESARROLLO',
-            "check_esquemac": get_form_field_value('check_esquemac') == 'ESQUEMA_COMPLETO',
-            "check_esquemai": get_form_field_value('check_esquemai') == 'ESQUEMA_INCOMPLETO',
-            "check_alergiano": get_form_field_value('check_alergiano') == 'NO_ALERGIAS',
-            "check_alergiasi": get_form_field_value('check_alergiasi') == 'SI_ALERGIAS',
-            "check_cirugiano": get_form_field_value('check_cirugiano') == 'NO_CIRUGIAS',
-            "check_cirugiasi": get_form_field_value('check_cirugiasi') == 'SI_CIRUGIAS',
-            "check_visionsinalteracion": get_form_field_value('check_visionsinalteracion') == 'SIN_ALTERACION_VISION',
-            "check_visionrefraccion": get_form_field_value('check_visionrefraccion') == 'VICIOS_DE_REFRACCION',
-            "check_audicionnormal": get_form_field_value('check_audicionnormal') == 'NORMAL_AUDICION',
-            "check_hipoacusia": get_form_field_value('check_hipoacusia') == 'HIPOACUSIA',
-            "check_tapondecerumen": get_form_field_value('check_tapondecerumen') == 'TAPON_DE_CERUMEN',
-            "check_sinhallazgos": get_form_field_value('check_sinhallazgos') == 'SIN_HALLAZGOS',
-            "caries": get_form_field_value('caries') == 'CARIES',
-            "check_apinamientodental": get_form_field_value('check_apinamientodental') == 'APINAMIENTO_DENTAL',
-            "check_retenciondental": get_form_field_value('check_retenciondental') == 'RETENCION_DENTAL',
-            "check_frenillolingual": get_form_field_value('check_frenillolingual') == 'FRENILLO_LINGUAL',
-            "check_hipertrofia": get_form_field_value('check_hipertrofia') == 'HIPERTROFIA_AMIGDALINA',
+            "check_cesarea": get_form_field_value('check_cesarea', request.form) == 'CESAREA',
+            "check_atermino": get_form_field_value('check_atermino', request.form) == 'A_TERMINO',
+            "check_vaginal": get_form_field_value('check_vaginal', request.form) == 'VAGINAL',
+            "check_prematuro": get_form_field_value('check_prematuro', request.form) == 'PREMATURO',
+            "check_acorde": get_form_field_value('check_acorde', request.form) == 'LOGRADO_ACORDE_A_LA_EDAD',
+            "check_retrasogeneralizado": get_form_field_value('check_retrasogeneralizado', request.form) == 'RETRASO_GENERALIZADO_DEL_DESARROLLO',
+            "check_esquemac": get_form_field_value('check_esquemac', request.form) == 'ESQUEMA_COMPLETO',
+            "check_esquemai": get_form_field_value('check_esquemai', request.form) == 'ESQUEMA_INCOMPLETO',
+            "check_alergiano": get_form_field_value('check_alergiano', request.form) == 'NO_ALERGIAS',
+            "check_alergiasi": get_form_field_value('check_alergiasi', request.form) == 'SI_ALERGIAS',
+            "check_cirugiano": get_form_field_value('check_cirugiano', request.form) == 'NO_CIRUGIAS',
+            "check_cirugiasi": get_form_field_value('check_cirugiasi', request.form) == 'SI_CIRUGIAS',
+            "check_visionsinalteracion": get_form_field_value('check_visionsinalteracion', request.form) == 'SIN_ALTERACION_VISION',
+            "check_visionrefraccion": get_form_field_value('check_visionrefraccion', request.form) == 'VICIOS_DE_REFRACCION',
+            "check_audicionnormal": get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION',
+            "check_hipoacusia": get_form_field_value('check_hipoacusia', request.form) == 'HIPOACUSIA',
+            "check_tapondecerumen": get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN',
+            "check_sinhallazgos": get_form_field_value('check_sinhallazgos', request.form) == 'SIN_HALLAZGOS',
+            "caries": get_form_field_value('caries', request.form) == 'CARIES',
+            "check_apinamientodental": get_form_field_value('check_apinamientodental', request.form) == 'APINAMIENTO_DENTAL',
+            "check_retenciondental": get_form_field_value('check_retenciondental', request.form) == 'RETENCION_DENTAL',
+            "check_frenillolingual": get_form_field_value('check_frenillolingual', request.form) == 'FRENILLO_LINGUAL',
+            "check_hipertrofia": get_form_field_value('check_hipertrofia', request.form) == 'HIPERTROFIA_AMIGDALINA',
         })
 
     print(f"DEBUG: Payload final para Supabase PATCH en /marcar_evaluado: {update_data}")
@@ -1329,7 +1328,7 @@ def enviar_formulario_a_drive():
     except Exception as e:
         print(f"ERROR: Error inesperado al obtener nombre de nómina para Drive: {e}")
 
-    # Obtener los datos del estudiante de la base de datos para asegurar que estén actualizados
+    # Recuperar los datos del estudiante de la base de datos para asegurar que estén actualizados
     try:
         url_estudiante_data = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}&select=*"
         res_estudiante = requests.get(url_estudiante_data, headers=SUPABASE_SERVICE_HEADERS)
@@ -1406,6 +1405,7 @@ def enviar_formulario_a_drive():
         writer = PdfWriter()
         writer.add_page(reader.pages[0])
 
+        # Los campos a rellenar deben ser específicos para cada tipo de formulario
         campos = {}
         if form_type == 'neurologia':
             campos = {
@@ -1424,6 +1424,8 @@ def enviar_formulario_a_drive():
                 "sexo_m": sexo_m_pdf,
             }
         elif form_type == 'medicina_familiar':
+            # Aquí deberías mapear los campos específicos de tu formulario de Medicina Familiar
+            # Basado en los campos que esperas en formulario_medicina_familiar.html
             campos = {
                 "Nombres y Apellidos": nombre,
                 "RUN": rut,
@@ -1436,7 +1438,7 @@ def enviar_formulario_a_drive():
                 "DIAGNÓSTICO COMPLEMENTARIO": est.get('diagnostico_complementario', ''),
                 "Clasificación": est.get('clasificacion_imc', ''),
                 "INDICACIONES": est.get('derivaciones', ''),
-                "Fecha evaluación": fecha_evaluacion_from_db_formatted, # También aquí si el PDF de familiar usa el mismo nombre de campo
+                "Fecha evaluación": fecha_evaluacion_from_db_formatted, # Usar la fecha del campo del formulario
                 "Fecha reevaluación": fecha_reeval_pdf,
                 "OBS1": est.get('observacion_1', ''),
                 "OBS2": est.get('observacion_2', ''),
@@ -1472,11 +1474,11 @@ def enviar_formulario_a_drive():
                 "Peso": est.get('peso', ''),
                 "I.M.C": est.get('imc', ''),
                 "Clasificación_IMC": est.get('clasificacion_imc', ''),
-                "Nombres y Apellidos_Doctor": "", 
-                "Rut_Doctor": "",
-                "Nº Registro Profesional": "",
-                "Especialidad": "",
-                "Fono/E-Mail Contacto": "",
+                "Nombres y Apellidos_Doctor": est.get('doctor_nombre', ''), # Estos campos deben venir de la DB
+                "Rut_Doctor": est.get('doctor_rut', ''),
+                "Nº Registro Profesional": est.get('doctor_registro', ''),
+                "Especialidad": est.get('doctor_especialidad', ''),
+                "Fono/E-Mail Contacto": est.get('doctor_email', ''),
                 "Salud pública": "/Yes" if est.get('procedencia_salud_publica') else "",
                 "Particular": "/Yes" if est.get('procedencia_particular') else "",
                 "Escuela": "/Yes" if est.get('procedencia_escuela') else "",
@@ -1616,8 +1618,7 @@ def mis_nominas():
             f"&select=id,nombre_nomina,tipo_nomina,form_type" # Incluir form_type
         )
         print(f"DEBUG: URL para mis_nominas: {url_nominas_asignadas}")
-        # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para que la doctora vea sus nóminas
-        res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_SERVICE_HEADERS)
+        res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_HEADERS)
         res_nominas_asignadas.raise_for_status()
         raw_nominas = res_nominas_asignadas.json()
         print(f"DEBUG: Nóminas raw recibidas para mis_nominas: {raw_nominas}")
@@ -1703,7 +1704,7 @@ def doctor_performance_detail(doctor_id):
             f"?doctora_evaluadora_id=eq.{doctor_id}" 
             f"&fecha_relleno.not.is.null" 
             f"&select=nombre,rut,fecha_relleno,nomina_id,nominas_medicas(nombre_nomina)" 
-            f"&order=nombre.asc" 
+            f"&order=fecha_relleno.desc" 
         )
         print(f"DEBUG: URL para obtener estudiantes evaluados: {url_students}")
         res_students = requests.get(url_students, headers=SUPABASE_SERVICE_HEADERS)
@@ -1738,7 +1739,7 @@ def doctor_performance_detail(doctor_id):
         print(f"ERROR: Error al obtener el rendimiento de la doctora: {e} - {res_students.text if 'res_students' in locals() else 'No response'}")
         flash('Error al cargar el detalle de rendimiento de la doctora.', 'error')
     except Exception as e:
-        print(f"❌ Error inesperado al cargar rendimiento de doctora: {e}")
+        print(f"ERROR: Error inesperado al cargar rendimiento de doctora: {e}")
         flash('Error inesperado al cargar el detalle de rendimiento de la doctora.', 'error')
 
     return render_template('doctor_performance.html', 
@@ -1843,30 +1844,25 @@ def generar_pdfs_visibles():
             est = student_data[0] 
 
             fecha_nac_formato = ''
-            if 'fecha_nacimiento' in est and isinstance(est['fecha_nacimiento'], str) and est['fecha_nacimiento'].strip():
+            if est.get('fecha_nacimiento'):
                 try:
                     fecha_nac_formato = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').strftime('%d/%m/%Y')
                 except ValueError:
-                    print(f"ADVERTENCIA: Fecha de nacimiento inválida para estudiante {est.get('nombre', 'N/A')} en PDF visible: {est['fecha_nacimiento']}")
-                    fecha_nac_formato = 'N/A'
-            else:
-                fecha_nac_formato = 'N/A'
+                    pass 
 
             fecha_evaluacion_from_db_formatted = ''
-            if est.get('fecha_evaluacion'):
+            if est.get('fecha_evaluacion'): # Usar fecha_evaluacion del campo del formulario
                 try:
                     fecha_evaluacion_from_db_formatted = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
                 except ValueError:
                     pass
 
-            fecha_reeval_pdf = est.get('fecha_reevaluacion')
-            if fecha_reeval_pdf and isinstance(fecha_reeval_pdf, str) and fecha_reeval_pdf.strip():
+            fecha_reeval_pdf = ''
+            if est.get('fecha_reevaluacion'):
                 try:
-                    fecha_reeval_pdf = datetime.strptime(fecha_reeval_pdf, '%Y-%m-%d').strftime('%d/%m/%Y')
+                    fecha_reeval_pdf = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
                 except ValueError:
                     pass
-            else:
-                fecha_reeval_pdf = ''
 
 
             reader = PdfReader(pdf_base_path)
@@ -1884,7 +1880,7 @@ def generar_pdfs_visibles():
                     "diagnostico_1": est.get('diagnostico', ''),
                     "diagnostico_2": est.get('diagnostico', ''), 
                     "estado_general": est.get('estado_general', ''),
-                    "fecha_evaluacion": fecha_evaluacion_from_db_formatted, # <-- Usar la fecha del campo del formulario
+                    "fecha_evaluacion": fecha_evaluacion_from_db_formatted, 
                     "fecha_reevaluacion": fecha_reeval_pdf,
                     "derivaciones": est.get('derivaciones', ''),
                     "sexo_f": "X" if est.get('sexo') == "F" else "",
@@ -1904,7 +1900,7 @@ def generar_pdfs_visibles():
                     "DIAGNÓSTICO COMPLEMENTARIO": est.get('diagnostico_complementario', ''),
                     "Clasificación": est.get('clasificacion', ''),
                     "INDICACIONES": est.get('derivaciones', ''),
-                    "Fecha evaluación": fecha_evaluacion_from_db_formatted, # Usar la fecha del campo del formulario
+                    "Fecha evaluación": fecha_evaluacion_from_db_formatted, 
                     "Fecha reevaluación": fecha_reeval_pdf,
                     "OBS1": est.get('observacion_1', ''),
                     "OBS2": est.get('observacion_2', ''),
@@ -1977,8 +1973,11 @@ def generar_pdfs_visibles():
 
         return send_file(final_output_pdf, as_attachment=False, download_name=pdf_filename, mimetype='application/pdf')
 
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR: Error de solicitud al obtener datos de estudiante para PDF combinado: {e}")
+        return jsonify({"success": False, "message": f"Error de conexión con Supabase al generar PDF: {str(e)}"}), 500
     except Exception as e:
-        print(f"ERROR: Error al generar PDFs visibles: {e}")
+        print(f"ERROR: Error inesperado al generar PDFs visibles: {e}")
         return jsonify({"success": False, "message": f"Error interno del servidor al generar PDFs: {str(e)}"}), 500
 
 

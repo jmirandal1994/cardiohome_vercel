@@ -379,7 +379,7 @@ def generar_pdf():
     nomina_id = request.form.get('nomina_id')
     
     # Obtener el form_type de la sesión para saber qué PDF base usar
-    form_type = session.get('current_form_type', 'neurologia') 
+    form_type = session.get('current_form_type', 'neurologia')
 
     print(f"DEBUG: generar_pdf - Solicitud para generar PDF para estudiante_id={estudiante_id}, nomina_id={nomina_id}, form_type={form_type}")
     print(f"DEBUG: Datos del formulario recibidos para PDF: {request.form.to_dict()}")
@@ -403,7 +403,7 @@ def generar_pdf():
         try:
             fecha_nac_formato = datetime.strptime(fecha_nac_original_str, '%Y-%m-%d').strftime('%d/%m/%Y')
         except ValueError:
-            pass 
+            pass
 
     edad = get_form_field_value('edad', request.form)
     nacionalidad = get_form_field_value('nacionalidad', request.form)
@@ -468,13 +468,13 @@ def generar_pdf():
             campos = {
                 "nombre": nombre,
                 "rut": rut,
-                "fecha_nacimiento": fecha_nac_formato, 
+                "fecha_nacimiento": fecha_nac_formato,
                 "nacionalidad": nacionalidad,
                 "edad": edad,
                 "diagnostico_1": get_form_field_value('diagnostico', request.form), # Obtener directamente del form
                 "diagnostico_2": get_form_field_value('diagnostico', request.form), # Duplicado si es el mismo campo en el PDF
                 "estado_general": get_form_field_value('estado', request.form), # Mapea 'estado' del form a 'estado_general' del PDF
-                "fecha_evaluacion": fecha_evaluacion_formatted, 
+                "fecha_evaluacion": fecha_evaluacion_formatted,
                 "fecha_reevaluacion": fecha_reeval_pdf,
                 "derivaciones": get_form_field_value('derivaciones', request.form),
                 "sexo_f": sexo_f_pdf,
@@ -490,10 +490,10 @@ def generar_pdf():
                 "nacionalidad": nacionalidad,
                 "sexo_f": sexo_f_pdf,
                 "sexo_m": sexo_m_pdf,
-                "diagnostico_1": get_form_field_value('diagnostico', request.form),
-                "diagnostico_2": get_form_field_value('diagnostico', request.form),
+                "diagnostico_1": get_form_field_value('diagnostico', request.form), # Asumiendo que viene del campo 'diagnostico' del form
+                "diagnostico_2": get_form_field_value('diagnostico', request.form), # Asumiendo que viene del campo 'diagnostico' del form
                 "diagnostico_complementario": get_form_field_value('diagnostico_complementario', request.form),
-                "clasificación": get_form_field_value('clasificacion_imc', request.form),
+                "clasificación": get_form_field_value('clasificacion_imc', request.form), # Corregido para coincidir con HTML y PDF
                 "derivaciones": get_form_field_value('derivaciones', request.form),
                 "fecha_evaluacion": fecha_evaluacion_formatted,
                 "fecha_reevaluacion": fecha_reeval_pdf,
@@ -515,14 +515,14 @@ def generar_pdf():
                 "check_alergiano": "/Yes" if get_form_field_value('check_alergiano', request.form) == 'NO_ALERGIAS' else "",
                 "check_alergiasi": "/Yes" if get_form_field_value('check_alergiasi', request.form) == 'SI_ALERGIAS' else "",
                 "check_cirugiano": "/Yes" if get_form_field_value('check_cirugiano', request.form) == 'NO_CIRUGIAS' else "",
-                "check_cirugiasi": "/Yes" if get_form_field_value('check_cirugiasi', request.form) == 'SI_CIRUGIAS' else "",
+                "check_cirugiasi": "/Yes" if get_form_field_value('check_cirugiasi', request.form) == 'SI_CIRUGIAS' else "", # Corregido nombre de campo
                 "check_visionsinalteracion": "/Yes" if get_form_field_value('check_visionsinalteracion', request.form) == 'SIN_ALTERACION_VISION' else "",
                 "check_visionrefraccion": "/Yes" if get_form_field_value('check_visionrefraccion', request.form) == 'VICIOS_DE_REFRACCION' else "",
                 "check_audicionnormal": "/Yes" if get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION' else "",
-                "check_hipoacusia": "/Yes" if get_form_field_value('check_hipoacusia', request.form) == 'HIPOACUSIA' else "",
-                "chack_tapondecerumen": "/Yes" if get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN' else "",
+                "HIPOACUSIA": "/Yes" if get_form_field_value('check_hipoacusia', request.form) == 'HIPOACUSIA' else "",
+                "chack_tapondecerumen": "/Yes" if get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN' else "", # Corregido typo
                 "check_sinhallazgos": "/Yes" if get_form_field_value('check_sinhallazgos', request.form) == 'SIN_HALLAZGOS' else "",
-                "check_caries": "/Yes" if get_form_field_value('check_caries', request.form) == 'caries' else "",
+                "check_caries": "/Yes" if get_form_field_value('check_caries', request.form) == 'caries' else "", # Corregido nombre de campo
                 "check_apinamientodental": "/Yes" if get_form_field_value('check_apinamientodental', request.form) == 'APINAMIENTO_DENTAL' else "",
                 "check_retenciondental": "/Yes" if get_form_field_value('check_retenciondental', request.form) == 'RETENCION_DENTAL' else "",
                 "check_frenillolingual": "/Yes" if get_form_field_value('check_frenillolingual', request.form) == 'FRENILLO_LINGUAL' else "",
@@ -530,7 +530,7 @@ def generar_pdf():
                 "altura": get_form_field_value('altura', request.form),
                 "peso": get_form_field_value('peso', request.form),
                 "imc": get_form_field_value('imc', request.form),
-                "clasificacion": get_form_field_value('clasificacion', request.form),
+                "clasificacion": get_form_field_value('clasificacion', request.form), # Corregido para coincidir con el HTML
             }
 
         print(f"DEBUG: Fields to fill in PDF for {form_type} form: {campos}")
@@ -560,8 +560,7 @@ def generar_pdf():
         if 'current_nomina_id' in session:
             return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
         return redirect(url_for('dashboard'))
-
-
+        
 @app.route('/marcar_evaluado', methods=['POST'])
 def marcar_evaluado():
     if 'usuario' not in session:

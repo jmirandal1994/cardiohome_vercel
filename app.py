@@ -522,7 +522,7 @@ def generar_pdf():
                 "HIPOACUSIA": "/Yes" if get_form_field_value('check_hipoacusia', request.form) == 'HIPOACUSIA' else "",
                 "TAPÓN DE CERUMEN": "/Yes" if get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN' else "",
                 "SIN HALLAZGOS": "/Yes" if get_form_field_value('check_sinhallazgos', request.form) == 'SIN_HALLAZGOS' else "",
-                "CARIES": "/Yes" if get_form_field_value('caries', request.form) == 'CARIES' else "",
+                "check_caries": "/Yes" if get_form_field_value('check_caries', request.form) == 'caries' else "",
                 "APIÑAMIENTO DENTAL": "/Yes" if get_form_field_value('check_apinamientodental', request.form) == 'APINAMIENTO_DENTAL' else "",
                 "RETENCIÓN DENTAL": "/Yes" if get_form_field_value('check_retenciondental', request.form) == 'RETENCION_DENTAL' else "",
                 "FRENILLO LINGUAL": "/Yes" if get_form_field_value('check_frenillolingual', request.form) == 'FRENILLO_LINGUAL' else "",
@@ -530,7 +530,7 @@ def generar_pdf():
                 "altura": get_form_field_value('altura', request.form),
                 "peso": get_form_field_value('peso', request.form),
                 "imc": get_form_field_value('imc', request.form),
-                "clasificacion": get_form_field_value('clasificacion_imc', request.form),
+                "clasificacion": get_form_field_value('clasificacion', request.form),
             }
 
         print(f"DEBUG: Fields to fill in PDF for {form_type} form: {campos}")

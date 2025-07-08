@@ -1368,7 +1368,67 @@
                     printWindow.document.write(`</div>`);
                 });
 
-                printWindow.document.write('</body></html>');
+                printWindow.document.write('
+<script>
+function calcularFechaReevaluacion(selectElem) {
+    const años = parseInt(selectElem.value);
+    if (!años) return;
+
+    const form = selectElem.closest("form");
+    const fechaEvaluacionInput = form.querySelector('input[name="fecha_evaluacion"]');
+    const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');
+
+    if (fechaEvaluacionInput && fechaReevaluacionInput && fechaEvaluacionInput.value) {
+        const fecha = new Date(fechaEvaluacionInput.value);
+        fecha.setFullYear(fecha.getFullYear() + años);
+        const nuevaFecha = fecha.toISOString().split("T")[0];
+        fechaReevaluacionInput.value = nuevaFecha;
+    }
+}
+</script>
+
+<script>
+async function submitForm(formElement) {
+    const formData = new FormData(formElement);
+    const estudianteId = formData.get("estudiante_id");
+    const nominaId = formData.get("nomina_id");
+
+    // Marcar como evaluado (guardar)
+    const response = await fetch("/marcar_evaluado", {
+        method: "POST",
+        body: formData
+    });
+
+    const result = await response.json();
+    const badge = formElement.closest(".formulario").querySelector(".badge");
+
+    if (result.success && badge) {
+        badge.classList.add("show");
+        setTimeout(() => badge.classList.remove("show"), 2000);
+    }
+
+    // Generar PDF (descargar)
+    const pdfResp = await fetch("/generar_pdf", {
+        method: "POST",
+        body: formData
+    });
+
+    if (pdfResp.ok) {
+        const blob = await pdfResp.blob();
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "formulario_evaluacion.pdf";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } else {
+        alert("Error al generar PDF.");
+    }
+}
+</script>
+
+</body>
+</html>');
                 printWindow.document.close(); 
                 printWindow.focus(); 
                 printWindow.print(); 
@@ -1563,5 +1623,65 @@
         // Llamar a updateCompletedCount cuando la página se carga para asegurar que el contador sea preciso
         document.addEventListener('DOMContentLoaded', updateCompletedCount);
     </script>
+
+<script>
+function calcularFechaReevaluacion(selectElem) {
+    const años = parseInt(selectElem.value);
+    if (!años) return;
+
+    const form = selectElem.closest("form");
+    const fechaEvaluacionInput = form.querySelector('input[name="fecha_evaluacion"]');
+    const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');
+
+    if (fechaEvaluacionInput && fechaReevaluacionInput && fechaEvaluacionInput.value) {
+        const fecha = new Date(fechaEvaluacionInput.value);
+        fecha.setFullYear(fecha.getFullYear() + años);
+        const nuevaFecha = fecha.toISOString().split("T")[0];
+        fechaReevaluacionInput.value = nuevaFecha;
+    }
+}
+</script>
+
+<script>
+async function submitForm(formElement) {
+    const formData = new FormData(formElement);
+    const estudianteId = formData.get("estudiante_id");
+    const nominaId = formData.get("nomina_id");
+
+    // Marcar como evaluado (guardar)
+    const response = await fetch("/marcar_evaluado", {
+        method: "POST",
+        body: formData
+    });
+
+    const result = await response.json();
+    const badge = formElement.closest(".formulario").querySelector(".badge");
+
+    if (result.success && badge) {
+        badge.classList.add("show");
+        setTimeout(() => badge.classList.remove("show"), 2000);
+    }
+
+    // Generar PDF (descargar)
+    const pdfResp = await fetch("/generar_pdf", {
+        method: "POST",
+        body: formData
+    });
+
+    if (pdfResp.ok) {
+        const blob = await pdfResp.blob();
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "formulario_evaluacion.pdf";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } else {
+        alert("Error al generar PDF.");
+    }
+}
+</script>
+
 </body>
+
 </html>

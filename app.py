@@ -490,10 +490,10 @@ def generar_pdf():
                 "nacionalidad": nacionalidad,
                 "sexo_f": sexo_f_pdf,
                 "sexo_m": sexo_m_pdf,
-                "diagnostico_1": get_form_field_value('diagnostico', request.form), # Asumiendo que viene del campo 'diagnostico' del form
-                "diagnostico_2": get_form_field_value('diagnostico', request.form), # Asumiendo que viene del campo 'diagnostico' del form
+                "diagnostico_1": get_form_field_value('diagnostico_1', request.form), # Asumiendo que el campo en DB es diagnostico_1
+                "diagnostico_2": get_form_field_value('diagnostico_2', request.form), # Asumiendo que el campo en DB es diagnostico_2
                 "diagnostico_complementario": get_form_field_value('diagnostico_complementario', request.form),
-                "clasificación": get_form_field_value('clasificacion_imc', request.form), # Corregido para coincidir con HTML y PDF
+                "clasificación": get_form_field_value('clasificacion', request.form), # Usando 'clasificacion' como clave de PDF y de form
                 "derivaciones": get_form_field_value('derivaciones', request.form),
                 "fecha_evaluacion": fecha_evaluacion_formatted,
                 "fecha_reevaluacion": fecha_reeval_pdf,
@@ -508,21 +508,21 @@ def generar_pdf():
                 "check_atermino": "/Yes" if get_form_field_value('check_atermino', request.form) == 'A_TERMINO' else "",
                 "check_vaginal": "/Yes" if get_form_field_value('check_vaginal', request.form) == 'VAGINAL' else "",
                 "check_prematuro": "/Yes" if get_form_field_value('check_prematuro', request.form) == 'PREMATURO' else "",
-                "check_acorde": "/Yes" if get_form_field_value('check_acorde', request.form) == 'LOGRADO_ACORDE_A_LA_EDAD' else "",
-                "check_retrasogeneralizado": "/Yes" if get_form_field_value('check_retrasogeneralizado', request.form) == 'RETRASO_GENERALIZADO_DEL_DESARROLLO' else "",
-                "check_esquemac": "/Yes" if get_form_field_value('check_esquemac', request.form) == 'ESQUEMA_COMPLETO' else "",
-                "check_esquemai": "/Yes" if get_form_field_value('check_esquemai', request.form) == 'ESQUEMA_INCOMPLETO' else "",
-                "check_alergiano": "/Yes" if get_form_field_value('check_alergiano', request.form) == 'NO_ALERGIAS' else "",
-                "check_alergiasi": "/Yes" if get_form_field_value('check_alergiasi', request.form) == 'SI_ALERGIAS' else "",
-                "check_cirugiano": "/Yes" if get_form_field_value('check_cirugiano', request.form) == 'NO_CIRUGIAS' else "",
-                "check_cirugiasi": "/Yes" if get_form_field_value('check_cirugiasi', request.form) == 'SI_CIRUGIAS' else "", # Corregido nombre de campo
-                "check_visionsinalteracion": "/Yes" if get_form_field_value('check_visionsinalteracion', request.form) == 'SIN_ALTERACION_VISION' else "",
-                "check_visionrefraccion": "/Yes" if get_form_field_value('check_visionrefraccion', request.form) == 'VICIOS_DE_REFRACCION' else "",
-                "check_audicionnormal": "/Yes" if get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION' else "",
+                "LOGRADO ACORDE A LA EDAD": "/Yes" if get_form_field_value('check_acorde', request.form) == 'LOGRADO_ACORDE_A_LA_EDAD' else "",
+                "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if get_form_field_value('check_retrasogeneralizado', request.form) == 'RETRASO_GENERALIZADO_DEL_DESARROLLO' else "",
+                "ESQUEMA COMPLETO": "/Yes" if get_form_field_value('check_esquemac', request.form) == 'ESQUEMA_COMPLETO' else "",
+                "ESQUEMA INCOMPLETO": "/Yes" if get_form_field_value('check_esquemai', request.form) == 'ESQUEMA_INCOMPLETO' else "",
+                "NO": "/Yes" if get_form_field_value('check_alergiano', request.form) == 'NO_ALERGIAS' else "",
+                "SI": "/Yes" if get_form_field_value('check_alergiasi', request.form) == 'SI_ALERGIAS' else "",
+                "NO_2": "/Yes" if get_form_field_value('check_cirugiano', request.form) == 'NO_CIRUGIAS' else "",
+                "SI_2": "/Yes" if get_form_field_value('check_cirugiasi', request.form) == 'SI_CIRUGIAS' else "", # Usando el nombre de campo que me proporcionaste
+                "SIN ALTERACIÓN": "/Yes" if get_form_field_value('check_visionsinalteracion', request.form) == 'SIN_ALTERACION_VISION' else "",
+                "VICIOS DE REFRACCION": "/Yes" if get_form_field_value('check_visionrefraccion', request.form) == 'VICIOS_DE_REFRACCION' else "",
+                "NORMAL": "/Yes" if get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION' else "",
                 "HIPOACUSIA": "/Yes" if get_form_field_value('check_hipoacusia', request.form) == 'HIPOACUSIA' else "",
-                "chack_tapondecerumen": "/Yes" if get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN' else "", # Corregido typo
+                "chack_tapondecerumen": "/Yes" if get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN' else "", # Manteniendo el nombre de campo que me proporcionaste
                 "check_sinhallazgos": "/Yes" if get_form_field_value('check_sinhallazgos', request.form) == 'SIN_HALLAZGOS' else "",
-                "check_caries": "/Yes" if get_form_field_value('check_caries', request.form) == 'caries' else "", # Corregido nombre de campo
+                "check_caries": "/Yes" if get_form_field_value('check_caries', request.form) == 'caries' else "", # Usando el nombre de campo que me proporcionaste
                 "check_apinamientodental": "/Yes" if get_form_field_value('check_apinamientodental', request.form) == 'APINAMIENTO_DENTAL' else "",
                 "check_retenciondental": "/Yes" if get_form_field_value('check_retenciondental', request.form) == 'RETENCION_DENTAL' else "",
                 "check_frenillolingual": "/Yes" if get_form_field_value('check_frenillolingual', request.form) == 'FRENILLO_LINGUAL' else "",
@@ -530,7 +530,7 @@ def generar_pdf():
                 "altura": get_form_field_value('altura', request.form),
                 "peso": get_form_field_value('peso', request.form),
                 "imc": get_form_field_value('imc', request.form),
-                "clasificacion": get_form_field_value('clasificacion', request.form), # Corregido para coincidir con el HTML
+                "clasificacion": get_form_field_value('clasificacion', request.form), # Usando 'clasificacion' como clave de PDF y de form
             }
 
         print(f"DEBUG: Fields to fill in PDF for {form_type} form: {campos}")

@@ -701,7 +701,7 @@
         <div class="evaluation-counter">
             <i class="fas fa-clipboard-check"></i>
             <span>Evaluaciones completadas para esta nómina: <strong id="completed-forms-count">{{ total_forms_completed_for_nomina }}</strong></span>
-            <button onclick="window.location.reload();">Actualizar Conteo</button>
+            <button onclick="updateCompletedCount()">Actualizar Conteo</button>
         </div>
 
         <!-- Nuevos botones de acción -->
@@ -757,7 +757,7 @@
                             <input type="text" name="rut" id="rut_{{ est.id }}" value="{{ est.rut }}" required readonly>
 
                             <!-- Campos ocultos que ya se pre-rellenan -->
-                            <input type="hidden" name="fecha_nacimiento_original" value="{{ est.fecha_nacimiento if est.fecha_nacimiento is not none else '' }}"> {# Asegurarse de enviar el valor YYYY-MM-DD #}
+                            <input type="hidden" name="fecha_nacimiento_original" value="{{ est.fecha_nacimiento if est.fecha_nacimiento is not none else '' }}"> {# Asegurarse de enviar el valor ISO YYYY-MM-DD #}
                             <input type="hidden" name="edad" value="{{ est.edad }}">
                             <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
                             
@@ -775,8 +775,7 @@
                             <p class="info"><strong>Sexo:</strong> <span class="prev-sexo-info">{{ 'Masculino' if est.sexo == 'M' else 'Femenino' if est.sexo == 'F' else 'N/A' }}</span></p>
 
                             <label for="fecha_evaluacion_{{ est.id }}">Fecha Evaluación:</label>
-                            {# Removido onchange para setFechaReevaluacion aquí, ya que plazo no existe #}
-                            <input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}" value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}" required onchange="updatePreview(this.form)">
+                            <input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}" value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}" required onchange="setFechaReevaluacion(this.form.querySelector('select[name=\'plazo\']'))">
 
 
                             <label for="estado_{{ est.id }}">Estado general del alumno:</label>
@@ -794,8 +793,8 @@
                                 <option value="Sindrome de Down" {% if est.diagnostico == 'Sindrome de Down' %}selected{% endif %}>Sindrome de Down</option>
                             </select>
 
-                            {# ELIMINADO: Plazo de reevaluación #}
-                            {# <label for="plazo_{{ est.id }}">Plazo de reevaluación:</label>
+                            {# RESTAURADO: Plazo de reevaluación #}
+                            <label for="plazo_{{ est.id }}">Plazo de reevaluación:</label>
                             <select name="plazo" id="plazo_{{ est.id }}" onchange="setFechaReevaluacion(this)">
                                 <option value="">Seleccionar plazo</option>
                                 <option value="1" {% if est.plazo == '1' %}selected{% endif %}>1 año</option>
@@ -803,10 +802,10 @@
                                 <option value="3" {% if est.plazo == '3' %}selected{% endif %}>3 años</option>
                                 <option value="4" {% if est.plazo == '4' %}selected{% endif %}>4 años</option>
                                 <option value="5" {% if est.plazo == '5' %}selected{% endif %}>5 años</option>
-                            </select> #}
+                            </select>
 
                             <label for="fecha_reevaluacion_{{ est.id }}">Fecha de reevaluación:</label>
-                            {# Ahora es un campo manual, sin dependencia de plazo #}
+                            {# Este campo ahora se rellena automáticamente por JavaScript, pero sigue siendo un input date #}
                             <input type="date" name="fecha_reevaluacion" id="fecha_reevaluacion_{{ est.id }}" value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}" required onchange="updatePreview(this.form)">
 
                             <label for="derivaciones_{{ est.id }}">Derivaciones:</label>
@@ -824,6 +823,7 @@
                                 </button>
                                 {# NEW BUTTON: Mark as evaluated #}
                                 <button type="button" class="mark-evaluated-btn" 
+                                    data-estudiante-id="{{ est.id }}" {# Add data-estudiante-id for JS #}
                                     {% if est.fecha_relleno is not none %}disabled{% endif %} 
                                     onclick="marcarComoEvaluado(this)">
                                     <i class="fas fa-check-circle"></i> 
@@ -901,8 +901,14 @@
 
                 updatePreview(form); // Actualiza la vista previa con los valores iniciales
                 
-                // La lógica de 'plazo' ha sido eliminada para neurología,
-                // así que no necesitamos llamar a setFechaReevaluacion aquí al cargar.
+                const selectPlazo = form.querySelector('select[name="plazo"]');
+                const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');
+                
+                // Si la fecha de reevaluación ya tiene un valor (viene de la DB), no sobrescribir con el selector de años
+                // Solo recalcular si el plazo tiene un valor y la fecha de reevaluación está vacía
+                if (selectPlazo && selectPlazo.value && (fechaReevaluacionInput.value === null || fechaReevaluacionInput.value.trim() === '')) {
+                    setFechaReevaluacion(selectPlazo);
+                }
             });
 
             // Event listener para el buscador
@@ -921,10 +927,6 @@
             window.location.href = "/logout";
         }
 
-        // Esta función setFechaReevaluacion ya no se usa para el formulario de neurología
-        // porque el campo 'plazo' ha sido eliminado.
-        // Si la necesitas para otro tipo de formulario, deberás reintroducirla en su HTML.
-        /*
         function setFechaReevaluacion(select) {
             const anos = parseInt(select.value);
             const form = select.closest('form');
@@ -957,7 +959,6 @@
             }
             updatePreview(form); 
         }
-        */
 
         function updatePreview(form) {
             const container = form.closest('.container');
@@ -1028,8 +1029,41 @@
             }
         }
 
+        // Nueva función para actualizar la UI del estudiante después de una acción exitosa
+        function updateStudentUI(estudianteId, isEvaluated) {
+            const detailElement = document.querySelector(`details.estudiante[data-estudiante-id="${estudianteId}"]`);
+            if (detailElement) {
+                detailElement.setAttribute('data-evaluated-status', isEvaluated ? 'true' : 'false');
+                
+                const markButton = detailElement.querySelector('.mark-evaluated-btn');
+                if (markButton) {
+                    if (isEvaluated) {
+                        markButton.disabled = true;
+                        markButton.innerHTML = '<i class="fas fa-check-circle"></i> Evaluado';
+                    } else {
+                        markButton.disabled = false;
+                        markButton.innerHTML = '<i class="fas fa-check-circle"></i> Marcar como Evaluado';
+                    }
+                }
+                // Actualizar el contador global
+                updateCompletedCount();
+                // Opcional: mostrar un badge de "Guardado" temporal
+                const badge = detailElement.querySelector('.badge');
+                if (badge) {
+                    badge.classList.add('show');
+                    badge.textContent = "Guardado";
+                    clearTimeout(badge.timeout); // Clear any previous timeout
+                    badge.timeout = setTimeout(() => {
+                        badge.classList.remove('show');
+                    }, 3000); // Hide after 3 seconds
+                }
+            }
+        }
+
+
         async function submitForm(form) {
             const formData = new FormData(form);
+            const estudianteId = form.querySelector('input[name="estudiante_id"]').value;
 
             // Debugging: Log FormData content
             console.log('FormData content before sending (submitForm - Guardar y Generar PDF):');
@@ -1056,6 +1090,9 @@
                 const saveData = await saveResponse.json(); 
 
                 if (saveData.success) {
+                    // Actualizar la UI del estudiante (sin recargar)
+                    updateStudentUI(estudianteId, true); 
+
                     // Paso 2: Generar el PDF si el guardado fue exitoso
                     const pdfResponse = await fetch('/generar_pdf', {
                         method: 'POST',
@@ -1088,8 +1125,6 @@
                             text: 'Los datos se han guardado y el PDF se ha descargado correctamente.',
                             timer: 2000,
                             showConfirmButton: false
-                        }).then(() => {
-                            window.location.reload(); 
                         });
 
                     } else {
@@ -1120,6 +1155,7 @@
 
         async function marcarComoEvaluado(buttonElement) {
             const form = buttonElement.closest('form');
+            const estudianteId = buttonElement.getAttribute('data-estudiante-id');
             
             const requiredInputs = form.querySelectorAll('input[required], select[required], textarea[required]');
             let allFilled = true;
@@ -1175,9 +1211,8 @@
                                 text: data.message,
                                 timer: 1500,
                                 showConfirmButton: false
-                            }).then(() => {
-                                window.location.reload(); 
                             });
+                            updateStudentUI(estudianteId, true); // Actualizar la UI sin recargar
                         } else {
                             Swal.fire({
                                 icon: 'error',

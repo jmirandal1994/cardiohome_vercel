@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - CardioHome</title>
+    <!-- Tailwind CSS CDN para estilos modernos y responsivos -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SweetAlert2 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Font Awesome para íconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Chart.js CDN para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
     <style>
         /* Custom CSS variables */
@@ -332,11 +336,13 @@
             gap: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
+
         form button:hover {
             background-color: var(--primary-medium);
             transform: translateY(-2px);
             box-shadow: 0 4px 10px var(--shadow-medium);
         }
+
         .filter-buttons {
             display: flex;
             flex-wrap: wrap;
@@ -348,18 +354,12 @@
             margin-top: 0;
             align-self: stretch;
         }
-        #descargarExcel {
-            background-color: var(--accent-green);
-        }
-        #descargarExcel:hover {
-            background-color: hsl(140, 60%, 30%);
-        }
-        #limpiarFiltros {
-            background-color: hsl(210, 10%, 50%);
-        }
-        #limpiarFiltros:hover {
-            background-color: hsl(210, 10%, 40%);
-        }
+
+        #descargarExcel { background-color: var(--accent-green); }
+        #descargarExcel:hover { background-color: hsl(140, 60%, 30%); }
+        #limpiarFiltros { background-color: hsl(210, 10%, 50%); }
+        #limpiarFiltros:hover { background-color: hsl(210, 10%, 40%); }
+
         /* Item list (visits, nominations, uploaded forms) */
         .lista-items {
             list-style: none;
@@ -367,6 +367,7 @@
             margin: 0;
             margin-top: 20px;
         }
+
         .item-card {
             background-color: white;
             border: 1px solid var(--border-color);
@@ -381,165 +382,179 @@
         }
         .item-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
         }
-        .item-card h4 {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 18px;
-            color: var(--primary-dark);
-            margin: 0 0 5px 0;
-        }
-        .item-card p {
-            font-size: 14px;
-            color: var(--text-dark);
-            margin: 0;
-        }
-        .item-card .actions {
+        .item-card-header {
             display: flex;
-            gap: 8px;
-            margin-top: 10px;
-            flex-wrap: wrap;
-        }
-        .item-card .actions button {
-            padding: 8px 15px;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: background-color 0.2s ease, transform 0.2s ease;
-            display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 5px;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-bottom: 5px;
         }
-        .item-card .actions button.edit {
+        .item-card-details {
+            font-size: 0.9em;
+            color: #555;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .item-card-action-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             background-color: var(--accent-blue);
             color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.9em;
+            margin-top: 10px;
+            align-self: flex-start;
+            transition: background-color 0.3s ease;
         }
-        .item-card .actions button.edit:hover {
+        .item-card-action-link:hover {
             background-color: hsl(200, 60%, 40%);
-            transform: translateY(-1px);
         }
-        .item-card .actions button.delete {
+        /* Style for delete button */
+        .delete-btn {
             background-color: var(--accent-red);
             color: white;
-        }
-        .item-card .actions button.delete:hover {
-            background-color: hsl(0, 70%, 45%);
-            transform: translateY(-1px);
-        }
-        .item-card .actions button.view {
-            background-color: hsl(210, 10%, 75%);
-            color: var(--text-dark);
-        }
-        .item-card .actions button.view:hover {
-            background-color: hsl(210, 10%, 65%);
-            transform: translateY(-1px);
-        }
-        .item-card .status {
-            font-size: 13px;
-            font-weight: 700;
-            padding: 4px 8px;
-            border-radius: 5px;
-            align-self: flex-start;
-            margin-top: 5px;
-        }
-        .item-card .status.pending {
-            background-color: hsl(40, 90%, 90%);
-            color: hsl(40, 90%, 40%);
-        }
-        .item-card .status.completed {
-            background-color: hsl(140, 60%, 90%);
-            color: var(--accent-green);
-        }
-
-        /* Tables */
-        .table-container {
-            overflow-x: auto;
-        }
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            font-size: 15px;
-        }
-        .data-table th, .data-table td {
-            border: 1px solid var(--border-color);
-            padding: 12px;
-            text-align: left;
-        }
-        .data-table th {
-            background-color: var(--primary-light);
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9em;
             font-weight: 600;
-            color: var(--primary-dark);
-            text-transform: uppercase;
-            font-size: 14px;
-        }
-        .data-table tr:nth-child(even) {
-            background-color: hsl(210, 16%, 98%);
-        }
-        .data-table tr:hover {
-            background-color: hsl(210, 16%, 93%);
-        }
-        .data-table td .actions {
             display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            margin-top: 10px;
+            align-self: flex-start;
         }
-        .data-table td .actions button {
-            padding: 6px 10px;
-            font-size: 12px;
-            border-radius: 5px;
+        .delete-btn:hover {
+            background-color: hsl(0, 70%, 45%);
+            transform: translateY(-2px);
         }
 
-        /* Charts */
+
+        /* Welcome Section Specific Styles */
+        .welcome-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-height: 400px;
+            background: linear-gradient(145deg, #e0f2f7, #c1e4f0);
+            border: 2px solid var(--accent-blue);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: var(--padding-base);
+            border-radius: var(--border-radius-base);
+            animation: slideInFromTop 0.8s ease-out;
+        }
+
+        .welcome-card img {
+            width: 180px;
+            height: auto;
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3));
+            margin-bottom: 25px;
+            animation: bounceIn 1s ease-out;
+        }
+
+        .welcome-card h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 44px;
+            font-weight: 800;
+            color: var(--primary-dark);
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+            animation: fadeInText 1.2s ease-out 0.3s forwards;
+            opacity: 0;
+        }
+
+        .welcome-card p {
+            font-family: 'Inter', sans-serif;
+            font-size: 20px;
+            color: var(--text-dark);
+            max-width: 600px;
+            margin-bottom: 30px;
+            animation: fadeInText 1.2s ease-out 0.6s forwards;
+            opacity: 0;
+        }
+
+        /* Doctor performance card for admin */
+        .doctor-performance-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            background-color: var(--background-accent);
+            border-radius: 8px;
+            font-weight: 500;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .doctor-performance-item span:first-child {
+            color: var(--primary-dark);
+        }
+        .doctor-performance-item span:last-child {
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
+
+        /* Chart container styles */
         .chart-container {
             position: relative;
-            height: 400px; /* Adjust height as needed */
+            height: 400px;
             width: 100%;
+            margin-top: 20px;
+        }
+        
+        @keyframes slideInFromTop {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
 
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 1; }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes fadeInText {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+
         /* Responsive adjustments */
-        @media (max-width: 1024px) {
+        @media (max-width: 768px) {
+            .menu-toggle-btn {
+                display: block;
+            }
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                z-index: 99;
+                transform: translateX(-100%);
+                width: 250px;
+                padding: var(--padding-base);
+                box-shadow: 4px 0 15px var(--shadow-strong);
+                height: 100vh;
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
             .dashboard-wrapper {
                 flex-direction: column;
             }
-            .sidebar {
-                width: 100%;
-                height: auto;
-                position: relative;
-                border-radius: 0;
-                transform: translateX(0); /* Ensure sidebar is visible */
-                padding: var(--padding-base);
-                box-shadow: 0 4px 15px var(--shadow-medium);
-            }
-            .sidebar.collapsed {
-                width: 100%;
-                height: 0;
-                overflow: hidden;
-                padding: 0;
-            }
-            .dashboard-wrapper.sidebar-active .dashboard-content {
-                margin-left: 0;
-            }
             .dashboard-content {
-                padding-top: var(--gap-base);
-            }
-            .menu-toggle-btn {
-                display: block; /* Show menu button on smaller screens */
-            }
-            header {
-                padding-bottom: 20px;
-            }
-            .logout-btn {
-                position: static;
-                margin-top: 15px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            header h1 {
-                font-size: 24px;
+                padding: 15px;
+                margin-left: 0;
             }
             .summary {
                 grid-template-columns: 1fr;
@@ -549,238 +564,511 @@
             }
             form input, form select, form textarea {
                 font-size: 14px;
-                padding: 10px 12px;
             }
             form button {
-                font-size: 14px;
-                padding: 10px 20px;
+                font-size: 15px;
             }
-            .item-card {
-                padding: 12px 15px;
+            .item-card-header {
+                flex-direction: column;
+                align-items: flex-start;
             }
-            .item-card h4 {
+            .item-card-action-link {
+                align-self: flex-start;
+            }
+            .welcome-card h2 {
+                font-size: 32px;
+            }
+            .welcome-card p {
                 font-size: 16px;
             }
-            .item-card p {
-                font-size: 13px;
+            .welcome-card img {
+                width: 100px;
             }
-            .item-card .actions button {
-                padding: 6px 10px;
-                font-size: 11px;
+            .chart-container {
+                height: 300px;
             }
         }
+        /* To prevent double scroll and ensure sticky sidebar design */
+        html {
+            overflow-y: hidden;
+        }
+        body {
+            overflow-y: auto;
+        }
+
     </style>
 </head>
 <body>
     <header>
-        <button class="menu-toggle-btn" id="menuToggle">
-            <i class="fas fa-bars"></i>
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo CardioHome" />
+        <h1>Bienvenido a tu Panel de CardioHome</h1>
+        <button class="logout-btn" onclick="cerrarSesion()">
+            <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
         </button>
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="CardioHome Logo">
-        <h1>Bienvenido, {{ current_user.nombre }}!</h1>
-        <form action="{{ url_for('logout') }}" method="post">
-            <button type="submit" class="logout-btn">
-                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-            </button>
-        </form>
+        <button class="menu-toggle-btn" id="menuToggle">
+            <i class="fa-solid fa-bars"></i>
+        </button>
     </header>
 
-    <div class="dashboard-wrapper" id="dashboardWrapper">
+    <div class="dashboard-wrapper">
         <aside class="sidebar" id="sidebar">
-            <nav class="sidebar-nav">
-                <ul>
-                    <li><a href="#" data-section="inicio" class="active"><i class="fas fa-home"></i> Inicio</a></li>
-                    <li><a href="#" data-section="mis-nominas"><i class="fas fa-file-alt"></i> Mis Nóminas</a></li>
-                    <li><a href="#" data-section="completar-formulario"><i class="fas fa-file-signature"></i> Completar Formulario</a></li>
+            <nav>
+                <ul class="sidebar-nav">
+                    <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical"></i> Bienvenida</a></li>
+                    {% if usuario == 'admin' %}
+                        <li><a href="#" class="nav-link" data-section="admin-performance"><i class="fa-solid fa-chart-line"></i> Rendimiento Admin</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-add-visit"><i class="fa-solid fa-calendar-plus"></i> Agregar Visita</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-upload-nomina"><i class="fa-solid fa-file-excel"></i> Cargar Nómina</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-visits-list"><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-nominas-list"><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Cargadas</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-uploaded-forms-all"><i class="fa-solid fa-folder-open"></i> Formularios Subidos</a></li>
+                    {% else %}
+                        <li><a href="#" class="nav-link" data-section="doctor-performance"><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-visits"><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-nominas"><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Asignadas</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-uploaded-forms"><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</a></li>
+                    {% endif %}
                 </ul>
             </nav>
         </aside>
 
         <main class="dashboard-content">
-            <div id="inicio" class="content-section active">
-                <div class="summary">
-                    <div class="card">
-                        <h3><i class="fas fa-file-alt"></i> Mis Nóminas Asignadas</h3>
-                        <p>{{ stats.nominas_asignadas }}</p>
-                    </div>
-                    <div class="card">
-                        <h3><i class="fas fa-tasks"></i> Formularios Pendientes</h3>
-                        <p>{{ stats.formularios_pendientes }}</p>
-                    </div>
-                    <div class="card">
-                        <h3><i class="fas fa-check-circle"></i> Formularios Completados</h3>
-                        <p>{{ stats.formularios_completados }}</p>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <h3><i class="fas fa-chart-pie"></i> Mi Rendimiento</h3>
-                    <div class="chart-container">
-                        <canvas id="doctorPerformanceSingleDoctorChart"></canvas>
-                    </div>
+            <!-- WELCOME SECTION -->
+            <div id="welcome-section" class="content-section active">
+                <div class="card welcome-card">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo CardioHome" />
+                    <h2>¡Bienvenido a CardioHome!</h2>
+                    <p>Tu plataforma integral para la gestión eficiente de visitas médicas, nóminas de pacientes y formularios. Aquí podrás optimizar tu trabajo y asegurar un seguimiento completo de cada caso.</p>
                 </div>
             </div>
-
-            <div id="mis-nominas" class="content-section">
-                <div class="card">
-                    <h3><i class="fas fa-list-alt"></i> Mis Nóminas</h3>
-                    <ul class="lista-items">
-                        {% for nomina in nominas_doctor %}
-                        <li class="item-card">
-                            <h4>Nómina: {{ nomina.nombre_archivo }} (ID: {{ nomina.id }})</h4>
-                            <p><strong>Fecha de Carga:</strong> {{ nomina.fecha_carga.strftime('%Y-%m-%d %H:%M') }}</p>
-                            <p><strong>Total Estudiantes:</strong> {{ nomina.total_estudiantes }}</p>
-                            <div class="actions">
-                                <a href="{{ url_for('nomina_detail', nomina_id=nomina.id) }}" class="view-btn">
-                                    <button class="view"><i class="fas fa-eye"></i> Ver Detalles</button>
-                                </a>
+               <div id="doctor-performance" class="content-section">
+                    <div class="card">
+                        <h3><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento (Formularios)</h3>
+                        {% if doctor_performance_data_single_doctor %}
+                            <p class="text-center text-4xl font-extrabold text-accent-blue my-4">
+                                {{ doctor_performance_data_single_doctor.completed }}
+                            </p>
+                            <p class="text-center text-lg text-gray-600 mb-4">Formularios Completados</p>
+                            <div class="chart-container">
+                                <canvas id="doctorPerformanceChart"></canvas>
                             </div>
-                        </li>
-                        {% endfor %}
-                    </ul>
+                            <div class="text-center text-sm text-gray-500 mt-4">
+                                Total de formularios en tus nóminas: {{ doctor_performance_data_single_doctor.total }}
+                            </div>
+                        {% else %}
+                            <p style="text-align: center; color: #777;">No hay datos de rendimiento disponibles para graficar.</p>
+                        {% endif %}
+                    </div>
                 </div>
-            </div>
 
-            <div id="completar-formulario" class="content-section">
-                <div class="card">
-                    <h3><i class="fas fa-search"></i> Buscar Estudiante</h3>
-                    <form id="searchStudentForm">
-                        <label for="search_rut">RUT del Estudiante:</label>
-                        <input type="text" id="search_rut" name="rut" placeholder="Ej: 12345678-9" required>
-                        <button type="submit"><i class="fas fa-search"></i> Buscar Estudiante</button>
-                    </form>
-                    <div id="searchResults" class="mt-4">
-                        </div>
+                <!-- Doctor Section: My Upcoming Visits -->
+                <div id="doctor-visits" class="content-section">
+                    <div class="card">
+                        <h3><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</h3>
+                        <ul class="lista-items">
+                            {% if eventos %}
+                                {% for evento in eventos %}
+                                    <li class="item-card">
+                                        <div class="item-card-header">
+                                            <span>{{ evento.nombre }} ({{ evento.fecha }})</span>
+                                            <span>{{ evento.horario }}</span>
+                                        </div>
+                                        <div class="item-card-details">
+                                            <span>Alumnos esperados: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
+                                            <span>Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
+                                        </div>
+                                        {% if evento.url_archivo %}
+                                            <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
+                                                <i class="fa-solid fa-file-alt"></i> Descargar Formulario Base
+                                            </a>
+                                        {% endif %}
+                                        <form action="{{ url_for('subir', establecimiento=evento.id) }}" method="POST" enctype="multipart/form-data" class="mt-4">
+                                            <label for="archivo_{{ loop.index }}">Subir Formulario Completado:</label>
+                                            <input type="file" id="archivo_{{ loop.index }}" name="archivo" accept=".pdf,.docx,.doc,.xls,.xlsx,.csv" required />
+                                            <button type="submit" style="background-color: var(--accent-green);"><i class="fa-solid fa-upload"></i> Subir Formulario</button>
+                                        </form>
+                                        <form action="{{ url_for('evaluados', establecimiento=evento.id) }}" method="POST" class="mt-4">
+                                            <label for="alumnos_evaluados_{{ loop.index }}">Alumnos Evaluados:</label>
+                                            <input type="number" id="alumnos_evaluados_{{ loop.index }}" name="alumnos" min="0" placeholder="N° de alumnos evaluados" required />
+                                            <button type="submit" style="background-color: var(--accent-blue);"><i class="fa-solid fa-check"></i> Registrar Evaluados</button>
+                                        </form>
+                                    </li>
+                                {% endfor %}
+                            {% else %}
+                                <p style="text-align: center; color: #777;">No tienes visitas programadas.</p>
+                            {% endif %}
+                        </ul>
+                    </div>
                 </div>
-            </div>
+
+                <!-- Doctor Section: My Assigned Rosters -->
+                <div id="doctor-nominas" class="content-section">
+                    <div class="card">
+                        <h3><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Médicas Asignadas</h3>
+                        <ul class="lista-items">
+                            {% if assigned_nominations %}
+                                {% for nomina in assigned_nominations %}
+                                    <li class="item-card">
+                                        <div class="item-card-header">
+                                            <span>{{ nomina.nombre_establecimiento }}</span>
+                                            <span>Tipo: {{ nomina.tipo_nomina_display }}</span>
+                                        </div>
+                                        <!-- The link to fill the form should now pass the form_type -->
+                                        <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="item-card-action-link">
+                                            <i class="fa-solid fa-edit"></i> Rellenar y Ver Estudiantes
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                            {% else %}
+                                <p style="text-align: center; color: #777;">No tienes nóminas médicas asignadas en este momento.</p>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Doctor Section: My Uploaded Forms -->
+                <div id="doctor-uploaded-forms" class="content-section">
+                    <div class="card">
+                        <h3><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</h3>
+                        <ul class="lista-items">
+                            {% if formularios %}
+                                {% for form_subido in formularios %}
+                                    {% if form_subido.doctoras_id == usuario_id %}
+                                        <li class="item-card">
+                                            <div class="item-card-header">
+                                                <span>{{ form_subido.nombre_archivo }}</span>
+                                                <span>Fecha: {{ form_subido.fecha_subida.strftime('%d-%m-%Y') if form_subido.fecha_subida else 'N/A' }}</span>
+                                            </div>
+                                            <div class="item-card-details">
+                                                <span>Establecimiento: 
+                                                    {% set est = (eventos | selectattr('id', 'equalto', form_subido.establecimientos_id) | first) %}
+                                                    {{ est.nombre if est else 'Desconocido' }}
+                                                </span>
+                                            </div>
+                                            <a href="{{ form_subido.url_archivo }}" target="_blank" class="item-card-action-link" style="background-color: var(--primary-medium);">
+                                                <i class="fa-solid fa-eye"></i> Ver Archivo
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <p style="text-align: center; color: #777;">No has subido ningún formulario aún.</p>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            {% endif %}
         </main>
     </div>
 
     <script>
+        function cerrarSesion() {
+            window.location.href = "/logout";
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
-            const menuToggle = document.getElementById('menuToggle');
             const sidebar = document.getElementById('sidebar');
-            const dashboardWrapper = document.getElementById('dashboardWrapper');
-            const navLinks = document.querySelectorAll('.sidebar-nav a');
+            const menuToggle = document.getElementById('menuToggle');
+            const navLinks = document.querySelectorAll('.nav-link');
             const contentSections = document.querySelectorAll('.content-section');
+            const dashboardWrapper = document.querySelector('.dashboard-wrapper');
 
-            menuToggle.addEventListener('click', function() {
-                sidebar.classList.toggle('collapsed');
-                dashboardWrapper.classList.toggle('sidebar-active');
-            });
+            // Function to activate a section and deactivate others
+            function showSection(sectionId) {
+                contentSections.forEach(section => {
+                    section.classList.remove('active');
+                });
+                const activeSection = document.getElementById(sectionId);
+                if (activeSection) {
+                    activeSection.classList.add('active');
+                    activeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
+                    // If it's the performance section, render the chart
+                    if (sectionId === 'admin-performance') {
+                        renderAdminPerformanceChart();
+                    } else if (sectionId === 'doctor-performance') {
+                        renderDoctorPerformanceChart();
+                    }
+                }
+            }
+
+            // Handle clicks on navigation links
             navLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    navLinks.forEach(nav => nav.classList.remove('active'));
+                link.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    navLinks.forEach(item => item.classList.remove('active'));
                     this.classList.add('active');
 
-                    const targetSection = this.dataset.section;
-                    contentSections.forEach(section => {
-                        if (section.id === targetSection) {
-                            section.classList.add('active');
-                        } else {
-                            section.classList.remove('active');
-                        }
-                    });
+                    const sectionId = this.dataset.section;
+                    showSection(sectionId);
+
+                    if (window.innerWidth <= 768) {
+                        sidebar.classList.remove('active');
+                        dashboardWrapper.classList.remove('sidebar-active');
+                    }
                 });
             });
 
-            // Función para inicializar el gráfico de rendimiento del doctor (Doctora)
-            function initDoctorPerformanceSingleDoctorChart(data) {
-                const ctx = document.getElementById('doctorPerformanceSingleDoctorChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Completados', 'Pendientes'],
-                        datasets: [{
-                            data: [data.completed, data.pending],
-                            backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 159, 64, 0.6)'],
-                            borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 159, 64, 1)'],
-                            borderWidth: 1
-                        }]
+            // Handle menu button for mobile
+            if (menuToggle) {
+                menuToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('active');
+                    dashboardWrapper.classList.toggle('sidebar-active');
+                });
+            }
+
+            // Hide sidebar if clicked outside on mobile
+            document.addEventListener('click', function(event) {
+                if (window.innerWidth <= 768 && sidebar.classList.contains('active')) {
+                    const isClickInsideSidebar = sidebar.contains(event.target);
+                    const isClickOnMenuToggle = menuToggle && menuToggle.contains(event.target);
+                    if (!isClickInsideSidebar && !isClickOnMenuToggle) {
+                        sidebar.classList.remove('active');
+                        dashboardWrapper.classList.remove('sidebar-active');
+                    }
+                }
+            });
+
+            // Initialize by showing the first active section by default
+            const initialActiveLink = document.querySelector('.nav-link.active');
+            if (initialActiveLink) {
+                showSection(initialActiveLink.dataset.section);
+            } else if (navLinks.length > 0) {
+                navLinks[0].classList.add('active');
+                showSection(navLinks[0].dataset.section);
+            }
+        });
+
+        // Function to confirm and perform deletion
+        function confirmDelete(type, id, name) {
+            Swal.fire({
+                title: `¿Estás seguro de eliminar ${type === 'establecimiento' ? 'el colegio' : 'la nómina'} "${name}"?`,
+                text: `Esta acción es irreversible y eliminará todos los datos asociados ${type === 'nomina' ? 'a los estudiantes de esta nómina.' : ''}`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/admin/eliminar_${type}/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire(
+                                '¡Eliminado!',
+                                data.message,
+                                'success'
+                            ).then(() => {
+                                window.location.reload(); // Reload to update the list
+                            });
+                        } else {
+                            Swal.fire(
+                                'Error',
+                                data.message,
+                                'error'
+                            );
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al eliminar:', error);
+                        Swal.fire(
+                            'Error',
+                            'No se pudo conectar con el servidor para eliminar.',
+                            'error'
+                        );
+                    });
+                }
+            });
+        }
+
+
+        // Doctor performance data for Chart.js (Admin)
+        // Injected from Flask into the template
+        const adminPerformanceData = {{ doctor_performance_data | tojson }};
+
+        function renderAdminPerformanceChart() {
+            const ctx = document.getElementById('adminPerformanceChart');
+            if (!ctx) {
+                console.error('Canvas element not found for adminPerformanceChart');
+                return;
+            }
+
+            // Destroy any existing chart instance to avoid duplicates
+            if (window.adminChartInstance) {
+                window.adminChartInstance.destroy();
+            }
+
+            const labels = Object.keys(adminPerformanceData);
+            const data = Object.values(adminPerformanceData);
+
+            window.adminChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Formularios Completados',
+                        data: data,
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.6)', /* Greenish-blue */
+                            'rgba(153, 102, 255, 0.6)', /* Purple */
+                            'rgba(255, 159, 64, 0.6)',  /* Orange */
+                            'rgba(54, 162, 235, 0.6)',  /* Blue */
+                            'rgba(255, 99, 132, 0.6)',  /* Red */
+                            'rgba(201, 203, 207, 0.6)'  /* Grey */
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(201, 203, 207, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Formularios Evaluados por Doctora',
+                            font: { size: 18, family: 'Montserrat' },
+                            color: '#333'
+                        },
+                        legend: {
+                            display: false
+                        }
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Estado de Mis Formularios',
-                                font: { size: 18, family: 'Montserrat' },
-                                color: '#333'
+                                text: 'Cantidad de Formularios',
+                                font: { size: 14, family: 'Inter' },
+                                color: '#555'
                             },
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    font: {
-                                        family: 'Inter'
-                                    }
+                            ticks: {
+                                precision: 0
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Doctora',
+                                font: { size: 14, family: 'Inter' },
+                                color: '#555'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /* Doctor's own performance data (if doctor is logged in) */
+        /* Injected from Flask into the template */
+        const doctorPerformanceDataSingleDoctor = {{ doctor_performance_data_single_doctor | tojson }};
+
+        function renderDoctorPerformanceChart() {
+            const ctx = document.getElementById('doctorPerformanceChart');
+            if (!ctx) {
+                console.error('Canvas element not found for doctorPerformanceChart');
+                return;
+            }
+
+            // Destroy any existing chart instance to avoid duplicates
+            if (window.doctorChartInstance) {
+                window.doctorChartInstance.destroy();
+            }
+
+            if (!doctorPerformanceDataSingleDoctor || doctorPerformanceDataSingleDoctor.total === 0) {
+                 ctx.style.display = 'none';
+                 const parent = ctx.closest('.chart-container');
+                 if (parent) {
+                    let noDataMsg = parent.querySelector('.no-data-message');
+                    if (!noDataMsg) {
+                        noDataMsg = document.createElement('p');
+                        noDataMsg.className = 'no-data-message text-center text-gray-500 mt-4';
+                        noDataMsg.textContent = 'No hay suficientes datos para mostrar el gráfico.';
+                        parent.appendChild(noDataMsg);
+                    }
+                 }
+                 return;
+            } else {
+                 const noDataMsg = ctx.closest('.chart-container').querySelector('.no-data-message');
+                 if (noDataMsg) noDataMsg.remove();
+                 ctx.style.display = 'block';
+            }
+
+
+            const completed = doctorPerformanceDataSingleDoctor.completed;
+            const pending = doctorPerformanceDataSingleDoctor.total - completed; /* Calculated dynamically from total */
+
+            window.doctorChartInstance = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Completados', 'Pendientes'],
+                    datasets: [{
+                        label: 'Formularios',
+                        data: [completed, pending],
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.6)', /* Blue for completed */
+                            'rgba(255, 99, 132, 0.6)'  /* Light red for pending */
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 99, 132, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Estado de Mis Formularios',
+                            font: { size: 18, family: 'Montserrat' },
+                            color: '#333'
+                        },
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    family: 'Inter'
                                 }
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        let label = context.label || '';
-                                        if (label) {
-                                            label += ': ';
-                                        }
-                                        if (context.parsed !== null) {
-                                            label += context.parsed + ' (' + ((context.parsed / doctorPerformanceDataSingleDoctor.total) * 100).toFixed(1) + '%)';
-                                        }
-                                        return label;
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
                                     }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed + ' (' + ((context.parsed / doctorPerformanceDataSingleDoctor.total) * 100).toFixed(1) + '%)';
+                                    }
+                                    return label;
                                 }
                             }
                         }
                     }
-                });
-            }
-
-            // Dummy data for Doctora's Performance Chart
-            const doctorPerformanceDataSingleDoctor = {
-                completed: 75,
-                pending: 25,
-                total: 100 // Sum of completed and pending
-            };
-            initDoctorPerformanceSingleDoctorChart(doctorPerformanceDataSingleDoctor);
-
-            // Búsqueda de estudiante (Doctora)
-            const searchStudentForm = document.getElementById('searchStudentForm');
-            const searchResultsDiv = document.getElementById('searchResults');
-
-            searchStudentForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const rut = document.getElementById('search_rut').value;
-
-                fetch(`/search_student?rut=${rut}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            const student = data.student;
-                            searchResultsDiv.innerHTML = `
-                                <div class="card">
-                                    <h4>Estudiante Encontrado: ${student.nombre} ${student.apellido}</h4>
-                                    <p>RUT: ${student.rut}</p>
-                                    <p>Nómina: ${student.nombre_nomina}</p>
-                                    <p>Estado de Formulario: <span class="status ${student.formulario_completado ? 'completed' : 'pending'}">${student.formulario_completado ? 'Completado' : 'Pendiente'}</span></p>
-                                    <div class="actions">
-                                        <a href="/fill_form/${student.id}" class="edit-btn">
-                                            <button class="edit"><i class="fas fa-file-signature"></i> Rellenar Formulario</button>
-                                        </a>
-                                    </div>
-                                </div>
-                            `;
-                        } else {
-                            searchResultsDiv.innerHTML = `<div class="card text-red-600">${data.message}</div>`;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error al buscar estudiante:', error);
-                        searchResultsDiv.innerHTML = `<div class="card text-red-600">Error de conexión al buscar estudiante.</div>`;
-                    });
+                }
             });
-        });
+        }
+
     </script>
 </body>
 </html>
+            

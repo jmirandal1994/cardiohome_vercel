@@ -33,7 +33,7 @@ PDF_BASE_FAMILIAR = 'formulario_familiar.pdf'
 # -------------------- Supabase Configuration --------------------
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://rbzxolreglwndvsrxhmg.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDE3ODcsImV4cCI6MjA2MzExNzc4N30.BbzsUhed1Y_dJYWFKLAHqtV4cXdvjF_ihGdQ_Bpov3Y")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4c25xZmZpeHdqcWRpdmJraWV5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxOTI4NzMyNSwiZXhwIjoxNzUwODIzMzI1fQ.qNlSg_p4_u1O5xQ9s6bN0K2Z0f0v_N9s8k0k0k0k0k") # ASEGÚRATE DE USAR TU SERVICE_KEY REAL
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IlNJUDU4IiwicmVmIjoiYnhzbnFmZml4d2pkcWl2eGJrZXkiLCJyb2xlIjoic2VydmljZV9yb2xlIiwiaWF0IjoxNzE5Mjg3MzI1LCJleHAiOjE3NTA4MjMzMjV9.qNlSg_p4_u1O5xQ9s6bN0K2Z0f0v_N9s8k0k0k0k0k") # ASEGÚRATE DE USAR TU SERVICE_KEY REAL
 
 SUPABASE_HEADERS = {
     "apikey": SUPABASE_KEY,
@@ -147,7 +147,7 @@ def get_form_field_value(field_name, form_data, return_none_if_empty=False):
     """
     Retrieves a form field value from form_data.
     If return_none_if_empty is True, returns None for empty strings.
-    Otherwise, returns an nonempty string for empty values.
+    Otherwise, returns an empty string for empty values.
     """
     value = form_data.get(field_name)
     if value is None:
@@ -206,8 +206,6 @@ def find_or_create_drive_folder(service, folder_name, parent_folder_id=None):
     Busca una carpeta por nombre. Si no existe, la crea.
     """
     try:
-        # 'creds' needs to be passed or accessed globally if not passed
-        # For this function, 'service' is already built with creds, so it's fine.
         query = f"name = '{folder_name}' and mimeType = 'application/vnd.google-apps.folder'"
         if parent_folder_id:
             query += f" and '{parent_folder_id}' in parents"
@@ -485,53 +483,54 @@ def generar_pdf():
         elif form_type == 'medicina_familiar':
             # Campos para medicina familiar (mantengo los que tenías, asumiendo que son correctos para ese PDF)
             campos = {
-                "Nombres y Apellidos": nombre,
-                "RUN": rut,
-                "Fecha nacimiento (dd/mm/aaaa)": fecha_nac_formato,
-                "Edad (en años y meses)": edad,
-                "Nacionalidad": nacionalidad,
-                "F": sexo_f_pdf,
-                "M": sexo_m_pdf,
-                "DIAGNOSTICO": get_form_field_value('diagnostico_1', request.form),
-                "DIAGNÓSTICO COMPLEMENTARIO": get_form_field_value('diagnostico_complementario', request.form),
-                "Clasificación": get_form_field_value('clasificacion_imc', request.form),
-                "INDICACIONES": get_form_field_value('derivaciones', request.form),
-                "Fecha evaluación": fecha_evaluacion_formatted,
-                "Fecha reevaluación": fecha_reeval_pdf,
-                "OBS1": get_form_field_value('observacion_1', request.form),
-                "OBS2": get_form_field_value('observacion_2', request.form),
-                "OBS3": get_form_field_value('observacion_3', request.form),
-                "OBS4": get_form_field_value('observacion_4', request.form),
-                "OBS5": get_form_field_value('observacion_5', request.form),
-                "OBS6": get_form_field_value('observacion_6', request.form),
-                "OBS7": get_form_field_value('observacion_7', request.form),
-                "CESAREA": "/Yes" if get_form_field_value('check_cesarea', request.form) == 'CESAREA' else "",
-                "A TÉRMINO": "/Yes" if get_form_field_value('check_atermino', request.form) == 'A_TERMINO' else "",
-                "VAGINAL": "/Yes" if get_form_field_value('check_vaginal', request.form) == 'VAGINAL' else "",
-                "PREMATURO": "/Yes" if get_form_field_value('check_prematuro', request.form) == 'PREMATURO' else "",
-                "LOGRADO ACORDE A LA EDAD": "/Yes" if get_form_field_value('check_acorde', request.form) == 'LOGRADO_ACORDE_A_LA_EDAD' else "",
-                "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if get_form_field_value('check_retrasogeneralizado', request.form) == 'RETRASO_GENERALIZADO_DEL_DESARROLLO' else "",
-                "ESQUEMA COMPLETO": "/Yes" if get_form_field_value('check_esquemac', request.form) == 'ESQUEMA_COMPLETO' else "",
-                "ESQUEMA INCOMPLETO": "/Yes" if get_form_field_value('check_esquemai', request.form) == 'ESQUEMA_INCOMPLETO' else "",
-                "NO": "/Yes" if get_form_field_value('check_alergiano', request.form) == 'NO_ALERGIAS' else "",
-                "SI": "/Yes" if get_form_field_value('check_alergiasi', request.form) == 'SI_ALERGIAS' else "",
-                "NO_2": "/Yes" if get_form_field_value('check_cirugiano', request.form) == 'NO_CIRUGIAS' else "",
-                "SI_2": "/Yes" if get_form_field_value('si_2', request.form) == 'SI_2' else "", # Corregido nombre de campo
-                "SIN ALTERACIÓN": "/Yes" if get_form_field_value('check_visionsinalteracion', request.form) == 'SIN_ALTERACION_VISION' else "",
-                "VICIOS DE REFRACCION": "/Yes" if get_form_field_value('check_visionrefraccion', request.form) == 'VICIOS_DE_REFRACCION' else "",
-                "NORMAL": "/Yes" if get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION' else "",
-                "HIPOACUSIA": "/Yes" if get_form_field_value('check_hipoacusia', request.form) == 'HIPOACUSIA' else "",
-                "TAPÓN DE CERUMEN": "/Yes" if get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN' else "",
-                "SIN HALLAZGOS": "/Yes" if get_form_field_value('check_sinhallazgos', request.form) == 'SIN_HALLAZGOS' else "",
-                "CARIES": "/Yes" if get_form_field_value('caries', request.form) == 'CARIES' else "",
-                "APIÑAMIENTO DENTAL": "/Yes" if get_form_field_value('check_apinamientodental', request.form) == 'APINAMIENTO_DENTAL' else "",
-                "RETENCIÓN DENTAL": "/Yes" if get_form_field_value('check_retenciondental', request.form) == 'RETENCION_DENTAL' else "",
-                "FRENILLO LINGUAL": "/Yes" if get_form_field_value('check_frenillolingual', request.form) == 'FRENILLO_LINGUAL' else "",
-                "HIPERTROFIA AMIGDALINA": "/Yes" if get_form_field_value('check_hipertrofia', request.form) == 'HIPERTROFIA_AMIGDALINA' else "",
-                "Altura": get_form_field_value('altura', request.form),
-                "Peso": get_form_field_value('peso', request.form),
-                "I.M.C": get_form_field_value('imc', request.form),
-                "Clasificación_IMC": get_form_field_value('clasificacion_imc', request.form),
+                "nombre": nombre,
+                "rut": rut,
+                "fecha_nacimiento": fecha_nac_formato,
+                "edad": edad,
+                "nacionalidad": nacionalidad,
+                "sexo_f": sexo_f_pdf,
+                "sexo_m": sexo_m_pdf,
+                "diagnostico_1": get_form_field_value('diagnostico', request.form),
+                "diagnostico_2": get_form_field_value('diagnostico', request.form),
+                "diagnostico_complementario": get_form_field_value('diagnostico_complementario', request.form),
+                "clasificación": get_form_field_value('clasificacion_imc', request.form),
+                "derivaciones": get_form_field_value('derivaciones', request.form),
+                "fecha_evaluacion": fecha_evaluacion_formatted,
+                "fecha_reevaluacion": fecha_reeval_pdf,
+                "observacion_1": get_form_field_value('observacion_1', request.form),
+                "observacion_2": get_form_field_value('observacion_2', request.form),
+                "observacion_3": get_form_field_value('observacion_3', request.form),
+                "observacion_4": get_form_field_value('observacion_4', request.form),
+                "observacion_5": get_form_field_value('observacion_5', request.form),
+                "observacion_6": get_form_field_value('observacion_6', request.form),
+                "observacion_7": get_form_field_value('observacion_7', request.form),
+                "check_cesarea": "/Yes" if get_form_field_value('check_cesarea', request.form) == 'CESAREA' else "",
+                "check_atermino": "/Yes" if get_form_field_value('check_atermino', request.form) == 'A_TERMINO' else "",
+                "check_vaginal": "/Yes" if get_form_field_value('check_vaginal', request.form) == 'VAGINAL' else "",
+                "check_prematuro": "/Yes" if get_form_field_value('check_prematuro', request.form) == 'PREMATURO' else "",
+                "check_acorde": "/Yes" if get_form_field_value('check_acorde', request.form) == 'LOGRADO_ACORDE_A_LA_EDAD' else "",
+                "check_retrasogeneralizado": "/Yes" if get_form_field_value('check_retrasogeneralizado', request.form) == 'RETRASO_GENERALIZADO_DEL_DESARROLLO' else "",
+                "check_esquemac": "/Yes" if get_form_field_value('check_esquemac', request.form) == 'ESQUEMA_COMPLETO' else "",
+                "check_esquemai": "/Yes" if get_form_field_value('check_esquemai', request.form) == 'ESQUEMA_INCOMPLETO' else "",
+                "check_alergiano": "/Yes" if get_form_field_value('check_alergiano', request.form) == 'NO_ALERGIAS' else "",
+                "check_alergiasi": "/Yes" if get_form_field_value('check_alergiasi', request.form) == 'SI_ALERGIAS' else "",
+                "check_cirugiano": "/Yes" if get_form_field_value('check_cirugiano', request.form) == 'NO_CIRUGIAS' else "",
+                "check_cirugiasi": "/Yes" if get_form_field_value('check_cirugiasi', request.form) == 'SI_CIRUGIAS' else "",
+                "check_visionsinalteracion": "/Yes" if get_form_field_value('check_visionsinalteracion', request.form) == 'SIN_ALTERACION_VISION' else "",
+                "check_visionrefraccion": "/Yes" if get_form_field_value('check_visionrefraccion', request.form) == 'VICIOS_DE_REFRACCION' else "",
+                "check_audicionnormal": "/Yes" if get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION' else "",
+                "check_hipoacusia": "/Yes" if get_form_field_value('check_hipoacusia', request.form) == 'HIPOACUSIA' else "",
+                "chack_tapondecerumen": "/Yes" if get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN' else "",
+                "check_sinhallazgos": "/Yes" if get_form_field_value('check_sinhallazgos', request.form) == 'SIN_HALLAZGOS' else "",
+                "check_caries": "/Yes" if get_form_field_value('check_caries', request.form) == 'caries' else "",
+                "check_apinamientodental": "/Yes" if get_form_field_value('check_apinamientodental', request.form) == 'APINAMIENTO_DENTAL' else "",
+                "check_retenciondental": "/Yes" if get_form_field_value('check_retenciondental', request.form) == 'RETENCION_DENTAL' else "",
+                "check_frenillolingual": "/Yes" if get_form_field_value('check_frenillolingual', request.form) == 'FRENILLO_LINGUAL' else "",
+                "check_hipertrofia": "/Yes" if get_form_field_value('check_hipertrofia', request.form) == 'HIPERTROFIA_AMIGDALINA' else "",
+                "altura": get_form_field_value('altura', request.form),
+                "peso": get_form_field_value('peso', request.form),
+                "imc": get_form_field_value('imc', request.form),
+                "clasificacion": get_form_field_value('clasificacion', request.form),
             }
 
         print(f"DEBUG: Fields to fill in PDF for {form_type} form: {campos}")
@@ -649,15 +648,15 @@ def marcar_evaluado():
             "si_2": get_form_field_value('si_2', request.form) == 'SI_2', # Corregido nombre de campo
             "check_visionsinalteracion": get_form_field_value('check_visionsinalteracion', request.form) == 'SIN_ALTERACION_VISION',
             "check_visionrefraccion": get_form_field_value('check_visionrefraccion', request.form) == 'VICIOS_DE_REFRACCION',
-            "NORMAL": "/Yes" if get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION' else "",
-            "HIPOACUSIA": "/Yes" if get_form_field_value('check_hipoacusia', request.form) == 'HIPOACUSIA' else "",
-            "TAPÓN DE CERUMEN": "/Yes" if get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN' else "",
-            "SIN HALLAZGOS": "/Yes" if get_form_field_value('check_sinhallazgos', request.form) == 'SIN_HALLAZGOS' else "",
-            "CARIES": "/Yes" if get_form_field_value('caries', request.form) == 'CARIES',
-            "APIÑAMIENTO DENTAL": "/Yes" if get_form_field_value('check_apinamientodental', request.form) == 'APINAMIENTO_DENTAL' else "",
-            "RETENCIÓN DENTAL": "/Yes" if get_form_field_value('check_retenciondental', request.form) == 'RETENCION_DENTAL' else "",
-            "FRENILLO LINGUAL": "/Yes" if get_form_field_value('check_frenillolingual', request.form) == 'FRENILLO_LINGUAL' else "",
-            "HIPERTROFIA AMIGDALINA": "/Yes" if get_form_field_value('check_hipertrofia', request.form) == 'HIPERTROFIA_AMIGDALINA' else "",
+            "check_audicionnormal": get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION',
+            "check_hipoacusia": get_form_field_value('check_hipoacusia', request.form) == 'HIPOACUSIA',
+            "check_tapondecerumen": get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN',
+            "check_sinhallazgos": get_form_field_value('check_sinhallazgos', request.form) == 'SIN_HALLAZGOS',
+            "check_caries": get_form_field_value('caries', request.form) == 'CARIES',
+            "check_apinamientodental": get_form_field_value('check_apinamientodental', request.form) == 'APINAMIENTO_DENTAL',
+            "check_retenciondental": get_form_field_value('check_retenciondental', request.form) == 'RETENCION_DENTAL',
+            "check_frenillolingual": get_form_field_value('check_frenillolingual', request.form) == 'FRENILLO_LINGUAL',
+            "check_hipertrofia": get_form_field_value('check_hipertrofia', request.form) == 'HIPERTROFIA_AMIGDALINA',
         })
 
     print(f"DEBUG: Payload final para Supabase PATCH en /marcar_evaluado: {update_data}")
@@ -705,9 +704,7 @@ def login():
         if data:
             session['usuario'] = usuario
             session['usuario_id'] = data[0]['id']
-            # Asumiendo que 'rol' es una columna en tu tabla de doctoras
-            session['rol_usuario'] = data[0].get('rol', 'doctora') # Añadir el rol a la sesión
-            print(f"DEBUG: Sesión iniciada: usuario={session['usuario']}, usuario_id={session['usuario_id']}, rol={session['rol_usuario']}")
+            print(f"DEBUG: Sesión iniciada: usuario={session['usuario']}, usuario_id={session['usuario_id']}")
             flash(f'¡Bienvenido, {usuario}!', 'success')
             return redirect(url_for('dashboard'))
         flash('Usuario o contraseña incorrecta.', 'error')
@@ -724,8 +721,7 @@ def dashboard():
 
     usuario = session['usuario']
     usuario_id = session.get('usuario_id')
-    usuario_rol = session.get('rol_usuario', 'doctora') # Obtener el rol del usuario
-    print(f"DEBUG: Accediendo a dashboard para usuario: {usuario}, ID: {usuario_id}, Rol: {usuario_rol}")
+    print(f"DEBUG: Accediendo a dashboard para usuario: {usuario}, ID: {usuario_id}")
 
     doctoras = []
     establecimientos_admin_list = []
@@ -735,16 +731,11 @@ def dashboard():
     doctor_performance_data = {} # Para admin: conteo de formularios por cada doctora
     doctor_performance_data_single_doctor = {'completed': 0, 'pending': 0, 'total': 0} # Para doctora individual
 
-    # --- NUEVAS VARIABLES PARA PROYECTOS Y NÓMINAS AGRUPADAS ---
-    proyectos_agrupados = [] # Lista para almacenar proyectos y sus nóminas
-    total_nominas_cargadas = 0 # Contador total de nóminas cargadas
-    total_formularios_completados = 0 # Contador total de formularios completados (en todas las nóminas)
-
 
     campos_establecimientos = "id,nombre,fecha,horario,observaciones,cantidad_alumnos,url_archivo,nombre_archivo,doctora_id"
     eventos = []
     try:
-        if usuario_rol != 'admin': # Usar usuario_rol aquí
+        if usuario != 'admin':
             url_eventos = (
                 f"{SUPABASE_URL}/rest/v1/establecimientos"
                 f"?doctora_id=eq.{usuario_id}"
@@ -780,7 +771,7 @@ def dashboard():
         flash('Error al cargar los formularios subidos.', 'error')
 
     assigned_nominations = []
-    if usuario_rol != 'admin': # Usar usuario_rol
+    if usuario != 'admin':
         try:
             url_nominas_asignadas = (
                 f"{SUPABASE_URL}/rest/v1/nominas_medicas"
@@ -862,7 +853,7 @@ def dashboard():
             print(f"Response text: {res_nominas_asignadas.text if 'res_nominas_asignadas' in locals() else 'No response'}")
             flash('Error al cargar sus nóminas asignadas o conteo de evaluaciones.', 'error')
 
-    if usuario_rol == 'admin': # Usar usuario_rol
+    if usuario == 'admin':
         try:
             url_doctoras = f"{SUPABASE_URL}/rest/v1/doctoras"
             print(f"DEBUG: URL para obtener doctoras (admin con service key): {url_doctoras}") 
@@ -944,90 +935,10 @@ def dashboard():
                     print(f"❌ Error inesperado al procesar rendimiento de doctora {doctor_name} (admin view): {e}")
                     doctor_performance_data[doctor_name] = 0
 
-    # --- Lógica para obtener y agrupar proyectos y nóminas ---
-    try:
-        if usuario_rol == 'admin':
-            # Para admin, obtener todos los proyectos y todas las nóminas
-            url_proyectos = f"{SUPABASE_URL}/rest/v1/proyectos?select=id,nombre_proyecto,doctoras(usuario)" # Incluye el nombre de la doctora
-            print(f"DEBUG: URL para obtener proyectos (admin): {url_proyectos}") # Added DEBUG
-            print(f"DEBUG: Headers para obtener proyectos (admin): {SUPABASE_HEADERS}") # Added DEBUG
-            url_nominas_base = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=*,proyecto_id,doctora_id,doctoras(usuario)" # Incluye el nombre de la doctora
-        else:
-            # Para doctoras, obtener solo sus proyectos y nóminas
-            url_proyectos = f"{SUPABASE_URL}/rest/v1/proyectos?doctora_id=eq.{usuario_id}&select=id,nombre_proyecto"
-            print(f"DEBUG: URL para obtener proyectos (doctora): {url_proyectos}") # Added DEBUG
-            print(f"DEBUG: Headers para obtener proyectos (doctora): {SUPABASE_HEADERS}") # Added DEBUG
-            url_nominas_base = f"{SUPABASE_URL}/rest/v1/nominas_medicas?doctora_id=eq.{usuario_id}&select=*,proyecto_id"
-
-        # 1. Obtener los proyectos
-        res_proyectos = requests.get(url_proyectos, headers=SUPABASE_HEADERS)
-        res_proyectos.raise_for_status()
-        proyectos_raw = res_proyectos.json()
-        print(f"DEBUG: Proyectos raw recibidos: {proyectos_raw}")
-
-        # 2. Obtener todas las nóminas (o las de la doctora) para luego agruparlas
-        res_nominas = requests.get(url_nominas_base, headers=SUPABASE_HEADERS)
-        res_nominas.raise_for_status()
-        nominas_raw_for_projects = res_nominas.json() # Renombrado para evitar conflicto con 'admin_nominas_cargadas'
-        print(f"DEBUG: Nóminas raw para proyectos recibidas: {nominas_raw_for_projects}")
-        
-        total_nominas_cargadas = len(nominas_raw_for_projects)
-        
-        nominas_por_proyecto = {}
-        for nomina in nominas_raw_for_projects:
-            # Contar formularios completados (asumo que 'fecha_relleno' indica completado)
-            # Esto debería hacerse a nivel de estudiantes_nomina, no de nominas_medicas
-            # Si quieres contar formularios completados por nómina, necesitarías otra consulta
-            # Por ahora, este contador es para el total general de la doctora/admin.
-            # total_formularios_completados += (lógica para contar si esta nómina tiene formularios completados)
-            
-            proyecto_id = nomina.get('proyecto_id')
-            if proyecto_id not in nominas_por_proyecto:
-                nominas_por_proyecto[proyecto_id] = []
-            
-            # Formatear la fecha de subida si existe
-            if 'fecha_subida' in nomina and isinstance(nomina['fecha_subida'], str):
-                try:
-                    nomina['fecha_subida_formato'] = datetime.fromisoformat(nomina['fecha_subida'].replace('Z', '+00:00')).strftime('%d/%m/%Y %H:%M')
-                except ValueError:
-                    nomina['fecha_subida_formato'] = nomina['fecha_subida'] # Si falla, usa el original
-            else:
-                nomina['fecha_subida_formato'] = 'N/A'
-
-            nominas_por_proyecto[proyecto_id].append(nomina)
-
-        # Construir la estructura final de proyectos con sus nóminas
-        for p_raw in proyectos_raw:
-            proyecto_nominas = nominas_por_proyecto.get(p_raw['id'], [])
-            
-            # Obtener el nombre de la doctora si es admin y viene en la consulta
-            nombre_doctora_proyecto = ''
-            if usuario_rol == 'admin' and p_raw.get('doctoras') and p_raw['doctoras']:
-                nombre_doctora_proyecto = f" ({p_raw['doctoras'].get('usuario', 'N/A')})".strip()
-
-            proyectos_agrupados.append({
-                "id": p_raw['id'],
-                "nombre": p_raw['nombre_proyecto'] + nombre_doctora_proyecto,
-                "nominas": proyecto_nominas,
-                "cantidad_nominas": len(proyecto_nominas)
-            })
-
-        # Puedes ordenar los proyectos si lo deseas
-        proyectos_agrupados.sort(key=lambda x: x['nombre'].lower())
-
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Error al obtener proyectos o nóminas agrupadas para el dashboard: {e}")
-        print(f"Response text: {res_proyectos.text if 'res_proyectos' in locals() else 'No response'}")
-        flash('Error al cargar la información de proyectos y nóminas.', 'error')
-    except Exception as e:
-        print(f"❌ Error inesperado en el dashboard al procesar proyectos: {e}")
-        flash('Error inesperado al cargar la información de proyectos y nóminas.', 'error')
-
 
     return render_template(
         'dashboard.html',
         usuario=usuario,
-        usuario_rol=usuario_rol, # Pasar el rol del usuario
         eventos=eventos,
         doctoras=doctoras,
         establecimientos=establecimientos_admin_list,
@@ -1036,8 +947,7 @@ def dashboard():
         assigned_nominations=assigned_nominations,
         admin_nominas_cargadas=admin_nominas_cargadas,
         doctor_performance_data=doctor_performance_data, 
-        doctor_performance_data_single_doctor=doctor_performance_data_single_doctor,
-        proyectos=proyectos_agrupados # ¡NUEVO! Pasar la lista de proyectos agrupados
+        doctor_performance_data_single_doctor=doctor_performance_data_single_doctor 
     )
 
 @app.route('/logout')
@@ -1048,7 +958,7 @@ def logout():
 
 @app.route('/admin/agregar', methods=['POST'])
 def admin_agregar():
-    if session.get('usuario_rol') != 'admin': # Usar usuario_rol
+    if session.get('usuario') != 'admin':
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
 
@@ -1100,70 +1010,10 @@ def admin_agregar():
 
     return redirect(url_for('dashboard'))
 
-# --- RUTA PARA CREAR PROYECTOS (MODIFICADA PARA REDIRIGIR AL DASHBOARD) ---
-@app.route('/crear_proyecto', methods=['POST']) # Solo POST, ya que el formulario está en el dashboard
-def crear_proyecto():
-    if 'usuario' not in session or session.get('usuario_rol') != 'admin': # Solo admin puede crear proyectos
-        flash('Acceso denegado. Solo administradores pueden crear proyectos.', 'danger')
-        return redirect(url_for('index'))
-
-    nombre_proyecto = request.form.get('nombre_proyecto')
-    doctora_id_creador = session.get('usuario_id') 
-
-    print(f"DEBUG: Intentando crear proyecto: '{nombre_proyecto}' para usuario ID: {doctora_id_creador}") # Added DEBUG
-
-    if not nombre_proyecto:
-        flash("❌ El nombre del proyecto no puede estar vacío.", 'error')
-        print("DEBUG: Nombre del proyecto vacío.") # Added DEBUG
-        return redirect(url_for('dashboard')) # Redirige al dashboard si falta el nombre
-
-    if not doctora_id_creador:
-        flash("❌ No se pudo determinar el usuario creador. Vuelve a iniciar sesión.", 'error')
-        print("DEBUG: ID de usuario creador no encontrado en sesión.") # Added DEBUG
-        return redirect(url_for('index'))
-
-    try:
-        # Verificar si el proyecto ya existe para este admin
-        check_url = f"{SUPABASE_URL}/rest/v1/proyectos?nombre_proyecto=eq.{nombre_proyecto}&doctora_id=eq.{doctora_id_creador}"
-        print(f"DEBUG: Verificando existencia de proyecto: {check_url}") # Added DEBUG
-        check_res = requests.get(check_url, headers=SUPABASE_HEADERS)
-        check_res.raise_for_status()
-        if check_res.json():
-            flash(f"❌ El proyecto '{nombre_proyecto}' ya existe para tu usuario.", 'error')
-            print(f"DEBUG: Proyecto '{nombre_proyecto}' ya existe.") # Added DEBUG
-            return redirect(url_for('dashboard')) # Redirige al dashboard
-
-        # Insertar nuevo proyecto en Supabase
-        data = {
-            "nombre_proyecto": nombre_proyecto,
-            "doctora_id": doctora_id_creador # Vincula el proyecto al ID del admin que lo crea
-        }
-        print(f"DEBUG: Payload para insertar proyecto: {data}") # Added DEBUG
-        print(f"DEBUG: URL para insertar proyecto: {SUPABASE_URL}/rest/v1/proyectos") # Added DEBUG
-        res = requests.post(f"{SUPABASE_URL}/rest/v1/proyectos", headers=SUPABASE_SERVICE_HEADERS, json=data)
-        res.raise_for_status()
-        
-        print(f"DEBUG: Respuesta de Supabase al insertar proyecto (status): {res.status_code}") # Added DEBUG
-        print(f"DEBUG: Respuesta de Supabase al insertar proyecto (text): {res.text}") # Added DEBUG
-
-        flash(f"✅ Proyecto '{nombre_proyecto}' creado exitosamente.", 'success')
-        print(f"DEBUG: Proyecto '{nombre_proyecto}' creado exitosamente.") # Added DEBUG
-        return redirect(url_for('dashboard')) 
-
-    except requests.exceptions.RequestException as e:
-        error_detail = res.text if 'res' in locals() else 'No response from Supabase.'
-        print(f"❌ Error al crear proyecto (RequestException): {e} - Detalles de Supabase: {error_detail}")
-        flash(f"Error al crear el proyecto: {error_detail}", 'error')
-    except Exception as e:
-        print(f"❌ Error inesperado al crear proyecto (General Exception): {e}")
-        flash('Error inesperado al crear el proyecto.', 'error')
-
-    return redirect(url_for('dashboard')) # Siempre redirigir al dashboard después de intentar la operación
-
 
 @app.route('/admin/cargar_nomina', methods=['POST'])
 def admin_cargar_nomina():
-    if session.get('usuario_rol') != 'admin': # Usar usuario_rol
+    if session.get('usuario') != 'admin':
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
 
@@ -1171,8 +1021,6 @@ def admin_cargar_nomina():
     nombre_especifico = request.form.get('nombre_especifico')
     doctora_id_from_form = request.form.get('doctora', '').strip()
     excel_file = request.files.get('excel')
-    # --- NUEVO: Obtener el ID del proyecto ---
-    proyecto_id = request.form.get('proyecto_id')
 
     # Normalizar tipo_nomina para una comparación robusta (ej. "NEUROLOGIA" -> "neurologia")
     tipo_nomina_normalized = tipo_nomina_raw.strip().lower() if tipo_nomina_raw else ''
@@ -1187,12 +1035,12 @@ def admin_cargar_nomina():
     # elif 'otro_tipo' in tipo_nomina_normalized:
     #     form_type = 'otro_pdf_base'
 
-    print(f"DEBUG: admin_cargar_nomina - Datos recibidos: tipo_nomina_raw={tipo_nomina_raw}, tipo_nomina_normalized={tipo_nomina_normalized}, nombre_especifico={nombre_especifico}, doctora_id_from_form={doctora_id_from_form}, archivo_presente={bool(excel_file)}, form_type_derivado={form_type}, proyecto_id={proyecto_id}")
+    print(f"DEBUG: admin_cargar_nomina - Datos recibidos: tipo_nomina_raw={tipo_nomina_raw}, tipo_nomina_normalized={tipo_nomina_normalized}, nombre_especifico={nombre_especifico}, doctora_id_from_form={doctora_id_from_form}, archivo_presente={bool(excel_file)}, form_type_derivado={form_type}")
 
     # Validar campos obligatorios antes de intentar subir o insertar
-    if not all([tipo_nomina_raw, nombre_especifico, doctora_id_from_form, excel_file, proyecto_id]): # Añadir proyecto_id a la validación
-        flash('❌ Falta uno o más campos obligatorios para cargar la nómina (tipo, nombre, doctora, archivo, proyecto).', 'error')
-        print(f"ERROR: Datos obligatorios faltantes: tipo_nomina_raw={tipo_nomina_raw}, nombre_especifico={nombre_especifico}, doctora_id_from_form={doctora_id_from_form}, excel_file_present={bool(excel_file)}, proyecto_id={proyecto_id}")
+    if not all([tipo_nomina_raw, nombre_especifico, doctora_id_from_form, excel_file]):
+        flash('❌ Falta uno o más campos obligatorios para cargar la nómina (tipo, nombre, doctora, archivo).', 'error')
+        print(f"ERROR: Datos obligatorios faltantes: tipo_nomina_raw={tipo_nomina_raw}, nombre_especifico={nombre_especifico}, doctora_id_from_form={doctora_id_from_form}, excel_file_present={bool(excel_file)}")
         return redirect(url_for('dashboard'))
 
     # Validar que se haya podido determinar un tipo de formulario
@@ -1232,8 +1080,7 @@ def admin_cargar_nomina():
         "doctora_id": doctora_id_from_form,
         "url_excel_original": url_excel_publica,
         "nombre_excel_original": excel_filename,
-        "form_type": form_type, # Guardar el form_type derivado en la nómina
-        "proyecto_id": proyecto_id # --- NUEVO: Guardar el ID del proyecto ---
+        "form_type": form_type # Guardar el form_type derivado en la nómina
     }
     print(f"DEBUG: Payload para insertar nómina en nominas_medicas: {data_nomina}")
 
@@ -1523,6 +1370,7 @@ def enviar_formulario_a_drive():
 
         campos = {}
         if form_type == 'neurologia':
+            # Campos estrictamente para neurología, como lo pediste
             campos = {
                 "nombre": nombre,
                 "rut": rut,
@@ -1705,7 +1553,7 @@ def subir(establecimiento):
 
 @app.route('/colegios')
 def colegios():
-    if session.get('usuario_rol') != 'admin':
+    if session.get('usuario') != 'admin':
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
     
@@ -1798,7 +1646,7 @@ def doctor_performance_detail(doctor_id):
     """
     Ruta para que el administrador vea el detalle de los formularios evaluados por una doctora.
     """
-    if session.get('usuario_rol') != 'admin': # Usar usuario_rol
+    if session.get('usuario') != 'admin':
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
 
@@ -2118,7 +1966,7 @@ def generar_pdfs_visibles():
 
 @app.route('/admin/eliminar_establecimiento/<establecimiento_id>', methods=['DELETE'])
 def eliminar_establecimiento(establecimiento_id):
-    if session.get('usuario_rol') != 'admin': # Usar usuario_rol
+    if session.get('usuario') != 'admin':
         return jsonify({"success": False, "message": "Acceso denegado. Solo administradores pueden eliminar."}), 403
     
     print(f"DEBUG: Intentando eliminar establecimiento con ID: {establecimiento_id}")
@@ -2147,7 +1995,7 @@ def eliminar_establecimiento(establecimiento_id):
 
 @app.route('/admin/eliminar_nomina/<nomina_id>', methods=['DELETE'])
 def eliminar_nomina(nomina_id):
-    if session.get('usuario_rol') != 'admin': # Usar usuario_rol
+    if session.get('usuario') != 'admin':
         return jsonify({"success": False, "message": "Acceso denegado. Solo administradores pueden eliminar."}), 403
     
     print(f"DEBUG: Intentando eliminar nómina y sus estudiantes con ID: {nomina_id}")

@@ -1709,6 +1709,57 @@ def doctor_performance_detail(doctor_id):
                            doctor_name=doctor_name, 
                            evaluated_students=evaluated_students)
 
+@app.route('/admin/crear_proyecto', methods=['POST'])
+def crear_proyecto():
+    if request.method == 'POST':
+        nombre_proyecto = request.form.get('nombre_proyecto')
+        descripcion_proyecto = request.form.get('descripcion_proyecto')
+        print(f"DEBUG: Intentando crear proyecto (via requests): {nombre_proyecto}, Desc: {descripcion_proyecto}")
+
+        # Datos a enviar a Supabase
+        payload = {
+            "nombre_proyecto": nombre_proyecto,
+            "descripcion": descripcion_proyecto,
+            "fecha_creacion": datetime.now().isoformat() # Asegúrate de que este campo exista en tu tabla 'proyectos'
+        }
+
+        # URL de tu tabla 'proyectos' en Supabase
+        # Necesitas la URL base de Supabase + /rest/v1/proyectos
+        # Asumiendo que SUPABASE_URL es "https://rbzxolreglwndvsrxhmg.supabase.co"
+        proyectos_url = f"{SUPABASE_URL}/rest/v1/proyectos"
+
+        try:
+            # Realizar la petición POST para insertar el nuevo proyecto
+            # Usa SUPABASE_SERVICE_HEADERS si tienes RLS configurado para que solo el service_role pueda insertar
+            # O SUPABASE_HEADERS si tu anon key tiene permisos de insert para esta tabla
+            response = requests.post(proyectos_url, json=payload, headers=SUPABASE_SERVICE_HEADERS) # O SUPABASE_HEADERS
+
+            response.raise_for_status() # Lanza una excepción para errores HTTP (4xx o 5xx)
+            data = response.json()
+
+            print(f"DEBUG: Proyecto '{nombre_proyecto}' creado exitosamente en Supabase. Respuesta: {data}")
+            flash('Proyecto creado exitosamente!', 'success')
+            # Redirige a la sección de gestionar_proyectos para que lo vea inmediatamente
+            return redirect(url_for('dashboard', _external=True, _scheme='https', section='gestionar_proyectos'))
+
+        except requests.exceptions.HTTPError as errh:
+            print(f"CRÍTICO: Error HTTP al insertar proyecto: {errh}")
+            flash(f"Error al crear el proyecto (HTTP): {errh}", 'danger')
+        except requests.exceptions.ConnectionError as errc:
+            print(f"CRÍTICO: Error de Conexión al insertar proyecto: {errc}")
+            flash(f"Error al crear el proyecto (Conexión): {errc}", 'danger')
+        except requests.exceptions.Timeout as errt:
+            print(f"CRÍTICO: Tiempo de espera agotado al insertar proyecto: {errt}")
+            flash(f"Error al crear el proyecto (Timeout): {errt}", 'danger')
+        except requests.exceptions.RequestException as err:
+            print(f"CRÍTICO: Error inesperado al insertar proyecto: {err}")
+            flash(f"Error en el servidor al crear el proyecto: {err}", 'danger')
+        except Exception as e:
+            print(f"CRÍTICO: Error general al procesar la creación del proyecto: {e}")
+            flash(f"Error inesperado al crear el proyecto: {e}", 'danger')
+
+    return redirect(url_for('dashboard', _external=True, _scheme='https'))
+    
 @app.route('/descargar_excel_evaluados/<nomina_id>', methods=['GET'])
 def descargar_excel_evaluados(nomina_id):
     if 'usuario' not in session:

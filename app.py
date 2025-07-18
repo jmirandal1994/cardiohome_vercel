@@ -711,7 +711,8 @@ def marcar_evaluado():
 
 @app.route('/')
 def index():
-    if 'user_id' in session: # Usar 'user_id' para consistencia
+    # Usamos 'usuario' aquí para ser consistentes con tu código
+    if 'usuario' in session:
         rol = session.get('rol')
         print(f"DEBUG INDEX: Sesión activa para rol: {rol}. Redirigiendo a /dashboard.")
         return redirect(url_for('dashboard'))

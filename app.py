@@ -705,60 +705,60 @@ def marcar_evaluado():
         print(f"ERROR: Error inesperado al marcar estudiante como evaluado: {e}")
         return jsonify({"success": False, "message": f"Error interno del servidor: {str(e)}"}), 500
 
-@app.route('/')
-def index():
-    return render_template('login.html')
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        email = request.form['email']
+        # CAMBIAR 'email' por 'username' para leer el campo del formulario HTML
+        user_input_username = request.form['username'] # <<< CAMBIO AQUÍ
         password = request.form['password']
 
-        print(f"DEBUG LOGIN: Intento de login para email: {email}") # DEBUG 1
+        print(f"DEBUG LOGIN: Intento de login para usuario: {user_input_username}") # DEBUG 1 (adaptado)
 
         try:
+            # Aquí, aunque el input se llame 'username', lo buscaremos en la columna 'email'
+            # de tu tabla 'doctoras' en Supabase, ya que es tu identificador principal.
             res = requests.get(
-                f"{SUPABASE_URL}/rest/v1/doctoras", # Asegúrate que esta es tu tabla de usuarios
+                f"{SUPABASE_URL}/rest/v1/doctoras", # Tu tabla de usuarios
                 headers=SUPABASE_SERVICE_HEADERS,
-                params={'email': f'eq.{email}'}
+                # Buscamos en la columna 'email' de Supabase el valor del 'username' que vino del formulario
+                params={'email': f'eq.{user_input_username}'} # <<< CAMBIO AQUÍ: user_input_username
             )
             res.raise_for_status()
             user_data = res.json()
 
             if user_data:
                 user = user_data[0]
-                print(f"DEBUG LOGIN: Datos de usuario obtenidos: {user}") # DEBUG 2
-                print(f"DEBUG LOGIN: Rol obtenido de Supabase (user['rol']): '{user.get('rol')}'") # DEBUG 3
+                print(f"DEBUG LOGIN: Datos de usuario obtenidos: {user}")
+                print(f"DEBUG LOGIN: Rol obtenido de Supabase (user['rol']): '{user.get('rol')}'")
 
-                if user.get('password') == password: # ¡CAMBIAR POR HASHING SEGURO!
+                if user.get('password') == password: # ¡RECUERDA CAMBIAR POR HASHING SEGURO EN PRODUCCIÓN!
                     session['user_id'] = user['id']
-                    session['user_email'] = user['email']
-                    session['rol'] = user.get('rol') # <<< AÑADIR .get() para evitar KeyError si la columna no existe
+                    # Almacena el email real del usuario, que es su identificador en la DB
+                    session['user_email'] = user['email'] # <<< USAMOS user['email'] de la DB
+                    session['rol'] = user.get('rol')
 
-                    print(f"DEBUG LOGIN: Rol almacenado en sesión: '{session.get('rol')}'") # DEBUG 4
-                    print(f"DEBUG LOGIN: Tipo de dato de session['rol']: {type(session.get('rol'))}") # DEBUG 5
-
+                    print(f"DEBUG LOGIN: Rol almacenado en sesión: '{session.get('rol')}'")
+                    print(f"DEBUG LOGIN: Tipo de dato de session['rol']: {type(session.get('rol'))}")
 
                     if session.get('rol') == 'administrador':
-                        print("DEBUG LOGIN: Redirigiendo a administrador_dashboard") # DEBUG 6a
+                        print("DEBUG LOGIN: Redirigiendo a administrador_dashboard")
                         return redirect(url_for('admin_dashboard'))
                     elif session.get('rol') == 'doctora':
-                        print("DEBUG LOGIN: Redirigiendo a doctor_dashboard") # DEBUG 6b
+                        print("DEBUG LOGIN: Redirigiendo a doctor_dashboard")
                         return redirect(url_for('doctor_dashboard'))
-                    elif session.get('rol') == 'coordinadora': # <<< NUEVA REDIRECCIÓN
-                        print("DEBUG LOGIN: Redirigiendo a coordinadora_dashboard") # DEBUG 6c
+                    elif session.get('rol') == 'coordinadora':
+                        print("DEBUG LOGIN: Redirigiendo a coordinadora_dashboard")
                         return redirect(url_for('coordinadora_dashboard'))
                     else:
-                        print(f"DEBUG LOGIN: Rol no reconocido: {session.get('rol')}. Redirigiendo a login.") # DEBUG 6d
+                        print(f"DEBUG LOGIN: Rol no reconocido: {session.get('rol')}. Redirigiendo a login.")
                         flash('Rol de usuario no reconocido.', 'warning')
                         return redirect(url_for('login'))
                 else:
                     flash('Contraseña incorrecta.', 'danger')
                     print("DEBUG LOGIN: Contraseña incorrecta.")
             else:
-                flash('Correo electrónico no encontrado.', 'danger')
-                print("DEBUG LOGIN: Correo electrónico no encontrado.")
+                flash('Usuario no encontrado.', 'danger') # Mensaje más apropiado
+                print("DEBUG LOGIN: Usuario no encontrado.")
 
         except requests.exceptions.RequestException as e:
             flash(f"Error de conexión: {str(e)}", 'danger')
@@ -766,9 +766,9 @@ def login():
         except Exception as e:
             flash(f"Ocurrió un error inesperado: {str(e)}", 'danger')
             print(f"ERROR LOGIN: Error inesperado: {e}")
-
+        
         return redirect(url_for('login'))
-    return render_template('login.html')
+    return render_template('login-3.html') # Asegúrate que renderizas 'login-3.html'
     
 @app.route('/dashboard')
 def dashboard():

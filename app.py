@@ -881,7 +881,10 @@ def admin_dashboard():
                 if count_range:
                     try:
                         completed_forms_count = int(count_range.split('/')[-1])
-                    except ValueError: pass
+                    except ValueError: 
+                        # Log the error if the value is not an integer but not fatal
+                        print(f"ADVERTENCIA: 'Content-Range' para formularios completados de doctora {doctor_name} no es un número válido: {count_range}")
+                        pass
                 
                 doctor_performance_data[doctor_name] = completed_forms_count
             except requests.exceptions.RequestException as e:
@@ -904,8 +907,14 @@ def admin_dashboard():
         )
         res_total_estudiantes.raise_for_status()
         total_estudiantes_range = res_total_estudiantes.headers.get('Content-Range')
+        
         if total_estudiantes_range:
-            total_estudiantes = int(total_estudiantes_range.split('/')[-1])
+            try:
+                # Intenta convertir el valor a entero. Si no es un número, se asigna 0.
+                total_estudiantes = int(total_estudiantes_range.split('/')[-1])
+            except ValueError:
+                print(f"ADVERTENCIA: 'Content-Range' para el total de estudiantes no es un número válido: {total_estudiantes_range}")
+                total_estudiantes = 0 # Valor por defecto si no es un número
         
         # Contar todos los formularios completados (globalmente)
         res_forms_completed = requests.get(
@@ -914,12 +923,22 @@ def admin_dashboard():
         )
         res_forms_completed.raise_for_status()
         forms_completed_range = res_forms_completed.headers.get('Content-Range')
+        
         if forms_completed_range:
-            formularios_completados_admin = int(forms_completed_range.split('/')[-1])
+            try:
+                # Intenta convertir el valor a entero. Si no es un número, se asigna 0.
+                formularios_completados_admin = int(forms_completed_range.split('/')[-1])
+            except ValueError:
+                print(f"ADVERTENCIA: 'Content-Range' para formularios completados globalmente no es un número válido: {forms_completed_range}")
+                formularios_completados_admin = 0 # Valor por defecto si no es un número
 
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener estadísticas generales para admin: {e}")
         flash('Error al cargar las estadísticas generales del dashboard.', 'error')
+    except Exception as e:
+        print(f"❌ Error inesperado al procesar estadísticas generales para admin: {e}")
+        flash(f'Error inesperado al cargar estadísticas: {e}', 'error')
+
 
     stats = {
         'total_nominas': total_nominas,

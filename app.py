@@ -779,35 +779,34 @@ def login():
     return render_template('login.html')    
     
 @app.route('/dashboard')
-@roles_required(['admin', 'doctora', 'coordinadora']) # Ahora permite a coordinadora
 def dashboard():
+    if 'usuario' not in session:
+        return redirect(url_for('index'))
+
     usuario = session['usuario']
     usuario_id = session.get('usuario_id')
-    user_role = session.get('rol') # Obtener el rol del usuario
-
-    print(f"DEBUG: Accediendo a dashboard para usuario: {usuario}, ID: {usuario_id}, Rol: {user_role}")
+    print(f"DEBUG: Accediendo a dashboard para usuario: {usuario}, ID: {usuario_id}")
 
     doctoras = []
     establecimientos_admin_list = []
-    admin_nominas_cargadas = [] # Ahora también para coordinadora
+    admin_nominas_cargadas = []
     conteo = {}
     
-    doctor_performance_data = {} # Para admin y coordinadora: conteo de formularios por cada doctora
+    doctor_performance_data = {} # Para admin: conteo de formularios por cada doctora
     doctor_performance_data_single_doctor = {'completed': 0, 'pending': 0, 'total': 0} # Para doctora individual
 
 
     campos_establecimientos = "id,nombre,fecha,horario,observaciones,cantidad_alumnos,url_archivo,nombre_archivo,doctora_id"
     eventos = []
     try:
-        # Admin y Coordinadora ven todos los eventos
-        if user_role == 'admin' or user_role == 'coordinadora':
-            url_eventos = f"{SUPABASE_URL}/rest/v1/establecimientos?select={campos_establecimientos}"
-        else: # Doctores ven solo sus eventos
+        if usuario != 'admin':
             url_eventos = (
                 f"{SUPABASE_URL}/rest/v1/establecimientos"
                 f"?doctora_id=eq.{usuario_id}"
                 f"&select={campos_establecimientos}"
             )
+        else:
+            url_eventos = f"{SUPABASE_URL}/rest/v1/establecimientos?select={campos_establecimientos}"
             
         print(f"DEBUG: URL para obtener eventos: {url_eventos}")
         res_eventos = requests.get(url_eventos, headers=SUPABASE_HEADERS)
@@ -836,8 +835,7 @@ def dashboard():
         flash('Error al cargar los formularios subidos.', 'error')
 
     assigned_nominations = []
-    # Las doctoras ven sus nóminas asignadas. Admin y Coordinadora verán todas en admin_nominas_cargadas.
-    if user_role == 'doctora':
+    if usuario != 'admin':
         try:
             url_nominas_asignadas = (
                 f"{SUPABASE_URL}/rest/v1/nominas_medicas"
@@ -845,7 +843,8 @@ def dashboard():
                 f"&select=id,nombre_nomina,tipo_nomina,form_type" # Incluir form_type
             )
             print(f"DEBUG: URL para obtener nóminas asignadas (doctor): {url_nominas_asignadas}")
-            res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_SERVICE_HEADERS)
+            # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para que la doctora vea sus nóminas
+            res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_SERVICE_HEADERS) 
             res_nominas_asignadas.raise_for_status()
             raw_nominas = res_nominas_asignadas.json()
             print(f"DEBUG: Nóminas raw recibidas para doctora: {raw_nominas}")
@@ -861,6 +860,7 @@ def dashboard():
             print(f"DEBUG: Nóminas asignadas procesadas para plantilla: {assigned_nominations}")
             
             # --- LÓGICA DE RENDIMIENTO PARA DOCTORA INDIVIDUAL ---
+            # 1. Obtener todas las nóminas asignadas a esta doctora para determinar el "total" de alumnos a evaluar
             nomina_ids_for_doctor = [n['id'] for n in raw_nominas]
             
             total_students_in_assigned_nominas = 0
@@ -879,7 +879,6 @@ def dashboard():
                     try:
                         total_students_in_assigned_nominas = int(total_students_count_range.split('/')[-1])
                     except ValueError:
-                        print(f"ADVERTENCIA: 'Content-Range' para el total de estudiantes no es un número válido: {total_students_count_range}")
                         pass
                 print(f"DEBUG: Total de estudiantes en nóminas asignadas para doctora {usuario_id}: {total_students_in_assigned_nominas}")
 
@@ -893,7 +892,7 @@ def dashboard():
             )
             print(f"DEBUG: URL para contar formularios completados por doctora {usuario_id}: {url_completed_by_this_doctor}")
             # Usar SERVICE_HEADERS para el conteo de evaluaciones, ya que accede a datos de 'fecha_relleno' y 'doctora_evaluadora_id'
-            res_completed_by_this_doctor = requests.get(url_completed_by_this_doctor, headers=SUPABASE_SERVICE_HEADERS)
+            res_completed_by_this_doctor = requests.get(url_completed_by_this_doctor, headers=SUPABASE_SERVICE_HEADERS) 
             res_completed_by_this_doctor.raise_for_status()
             completed_forms_count_range = res_completed_by_this_doctor.headers.get('Content-Range')
             completed_count_by_doctor = 0
@@ -901,7 +900,6 @@ def dashboard():
                 try:
                     completed_count_by_doctor = int(completed_forms_count_range.split('/')[-1])
                 except ValueError:
-                    print(f"ADVERTENCIA: 'Content-Range' para formularios completados globalmente no es un número válido: {completed_forms_count_range}")
                     pass
             print(f"DEBUG: Formularios completados por doctora {usuario_id}: {completed_count_by_doctor}")
 
@@ -919,35 +917,34 @@ def dashboard():
             print(f"Response text: {res_nominas_asignadas.text if 'res_nominas_asignadas' in locals() else 'No response'}")
             flash('Error al cargar sus nóminas asignadas o conteo de evaluaciones.', 'error')
 
-    # Lógica para roles de admin y coordinadora
-    if user_role == 'admin' or user_role == 'coordinadora':
+    if usuario == 'admin':
         try:
             url_doctoras = f"{SUPABASE_URL}/rest/v1/doctoras"
-            print(f"DEBUG: URL para obtener doctoras (admin/coordinadora con service key): {url_doctoras}")
-            res_doctoras = requests.get(url_doctoras, headers=SUPABASE_SERVICE_HEADERS)
+            print(f"DEBUG: URL para obtener doctoras (admin con service key): {url_doctoras}") 
+            res_doctoras = requests.get(url_doctoras, headers=SUPABASE_SERVICE_HEADERS) 
             res_doctoras.raise_for_status()
             doctoras_raw = res_doctoras.json()
             doctoras = []
             for doc in doctoras_raw:
                 doctoras.append({'id': doc['id'], 'usuario': doc['usuario']})
-            print(f"DEBUG: Doctoras recibidas (admin/coordinadora): {doctoras}")
+            print(f"DEBUG: Doctoras recibidas (admin): {doctoras}")
         except requests.exceptions.RequestException as e:
-            print(f"❌ ERROR AL OBTENER DOCTORAS (ADMIN/COORDINADORA DASHBOARD) CON SERVICE KEY: {e} - {res_doctoras.text if 'res_doctoras' in locals() else ''}")
-            flash('Error crítico al cargar doctoras en el panel de administrador/coordinadora. Verifique su SUPABASE_SERVICE_KEY.', 'error')
-            doctoras = []
+            print(f"❌ ERROR AL OBTENER DOCTORAS (ADMIN DASHBOARD) CON SERVICE KEY: {e} - {res_doctoras.text if 'res_doctoras' in locals() else ''}")
+            flash('Error crítico al cargar doctoras en el panel de administrador. Verifique su SUPABASE_SERVICE_KEY.', 'error')
+            doctoras = [] 
 
         try:
             url_establecimientos_admin = f"{SUPABASE_URL}/rest/v1/establecimientos?select=id,nombre"
-            print(f"DEBUG: URL para obtener establecimientos (admin/coordinadora con service key): {url_establecimientos_admin}")
-            res_establecimientos = requests.get(url_establecimientos_admin, headers=SUPABASE_SERVICE_HEADERS)
+            print(f"DEBUG: URL para obtener establecimientos (admin con service key): {url_establecimientos_admin}") 
+            res_establecimientos = requests.get(url_establecimientos_admin, headers=SUPABASE_SERVICE_HEADERS) 
             res_establecimientos.raise_for_status()
             establecimientos_admin_list = res_establecimientos.json()
-            print(f"DEBUG: Establecimientos recibidos (admin/coordinadora): {establecimientos_admin_list}")
+            print(f"DEBUG: Establecimientos recibidos (admin): {establecimientos_admin_list}")
         except requests.exceptions.RequestException as e:
-            print(f"❌ Error al obtener establecimientos (ADMIN/COORDINADORA DASHBOARD) CON SERVICE KEY: {e}")
+            print(f"❌ Error al obtener establecimientos (ADMIN DASHBOARD) CON SERVICE KEY: {e}")
             print(f"Response text: {res_establecimientos.text if 'res_establecimientos' in locals() else 'No response'}")
-            flash('Error crítico al cargar establecimientos en el panel de administrador/coordinadora. Verifique su SUPABASE_SERVICE_KEY.', 'error')
-            establecimientos_admin_list = []
+            flash('Error crítico al cargar establecimientos en el panel de administrador. Verifique su SUPABASE_SERVICE_KEY.', 'error')
+            establecimientos_admin_list = [] 
 
 
         for f in formularios:
@@ -957,31 +954,32 @@ def dashboard():
         print(f"DEBUG: Conteo de formularios por establecimiento: {conteo}")
 
         try:
+            # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para que el admin vea todas las nóminas
             url_admin_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina,tipo_nomina,doctora_id,url_excel_original,nombre_excel_original,form_type"
-            print(f"DEBUG: URL para obtener nóminas cargadas por admin/coordinadora: {url_admin_nominas}")
-            res_admin_nominas = requests.get(url_admin_nominas, headers=SUPABASE_SERVICE_HEADERS)
+            print(f"DEBUG: URL para obtener nóminas cargadas por admin: {url_admin_nominas}")
+            res_admin_nominas = requests.get(url_admin_nominas, headers=SUPABASE_SERVICE_HEADERS) 
             res_admin_nominas.raise_for_status()
             admin_nominas_cargadas = res_admin_nominas.json()
-            print(f"DEBUG: Nóminas cargadas por admin/coordinadora recibidas: {admin_nominas_cargadas}")
+            print(f"DEBUG: Nóminas cargadas por admin recibidas: {admin_nominas_cargadas}")
         except requests.exceptions.RequestException as e:
-            print(f"❌ Error al obtener nóminas cargadas por admin/coordinadora: {e}")
+            print(f"❌ Error al obtener nóminas cargadas por admin: {e}")
             print(f"Response text: {res_admin_nominas.text if 'res_admin_nominas' in locals() else 'No response'}")
-            flash('Error al cargar la lista de nóminas en la vista de administrador/coordinadora.', 'error')
+            flash('Error al cargar la lista de nóminas en la vista de administrador.', 'error')
         
-        # --- LÓGICA DE RENDIMIENTO POR DOCTORA PARA ADMIN Y COORDINADORA ---
-        if doctoras_raw:
+        # --- LÓGICA DE RENDIMIENTO POR DOCTORA PARA ADMIN ---
+        if doctoras_raw: 
             for doc in doctoras_raw:
                 doctor_id = doc['id']
                 doctor_name = doc['usuario']
                 try:
                     url_doctor_forms_count = (
                         f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                        f"?doctora_evaluadora_id=eq.{doctor_id}"
-                        f"&fecha_relleno.not.is.null"
-                        f"&select=count"
+                        f"?doctora_evaluadora_id=eq.{doctor_id}" 
+                        f"&fecha_relleno.not.is.null" 
+                        f"&select=count" 
                     )
-                    print(f"DEBUG: URL para contar formularios de doctora {doctor_name} (admin/coordinadora view): {url_doctor_forms_count}")
-                    res_doctor_forms = requests.get(url_doctor_forms_count, headers=SUPABASE_SERVICE_HEADERS)
+                    print(f"DEBUG: URL para contar formularios de doctora {doctor_name} (admin view): {url_doctor_forms_count}")
+                    res_doctor_forms = requests.get(url_doctor_forms_count, headers=SUPABASE_SERVICE_HEADERS) 
                     res_doctor_forms.raise_for_status()
                     count_range = res_doctor_forms.headers.get('Content-Range')
                     completed_forms_count = 0
@@ -989,17 +987,16 @@ def dashboard():
                         try:
                             completed_forms_count = int(count_range.split('/')[-1])
                         except ValueError:
-                            print(f"ADVERTENCIA: 'Content-Range' para formularios completados de doctora {doctor_name} no es un número válido: {count_range}")
                             pass
                     
                     doctor_performance_data[doctor_name] = completed_forms_count
                     print(f"DEBUG: Doctora {doctor_name} (ID: {doctor_id}) ha completado {completed_forms_count} formularios.")
 
                 except requests.exceptions.RequestException as e:
-                    print(f"❌ ERROR AL OBTENER FORMULARIOS COMPLETADOS PARA DOCTORA {doctor_name} (ADMIN/COORDINADORA VIEW): {e}")
-                    doctor_performance_data[doctor_name] = 0
+                    print(f"❌ ERROR AL OBTENER FORMULARIOS COMPLETADOS PARA DOCTORA {doctor_name} (ADMIN VIEW): {e}")
+                    doctor_performance_data[doctor_name] = 0 
                 except Exception as e:
-                    print(f"❌ Error inesperado al procesar rendimiento de doctora {doctor_name} (admin/coordinadora view): {e}")
+                    print(f"❌ Error inesperado al procesar rendimiento de doctora {doctor_name} (admin view): {e}")
                     doctor_performance_data[doctor_name] = 0
 
 
@@ -1007,15 +1004,14 @@ def dashboard():
         'dashboard.html',
         usuario=usuario,
         eventos=eventos,
-        doctoras=doctoras, # Se usará solo si el rol es admin o coordinadora
-        establecimientos=establecimientos_admin_list, # Se usará solo si el rol es admin o coordinadora
-        formularios=formularios, # Se usará para todos los roles
-        conteo=conteo, # Se usará solo si el rol es admin o coordinadora
-        assigned_nominations=assigned_nominations, # Se usará solo para doctora
-        admin_nominas_cargadas=admin_nominas_cargadas, # Se usará solo si el rol es admin o coordinadora
-        doctor_performance_data=doctor_performance_data, # Se usará solo si el rol es admin o coordinadora
-        doctor_performance_data_single_doctor=doctor_performance_data_single_doctor, # Se usará solo para doctora
-        current_user_role=user_role # Pasar el rol a la plantilla para renderizado condicional
+        doctoras=doctoras,
+        establecimientos=establecimientos_admin_list,
+        formularios=formularios,
+        conteo=conteo,
+        assigned_nominations=assigned_nominations,
+        admin_nominas_cargadas=admin_nominas_cargadas,
+        doctor_performance_data=doctor_performance_data, 
+        doctor_performance_data_single_doctor=doctor_performance_data_single_doctor 
     )
 
 @app.route('/logout')

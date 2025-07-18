@@ -4,13 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - CardioHome</title>
-    <!-- Tailwind CSS CDN para estilos modernos y responsivos -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SweetAlert2 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Font Awesome para íconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Chart.js CDN para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
     <style>
         /* Custom CSS variables */
@@ -596,6 +592,34 @@
             overflow-y: auto;
         }
 
+        /* Estilos para la tabla de proyectos (ajustados para ser más genéricos) */
+        .overflow-x-auto {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e2e8f0; /* gray-200 */
+            text-align: left;
+        }
+
+        th {
+            background-color: #f8fafc; /* gray-50 */
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #4a5568; /* gray-700 */
+            font-size: 0.8rem;
+        }
+
+        tr:hover {
+            background-color: #f0f4f8; /* lighter gray for hover */
+        }
     </style>
 </head>
 <body>
@@ -622,6 +646,8 @@
                         <li><a href="#" class="nav-link" data-section="admin-visits-list"><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-nominas-list"><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Cargadas</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-uploaded-forms-all"><i class="fa-solid fa-folder-open"></i> Formularios Subidos</a></li>
+                        <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fa-solid fa-folder-plus"></i> Crear Proyecto</a></li>
+                        <li><a href="#" class="nav-link" data-section="gestionar_proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
                     {% else %}
                         <li><a href="#" class="nav-link" data-section="doctor-performance"><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-visits"><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</a></li>
@@ -633,7 +659,6 @@
         </aside>
 
         <main class="dashboard-content">
-            <!-- WELCOME SECTION -->
             <div id="welcome-section" class="content-section active">
                 <div class="card welcome-card">
                     <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo CardioHome" />
@@ -643,7 +668,6 @@
             </div>
 
             {% if usuario == 'admin' %}
-                <!-- Admin Section: Performance -->
                 <div id="admin-performance" class="content-section">
                     <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento del Administrador</h2>
                     <div class="summary">
@@ -673,7 +697,6 @@
                     </div>
                 </div>
 
-                <!-- Admin Section: Add Scheduled Visit -->
                 <div id="admin-add-visit" class="content-section">
                     <div class="card admin-form">
                         <h3><i class="fa-solid fa-calendar-plus"></i> Agregar Visita Programada</h3>
@@ -706,7 +729,6 @@
                     </div>
                 </div>
 
-                <!-- Admin Section: Upload Medical Roster -->
                 <div id="admin-upload-nomina" class="content-section">
                     <div class="card admin-form">
                         <h3><i class="fa-solid fa-file-excel"></i> Cargar Nómina Médica (Excel/CSV)</h3>
@@ -725,7 +747,6 @@
                                 {% endfor %}
                             </select>
 
-                            <!-- NEW: Select for Form Type -->
                             <label for="form_type_nomina">Tipo de Formulario Asociado:</label>
                             <select id="form_type_nomina" name="form_type" required>
                                 <option value="">Selecciona el tipo de formulario</option>
@@ -741,7 +762,6 @@
                     </div>
                 </div>
 
-                <!-- Admin Section: All Scheduled Visits -->
                 <div id="admin-visits-list" class="content-section">
                     <div class="card admin-list">
                         <h3><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas Programadas</h3>
@@ -763,7 +783,6 @@
                                                 <i class="fa-solid fa-file-alt"></i> Ver Formulario Base
                                             </a>
                                         {% endif %}
-                                        <!-- Button to delete school/establishment -->
                                         <button class="delete-btn" onclick="confirmDelete('establecimiento', '{{ evento.id }}', '{{ evento.nombre }}')">
                                             <i class="fas fa-trash"></i> Eliminar Colegio
                                         </button>
@@ -776,7 +795,6 @@
                     </div>
                 </div>
 
-                <!-- NEW SECTION for admin: Uploaded Rosters -->
                 <div id="admin-nominas-list" class="content-section">
                     <div class="card admin-list">
                         <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Médicas Cargadas</h3>
@@ -790,7 +808,6 @@
                                         </div>
                                         <div class="item-card-details">
                                             <span>Archivo Original: {{ nomina.nombre_excel_original }}</span>
-                                            <!-- Display the associated form type -->
                                             <span>Tipo de Formulario: {{ nomina.form_type | default('No especificado') | capitalize }}</span>
                                         </div>
                                         {% if nomina.url_excel_original %}
@@ -798,11 +815,9 @@
                                                 <i class="fa-solid fa-file-excel"></i> Ver Excel Original
                                             </a>
                                         {% endif %}
-                                        <!-- The link to fill the form should now pass the form_type -->
                                         <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="item-card-action-link" style="background-color: var(--accent-green);">
                                             <i class="fa-solid fa-list-ul"></i> Rellenar y Ver Estudiantes
                                         </a>
-                                        <!-- Button to delete roster (and its students) -->
                                         <button class="delete-btn" onclick="confirmDelete('nomina', '{{ nomina.id }}', '{{ nomina.nombre_nomina }}')">
                                             <i class="fas fa-trash"></i> Eliminar Nómina y Estudiantes
                                         </button>
@@ -815,7 +830,6 @@
                     </div>
                 </div>
 
-                <!-- Admin Section: All Uploaded Forms -->
                 <div id="admin-uploaded-forms-all" class="content-section">
                     <div class="card">
                         <h3><i class="fa-solid fa-folder-open"></i> Todos los Formularios Subidos</h3>
@@ -843,8 +857,59 @@
                     </div>
                 </div>
 
+                <div id="crear_proyecto" class="content-section">
+                    <div class="card admin-form">
+                        <h3><i class="fas fa-folder-plus"></i> Crear Nuevo Proyecto</h3>
+                        <form action="{{ url_for('crear_proyecto') }}" method="POST">
+                            <label for="nombre_proyecto">Nombre del Proyecto:</label>
+                            <input type="text" id="nombre_proyecto" name="nombre_proyecto" placeholder="Ej: Proyecto Colegio Las Acacias" required>
+
+                            <label for="descripcion_proyecto">Descripción (opcional):</label>
+                            <textarea id="descripcion_proyecto" name="descripcion_proyecto" rows="4" placeholder="Breve descripción del proyecto..."></textarea>
+                            
+                            <button type="submit"><i class="fas fa-plus-circle"></i> Crear Proyecto</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="gestionar_proyectos" class="content-section">
+                    <div class="card admin-list">
+                        <h3><i class="fas fa-list-check"></i> Gestionar Proyectos</h3>
+                        {% if proyectos %}
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre del Proyecto</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Creación</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                    {% for proyecto in proyectos %}
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">{{ proyecto.nombre_proyecto }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">{{ proyecto.descripcion or 'N/A' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">{{ proyecto.fecha_creacion | default('N/A') }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <a href="#" class="text-blue-600 hover:text-blue-900 mr-3" title="Editar"><i class="fas fa-edit"></i></a>
+                                            <button class="text-red-600 hover:text-red-900" title="Eliminar" onclick="confirmDelete('proyecto', '{{ proyecto.id }}', '{{ proyecto.nombre_proyecto }}')">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-gray-600">No hay proyectos creados aún.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
             {% else %}
-                <!-- Doctor Section: My Performance -->
                 <div id="doctor-performance" class="content-section">
                     <div class="card">
                         <h3><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento (Formularios)</h3>
@@ -865,7 +930,6 @@
                     </div>
                 </div>
 
-                <!-- Doctor Section: My Upcoming Visits -->
                 <div id="doctor-visits" class="content-section">
                     <div class="card">
                         <h3><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</h3>
@@ -905,7 +969,6 @@
                     </div>
                 </div>
 
-                <!-- Doctor Section: My Assigned Rosters -->
                 <div id="doctor-nominas" class="content-section">
                     <div class="card">
                         <h3><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Médicas Asignadas</h3>
@@ -917,7 +980,6 @@
                                             <span>{{ nomina.nombre_establecimiento }}</span>
                                             <span>Tipo: {{ nomina.tipo_nomina_display }}</span>
                                         </div>
-                                        <!-- The link to fill the form should now pass the form_type -->
                                         <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="item-card-action-link">
                                             <i class="fa-solid fa-edit"></i> Rellenar y Ver Estudiantes
                                         </a>
@@ -930,7 +992,6 @@
                     </div>
                 </div>
 
-                <!-- Doctor Section: My Uploaded Forms -->
                 <div id="doctor-uploaded-forms" class="content-section">
                     <div class="card">
                         <h3><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</h3>
@@ -1045,9 +1106,34 @@
 
         // Function to confirm and perform deletion
         function confirmDelete(type, id, name) {
+            let titleText = '';
+            let confirmText = '';
+            let endpoint = '';
+            let successMessage = '';
+
+            if (type === 'establecimiento') {
+                titleText = `¿Estás seguro de eliminar el colegio "${name}"?`;
+                confirmText = `Esta acción es irreversible y eliminará todos los datos asociados.`;
+                endpoint = `/admin/eliminar_establecimiento/${id}`;
+                successMessage = 'Colegio eliminado exitosamente.';
+            } else if (type === 'nomina') {
+                titleText = `¿Estás seguro de eliminar la nómina "${name}"?`;
+                confirmText = `Esta acción es irreversible y eliminará todos los datos asociados a los estudiantes de esta nómina.`;
+                endpoint = `/admin/eliminar_nomina/${id}`;
+                successMessage = 'Nómina y estudiantes eliminados exitosamente.';
+            } else if (type === 'proyecto') { // Nuevo tipo para proyectos
+                titleText = `¿Estás seguro de eliminar el proyecto "${name}"?`;
+                confirmText = `Esta acción es irreversible y eliminará el proyecto de la base de datos.`;
+                endpoint = `/admin/eliminar_proyecto/${id}`; // Asegúrate de que esta ruta exista en tu Flask
+                successMessage = 'Proyecto eliminado exitosamente.';
+            } else {
+                Swal.fire('Error', 'Tipo de eliminación no reconocido.', 'error');
+                return;
+            }
+
             Swal.fire({
-                title: `¿Estás seguro de eliminar ${type === 'establecimiento' ? 'el colegio' : 'la nómina'} "${name}"?`,
-                text: `Esta acción es irreversible y eliminará todos los datos asociados ${type === 'nomina' ? 'a los estudiantes de esta nómina.' : ''}`,
+                title: titleText,
+                text: confirmText,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
@@ -1056,7 +1142,7 @@
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    fetch(`/admin/eliminar_${type}/${id}`, {
+                    fetch(endpoint, {
                         method: 'DELETE',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1067,10 +1153,10 @@
                         if (data.success) {
                             Swal.fire(
                                 '¡Eliminado!',
-                                data.message,
+                                successMessage,
                                 'success'
                             ).then(() => {
-                                window.location.reload(); // Reload to update the list
+                                window.location.reload(); // Recargar para actualizar la lista
                             });
                         } else {
                             Swal.fire(

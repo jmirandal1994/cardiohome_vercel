@@ -1037,56 +1037,35 @@ def gestionar_proyectos():
     return render_template('dashboard-8.html', active_section='gestionar_proyectos', proyectos=proyectos)
 
 
-@app.route('/admin/crear_proyecto', methods=['GET', 'POST'])
+@app.route('/admin/crear_proyecto', methods=['POST'])
 def crear_proyecto():
-    if 'usuario' not in session or session.get('rol') != 'administrador':
-        flash('Acceso denegado. Solo administradores pueden crear proyectos.', 'danger')
-        return redirect(url_for('index'))
-
     if request.method == 'POST':
         nombre_proyecto = request.form.get('nombre_proyecto')
-        descripcion_proyecto = request.form.get('descripcion_proyecto', '') # Campo opcional
-
-        if not nombre_proyecto:
-            flash('El nombre del proyecto es obligatorio.', 'warning')
-            return redirect(url_for('crear_proyecto'))
+        descripcion_proyecto = request.form.get('descripcion_proyecto')
+        print(f"DEBUG: Intentando crear proyecto: {nombre_proyecto}, Desc: {descripcion_proyecto}") # Añade este print
 
         try:
-            # Primero, verificar si ya existe un proyecto con ese nombre
-            url_check = f"{SUPABASE_URL}/rest/v1/proyectos?nombre_proyecto=eq.{nombre_proyecto}"
-            res_check = requests.get(url_check, headers=SUPABASE_HEADERS)
-            res_check.raise_for_status()
-            existente = res_check.json()
-
-            if existente:
-                flash(f'Ya existe un proyecto con el nombre "{nombre_proyecto}".', 'warning')
-                return redirect(url_for('crear_proyecto'))
-
-            # Si no existe, insertar el nuevo proyecto
-            data = {
+            # Asegúrate de que tu tabla en Supabase se llama 'proyectos'
+            data, count = supabase.table('proyectos').insert({
                 "nombre_proyecto": nombre_proyecto,
                 "descripcion": descripcion_proyecto,
-                "fecha_creacion": datetime.now().isoformat()
-            }
-            url_insert = f"{SUPABASE_URL}/rest/v1/proyectos"
-            res_insert = requests.post(url_insert, headers=SUPABASE_HEADERS, data=json.dumps(data))
-            res_insert.raise_for_status()
+                "fecha_creacion": datetime.now().isoformat() # Asegúrate de que 'datetime' esté importado
+            }).execute()
 
-            flash(f'✅ Proyecto "{nombre_proyecto}" creado exitosamente.', 'success')
-            return redirect(url_for('gestionar_proyectos')) # Redirigir a la vista de proyectos
+            if data:
+                print(f"DEBUG: Proyecto '{nombre_proyecto}' creado exitosamente en Supabase. Data: {data}") # Éxito
+                flash('Proyecto creado exitosamente!', 'success')
+                return redirect(url_for('dashboard', _external=True, _scheme='https', section='gestionar_proyectos')) # Redirige a la sección de proyectos
+            else:
+                print(f"ERROR: Supabase no devolvió datos al crear proyecto. Data: {data}, Count: {count}") # Si no hay data
+                flash('Error al crear el proyecto: Supabase no devolvió datos.', 'danger')
 
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Error al crear proyecto en Supabase: {e}")
-            flash('Error al crear el proyecto. Por favor, inténtalo de nuevo.', 'error')
-            if 'res_insert' in locals():
-                print(f"Supabase response error: {res_insert.text}")
         except Exception as e:
-            print(f"❌ Error inesperado al crear proyecto: {e}")
-            flash('Error inesperado al crear el proyecto.', 'error')
+            print(f"CRÍTICO: Error inesperado al insertar proyecto en Supabase: {e}") # Captura errores
+            flash(f"Error en el servidor al crear el proyecto: {e}", 'danger')
 
-    # Para la solicitud GET o si hay un error en POST
-    return render_template('dashboard-8.html', active_section='crear_proyecto')
-
+    return redirect(url_for('dashboard', _external=True, _scheme='https')) # Redirección final si algo falla antes
+    
 
 @app.route('/admin/cargar_nomina', methods=['POST'])
 def admin_cargar_nomina():

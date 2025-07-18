@@ -1323,55 +1323,7 @@ def dashboard():
         doctor_performance_data=doctor_performance_data, 
         doctor_performance_data_single_doctor=doctor_performance_data_single_doctor 
     )
-@app.route('/coordinadora_dashboard')
-@login_required
-@rol_required('coordinadora')
-def coordinadora_dashboard():
-    try:
-        # 1. Obtener el conteo general de alumnos evaluados
-        # Esto asume que tienes una tabla de 'estudiantes_evaluados' o un campo 'estado' en tu tabla de 'estudiantes'
-        # que indica si ha sido evaluado. Adaptar según tu esquema de DB.
-        res_count = requests.get(
-            f"{SUPABASE_URL}/rest/v1/estudiantes", # O la tabla donde guardas los estudiantes
-            headers=SUPABASE_SERVICE_HEADERS,
-            params={'select': 'count()', 'estado_evaluacion': 'eq.completado'} # Ajusta 'estado_evaluacion' y 'completado'
-        )
-        res_count.raise_for_status()
-        total_evaluados = res_count.json()[0]['count'] # Supabase count devuelve una lista con un diccionario
 
-        # 2. Obtener la lista de formularios completados para descarga
-        # Esto asume que tienes una tabla 'formularios_completados' o 'evaluaciones'
-        # donde guardas los PDFs finales o los enlaces a Google Drive.
-        # Es crucial que estos formularios tengan un campo que indique que están 'completados' y listos.
-        res_formularios = requests.get(
-            f"{SUPABASE_URL}/rest/v1/evaluaciones", # O tu tabla de PDFs/formularios finales
-            headers=SUPABASE_SERVICE_HEADERS,
-            params={'select': 'id,nombre_alumno,fecha_evaluacion,enlace_drive', 'estado': 'eq.completado'} # Ajusta campos
-        )
-        res_formularios.raise_for_status()
-        formularios_completados = res_formularios.json()
-
-        # Opcional: Si necesitas más detalles de las nóminas asociadas
-        res_nominas = requests.get(
-            f"{SUPABASE_URL}/rest/v1/nominas_medicas",
-            headers=SUPABASE_SERVICE_HEADERS,
-            params={'select': 'id,nombre_nomina,fecha_creacion,estado_nomina'} # Ajusta campos
-        )
-        res_nominas.raise_for_status()
-        nominas = res_nominas.json()
-
-
-        return render_template('coordinadora_dashboard.html',
-                               total_evaluados=total_evaluados,
-                               formularios_completados=formularios_completados,
-                               nominas=nominas)
-
-    except requests.exceptions.RequestException as e:
-        flash(f"Error de conexión con la base de datos: {str(e)}", 'danger')
-        return redirect(url_for('login')) # O a una página de error
-    except Exception as e:
-        flash(f"Ocurrió un error inesperado al cargar el dashboard: {str(e)}", 'danger')
-        return redirect(url_for('login')) # O a una página de error
 
 @app.route('/logout')
 def logout():

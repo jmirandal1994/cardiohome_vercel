@@ -264,6 +264,26 @@ def upload_pdf_to_google_drive(creds, file_content_io, file_name, folder_id=None
         print(f"ERROR: Error inesperado al subir a Google Drive: {e}")
         return None
 
+# Decorador para requerir inicio de sesión y rol específico
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Por favor, inicia sesión para acceder.', 'danger')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def rol_required(rol_esperado):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if 'rol' not in session or session['rol'] != rol_esperado:
+                flash(f'Acceso denegado. Se requiere el rol de {rol_esperado}.', 'danger')
+                return redirect(url_for('login'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 # -------------------- Rutas de la Aplicación --------------------
 
 @app.route('/relleno_formularios/<nomina_id>', methods=['GET'])

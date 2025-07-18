@@ -800,9 +800,17 @@ def login():
 @login_required
 @rol_required('administrador')
 def admin_dashboard():
-    usuario = session['usuario']
-    usuario_id = session.get('usuario_id')
+    # Obtener datos del usuario logueado de la sesión
+    user_id = session.get('user_id')
+    user_nombre = session.get('user_nombre')
     rol = session.get('rol')
+
+    # Crear un objeto 'current_user_data' que tu plantilla espera
+    current_user_data = {
+        'id': user_id,
+        'nombre': user_nombre,
+        'rol': rol
+    }
 
     doctoras = []
     establecimientos_admin_list = []
@@ -821,6 +829,7 @@ def admin_dashboard():
     except requests.exceptions.RequestException as e:
         print(f"❌ ERROR AL OBTENER DOCTORAS (ADMIN DASHBOARD): {e}")
         flash('Error crítico al cargar doctoras en el panel de administrador.', 'error')
+        doctoras_raw = [] # Asegurar que doctoras_raw esté definida incluso en caso de error
 
     try:
         url_establecimientos_admin = f"{SUPABASE_URL}/rest/v1/establecimientos?select=id,nombre"
@@ -854,7 +863,7 @@ def admin_dashboard():
         flash('Error al cargar la lista de nóminas en la vista de administrador.', 'error')
     
     # Lógica de rendimiento por doctora para ADMIN
-    if doctoras_raw:
+    if doctoras_raw: # Usar doctoras_raw que ya se obtuvo
         for doc in doctoras_raw:
             doctor_id = doc['id']
             doctor_name = doc['usuario']
@@ -882,18 +891,55 @@ def admin_dashboard():
                 print(f"❌ Error inesperado al procesar rendimiento de doctora {doctor_name} (admin view): {e}")
                 doctor_performance_data[doctor_name] = 0
 
+    # Calcular estadísticas generales para el admin dashboard
+    total_nominas = len(admin_nominas_cargadas)
+    total_estudiantes = 0
+    formularios_completados_admin = 0
+
+    try:
+        # Contar todos los estudiantes en todas las nóminas
+        res_total_estudiantes = requests.get(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        res_total_estudiantes.raise_for_status()
+        total_estudiantes_range = res_total_estudiantes.headers.get('Content-Range')
+        if total_estudiantes_range:
+            total_estudiantes = int(total_estudiantes_range.split('/')[-1])
+        
+        # Contar todos los formularios completados (globalmente)
+        res_forms_completed = requests.get(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?fecha_relleno.not.is.null&select=count",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        res_forms_completed.raise_for_status()
+        forms_completed_range = res_forms_completed.headers.get('Content-Range')
+        if forms_completed_range:
+            formularios_completados_admin = int(forms_completed_range.split('/')[-1])
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error al obtener estadísticas generales para admin: {e}")
+        flash('Error al cargar las estadísticas generales del dashboard.', 'error')
+
+    stats = {
+        'total_nominas': total_nominas,
+        'total_estudiantes': total_estudiantes,
+        'formularios_completados': formularios_completados_admin
+    }
+
     return render_template(
         'admin_dashboard.html',
-        usuario=usuario,
+        current_user=current_user_data, # Pasa el objeto current_user_data
         rol=rol,
         doctoras=doctoras,
         establecimientos=establecimientos_admin_list,
-        formularios=formularios, # Pasamos los formularios para conteo si es necesario en HTML
+        formularios=formularios, 
         conteo=conteo,
         admin_nominas_cargadas=admin_nominas_cargadas,
-        doctor_performance_data=doctor_performance_data
+        doctor_performance_data=doctor_performance_data,
+        stats=stats # Pasa las estadísticas generales
     )
-
+    
 @app.route('/doctor_dashboard')
 @login_required
 @rol_required('doctora')

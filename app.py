@@ -1034,7 +1034,7 @@ def gestionar_proyectos():
 
     # Renderiza la plantilla dashboard con la sección de proyectos activa
     # Asegúrate de que tu dashboard.html pueda manejar 'active_section'
-    return render_template('dashboard-8.html', active_section='gestionar_proyectos', proyectos=proyectos)
+        return render_template('dashboard-8.html', active_section='gestionar_proyectos', proyectos=proyectos)
 
 
   @app.route('/admin/crear_proyecto', methods=['POST'])
@@ -1086,7 +1086,7 @@ def crear_proyecto():
             print(f"CRÍTICO: Error general al procesar la creación del proyecto: {e}")
             flash(f"Error inesperado al crear el proyecto: {e}", 'danger')
 
-    return redirect(url_for('dashboard', _external=True, _scheme='https'))
+            return redirect(url_for('dashboard', _external=True, _scheme='https'))
     
 @app.route('/admin/cargar_nomina', methods=['POST'])
 def admin_cargar_nomina():

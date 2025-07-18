@@ -768,7 +768,7 @@ def login():
             print(f"ERROR LOGIN: Error inesperado: {e}")
         
         return redirect(url_for('login'))
-    return render_template('login-3.html') # Asegúrate que renderizas 'login-3.html'
+    return render_template('login.html') # Asegúrate que renderizas 'login-3.html'
     
 @app.route('/dashboard')
 def dashboard():

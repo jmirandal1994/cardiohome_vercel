@@ -736,26 +736,14 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     # Si el usuario ya está logueado, redirigirlo a su dashboard
-    if 'user_id' in session:
-        rol = session.get('rol')
-        if rol == 'administrador':
-            return redirect(url_for('admin_dashboard'))
-        elif rol == 'doctora':
-            return redirect(url_for('doctor_dashboard'))
-        elif rol == 'coordinadora':
-            return redirect(url_for('coordinadora_dashboard'))
-        # Si el rol no está definido o es desconocido, forzar logout y login
-        flash('Sesión activa con rol desconocido, por favor, inicia sesión de nuevo.', 'warning')
-        session.clear()
-        return redirect(url_for('login'))
+    if 'usuario_id' in session and 'usuario' in session: # Verificar ambas claves de sesión
+        print(f"DEBUG LOGIN: Sesión activa para {session.get('usuario')}, redirigiendo a dashboard.")
+        return redirect(url_for('dashboard')) # <<< REDIRIGE AL DASHBOARD GENERAL
 
     if request.method == 'POST':
-        # Leemos 'username' del formulario HTML (tu login.html tiene name="username")
-        # Este 'username' del formulario se mapeará a la columna 'usuario' en Supabase.
-        user_input_form_username = request.form.get('username') # <<< Correcto: lee 'username' del HTML
-        password = request.form.get('password') # Correcto: lee 'password' del HTML
+        user_input_form_username = request.form.get('username')
+        password = request.form.get('password')
 
-        # Validaciones básicas de entrada
         if not user_input_form_username or not password:
             flash('Por favor, introduce usuario y contraseña.', 'danger')
             return render_template('login.html')
@@ -763,50 +751,36 @@ def login():
         print(f"DEBUG LOGIN: Intento de login para usuario (desde formulario): {user_input_form_username}")
 
         try:
-            # Consultamos Supabase. Buscamos por la columna 'usuario' en tu tabla 'doctoras'.
             res = requests.get(
                 f"{SUPABASE_URL}/rest/v1/doctoras", # Tu tabla de usuarios
-                headers=SUPABASE_SERVICE_HEADERS,
-                # ¡¡¡CAMBIO CLAVE AQUÍ!!! Buscamos por la columna 'usuario' de Supabase
-                params={'usuario': f'eq.{user_input_form_username}'} # <<< CAMBIO CLAVE
+                headers=SUPABASE_SERVICE_HEADERS, # Asegúrate de usar SUPABASE_SERVICE_HEADERS para leer usuarios
+                params={'usuario': f'eq.{user_input_form_username}'} # <<< USA LA COLUMNA 'usuario'
             )
-            res.raise_for_status() # Lanza un error para códigos de estado HTTP 4xx/5xx
+            res.raise_for_status()
             user_data = res.json()
 
             if user_data:
                 user = user_data[0]
                 print(f"DEBUG LOGIN: Datos de usuario obtenidos: {user}")
                 print(f"DEBUG LOGIN: Rol obtenido de Supabase (user['rol']): '{user.get('rol')}'")
-                print(f"DEBUG LOGIN: Columna 'usuario' de DB: '{user.get('usuario')}'") # Debug adicional
-                print(f"DEBUG LOGIN: Columna 'nombre' de DB: '{user.get('nombre')}'") # Debug adicional
+                print(f"DEBUG LOGIN: Columna 'usuario' de DB: '{user.get('usuario')}'")
+                print(f"DEBUG LOGIN: Columna 'nombre' de DB: '{user.get('nombre')}'")
 
-                # ¡IMPORTANTE! Aquí debes usar un método seguro para verificar la contraseña hasheada.
-                # Si estás usando bcrypt o similar, sería: check_password_hash(user['password_hash'], password)
-                # Por ahora, para depuración, si la tienes en texto plano (NO RECOMENDADO PARA PRODUCCIÓN):
-                if user.get('password') == password: # Usa .get() para evitar KeyError si la columna no existe
-                    session['user_id'] = user['id']
-                    # Almacenamos el nombre (campo más descriptivo) del usuario de la DB en la sesión
-                    session['user_nombre'] = user.get('nombre') # <<< Usamos 'nombre' de la DB
-                    # También puedes almacenar el 'usuario' si lo necesitas para algo específico
-                    session['user_login_username'] = user.get('usuario') # <<< El usuario usado para login
-                    session['rol'] = user.get('rol')
+                # Aquí se compara la contraseña (¡Recuerda usar hashing en producción!)
+                if user.get('password') == password:
+                    # Ajustado para usar 'usuario_id' y 'usuario' como en tu función dashboard
+                    session['usuario_id'] = user['id']
+                    session['usuario'] = user.get('usuario') # Nombre de usuario de la DB
+                    session['user_nombre'] = user.get('nombre') # Nombre real para mostrar
+                    session['rol'] = user.get('rol') # El rol para el control de acceso
 
                     print(f"DEBUG LOGIN: Rol almacenado en sesión: '{session.get('rol')}'")
-                    print(f"DEBUG LOGIN: Tipo de dato de session['rol']: {type(session.get('rol'))}")
+                    flash('¡Inicio de sesión exitoso!', 'success')
+                    
+                    # Ahora, siempre redirige al dashboard general, que manejará los roles internamente
+                    print("DEBUG LOGIN: Redirigiendo a dashboard general.")
+                    return redirect(url_for('dashboard'))
 
-                    if session.get('rol') == 'administrador':
-                        print("DEBUG LOGIN: Redirigiendo a administrador_dashboard")
-                        return redirect(url_for('admin_dashboard'))
-                    elif session.get('rol') == 'doctora':
-                        print("DEBUG LOGIN: Redirigiendo a doctor_dashboard")
-                        return redirect(url_for('doctor_dashboard'))
-                    elif session.get('rol') == 'coordinadora':
-                        print("DEBUG LOGIN: Redirigiendo a coordinadora_dashboard")
-                        return redirect(url_for('coordinadora_dashboard'))
-                    else:
-                        print(f"DEBUG LOGIN: Rol no reconocido: {session.get('rol')}. Redirigiendo a login.")
-                        flash('Rol de usuario no reconocido. Contacta al administrador.', 'warning')
-                        return redirect(url_for('login'))
                 else:
                     flash('Contraseña incorrecta.', 'danger')
                     print("DEBUG LOGIN: Contraseña incorrecta.")
@@ -821,10 +795,8 @@ def login():
             flash(f"Ocurrió un error inesperado: {str(e)}", 'danger')
             print(f"ERROR LOGIN: Error inesperado: {e}")
         
-        # Si algo falla en el POST, volvemos a renderizar el formulario de login
         return render_template('login.html')
 
-    # Para solicitudes GET (cuando se carga la página de login por primera vez)
     return render_template('login.html')
     
 @app.route('/dashboard')

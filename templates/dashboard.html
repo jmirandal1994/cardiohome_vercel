@@ -615,22 +615,18 @@
             <nav>
                 <ul class="sidebar-nav">
                     <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical"></i> Bienvenida</a></li>
-                    {% if usuario_rol == 'admin' %} {# Usar usuario_rol #}
+                    {% if usuario == 'admin' %}
                         <li><a href="#" class="nav-link" data-section="admin-performance"><i class="fa-solid fa-chart-line"></i> Rendimiento Admin</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-add-visit"><i class="fa-solid fa-calendar-plus"></i> Agregar Visita</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-upload-nomina"><i class="fa-solid fa-file-excel"></i> Cargar Nómina</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-visits-list"><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-nominas-list"><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Cargadas</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-uploaded-forms-all"><i class="fa-solid fa-folder-open"></i> Formularios Subidos</a></li>
-                        {# NUEVO ENLACE PARA PROYECTOS #}
-                        <li><a href="#" class="nav-link" data-section="proyectos-nominas"><i class="fas fa-project-diagram"></i> Proyectos Nóminas</a></li>
                     {% else %}
                         <li><a href="#" class="nav-link" data-section="doctor-performance"><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-visits"><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-nominas"><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Asignadas</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-uploaded-forms"><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</a></li>
-                        {# NUEVO ENLACE PARA PROYECTOS (si aplica para doctoras) #}
-                        <li><a href="#" class="nav-link" data-section="proyectos-nominas"><i class="fas fa-project-diagram"></i> Mis Proyectos</a></li>
                     {% endif %}
                 </ul>
             </nav>
@@ -646,7 +642,7 @@
                 </div>
             </div>
 
-            {% if usuario_rol == 'admin' %} {# Usar usuario_rol #}
+            {% if usuario == 'admin' %}
                 <!-- Admin Section: Performance -->
                 <div id="admin-performance" class="content-section">
                     <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento del Administrador</h2>
@@ -714,7 +710,7 @@
                 <div id="admin-upload-nomina" class="content-section">
                     <div class="card admin-form">
                         <h3><i class="fa-solid fa-file-excel"></i> Cargar Nómina Médica (Excel/CSV)</h3>
-                        <form action="{{ url_for('admin_cargar_nomina') }}" method="POST" enctype="multipart/form-data"> {# Asegúrate que la acción apunte a tu función #}
+                        <form action="{{ url_for('admin_cargar_nomina') }}" method="POST" enctype="multipart/form-data">
                             <label for="tipo_nomina">Tipo de Nómina:</label>
                             <input type="text" id="tipo_nomina" name="tipo_nomina" placeholder="Ej: General, Dental, Oftalmológica" required />
 
@@ -735,15 +731,6 @@
                                 <option value="">Selecciona el tipo de formulario</option>
                                 <option value="neurologia">Neurología</option>
                                 <option value="medicina_familiar">Medicina Familiar</option>
-                            </select>
-
-                            {# NUEVO: Campo para seleccionar el proyecto #}
-                            <label for="proyecto_id">Asignar a Proyecto:</label>
-                            <select id="proyecto_id" name="proyecto_id" required>
-                                <option value="">Selecciona un proyecto</option>
-                                {% for proyecto in proyectos %} {# 'proyectos' ahora viene del dashboard agrupado #}
-                                    <option value="{{ proyecto.id }}">{{ proyecto.nombre }}</option>
-                                {% endfor %}
                             </select>
 
                             <label for="excel_nomina">Archivo Excel/CSV de la Nómina:</label>
@@ -856,65 +843,7 @@
                     </div>
                 </div>
 
-                {# NUEVA SECCIÓN: PROYECTOS NÓMINAS (PARA ADMIN) #}
-                <div id="proyectos-nominas" class="content-section">
-                    <div class="card">
-                        <h3><i class="fas fa-project-diagram"></i> Gestión de Proyectos y Nóminas</h3>
-                        
-                        <!-- Formulario para crear un nuevo proyecto -->
-                        <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                            <h4 class="font-bold text-lg mb-3 text-primary-dark">Crear Nuevo Proyecto</h4>
-                            <form action="{{ url_for('crear_proyecto') }}" method="POST" class="flex flex-col gap-3">
-                                <label for="nombre_proyecto" class="text-sm font-medium text-gray-700">Nombre del Proyecto:</label>
-                                <input type="text" id="nombre_proyecto" name="nombre_proyecto" placeholder="Ej: Proyecto Invierno 2025" required 
-                                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accent-blue focus:ring-accent-blue sm:text-sm p-2">
-                                <button type="submit" class="bg-accent-green text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors duration-200 self-end">
-                                    <i class="fas fa-plus-circle"></i> Crear Proyecto
-                                </button>
-                            </form>
-                        </div>
-
-                        <!-- Lista de proyectos -->
-                        <h4 class="font-bold text-lg mb-4 text-primary-dark border-b pb-2">Proyectos Existentes</h4>
-                        {% if proyectos %}
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {% for proyecto in proyectos %}
-                                    <div class="bg-white p-4 rounded-lg shadow-md border border-gray-200">
-                                        <div class="flex justify-between items-center mb-3">
-                                            <h4 class="font-semibold text-primary-dark text-lg">{{ proyecto.nombre }}</h4>
-                                            <span class="text-sm text-gray-500">Nóminas: {{ proyecto.cantidad_nominas }}</span>
-                                        </div>
-                                        <button class="btn-toggle-nominas bg-accent-blue text-white text-sm px-3 py-1 rounded-md hover:bg-blue-700 transition-colors duration-200">
-                                            Ver Nóminas <i class="fas fa-chevron-down ml-1"></i>
-                                        </button>
-                                        <div class="nominas-list hidden mt-3 border-t pt-3">
-                                            {% if proyecto.nominas %}
-                                                <ul class="list-disc pl-5 text-gray-700">
-                                                {% for nomina in proyecto.nominas %}
-                                                    <li class="mb-1 text-sm">
-                                                        <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="text-blue-600 hover:text-blue-800 font-medium">
-                                                            {{ nomina.nombre_nomina }} ({{ nomina.tipo_nomina.replace('_', ' ').title() }}) - Subida: {{ nomina.fecha_subida_formato }}
-                                                        </a>
-                                                        {% if usuario_rol == 'admin' %}
-                                                            <span class="text-xs text-gray-400 ml-2">(Asignada a: {{ nomina.doctoras.usuario if nomina.doctoras else 'N/A' }})</span>
-                                                        {% endif %}
-                                                    </li>
-                                                {% endfor %}
-                                                </ul>
-                                            {% else %}
-                                                <p class="text-gray-500 text-sm">No hay nóminas asociadas a este proyecto.</p>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <p class="text-gray-600">No hay proyectos disponibles. ¡Crea uno!</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-            {% else %} {# Vistas para la Doctora #}
+            {% else %}
                 <!-- Doctor Section: My Performance -->
                 <div id="doctor-performance" class="content-section">
                     <div class="card">
@@ -1032,45 +961,6 @@
                         </ul>
                     </div>
                 </div>
-
-                {# NUEVA SECCIÓN: MIS PROYECTOS (PARA DOCTORA) #}
-                <div id="proyectos-nominas" class="content-section">
-                    <div class="card">
-                        <h3><i class="fas fa-project-diagram"></i> Mis Proyectos y Nóminas</h3>
-                        {% if proyectos %}
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {% for proyecto in proyectos %}
-                                    <div class="bg-white p-4 rounded-lg shadow-md border border-gray-200">
-                                        <div class="flex justify-between items-center mb-3">
-                                            <h4 class="font-semibold text-primary-dark text-lg">{{ proyecto.nombre }}</h4>
-                                            <span class="text-sm text-gray-500">Nóminas: {{ proyecto.cantidad_nominas }}</span>
-                                        </div>
-                                        <button class="btn-toggle-nominas bg-accent-blue text-white text-sm px-3 py-1 rounded-md hover:bg-blue-700 transition-colors duration-200">
-                                            Ver Nóminas <i class="fas fa-chevron-down ml-1"></i>
-                                        </button>
-                                        <div class="nominas-list hidden mt-3 border-t pt-3">
-                                            {% if proyecto.nominas %}
-                                                <ul class="list-disc pl-5 text-gray-700">
-                                                {% for nomina in proyecto.nominas %}
-                                                    <li class="mb-1 text-sm">
-                                                        <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="text-blue-600 hover:text-blue-800 font-medium">
-                                                            {{ nomina.nombre_nomina }} ({{ nomina.tipo_nomina.replace('_', ' ').title() }}) - Subida: {{ nomina.fecha_subida_formato }}
-                                                        </a>
-                                                    </li>
-                                                {% endfor %}
-                                                </ul>
-                                            {% else %}
-                                                <p class="text-gray-500 text-sm">No hay nóminas asociadas a este proyecto.</p>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <p class="text-gray-600">No tienes proyectos disponibles.</p>
-                        {% endif %}
-                    </div>
-                </div>
             {% endif %}
         </main>
     </div>
@@ -1083,7 +973,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar');
             const menuToggle = document.getElementById('menuToggle');
-            const navLinks = document.querySelectorAll('.sidebar-nav a'); // Selecciona todos los enlaces de navegación
+            const navLinks = document.querySelectorAll('.nav-link');
             const contentSections = document.querySelectorAll('.content-section');
             const dashboardWrapper = document.querySelector('.dashboard-wrapper');
 
@@ -1097,21 +987,12 @@
                     activeSection.classList.add('active');
                     activeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-                    // Si es la sección de rendimiento, renderizar el gráfico
+                    // If it's the performance section, render the chart
                     if (sectionId === 'admin-performance') {
                         renderAdminPerformanceChart();
                     } else if (sectionId === 'doctor-performance') {
                         renderDoctorPerformanceChart();
                     }
-                }
-
-                // Actualizar la clase 'active' en los enlaces del sidebar
-                navLinks.forEach(link => {
-                    link.classList.remove('active');
-                });
-                const activeLink = document.querySelector(`.sidebar-nav a[data-section="${sectionId}"]`);
-                if (activeLink) {
-                    activeLink.classList.add('active');
                 }
             }
 
@@ -1119,6 +1000,9 @@
             navLinks.forEach(link => {
                 link.addEventListener('click', function(event) {
                     event.preventDefault();
+                    navLinks.forEach(item => item.classList.remove('active'));
+                    this.classList.add('active');
+
                     const sectionId = this.dataset.section;
                     showSection(sectionId);
 
@@ -1149,278 +1033,245 @@
                 }
             });
 
-            // Inicializar mostrando la sección 'welcome-section' por defecto al cargar la página
-            showSection('welcome-section');
+            // Initialize by showing the first active section by default
+            const initialActiveLink = document.querySelector('.nav-link.active');
+            if (initialActiveLink) {
+                showSection(initialActiveLink.dataset.section);
+            } else if (navLinks.length > 0) {
+                navLinks[0].classList.add('active');
+                showSection(navLinks[0].dataset.section);
+            }
+        });
 
-            // Function to confirm and perform deletion
-            function confirmDelete(type, id, name) {
-                Swal.fire({
-                    title: `¿Estás seguro de eliminar ${type === 'establecimiento' ? 'el colegio' : 'la nómina'} "${name}"?`,
-                    text: `Esta acción es irreversible y eliminará todos los datos asociados ${type === 'nomina' ? 'a los estudiantes de esta nómina.' : ''}`,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#3085d6',
-                    confirmButtonText: 'Sí, eliminar',
-                    cancelButtonText: 'Cancelar'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        fetch(`/admin/eliminar_${type}/${id}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                Swal.fire(
-                                    '¡Eliminado!',
-                                    data.message,
-                                    'success'
-                                ).then(() => {
-                                    window.location.reload(); // Reload to update the list
-                                });
-                            } else {
-                                Swal.fire(
-                                    'Error',
-                                    data.message,
-                                    'error'
-                                );
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error al eliminar:', error);
+        // Function to confirm and perform deletion
+        function confirmDelete(type, id, name) {
+            Swal.fire({
+                title: `¿Estás seguro de eliminar ${type === 'establecimiento' ? 'el colegio' : 'la nómina'} "${name}"?`,
+                text: `Esta acción es irreversible y eliminará todos los datos asociados ${type === 'nomina' ? 'a los estudiantes de esta nómina.' : ''}`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/admin/eliminar_${type}/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire(
+                                '¡Eliminado!',
+                                data.message,
+                                'success'
+                            ).then(() => {
+                                window.location.reload(); // Reload to update the list
+                            });
+                        } else {
                             Swal.fire(
                                 'Error',
-                                'No se pudo conectar con el servidor para eliminar.',
+                                data.message,
                                 'error'
                             );
-                        });
-                    }
-                });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al eliminar:', error);
+                        Swal.fire(
+                            'Error',
+                            'No se pudo conectar con el servidor para eliminar.',
+                            'error'
+                        );
+                    });
+                }
+            });
+        }
+
+
+        // Doctor performance data for Chart.js (Admin)
+        // Injected from Flask into the template
+        const adminPerformanceData = {{ doctor_performance_data | tojson }};
+
+        function renderAdminPerformanceChart() {
+            const ctx = document.getElementById('adminPerformanceChart');
+            if (!ctx) {
+                console.error('Canvas element not found for adminPerformanceChart');
+                return;
             }
 
+            // Destroy any existing chart instance to avoid duplicates
+            if (window.adminChartInstance) {
+                window.adminChartInstance.destroy();
+            }
 
-            // Doctor performance data for Chart.js (Admin)
-            // Injected from Flask into the template
-            const adminPerformanceData = {{ doctor_performance_data | tojson }};
+            const labels = Object.keys(adminPerformanceData);
+            const data = Object.values(adminPerformanceData);
 
-            function renderAdminPerformanceChart() {
-                const ctx = document.getElementById('adminPerformanceChart');
-                if (!ctx) {
-                    console.error('Canvas element not found for adminPerformanceChart');
-                    return;
-                }
-
-                // Destroy any existing chart instance to avoid duplicates
-                if (window.adminChartInstance) {
-                    window.adminChartInstance.destroy();
-                }
-
-                const labels = Object.keys(adminPerformanceData);
-                const data = Object.values(adminPerformanceData);
-
-                window.adminChartInstance = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Formularios Completados',
-                            data: data,
-                            backgroundColor: [
-                                'rgba(75, 192, 192, 0.6)', /* Greenish-blue */
-                                'rgba(153, 102, 255, 0.6)', /* Purple */
-                                'rgba(255, 159, 64, 0.6)',  /* Orange */
-                                'rgba(54, 162, 235, 0.6)',  /* Blue */
-                                'rgba(255, 99, 132, 0.6)',  /* Red */
-                                'rgba(201, 203, 207, 0.6)'  /* Grey */
-                            ],
-                            borderColor: [
-                                'rgba(75, 192, 192, 1)',
-                                'rgba(153, 102, 255, 1)',
-                                'rgba(255, 159, 64, 1)',
-                                'rgba(54, 162, 235, 1)',
-                                'rgba(255, 99, 132, 1)',
-                                'rgba(201, 203, 207, 1)'
-                            ],
-                            borderWidth: 1
-                        }]
+            window.adminChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Formularios Completados',
+                        data: data,
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.6)', /* Greenish-blue */
+                            'rgba(153, 102, 255, 0.6)', /* Purple */
+                            'rgba(255, 159, 64, 0.6)',  /* Orange */
+                            'rgba(54, 162, 235, 0.6)',  /* Blue */
+                            'rgba(255, 99, 132, 0.6)',  /* Red */
+                            'rgba(201, 203, 207, 0.6)'  /* Grey */
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(201, 203, 207, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Formularios Evaluados por Doctora',
+                            font: { size: 18, family: 'Montserrat' },
+                            color: '#333'
+                        },
+                        legend: {
+                            display: false
+                        }
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Formularios Evaluados por Doctora',
-                                font: { size: 18, family: 'Montserrat' },
-                                color: '#333'
+                                text: 'Cantidad de Formularios',
+                                font: { size: 14, family: 'Inter' },
+                                color: '#555'
                             },
-                            legend: {
-                                display: false
+                            ticks: {
+                                precision: 0
                             }
                         },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'Cantidad de Formularios',
-                                    font: { size: 14, family: 'Inter' },
-                                    color: '#555'
-                                },
-                                ticks: {
-                                    precision: 0
-                                }
-                            },
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Doctora',
-                                    font: { size: 14, family: 'Inter' },
-                                    color: '#555'
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-
-            /* Doctor's own performance data (if doctor is logged in) */
-            /* Injected from Flask into the template */
-            const doctorPerformanceDataSingleDoctor = {{ doctor_performance_data_single_doctor | tojson }};
-
-            function renderDoctorPerformanceChart() {
-                const ctx = document.getElementById('doctorPerformanceChart');
-                if (!ctx) {
-                    console.error('Canvas element not found for doctorPerformanceChart');
-                    return;
-                }
-
-                // Destroy any existing chart instance to avoid duplicates
-                if (window.doctorChartInstance) {
-                    window.doctorChartInstance.destroy();
-                }
-
-                if (!doctorPerformanceDataSingleDoctor || doctorPerformanceDataSingleDoctor.total === 0) {
-                     ctx.style.display = 'none';
-                     const parent = ctx.closest('.chart-container');
-                     if (parent) {
-                        let noDataMsg = parent.querySelector('.no-data-message');
-                        if (!noDataMsg) {
-                            noDataMsg = document.createElement('p');
-                            noDataMsg.className = 'no-data-message text-center text-gray-500 mt-4';
-                            noDataMsg.textContent = 'No hay suficientes datos para mostrar el gráfico.';
-                            parent.appendChild(noDataMsg);
-                        }
-                     }
-                     return;
-                } else {
-                     const noDataMsg = ctx.closest('.chart-container').querySelector('.no-data-message');
-                     if (noDataMsg) noDataMsg.remove();
-                     ctx.style.display = 'block';
-                }
-
-
-                const completed = doctorPerformanceDataSingleDoctor.completed;
-                const pending = doctorPerformanceDataSingleDoctor.total - completed; /* Calculated dynamically from total */
-
-                window.doctorChartInstance = new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: ['Completados', 'Pendientes'],
-                        datasets: [{
-                            label: 'Formularios',
-                            data: [completed, pending],
-                            backgroundColor: [
-                                'rgba(54, 162, 235, 0.6)', /* Blue for completed */
-                                'rgba(255, 99, 132, 0.6)'  /* Light red for pending */
-                            ],
-                            borderColor: [
-                                'rgba(54, 162, 235, 1)',
-                                'rgba(255, 99, 132, 1)'
-                            ],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
+                        x: {
                             title: {
                                 display: true,
-                                text: 'Estado de Mis Formularios',
-                                font: { size: 18, family: 'Montserrat' },
-                                color: '#333'
-                            },
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    font: {
-                                        family: 'Inter'
-                                    }
+                                text: 'Doctora',
+                                font: { size: 14, family: 'Inter' },
+                                color: '#555'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /* Doctor's own performance data (if doctor is logged in) */
+        /* Injected from Flask into the template */
+        const doctorPerformanceDataSingleDoctor = {{ doctor_performance_data_single_doctor | tojson }};
+
+        function renderDoctorPerformanceChart() {
+            const ctx = document.getElementById('doctorPerformanceChart');
+            if (!ctx) {
+                console.error('Canvas element not found for doctorPerformanceChart');
+                return;
+            }
+
+            // Destroy any existing chart instance to avoid duplicates
+            if (window.doctorChartInstance) {
+                window.doctorChartInstance.destroy();
+            }
+
+            if (!doctorPerformanceDataSingleDoctor || doctorPerformanceDataSingleDoctor.total === 0) {
+                 ctx.style.display = 'none';
+                 const parent = ctx.closest('.chart-container');
+                 if (parent) {
+                    let noDataMsg = parent.querySelector('.no-data-message');
+                    if (!noDataMsg) {
+                        noDataMsg = document.createElement('p');
+                        noDataMsg.className = 'no-data-message text-center text-gray-500 mt-4';
+                        noDataMsg.textContent = 'No hay suficientes datos para mostrar el gráfico.';
+                        parent.appendChild(noDataMsg);
+                    }
+                 }
+                 return;
+            } else {
+                 const noDataMsg = ctx.closest('.chart-container').querySelector('.no-data-message');
+                 if (noDataMsg) noDataMsg.remove();
+                 ctx.style.display = 'block';
+            }
+
+
+            const completed = doctorPerformanceDataSingleDoctor.completed;
+            const pending = doctorPerformanceDataSingleDoctor.total - completed; /* Calculated dynamically from total */
+
+            window.doctorChartInstance = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Completados', 'Pendientes'],
+                    datasets: [{
+                        label: 'Formularios',
+                        data: [completed, pending],
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.6)', /* Blue for completed */
+                            'rgba(255, 99, 132, 0.6)'  /* Light red for pending */
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 99, 132, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Estado de Mis Formularios',
+                            font: { size: 18, family: 'Montserrat' },
+                            color: '#333'
+                        },
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    family: 'Inter'
                                 }
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        let label = context.label || '';
-                                        if (label) {
-                                            label += ': ';
-                                        }
-                                        if (context.parsed !== null) {
-                                            label += context.parsed + ' (' + ((context.parsed / doctorPerformanceDataSingleDoctor.total) * 100).toFixed(1) + '%)';
-                                        }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
                                     }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed + ' (' + ((context.parsed / doctorPerformanceDataSingleDoctor.total) * 100).toFixed(1) + '%)';
+                                    }
+                                    return label;
                                 }
                             }
                         }
                     }
-                });
-            }
-
-            // Event listener para los botones de "Ver Nóminas"
-            document.querySelectorAll('.btn-toggle-nominas').forEach(button => {
-                button.addEventListener('click', function() {
-                    const nominasList = this.nextElementSibling; // El div que contiene la lista de nóminas
-                    const icon = this.querySelector('i');
-
-                    nominasList.classList.toggle('hidden');
-                    if (nominasList.classList.contains('hidden')) {
-                        icon.classList.remove('fa-chevron-up');
-                        icon.classList.add('fa-chevron-down');
-                        this.innerHTML = 'Ver Nóminas <i class="fas fa-chevron-down ml-1"></i>';
-                    } else {
-                        icon.classList.remove('fa-chevron-down');
-                        icon.classList.add('fa-chevron-up');
-                        this.innerHTML = 'Ocultar Nóminas <i class="fas fa-chevron-up ml-1"></i>';
-                    }
-                });
-            });
-
-            // Script para mensajes flash (SweetAlert2)
-            const flashMessages = document.querySelectorAll('.flash-message');
-            flashMessages.forEach(msg => {
-                let iconType = 'info';
-                if (msg.classList.contains('bg-green-100')) {
-                    iconType = 'success';
-                } else if (msg.classList.contains('bg-red-100')) {
-                    iconType = 'error';
-                } else if (msg.classList.contains('bg-yellow-100')) {
-                    iconType = 'warning';
                 }
-
-                Swal.fire({
-                    title: msg.getAttribute('data-title') || 'Mensaje',
-                    text: msg.textContent.trim(),
-                    icon: iconType,
-                    confirmButtonText: 'Ok'
-                });
-                msg.remove(); // Eliminar el div del DOM después de mostrar el SweetAlert
             });
+        }
 
-        });
     </script>
 </body>
 </html>

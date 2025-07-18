@@ -709,30 +709,67 @@ def marcar_evaluado():
 def index():
     return render_template('login.html')
 
-@app.route('/login', methods=['POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    usuario = request.form['username']
-    clave = request.form['password']
-    url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario}&password=eq.{clave}"
-    print(f"DEBUG: Intento de login para usuario: {usuario}, URL: {url}")
-    try:
-        res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS) 
-        res.raise_for_status()
-        data = res.json()
-        print(f"DEBUG: Respuesta Supabase login: {data}")
-        if data:
-            session['usuario'] = usuario
-            session['usuario_id'] = data[0]['id']
-            print(f"DEBUG: Sesión iniciada: usuario={session['usuario']}, usuario_id={session['usuario_id']}")
-            flash(f'¡Bienvenido, {usuario}!', 'success')
-            return redirect(url_for('dashboard'))
-        flash('Usuario o contraseña incorrecta.', 'error')
-        return redirect(url_for('index'))
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Error en el login: {e} - {res.text if 'res' in locals() else ''}")
-        flash('Error de conexión al intentar iniciar sesión. Intente de nuevo.', 'error')
-        return redirect(url_for('index'))
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
 
+        print(f"DEBUG LOGIN: Intento de login para email: {email}") # DEBUG 1
+
+        try:
+            res = requests.get(
+                f"{SUPABASE_URL}/rest/v1/doctoras", # Asegúrate que esta es tu tabla de usuarios
+                headers=SUPABASE_SERVICE_HEADERS,
+                params={'email': f'eq.{email}'}
+            )
+            res.raise_for_status()
+            user_data = res.json()
+
+            if user_data:
+                user = user_data[0]
+                print(f"DEBUG LOGIN: Datos de usuario obtenidos: {user}") # DEBUG 2
+                print(f"DEBUG LOGIN: Rol obtenido de Supabase (user['rol']): '{user.get('rol')}'") # DEBUG 3
+
+                if user.get('password') == password: # ¡CAMBIAR POR HASHING SEGURO!
+                    session['user_id'] = user['id']
+                    session['user_email'] = user['email']
+                    session['rol'] = user.get('rol') # <<< AÑADIR .get() para evitar KeyError si la columna no existe
+
+                    print(f"DEBUG LOGIN: Rol almacenado en sesión: '{session.get('rol')}'") # DEBUG 4
+                    print(f"DEBUG LOGIN: Tipo de dato de session['rol']: {type(session.get('rol'))}") # DEBUG 5
+
+
+                    if session.get('rol') == 'administrador':
+                        print("DEBUG LOGIN: Redirigiendo a administrador_dashboard") # DEBUG 6a
+                        return redirect(url_for('admin_dashboard'))
+                    elif session.get('rol') == 'doctora':
+                        print("DEBUG LOGIN: Redirigiendo a doctor_dashboard") # DEBUG 6b
+                        return redirect(url_for('doctor_dashboard'))
+                    elif session.get('rol') == 'coordinadora': # <<< NUEVA REDIRECCIÓN
+                        print("DEBUG LOGIN: Redirigiendo a coordinadora_dashboard") # DEBUG 6c
+                        return redirect(url_for('coordinadora_dashboard'))
+                    else:
+                        print(f"DEBUG LOGIN: Rol no reconocido: {session.get('rol')}. Redirigiendo a login.") # DEBUG 6d
+                        flash('Rol de usuario no reconocido.', 'warning')
+                        return redirect(url_for('login'))
+                else:
+                    flash('Contraseña incorrecta.', 'danger')
+                    print("DEBUG LOGIN: Contraseña incorrecta.")
+            else:
+                flash('Correo electrónico no encontrado.', 'danger')
+                print("DEBUG LOGIN: Correo electrónico no encontrado.")
+
+        except requests.exceptions.RequestException as e:
+            flash(f"Error de conexión: {str(e)}", 'danger')
+            print(f"ERROR LOGIN: Error de conexión: {e}")
+        except Exception as e:
+            flash(f"Ocurrió un error inesperado: {str(e)}", 'danger')
+            print(f"ERROR LOGIN: Error inesperado: {e}")
+
+        return redirect(url_for('login'))
+    return render_template('login.html')
+    
 @app.route('/dashboard')
 def dashboard():
     if 'usuario' not in session:

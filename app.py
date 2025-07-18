@@ -1262,6 +1262,52 @@ def admin_cargar_nomina():
         flash(f"❌ Error al guardar los estudiantes en la base de datos. La nómina fue creada, pero no se agregaron los estudiantes. ({e}). Detalles: {error_detail}", 'error')
         return redirect(url_for('dashboard'))
 
+@app.route('/crear_proyecto', methods=['GET', 'POST'])
+def crear_proyecto():
+    if 'usuario' not in session:
+        flash('Debes iniciar sesión para acceder a esta página.', 'danger')
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        nombre_proyecto = request.form.get('nombre_proyecto')
+        doctora_id = session.get('usuario_id') # Asumiendo que guardas el ID de la doctora en sesión
+
+        if not nombre_proyecto:
+            flash("❌ El nombre del proyecto no puede estar vacío.", 'error')
+            return redirect(url_for('crear_proyecto'))
+        if not doctora_id:
+            flash("❌ No se pudo determinar la doctora asociada. Vuelve a iniciar sesión.", 'error')
+            return redirect(url_for('index'))
+
+        try:
+            # Verificar si el proyecto ya existe para esta doctora
+            check_url = f"{SUPABASE_URL}/rest/v1/proyectos?nombre_proyecto=eq.{nombre_proyecto}&doctora_id=eq.{doctora_id}"
+            check_res = requests.get(check_url, headers=SUPABASE_HEADERS)
+            check_res.raise_for_status()
+            if check_res.json():
+                flash(f"❌ El proyecto '{nombre_proyecto}' ya existe para tu usuario.", 'error')
+                return redirect(url_for('crear_proyecto'))
+
+            # Insertar nuevo proyecto en Supabase
+            data = {
+                "nombre_proyecto": nombre_proyecto,
+                "doctora_id": doctora_id
+            }
+            res = requests.post(f"{SUPABASE_URL}/rest/v1/proyectos", headers=SUPABASE_SERVICE_HEADERS, json=data)
+            res.raise_for_status()
+            flash(f"✅ Proyecto '{nombre_proyecto}' creado exitosamente.", 'success')
+            return redirect(url_for('dashboard')) # Redirige al dashboard o a donde sea apropiado
+
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Error al crear proyecto: {e}")
+            print(f"Response text: {res.text if 'res' in locals() else 'No response'}")
+            flash('Error al crear el proyecto. Inténtalo de nuevo.', 'error')
+        except Exception as e:
+            print(f"❌ Error inesperado al crear proyecto: {e}")
+            flash('Error inesperado al crear el proyecto.', 'error')
+
+    return render_template('crear_proyecto.html') # Necesitarás crear este HTML
+    
 @app.route('/enviar_formulario_a_drive', methods=['POST'])
 def enviar_formulario_a_drive():
     """

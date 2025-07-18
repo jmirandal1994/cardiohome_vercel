@@ -264,26 +264,34 @@ def upload_pdf_to_google_drive(creds, file_content_io, file_name, folder_id=None
         print(f"ERROR: Error inesperado al subir a Google Drive: {e}")
         return None
 
-# Decorador para requerir inicio de sesión y rol específico
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            flash('Por favor, inicia sesión para acceder.', 'danger')
+        if 'usuario_id' not in session:
+            flash('Por favor, inicia sesión para acceder a esta página.', 'warning')
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
 
-def rol_required(rol_esperado):
+def rol_required(required_rol):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            if 'rol' not in session or session['rol'] != rol_esperado:
-                flash(f'Acceso denegado. Se requiere el rol de {rol_esperado}.', 'danger')
-                return redirect(url_for('login'))
+            if 'rol' not in session or session['rol'] != required_rol:
+                flash(f'Acceso denegado. Se requiere el rol de {required_rol}.', 'danger')
+                # Redirige al dashboard general o a una página de error
+                if 'rol' in session:
+                    if session['rol'] == 'administrador':
+                        return redirect(url_for('admin_dashboard'))
+                    elif session['rol'] == 'doctora':
+                        return redirect(url_for('doctor_dashboard'))
+                    elif session['rol'] == 'coordinadora':
+                        return redirect(url_for('coordinadora_dashboard'))
+                return redirect(url_for('login')) # O a una página de "acceso no autorizado"
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+    
 # -------------------- Rutas de la Aplicación --------------------
 
 @app.route('/relleno_formularios/<nomina_id>', methods=['GET'])
@@ -707,38 +715,35 @@ def marcar_evaluado():
 
 @app.route('/')
 def index():
-    """
-    Ruta raíz que redirige directamente al login si no hay sesión iniciada,
-    o al dashboard correspondiente si ya hay sesión.
-    """
-    if 'user_id' in session:
-        # Si ya hay sesión, redirige al dashboard correspondiente
+    if 'usuario_id' in session and 'usuario' in session:
         rol = session.get('rol')
         if rol == 'administrador':
-            print("DEBUG: Sesión activa. Redirigiendo a administrador_dashboard.")
             return redirect(url_for('admin_dashboard'))
         elif rol == 'doctora':
-            print("DEBUG: Sesión activa. Redirigiendo a doctor_dashboard.")
             return redirect(url_for('doctor_dashboard'))
         elif rol == 'coordinadora':
-            print("DEBUG: Sesión activa. Redirigiendo a coordinadora_dashboard.")
             return redirect(url_for('coordinadora_dashboard'))
         else:
-            # Si el rol es desconocido, redirigir al login y limpiar sesión
             flash('Sesión activa con rol desconocido, por favor, inicia sesión de nuevo.', 'warning')
             session.clear()
             return redirect(url_for('login'))
     else:
-        # Si no hay sesión, redirige a la página de login
-        print("DEBUG: Accediendo a la ruta raíz ('/'). Redirigiendo a /login.")
         return redirect(url_for('login'))
         
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    # Si el usuario ya está logueado, redirigirlo a su dashboard
-    if 'usuario_id' in session and 'usuario' in session: # Verificar ambas claves de sesión
-        print(f"DEBUG LOGIN: Sesión activa para {session.get('usuario')}, redirigiendo a dashboard.")
-        return redirect(url_for('dashboard')) # <<< REDIRIGE AL DASHBOARD GENERAL
+    if 'usuario_id' in session and 'usuario' in session:
+        rol = session.get('rol')
+        if rol == 'administrador':
+            return redirect(url_for('admin_dashboard'))
+        elif rol == 'doctora':
+            return redirect(url_for('doctor_dashboard'))
+        elif rol == 'coordinadora':
+            return redirect(url_for('coordinadora_dashboard'))
+        else:
+            flash('Sesión activa con rol desconocido. Por favor, inicia sesión de nuevo.', 'warning')
+            session.clear()
+            return redirect(url_for('login'))
 
     if request.method == 'POST':
         user_input_form_username = request.form.get('username')
@@ -748,57 +753,49 @@ def login():
             flash('Por favor, introduce usuario y contraseña.', 'danger')
             return render_template('login.html')
 
-        print(f"DEBUG LOGIN: Intento de login para usuario (desde formulario): {user_input_form_username}")
-
         try:
             res = requests.get(
-                f"{SUPABASE_URL}/rest/v1/doctoras", # Tu tabla de usuarios
-                headers=SUPABASE_SERVICE_HEADERS, # Asegúrate de usar SUPABASE_SERVICE_HEADERS para leer usuarios
-                params={'usuario': f'eq.{user_input_form_username}'} # <<< USA LA COLUMNA 'usuario'
+                f"{SUPABASE_URL}/rest/v1/doctoras",
+                headers=SUPABASE_SERVICE_HEADERS,
+                params={'usuario': f'eq.{user_input_form_username}'}
             )
             res.raise_for_status()
             user_data = res.json()
 
             if user_data:
                 user = user_data[0]
-                print(f"DEBUG LOGIN: Datos de usuario obtenidos: {user}")
-                print(f"DEBUG LOGIN: Rol obtenido de Supabase (user['rol']): '{user.get('rol')}'")
-                print(f"DEBUG LOGIN: Columna 'usuario' de DB: '{user.get('usuario')}'")
-                print(f"DEBUG LOGIN: Columna 'nombre' de DB: '{user.get('nombre')}'")
-
-                # Aquí se compara la contraseña (¡Recuerda usar hashing en producción!)
                 if user.get('password') == password:
-                    # Ajustado para usar 'usuario_id' y 'usuario' como en tu función dashboard
                     session['usuario_id'] = user['id']
-                    session['usuario'] = user.get('usuario') # Nombre de usuario de la DB
-                    session['user_nombre'] = user.get('nombre') # Nombre real para mostrar
-                    session['rol'] = user.get('rol') # El rol para el control de acceso
+                    session['usuario'] = user.get('usuario')
+                    session['user_nombre'] = user.get('nombre')
+                    session['rol'] = user.get('rol')
 
-                    print(f"DEBUG LOGIN: Rol almacenado en sesión: '{session.get('rol')}'")
                     flash('¡Inicio de sesión exitoso!', 'success')
-                    
-                    # Ahora, siempre redirige al dashboard general, que manejará los roles internamente
-                    print("DEBUG LOGIN: Redirigiendo a dashboard general.")
-                    return redirect(url_for('dashboard'))
-
+                    rol = session.get('rol')
+                    if rol == 'administrador':
+                        return redirect(url_for('admin_dashboard'))
+                    elif rol == 'doctora':
+                        return redirect(url_for('doctor_dashboard'))
+                    elif rol == 'coordinadora':
+                        return redirect(url_for('coordinadora_dashboard'))
+                    else:
+                        flash('Rol de usuario no reconocido. Contacta al administrador.', 'warning')
+                        session.clear()
+                        return redirect(url_for('login'))
                 else:
                     flash('Contraseña incorrecta.', 'danger')
-                    print("DEBUG LOGIN: Contraseña incorrecta.")
             else:
                 flash('Usuario no encontrado.', 'danger')
-                print("DEBUG LOGIN: Usuario no encontrado.")
 
         except requests.exceptions.RequestException as e:
             flash(f"Error de conexión con la base de datos: {str(e)}", 'danger')
-            print(f"ERROR LOGIN: Error de conexión: {e}")
         except Exception as e:
             flash(f"Ocurrió un error inesperado: {str(e)}", 'danger')
-            print(f"ERROR LOGIN: Error inesperado: {e}")
         
         return render_template('login.html')
 
     return render_template('login.html')
-
+    
 @app.route('/admin_dashboard')
 @login_required
 @rol_required('administrador')

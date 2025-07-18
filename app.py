@@ -206,7 +206,8 @@ def find_or_create_drive_folder(service, folder_name, parent_folder_id=None):
     Busca una carpeta por nombre. Si no existe, la crea.
     """
     try:
-        service = build('drive', 'v3', credentials=creds) # Asegúrate de que 'creds' esté disponible aquí
+        # 'creds' needs to be passed or accessed globally if not passed
+        # For this function, 'service' is already built with creds, so it's fine.
         query = f"name = '{folder_name}' and mimeType = 'application/vnd.google-apps.folder'"
         if parent_folder_id:
             query += f" and '{parent_folder_id}' in parents"
@@ -652,7 +653,7 @@ def marcar_evaluado():
             "HIPOACUSIA": "/Yes" if get_form_field_value('check_hipoacusia', request.form) == 'HIPOACUSIA' else "",
             "TAPÓN DE CERUMEN": "/Yes" if get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN' else "",
             "SIN HALLAZGOS": "/Yes" if get_form_field_value('check_sinhallazgos', request.form) == 'SIN_HALLAZGOS' else "",
-            "CARIES": "/Yes" if get_form_field_value('caries', request.form) == 'CARIES' else "",
+            "CARIES": "/Yes" if get_form_field_value('caries', request.form) == 'CARIES',
             "APIÑAMIENTO DENTAL": "/Yes" if get_form_field_value('check_apinamientodental', request.form) == 'APINAMIENTO_DENTAL' else "",
             "RETENCIÓN DENTAL": "/Yes" if get_form_field_value('check_retenciondental', request.form) == 'RETENCION_DENTAL' else "",
             "FRENILLO LINGUAL": "/Yes" if get_form_field_value('check_frenillolingual', request.form) == 'FRENILLO_LINGUAL' else "",
@@ -844,7 +845,7 @@ def dashboard():
                 try:
                     completed_count_by_doctor = int(completed_forms_count_range.split('/')[-1])
                 except ValueError:
-                        pass
+                    pass
             print(f"DEBUG: Formularios completados por doctora {usuario_id}: {completed_count_by_doctor}")
 
 
@@ -948,10 +949,14 @@ def dashboard():
         if usuario_rol == 'admin':
             # Para admin, obtener todos los proyectos y todas las nóminas
             url_proyectos = f"{SUPABASE_URL}/rest/v1/proyectos?select=id,nombre_proyecto,doctoras(usuario)" # Incluye el nombre de la doctora
+            print(f"DEBUG: URL para obtener proyectos (admin): {url_proyectos}") # Added DEBUG
+            print(f"DEBUG: Headers para obtener proyectos (admin): {SUPABASE_HEADERS}") # Added DEBUG
             url_nominas_base = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=*,proyecto_id,doctora_id,doctoras(usuario)" # Incluye el nombre de la doctora
         else:
             # Para doctoras, obtener solo sus proyectos y nóminas
             url_proyectos = f"{SUPABASE_URL}/rest/v1/proyectos?doctora_id=eq.{usuario_id}&select=id,nombre_proyecto"
+            print(f"DEBUG: URL para obtener proyectos (doctora): {url_proyectos}") # Added DEBUG
+            print(f"DEBUG: Headers para obtener proyectos (doctora): {SUPABASE_HEADERS}") # Added DEBUG
             url_nominas_base = f"{SUPABASE_URL}/rest/v1/nominas_medicas?doctora_id=eq.{usuario_id}&select=*,proyecto_id"
 
         # 1. Obtener los proyectos

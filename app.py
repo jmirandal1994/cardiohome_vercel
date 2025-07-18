@@ -707,34 +707,60 @@ def marcar_evaluado():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        # CAMBIAR 'email' por 'username' para leer el campo del formulario HTML
-        user_input_username = request.form['username'] # <<< CAMBIO AQUÍ
-        password = request.form['password']
+    # Si el usuario ya está logueado, redirigirlo a su dashboard
+    if 'user_id' in session:
+        rol = session.get('rol')
+        if rol == 'administrador':
+            return redirect(url_for('admin_dashboard'))
+        elif rol == 'doctora':
+            return redirect(url_for('doctor_dashboard'))
+        elif rol == 'coordinadora':
+            return redirect(url_for('coordinadora_dashboard'))
+        # Si el rol no está definido o es desconocido, forzar logout y login
+        flash('Sesión activa con rol desconocido, por favor, inicia sesión de nuevo.', 'warning')
+        session.clear()
+        return redirect(url_for('login'))
 
-        print(f"DEBUG LOGIN: Intento de login para usuario: {user_input_username}") # DEBUG 1 (adaptado)
+    if request.method == 'POST':
+        # Leemos 'username' del formulario HTML (tu login.html tiene name="username")
+        # Este 'username' del formulario se mapeará a la columna 'usuario' en Supabase.
+        user_input_form_username = request.form.get('username') # <<< Correcto: lee 'username' del HTML
+        password = request.form.get('password') # Correcto: lee 'password' del HTML
+
+        # Validaciones básicas de entrada
+        if not user_input_form_username or not password:
+            flash('Por favor, introduce usuario y contraseña.', 'danger')
+            return render_template('login.html')
+
+        print(f"DEBUG LOGIN: Intento de login para usuario (desde formulario): {user_input_form_username}")
 
         try:
-            # Aquí, aunque el input se llame 'username', lo buscaremos en la columna 'email'
-            # de tu tabla 'doctoras' en Supabase, ya que es tu identificador principal.
+            # Consultamos Supabase. Buscamos por la columna 'usuario' en tu tabla 'doctoras'.
             res = requests.get(
                 f"{SUPABASE_URL}/rest/v1/doctoras", # Tu tabla de usuarios
                 headers=SUPABASE_SERVICE_HEADERS,
-                # Buscamos en la columna 'email' de Supabase el valor del 'username' que vino del formulario
-                params={'email': f'eq.{user_input_username}'} # <<< CAMBIO AQUÍ: user_input_username
+                # ¡¡¡CAMBIO CLAVE AQUÍ!!! Buscamos por la columna 'usuario' de Supabase
+                params={'usuario': f'eq.{user_input_form_username}'} # <<< CAMBIO CLAVE
             )
-            res.raise_for_status()
+            res.raise_for_status() # Lanza un error para códigos de estado HTTP 4xx/5xx
             user_data = res.json()
 
             if user_data:
                 user = user_data[0]
                 print(f"DEBUG LOGIN: Datos de usuario obtenidos: {user}")
                 print(f"DEBUG LOGIN: Rol obtenido de Supabase (user['rol']): '{user.get('rol')}'")
+                print(f"DEBUG LOGIN: Columna 'usuario' de DB: '{user.get('usuario')}'") # Debug adicional
+                print(f"DEBUG LOGIN: Columna 'nombre' de DB: '{user.get('nombre')}'") # Debug adicional
 
-                if user.get('password') == password: # ¡RECUERDA CAMBIAR POR HASHING SEGURO EN PRODUCCIÓN!
+                # ¡IMPORTANTE! Aquí debes usar un método seguro para verificar la contraseña hasheada.
+                # Si estás usando bcrypt o similar, sería: check_password_hash(user['password_hash'], password)
+                # Por ahora, para depuración, si la tienes en texto plano (NO RECOMENDADO PARA PRODUCCIÓN):
+                if user.get('password') == password: # Usa .get() para evitar KeyError si la columna no existe
                     session['user_id'] = user['id']
-                    # Almacena el email real del usuario, que es su identificador en la DB
-                    session['user_email'] = user['email'] # <<< USAMOS user['email'] de la DB
+                    # Almacenamos el nombre (campo más descriptivo) del usuario de la DB en la sesión
+                    session['user_nombre'] = user.get('nombre') # <<< Usamos 'nombre' de la DB
+                    # También puedes almacenar el 'usuario' si lo necesitas para algo específico
+                    session['user_login_username'] = user.get('usuario') # <<< El usuario usado para login
                     session['rol'] = user.get('rol')
 
                     print(f"DEBUG LOGIN: Rol almacenado en sesión: '{session.get('rol')}'")
@@ -751,24 +777,27 @@ def login():
                         return redirect(url_for('coordinadora_dashboard'))
                     else:
                         print(f"DEBUG LOGIN: Rol no reconocido: {session.get('rol')}. Redirigiendo a login.")
-                        flash('Rol de usuario no reconocido.', 'warning')
+                        flash('Rol de usuario no reconocido. Contacta al administrador.', 'warning')
                         return redirect(url_for('login'))
                 else:
                     flash('Contraseña incorrecta.', 'danger')
                     print("DEBUG LOGIN: Contraseña incorrecta.")
             else:
-                flash('Usuario no encontrado.', 'danger') # Mensaje más apropiado
+                flash('Usuario no encontrado.', 'danger')
                 print("DEBUG LOGIN: Usuario no encontrado.")
 
         except requests.exceptions.RequestException as e:
-            flash(f"Error de conexión: {str(e)}", 'danger')
+            flash(f"Error de conexión con la base de datos: {str(e)}", 'danger')
             print(f"ERROR LOGIN: Error de conexión: {e}")
         except Exception as e:
             flash(f"Ocurrió un error inesperado: {str(e)}", 'danger')
             print(f"ERROR LOGIN: Error inesperado: {e}")
         
-        return redirect(url_for('login'))
-    return render_template('login.html') # Asegúrate que renderizas 'login-3.html'
+        # Si algo falla en el POST, volvemos a renderizar el formulario de login
+        return render_template('login.html')
+
+    # Para solicitudes GET (cuando se carga la página de login por primera vez)
+    return render_template('login.html')
     
 @app.route('/dashboard')
 def dashboard():

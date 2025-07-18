@@ -4,7 +4,7 @@ import requests
 import base64
 from werkzeug.utils import secure_filename
 from datetime import datetime, date
-from openpyxl import load_workbook
+from supabase import create_client, Clientfrom openpyxl import load_workbook
 from PyPDF2 import PdfReader, PdfWriter
 from PyPDF2.generic import BooleanObject, NameObject, NumberObject, DictionaryObject
 import mimetypes

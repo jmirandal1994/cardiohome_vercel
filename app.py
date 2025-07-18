@@ -1042,30 +1042,30 @@ def crear_proyecto():
     if request.method == 'POST':
         nombre_proyecto = request.form.get('nombre_proyecto')
         descripcion_proyecto = request.form.get('descripcion_proyecto')
-        print(f"DEBUG: Intentando crear proyecto: {nombre_proyecto}, Desc: {descripcion_proyecto}") # Añade este print
+        print(f"DEBUG: Intentando crear proyecto: {nombre_proyecto}, Desc: {descripcion_proyecto}")
 
         try:
-            # Asegúrate de que tu tabla en Supabase se llama 'proyectos'
             data, count = supabase.table('proyectos').insert({
                 "nombre_proyecto": nombre_proyecto,
                 "descripcion": descripcion_proyecto,
-                "fecha_creacion": datetime.now().isoformat() # Asegúrate de que 'datetime' esté importado
+                "fecha_creacion": datetime.now().isoformat() # Asegúrate de que datetime está importado
             }).execute()
 
             if data:
-                print(f"DEBUG: Proyecto '{nombre_proyecto}' creado exitosamente en Supabase. Data: {data}") # Éxito
+                print(f"DEBUG: Proyecto '{nombre_proyecto}' creado exitosamente en Supabase. Data: {data}")
                 flash('Proyecto creado exitosamente!', 'success')
-                return redirect(url_for('dashboard', _external=True, _scheme='https', section='gestionar_proyectos')) # Redirige a la sección de proyectos
+                # Redirige a la sección de gestionar_proyectos para que lo vea inmediatamente
+                return redirect(url_for('dashboard', _external=True, _scheme='https', section='gestionar_proyectos'))
             else:
-                print(f"ERROR: Supabase no devolvió datos al crear proyecto. Data: {data}, Count: {count}") # Si no hay data
+                print(f"ERROR: Supabase no devolvió datos al crear proyecto. Data: {data}, Count: {count}")
                 flash('Error al crear el proyecto: Supabase no devolvió datos.', 'danger')
 
         except Exception as e:
-            print(f"CRÍTICO: Error inesperado al insertar proyecto en Supabase: {e}") # Captura errores
+            print(f"CRÍTICO: Error inesperado al insertar proyecto en Supabase: {e}")
             flash(f"Error en el servidor al crear el proyecto: {e}", 'danger')
 
-    return redirect(url_for('dashboard', _external=True, _scheme='https')) # Redirección final si algo falla antes
-    
+    # Si no es POST o hay algún fallo antes del try-except
+    return redirect(url_for('dashboard', _external=True, _scheme='https'))    
 
 @app.route('/admin/cargar_nomina', methods=['POST'])
 def admin_cargar_nomina():

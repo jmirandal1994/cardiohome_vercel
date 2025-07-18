@@ -206,6 +206,7 @@ def find_or_create_drive_folder(service, folder_name, parent_folder_id=None):
     Busca una carpeta por nombre. Si no existe, la crea.
     """
     try:
+        service = build('drive', 'v3', credentials=creds) # Asegúrate de que 'creds' esté disponible aquí
         query = f"name = '{folder_name}' and mimeType = 'application/vnd.google-apps.folder'"
         if parent_folder_id:
             query += f" and '{parent_folder_id}' in parents"
@@ -647,15 +648,15 @@ def marcar_evaluado():
             "si_2": get_form_field_value('si_2', request.form) == 'SI_2', # Corregido nombre de campo
             "check_visionsinalteracion": get_form_field_value('check_visionsinalteracion', request.form) == 'SIN_ALTERACION_VISION',
             "check_visionrefraccion": get_form_field_value('check_visionrefraccion', request.form) == 'VICIOS_DE_REFRACCION',
-            "check_audicionnormal": get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION',
-            "check_hipoacusia": get_form_field_value('check_hipoacusia', request.form) == 'HIPOACUSIA',
-            "check_tapondecerumen": get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN',
-            "check_sinhallazgos": get_form_field_value('check_sinhallazgos', request.form) == 'SIN_HALLAZGOS',
-            "check_caries": get_form_field_value('caries', request.form) == 'CARIES',
-            "check_apinamientodental": get_form_field_value('check_apinamientodental', request.form) == 'APINAMIENTO_DENTAL',
-            "check_retenciondental": get_form_field_value('check_retenciondental', request.form) == 'RETENCION_DENTAL',
-            "check_frenillolingual": get_form_field_value('check_frenillolingual', request.form) == 'FRENILLO_LINGUAL',
-            "check_hipertrofia": get_form_field_value('check_hipertrofia', request.form) == 'HIPERTROFIA_AMIGDALINA',
+            "NORMAL": "/Yes" if get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION' else "",
+            "HIPOACUSIA": "/Yes" if get_form_field_value('check_hipoacusia', request.form) == 'HIPOACUSIA' else "",
+            "TAPÓN DE CERUMEN": "/Yes" if get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN' else "",
+            "SIN HALLAZGOS": "/Yes" if get_form_field_value('check_sinhallazgos', request.form) == 'SIN_HALLAZGOS' else "",
+            "CARIES": "/Yes" if get_form_field_value('caries', request.form) == 'CARIES' else "",
+            "APIÑAMIENTO DENTAL": "/Yes" if get_form_field_value('check_apinamientodental', request.form) == 'APINAMIENTO_DENTAL' else "",
+            "RETENCIÓN DENTAL": "/Yes" if get_form_field_value('check_retenciondental', request.form) == 'RETENCION_DENTAL' else "",
+            "FRENILLO LINGUAL": "/Yes" if get_form_field_value('check_frenillolingual', request.form) == 'FRENILLO_LINGUAL' else "",
+            "HIPERTROFIA AMIGDALINA": "/Yes" if get_form_field_value('check_hipertrofia', request.form) == 'HIPERTROFIA_AMIGDALINA' else "",
         })
 
     print(f"DEBUG: Payload final para Supabase PATCH en /marcar_evaluado: {update_data}")
@@ -843,7 +844,7 @@ def dashboard():
                 try:
                     completed_count_by_doctor = int(completed_forms_count_range.split('/')[-1])
                 except ValueError:
-                    pass
+                        pass
             print(f"DEBUG: Formularios completados por doctora {usuario_id}: {completed_count_by_doctor}")
 
 
@@ -1104,21 +1105,27 @@ def crear_proyecto():
     nombre_proyecto = request.form.get('nombre_proyecto')
     doctora_id_creador = session.get('usuario_id') 
 
+    print(f"DEBUG: Intentando crear proyecto: '{nombre_proyecto}' para usuario ID: {doctora_id_creador}") # Added DEBUG
+
     if not nombre_proyecto:
         flash("❌ El nombre del proyecto no puede estar vacío.", 'error')
+        print("DEBUG: Nombre del proyecto vacío.") # Added DEBUG
         return redirect(url_for('dashboard')) # Redirige al dashboard si falta el nombre
 
     if not doctora_id_creador:
         flash("❌ No se pudo determinar el usuario creador. Vuelve a iniciar sesión.", 'error')
+        print("DEBUG: ID de usuario creador no encontrado en sesión.") # Added DEBUG
         return redirect(url_for('index'))
 
     try:
         # Verificar si el proyecto ya existe para este admin
         check_url = f"{SUPABASE_URL}/rest/v1/proyectos?nombre_proyecto=eq.{nombre_proyecto}&doctora_id=eq.{doctora_id_creador}"
+        print(f"DEBUG: Verificando existencia de proyecto: {check_url}") # Added DEBUG
         check_res = requests.get(check_url, headers=SUPABASE_HEADERS)
         check_res.raise_for_status()
         if check_res.json():
             flash(f"❌ El proyecto '{nombre_proyecto}' ya existe para tu usuario.", 'error')
+            print(f"DEBUG: Proyecto '{nombre_proyecto}' ya existe.") # Added DEBUG
             return redirect(url_for('dashboard')) # Redirige al dashboard
 
         # Insertar nuevo proyecto en Supabase
@@ -1126,17 +1133,24 @@ def crear_proyecto():
             "nombre_proyecto": nombre_proyecto,
             "doctora_id": doctora_id_creador # Vincula el proyecto al ID del admin que lo crea
         }
+        print(f"DEBUG: Payload para insertar proyecto: {data}") # Added DEBUG
+        print(f"DEBUG: URL para insertar proyecto: {SUPABASE_URL}/rest/v1/proyectos") # Added DEBUG
         res = requests.post(f"{SUPABASE_URL}/rest/v1/proyectos", headers=SUPABASE_SERVICE_HEADERS, json=data)
         res.raise_for_status()
+        
+        print(f"DEBUG: Respuesta de Supabase al insertar proyecto (status): {res.status_code}") # Added DEBUG
+        print(f"DEBUG: Respuesta de Supabase al insertar proyecto (text): {res.text}") # Added DEBUG
+
         flash(f"✅ Proyecto '{nombre_proyecto}' creado exitosamente.", 'success')
+        print(f"DEBUG: Proyecto '{nombre_proyecto}' creado exitosamente.") # Added DEBUG
         return redirect(url_for('dashboard')) 
 
     except requests.exceptions.RequestException as e:
         error_detail = res.text if 'res' in locals() else 'No response from Supabase.'
-        print(f"❌ Error al crear proyecto: {e} - Detalles de Supabase: {error_detail}")
+        print(f"❌ Error al crear proyecto (RequestException): {e} - Detalles de Supabase: {error_detail}")
         flash(f"Error al crear el proyecto: {error_detail}", 'error')
     except Exception as e:
-        print(f"❌ Error inesperado al crear proyecto: {e}")
+        print(f"❌ Error inesperado al crear proyecto (General Exception): {e}")
         flash('Error inesperado al crear el proyecto.', 'error')
 
     return redirect(url_for('dashboard')) # Siempre redirigir al dashboard después de intentar la operación
@@ -1686,7 +1700,7 @@ def subir(establecimiento):
 
 @app.route('/colegios')
 def colegios():
-    if session.get('usuario') != 'admin':
+    if session.get('usuario_rol') != 'admin':
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
     

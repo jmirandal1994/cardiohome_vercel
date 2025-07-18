@@ -705,6 +705,34 @@ def marcar_evaluado():
         print(f"ERROR: Error inesperado al marcar estudiante como evaluado: {e}")
         return jsonify({"success": False, "message": f"Error interno del servidor: {str(e)}"}), 500
 
+@app.route('/')
+def index():
+    """
+    Ruta raíz que redirige directamente al login si no hay sesión iniciada,
+    o al dashboard correspondiente si ya hay sesión.
+    """
+    if 'user_id' in session:
+        # Si ya hay sesión, redirige al dashboard correspondiente
+        rol = session.get('rol')
+        if rol == 'administrador':
+            print("DEBUG: Sesión activa. Redirigiendo a administrador_dashboard.")
+            return redirect(url_for('admin_dashboard'))
+        elif rol == 'doctora':
+            print("DEBUG: Sesión activa. Redirigiendo a doctor_dashboard.")
+            return redirect(url_for('doctor_dashboard'))
+        elif rol == 'coordinadora':
+            print("DEBUG: Sesión activa. Redirigiendo a coordinadora_dashboard.")
+            return redirect(url_for('coordinadora_dashboard'))
+        else:
+            # Si el rol es desconocido, redirigir al login y limpiar sesión
+            flash('Sesión activa con rol desconocido, por favor, inicia sesión de nuevo.', 'warning')
+            session.clear()
+            return redirect(url_for('login'))
+    else:
+        # Si no hay sesión, redirige a la página de login
+        print("DEBUG: Accediendo a la ruta raíz ('/'). Redirigiendo a /login.")
+        return redirect(url_for('login'))
+        
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     # Si el usuario ya está logueado, redirigirlo a su dashboard

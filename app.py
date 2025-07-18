@@ -273,21 +273,33 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# Función de verificación de roles
 def roles_required(roles):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            if 'user_id' not in session: # Usar 'user_id' para consistencia
+            # Usamos 'usuario' aquí para ser consistentes con tu código
+            if 'usuario' not in session:
+                print(f"DEBUG ROLES_REQUIRED: 'usuario' no en sesión. Redirigiendo a login.")
                 flash('Necesitas iniciar sesión para acceder a esta página.', 'warning')
-                return redirect(url_for('login')) # Redirigir a 'login'
+                return redirect(url_for('login'))
             
             user_role = session.get('rol')
-            if user_role not in roles:
+            
+            if user_role is None or user_role not in roles:
+                print(f"DEBUG ROLES_REQUIRED: Rol '{user_role}' no permitido para esta ruta. Roles requeridos: {roles}. Redirigiendo a dashboard.")
                 flash('No tienes permiso para acceder a esta página.', 'error')
                 return redirect(url_for('dashboard')) # Redirigir a su propio dashboard
             return f(*args, **kwargs)
         return decorated_function
-    return decorator    
+    return decorator
+
+
+# Función para validar extensiones de archivo
+def permitido(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    
 # -------------------- Rutas de la Aplicación --------------------
 
 @app.route('/relleno_formularios/<nomina_id>', methods=['GET'])
@@ -711,73 +723,84 @@ def marcar_evaluado():
 
 @app.route('/')
 def index():
-    # Usamos 'usuario' aquí para ser consistentes con tu código
-    if 'usuario' in session:
+    print("--- INICIO FUNCIÓN INDEX ---")
+    # Verificar si hay una sesión activa con 'usuario'
+    if 'usuario' in session and session.get('usuario') is not None:
         rol = session.get('rol')
-        print(f"DEBUG INDEX: Sesión activa para rol: {rol}. Redirigiendo a /dashboard.")
+        print(f"DEBUG INDEX: Sesión activa detectada. Usuario: {session.get('usuario')}, Rol: {rol}. Redirigiendo a /dashboard.")
         return redirect(url_for('dashboard'))
     else:
-        print("DEBUG INDEX: No hay sesión activa. Redirigiendo a /login.")
+        print("DEBUG INDEX: No hay sesión activa o 'usuario' es None. Redirigiendo a /login.")
         return redirect(url_for('login'))
         
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    print("--- INICIO FUNCIÓN LOGIN ---")
     # Si el usuario ya está logueado, redirigirlo a su dashboard consolidado
-    if 'user_id' in session: # Usar 'user_id' para consistencia
+    # Esta verificación debe ser robusta para evitar bucles.
+    if 'usuario' in session and session.get('usuario') is not None:
         rol = session.get('rol')
-        print(f"DEBUG LOGIN (GET): Sesión activa para rol: {rol}. Redirigiendo a /dashboard.")
+        print(f"DEBUG LOGIN (GET/POST): Sesión activa detectada en /login. usuario: {session.get('usuario')}, Rol: {rol}. Redirigiendo a /dashboard.")
         return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
         user_input_form_username = request.form.get('username')
         password = request.form.get('password')
 
+        print(f"DEBUG LOGIN (POST): Intento de login. Username recibido: '{user_input_form_username}', Password recibido: '{password}'")
+
         if not user_input_form_username or not password:
             flash('Por favor, introduce usuario y contraseña.', 'danger')
+            print("DEBUG LOGIN (POST): Usuario o contraseña vacíos. Renderizando login.html.")
             return render_template('login.html')
 
-        print(f"DEBUG LOGIN (POST): Intento de login para usuario: {user_input_form_username}")
-
         try:
+            print(f"DEBUG LOGIN (POST): Intentando obtener datos de Supabase para usuario: '{user_input_form_username}'")
+            # SupabaseServiceHeaders se usa para acceder a la tabla 'doctoras' que contiene credenciales
             res = requests.get(
                 f"{SUPABASE_URL}/rest/v1/doctoras",
                 headers=SUPABASE_SERVICE_HEADERS,
                 params={'usuario': f'eq.{user_input_form_username}'}
             )
-            res.raise_for_status()
+            res.raise_for_status() # Esto lanzará una excepción para códigos de error HTTP (4xx o 5xx)
             user_data = res.json()
+            print(f"DEBUG LOGIN (POST): Respuesta de Supabase (JSON): {user_data}")
 
             if user_data:
                 user = user_data[0]
-                print(f"DEBUG LOGIN (POST): Datos de usuario obtenidos: {user}")
+                print(f"DEBUG LOGIN (POST): Usuario encontrado en DB: ID={user.get('id')}, Usuario={user.get('usuario')}, Rol={user.get('rol')}, Nombre={user.get('nombre')}")
                 
                 if user.get('password') == password:
-                    session['user_id'] = user['id'] # Consolidado: 'user_id'
-                    session['user_login_username'] = user.get('usuario') # Consolidado: 'user_login_username'
-                    session['user_nombre'] = user.get('nombre') # Nombre completo para mostrar
-                    session['rol'] = user.get('rol')
+                    # REVERTIDO: Usamos 'usuario_id' y 'usuario' como tus claves originales
+                    session['usuario_id'] = user['id']
+                    session['usuario'] = user.get('usuario')
+                    session['user_nombre'] = user.get('nombre') # Mantener este para el nombre completo
+                    session['rol'] = user.get('rol') # Guardar el rol en la sesión
+                    print(f"DEBUG LOGIN (POST): Contraseña correcta. Sesión establecida: usuario_id={session.get('usuario_id')}, usuario={session.get('usuario')}, rol={session.get('rol')}")
 
                     flash('¡Inicio de sesión exitoso!', 'success')
-                    print(f"DEBUG LOGIN (POST): Inicio de sesión exitoso para rol: {session.get('rol')}. Redirigiendo a /dashboard.")
+                    print(f"DEBUG LOGIN (POST): Inicio de sesión exitoso. Redirigiendo a /dashboard.")
                     # Redirigir siempre al dashboard consolidado
                     return redirect(url_for('dashboard'))
                 else:
                     flash('Contraseña incorrecta.', 'danger')
-                    print("DEBUG LOGIN (POST): Contraseña incorrecta.")
+                    print("DEBUG LOGIN (POST): Contraseña incorrecta. Renderizando login.html.")
             else:
                 flash('Usuario no encontrado.', 'danger')
-                print("DEBUG LOGIN (POST): Usuario no encontrado.")
+                print("DEBUG LOGIN (POST): Usuario no encontrado en la base de datos. Renderizando login.html.")
 
         except requests.exceptions.RequestException as e:
             flash(f"Error de conexión con la base de datos: {str(e)}", 'danger')
-            print(f"ERROR LOGIN (POST): Error de conexión: {e}")
+            print(f"ERROR LOGIN (POST): Error de conexión con Supabase: {e}")
         except Exception as e:
             flash(f"Ocurrió un error inesperado: {str(e)}", 'danger')
-            print(f"ERROR LOGIN (POST): Error inesperado: {e}")
+            print(f"ERROR LOGIN (POST): Error inesperado durante el login: {e}")
         
+        print("DEBUG LOGIN (POST): Finalizando POST, renderizando login.html.")
         return render_template('login.html')
 
-    return render_template('login.html')    
+    print("DEBUG LOGIN (GET): Renderizando login.html inicialmente.")
+    return render_template('login.html')
     
 @app.route('/dashboard')
 # Incluimos 'coordinadora' en los roles que pueden acceder al dashboard
@@ -1063,6 +1086,7 @@ def dashboard():
         doctor_performance_data_single_doctor=doctor_performance_data_single_doctor, # Solo relevante para doctora
         stats=stats # Relevante para admin/coordinadora
     )
+    
 @app.route('/logout')
 # Incluimos 'coordinadora' en los roles que pueden cerrar sesión
 @roles_required(['admin', 'doctora', 'coordinadora'])
@@ -1070,7 +1094,7 @@ def logout():
     print(f"DEBUG LOGOUT: Cerrando sesión para usuario_id: {session.get('usuario_id')}, Rol: {session.get('rol')}")
     session.clear()
     flash('Has cerrado sesión correctamente.', 'info')
-    return redirect(url_for('login'))
+    return redirect(url_for('login'))  
     
 @app.route('/admin/agregar', methods=['POST'])
 def admin_agregar():

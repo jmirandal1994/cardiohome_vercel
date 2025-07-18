@@ -1712,34 +1712,34 @@ def doctor_performance_detail(doctor_id):
 @app.route('/admin/crear_proyecto', methods=['POST'])
 def crear_proyecto():
     if request.method == 'POST':
-        nombre_proyecto = request.form.get('nombre_proyecto')
-        descripcion_proyecto = request.form.get('descripcion_proyecto')
-        print(f"DEBUG: Intentando crear proyecto (via requests): {nombre_proyecto}, Desc: {descripcion_proyecto}")
+        nombre_proyecto_form = request.form.get('nombre_proyecto') # Valor del formulario
+        descripcion_proyecto_form = request.form.get('descripcion_proyecto') # Valor del formulario
+        print(f"DEBUG: Intentando crear proyecto (via requests): {nombre_proyecto_form}, Desc: {descripcion_proyecto_form}")
 
-        # Datos a enviar a Supabase
+        # Datos a enviar a Supabase, usando los nombres de columna que me indicaste
         payload = {
-            "nombre_proyecto": nombre_proyecto,
-            "descripcion": descripcion_proyecto,
-            "fecha_creacion": datetime.now().isoformat() # Asegúrate de que este campo exista en tu tabla 'proyectos'
+            "nombre_proyecto": nombre_proyecto_form,       # Nombre de la columna en Supabase
+            "descripcion_proyecto": descripcion_proyecto_form, # Nombre de la columna en Supabase
+            "fecha_creacion": datetime.now().isoformat() # Asegúrate de que este campo exista y sea 'timestamp with time zone'
         }
 
         # URL de tu tabla 'proyectos' en Supabase
-        # Necesitas la URL base de Supabase + /rest/v1/proyectos
-        # Asumiendo que SUPABASE_URL es "https://rbzxolreglwndvsrxhmg.supabase.co"
         proyectos_url = f"{SUPABASE_URL}/rest/v1/proyectos"
 
         try:
-            # Realizar la petición POST para insertar el nuevo proyecto
-            # Usa SUPABASE_SERVICE_HEADERS si tienes RLS configurado para que solo el service_role pueda insertar
-            # O SUPABASE_HEADERS si tu anon key tiene permisos de insert para esta tabla
-            response = requests.post(proyectos_url, json=payload, headers=SUPABASE_SERVICE_HEADERS) # O SUPABASE_HEADERS
+            # Usar SUPABASE_SERVICE_HEADERS es generalmente más seguro para inserts desde el backend
+            response = requests.post(proyectos_url, json=payload, headers=SUPABASE_SERVICE_HEADERS)
+
+            # Para depurar el detalle del error de Supabase
+            if response.status_code != 201: # El código de éxito para POST es 201 Created
+                print(f"DEBUG: Respuesta de error de Supabase (Status {response.status_code}): {response.text}")
 
             response.raise_for_status() # Lanza una excepción para errores HTTP (4xx o 5xx)
-            data = response.json()
 
-            print(f"DEBUG: Proyecto '{nombre_proyecto}' creado exitosamente en Supabase. Respuesta: {data}")
+            data = response.json() # Si todo va bien, obtén la respuesta JSON
+
+            print(f"DEBUG: Proyecto '{nombre_proyecto_form}' creado exitosamente en Supabase. Respuesta: {data}")
             flash('Proyecto creado exitosamente!', 'success')
-            # Redirige a la sección de gestionar_proyectos para que lo vea inmediatamente
             return redirect(url_for('dashboard', _external=True, _scheme='https', section='gestionar_proyectos'))
 
         except requests.exceptions.HTTPError as errh:

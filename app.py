@@ -33,7 +33,7 @@ PDF_BASE_FAMILIAR = 'formulario_familiar.pdf'
 # -------------------- Supabase Configuration --------------------
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://rbzxolreglwndvsrxhmg.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienhvbHJlZ2x3bmR2c3J4aG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NDE3ODcsImV4cCI6MjA2MzExNzc4N30.BbzsUhed1Y_dJYWFKLAHqtV4cXdvjF_ihGdQ_Bpov3Y")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IlNJUDU4IiwicmVmIjoiYnhzbnFmZml4d2pkcWl2eGJrZXkiLCJyb2xlIjoic2VydmljZV9yb2xlIiwiaWF0IjoxNzE5Mjg3MzI1LCJleHAiOjE3NTA4MjMzMjV9.qNlSg_p4_u1O5xQ9s6bN0K2Z0f0v_N9s8k0k0k0k0k") # ASEGÚRATE DE USAR TU SERVICE_KEY REAL
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4c25xZmZpeHdqcWRpdmJraWV5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxOTI4NzMyNSwiZXhwIjoxNzUwODIzMzI1fQ.qNlSg_p4_u1O5xQ9s6bN0K2Z0f0v_N9s8k0k0k0k0k") # ASEGÚRATE DE USAR TU SERVICE_KEY REAL
 
 SUPABASE_HEADERS = {
     "apikey": SUPABASE_KEY,
@@ -147,7 +147,7 @@ def get_form_field_value(field_name, form_data, return_none_if_empty=False):
     """
     Retrieves a form field value from form_data.
     If return_none_if_empty is True, returns None for empty strings.
-    Otherwise, returns an empty string for empty values.
+    Otherwise, returns an nonempty string for empty values.
     """
     value = form_data.get(field_name)
     if value is None:
@@ -1094,64 +1094,52 @@ def admin_agregar():
 
     return redirect(url_for('dashboard'))
 
-# --- NUEVA RUTA PARA CREAR PROYECTOS ---
-@app.route('/crear_proyecto', methods=['GET', 'POST'])
+# --- RUTA PARA CREAR PROYECTOS (MODIFICADA PARA REDIRIGIR AL DASHBOARD) ---
+@app.route('/crear_proyecto', methods=['POST']) # Solo POST, ya que el formulario está en el dashboard
 def crear_proyecto():
     if 'usuario' not in session or session.get('usuario_rol') != 'admin': # Solo admin puede crear proyectos
         flash('Acceso denegado. Solo administradores pueden crear proyectos.', 'danger')
         return redirect(url_for('index'))
 
-    if request.method == 'POST':
-        nombre_proyecto = request.form.get('nombre_proyecto')
-        # Para el admin, el proyecto no se asocia directamente a una 'doctora_id' en la tabla de proyectos
-        # si el admin es el que los gestiona globalmente.
-        # Si quieres que los proyectos creados por el admin se vinculen a una doctora específica,
-        # necesitarías un campo de selección de doctora en el formulario de creación de proyecto.
-        # Por ahora, asumiré que los proyectos creados por el admin son "globales" o no tienen un doctora_id directo.
-        # Si necesitas vincularlos a la doctora que los crea (el admin), puedes usar session.get('usuario_id')
-        # como 'creado_por_doctora_id' o similar.
-        
-        # Para este caso, vamos a vincularlo al ID del admin que lo crea, para que se muestre en su panel
-        # de proyectos si tuviera uno, o para referencia.
-        doctora_id_creador = session.get('usuario_id') 
+    nombre_proyecto = request.form.get('nombre_proyecto')
+    doctora_id_creador = session.get('usuario_id') 
 
-        if not nombre_proyecto:
-            flash("❌ El nombre del proyecto no puede estar vacío.", 'error')
-            return redirect(url_for('crear_proyecto'))
-        if not doctora_id_creador:
-            flash("❌ No se pudo determinar el usuario creador. Vuelve a iniciar sesión.", 'error')
-            return redirect(url_for('index'))
+    if not nombre_proyecto:
+        flash("❌ El nombre del proyecto no puede estar vacío.", 'error')
+        return redirect(url_for('dashboard')) # Redirige al dashboard si falta el nombre
 
-        try:
-            # Verificar si el proyecto ya existe para este admin
-            # Ajusta la consulta si quieres que los nombres de proyecto sean únicos globalmente o por admin.
-            check_url = f"{SUPABASE_URL}/rest/v1/proyectos?nombre_proyecto=eq.{nombre_proyecto}&doctora_id=eq.{doctora_id_creador}"
-            check_res = requests.get(check_url, headers=SUPABASE_HEADERS)
-            check_res.raise_for_status()
-            if check_res.json():
-                flash(f"❌ El proyecto '{nombre_proyecto}' ya existe para tu usuario.", 'error')
-                return redirect(url_for('dashboard')) # Redirige al dashboard
+    if not doctora_id_creador:
+        flash("❌ No se pudo determinar el usuario creador. Vuelve a iniciar sesión.", 'error')
+        return redirect(url_for('index'))
 
-            # Insertar nuevo proyecto en Supabase
-            data = {
-                "nombre_proyecto": nombre_proyecto,
-                "doctora_id": doctora_id_creador # Vincula el proyecto al ID del admin que lo crea
-            }
-            res = requests.post(f"{SUPABASE_URL}/rest/v1/proyectos", headers=SUPABASE_SERVICE_HEADERS, json=data)
-            res.raise_for_status()
-            flash(f"✅ Proyecto '{nombre_proyecto}' creado exitosamente.", 'success')
-            return redirect(url_for('dashboard')) 
+    try:
+        # Verificar si el proyecto ya existe para este admin
+        check_url = f"{SUPABASE_URL}/rest/v1/proyectos?nombre_proyecto=eq.{nombre_proyecto}&doctora_id=eq.{doctora_id_creador}"
+        check_res = requests.get(check_url, headers=SUPABASE_HEADERS)
+        check_res.raise_for_status()
+        if check_res.json():
+            flash(f"❌ El proyecto '{nombre_proyecto}' ya existe para tu usuario.", 'error')
+            return redirect(url_for('dashboard')) # Redirige al dashboard
 
-        except requests.exceptions.RequestException as e:
-            error_detail = res.text if 'res' in locals() else 'No response from Supabase.'
-            print(f"❌ Error al crear proyecto: {e} - Detalles de Supabase: {error_detail}")
-            flash(f"Error al crear el proyecto: {error_detail}", 'error')
-        except Exception as e:
-            print(f"❌ Error inesperado al crear proyecto: {e}")
-            flash('Error inesperado al crear el proyecto.', 'error')
+        # Insertar nuevo proyecto en Supabase
+        data = {
+            "nombre_proyecto": nombre_proyecto,
+            "doctora_id": doctora_id_creador # Vincula el proyecto al ID del admin que lo crea
+        }
+        res = requests.post(f"{SUPABASE_URL}/rest/v1/proyectos", headers=SUPABASE_SERVICE_HEADERS, json=data)
+        res.raise_for_status()
+        flash(f"✅ Proyecto '{nombre_proyecto}' creado exitosamente.", 'success')
+        return redirect(url_for('dashboard')) 
 
-    # Si es GET request o hay un error, renderiza el dashboard
-    return redirect(url_for('dashboard'))
+    except requests.exceptions.RequestException as e:
+        error_detail = res.text if 'res' in locals() else 'No response from Supabase.'
+        print(f"❌ Error al crear proyecto: {e} - Detalles de Supabase: {error_detail}")
+        flash(f"Error al crear el proyecto: {error_detail}", 'error')
+    except Exception as e:
+        print(f"❌ Error inesperado al crear proyecto: {e}")
+        flash('Error inesperado al crear el proyecto.', 'error')
+
+    return redirect(url_for('dashboard')) # Siempre redirigir al dashboard después de intentar la operación
 
 
 @app.route('/admin/cargar_nomina', methods=['POST'])
@@ -1516,7 +1504,6 @@ def enviar_formulario_a_drive():
 
         campos = {}
         if form_type == 'neurologia':
-            # Campos estrictamente para neurología, como lo pediste
             campos = {
                 "nombre": nombre,
                 "rut": rut,

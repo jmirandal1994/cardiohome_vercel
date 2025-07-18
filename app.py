@@ -779,72 +779,200 @@ def login():
     return render_template('login.html')    
     
 @app.route('/dashboard')
+# Incluimos 'coordinadora' en los roles que pueden acceder al dashboard
+@roles_required(['admin', 'doctora', 'coordinadora'])
 def dashboard():
-    if 'usuario' not in session:
-        return redirect(url_for('index'))
-
-    usuario = session['usuario']
+    # REVERTIDO: Usamos 'usuario' y 'usuario_id' como tus claves originales
+    usuario = session.get('usuario')
     usuario_id = session.get('usuario_id')
-    print(f"DEBUG: Accediendo a dashboard para usuario: {usuario}, ID: {usuario_id}")
+    user_role = session.get('rol') # Obtener el rol del usuario de la sesión
+    user_nombre_completo = session.get('user_nombre') # Nombre completo para el saludo
 
-    doctoras = []
-    establecimientos_admin_list = []
-    admin_nominas_cargadas = []
-    conteo = {}
-    
-    doctor_performance_data = {} # Para admin: conteo de formularios por cada doctora
+    print(f"DEBUG: Accediendo a dashboard para usuario: {usuario}, ID: {usuario_id}, Rol: {user_role}")
+
+    # Inicializar todas las variables que se pasarán a la plantilla
+    doctoras = [] # Lista de doctoras (admin/coordinadora)
+    establecimientos_admin_list = [] # Lista de establecimientos (admin/coordinadora)
+    admin_nominas_cargadas = [] # Nóminas cargadas (admin/coordinadora)
+    conteo = {} # Para formularios por establecimiento (admin/coordinadora)
+    doctor_performance_data = {} # Para admin y coordinadora: conteo de formularios por cada doctora
     doctor_performance_data_single_doctor = {'completed': 0, 'pending': 0, 'total': 0} # Para doctora individual
-
-
+    eventos = [] # Visitas programadas (establecimientos)
+    formularios = [] # Formularios subidos (todos)
+    assigned_nominations = [] # Nóminas asignadas (solo para doctora)
+    stats = {'total_nominas': 0, 'total_estudiantes': 0, 'formularios_completados': 0} # Estadísticas generales (admin/coordinadora)
     campos_establecimientos = "id,nombre,fecha,horario,observaciones,cantidad_alumnos,url_archivo,nombre_archivo,doctora_id"
-    eventos = []
+
+    # Lógica para obtener datos según el rol
+    # Las secciones de 'admin' ahora también aplican a 'coordinadora'
+    if user_role == 'admin' or user_role == 'coordinadora':
+        try:
+            url_doctoras = f"{SUPABASE_URL}/rest/v1/doctoras"
+            print(f"DEBUG: URL para obtener doctoras (admin/coordinadora con service key): {url_doctoras}")
+            res_doctoras = requests.get(url_doctoras, headers=SUPABASE_SERVICE_HEADERS)
+            res_doctoras.raise_for_status()
+            doctoras_raw = res_doctoras.json()
+            for doc in doctoras_raw:
+                doctoras.append({'id': doc['id'], 'usuario': doc['usuario']})
+            print(f"DEBUG: Doctoras recibidas (admin/coordinadora): {doctoras}")
+        except requests.exceptions.RequestException as e:
+            print(f"❌ ERROR AL OBTENER DOCTORAS (ADMIN/COORDINADORA DASHBOARD) CON SERVICE KEY: {e} - {res_doctoras.text if 'res_doctoras' in locals() else ''}")
+            flash('Error crítico al cargar doctoras.', 'error')
+            doctoras_raw = [] # Asegurar que esté definida para el loop de performance
+
+        try:
+            url_establecimientos_admin = f"{SUPABASE_URL}/rest/v1/establecimientos?select=id,nombre"
+            print(f"DEBUG: URL para obtener establecimientos (admin/coordinadora con service key): {url_establecimientos_admin}")
+            res_establecimientos = requests.get(url_establecimientos_admin, headers=SUPABASE_SERVICE_HEADERS)
+            res_establecimientos.raise_for_status()
+            establecimientos_admin_list = res_establecimientos.json()
+            print(f"DEBUG: Establecimientos recibidos (admin/coordinadora): {establecimientos_admin_list}")
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Error al obtener establecimientos (ADMIN/COORDINADORA DASHBOARD) CON SERVICE KEY: {e}")
+            print(f"Response text: {res_establecimientos.text if 'res_establecimientos' in locals() else 'No response'}")
+            flash('Error crítico al cargar establecimientos.', 'error')
+            establecimientos_admin_list = []
+
+        try:
+            url_admin_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina,tipo_nomina,doctora_id,url_excel_original,nombre_excel_original,form_type"
+            print(f"DEBUG: URL para obtener nóminas cargadas (admin/coordinadora): {url_admin_nominas}")
+            res_admin_nominas = requests.get(url_admin_nominas, headers=SUPABASE_SERVICE_HEADERS)
+            res_admin_nominas.raise_for_status()
+            admin_nominas_cargadas = res_admin_nominas.json()
+            print(f"DEBUG: Nóminas cargadas (admin/coordinadora) recibidas: {admin_nominas_cargadas}")
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Error al obtener nóminas cargadas (ADMIN/COORDINADORA): {e}")
+            print(f"Response text: {res_admin_nominas.text if 'res_admin_nominas' in locals() else 'No response'}")
+            flash('Error al cargar la lista de nóminas.', 'error')
+        
+        # --- LÓGICA DE RENDIMIENTO POR DOCTORA PARA ADMIN Y COORDINADORA ---
+        if doctoras_raw: # Solo si se pudieron obtener las doctoras
+            for doc in doctoras_raw:
+                doctor_id = doc['id']
+                doctor_name = doc['usuario']
+                try:
+                    url_doctor_forms_count = (
+                        f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                        f"?doctora_evaluadora_id=eq.{doctor_id}"
+                        f"&fecha_relleno.not.is.null"
+                        f"&select=count"
+                    )
+                    print(f"DEBUG: URL para contar formularios de doctora {doctor_name} (admin/coordinadora view): {url_doctor_forms_count}")
+                    res_doctor_forms = requests.get(url_doctor_forms_count, headers=SUPABASE_SERVICE_HEADERS)
+                    res_doctor_forms.raise_for_status()
+                    count_range = res_doctor_forms.headers.get('Content-Range')
+                    completed_forms_count = 0
+                    if count_range:
+                        try:
+                            completed_forms_count = int(count_range.split('/')[-1])
+                        except ValueError:
+                            print(f"ADVERTENCIA: 'Content-Range' para formularios completados de doctora {doctor_name} no es un número válido: {count_range}")
+                            pass
+                    
+                    doctor_performance_data[doctor_name] = completed_forms_count
+                    print(f"DEBUG: Doctora {doctor_name} (ID: {doctor_id}) ha completado {completed_forms_count} formularios.")
+
+                except requests.exceptions.RequestException as e:
+                    print(f"❌ ERROR AL OBTENER FORMULARIOS COMPLETADOS PARA DOCTORA {doctor_name} (ADMIN/COORDINADORA VIEW): {e}")
+                    doctor_performance_data[doctor_name] = 0
+                except Exception as e:
+                    print(f"❌ Error inesperado al procesar rendimiento de doctora {doctor_name} (admin/coordinadora view): {e}")
+                    doctor_performance_data[doctor_name] = 0
+        
+        # Estadísticas generales para admin y coordinadora
+        try:
+            res_total_estudiantes = requests.get(
+                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count",
+                headers=SUPABASE_SERVICE_HEADERS
+            )
+            res_total_estudiantes.raise_for_status()
+            total_estudiantes_range = res_total_estudiantes.headers.get('Content-Range')
+            if total_estudiantes_range:
+                try:
+                    stats['total_estudiantes'] = int(total_estudiantes_range.split('/')[-1])
+                except ValueError:
+                    print(f"ADVERTENCIA: 'Content-Range' para el total de estudiantes no es un número válido: {total_estudiantes_range}")
+            
+            res_forms_completed = requests.get(
+                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?fecha_relleno.not.is.null&select=count",
+                headers=SUPABASE_SERVICE_HEADERS
+            )
+            res_forms_completed.raise_for_status()
+            forms_completed_range = res_forms_completed.headers.get('Content-Range')
+            if forms_completed_range:
+                try:
+                    stats['formularios_completados'] = int(forms_completed_range.split('/')[-1])
+                except ValueError:
+                    print(f"ADVERTENCIA: 'Content-Range' para formularios completados globalmente no es un número válido: {forms_completed_range}")
+            
+            stats['total_nominas'] = len(admin_nominas_cargadas) # Ya obtenidas arriba
+
+            print(f"DEBUG: Estadísticas generales (admin/coordinadora): {stats}")
+
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Error al obtener estadísticas generales para admin/coordinadora: {e}")
+            flash('Error al cargar las estadísticas generales del dashboard.', 'error')
+        except Exception as e:
+            print(f"❌ Error inesperado al procesar estadísticas generales para admin/coordinadora: {e}")
+            flash(f'Error inesperado al cargar estadísticas: {e}', 'error')
+
+
+    # Lógica para obtener eventos (visitas) - común o diferenciado
     try:
-        if usuario != 'admin':
+        # Si el rol es 'doctora', solo ve sus establecimientos asignados
+        if user_role == 'doctora':
             url_eventos = (
                 f"{SUPABASE_URL}/rest/v1/establecimientos"
                 f"?doctora_id=eq.{usuario_id}"
                 f"&select={campos_establecimientos}"
             )
-        else:
+        else: # admin y coordinadora ven todos los establecimientos
             url_eventos = f"{SUPABASE_URL}/rest/v1/establecimientos?select={campos_establecimientos}"
             
         print(f"DEBUG: URL para obtener eventos: {url_eventos}")
-        res_eventos = requests.get(url_eventos, headers=SUPABASE_HEADERS)
+        res_eventos = requests.get(url_eventos, headers=SUPABASE_HEADERS) # headers=SUPABASE_HEADERS para lectura general
         res_eventos.raise_for_status()
         eventos = res_eventos.json()
         print(f"DEBUG: Eventos recibidos: {eventos}")
 
         if isinstance(eventos, list):
-            eventos.sort(key=lambda e: e.get('horario', '').split(' - ')[0] if e.get('horario') else '')
+            eventos.sort(key=lambda e: (e.get('fecha', ''), e.get('horario', ''))) # Ordenar por fecha y luego horario
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener eventos: {e}")
         print(f"Response text: {res_eventos.text if 'res_eventos' in locals() else 'No response'}")
         flash('Error al cargar el calendario de visitas.', 'error')
 
-    formularios = []
+    # Lógica para formularios subidos (todos los roles pueden verlos)
     try:
         url_formularios_subidos = f"{SUPABASE_URL}/rest/v1/formularios_subidos"
         print(f"DEBUG: URL para obtener formularios subidos: {url_formularios_subidos}")
-        res_formularios = requests.get(url_formularios_subidos, headers=SUPABASE_HEADERS)
+        res_formularios = requests.get(url_formularios_subidos, headers=SUPABASE_HEADERS) # headers=SUPABASE_HEADERS para lectura general
         res_formularios.raise_for_status()
         formularios = res_formularios.json()
         print(f"DEBUG: Formularios subidos recibidos: {formularios}")
+        # Conteo de formularios por establecimiento para admin/coordinadora
+        if user_role == 'admin' or user_role == 'coordinadora':
+            for f in formularios:
+                if isinstance(f, dict) and 'establecimientos_id' in f:
+                    est_id = f['establecimientos_id']
+                    conteo[est_id] = conteo.get(est_id, 0) + 1
+            print(f"DEBUG: Conteo de formularios por establecimiento: {conteo}")
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener formularios subidos: {e}")
         print(f"Response text: {res_formularios.text if 'res_formularios' in locals() else 'No response'}")
         flash('Error al cargar los formularios subidos.', 'error')
 
-    assigned_nominations = []
-    if usuario != 'admin':
+    # Lógica para nóminas asignadas (solo doctora)
+    if user_role == 'doctora':
         try:
             url_nominas_asignadas = (
                 f"{SUPABASE_URL}/rest/v1/nominas_medicas"
                 f"?doctora_id=eq.{usuario_id}"
                 f"&select=id,nombre_nomina,tipo_nomina,form_type" # Incluir form_type
             )
-            print(f"DEBUG: URL para obtener nóminas asignadas (doctor): {url_nominas_asignadas}")
-            # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para que la doctora vea sus nóminas
-            res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_SERVICE_HEADERS) 
+            print(f"DEBUG: URL para obtener nóminas asignadas (doctora): {url_nominas_asignadas}")
+            # Usar SUPABASE_SERVICE_HEADERS para que la doctora vea sus nóminas (si la RLS lo requiere)
+            res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_SERVICE_HEADERS)
             res_nominas_asignadas.raise_for_status()
             raw_nominas = res_nominas_asignadas.json()
             print(f"DEBUG: Nóminas raw recibidas para doctora: {raw_nominas}")
@@ -872,16 +1000,17 @@ def dashboard():
                     f"&select=count"
                 )
                 print(f"DEBUG: URL para contar todos los estudiantes en nóminas asignadas a doctora {usuario_id}: {url_total_students_assigned_to_doctor_nominations}")
-                res_total_students = requests.get(url_total_students_assigned_to_doctor_nominations, headers=SUPABASE_SERVICE_HEADERS) # Usar SERVICE_HEADERS
+                # Usar SERVICE_HEADERS para el conteo de estudiantes en nóminas asignadas
+                res_total_students = requests.get(url_total_students_assigned_to_doctor_nominations, headers=SUPABASE_SERVICE_HEADERS)
                 res_total_students.raise_for_status()
                 total_students_count_range = res_total_students.headers.get('Content-Range')
                 if total_students_count_range:
                     try:
                         total_students_in_assigned_nominas = int(total_students_count_range.split('/')[-1])
                     except ValueError:
+                        print(f"ADVERTENCIA: 'Content-Range' para el total de estudiantes de doctora {usuario} no es un número válido: {total_students_count_range}")
                         pass
                 print(f"DEBUG: Total de estudiantes en nóminas asignadas para doctora {usuario_id}: {total_students_in_assigned_nominas}")
-
 
             # 2. Contar los estudiantes que esta DOCTORA ESPECÍFICA ha evaluado
             url_completed_by_this_doctor = (
@@ -892,7 +1021,7 @@ def dashboard():
             )
             print(f"DEBUG: URL para contar formularios completados por doctora {usuario_id}: {url_completed_by_this_doctor}")
             # Usar SERVICE_HEADERS para el conteo de evaluaciones, ya que accede a datos de 'fecha_relleno' y 'doctora_evaluadora_id'
-            res_completed_by_this_doctor = requests.get(url_completed_by_this_doctor, headers=SUPABASE_SERVICE_HEADERS) 
+            res_completed_by_this_doctor = requests.get(url_completed_by_this_doctor, headers=SUPABASE_SERVICE_HEADERS)
             res_completed_by_this_doctor.raise_for_status()
             completed_forms_count_range = res_completed_by_this_doctor.headers.get('Content-Range')
             completed_count_by_doctor = 0
@@ -900,9 +1029,9 @@ def dashboard():
                 try:
                     completed_count_by_doctor = int(completed_forms_count_range.split('/')[-1])
                 except ValueError:
+                    print(f"ADVERTENCIA: 'Content-Range' para formularios completados por doctora {usuario} no es un número válido: {completed_forms_count_range}")
                     pass
             print(f"DEBUG: Formularios completados por doctora {usuario_id}: {completed_count_by_doctor}")
-
 
             doctor_performance_data_single_doctor = {
                 'completed': completed_count_by_doctor,
@@ -911,115 +1040,37 @@ def dashboard():
             }
             print(f"DEBUG: Rendimiento final para doctora {usuario_id}: {doctor_performance_data_single_doctor}")
 
-
         except requests.exceptions.RequestException as e:
-            print(f"❌ Error al obtener nóminas asignadas o conteo de evaluaciones: {e}")
+            print(f"❌ Error al obtener nóminas asignadas o conteo de evaluaciones para doctora: {e}")
             print(f"Response text: {res_nominas_asignadas.text if 'res_nominas_asignadas' in locals() else 'No response'}")
             flash('Error al cargar sus nóminas asignadas o conteo de evaluaciones.', 'error')
 
-    if usuario == 'admin':
-        try:
-            url_doctoras = f"{SUPABASE_URL}/rest/v1/doctoras"
-            print(f"DEBUG: URL para obtener doctoras (admin con service key): {url_doctoras}") 
-            res_doctoras = requests.get(url_doctoras, headers=SUPABASE_SERVICE_HEADERS) 
-            res_doctoras.raise_for_status()
-            doctoras_raw = res_doctoras.json()
-            doctoras = []
-            for doc in doctoras_raw:
-                doctoras.append({'id': doc['id'], 'usuario': doc['usuario']})
-            print(f"DEBUG: Doctoras recibidas (admin): {doctoras}")
-        except requests.exceptions.RequestException as e:
-            print(f"❌ ERROR AL OBTENER DOCTORAS (ADMIN DASHBOARD) CON SERVICE KEY: {e} - {res_doctoras.text if 'res_doctoras' in locals() else ''}")
-            flash('Error crítico al cargar doctoras en el panel de administrador. Verifique su SUPABASE_SERVICE_KEY.', 'error')
-            doctoras = [] 
-
-        try:
-            url_establecimientos_admin = f"{SUPABASE_URL}/rest/v1/establecimientos?select=id,nombre"
-            print(f"DEBUG: URL para obtener establecimientos (admin con service key): {url_establecimientos_admin}") 
-            res_establecimientos = requests.get(url_establecimientos_admin, headers=SUPABASE_SERVICE_HEADERS) 
-            res_establecimientos.raise_for_status()
-            establecimientos_admin_list = res_establecimientos.json()
-            print(f"DEBUG: Establecimientos recibidos (admin): {establecimientos_admin_list}")
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Error al obtener establecimientos (ADMIN DASHBOARD) CON SERVICE KEY: {e}")
-            print(f"Response text: {res_establecimientos.text if 'res_establecimientos' in locals() else 'No response'}")
-            flash('Error crítico al cargar establecimientos en el panel de administrador. Verifique su SUPABASE_SERVICE_KEY.', 'error')
-            establecimientos_admin_list = [] 
-
-
-        for f in formularios:
-            if isinstance(f, dict) and 'establecimientos_id' in f:
-                est_id = f['establecimientos_id']
-                conteo[est_id] = conteo.get(est_id, 0) + 1
-        print(f"DEBUG: Conteo de formularios por establecimiento: {conteo}")
-
-        try:
-            # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para que el admin vea todas las nóminas
-            url_admin_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina,tipo_nomina,doctora_id,url_excel_original,nombre_excel_original,form_type"
-            print(f"DEBUG: URL para obtener nóminas cargadas por admin: {url_admin_nominas}")
-            res_admin_nominas = requests.get(url_admin_nominas, headers=SUPABASE_SERVICE_HEADERS) 
-            res_admin_nominas.raise_for_status()
-            admin_nominas_cargadas = res_admin_nominas.json()
-            print(f"DEBUG: Nóminas cargadas por admin recibidas: {admin_nominas_cargadas}")
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Error al obtener nóminas cargadas por admin: {e}")
-            print(f"Response text: {res_admin_nominas.text if 'res_admin_nominas' in locals() else 'No response'}")
-            flash('Error al cargar la lista de nóminas en la vista de administrador.', 'error')
-        
-        # --- LÓGICA DE RENDIMIENTO POR DOCTORA PARA ADMIN ---
-        if doctoras_raw: 
-            for doc in doctoras_raw:
-                doctor_id = doc['id']
-                doctor_name = doc['usuario']
-                try:
-                    url_doctor_forms_count = (
-                        f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                        f"?doctora_evaluadora_id=eq.{doctor_id}" 
-                        f"&fecha_relleno.not.is.null" 
-                        f"&select=count" 
-                    )
-                    print(f"DEBUG: URL para contar formularios de doctora {doctor_name} (admin view): {url_doctor_forms_count}")
-                    res_doctor_forms = requests.get(url_doctor_forms_count, headers=SUPABASE_SERVICE_HEADERS) 
-                    res_doctor_forms.raise_for_status()
-                    count_range = res_doctor_forms.headers.get('Content-Range')
-                    completed_forms_count = 0
-                    if count_range:
-                        try:
-                            completed_forms_count = int(count_range.split('/')[-1])
-                        except ValueError:
-                            pass
-                    
-                    doctor_performance_data[doctor_name] = completed_forms_count
-                    print(f"DEBUG: Doctora {doctor_name} (ID: {doctor_id}) ha completado {completed_forms_count} formularios.")
-
-                except requests.exceptions.RequestException as e:
-                    print(f"❌ ERROR AL OBTENER FORMULARIOS COMPLETADOS PARA DOCTORA {doctor_name} (ADMIN VIEW): {e}")
-                    doctor_performance_data[doctor_name] = 0 
-                except Exception as e:
-                    print(f"❌ Error inesperado al procesar rendimiento de doctora {doctor_name} (admin view): {e}")
-                    doctor_performance_data[doctor_name] = 0
-
-
+    # Pasar todas las variables a la plantilla. Jinja2 manejará cuáles existen o no.
     return render_template(
         'dashboard.html',
-        usuario=usuario,
+        usuario=usuario, # Nombre de usuario de login (ej. 'admin', 'doctora1', 'coordinadora1')
+        user_nombre_completo=user_nombre_completo, # Nombre completo para el saludo
+        current_user_role=user_role, # Rol para renderizado condicional en HTML
         eventos=eventos,
-        doctoras=doctoras,
-        establecimientos=establecimientos_admin_list,
-        formularios=formularios,
-        conteo=conteo,
-        assigned_nominations=assigned_nominations,
-        admin_nominas_cargadas=admin_nominas_cargadas,
-        doctor_performance_data=doctor_performance_data, 
-        doctor_performance_data_single_doctor=doctor_performance_data_single_doctor 
+        doctoras=doctoras, # Relevante para admin/coordinadora
+        establecimientos=establecimientos_admin_list, # Relevante para admin/coordinadora
+        formularios=formularios, # Relevante para todos
+        conteo=conteo, # Relevante para admin/coordinadora
+        assigned_nominations=assigned_nominations, # Solo relevante para doctora
+        admin_nominas_cargadas=admin_nominas_cargadas, # Relevante para admin/coordinadora
+        doctor_performance_data=doctor_performance_data, # Relevante para admin/coordinadora
+        doctor_performance_data_single_doctor=doctor_performance_data_single_doctor, # Solo relevante para doctora
+        stats=stats # Relevante para admin/coordinadora
     )
-
 @app.route('/logout')
+# Incluimos 'coordinadora' en los roles que pueden cerrar sesión
+@roles_required(['admin', 'doctora', 'coordinadora'])
 def logout():
+    print(f"DEBUG LOGOUT: Cerrando sesión para usuario_id: {session.get('usuario_id')}, Rol: {session.get('rol')}")
     session.clear()
     flash('Has cerrado sesión correctamente.', 'info')
-    return redirect(url_for('index'))
-
+    return redirect(url_for('login'))
+    
 @app.route('/admin/agregar', methods=['POST'])
 def admin_agregar():
     if session.get('usuario') != 'admin':

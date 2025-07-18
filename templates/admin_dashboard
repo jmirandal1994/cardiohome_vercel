@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - CardioHome</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+    <style>
+        /* Custom CSS variables */
+        :root {
+            --primary-dark: hsl(210, 29%, 24%); /* Deep Slate Blue */
+            --primary-medium: hsl(210, 15%, 35%); /* Darker Grayish Blue */
+            --primary-light: hsl(210, 16%, 95%); /* Light Gray-Blue */
+            --background-accent: hsl(210, 16%, 98%); /* Very Light Gray-Blue */
+            --accent-green: hsl(140, 60%, 40%); /* Forest Green */
+            --accent-red: hsl(0, 70%, 55%); /* Vibrant Red */
+            --accent-blue: hsl(200, 60%, 50%); /* Sky Blue */
+            --text-dark: hsl(210, 10%, 20%);
+            --text-light: hsl(0, 0%, 98%);
+            --border-color: hsl(210, 10%, 88%);
+            --shadow-light: rgba(0, 0, 0, 0.06);
+            --shadow-medium: rgba(0, 0, 0, 0.12);
+            --shadow-strong: rgba(0, 0, 0, 0.2);
+            --border-radius-base: 12px;
+            --padding-base: 25px;
+            --gap-base: 25px;
+        }
+
+        /* Google Fonts for a more professional look */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+        /* General body styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-accent);
+            color: var(--text-dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Header styles */
+        header {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-medium) 100%);
+            color: var(--text-light);
+            padding: 1.5rem 0;
+            text-align: center; /* Centers the h1 and other inline elements */
+            box-shadow: 0 6px 20px var(--shadow-strong);
+            position: relative;
+            display: flex; /* Using flex to help with vertical alignment if needed */
+            flex-direction: column; /* Stack children vertically */
+            align-items: center; /* Center children horizontally in a column */
+            justify-content: center; /* Center children vertically if space allows */
+            z-index: 10;
+        }
+
+        header img {
+            width: 100px;
+            height: auto;
+            filter: brightness(0) invert(1);
+            margin: 0 auto 5px auto; /* This line centers the image horizontally */
+            display: block; /* Ensures the image behaves as a block element for margin:auto to work */
+        }
+
+        header h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 28px;
+            margin-top: 0;
+            margin-bottom: 0;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* Logout button */
+        .logout-btn {
+            background-color: var(--accent-red);
+            color: var(--text-light);
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--border-radius-base);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .logout-btn:hover {
+            background-color: hsl(0, 70%, 45%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .logout-btn i {
+            font-size: 15px;
+        }
+
+        /* Menu button for mobile */
+        .menu-toggle-btn {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 24px;
+            cursor: pointer;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            display: none;
+        }
+
+        /* Main dashboard wrapper */
+        .dashboard-wrapper {
+            display: flex;
+            flex: 1;
+            padding-top: var(--gap-base);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background-color: var(--primary-dark);
+            color: var(--text-light);
+            padding: var(--padding-base);
+            box-shadow: 4px 0 15px var(--shadow-medium);
+            flex-shrink: 0;
+            transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
+            position: sticky;
+            top: 0;
+            height: calc(100vh - 80px);
+            overflow-y: auto;
+            border-radius: 0 var(--border-radius-base) var(--border-radius-base) 0;
+        }
+
+        .sidebar.collapsed {
+            width: 0;
+            transform: translateX(-250px);
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-nav li {
+            margin-bottom: 10px;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            color: var(--text-light);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            font-weight: 500;
+        }
+
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background-color: var(--primary-medium);
+            color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .sidebar-nav a i {
+            font-size: 18px;
+        }
+
+        /* Main dashboard content */
+        .dashboard-content {
+            flex-grow: 1;
+            padding: 0 var(--gap-base) var(--gap-base) var(--gap-base);
+            transition: margin-left 0.3s ease-in-out;
+        }
+
+        /* Adjustment when sidebar is collapsed */
+        .dashboard-wrapper.sidebar-active .dashboard-content {
+            margin-left: 250px;
+        }
+
+        /* Content section */
+        .content-section {
+            display: none;
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Statistics cards */
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--gap-base);
+            margin-bottom: var(--gap-base);
+        }
+
+        .summary .card {
+            text-align: center;
+            font-weight: 600;
+            font-size: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .summary .card p {
+            font-size: 30px;
+            margin: 10px 0 0;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .summary .card:nth-child(1) { background-color: hsl(140, 50%, 90%); color: var(--accent-green); border: 1px solid hsl(140, 50%, 80%); }
+        .summary .card:nth-child(2) { background-color: hsl(0, 60%, 92%); color: var(--accent-red); border: 1px solid hsl(0, 60%, 85%); }
+        .summary .card:nth-child(3) { background-color: hsl(200, 70%, 90%); color: var(--accent-blue); border: 1px solid hsl(200, 70%, 85%); }
+
+        .summary .card h3 i {
+            font-size: 22px;
+            margin-right: 8px;
+            color: inherit;
+        }
+
+        /* General cards */
+        .card {
+            background: white;
+            padding: var(--padding-base);
+            border-radius: var(--border-radius-base);
+            box-shadow: 0 4px 18px var(--shadow-medium);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-color);
+            position: relative;
+            margin-bottom: var(--gap-base);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px var(--shadow-strong);
+        }
+
+        .card h3 {
+            font-family: 'Montserrat', sans-serif;
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--primary-dark);
+            font-size: 22px;
+            font-weight: 700;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .card h3 i {
+            color: var(--accent-blue);
+            font-size: 1.2em;
+        }
+
+        /* Forms */
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        form label {
+            font-weight: 500;
+            margin-bottom: -10px;
+            color: var(--text-dark);
+            font-size: 0.95em;
+        }
+        form input, form select, form textarea {
+            padding: 12px 15px;
+            margin: 0;
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-size: 15px;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        form input:focus, form select:focus, form textarea:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 4px hsla(200, 60%, 50%, 0.2);
+            outline: none;
+        }
+        form button {
+            padding: 12px 25px;
+            background-color: var(--primary-dark);
+            color: var(--text-light);
+            border: none;
+            border-radius: var(--border-radius-base);
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 16px;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            margin-top: 15px;
+            width: auto;
+            align-self: flex-start;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        form button:hover {
+            background-color: var(--primary-medium);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px var(--shadow-medium);
+        }
+        .filter-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .filter-buttons button {
+            flex-grow: 1;
+            margin-top: 0;
+            align-self: stretch;
+        }
+        #descargarExcel {
+            background-color: var(--accent-green);
+        }
+        #descargarExcel:hover {
+            background-color: hsl(140, 60%, 30%);
+        }
+        #limpiarFiltros {
+            background-color: hsl(210, 10%, 50%);
+        }
+        #limpiarFiltros:hover {
+            background-color: hsl(210, 10%, 40%);
+        }
+        /* Item list (visits, nominations, uploaded forms) */
+        .lista-items {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            margin-top: 20px;
+        }
+        .item-card {
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-base);
+            padding: 15px 20px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .item-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        .item-card h4 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 18px;
+            color: var(--primary-dark);
+            margin: 0 0 5px 0;
+        }
+        .item-card p {
+            font-size: 14px;
+            color: var(--text-dark);
+            margin: 0;
+        }
+        .item-card .actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .item-card .actions button {
+            padding: 8px 15px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .item-card .actions button.edit {
+            background-color: var(--accent-blue);
+            color: white;
+        }
+        .item-card .actions button.edit:hover {
+            background-color: hsl(200, 60%, 40%);
+            transform: translateY(-1px);
+        }
+        .item-card .actions button.delete {
+            background-color: var(--accent-red);
+            color: white;
+        }
+        .item-card .actions button.delete:hover {
+            background-color: hsl(0, 70%, 45%);
+            transform: translateY(-1px);
+        }
+        .item-card .actions button.view {
+            background-color: hsl(210, 10%, 75%);
+            color: var(--text-dark);
+        }
+        .item-card .actions button.view:hover {
+            background-color: hsl(210, 10%, 65%);
+            transform: translateY(-1px);
+        }
+        .item-card .status {
+            font-size: 13px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 5px;
+            align-self: flex-start;
+            margin-top: 5px;
+        }
+        .item-card .status.pending {
+            background-color: hsl(40, 90%, 90%);
+            color: hsl(40, 90%, 40%);
+        }
+        .item-card .status.completed {
+            background-color: hsl(140, 60%, 90%);
+            color: var(--accent-green);
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 15px;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+        }
+        .data-table th {
+            background-color: var(--primary-light);
+            font-weight: 600;
+            color: var(--primary-dark);
+            text-transform: uppercase;
+            font-size: 14px;
+        }
+        .data-table tr:nth-child(even) {
+            background-color: hsl(210, 16%, 98%);
+        }
+        .data-table tr:hover {
+            background-color: hsl(210, 16%, 93%);
+        }
+        .data-table td .actions {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .data-table td .actions button {
+            padding: 6px 10px;
+            font-size: 12px;
+            border-radius: 5px;
+        }
+
+        /* Charts */
+        .chart-container {
+            position: relative;
+            height: 400px; /* Adjust height as needed */
+            width: 100%;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .dashboard-wrapper {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                border-radius: 0;
+                transform: translateX(0); /* Ensure sidebar is visible */
+                padding: var(--padding-base);
+                box-shadow: 0 4px 15px var(--shadow-medium);
+            }
+            .sidebar.collapsed {
+                width: 100%;
+                height: 0;
+                overflow: hidden;
+                padding: 0;
+            }
+            .dashboard-wrapper.sidebar-active .dashboard-content {
+                margin-left: 0;
+            }
+            .dashboard-content {
+                padding-top: var(--gap-base);
+            }
+            .menu-toggle-btn {
+                display: block; /* Show menu button on smaller screens */
+            }
+            header {
+                padding-bottom: 20px;
+            }
+            .logout-btn {
+                position: static;
+                margin-top: 15px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 24px;
+            }
+            .summary {
+                grid-template-columns: 1fr;
+            }
+            .card {
+                padding: 20px;
+            }
+            form input, form select, form textarea {
+                font-size: 14px;
+                padding: 10px 12px;
+            }
+            form button {
+                font-size: 14px;
+                padding: 10px 20px;
+            }
+            .item-card {
+                padding: 12px 15px;
+            }
+            .item-card h4 {
+                font-size: 16px;
+            }
+            .item-card p {
+                font-size: 13px;
+            }
+            .item-card .actions button {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <button class="menu-toggle-btn" id="menuToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="CardioHome Logo">
+        <h1>Bienvenido, {{ current_user.nombre }}!</h1>
+        <form action="{{ url_for('logout') }}" method="post">
+            <button type="submit" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </form>
+    </header>
+
+    <div class="dashboard-wrapper" id="dashboardWrapper">
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="#" data-section="inicio" class="active"><i class="fas fa-home"></i> Inicio</a></li>
+                    <li><a href="#" data-section="gestion-usuarios"><i class="fas fa-users-cog"></i> Gestión de Usuarios</a></li>
+                    <li><a href="#" data-section="gestion-nominas"><i class="fas fa-file-invoice"></i> Gestión de Nóminas</a></li>
+                    <li><a href="#" data-section="reportes"><i class="fas fa-chart-line"></i> Reportes</a></li>
+                    <li><a href="#" data-section="cargas-masivas"><i class="fas fa-upload"></i> Cargas Masivas</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="dashboard-content">
+            <div id="inicio" class="content-section active">
+                <div class="summary">
+                    <div class="card">
+                        <h3><i class="fas fa-file-alt"></i> Total Nóminas</h3>
+                        <p>{{ stats.total_nominas }}</p>
+                    </div>
+                    <div class="card">
+                        <h3><i class="fas fa-user-friends"></i> Total Estudiantes</h3>
+                        <p>{{ stats.total_estudiantes }}</p>
+                    </div>
+                    <div class="card">
+                        <h3><i class="fas fa-check-circle"></i> Formularios Completados</h3>
+                        <p>{{ stats.formularios_completados }}</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><i class="fas fa-chart-pie"></i> Rendimiento por Doctor</h3>
+                    <div class="chart-container">
+                        <canvas id="doctorPerformanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="gestion-usuarios" class="content-section">
+                <div class="card">
+                    <h3><i class="fas fa-user-plus"></i> Registrar Nuevo Usuario</h3>
+                    <form action="{{ url_for('register') }}" method="post">
+                        <label for="nombre">Nombre Completo:</label>
+                        <input type="text" id="nombre" name="nombre" required>
+
+                        <label for="email">Correo Electrónico:</label>
+                        <input type="email" id="email" name="email" required>
+
+                        <label for="password">Contraseña:</label>
+                        <input type="password" id="password" name="password" required>
+
+                        <label for="rol">Rol:</label>
+                        <select id="rol" name="rol" required>
+                            <option value="administrador">Administrador</option>
+                            <option value="doctora">Doctora</option>
+                            <option value="coordinadora">Coordinadora</option>
+                        </select>
+                        <button type="submit"><i class="fas fa-user-plus"></i> Registrar Usuario</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3><i class="fas fa-users"></i> Usuarios Registrados</h3>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Email</th>
+                                    <th>Rol</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>{{ user.id }}</td>
+                                    <td>{{ user.nombre }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ user.rol }}</td>
+                                    <td>
+                                        <div class="actions">
+                                            <button onclick="editUser({{ user.id }}, '{{ user.nombre }}', '{{ user.email }}', '{{ user.rol }}')" class="edit"><i class="fas fa-edit"></i> Editar</button>
+                                            <button onclick="deleteUser({{ user.id }})" class="delete"><i class="fas fa-trash-alt"></i> Eliminar</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="gestion-nominas" class="content-section">
+                <div class="card">
+                    <h3><i class="fas fa-file-invoice"></i> Cargar Nueva Nómina</h3>
+                    <form action="{{ url_for('upload_nomina') }}" method="post" enctype="multipart/form-data">
+                        <label for="nomina_file">Archivo de Nómina (Excel):</label>
+                        <input type="file" id="nomina_file" name="nomina_file" accept=".xls,.xlsx,.csv" required>
+                        <button type="submit"><i class="fas fa-upload"></i> Cargar Nómina</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3><i class="fas fa-list-alt"></i> Nóminas Cargadas</h3>
+                    <ul class="lista-items">
+                        {% for nomina in nominas %}
+                        <li class="item-card">
+                            <h4>Nómina: {{ nomina.nombre_archivo }} (ID: {{ nomina.id }})</h4>
+                            <p><strong>Fecha de Carga:</strong> {{ nomina.fecha_carga.strftime('%Y-%m-%d %H:%M') }}</p>
+                            <p><strong>Total Estudiantes:</strong> {{ nomina.total_estudiantes }}</p>
+                            <p><strong>Cargada por:</strong> {{ nomina.cargado_por_nombre }}</p>
+                            <div class="actions">
+                                <button onclick="deleteNomina({{ nomina.id }})" class="delete"><i class="fas fa-trash-alt"></i> Eliminar Nómina</button>
+                                <a href="{{ url_for('nomina_detail', nomina_id=nomina.id) }}" class="view-btn">
+                                    <button class="view"><i class="fas fa-eye"></i> Ver Detalles</button>
+                                </a>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <div id="reportes" class="content-section">
+                <div class="card">
+                    <h3><i class="fas fa-file-excel"></i> Generar Reporte de Actividad</h3>
+                    <form action="{{ url_for('generate_report') }}" method="post">
+                        <label for="report_start_date">Fecha Inicio:</label>
+                        <input type="date" id="report_start_date" name="start_date" required>
+
+                        <label for="report_end_date">Fecha Fin:</label>
+                        <input type="date" id="report_end_date" name="end_date" required>
+
+                        <button type="submit"><i class="fas fa-file-excel"></i> Generar Reporte</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="cargas-masivas" class="content-section">
+                <div class="card">
+                    <h3><i class="fas fa-cloud-upload-alt"></i> Carga Masiva de Documentos</h3>
+                    <form action="{{ url_for('upload_mass_documents') }}" method="post" enctype="multipart/form-data">
+                        <label for="documents_zip">Archivo ZIP de Documentos:</label>
+                        <input type="file" id="documents_zip" name="documents_zip" accept=".zip" required>
+                        <button type="submit"><i class="fas fa-upload"></i> Cargar Documentos</button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const dashboardWrapper = document.getElementById('dashboardWrapper');
+            const navLinks = document.querySelectorAll('.sidebar-nav a');
+            const contentSections = document.querySelectorAll('.content-section');
+
+            menuToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('collapsed');
+                dashboardWrapper.classList.toggle('sidebar-active');
+            });
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    navLinks.forEach(nav => nav.classList.remove('active'));
+                    this.classList.add('active');
+
+                    const targetSection = this.dataset.section;
+                    contentSections.forEach(section => {
+                        if (section.id === targetSection) {
+                            section.classList.add('active');
+                        } else {
+                            section.classList.remove('active');
+                        }
+                    });
+                });
+            });
+
+            // Función para inicializar el gráfico de rendimiento del doctor (Administrador)
+            function initDoctorPerformanceChart(data) {
+                const ctx = document.getElementById('doctorPerformanceChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Formularios Completados',
+                            data: data.values,
+                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Rendimiento de Doctores (Formularios Completados)',
+                                font: { size: 18, family: 'Montserrat' },
+                                color: '#333'
+                            },
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    font: {
+                                        family: 'Inter'
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Cantidad de Formularios',
+                                    font: { family: 'Inter' }
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Doctor',
+                                    font: { family: 'Inter' }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Dummy data for Administrator's Doctor Performance Chart
+            const doctorPerformanceData = {
+                labels: ['Dr. Ana', 'Dr. Carlos', 'Dra. Laura', 'Dr. Miguel'],
+                values: [150, 120, 180, 90]
+            };
+            initDoctorPerformanceChart(doctorPerformanceData);
+
+            // Funciones de SweetAlert2 para acciones de usuario y nómina (Administrador)
+            window.editUser = function(id, nombre, email, rol) {
+                Swal.fire({
+                    title: 'Editar Usuario',
+                    html:
+                        `<input id="swal-input1" class="swal2-input" value="${nombre}" placeholder="Nombre Completo">` +
+                        `<input id="swal-input2" class="swal2-input" value="${email}" placeholder="Correo Electrónico">` +
+                        `<select id="swal-input3" class="swal2-input">` +
+                        `<option value="administrador" ${rol === 'administrador' ? 'selected' : ''}>Administrador</option>` +
+                        `<option value="doctora" ${rol === 'doctora' ? 'selected' : ''}>Doctora</option>` +
+                        `<option value="coordinadora" ${rol === 'coordinadora' ? 'selected' : ''}>Coordinadora</option>` +
+                        `</select>`,
+                    focusConfirm: false,
+                    preConfirm: () => {
+                        const newNombre = Swal.getPopup().querySelector('#swal-input1').value;
+                        const newEmail = Swal.getPopup().querySelector('#swal-input2').value;
+                        const newRol = Swal.getPopup().querySelector('#swal-input3').value;
+                        if (!newNombre || !newEmail || !newRol) {
+                            Swal.showValidationMessage(`Por favor, rellena todos los campos`);
+                        }
+                        return { id: id, nombre: newNombre, email: newEmail, rol: newRol };
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        fetch('/edit_user', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(result.value)
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire('¡Actualizado!', data.message, 'success').then(() => location.reload());
+                            } else {
+                                Swal.fire('Error', data.message, 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            Swal.fire('Error', 'Error de conexión', 'error');
+                        });
+                    }
+                });
+            };
+
+            window.deleteUser = function(id) {
+                Swal.fire({
+                    title: '¿Estás seguro?',
+                    text: "¡No podrás revertir esto!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Sí, eliminarlo!',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        fetch('/delete_user', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ user_id: id })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire('¡Eliminado!', data.message, 'success').then(() => location.reload());
+                            } else {
+                                Swal.fire('Error', data.message, 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            Swal.fire('Error', 'Error de conexión', 'error');
+                        });
+                    }
+                });
+            };
+
+            window.deleteNomina = function(nomina_id) {
+                Swal.fire({
+                    title: '¿Estás seguro?',
+                    text: "¡Eliminar esta nómina también eliminará a todos los estudiantes asociados!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Sí, eliminar!',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        fetch('/delete_nomina', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ nomina_id: nomina_id })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire('¡Eliminada!', 'La nómina y sus estudiantes han sido eliminados.', 'success')
+                                    .then(() => {
+                                        location.reload();
+                                    });
+                            } else {
+                                Swal.fire('Error', data.message, 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            Swal.fire('Error', 'Error de conexión al eliminar la nómina.', 'error');
+                        });
+                    }
+                });
+            };
+        });
+    </script>
+</body>
+</html>

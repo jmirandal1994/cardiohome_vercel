@@ -5,7 +5,7 @@ import base64
 from werkzeug.utils import secure_filename
 from datetime import datetime, date
 from openpyxl import load_workbook
-from PyPDF2 import PdfReader, PdfWriter
+from functools import wraps # Añade esta línea si no la tienesfrom PyPDF2 import PdfReader, PdfWriter
 from PyPDF2.generic import BooleanObject, NameObject, NumberObject, DictionaryObject
 import mimetypes
 import io

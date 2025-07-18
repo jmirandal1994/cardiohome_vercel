@@ -1010,6 +1010,83 @@ def admin_agregar():
 
     return redirect(url_for('dashboard'))
 
+# --- Rutas de Administración de Proyectos ---
+
+@app.route('/admin/proyectos', methods=['GET'])
+def gestionar_proyectos():
+    if 'usuario' not in session or session.get('rol') != 'administrador':
+        flash('Acceso denegado. Solo administradores pueden gestionar proyectos.', 'danger')
+        return redirect(url_for('index'))
+
+    proyectos = []
+    try:
+        url_proyectos = f"{SUPABASE_URL}/rest/v1/proyectos?select=*"
+        res_proyectos = requests.get(url_proyectos, headers=SUPABASE_SERVICE_HEADERS)
+        res_proyectos.raise_for_status()
+        proyectos = res_proyectos.json()
+        print(f"DEBUG: Proyectos obtenidos: {proyectos}")
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error al obtener proyectos de Supabase: {e}")
+        flash('Error al cargar la lista de proyectos.', 'error')
+    except Exception as e:
+        print(f"❌ Error inesperado al procesar proyectos: {e}")
+        flash('Error inesperado al cargar la lista de proyectos.', 'error')
+
+    # Renderiza la plantilla dashboard con la sección de proyectos activa
+    # Asegúrate de que tu dashboard.html pueda manejar 'active_section'
+    return render_template('dashboard-8.html', active_section='gestionar_proyectos', proyectos=proyectos)
+
+
+@app.route('/admin/crear_proyecto', methods=['GET', 'POST'])
+def crear_proyecto():
+    if 'usuario' not in session or session.get('rol') != 'administrador':
+        flash('Acceso denegado. Solo administradores pueden crear proyectos.', 'danger')
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        nombre_proyecto = request.form.get('nombre_proyecto')
+        descripcion_proyecto = request.form.get('descripcion_proyecto', '') # Campo opcional
+
+        if not nombre_proyecto:
+            flash('El nombre del proyecto es obligatorio.', 'warning')
+            return redirect(url_for('crear_proyecto'))
+
+        try:
+            # Primero, verificar si ya existe un proyecto con ese nombre
+            url_check = f"{SUPABASE_URL}/rest/v1/proyectos?nombre_proyecto=eq.{nombre_proyecto}"
+            res_check = requests.get(url_check, headers=SUPABASE_HEADERS)
+            res_check.raise_for_status()
+            existente = res_check.json()
+
+            if existente:
+                flash(f'Ya existe un proyecto con el nombre "{nombre_proyecto}".', 'warning')
+                return redirect(url_for('crear_proyecto'))
+
+            # Si no existe, insertar el nuevo proyecto
+            data = {
+                "nombre_proyecto": nombre_proyecto,
+                "descripcion": descripcion_proyecto,
+                "fecha_creacion": datetime.now().isoformat()
+            }
+            url_insert = f"{SUPABASE_URL}/rest/v1/proyectos"
+            res_insert = requests.post(url_insert, headers=SUPABASE_HEADERS, data=json.dumps(data))
+            res_insert.raise_for_status()
+
+            flash(f'✅ Proyecto "{nombre_proyecto}" creado exitosamente.', 'success')
+            return redirect(url_for('gestionar_proyectos')) # Redirigir a la vista de proyectos
+
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Error al crear proyecto en Supabase: {e}")
+            flash('Error al crear el proyecto. Por favor, inténtalo de nuevo.', 'error')
+            if 'res_insert' in locals():
+                print(f"Supabase response error: {res_insert.text}")
+        except Exception as e:
+            print(f"❌ Error inesperado al crear proyecto: {e}")
+            flash('Error inesperado al crear el proyecto.', 'error')
+
+    # Para la solicitud GET o si hay un error en POST
+    return render_template('dashboard-8.html', active_section='crear_proyecto')
+
 
 @app.route('/admin/cargar_nomina', methods=['POST'])
 def admin_cargar_nomina():

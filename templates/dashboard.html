@@ -950,11 +950,6 @@
                                                 <i class="fa-solid fa-file-alt"></i> Descargar Formulario Base
                                             </a>
                                         {% endif %}
-                                        <form action="{{ url_for('subir', establecimiento=evento.id) }}" method="POST" enctype="multipart/form-data" class="mt-4">
-                                            <label for="archivo_{{ loop.index }}">Subir Formulario Completado:</label>
-                                            <input type="file" id="archivo_{{ loop.index }}" name="archivo" accept=".pdf,.docx,.doc,.xls,.xlsx,.csv" required />
-                                            <button type="submit" style="background-color: var(--accent-green);"><i class="fa-solid fa-upload"></i> Subir Formulario</button>
-                                        </form>
                                         <form action="{{ url_for('evaluados', establecimiento=evento.id) }}" method="POST" class="mt-4">
                                             <label for="alumnos_evaluados_{{ loop.index }}">Alumnos Evaluados:</label>
                                             <input type="number" id="alumnos_evaluados_{{ loop.index }}" name="alumnos" min="0" placeholder="N° de alumnos evaluados" required />

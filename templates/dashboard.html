@@ -821,9 +821,10 @@
                                         <div class="item-card-details">
                                             <span>Archivo Original: {{ nomina.nombre_excel_original }}</span>
                                             <span>Tipo de Formulario: {{ nomina.form_type | default('No especificado') | capitalize }}</span>
-                                            <!-- Nuevo: Mostrar la doctora_id_para_formulario si existe -->
+                                            <!-- Corregido: Manejo seguro para 'doctora_id_para_formulario' -->
                                             {% if nomina.form_type == 'neurologia' and nomina.doctora_id_para_formulario %}
-                                                <span>Formulario base de: {{ (doctoras | selectattr('id', 'equalto', nomina.doctora_id_para_formulario) | first).usuario if nomina.doctora_id_para_formulario else 'N/A' }}</span>
+                                                {% set doctora_form_obj = doctoras | selectattr('id', 'equalto', nomina.doctora_id_para_formulario) | first %}
+                                                <span>Formulario base de: {{ doctora_form_obj.usuario if doctora_form_obj else 'Doctora no encontrada' }}</span>
                                             {% endif %}
                                         </div>
                                         {% if nomina.url_excel_original %}
@@ -992,9 +993,10 @@
                                             <span>Tipo: {{ nomina.tipo_nomina_display }}</span>
                                         </div>
                                         <div class="item-card-details">
-                                            <!-- Nuevo: Mostrar la doctora_id_para_formulario si existe -->
+                                            <!-- Corregido: Manejo seguro para 'doctora_id_para_formulario' -->
                                             {% if nomina.form_type == 'neurologia' and nomina.doctora_id_para_formulario %}
-                                                <span>Formulario base de: {{ (doctoras | selectattr('id', 'equalto', nomina.doctora_id_para_formulario) | first).usuario if nomina.doctora_id_para_formulario else 'N/A' }}</span>
+                                                {% set doctora_form_obj = doctoras | selectattr('id', 'equalto', nomina.doctora_id_para_formulario) | first %}
+                                                <span>Formulario base de: {{ doctora_form_obj.usuario if doctora_form_obj else 'Doctora no encontrada' }}</span>
                                             {% endif %}
                                         </div>
                                         <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="item-card-action-link">

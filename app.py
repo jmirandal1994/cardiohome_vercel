@@ -17,7 +17,7 @@ import unicodedata
 # Las importaciones específicas para Google Drive API han sido eliminadas.
 
 
-app = Flask(____name__)
+app = Flask(__name__) # <--- ¡CORREGIDO AQUÍ! Era ____name__
 app.secret_key = os.getenv("SECRET_KEY", "clave_super_segura_cardiohome_2025")
 ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'xls', 'xlsx', 'csv'}
 
@@ -395,7 +395,9 @@ def generar_pdf():
         if doctora_id_para_formulario:
             pdf_base_path = get_doctor_specific_neurologia_pdf(doctora_id_para_formulario)
         else:
-            pdf_base_path = PDF_BASE_NEUROLOGIA # Fallback si no hay doctora_id_para_formulario
+            # Asegúrate de que PDF_BASE_NEUROLOGIA sea una ruta absoluta si no está en el mismo directorio
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            pdf_base_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
     elif form_type == 'medicina_familiar':
         # Asegúrate de que PDF_BASE_FAMILIAR sea una ruta absoluta si no está en el mismo directorio
         base_dir = os.path.dirname(os.path.abspath(__file__))

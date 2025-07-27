@@ -754,6 +754,18 @@
                                 <option value="medicina_familiar">Medicina Familiar</option>
                             </select>
 
+                            <!-- Nuevo campo para seleccionar la doctora cuyo PDF base de neurología se usará -->
+                            <div id="doctora_para_formulario_div" class="mb-4" style="display: none;">
+                                <label for="doctora_id_para_formulario" class="block text-gray-700 text-sm font-bold mb-2">Doctora para el Formulario (solo Neurología):</label>
+                                <select name="doctora_id_para_formulario" id="doctora_id_para_formulario" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                    <option value="">Seleccione una doctora...</option>
+                                    {% for doc in doctoras %}
+                                        <option value="{{ doc.id }}">{{ doc.usuario }}</option>
+                                    {% endfor %}
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">Este campo es obligatorio si el tipo de nómina es "Neurología".</p>
+                            </div>
+                            
                             <label for="excel_nomina">Archivo Excel/CSV de la Nómina:</label>
                             <input type="file" id="excel_nomina" name="excel" accept=".xls,.xlsx,.csv" required />
                             
@@ -809,6 +821,10 @@
                                         <div class="item-card-details">
                                             <span>Archivo Original: {{ nomina.nombre_excel_original }}</span>
                                             <span>Tipo de Formulario: {{ nomina.form_type | default('No especificado') | capitalize }}</span>
+                                            <!-- Nuevo: Mostrar la doctora_id_para_formulario si existe -->
+                                            {% if nomina.form_type == 'neurologia' and nomina.doctora_id_para_formulario %}
+                                                <span>Formulario base de: {{ (doctoras | selectattr('id', 'equalto', nomina.doctora_id_para_formulario) | first).usuario if nomina.doctora_id_para_formulario else 'N/A' }}</span>
+                                            {% endif %}
                                         </div>
                                         {% if nomina.url_excel_original %}
                                             <a href="{{ nomina.url_excel_original }}" target="_blank" class="item-card-action-link">
@@ -975,6 +991,12 @@
                                             <span>{{ nomina.nombre_establecimiento }}</span>
                                             <span>Tipo: {{ nomina.tipo_nomina_display }}</span>
                                         </div>
+                                        <div class="item-card-details">
+                                            <!-- Nuevo: Mostrar la doctora_id_para_formulario si existe -->
+                                            {% if nomina.form_type == 'neurologia' and nomina.doctora_id_para_formulario %}
+                                                <span>Formulario base de: {{ (doctoras | selectattr('id', 'equalto', nomina.doctora_id_para_formulario) | first).usuario if nomina.doctora_id_para_formulario else 'N/A' }}</span>
+                                            {% endif %}
+                                        </div>
                                         <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="item-card-action-link">
                                             <i class="fa-solid fa-edit"></i> Rellenar y Ver Estudiantes
                                         </a>
@@ -1032,6 +1054,8 @@
             const navLinks = document.querySelectorAll('.nav-link');
             const contentSections = document.querySelectorAll('.content-section');
             const dashboardWrapper = document.querySelector('.dashboard-wrapper');
+            const formTypeNominaSelect = document.getElementById('form_type_nomina');
+            const doctoraParaFormularioDiv = document.getElementById('doctora_para_formulario_div');
 
             // Function to activate a section and deactivate others
             function showSection(sectionId) {
@@ -1088,6 +1112,26 @@
                     }
                 }
             });
+
+            // Lógica para mostrar/ocultar el campo "Doctora para el Formulario"
+            if (formTypeNominaSelect && doctoraParaFormularioDiv) {
+                formTypeNominaSelect.addEventListener('change', function() {
+                    if (this.value === 'neurologia') {
+                        doctoraParaFormularioDiv.style.display = 'block';
+                    } else {
+                        doctoraParaFormularioDiv.style.display = 'none';
+                        // Opcional: limpiar la selección si se oculta
+                        document.getElementById('doctora_id_para_formulario').value = '';
+                    }
+                });
+                // Ejecutar al cargar la página para el estado inicial
+                if (formTypeNominaSelect.value === 'neurologia') {
+                    doctoraParaFormularioDiv.style.display = 'block';
+                } else {
+                    doctoraParaFormularioDiv.style.display = 'none';
+                }
+            }
+
 
             // Initialize by showing the first active section by default
             const initialActiveLink = document.querySelector('.nav-link.active');

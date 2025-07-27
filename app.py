@@ -14,11 +14,7 @@ import json
 import pandas as pd
 import unicodedata
 
-# Importaciones específicas para Google Drive API
-from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from google.auth.transport.requests import Request
+# Las importaciones específicas para Google Drive API han sido eliminadas.
 
 
 app = Flask(__name__)
@@ -53,13 +49,8 @@ SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 SENDGRID_FROM = os.getenv("SENDGRID_FROM_EMAIL", 'your_sendgrid_email@example.com')
 SENDGRID_TO = os.getenv("SENDGRID_ADMIN_EMAIL", 'destination_admin_email@example.com')
 
-# -------------------- Google Drive API Configuration (Empresa) --------------------
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "YOUR_GOOGLE_CLIENT_ID") 
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "YOUR_GOOGLE_CLIENT_SECRET")
-GOOGLE_DRIVE_REFRESH_TOKEN = os.getenv("GOOGLE_DRIVE_REFRESH_TOKEN", None)
-GOOGLE_DRIVE_PARENT_FOLDER_ID = os.getenv("GOOGLE_DRIVE_PARENT_FOLDER_ID", None)
-
-SCOPES = ['https://www.googleapis.com/auth/drive.file'] 
+# -------------------- Google Drive API Configuration (Empresa) - ELIMINADA --------------------
+# Todas las variables de configuración de Google Drive han sido eliminadas.
 
 
 # -------------------- Utilidades --------------------
@@ -159,110 +150,9 @@ def get_form_field_value(field_name, form_data, return_none_if_empty=False):
     return stripped_value
 
 
-# -------------------- Google Drive API Functions (Empresa) --------------------
+# -------------------- Google Drive API Functions (Empresa) - ELIMINADAS --------------------
+# Todas las funciones relacionadas con Google Drive han sido eliminadas.
 
-_COMPANY_DRIVE_CREDS = None # Variable global para almacenar las credenciales de la empresa
-
-def get_company_google_credentials():
-    """
-    Obtiene y refresca las credenciales de Google para la cuenta de la empresa.
-    Utiliza el refresh token almacenado en las variables de entorno.
-    Almacena las credenciales en una variable global para reutilización.
-    """
-    global _COMPANY_DRIVE_CREDS
-
-    if _COMPANY_DRIVE_CREDS and _COMPANY_DRIVE_CREDS.valid:
-        print("DEBUG: Credenciales de Google Drive de empresa válidas y en caché.")
-        return _COMPANY_DRIVE_CREDS
-
-    if not GOOGLE_DRIVE_REFRESH_TOKEN:
-        print("ERROR: GOOGLE_DRIVE_REFRESH_TOKEN no está configurado en las variables de entorno.")
-        return None
-    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
-        print("ERROR: GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET no están configurados.")
-        return None
-
-    creds = Credentials(
-        None, 
-        refresh_token=GOOGLE_DRIVE_REFRESH_TOKEN,
-        token_uri="https://oauth2.googleapis.com/token",
-        client_id=GOOGLE_CLIENT_ID,
-        client_secret=GOOGLE_CLIENT_SECRET,
-        scopes=SCOPES
-    )
-    
-    try:
-        print("DEBUG: Intentando refrescar token de Google Drive de empresa...")
-        creds.refresh(Request())
-        _COMPANY_DRIVE_CREDS = creds 
-        print("DEBUG: Token de acceso de Google Drive de empresa refrescado y credenciales obtenidas.")
-        return creds
-    except Exception as e:
-        print(f"ERROR: No se pudo refrescar el token de Google Drive de empresa: {e}")
-        return None
-
-def find_or_create_drive_folder(service, folder_name, parent_folder_id=None):
-    """
-    Busca una carpeta por nombre. Si no existe, la crea.
-    """
-    try:
-        query = f"name = '{folder_name}' and mimeType = 'application/vnd.google-apps.folder'"
-        if parent_folder_id:
-            query += f" and '{parent_folder_id}' in parents"
-        
-        results = service.files().list(q=query, spaces='drive', fields='files(id, name)').execute()
-        items = results.get('files', [])
-
-        if items:
-            print(f"DEBUG: Carpeta '{folder_name}' encontrada con ID: {items[0]['id']}")
-            return items[0]['id']
-        else:
-            file_metadata = {
-                'name': folder_name,
-                'mimeType': 'application/vnd.google-apps.folder'
-            }
-            if parent_folder_id:
-                file_metadata['parents'] = [parent_folder_id]
-            
-            folder = service.files().create(body=file_metadata, fields='id').execute()
-            print(f"DEBUG: Carpeta '{folder_name}' creada con ID: {folder.get('id')}")
-            return folder.get('id')
-    except HttpError as error:
-        print(f"ERROR: Error al buscar o crear carpeta en Google Drive: {error}")
-        return None
-    except Exception as e:
-        print(f"ERROR: Error inesperado en find_or_or_create_drive_folder: {e}")
-        return None
-
-def upload_pdf_to_google_drive(creds, file_content_io, file_name, folder_id=None):
-    """
-    Sube un archivo PDF a Google Drive.
-    """
-    try:
-        service = build('drive', 'v3', credentials=creds)
-        
-        file_metadata = {'name': file_name, 'mimeType': 'application/pdf'}
-        if folder_id:
-            file_metadata['parents'] = [folder_id]
-
-        file_content_io.seek(0)
-
-        file = service.files().create(
-            body=file_metadata,
-            media_body=file_content_io,
-            media_mime_type='application/pdf', 
-            fields='id'
-        ).execute()
-
-        print(f"DEBUG: Archivo subido a Google Drive. ID: {file.get('id')}")
-        return file.get('id')
-
-    except HttpError as error:
-        print(f"ERROR: Ocurrió un error al subir a Google Drive: {error}")
-        return None
-    except Exception as e:
-        print(f"ERROR: Error inesperado al subir a Google Drive: {e}")
-        return None
 
 # -------------------- Rutas de la Aplicación --------------------
 
@@ -342,7 +232,7 @@ def relleno_formularios(nomina_id):
             est['fecha_reevaluacion'] = est.get('fecha_reevaluacion') or '' # Asegurar que sea string
 
             if est.get('fecha_relleno') is not None:
-                total_forms_completed_for_nomina += 1
+                total_forms_completed_for_nomina += 0
 
             estudiantes.append(est)
         print(f"DEBUG: Estudiantes procesados para plantilla en /relleno_formularios: {estudiantes}")
@@ -490,8 +380,8 @@ def generar_pdf():
                 "nacionalidad": nacionalidad,
                 "sexo_f": sexo_f_pdf,
                 "sexo_m": sexo_m_pdf,
-                "diagnostico_1": get_form_field_value('diagnostico', request.form),
-                "diagnostico_2": get_form_field_value('diagnostico', request.form),
+                "diagnostico_1": get_form_field_value('diagnostico_1', request.form),
+                "diagnostico_2": get_form_field_value('diagnostico_2', request.form),
                 "diagnostico_complementario": get_form_field_value('diagnostico_complementario', request.form),
                 "clasificación": get_form_field_value('clasificacion_imc', request.form),
                 "derivaciones": get_form_field_value('derivaciones', request.form),
@@ -508,29 +398,31 @@ def generar_pdf():
                 "check_atermino": "/Yes" if get_form_field_value('check_atermino', request.form) == 'A_TERMINO' else "",
                 "check_vaginal": "/Yes" if get_form_field_value('check_vaginal', request.form) == 'VAGINAL' else "",
                 "check_prematuro": "/Yes" if get_form_field_value('check_prematuro', request.form) == 'PREMATURO' else "",
-                "check_acorde": "/Yes" if get_form_field_value('check_acorde', request.form) == 'LOGRADO_ACORDE_A_LA_EDAD' else "",
-                "check_retrasogeneralizado": "/Yes" if get_form_field_value('check_retrasogeneralizado', request.form) == 'RETRASO_GENERALIZADO_DEL_DESARROLLO' else "",
-                "check_esquemac": "/Yes" if get_form_field_value('check_esquemac', request.form) == 'ESQUEMA_COMPLETO' else "",
-                "check_esquemai": "/Yes" if get_form_field_value('check_esquemai', request.form) == 'ESQUEMA_INCOMPLETO' else "",
-                "check_alergiano": "/Yes" if get_form_field_value('check_alergiano', request.form) == 'NO_ALERGIAS' else "",
-                "check_alergiasi": "/Yes" if get_form_field_value('check_alergiasi', request.form) == 'SI_ALERGIAS' else "",
-                "check_cirugiano": "/Yes" if get_form_field_value('check_cirugiano', request.form) == 'NO_CIRUGIAS' else "",
-                "check_cirugiasi": "/Yes" if get_form_field_value('check_cirugiasi', request.form) == 'SI_CIRUGIAS' else "",
-                "check_visionsinalteracion": "/Yes" if get_form_field_value('check_visionsinalteracion', request.form) == 'SIN_ALTERACION_VISION' else "",
-                "check_visionrefraccion": "/Yes" if get_form_field_value('check_visionrefraccion', request.form) == 'VICIOS_DE_REFRACCION' else "",
-                "check_audicionnormal": "/Yes" if get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION' else "",
-                "check_hipoacusia": "/Yes" if get_form_field_value('check_hipoacusia', request.form) == 'HIPOACUSIA' else "",
-                "chack_tapondecerumen": "/Yes" if get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN' else "",
-                "check_sinhallazgos": "/Yes" if get_form_field_value('check_sinhallazgos', request.form) == 'SIN_HALLAZGOS' else "",
-                "check_caries": "/Yes" if get_form_field_value('check_caries', request.form) == 'caries' else "",
-                "check_apinamientodental": "/Yes" if get_form_field_value('check_apinamientodental', request.form) == 'APINAMIENTO_DENTAL' else "",
-                "check_retenciondental": "/Yes" if get_form_field_value('check_retenciondental', request.form) == 'RETENCION_DENTAL' else "",
-                "check_frenillolingual": "/Yes" if get_form_field_value('check_frenillolingual', request.form) == 'FRENILLO_LINGUAL' else "",
-                "check_hipertrofia": "/Yes" if get_form_field_value('check_hipertrofia', request.form) == 'HIPERTROFIA_AMIGDALINA' else "",
-                "altura": get_form_field_value('altura', request.form),
-                "peso": get_form_field_value('peso', request.form),
-                "imc": get_form_field_value('imc', request.form),
-                "clasificacion": get_form_field_value('clasificacion', request.form),
+                "LOGRADO ACORDE A LA EDAD": "/Yes" if get_form_field_value('check_acorde', request.form) == 'LOGRADO_ACORDE_A_LA_EDAD' else "",
+                "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if get_form_field_value('check_retrasogeneralizado', request.form) == 'RETRASO_GENERALIZADO_DEL_DESARROLLO' else "",
+                "ESQUEMA COMPLETO": "/Yes" if get_form_field_value('check_esquemac', request.form) == 'ESQUEMA_COMPLETO' else "",
+                "ESQUEMA INCOMPLETO": "/Yes" if get_form_field_value('check_esquemai', request.form) == 'ESQUEMA_INCOMPLETO' else "",
+                "NO": "/Yes" if get_form_field_value('check_alergiano', request.form) == 'NO_ALERGIAS' else "",
+                "SI": "/Yes" if get_form_field_value('check_alergiasi', request.form) == 'SI_ALERGIAS' else "",
+                "NO_2": "/Yes" if get_form_field_value('check_cirugiano', request.form) == 'NO_CIRUGIAS' else "",
+                "SI_2": "/Yes" if get_form_field_value('si_2', request.form) == 'SI_2' else "", # Corregido nombre de campo
+                "SIN ALTERACIÓN": "/Yes" if get_form_field_value('check_visionsinalteracion', request.form) == 'SIN_ALTERACION_VISION' else "",
+                "VICIOS DE REFRACCION": "/Yes" if get_form_field_value('check_visionrefraccion', request.form) == 'VICIOS_DE_REFRACCION' else "",
+                "NORMAL": "/Yes" if get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION' else "",
+                "HIPOACUSIA": "/Yes" if get_form_field_value('check_hipoacusia', request.form) == 'HIPOACUSIA' else "",
+                "TAPÓN DE CERUMEN": "/Yes" if get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN' else "",
+                "SIN HALLAZGOS": "/Yes" if get_form_field_value('check_sinhallazgos', request.form) == 'SIN_HALLAZGOS' else "",
+                "CARIES": "/Yes" if get_form_field_value('caries', request.form) == 'CARIES' else "",
+                "APIÑAMIENTO DENTAL": "/Yes" if get_form_field_value('check_apinamientodental', request.form) == 'APINAMIENTO_DENTAL' else "",
+                "RETENCIÓN DENTAL": "/Yes" if get_form_field_value('check_retenciondental', request.form) == 'RETENCION_DENTAL' else "",
+                "FRENILLO LINGUAL": "/Yes" if get_form_field_value('check_frenillolingual', request.form) == 'FRENILLO_LINGUAL' else "",
+                "HIPERTROFIA AMIGDALINA": "/Yes" if get_form_field_value('check_hipertrofia', request.form) == 'HIPERTROFIA_AMIGDALINA' else "",
+                "Altura": get_form_field_value('altura', request.form),
+                "Peso": get_form_field_value('peso', request.form),
+                "I.M.C": get_form_field_value('imc', request.form),
+                "Clasificación_IMC": get_form_field_value('clasificacion_imc', request.form),
+                # Los campos de doctora para Medicina Familiar se rellenarían si tu PDF los tuviera
+                # y si tuvieras una lógica para obtenerlos (similar a neurología pero para familiar)
             }
 
         print(f"DEBUG: Fields to fill in PDF for {form_type} form: {campos}")
@@ -1262,224 +1154,8 @@ def admin_cargar_nomina():
         flash(f"❌ Error al guardar los estudiantes en la base de datos. La nómina fue creada, pero no se agregaron los estudiantes. ({e}). Detalles: {error_detail}", 'error')
         return redirect(url_for('dashboard'))
 
-@app.route('/enviar_formulario_a_drive', methods=['POST'])
-def enviar_formulario_a_drive():
-    """
-    Endpoint para enviar el formulario PDF a Google Drive de la empresa.
-    Genera el PDF en memoria y lo sube a una carpeta específica por colegio.
-    """
-    if 'usuario_id' not in session:
-        return jsonify({"success": False, "message": "No autorizado"}), 401
+# La ruta '/enviar_formulario_a_drive' ha sido eliminada por completo.
 
-    doctor_id = session['usuario_id']
-    
-    creds = get_company_google_credentials()
-    if not creds:
-        return jsonify({"success": False, "message": "Error de autenticación con Google Drive de la empresa. Contacte al administrador (refresh token no configurado o inválido)."}), 500
-
-    estudiante_id = request.form.get('estudiante_id')
-    nomina_id = request.form.get('nomina_id') 
-    
-    # Obtener el form_type de la sesión para saber qué PDF base usar
-    form_type = session.get('current_form_type', 'neurologia') 
-
-    if not all([estudiante_id, nomina_id]): 
-        return jsonify({"success": False, "message": "Faltan datos esenciales del formulario para subir a Drive."}), 400
-
-    establecimiento_nombre = "Formularios Varios" 
-    try:
-        res_nomina = requests.get(
-            f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}&select=nombre_nomina",
-            headers=SUPABASE_HEADERS
-        )
-        res_nomina.raise_for_status()
-        nomina_data = res_nomina.json()
-        if nomina_data and nomina_data[0] and 'nombre_nomina' in nomina_data[0]:
-            establecimiento_nombre = nomina_data[0]['nombre_nomina']
-        else:
-            print(f"ADVERTENCIA: No se pudo encontrar el nombre de la nómina para ID: {nomina_id}, usando '{establecimiento_nombre}'.")
-    except requests.exceptions.RequestException as e:
-        print(f"ERROR: Error al obtener nombre de nómina para Drive: {e}")
-    except Exception as e:
-        print(f"ERROR: Error inesperado al obtener nombre de nómina para Drive: {e}")
-
-    # Usar los datos del request.form directamente para rellenar el PDF,
-    # ya que son los datos más actualizados que el usuario acaba de enviar.
-    # Asegurarse de que los valores sean cadenas vacías si son None o vacíos.
-    nombre = get_form_field_value('nombre', request.form)
-    rut = get_form_field_value('rut', request.form)
-    
-    fecha_nac_formato = ''
-    fecha_nac_original_str = get_form_field_value('fecha_nacimiento_original', request.form)
-    if fecha_nac_original_str:
-        try:
-            fecha_nac_formato = datetime.strptime(fecha_nac_original_str, '%Y-%m-%d').strftime('%d/%m/%Y')
-        except ValueError:
-            pass 
-
-    edad = get_form_field_value('edad', request.form)
-    nacionalidad = get_form_field_value('nacionalidad', request.form)
-    
-    sexo_f_pdf = ""
-    sexo_m_pdf = ""
-    sexo_form_value = get_form_field_value('sexo', request.form)
-
-    if form_type == 'neurologia':
-        sexo_f_pdf = "X" if sexo_form_value == "F" else ""
-        sexo_m_pdf = "X" if sexo_form_value == "M" else ""
-    elif form_type == 'medicina_familiar':
-        sexo_f_pdf = "X" if get_form_field_value('genero_f', request.form) == 'Femenino' else ""
-        sexo_m_pdf = "X" if get_form_field_value('genero_m', request.form) == 'Masculino' else ""
-
-
-    fecha_evaluacion_form_value = get_form_field_value('fecha_evaluacion', request.form)
-    fecha_evaluacion_formatted = ''
-    if fecha_evaluacion_form_value:
-        try:
-            fecha_evaluacion_formatted = datetime.strptime(fecha_evaluacion_form_value, '%Y-%m-%d').strftime('%d/%m/%Y')
-        except ValueError:
-            pass
-
-    fecha_reevaluacion_form_value = get_form_field_value('fecha_reevaluacion', request.form)
-    fecha_reeval_pdf = ''
-    if fecha_reevaluacion_form_value:
-        try:
-            fecha_reeval_pdf = datetime.strptime(fecha_reevaluacion_form_value, '%Y-%m-%d').strftime('%d/%m/%Y')
-        except ValueError:
-            pass
-
-
-    # Seleccionar el PDF base según el form_type
-    pdf_base_path = ''
-    if form_type == 'neurologia':
-        pdf_base_path = PDF_BASE_NEUROLOGIA
-    elif form_type == 'medicina_familiar':
-        pdf_base_path = PDF_BASE_FAMILIAR
-    else:
-        return jsonify({"success": False, "message": "Tipo de formulario no reconocido para generar PDF."}), 400
-
-
-    if not os.path.exists(pdf_base_path):
-        print("ERROR: Archivo FORMULARIO.pdf no encontrado para generar PDF para Drive.")
-        return jsonify({"success": False, "message": "Error interno: Archivo base del formulario no encontrado en el servidor."}), 500
-
-    try:
-        reader = PdfReader(pdf_base_path)
-        writer = PdfWriter()
-        writer.add_page(reader.pages[0])
-
-        campos = {}
-        if form_type == 'neurologia':
-            # Campos estrictamente para neurología, como lo pediste
-            campos = {
-                "nombre": nombre,
-                "rut": rut,
-                "fecha_nacimiento": fecha_nac_formato, 
-                "nacionalidad": nacionalidad,
-                "edad": edad,
-                "diagnostico_1": get_form_field_value('diagnostico', request.form),
-                "diagnostico_2": get_form_field_value('diagnostico', request.form), 
-                "estado_general": get_form_field_value('estado', request.form),
-                "fecha_evaluacion": fecha_evaluacion_formatted, 
-                "fecha_reevaluacion": fecha_reeval_pdf,
-                "derivaciones": get_form_field_value('derivaciones', request.form),
-                "sexo_f": sexo_f_pdf,
-                "sexo_m": sexo_m_pdf,
-            }
-        elif form_type == 'medicina_familiar':
-            # Campos para medicina familiar (mantengo los que tenías, asumiendo que son correctos para ese PDF)
-            campos = {
-                "Nombres y Apellidos": nombre,
-                "RUN": rut,
-                "Fecha nacimiento (dd/mm/aaaa)": fecha_nac_formato,
-                "Edad (en años y meses)": edad,
-                "Nacionalidad": nacionalidad,
-                "F": sexo_f_pdf,
-                "M": sexo_m_pdf,
-                "DIAGNOSTICO": get_form_field_value('diagnostico_1', request.form),
-                "DIAGNÓSTICO COMPLEMENTARIO": get_form_field_value('diagnostico_complementario', request.form),
-                "Clasificación": get_form_field_value('clasificacion_imc', request.form),
-                "INDICACIONES": get_form_field_value('derivaciones', request.form),
-                "Fecha evaluación": fecha_evaluacion_formatted,
-                "Fecha reevaluación": fecha_reeval_pdf,
-                "OBS1": get_form_field_value('observacion_1', request.form),
-                "OBS2": get_form_field_value('observacion_2', request.form),
-                "OBS3": get_form_field_value('observacion_3', request.form),
-                "OBS4": get_form_field_value('observacion_4', request.form),
-                "OBS5": get_form_field_value('observacion_5', request.form),
-                "OBS6": get_form_field_value('observacion_6', request.form),
-                "OBS7": get_form_field_value('observacion_7', request.form),
-                "CESAREA": "/Yes" if get_form_field_value('check_cesarea', request.form) == 'CESAREA' else "",
-                "A TÉRMINO": "/Yes" if get_form_field_value('check_atermino', request.form) == 'A_TERMINO' else "",
-                "VAGINAL": "/Yes" if get_form_field_value('check_vaginal', request.form) == 'VAGINAL' else "",
-                "PREMATURO": "/Yes" if get_form_field_value('check_prematuro', request.form) == 'PREMATURO' else "",
-                "LOGRADO ACORDE A LA EDAD": "/Yes" if get_form_field_value('check_acorde', request.form) == 'LOGRADO_ACORDE_A_LA_EDAD' else "",
-                "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if get_form_field_value('check_retrasogeneralizado', request.form) == 'RETRASO_GENERALIZADO_DEL_DESARROLLO' else "",
-                "ESQUEMA COMPLETO": "/Yes" if get_form_field_value('check_esquemac', request.form) == 'ESQUEMA_COMPLETO' else "",
-                "ESQUEMA INCOMPLETO": "/Yes" if get_form_field_value('check_esquemai', request.form) == 'ESQUEMA_INCOMPLETO' else "",
-                "NO": "/Yes" if get_form_field_value('check_alergiano', request.form) == 'NO_ALERGIAS' else "",
-                "SI": "/Yes" if get_form_field_value('check_alergiasi', request.form) == 'SI_ALERGIAS' else "",
-                "NO_2": "/Yes" if get_form_field_value('check_cirugiano', request.form) == 'NO_CIRUGIAS' else "",
-                "SI_2": "/Yes" if get_form_field_value('si_2', request.form) == 'SI_2' else "", # Corregido nombre de campo
-                "SIN ALTERACIÓN": "/Yes" if get_form_field_value('check_visionsinalteracion', request.form) == 'SIN_ALTERACION_VISION' else "",
-                "VICIOS DE REFRACCION": "/Yes" if get_form_field_value('check_visionrefraccion', request.form) == 'VICIOS_DE_REFRACCION' else "",
-                "NORMAL": "/Yes" if get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION' else "",
-                "HIPOACUSIA": "/Yes" if get_form_field_value('check_hipoacusia', request.form) == 'HIPOACUSIA' else "",
-                "TAPÓN DE CERUMEN": "/Yes" if get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN' else "",
-                "SIN HALLAZGOS": "/Yes" if get_form_field_value('check_sinhallazgos', request.form) == 'SIN_HALLAZGOS' else "",
-                "CARIES": "/Yes" if get_form_field_value('caries', request.form) == 'CARIES' else "",
-                "APIÑAMIENTO DENTAL": "/Yes" if get_form_field_value('check_apinamientodental', request.form) == 'APINAMIENTO_DENTAL' else "",
-                "RETENCIÓN DENTAL": "/Yes" if get_form_field_value('check_retenciondental', request.form) == 'RETENCION_DENTAL' else "",
-                "FRENILLO LINGUAL": "/Yes" if get_form_field_value('check_frenillolingual', request.form) == 'FRENILLO_LINGUAL' else "",
-                "HIPERTROFIA AMIGDALINA": "/Yes" if get_form_field_value('check_hipertrofia', request.form) == 'HIPERTROFIA_AMIGDALINA' else "",
-                "Altura": get_form_field_value('altura', request.form),
-                "Peso": get_form_field_value('peso', request.form),
-                "I.M.C": get_form_field_value('imc', request.form),
-                "Clasificación_IMC": get_form_field_value('clasificacion_imc', request.form),
-                "Nombres y Apellidos_Doctor": "", 
-                "Rut_Doctor": "",
-                "Nº Registro Profesional": "",
-                "Especialidad": "",
-                "Fono/E-Mail Contacto": "",
-                "Salud pública": "/Yes" if get_form_field_value('procedencia_salud_publica', request.form) else "",
-                "Particular": "/Yes" if get_form_field_value('procedencia_particular', request.form) else "",
-                "Escuela": "/Yes" if get_form_field_value('procedencia_escuela', request.form) else "",
-                "Otro": "/Yes" if get_form_field_value('procedencia_otro', request.form) else "",
-            }
-
-
-        writer.update_page_form_field_values(writer.pages[0], campos)
-
-        writer._root_object["/AcroForm"].update({
-            NameObject("/NeedAppearances"): BooleanObject(True)
-        })
-
-        output = io.BytesIO()
-        writer.write(output)
-        output.seek(0)
-
-        nombre_archivo_descarga = f"{nombre.replace(' ', '_')}_{rut}_formulario_{form_type}.pdf"
-        print(f"DEBUG: PDF generado y listo para descarga: {nombre_archivo_descarga}")
-        
-        # Subir a Google Drive
-        service = build('drive', 'v3', credentials=creds)
-        colegio_folder_id = find_or_create_drive_folder(service, establecimiento_nombre, GOOGLE_DRIVE_PARENT_FOLDER_ID)
-
-        if not colegio_folder_id:
-            return jsonify({"success": False, "message": "Error al encontrar o crear la carpeta del colegio en Google Drive."}), 500
-
-        # Rebobinar el BytesIO para la subida
-        output.seek(0)
-        file_id = upload_pdf_to_google_drive(creds, output, nombre_archivo_descarga, colegio_folder_id)
-
-        if file_id:
-            return jsonify({"success": True, "message": f"Formulario enviado a Google Drive (ID: {file_id}) en la carpeta '{establecimiento_nombre}'."})
-        else:
-            return jsonify({"success": False, "message": "Error al subir el formulario a Google Drive."}), 500
-
-    except Exception as e:
-        print(f"❌ Error al procesar y subir formulario a Drive: {e}")
-        return jsonify({"success": False, "message": f"Error interno del servidor al procesar y subir a Drive: {str(e)}"}), 500
 
 @app.route('/subir/<establecimiento>', methods=['POST'])
 def subir(establecimiento):

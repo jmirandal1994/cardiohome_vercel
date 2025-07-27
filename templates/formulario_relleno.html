@@ -739,7 +739,7 @@
             {# Added data-evaluated-status to details for JS to easily check if student is evaluated #}
             <details class="estudiante" data-nombre="{{ est.nombre | lower }}" data-estudiante-id="{{ est.id }}" data-nomina-id="{{ session['current_nomina_id'] }}" data-evaluated-status="{{ 'true' if est.fecha_relleno is not none else 'false' }}">
                 <summary>
-                    <span>{{ est.nombre }} (RUT: <span class="rut-display">{{ est.rut }}</span>) - Edad: {{ est.edad }}</span>
+                    <span>{{ est.nombre }} (RUT: {{ est.rut }}) - Edad: {{ est.edad }}</span>
                     <i class="fas fa-chevron-right chevron-icon"></i>
                 </summary>
                 <div class="container">
@@ -754,13 +754,7 @@
                             <input type="text" name="nombre" id="nombre_{{ est.id }}" value="{{ est.nombre }}" required readonly>
 
                             <label for="rut_{{ est.id }}">RUT:</label>
-                            <!-- Se añadió data-original-rut para guardar el valor sin formato -->
-                            <input type="text" name="rut" id="rut_{{ est.id }}" 
-                                value="{{ est.rut }}" 
-                                data-original-rut="{{ est.rut }}"
-                                required readonly
-                                onfocus="this.value = this.dataset.originalRut;"
-                                onblur="this.value = formatRut(this.value); updatePreview(this.form);">
+                            <input type="text" name="rut" id="rut_{{ est.id }}" value="{{ est.rut }}" required readonly>
 
                             <!-- Campos ocultos que ya se pre-rellenan -->
                             <input type="hidden" name="fecha_nacimiento_original" value="{{ est.fecha_nacimiento if est.fecha_nacimiento is not none else '' }}"> {# Asegurarse de enviar el valor ISO YYYY-MM-DD #}
@@ -869,7 +863,7 @@
                         <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">{{ est.derivaciones if est.derivaciones is not none else '-' }}</span></p>
                         
 
-                        <img src="{{ url_for('static', filename='formulario_muestra.png') }}" alt="Ejemplo Formulario" class="preview-img" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=Imagen+No+Disponible';" />
+                        <img src="/static/formulario_muestra.png" alt="Ejemplo Formulario" class="preview-img" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=Imagen+No+Disponible';" />
 
                         <button onclick="window.print()" style="margin-top: 20px; width: 100%;">
                             <i class="fas fa-print"></i> Imprimir Vista Previa
@@ -927,54 +921,6 @@
             document.querySelectorAll('input[name="evaluation_filter"]').forEach(radio => {
                 radio.addEventListener('change', aplicarFiltros);
             });
-
-            // Función para formatear el RUT (ej: 123456789 -> 12.345.678-9)
-            function formatRut(rut) {
-                if (!rut) return '';
-                rut = String(rut).replace(/[^0-9kK]/g, ''); // Elimina todo excepto números y K
-                if (rut.length < 2) return rut;
-
-                let body = rut.substring(0, rut.length - 1);
-                let dv = rut.substring(rut.length - 1).toUpperCase();
-                
-                // Agrega puntos cada 3 dígitos desde la derecha en el cuerpo
-                body = body.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-
-                return `${body}-${dv}`;
-            }
-
-            // Aplicar formato a los RUTs al cargar la página en el summary y preview
-            document.querySelectorAll('.rut-display, .prev-rut').forEach(element => {
-                const originalRut = element.textContent;
-                element.textContent = formatRut(originalRut);
-            });
-
-            // Aplicar formato al input de RUT al cargar la página
-            document.querySelectorAll('input[name="rut"]').forEach(input => {
-                // Guardar el RUT original sin formato en un atributo de datos
-                input.dataset.originalRut = input.value; 
-                // Formatear el valor visible del input
-                input.value = formatRut(input.value);
-            });
-
-            // Event listeners para los inputs de formulario para el badge de "Modificando..."
-            document.querySelectorAll('.formulario form input, .formulario form select, .formulario form textarea').forEach(input => {
-                input.addEventListener('input', function() {
-                    const form = this.closest('form');
-                    const badge = form.closest('.formulario').querySelector('.badge');
-                    if (badge) {
-                        badge.classList.add('show');
-                        badge.textContent = "Modificando...";
-                        clearTimeout(badge.timeout); // Limpiar cualquier timeout anterior
-                    }
-                });
-
-                input.addEventListener('change', function() { // Para select y date inputs
-                    const form = this.closest('form');
-                    updatePreview(form); // Actualizar preview al cambiar
-                });
-            });
-
         });
 
         function cerrarSesion() {
@@ -1019,8 +965,7 @@
             if (!container) return; 
 
             container.querySelector('.prev-nombre').textContent = form.nombre.value;
-            // Actualizar el RUT en la vista previa con el formato
-            container.querySelector('.prev-rut').textContent = formatRut(form.rut.value);
+            container.querySelector('.prev-rut').textContent = form.rut.value;
             // Usar (value || '-') para asegurar que se muestre '-' si el campo está vacío
             container.querySelector('.prev-estado').textContent = form.estado ? (form.estado.value || '-') : '-';
             container.querySelector('.prev-diagnostico').textContent = form.diagnostico ? (form.diagnostico.value || '-') : '-';
@@ -1076,11 +1021,11 @@
             const badge = form.closest('.formulario').querySelector('.badge');
             if (badge) {
                 badge.classList.add('show');
-                badge.textContent = "Guardado"; // Cambiar a "Guardado" después de la actualización
-                clearTimeout(badge.timeout); // Limpiar cualquier timeout anterior
+                badge.textContent = "Modificando..."; 
+                clearTimeout(badge.timeout);
                 badge.timeout = setTimeout(() => {
-                    badge.classList.remove('show');
-                }, 1500); // Ocultar después de 1.5 segundos
+                    badge.textContent = "Guardado";
+                }, 800);
             }
         }
 
@@ -1119,12 +1064,6 @@
         async function submitForm(form) {
             const formData = new FormData(form);
             const estudianteId = form.querySelector('input[name="estudiante_id"]').value;
-
-            // Antes de enviar, asegúrate de que el RUT se envíe sin formato al backend
-            const rutInput = form.querySelector('input[name="rut"]');
-            if (rutInput && rutInput.dataset.originalRut) {
-                formData.set('rut', rutInput.dataset.originalRut);
-            }
 
             // Debugging: Log FormData content
             console.log('FormData content before sending (submitForm - Guardar y Generar PDF):');
@@ -1252,12 +1191,6 @@
                 if (result.isConfirmed) {
                     try {
                         const formData = new FormData(form); 
-
-                        // Antes de enviar, asegúrate de que el RUT se envíe sin formato al backend
-                        const rutInput = form.querySelector('input[name="rut"]');
-                        if (rutInput && rutInput.dataset.originalRut) {
-                            formData.set('rut', rutInput.dataset.originalRut);
-                        }
                         
                         // Debugging: Log FormData content
                         console.log('FormData content before sending (marcarComoEvaluado):');
@@ -1311,12 +1244,6 @@
             });
 
             const formData = new FormData(form);
-
-            // Antes de enviar, asegúrate de que el RUT se envíe sin formato al backend
-            const rutInput = form.querySelector('input[name="rut"]');
-            if (rutInput && rutInput.dataset.originalRut) {
-                formData.set('rut', rutInput.dataset.originalRut);
-            }
 
             fetch('/enviar_formulario_a_drive', {
                 method: 'POST',
@@ -1621,12 +1548,6 @@
             });
 
             const formData = new FormData(form);
-
-            // Antes de enviar, asegúrate de que el RUT se envíe sin formato al backend
-            const rutInput = form.querySelector('input[name="rut"]');
-            if (rutInput && rutInput.dataset.originalRut) {
-                formData.set('rut', rutInput.dataset.originalRut);
-            }
 
             fetch('/enviar_formulario_a_drive', {
                 method: 'POST',

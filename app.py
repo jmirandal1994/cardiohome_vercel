@@ -14,6 +14,8 @@ import json
 import pandas as pd
 import unicodedata
 
+# Las importaciones específicas para Google Drive API han sido eliminadas.
+
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "clave_super_segura_cardiohome_2025")
@@ -23,6 +25,12 @@ ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'xls', 'xlsx', 'csv'}
 # Asegúrate de que estos archivos PDF existan en la misma carpeta que app.py
 PDF_BASE_NEUROLOGIA = 'FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE.pdf'
 PDF_BASE_FAMILIAR = 'formulario_familiar.pdf' 
+
+# Nuevo: Directorio para los PDFs de neurología específicos por doctora
+# Asegúrate de que esta carpeta exista en la misma ubicación que app.py
+# y que contenga los PDFs nombrados como 'FORMULARIO_NEUROLOGIA_{doctora_id}.pdf'
+PDF_BASES_NEUROLOGIA_DIR = 'pdf_bases_doctoras_neurologia'
+
 
 # -------------------- Supabase Configuration --------------------
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://rbzxolreglwndvsrxhmg.supabase.co")
@@ -148,8 +156,22 @@ def get_form_field_value(field_name, form_data, return_none_if_empty=False):
     return stripped_value
 
 
-# -------------------- Google Drive API Functions (Empresa) - ELIMINADAS --------------------
-# Todas las funciones relacionadas con Google Drive han sido eliminadas.
+# Nuevo: Función para obtener el PDF de neurología específico para una doctora
+def get_doctor_specific_neurologia_pdf(doctora_id):
+    """
+    Intenta encontrar un PDF de neurología específico para la doctora en el directorio configurado.
+    Si no lo encuentra, retorna el PDF de neurología por defecto.
+    """
+    # Asume que los PDFs están nombrados como FORMULARIO_NEUROLOGIA_{doctora_id}.pdf
+    specific_pdf_filename = f"FORMULARIO_NEUROLOGIA_{doctora_id}.pdf"
+    specific_pdf_path = os.path.join(PDF_BASES_NEUROLOGIA_DIR, specific_pdf_filename)
+
+    if os.path.exists(specific_pdf_path):
+        print(f"DEBUG: Se encontró PDF específico para doctora {doctora_id}: {specific_pdf_path}")
+        return specific_pdf_path
+    else:
+        print(f"ADVERTENCIA: No se encontró PDF específico para doctora {doctora_id} en {specific_pdf_path}. Usando PDF por defecto: {PDF_BASE_NEUROLOGIA}")
+        return PDF_BASE_NEUROLOGIA
 
 
 # -------------------- Rutas de la Aplicación --------------------
@@ -164,8 +186,8 @@ def relleno_formularios(nomina_id):
 
     nomina_data = None
     try:
-        # Obtener form_type desde la nómina
-        url_nomina = f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}&select=nombre_nomina,tipo_nomina,form_type"
+        # Obtener form_type y doctora_id_para_formulario desde la nómina
+        url_nomina = f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}&select=nombre_nomina,tipo_nomina,form_type,doctora_id_para_formulario"
         print(f"DEBUG: URL para obtener nómina en /relleno_formularios: {url_nomina}")
         res_nomina = requests.get(url_nomina, headers=SUPABASE_HEADERS)
         res_nomina.raise_for_status()
@@ -180,8 +202,9 @@ def relleno_formularios(nomina_id):
         session['establecimiento'] = f"{nomina['nombre_nomina']} ({nomina['tipo_nomina'].replace('_', ' ').title()})"
         session['current_nomina_id'] = nomina_id
         session['establecimiento_nombre'] = nomina['nombre_nomina']
-        # Guardar el form_type en la sesión para usarlo al renderizar la plantilla
+        # Guardar el form_type y doctora_id_para_formulario en la sesión
         session['current_form_type'] = nomina.get('form_type', 'neurologia') 
+        session['doctora_id_para_formulario'] = nomina.get('doctora_id_para_formulario') # Nuevo: Guardar el ID de la doctora para el formulario
 
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener datos de la nómina en /relleno_formularios: {e}")
@@ -266,10 +289,11 @@ def generar_pdf():
     estudiante_id = request.form.get('estudiante_id')
     nomina_id = request.form.get('nomina_id')
     
-    # Obtener el form_type de la sesión para saber qué PDF base usar
+    # Obtener el form_type y doctora_id_para_formulario de la sesión
     form_type = session.get('current_form_type', 'neurologia') 
+    doctora_id_para_formulario = session.get('doctora_id_para_formulario')
 
-    print(f"DEBUG: generar_pdf - Solicitud para generar PDF para estudiante_id={estudiante_id}, nomina_id={nomina_id}, form_type={form_type}")
+    print(f"DEBUG: generar_pdf - Solicitud para generar PDF para estudiante_id={estudiante_id}, nomina_id={nomina_id}, form_type={form_type}, doctora_id_para_formulario={doctora_id_para_formulario}")
     print(f"DEBUG: Datos del formulario recibidos para PDF: {request.form.to_dict()}")
 
 
@@ -327,10 +351,13 @@ def generar_pdf():
         except ValueError:
             pass
 
-    # Seleccionar el PDF base según el form_type
+    # Seleccionar el PDF base según el form_type y la doctora_id_para_formulario (si aplica)
     pdf_base_path = ''
     if form_type == 'neurologia':
-        pdf_base_path = PDF_BASE_NEUROLOGIA
+        if doctora_id_para_formulario:
+            pdf_base_path = get_doctor_specific_neurologia_pdf(doctora_id_para_formulario)
+        else:
+            pdf_base_path = PDF_BASE_NEUROLOGIA # Fallback si no hay doctora_id_para_formulario
     elif form_type == 'medicina_familiar':
         pdf_base_path = PDF_BASE_FAMILIAR
     else:
@@ -781,7 +808,7 @@ def dashboard():
 
         try:
             # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para que el admin vea todas las nóminas
-            url_admin_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina,tipo_nomina,doctora_id,url_excel_original,nombre_excel_original,form_type"
+            url_admin_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina,tipo_nomina,doctora_id,url_excel_original,nombre_excel_original,form_type,doctora_id_para_formulario" # Nuevo: Seleccionar doctora_id_para_formulario
             print(f"DEBUG: URL para obtener nóminas cargadas por admin: {url_admin_nominas}")
             res_admin_nominas = requests.get(url_admin_nominas, headers=SUPABASE_SERVICE_HEADERS) 
             res_admin_nominas.raise_for_status()
@@ -911,6 +938,9 @@ def admin_cargar_nomina():
     nombre_especifico = request.form.get('nombre_especifico')
     doctora_id_from_form = request.form.get('doctora', '').strip()
     excel_file = request.files.get('excel')
+    # Nuevo: Obtener el ID de la doctora cuyo formulario base de neurología se usará para esta nómina
+    doctora_id_para_formulario = request.form.get('doctora_id_para_formulario', '').strip()
+
 
     # Normalizar tipo_nomina para una comparación robusta (ej. "NEUROLOGIA" -> "neurologia")
     tipo_nomina_normalized = tipo_nomina_raw.strip().lower() if tipo_nomina_raw else ''
@@ -925,7 +955,7 @@ def admin_cargar_nomina():
     # elif 'otro_tipo' in tipo_nomina_normalized:
     #     form_type = 'otro_pdf_base'
 
-    print(f"DEBUG: admin_cargar_nomina - Datos recibidos: tipo_nomina_raw={tipo_nomina_raw}, tipo_nomina_normalized={tipo_nomina_normalized}, nombre_especifico={nombre_especifico}, doctora_id_from_form={doctora_id_from_form}, archivo_presente={bool(excel_file)}, form_type_derivado={form_type}")
+    print(f"DEBUG: admin_cargar_nomina - Datos recibidos: tipo_nomina_raw={tipo_nomina_raw}, tipo_nomina_normalized={tipo_nomina_normalized}, nombre_especifico={nombre_especifico}, doctora_id_from_form={doctora_id_from_form}, archivo_presente={bool(excel_file)}, form_type_derivado={form_type}, doctora_id_para_formulario={doctora_id_para_formulario}")
 
     # Validar campos obligatorios antes de intentar subir o insertar
     if not all([tipo_nomina_raw, nombre_especifico, doctora_id_from_form, excel_file]):
@@ -938,6 +968,13 @@ def admin_cargar_nomina():
         flash(f'❌ El tipo de nómina "{tipo_nomina_raw}" no se pudo mapear a un tipo de formulario conocido. Por favor, verifique el tipo de nómina.', 'error')
         print(f"ERROR: Tipo de nómina no reconocido: {tipo_nomina_raw}. No se pudo derivar form_type.")
         return redirect(url_for('dashboard'))
+
+    # Si el tipo de formulario es neurología, validar que se haya seleccionado una doctora_id_para_formulario
+    if form_type == 'neurologia' and not doctora_id_para_formulario:
+        flash('❌ Para nóminas de tipo "Neurología", debe seleccionar la Doctora para el formulario.', 'error')
+        print(f"ERROR: Falta doctora_id_para_formulario para nómina de neurología.")
+        return redirect(url_for('dashboard'))
+
 
     if not permitido(excel_file.filename):
         flash('❌ Archivo Excel o CSV no válido. Extensiones permitidas: .xls, .xlsx, .csv', 'error')
@@ -967,10 +1004,11 @@ def admin_cargar_nomina():
         "id": nomina_id,
         "nombre_nomina": nombre_especifico,
         "tipo_nomina": tipo_nomina_raw, # Guardamos el tipo_nomina original del formulario
-        "doctora_id": doctora_id_from_form,
+        "doctora_id": doctora_id_from_form, # Doctora a la que se le asigna la nómina (para su dashboard)
         "url_excel_original": url_excel_publica,
         "nombre_excel_original": excel_filename,
-        "form_type": form_type # Guardar el form_type derivado en la nómina
+        "form_type": form_type, # Guardar el form_type derivado en la nómina
+        "doctora_id_para_formulario": doctora_id_para_formulario if form_type == 'neurologia' else None # Nuevo: Guardar solo si es neurología
     }
     print(f"DEBUG: Payload para insertar nómina en nominas_medicas: {data_nomina}")
 
@@ -1252,7 +1290,7 @@ def mis_nominas():
         url_nominas_asignadas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?doctora_id=eq.{usuario_id}"
-            f"&select=id,nombre_nomina,tipo_nomina,form_type" # Incluir form_type
+            f"&select=id,nombre_nomina,tipo_nomina,form_type,doctora_id_para_formulario" # Incluir form_type y doctora_id_para_formulario
         )
         print(f"DEBUG: URL para mis_nominas: {url_nominas_asignadas}")
         res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_HEADERS)
@@ -1266,7 +1304,8 @@ def mis_nominas():
                 'id': nom['id'],
                 'nombre_establecimiento': nom['nombre_nomina'],
                 'tipo_nomina_display': display_name,
-                'form_type': nom.get('form_type') # Pasar el form_type
+                'form_type': nom.get('form_type'), # Pasar el form_type
+                'doctora_id_para_formulario': nom.get('doctora_id_para_formulario') # Nuevo: Pasar el ID de la doctora para el formulario
             })
         print(f"DEBUG: Nóminas asignadas procesadas para plantilla /mis_nominas: {assigned_nominations}")
 
@@ -1504,12 +1543,16 @@ def generar_pdfs_visibles():
         return jsonify({"success": False, "message": "Datos de entrada inválidos para la generación de PDFs."}), 400
 
     merged_pdf_writer = PdfWriter()
-    # Obtener el form_type de la sesión para saber qué PDF base usar
+    # Obtener el form_type y doctora_id_para_formulario de la sesión para saber qué PDF base usar
     form_type = session.get('current_form_type', 'neurologia') 
+    doctora_id_para_formulario = session.get('doctora_id_para_formulario')
 
     pdf_base_path = ''
     if form_type == 'neurologia':
-        pdf_base_path = PDF_BASE_NEUROLOGIA
+        if doctora_id_para_formulario:
+            pdf_base_path = get_doctor_specific_neurologia_pdf(doctora_id_para_formulario)
+        else:
+            pdf_base_path = PDF_BASE_NEUROLOGIA # Fallback si no hay doctora_id_para_formulario
     elif form_type == 'medicina_familiar':
         pdf_base_path = PDF_BASE_FAMILIAR
     else:

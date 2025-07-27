@@ -14,8 +14,6 @@ import json
 import pandas as pd
 import unicodedata
 
-# Las importaciones específicas para Google Drive API han sido eliminadas.
-
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "clave_super_segura_cardiohome_2025")

@@ -739,7 +739,7 @@
             {# Added data-evaluated-status to details for JS to easily check if student is evaluated #}
             <details class="estudiante" data-nombre="{{ est.nombre | lower }}" data-estudiante-id="{{ est.id }}" data-nomina-id="{{ session['current_nomina_id'] }}" data-evaluated-status="{{ 'true' if est.fecha_relleno is not none else 'false' }}">
                 <summary>
-                    <span>{{ est.nombre }} (RUT: {{ est.rut }}) - Edad: {{ est.edad }}</span>
+                    <span>{{ est.nombre }} (RUT: <span class="rut-display">{{ est.rut }}</span>) - Edad: {{ est.edad }}</span>
                     <i class="fas fa-chevron-right chevron-icon"></i>
                 </summary>
                 <div class="container">
@@ -863,7 +863,7 @@
                         <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">{{ est.derivaciones if est.derivaciones is not none else '-' }}</span></p>
                         
 
-                        <img src="/static/formulario_muestra.png" alt="Ejemplo Formulario" class="preview-img" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=Imagen+No+Disponible';" />
+                        <img src="https://placehold.co/300x200/cccccc/333333?text=Imagen+No+Disponible" alt="Ejemplo Formulario" class="preview-img" />
 
                         <button onclick="window.print()" style="margin-top: 20px; width: 100%;">
                             <i class="fas fa-print"></i> Imprimir Vista Previa
@@ -921,6 +921,28 @@
             document.querySelectorAll('input[name="evaluation_filter"]').forEach(radio => {
                 radio.addEventListener('change', aplicarFiltros);
             });
+
+            // Función para formatear el RUT (ej: 123456789 -> 12.345.678-9)
+            function formatRut(rut) {
+                if (!rut) return '';
+                rut = String(rut).replace(/[^0-9kK]/g, ''); // Elimina todo excepto números y K
+                if (rut.length < 2) return rut;
+
+                let body = rut.substring(0, rut.length - 1);
+                let dv = rut.substring(rut.length - 1).toUpperCase();
+                
+                // Agrega puntos cada 3 dígitos desde la derecha en el cuerpo
+                body = body.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+                return `${body}-${dv}`;
+            }
+
+            // Aplicar formato a los RUTs al cargar la página en el summary y preview
+            document.querySelectorAll('.rut-display, .prev-rut').forEach(element => {
+                const originalRut = element.textContent;
+                element.textContent = formatRut(originalRut);
+            });
+
         });
 
         function cerrarSesion() {
@@ -965,7 +987,8 @@
             if (!container) return; 
 
             container.querySelector('.prev-nombre').textContent = form.nombre.value;
-            container.querySelector('.prev-rut').textContent = form.rut.value;
+            // Actualizar el RUT en la vista previa con el formato
+            container.querySelector('.prev-rut').textContent = formatRut(form.rut.value);
             // Usar (value || '-') para asegurar que se muestre '-' si el campo está vacío
             container.querySelector('.prev-estado').textContent = form.estado ? (form.estado.value || '-') : '-';
             container.querySelector('.prev-diagnostico').textContent = form.diagnostico ? (form.diagnostico.value || '-') : '-';

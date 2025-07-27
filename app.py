@@ -158,40 +158,6 @@ def get_form_field_value(field_name, form_data, return_none_if_empty=False):
         return None if return_none_if_empty else '' # Return None for dates/numeric, empty string for text/select
     return stripped_value
 
-def get_doctor_specific_neurologia_pdf(doctor_identifier):
-    """
-    Construye la ruta al archivo PDF de neurología específico para una doctora.
-    Busca un archivo que contenga 'neurologia' y el identificador de la doctora
-    (normalizado) en el nombre.
-    
-    Args:
-        doctor_identifier (str): El identificador de la doctora (ej. "Perez", "Garcia").
-
-    Returns:
-        str: La ruta completa al archivo PDF si existe, o None.
-    """
-    if not doctor_identifier:
-        print("ADVERTENCIA: No se proporcionó identificador de doctora para buscar PDF.")
-        return None
-
-    # Normaliza el identificador para que coincida con el formato del nombre del archivo.
-    # Por ejemplo, "Perez" -> "perez" o "lopez"
-    # Ajusta esta normalización según cómo nombras tus archivos.
-    nombre_normalizado = normalizar(doctor_identifier) 
-
-    for filename in os.listdir(PDF_BASES_NEUROLOGIA_DIR):
-        if filename.lower().endswith('.pdf') and \
-           'neurologia' in filename.lower() and \
-           nombre_normalizado.lower() in filename.lower():
-            
-            pdf_path = os.path.join(PDF_BASES_NEUROLOGIA_DIR, filename)
-            if os.path.exists(pdf_path):
-                print(f"DEBUG: PDF de neurología encontrado para '{doctor_identifier}': {pdf_path}")
-                return pdf_path
-    
-    print(f"ADVERTENCIA: No se encontró un PDF de neurología específico para la doctora con identificador '{doctor_identifier}' en '{PDF_BASES_NEUROLOGIA_DIR}'.")
-    return None
-
 
 # -------------------- Google Drive API Functions (Empresa) --------------------
 

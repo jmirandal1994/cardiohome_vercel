@@ -17,7 +17,7 @@ import unicodedata
 # Las importaciones específicas para Google Drive API han sido eliminadas.
 
 
-app = Flask(__name__)
+app = Flask(____name__)
 app.secret_key = os.getenv("SECRET_KEY", "clave_super_segura_cardiohome_2025")
 ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'xls', 'xlsx', 'csv'}
 
@@ -28,7 +28,7 @@ PDF_BASE_FAMILIAR = 'formulario_familiar.pdf'
 
 # Nuevo: Directorio para los PDFs de neurología específicos por doctora
 # Asegúrate de que esta carpeta exista en la misma ubicación que app.py
-# y que contenga los PDFs nombrados como 'FORMULARIO_NEUROLOGIA_{doctora_id}.pdf'
+# y que contenga los PDFs nombrados como 'FORMULARIO TIPO NEUROLOGIA_{doctora_id}.pdf'
 PDF_BASES_NEUROLOGIA_DIR = 'pdf_bases_doctoras_neurologia'
 
 
@@ -57,6 +57,34 @@ SENDGRID_TO = os.getenv("SENDGRID_ADMIN_EMAIL", 'destination_admin_email@example
 
 # -------------------- Google Drive API Configuration (Empresa) - ELIMINADA --------------------
 # Todas las variables de configuración de Google Drive han sido eliminadas.
+
+# --- AÑADE ESTA FUNCIÓN AL PRINCIPIO DE TU ARCHIVO app.py ---
+def format_rut_python(rut):
+    """
+    Formatea un RUT chileno (ej: 12345678-9) a un formato con puntos y guion (ej: 12.345.678-9).
+    Acepta RUTs con o sin puntos y guiones.
+    """
+    if not rut:
+        return ""
+    
+    # Asegurarse de que el RUT sea una cadena y limpiar puntos y guiones existentes
+    rut = str(rut).replace('.', '').replace('-', '').strip().upper() 
+
+    if not rut:
+        return ""
+
+    # Separar cuerpo y dígito verificador
+    body = rut[:-1]
+    dv = rut[-1]
+
+    # Formatear el cuerpo con puntos
+    formatted_body = ""
+    for i, digit in enumerate(reversed(body)):
+        if i > 0 and i % 3 == 0:
+            formatted_body = "." + formatted_body
+        formatted_body = digit + formatted_body
+
+    return f"{formatted_body}-{dv}"
 
 
 # -------------------- Utilidades --------------------
@@ -162,16 +190,25 @@ def get_doctor_specific_neurologia_pdf(doctora_id):
     Intenta encontrar un PDF de neurología específico para la doctora en el directorio configurado.
     Si no lo encuentra, retorna el PDF de neurología por defecto.
     """
-    # Asume que los PDFs están nombrados como FORMULARIO_NEUROLOGIA_{doctora_id}.pdf
-    specific_pdf_filename = f"FORMULARIO_NEUROLOGIA_{doctora_id}.pdf"
-    specific_pdf_path = os.path.join(PDF_BASES_NEUROLOGIA_DIR, specific_pdf_filename)
+    # Construir la ruta completa al directorio de bases de PDF
+    base_dir = os.path.dirname(os.path.abspath(__file__)) # Obtiene el directorio del script actual
+    full_pdf_bases_dir_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR)
+
+    # Corregido: Asume que los PDFs están nombrados como 'FORMULARIO TIPO NEUROLOGIA_{doctora_id}.pdf'
+    specific_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{doctora_id}.pdf"
+    specific_pdf_path = os.path.join(full_pdf_bases_dir_path, specific_pdf_filename)
+
+    print(f"DEBUG: Buscando PDF en la ruta absoluta: {specific_pdf_path}") # Añadido para depuración
 
     if os.path.exists(specific_pdf_path):
         print(f"DEBUG: Se encontró PDF específico para doctora {doctora_id}: {specific_pdf_path}")
         return specific_pdf_path
     else:
         print(f"ADVERTENCIA: No se encontró PDF específico para doctora {doctora_id} en {specific_pdf_path}. Usando PDF por defecto: {PDF_BASE_NEUROLOGIA}")
-        return PDF_BASE_NEUROLOGIA
+        # Fallback al PDF por defecto, asegurando que su ruta también sea absoluta para claridad
+        default_pdf_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
+        print(f"DEBUG: Usando PDF por defecto en la ruta absoluta: {default_pdf_path}")
+        return default_pdf_path
 
 
 # -------------------- Rutas de la Aplicación --------------------
@@ -307,7 +344,8 @@ def generar_pdf():
     # ya que son los datos más actualizados que el usuario acaba de enviar.
     # Asegurarse de que los valores sean cadenas vacías si son None o vacíos.
     nombre = get_form_field_value('nombre', request.form)
-    rut = get_form_field_value('rut', request.form)
+    # APLICA EL FORMATO AL RUT AQUÍ
+    rut = format_rut_python(get_form_field_value('rut', request.form))
     
     fecha_nac_formato = ''
     fecha_nac_original_str = get_form_field_value('fecha_nacimiento_original', request.form)
@@ -359,7 +397,9 @@ def generar_pdf():
         else:
             pdf_base_path = PDF_BASE_NEUROLOGIA # Fallback si no hay doctora_id_para_formulario
     elif form_type == 'medicina_familiar':
-        pdf_base_path = PDF_BASE_FAMILIAR
+        # Asegúrate de que PDF_BASE_FAMILIAR sea una ruta absoluta si no está en el mismo directorio
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
     else:
         flash("❌ Tipo de formulario no reconocido para generar PDF.", 'error')
         if 'current_nomina_id' in session:
@@ -367,7 +407,7 @@ def generar_pdf():
         return redirect(url_for('dashboard'))
 
     if not os.path.exists(pdf_base_path):
-        flash(f"❌ Error: El archivo '{pdf_base_path}' no se encontró en la carpeta del servidor.", 'error')
+        flash(f"❌ Error: El archivo '{pdf_base_path}' no se encontró en la carpeta del servidor. Verifique la ruta y el nombre del archivo.", 'error')
         if 'current_nomina_id' in session:
             return redirect(url_for('relleno_formularios', nomina_id=session['current_nomina_id']))
         return redirect(url_for('dashboard'))
@@ -382,7 +422,7 @@ def generar_pdf():
             # Campos estrictamente para neurología, como lo pediste
             campos = {
                 "nombre": nombre,
-                "rut": rut,
+                "rut": rut, # AHORA 'rut' YA VIENE FORMATEADO
                 "fecha_nacimiento": fecha_nac_formato, 
                 "nacionalidad": nacionalidad,
                 "edad": edad,
@@ -399,7 +439,7 @@ def generar_pdf():
             # Campos para medicina familiar (mantengo los que tenías, asumiendo que son correctos para ese PDF)
             campos = {
                 "nombre": nombre,
-                "rut": rut,
+                "rut": rut, # AHORA 'rut' YA VIENE FORMATEADO
                 "fecha_nacimiento": fecha_nac_formato,
                 "edad": edad,
                 "nacionalidad": nacionalidad,
@@ -501,7 +541,7 @@ def marcar_evaluado():
         'fecha_relleno': str(date.today()), # Fecha actual de rellenado
         'doctora_evaluadora_id': doctora_id, 
         'nombre': get_form_field_value('nombre', request.form),
-        'rut': get_form_field_value('rut', request.form),
+        'rut': get_form_field_value('rut', request.form), # Este RUT se guarda sin formato
         # Para fechas, queremos None si están vacías para que se mapeen a NULL en la DB
         'fecha_nacimiento': get_form_field_value('fecha_nacimiento_original', request.form, return_none_if_empty=True), 
         'fecha_evaluacion': get_form_field_value('fecha_evaluacion', request.form, return_none_if_empty=True),
@@ -693,7 +733,7 @@ def dashboard():
             url_nominas_asignadas = (
                 f"{SUPABASE_URL}/rest/v1/nominas_medicas"
                 f"?doctora_id=eq.{usuario_id}"
-                f"&select=id,nombre_nomina,tipo_nomina,form_type" # Incluir form_type
+                f"&select=id,nombre_nomina,tipo_nomina,form_type,doctora_id_para_formulario" # Incluir form_type
             )
             print(f"DEBUG: URL para obtener nóminas asignadas (doctor): {url_nominas_asignadas}")
             # CAMBIO CLAVE: Usar SUPABASE_SERVICE_HEADERS para que la doctora vea sus nóminas
@@ -708,7 +748,8 @@ def dashboard():
                     'id': nom['id'],
                     'nombre_establecimiento': nom['nombre_nomina'],
                     'tipo_nomina_display': display_name,
-                    'form_type': nom.get('form_type') # Pasar el form_type
+                    'form_type': nom.get('form_type'), # Pasar el form_type
+                    'doctora_id_para_formulario': nom.get('doctora_id_para_formulario') # Nuevo: Pasar el ID de la doctora para el formulario
                 })
             print(f"DEBUG: Nóminas asignadas procesadas para plantilla: {assigned_nominations}")
             
@@ -1106,6 +1147,8 @@ def admin_cargar_nomina():
                 continue
             
             # Limpiar RUT: quitar puntos y guiones
+            # ESTA ES LA LÍNEA QUE LIMPIA EL RUT AL SUBIR LA NÓMINA.
+            # Se mantiene así para guardar el RUT sin formato en la DB.
             rut_limpio = str(rut_raw).replace('.', '').replace('-', '').strip()
             
             # Convertir fecha de nacimiento a formato ISO (YYYY-MM-DD)
@@ -1226,7 +1269,7 @@ def subir(establecimiento):
                 res_upload = requests.put(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=file_data)
                 res_upload.raise_for_status()
                 
-                url_publica = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path}"
+                url_publica = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path}" 
                 print(f"DEBUG: Archivo completado subido, URL pública: {url_publica}")
 
                 data = {
@@ -1379,8 +1422,8 @@ def doctor_performance_detail(doctor_id):
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?doctora_evaluadora_id=eq.{doctor_id}" 
             f"&fecha_relleno.not.is.null" 
-            f"&select=nombre,rut,fecha_relleno,nomina_id,nominas_medicas(nombre_nomina)" 
-            f"&order=fecha_relleno.desc" 
+            f"&select=nombre,rut,fecha_nacimiento,fecha_relleno,nomina_id,nominas_medicas(nombre_nomina)" 
+            f"&order=nombre.asc" 
         )
         print(f"DEBUG: URL para obtener estudiantes evaluados: {url_students}")
         res_students = requests.get(url_students, headers=SUPABASE_SERVICE_HEADERS)
@@ -1406,13 +1449,13 @@ def doctor_performance_detail(doctor_id):
 
             evaluated_students.append({
                 'nombre': student.get('nombre'),
-                'rut': student.get('rut'),
+                'rut': format_rut_python(student.get('rut')), # APLICA FORMATO AQUÍ TAMBIÉN SI SE MUESTRA EN ESTA VISTA
                 'fecha_relleno': formatted_date,
                 'nomina_nombre': nomina_nombre 
             })
 
     except requests.exceptions.RequestException as e:
-        print(f"ERROR: Error al obtener el rendimiento de la doctora: {e} - {res_students.text if 'res_students' in locals() else 'No response'}")
+        print(f"ERROR: Error de solicitud al obtener el rendimiento de la doctora: {e} - {res_students.text if 'res_students' in locals() else 'No response'}")
         flash('Error al cargar el detalle de rendimiento de la doctora.', 'error')
     except Exception as e:
         print(f"❌ Error inesperado al cargar rendimiento de doctora: {e}")
@@ -1504,6 +1547,9 @@ def descargar_excel_evaluados(nomina_id):
             'fecha_relleno': 'Fecha de Evaluación'
         }, inplace=True)
 
+        # Formatear el RUT en el DataFrame antes de exportar a Excel
+        df['RUT'] = df['RUT'].apply(format_rut_python) # APLICA EL FORMATO AQUÍ PARA EL EXCEL
+
         for col in ['Fecha de Nacimiento', 'Fecha de Evaluación']:
             if col in df.columns:
                 df[col] = pd.to_datetime(df[col], errors='coerce').dt.strftime('%d/%m/%Y').fillna('')
@@ -1552,9 +1598,13 @@ def generar_pdfs_visibles():
         if doctora_id_para_formulario:
             pdf_base_path = get_doctor_specific_neurologia_pdf(doctora_id_para_formulario)
         else:
-            pdf_base_path = PDF_BASE_NEUROLOGIA # Fallback si no hay doctora_id_para_formulario
+            # Asegúrate de que PDF_BASE_NEUROLOGIA sea una ruta absoluta si no está en el mismo directorio
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            pdf_base_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
     elif form_type == 'medicina_familiar':
-        pdf_base_path = PDF_BASE_FAMILIAR
+        # Asegúrate de que PDF_BASE_FAMILIAR sea una ruta absoluta si no está en el mismo directorio
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
     else:
         return jsonify({"success": False, "message": "Tipo de formulario no reconocido para generar PDF."}), 400
 
@@ -1577,7 +1627,8 @@ def generar_pdfs_visibles():
 
             # Preparar los datos para el PDF, asegurando que los Nones sean cadenas vacías
             nombre = est.get('nombre', '')
-            rut = est.get('rut', '')
+            # APLICA EL FORMATO AL RUT AQUÍ PARA PDFS VISIBLES
+            rut = format_rut_python(est.get('rut', ''))
             
             fecha_nac_formato = ''
             if est.get('fecha_nacimiento'):
@@ -1622,7 +1673,7 @@ def generar_pdfs_visibles():
             if form_type == 'neurologia':
                 campos = {
                     "nombre": nombre,
-                    "rut": rut,
+                    "rut": rut, # AHORA 'rut' YA VIENE FORMATEADO
                     "fecha_nacimiento": fecha_nac_formato, 
                     "nacionalidad": nacionalidad,
                     "edad": edad,
@@ -1639,7 +1690,7 @@ def generar_pdfs_visibles():
                 # Aquí deberías mapear los campos específicos de tu formulario de Medicina Familiar
                 campos = {
                     "Nombres y Apellidos": nombre,
-                    "RUN": rut,
+                    "RUN": rut, # AHORA 'rut' YA VIENE FORMATEADO
                     "Fecha nacimiento (dd/mm/aaaa)": fecha_nac_formato,
                     "Edad (en años y meses)": edad,
                     "Nacionalidad": nacionalidad,

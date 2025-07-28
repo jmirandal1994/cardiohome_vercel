@@ -784,10 +784,11 @@
                             <label for="diagnostico_{{ est.id }}">Diagnóstico:</label>
                             <select name="diagnostico" id="diagnostico_{{ est.id }}" required onchange="updatePreview(this.form)">
                                 <option value="">Seleccionar diagnóstico</option>
-                                <option value="Trastorno espectro autista" {% if est.diagnostico == 'Trastorno espectro autista' %}selected{% endif %}>Trastorno espectro autista</option>
+                                <option value="Trastorno Del Espectro Autista" {% if est.diagnostico == 'Trastorno Del Espectro Autista' %}selected{% endif %}>Trastorno Del Espectro Autista</option>
+                                <option value="Trastorno Por Deficit de Atención" {% if est.diagnostico == 'Trastorno Por Deficit de Atención' %}selected{% endif %}>Trastorno por Deficit de Atención</option>
+                                <option value="TDAH" {% if est.diagnostico == 'TDAH' %}selected{% endif %}>TDAH</option>
                                 <option value="GARC" {% if est.diagnostico == 'GARC' %}selected{% endif %}>GARC</option>
-                                <option value="Trastorno por deficit de atención" {% if est.diagnostico == 'Trastorno por deficit de atención' %}selected{% endif %}>Trastorno por deficit de atención</option>
-                                <option value="Trastorno por deficit de atención e hiperactividad" {% if est.diagnostico == 'Trastorno por deficit de atención e hiperactividad' %}selected{% endif %}>Trastorno por deficit de atención e hiperactividad</option>
+                                <option value="Hipoacusia" {% if est.diagnostico == 'Hipoacusia' %}selected{% endif %}>Hipoacusia</option>
                                 <option value="FIL" {% if est.diagnostico == 'FIL' %}selected{% endif %}>FIL</option>
                                 <option value="DIL" {% if est.diagnostico == 'DIL' %}selected{% endif %}>DIL</option>
                                 <option value="Sindrome de Down" {% if est.diagnostico == 'Sindrome de Down' %}selected{% endif %}>Sindrome de Down</option>

@@ -620,6 +620,153 @@
         tr:hover {
             background-color: #f0f4f8; /* lighter gray for hover */
         }
+
+        /* NEW STYLES FOR VISITS LIST */
+        .date-group {
+            margin-bottom: 30px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-base);
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .date-group-header {
+            background-color: var(--accent-blue);
+            color: white;
+            padding: 15px 20px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .date-group-header i {
+            font-size: 1.1em;
+        }
+
+        .date-group-content {
+            padding: 15px;
+            background-color: white;
+        }
+
+        .visit-card {
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .visit-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .visit-card-title {
+            font-weight: 700;
+            color: var(--primary-dark);
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .visit-card-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 20px; /* Row gap and column gap */
+            font-size: 0.9em;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .visit-card-details span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .visit-card-details span i {
+            color: var(--accent-blue);
+            font-size: 1em;
+        }
+
+        .visit-card-doctor-info {
+            font-weight: 600;
+            color: var(--accent-green);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 5px;
+        }
+        .visit-card-doctor-info i {
+            color: var(--accent-green);
+        }
+
+        .visit-card-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: flex-end; /* Align buttons to the right */
+        }
+
+        .visit-card-actions .item-card-action-link,
+        .visit-card-actions .delete-btn,
+        .visit-card-actions button {
+            margin-top: 0; /* Override default margin-top */
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+        
+        /* Specific style for "Registrar Evaluados" button */
+        .register-evaluated-btn {
+            background-color: var(--accent-blue);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .register-evaluated-btn:hover {
+            background-color: hsl(200, 60%, 40%);
+            transform: translateY(-2px);
+        }
+
+        /* Responsive adjustments for new visit styles */
+        @media (max-width: 768px) {
+            .date-group-header {
+                font-size: 1rem;
+                padding: 12px 15px;
+            }
+            .visit-card {
+                padding: 12px;
+            }
+            .visit-card-title {
+                font-size: 1rem;
+            }
+            .visit-card-details {
+                flex-direction: column;
+                gap: 5px;
+            }
+            .visit-card-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .visit-card-actions .item-card-action-link,
+            .visit-card-actions .delete-btn,
+            .visit-card-actions button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -777,33 +924,44 @@
                 <div id="admin-visits-list" class="content-section">
                     <div class="card admin-list">
                         <h3><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas Programadas</h3>
-                        <ul class="lista-items">
-                            {% if eventos %}
-                                {% for evento in eventos %}
-                                    <li class="item-card">
-                                        <div class="item-card-header">
-                                            <span>{{ evento.nombre }} ({{ evento.fecha }})</span>
-                                            <span>{{ evento.horario }}</span>
-                                        </div>
-                                        <div class="item-card-details">
-                                            <span>Alumnos: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
-                                            <span>Doc: {{ (doctoras | selectattr('id', 'equalto', evento.doctora_id) | first).usuario if evento.doctora_id else 'N/A' }}</span>
-                                            <span>Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
-                                        </div>
-                                        {% if evento.url_archivo %}
-                                            <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
-                                                <i class="fa-solid fa-file-alt"></i> Ver Formulario Base
-                                            </a>
-                                        {% endif %}
-                                        <button class="delete-btn" onclick="confirmDelete('establecimiento', '{{ evento.id }}', '{{ evento.nombre }}')">
-                                            <i class="fas fa-trash"></i> Eliminar Colegio
-                                        </button>
-                                    </li>
-                                {% endfor %}
-                            {% else %}
-                                <p style="text-align: center; color: #777;">No hay visitas programadas.</p>
-                            {% endif %}
-                        </ul>
+                        {% if eventos %}
+                            {% set grouped_events = eventos | groupby('fecha') %}
+                            {% for fecha, eventos_del_dia in grouped_events %}
+                                <div class="date-group">
+                                    <div class="date-group-header">
+                                        <i class="fa-solid fa-calendar-day"></i> {{ fecha }}
+                                    </div>
+                                    <div class="date-group-content">
+                                        <ul class="lista-items !mt-0"> {# Override default margin-top #}
+                                            {% for evento in eventos_del_dia %}
+                                                <li class="visit-card">
+                                                    <div class="visit-card-title">{{ evento.nombre }}</div>
+                                                    <div class="visit-card-details">
+                                                        <span><i class="fa-solid fa-clock"></i> {{ evento.horario }}</span>
+                                                        <span><i class="fa-solid fa-users"></i> Alumnos: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
+                                                        {% set doc_info = doctoras | selectattr('id', 'equalto', evento.doctora_id) | first %}
+                                                        <span class="visit-card-doctor-info"><i class="fa-solid fa-user-doctor"></i> Doctora: {{ doc_info.usuario if doc_info else 'N/A' }}</span>
+                                                        <span><i class="fa-solid fa-clipboard"></i> Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
+                                                    </div>
+                                                    <div class="visit-card-actions">
+                                                        {% if evento.url_archivo %}
+                                                            <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
+                                                                <i class="fa-solid fa-file-alt"></i> Ver Formulario Base
+                                                            </a>
+                                                        {% endif %}
+                                                        <button class="delete-btn" onclick="confirmDelete('establecimiento', '{{ evento.id }}', '{{ evento.nombre }}')">
+                                                            <i class="fas fa-trash"></i> Eliminar Visita
+                                                        </button>
+                                                    </div>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p style="text-align: center; color: #777;">No hay visitas programadas.</p>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -950,34 +1108,44 @@
                 <div id="doctor-visits" class="content-section">
                     <div class="card">
                         <h3><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</h3>
-                        <ul class="lista-items">
-                            {% if eventos %}
-                                {% for evento in eventos %}
-                                    <li class="item-card">
-                                        <div class="item-card-header">
-                                            <span>{{ evento.nombre }} ({{ evento.fecha }})</span>
-                                            <span>{{ evento.horario }}</span>
-                                        </div>
-                                        <div class="item-card-details">
-                                            <span>Alumnos esperados: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
-                                            <span>Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
-                                        </div>
-                                        {% if evento.url_archivo %}
-                                            <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
-                                                <i class="fa-solid fa-file-alt"></i> Descargar Formulario Base
-                                            </a>
-                                        {% endif %}
-                                        <form action="{{ url_for('evaluados', establecimiento=evento.id) }}" method="POST" class="mt-4">
-                                            <label for="alumnos_evaluados_{{ loop.index }}">Alumnos Evaluados:</label>
-                                            <input type="number" id="alumnos_evaluados_{{ loop.index }}" name="alumnos" min="0" placeholder="N° de alumnos evaluados" required />
-                                            <button type="submit" style="background-color: var(--accent-blue);"><i class="fa-solid fa-check"></i> Registrar Evaluados</button>
-                                        </form>
-                                    </li>
-                                {% endfor %}
-                            {% else %}
-                                <p style="text-align: center; color: #777;">No tienes visitas programadas.</p>
-                            {% endif %}
-                        </ul>
+                        {% if eventos %}
+                            {% set grouped_events = eventos | groupby('fecha') %}
+                            {% for fecha, eventos_del_dia in grouped_events %}
+                                <div class="date-group">
+                                    <div class="date-group-header">
+                                        <i class="fa-solid fa-calendar-day"></i> {{ fecha }}
+                                    </div>
+                                    <div class="date-group-content">
+                                        <ul class="lista-items !mt-0"> {# Override default margin-top #}
+                                            {% for evento in eventos_del_dia %}
+                                                <li class="visit-card">
+                                                    <div class="visit-card-title">{{ evento.nombre }}</div>
+                                                    <div class="visit-card-details">
+                                                        <span><i class="fa-solid fa-clock"></i> {{ evento.horario }}</span>
+                                                        <span><i class="fa-solid fa-users"></i> Alumnos esperados: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
+                                                        <span><i class="fa-solid fa-clipboard"></i> Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
+                                                    </div>
+                                                    <div class="visit-card-actions">
+                                                        {% if evento.url_archivo %}
+                                                            <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
+                                                                <i class="fa-solid fa-file-alt"></i> Descargar Formulario Base
+                                                            </a>
+                                                        {% endif %}
+                                                        <form action="{{ url_for('evaluados', establecimiento=evento.id) }}" method="POST" class="mt-4 flex flex-col gap-2">
+                                                            <label for="alumnos_evaluados_{{ loop.index }}" class="sr-only">Alumnos Evaluados:</label>
+                                                            <input type="number" id="alumnos_evaluados_{{ loop.index }}" name="alumnos" min="0" placeholder="N° de alumnos evaluados" required class="w-full" />
+                                                            <button type="submit" class="register-evaluated-btn w-full"><i class="fa-solid fa-check"></i> Registrar Evaluados</button>
+                                                        </form>
+                                                    </div>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p style="text-align: center; color: #777;">No tienes visitas programadas.</p>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -1153,10 +1321,10 @@
             let successMessage = '';
 
             if (type === 'establecimiento') {
-                titleText = `¿Estás seguro de eliminar el colegio "${name}"?`;
-                confirmText = `Esta acción es irreversible y eliminará todos los datos asociados.`;
+                titleText = `¿Estás seguro de eliminar la visita al colegio "${name}"?`;
+                confirmText = `Esta acción es irreversible y eliminará todos los datos asociados a esta visita.`;
                 endpoint = `/admin/eliminar_establecimiento/${id}`;
-                successMessage = 'Colegio eliminado exitosamente.';
+                successMessage = 'Visita eliminada exitosamente.';
             } else if (type === 'nomina') {
                 titleText = `¿Estás seguro de eliminar la nómina "${name}"?`;
                 confirmText = `Esta acción es irreversible y eliminará todos los datos asociados a los estudiantes de esta nómina.`;

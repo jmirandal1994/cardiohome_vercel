@@ -936,54 +936,74 @@
                 <div id="admin-visits-list" class="content-section">
                     <div class="card admin-list">
                         <h3><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas Programadas</h3>
-                        {% if eventos %}
-                            {% set grouped_events = eventos | groupby('fecha') %}
-                            {% for fecha, eventos_del_dia in grouped_events %}
-                                <div class="date-group">
-                                    <div class="date-group-header">
-                                        <i class="fa-solid fa-calendar-day"></i> {{ fecha }}
+                        <div class="flex flex-col md:flex-row gap-4 mb-6">
+                            <input type="text" id="adminVisitSearch" placeholder="Buscar por nombre o descripción..." class="flex-grow p-2 border rounded-md" onkeyup="filterVisits('admin')" />
+                            <select id="adminVisitDoctorFilter" class="p-2 border rounded-md" onchange="filterVisits('admin')">
+                                <option value="">Todas las Doctoras</option>
+                                {% for doc in doctoras %}
+                                    <option value="{{ doc.id }}">{{ doc.usuario }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div id="adminVisitsContainer">
+                            {% if eventos %}
+                                {% set grouped_events = eventos | groupby('fecha') %}
+                                {% for fecha, eventos_del_dia in grouped_events %}
+                                    <div class="date-group" data-date="{{ fecha }}">
+                                        <div class="date-group-header">
+                                            <i class="fa-solid fa-calendar-day"></i> {{ fecha }}
+                                        </div>
+                                        <div class="date-group-content">
+                                            <ul class="lista-items !mt-0"> {# Override default margin-top #}
+                                                {% for evento in eventos_del_dia %}
+                                                    <li class="visit-card" data-doctor-id="{{ evento.doctora_id }}" data-name="{{ evento.nombre | lower }}" data-obs="{{ evento.observaciones | lower }}">
+                                                        <div class="visit-card-title">{{ evento.nombre }}</div>
+                                                        <div class="visit-card-details">
+                                                            <span><i class="fa-solid fa-clock"></i> {{ evento.horario }}</span>
+                                                            <span><i class="fa-solid fa-users"></i> Alumnos: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
+                                                            {% set doc_info = doctoras | selectattr('id', 'equalto', evento.doctora_id) | first %}
+                                                            <span class="visit-card-doctor-info"><i class="fa-solid fa-user-doctor"></i> Doctora: {{ doc_info.usuario if doc_info else 'N/A' }}</span>
+                                                            <span><i class="fa-solid fa-clipboard"></i> Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
+                                                        </div>
+                                                        <div class="visit-card-actions">
+                                                            {% if evento.url_archivo %}
+                                                                <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
+                                                                    <i class="fa-solid fa-file-alt"></i> Ver Formulario Base
+                                                                </a>
+                                                            {% endif %}
+                                                            <button class="delete-btn" onclick="confirmDelete('establecimiento', '{{ evento.id }}', '{{ evento.nombre }}')">
+                                                                <i class="fas fa-trash"></i> Eliminar Visita
+                                                            </button>
+                                                        </div>
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
                                     </div>
-                                    <div class="date-group-content">
-                                        <ul class="lista-items !mt-0"> {# Override default margin-top #}
-                                            {% for evento in eventos_del_dia %}
-                                                <li class="visit-card">
-                                                    <div class="visit-card-title">{{ evento.nombre }}</div>
-                                                    <div class="visit-card-details">
-                                                        <span><i class="fa-solid fa-clock"></i> {{ evento.horario }}</span>
-                                                        <span><i class="fa-solid fa-users"></i> Alumnos: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
-                                                        {% set doc_info = doctoras | selectattr('id', 'equalto', evento.doctora_id) | first %}
-                                                        <span class="visit-card-doctor-info"><i class="fa-solid fa-user-doctor"></i> Doctora: {{ doc_info.usuario if doc_info else 'N/A' }}</span>
-                                                        <span><i class="fa-solid fa-clipboard"></i> Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
-                                                    </div>
-                                                    <div class="visit-card-actions">
-                                                        {% if evento.url_archivo %}
-                                                            <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
-                                                                <i class="fa-solid fa-file-alt"></i> Ver Formulario Base
-                                                            </a>
-                                                        {% endif %}
-                                                        <button class="delete-btn" onclick="confirmDelete('establecimiento', '{{ evento.id }}', '{{ evento.nombre }}')">
-                                                            <i class="fas fa-trash"></i> Eliminar Visita
-                                                        </button>
-                                                    </div>
-                                                </li>
-                                            {% endfor %}
-                                        </ul>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        {% else %}
-                            <p style="text-align: center; color: #777;">No hay visitas programadas.</p>
-                        {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <p style="text-align: center; color: #777;">No hay visitas programadas.</p>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
 
                 <div id="admin-nominas-list" class="content-section">
                     <div class="card admin-list">
                         <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Médicas Cargadas</h3>
-                        <ul class="lista-items">
+                        <div class="flex flex-col md:flex-row gap-4 mb-6">
+                            <input type="text" id="adminNominaSearch" placeholder="Buscar por nombre o tipo de nómina..." class="flex-grow p-2 border rounded-md" onkeyup="filterNominas('admin')" />
+                            <select id="adminNominaDoctorFilter" class="p-2 border rounded-md" onchange="filterNominas('admin')">
+                                <option value="">Todas las Doctoras</option>
+                                {% for doc in doctoras %}
+                                    <option value="{{ doc.id }}">{{ doc.usuario }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <ul class="lista-items" id="adminNominasContainer">
                             {% if admin_nominas_cargadas %}
                                 {% for nomina in admin_nominas_cargadas %}
-                                    <li class="item-card">
+                                    <li class="item-card" data-doctor-id="{{ nomina.doctora_id }}" data-name="{{ nomina.nombre_nomina | lower }}" data-type="{{ nomina.tipo_nomina | lower }}">
                                         <div class="item-card-header">
                                             <span>{{ nomina.nombre_nomina }} ({{ nomina.tipo_nomina.replace('_', ' ').title() }})</span>
                                             <span>Asignada a: {{ (doctoras | selectattr('id', 'equalto', nomina.doctora_id) | first).usuario if nomina.doctora_id else 'N/A' }}</span>
@@ -1120,54 +1140,62 @@
                 <div id="doctor-visits" class="content-section">
                     <div class="card">
                         <h3><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</h3>
-                        {% if eventos %}
-                            {% set grouped_events = eventos | groupby('fecha') %}
-                            {% for fecha, eventos_del_dia in grouped_events %}
-                                <div class="date-group">
-                                    <div class="date-group-header">
-                                        <i class="fa-solid fa-calendar-day"></i> {{ fecha }}
+                        <div class="flex flex-col md:flex-row gap-4 mb-6">
+                            <input type="text" id="doctorVisitSearch" placeholder="Buscar por nombre o descripción..." class="flex-grow p-2 border rounded-md" onkeyup="filterVisits('doctor')" />
+                        </div>
+                        <div id="doctorVisitsContainer">
+                            {% if eventos %}
+                                {% set grouped_events = eventos | groupby('fecha') %}
+                                {% for fecha, eventos_del_dia in grouped_events %}
+                                    <div class="date-group" data-date="{{ fecha }}">
+                                        <div class="date-group-header">
+                                            <i class="fa-solid fa-calendar-day"></i> {{ fecha }}
+                                        </div>
+                                        <div class="date-group-content">
+                                            <ul class="lista-items !mt-0"> {# Override default margin-top #}
+                                                {% for evento in eventos_del_dia %}
+                                                    <li class="visit-card" data-name="{{ evento.nombre | lower }}" data-obs="{{ evento.observaciones | lower }}">
+                                                        <div class="visit-card-title">{{ evento.nombre }}</div>
+                                                        <div class="visit-card-details">
+                                                            <span><i class="fa-solid fa-clock"></i> {{ evento.horario }}</span>
+                                                            <span><i class="fa-solid fa-users"></i> Alumnos esperados: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
+                                                            <span><i class="fa-solid fa-clipboard"></i> Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
+                                                        </div>
+                                                        <div class="visit-card-actions">
+                                                            {% if evento.url_archivo %}
+                                                                <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
+                                                                    <i class="fa-solid fa-file-alt"></i> Descargar Formulario Base
+                                                                </a>
+                                                            {% endif %}
+                                                            <form action="{{ url_for('evaluados', establecimiento=evento.id) }}" method="POST" class="mt-4 flex flex-col gap-2">
+                                                                <label for="alumnos_evaluados_{{ loop.index }}" class="sr-only">Alumnos Evaluados:</label>
+                                                                <input type="number" id="alumnos_evaluados_{{ loop.index }}" name="alumnos" min="0" placeholder="N° de alumnos evaluados" required class="w-full" />
+                                                                <button type="submit" class="register-evaluated-btn w-full"><i class="fa-solid fa-check"></i> Registrar Evaluados</button>
+                                                            </form>
+                                                        </div>
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
                                     </div>
-                                    <div class="date-group-content">
-                                        <ul class="lista-items !mt-0"> {# Override default margin-top #}
-                                            {% for evento in eventos_del_dia %}
-                                                <li class="visit-card">
-                                                    <div class="visit-card-title">{{ evento.nombre }}</div>
-                                                    <div class="visit-card-details">
-                                                        <span><i class="fa-solid fa-clock"></i> {{ evento.horario }}</span>
-                                                        <span><i class="fa-solid fa-users"></i> Alumnos esperados: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
-                                                        <span><i class="fa-solid fa-clipboard"></i> Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
-                                                    </div>
-                                                    <div class="visit-card-actions">
-                                                        {% if evento.url_archivo %}
-                                                            <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
-                                                                <i class="fa-solid fa-file-alt"></i> Descargar Formulario Base
-                                                            </a>
-                                                        {% endif %}
-                                                        <form action="{{ url_for('evaluados', establecimiento=evento.id) }}" method="POST" class="mt-4 flex flex-col gap-2">
-                                                            <label for="alumnos_evaluados_{{ loop.index }}" class="sr-only">Alumnos Evaluados:</label>
-                                                            <input type="number" id="alumnos_evaluados_{{ loop.index }}" name="alumnos" min="0" placeholder="N° de alumnos evaluados" required class="w-full" />
-                                                            <button type="submit" class="register-evaluated-btn w-full"><i class="fa-solid fa-check"></i> Registrar Evaluados</button>
-                                                        </form>
-                                                    </div>
-                                                </li>
-                                            {% endfor %}
-                                        </ul>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        {% else %}
-                            <p style="text-align: center; color: #777;">No tienes visitas programadas.</p>
-                        {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <p style="text-align: center; color: #777;">No tienes visitas programadas.</p>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
 
                 <div id="doctor-nominas" class="content-section">
                     <div class="card">
                         <h3><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Médicas Asignadas</h3>
-                        <ul class="lista-items">
+                        <div class="flex flex-col md:flex-row gap-4 mb-6">
+                            <input type="text" id="doctorNominaSearch" placeholder="Buscar por nombre o tipo de nómina..." class="flex-grow p-2 border rounded-md" onkeyup="filterNominas('doctor')" />
+                        </div>
+                        <ul class="lista-items" id="doctorNominasContainer">
                             {% if assigned_nominations %}
                                 {% for nomina in assigned_nominations %}
-                                    <li class="item-card">
+                                    <li class="item-card" data-name="{{ nomina.nombre_establecimiento | lower }}" data-type="{{ nomina.tipo_nomina_display | lower }}">
                                         <div class="item-card-header">
                                             <span>{{ nomina.nombre_establecimiento }}</span>
                                             <span>Tipo: {{ nomina.tipo_nomina_display }}</span>
@@ -1578,6 +1606,95 @@
                 }
             });
         }
+
+        // --- NEW FILTERING LOGIC ---
+
+        function filterNominas(userType) {
+            let searchText;
+            let doctorFilterId;
+            let containerId;
+
+            if (userType === 'admin') {
+                searchText = document.getElementById('adminNominaSearch').value.toLowerCase();
+                doctorFilterId = document.getElementById('adminNominaDoctorFilter').value;
+                containerId = 'adminNominasContainer';
+            } else { // userType === 'doctor'
+                searchText = document.getElementById('doctorNominaSearch').value.toLowerCase();
+                containerId = 'doctorNominasContainer';
+                doctorFilterId = null; // No doctor filter for doctors' own nominations
+            }
+
+            const nominaItems = document.getElementById(containerId).getElementsByClassName('item-card');
+
+            for (let i = 0; i < nominaItems.length; i++) {
+                const item = nominaItems[i];
+                const nominaName = item.dataset.name; // Stored in lowercase
+                const nominaType = item.dataset.type; // Stored in lowercase
+                const assignedDoctorId = item.dataset.doctorId;
+
+                const matchesSearch = (nominaName.includes(searchText) || nominaType.includes(searchText));
+                const matchesDoctor = (doctorFilterId === "" || assignedDoctorId === doctorFilterId);
+
+                if (matchesSearch && matchesDoctor) {
+                    item.style.display = ''; // Show the item
+                } else {
+                    item.style.display = 'none'; // Hide the item
+                }
+            }
+        }
+
+        function filterVisits(userType) {
+            let searchText;
+            let doctorFilterId;
+            let containerId;
+
+            if (userType === 'admin') {
+                searchText = document.getElementById('adminVisitSearch').value.toLowerCase();
+                doctorFilterId = document.getElementById('adminVisitDoctorFilter').value;
+                containerId = 'adminVisitsContainer';
+            } else { // userType === 'doctor'
+                searchText = document.getElementById('doctorVisitSearch').value.toLowerCase();
+                containerId = 'doctorVisitsContainer';
+                doctorFilterId = null; // No doctor filter for doctors' own visits
+            }
+
+            const dateGroups = document.getElementById(containerId).getElementsByClassName('date-group');
+
+            for (let i = 0; i < dateGroups.length; i++) {
+                const dateGroup = dateGroups[i];
+                const visitCards = dateGroup.getElementsByClassName('visit-card');
+                let anyCardVisibleInGroup = false;
+
+                for (let j = 0; j < visitCards.length; j++) {
+                    const card = visitCards[j];
+                    const visitName = card.dataset.name; // Stored in lowercase
+                    const visitObs = card.dataset.obs;   // Stored in lowercase
+                    const assignedDoctorId = card.dataset.doctorId; // Only present for admin view
+
+                    const matchesSearch = (visitName.includes(searchText) || visitObs.includes(searchText));
+                    
+                    let matchesDoctor = true; // Assume true if no doctor filter or for doctor's own view
+                    if (userType === 'admin') { // Only apply doctor filter for admin
+                        matchesDoctor = (doctorFilterId === "" || assignedDoctorId === doctorFilterId);
+                    }
+
+                    if (matchesSearch && matchesDoctor) {
+                        card.style.display = ''; // Show the card
+                        anyCardVisibleInGroup = true;
+                    } else {
+                        card.style.display = 'none'; // Hide the card
+                    }
+                }
+
+                // Show/hide the date group based on whether any of its children are visible
+                if (anyCardVisibleInGroup) {
+                    dateGroup.style.display = '';
+                } else {
+                    dateGroup.style.display = 'none';
+                }
+            }
+        }
+
 
     </script>
 </body>

@@ -810,7 +810,7 @@
                             {# Este campo ahora se rellena automáticamente por JavaScript, pero sigue siendo un input date #}
                             <input type="date" name="fecha_reevaluacion" id="fecha_reevaluacion_{{ est.id }}" value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}" required onchange="updatePreview(this.form)">
 
-                            <label for="derivaciones_{{ est.id }}">Derivaciones:</label>
+                            <label for="derivaciones_{{ est.id }}">Indicaciones/Derivaciones:</label>
                             <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="2" placeholder="Detalles de derivaciones...">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
 
                             <div class="button-group">

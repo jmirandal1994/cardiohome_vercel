@@ -1578,6 +1578,119 @@ def descargar_excel_evaluados(nomina_id):
         print(f"ERROR: Error inesperado al generar Excel: {e}")
         return jsonify({"success": False, "message": f"Error interno del servidor al generar el Excel: {str(e)}"}), 500
 
+@app.route('/generar_zip_pdfs_evaluados', methods=['POST'])
+def generar_zip_pdfs_evaluados():
+    if 'user_id' not in session:
+        return jsonify({"success": False, "message": "Acceso denegado."}), 403
+
+    data = request.get_json()
+    nomina_id = data.get('nomina_id')
+    student_ids = data.get('student_ids', [])
+
+    if not nomina_id or not student_ids:
+        return jsonify({"success": False, "message": "IDs de nómina o estudiantes faltantes."}), 400
+
+    try:
+        # Obtener el tipo de formulario y el ID de la doctora para el PDF base de la nómina
+        res_nomina = requests.get(
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}&select=nombre_nomina,form_type,doctora_id_para_formulario",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        res_nomina.raise_for_status()
+        nomina_info = res_nomina.json()
+        if not nomina_info:
+            return jsonify({"success": False, "message": "Nómina no encontrada."}), 404
+        
+        nomina_nombre = nomina_info[0]['nombre_nomina']
+        form_type = nomina_info[0]['form_type']
+        doctora_id_para_formulario = nomina_info[0].get('doctora_id_para_formulario')
+
+        pdf_base_path = None
+        if form_type == 'neurologia':
+            pdf_base_path = PDF_BASE_NEUROLOGIA 
+            if not doctora_id_para_formulario:
+                return jsonify({"success": False, "message": "No se especificó la doctora para el formulario de neurología."}), 400
+        elif form_type == 'medicina_familiar':
+            pdf_base_path = PDF_BASE_FAMILIAR
+        else:
+            return jsonify({"success": False, "message": "Tipo de formulario no soportado."}), 400
+
+        if not os.path.exists(pdf_base_path):
+            return jsonify({"success": False, "message": f"Archivo PDF base no encontrado: {pdf_base_path}"}), 500
+
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for student_id in student_ids:
+                # Obtener datos completos del estudiante
+                res_estudiante = requests.get(
+                    f"{SUPABASE_URL}/rest/v1/estudiantes?id=eq.{student_id}&select=*",
+                    headers=SUPABASE_SERVICE_HEADERS
+                )
+                res_estudiante.raise_for_status()
+                estudiante_data = res_estudiante.json()
+                if not estudiante_data:
+                    print(f"ADVERTENCIA: Estudiante con ID {student_id} no encontrado. Saltando.")
+                    continue
+                estudiante = estudiante_data[0]
+
+                # Rellenar el PDF individual
+                temp_pdf_buffer = io.BytesIO()
+                with open(pdf_base_path, 'rb') as file:
+                    reader = PdfReader(file)
+                    writer = PdfWriter()
+
+                    for page in reader.pages:
+                        writer.add_page(page)
+
+                    field_mapping = {
+                        "Nombre": estudiante.get('nombre', ''),
+                        "RUT": estudiante.get('rut', ''),
+                        "Fecha_Nacimiento": datetime.strptime(estudiante['fecha_nacimiento'], '%Y-%m-%d').strftime('%d/%m/%Y') if estudiante.get('fecha_nacimiento') else '',
+                        "Edad": str(estudiante.get('edad', '')),
+                        "Nacionalidad": estudiante.get('nacionalidad', ''),
+                        "Sexo": 'MASCULINO' if estudiante.get('sexo') == 'M' else 'FEMENINO' if estudiante.get('sexo') == 'F' else '',
+                        "Fecha_Evaluacion": datetime.strptime(estudiante['fecha_evaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y') if estudiante.get('fecha_evaluacion') else '',
+                        "Estado_General": estudiante.get('estado_general', ''),
+                        "Diagnostico": estudiante.get('diagnostico', ''),
+                        "Plazo_Reevaluacion": estudiante.get('plazo', ''),
+                        "Fecha_Reevaluacion": datetime.strptime(estudiante['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y') if estudiante.get('fecha_reevaluacion') else '',
+                        "Derivaciones": estudiante.get('derivaciones', '')
+                    }
+                    writer.update_page_form_field_values(writer.pages[0], field_mapping)
+                    writer.write(temp_pdf_buffer)
+                temp_pdf_buffer.seek(0)
+
+                # Añadir el PDF individual al archivo ZIP
+                pdf_filename = f"Evaluacion_{estudiante.get('nombre', 'Estudiante').replace(' ', '_')}_{estudiante.get('rut', '')}.pdf"
+                zf.writestr(pdf_filename, temp_pdf_buffer.getvalue())
+
+        zip_buffer.seek(0)
+        
+        # Enviar el archivo ZIP como respuesta
+        zip_filename = f"Evaluaciones_ZIP_{nomina_nombre.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+        return send_file(
+            zip_buffer,
+            mimetype='application/zip',
+            as_attachment=True,
+            download_name=zip_filename
+        )
+
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR: Error de solicitud al generar ZIP de PDFs: {e}")
+        return jsonify({"success": False, "message": f"Error de conexión al generar ZIP de PDFs: {str(e)}"}), 500
+    except Exception as e:
+        print(f"ERROR: Error inesperado al generar ZIP de PDFs: {e}")
+        return jsonify({"success": False, "message": f"Error inesperado al generar ZIP de PDFs: {str(e)}"}), 500
+
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
 @app.route('/generar_pdfs_visibles', methods=['POST'])
 def generar_pdfs_visibles():
     if 'usuario' not in session:

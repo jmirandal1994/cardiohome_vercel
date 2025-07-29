@@ -715,6 +715,9 @@
             <button onclick="generarEImprimirPDFsVisibles('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
                 <i class="fas fa-file-pdf"></i> Generar y Abrir PDFs Visibles (para Imprimir)
             </button>
+            <button onclick="descargarPDFsVisiblesComoZip('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
+                <i class="fas fa-file-archive"></i> Descargar PDFs Visibles (ZIP)
+            </button>
         </div>
 
 
@@ -1463,7 +1466,7 @@
                 });
         }
 
-        // FUNCIÓN MODIFICADA: Generar y abrir PDF para imprimir
+        // Función para generar y abrir PDF para imprimir (combinado)
         async function generarEImprimirPDFsVisibles(nominaId, establecimientoNombre) {
             const visibleStudentIds = [];
             document.querySelectorAll('details.estudiante:not([style*="display: none"])').forEach(detail => {
@@ -1532,6 +1535,80 @@
                     icon: 'error',
                     title: 'Error de impresión',
                     text: error.message || 'No se pudo generar o abrir los PDFs para imprimir. Intente de nuevo más tarde.',
+                });
+            } finally {
+                Swal.close();
+            }
+        }
+
+        // NUEVA FUNCIÓN: Descargar PDFs visibles como archivo ZIP
+        async function descargarPDFsVisiblesComoZip(nominaId, establecimientoNombre) {
+            const visibleStudentIds = [];
+            // Solo obtener IDs de estudiantes que estén evaluados y visibles
+            document.querySelectorAll('details.estudiante[data-evaluated-status="true"]:not([style*="display: none"])').forEach(detail => {
+                visibleStudentIds.push(detail.getAttribute('data-estudiante-id'));
+            });
+
+            if (visibleStudentIds.length === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'No hay formularios evaluados y visibles para descargar',
+                    text: 'Asegúrate de que haya estudiantes evaluados y visibles en la lista.',
+                    confirmButtonText: 'Entendido'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Generando ZIP de PDFs...',
+                html: `Se generarán ${visibleStudentIds.length} PDF(s). Esto puede tardar un momento. <br><br> <i class="fas fa-spinner fa-spin"></i>`,
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            try {
+                const response = await fetch('/generar_zip_pdfs_evaluados', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        nomina_id: nominaId,
+                        student_ids: visibleStudentIds 
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Error al generar el archivo ZIP de PDFs.');
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Evaluaciones_ZIP_${establecimientoNombre.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0,10)}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Descarga Completa!',
+                    text: 'El archivo ZIP con los PDFs individuales se ha descargado correctamente.',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+
+            } catch (error) {
+                console.error('Error al descargar ZIP de PDFs:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de descarga',
+                    text: error.message || 'No se pudo descargar el archivo ZIP. Intente de nuevo más tarde.',
                 });
             } finally {
                 Swal.close();

@@ -427,6 +427,58 @@
             box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
         }
 
+        /* --- NUEVO CÓDIGO DE ANIMACIÓN --- */
+        .welcome-animation-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px; /* Asegura un buen espacio para la animación */
+            text-align: center;
+            gap: 1.5rem;
+            animation: fadeIn 1s ease-out forwards;
+        }
+
+        .animated-logo {
+            width: 120px;
+            height: 120px;
+            animation: pulse 2s infinite ease-in-out, rotate 8s linear infinite; /* Animación de pulso y giro */
+            filter: drop-shadow(0 0 10px var(--color-accent));
+        }
+
+        .animated-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--color-accent);
+            text-shadow: 0 0 15px var(--color-accent);
+            animation: fadeInScale 2s ease-out forwards;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .welcome-text {
+            font-size: 1.2rem;
+            max-width: 600px;
+            line-height: 1.7;
+            animation: fadeIn 2s ease-out forwards 1s; /* Retrasa la animación del texto */
+            opacity: 0;
+        }
+        /* --- FIN DEL CÓDIGO DE ANIMACIÓN --- */
+
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .menu-toggle-btn { display: block; position: fixed; top: 1.5rem; left: 1.5rem; z-index: 100; }
@@ -494,9 +546,12 @@
 
         <main class="dashboard-content">
             <div id="welcome-section" class="content-section active">
-                <div class="card">
-                    <h2 class="text-3xl font-bold text-accent mb-4">¡Bienvenido a CardioHome!</h2>
-                    <p class="text-lg text-light-text mb-6">Tu plataforma integral para la gestión eficiente de visitas médicas, nóminas de pacientes y formularios. Aquí podrás optimizar tu trabajo y asegurar un seguimiento completo de cada caso.</p>
+                <div class="welcome-animation-container">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo CardioHome" class="animated-logo" />
+                    <h2 class="animated-title">CardioHome</h2>
+                    <p class="welcome-text">
+                        Tu plataforma integral para la gestión eficiente de visitas médicas, nóminas de pacientes y formularios. Aquí podrás optimizar tu trabajo y asegurar un seguimiento completo de cada caso.
+                    </p>
                 </div>
             </div>
 

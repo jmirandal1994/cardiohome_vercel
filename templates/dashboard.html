@@ -9,66 +9,58 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
     <style>
-        /* Custom CSS variables - Adjusted for a softer, more professional look */
+        /* Modern Dark Theme Variables */
         :root {
-            --primary-dark: hsl(210, 29%, 20%); /* Slightly darker, richer blue */
-            --primary-medium: hsl(210, 15%, 30%); /* Deeper grayish blue */
-            --primary-light: hsl(210, 16%, 96%); /* Very light gray-blue */
-            --background-accent: hsl(210, 16%, 99%); /* Almost white, clean background */
-            --accent-green: hsl(140, 55%, 38%); /* Slightly muted forest green */
-            --accent-red: hsl(0, 65%, 50%); /* Softer vibrant red */
-            --accent-blue: hsl(200, 55%, 45%); /* Slightly deeper sky blue */
-            --text-dark: hsl(210, 10%, 18%); /* Darker text for contrast */
-            --text-light: hsl(0, 0%, 98%);
-            --border-color: hsl(210, 10%, 85%); /* Softer border color */
-            --shadow-light: rgba(0, 0, 0, 0.04);
-            --shadow-medium: rgba(0, 0, 0, 0.08);
-            --shadow-strong: rgba(0, 0, 0, 0.15); /* More subtle strong shadow */
+            --bg-primary: #121212; /* Darker background */
+            --bg-secondary: #1e1e1e; /* Card background */
+            --text-light: #e0e0e0;
+            --text-medium: #a0a0a0;
+            --text-dark: #f0f0f0;
+            --accent-purple: #bb86fc; /* Vibrant accent for links/buttons */
+            --accent-green: #03dac6; /* Secondary accent */
+            --accent-red: #cf6679; /* Error/danger color */
+            --border-color: #2c2c2c;
+            --shadow-strong: rgba(0, 0, 0, 0.4);
+            --shadow-medium: rgba(0, 0, 0, 0.2);
             --border-radius-base: 12px;
             --padding-base: 25px;
             --gap-base: 25px;
         }
 
-        /* Google Fonts for a more professional look */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap');
-
-        /* General body styles */
+        /* General body & fonts */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--background-accent);
-            color: var(--text-dark);
+            background-color: var(--bg-primary);
+            color: var(--text-light);
             line-height: 1.6;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
 
-        /* Header styles */
+        /* Header */
         header {
-            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-medium) 100%);
-            color: var(--text-light);
+            background-color: var(--bg-secondary);
             padding: 1.5rem 0;
             text-align: center;
-            box-shadow: 0 8px 25px var(--shadow-strong); /* Slightly more pronounced shadow */
-            position: relative;
+            box-shadow: 0 4px 15px var(--shadow-medium);
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 10;
         }
-
         header img {
-            width: 100px;
+            width: 80px;
             height: auto;
-            filter: brightness(0) invert(1);
             margin: 0 auto 5px auto;
             display: block;
+            filter: grayscale(100%) brightness(0) invert(1) drop-shadow(0 0 5px var(--accent-purple));
         }
-
         header h1 {
             font-family: 'Montserrat', sans-serif;
             font-size: 28px;
@@ -76,39 +68,37 @@
             margin-bottom: 0;
             font-weight: 800;
             letter-spacing: 0.8px;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.2); /* Softer text shadow */
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+            color: var(--text-dark);
         }
 
         /* Logout button */
         .logout-btn {
-            background-color: var(--accent-red);
-            color: var(--text-light);
-            border: none;
+            background-color: transparent;
+            color: var(--accent-red);
+            border: 1px solid var(--accent-red);
             padding: 10px 20px;
             border-radius: var(--border-radius-base);
             cursor: pointer;
             font-weight: 600;
             font-size: 14px;
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            transition: all 0.3s ease;
             position: absolute;
             top: 15px;
             right: 20px;
             display: flex;
             align-items: center;
             gap: 8px;
-            box-shadow: 0 3px 10px var(--shadow-medium); /* Refined shadow */
         }
-
         .logout-btn:hover {
-            background-color: hsl(0, 65%, 40%); /* Slightly darker on hover */
-            transform: translateY(-3px); /* More pronounced lift */
-            box-shadow: 0 6px 15px var(--shadow-strong);
+            background-color: var(--accent-red);
+            color: var(--bg-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(207, 102, 121, 0.3);
         }
-        .logout-btn i {
-            font-size: 15px;
-        }
+        .logout-btn i { font-size: 15px; }
 
-        /* Menu button for mobile */
+        /* Menu toggle */
         .menu-toggle-btn {
             background: none;
             border: none;
@@ -120,161 +110,127 @@
             left: 20px;
             z-index: 100;
             display: none;
+            transition: transform 0.2s ease;
+        }
+        .menu-toggle-btn:hover {
+            transform: scale(1.1);
         }
 
-        /* Main dashboard wrapper */
+        /* Dashboard layout */
         .dashboard-wrapper {
             display: flex;
             flex: 1;
-            padding-top: var(--gap-base);
         }
 
         /* Sidebar */
         .sidebar {
-            width: 250px;
-            background-color: var(--primary-dark);
-            color: var(--text-light);
+            width: 280px;
+            background-color: var(--bg-secondary);
             padding: var(--padding-base);
-            box-shadow: 4px 0 15px var(--shadow-medium);
+            box-shadow: 4px 0 15px var(--shadow-strong);
             flex-shrink: 0;
             transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
             position: sticky;
             top: 0;
-            height: calc(100vh - 80px);
+            height: 100vh;
             overflow-y: auto;
-            border-radius: 0 var(--border-radius-base) var(--border-radius-base) 0;
+            border-right: 1px solid var(--border-color);
         }
-
         .sidebar.collapsed {
             width: 0;
-            transform: translateX(-250px);
-            padding: 0;
-            overflow: hidden;
+            transform: translateX(-100%);
         }
-
         .sidebar-nav {
             list-style: none;
             padding: 0;
             margin: 0;
         }
-
         .sidebar-nav li {
             margin-bottom: 10px;
         }
-
         .sidebar-nav a {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 12px 15px;
-            color: var(--text-light);
+            padding: 12px 18px;
+            color: var(--text-medium);
             text-decoration: none;
             border-radius: 8px;
-            transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; /* Added transform */
+            transition: all 0.3s ease;
             font-weight: 500;
-            transform: translateX(0); /* Default state */
+            position: relative;
+            overflow: hidden;
         }
-
-        .sidebar-nav a:hover,
-        .sidebar-nav a.active {
-            background-color: var(--primary-medium);
-            color: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3); /* Stronger shadow on hover/active */
-            transform: translateX(5px); /* Slide effect */
-        }
-
         .sidebar-nav a i {
             font-size: 18px;
         }
+        .sidebar-nav a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background-color: var(--accent-purple);
+            transform: scaleY(0);
+            transform-origin: top;
+            transition: transform 0.3s ease;
+        }
+        .sidebar-nav a:hover {
+            color: var(--text-light);
+            background-color: rgba(187, 134, 252, 0.1);
+            transform: translateX(5px);
+        }
+        .sidebar-nav a.active {
+            color: var(--text-dark);
+            background-color: var(--accent-purple);
+            font-weight: 600;
+            box-shadow: 0 4px 10px rgba(187, 134, 252, 0.3);
+            transform: translateX(0);
+        }
+        .sidebar-nav a.active::before {
+            transform: scaleY(1);
+        }
 
-        /* Main dashboard content */
+        /* Main content */
         .dashboard-content {
             flex-grow: 1;
-            padding: 0 var(--gap-base) var(--gap-base) var(--gap-base);
+            padding: var(--gap-base);
             transition: margin-left 0.3s ease-in-out;
         }
 
-        /* Adjustment when sidebar is collapsed */
-        .dashboard-wrapper.sidebar-active .dashboard-content {
-            margin-left: 250px;
-        }
-
-        /* Content section */
+        /* Content sections */
         .content-section {
             display: none;
             animation: fadeIn 0.5s ease-out forwards;
         }
-
         .content-section.active {
             display: block;
         }
-
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Statistics cards */
-        .summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: var(--gap-base);
-            margin-bottom: var(--gap-base);
-        }
-
-        .summary .card {
-            text-align: center;
-            font-weight: 600;
-            font-size: 16px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 4px 15px var(--shadow-medium); /* Enhanced shadow */
-        }
-
-        .summary .card p {
-            font-size: 30px;
-            margin: 10px 0 0;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-        }
-
-        .summary .card:nth-child(1) { background-color: hsl(140, 50%, 92%); color: var(--accent-green); border: 1px solid hsl(140, 50%, 85%); } /* Lighter background */
-        .summary .card:nth-child(2) { background-color: hsl(0, 60%, 94%); color: var(--accent-red); border: 1px solid hsl(0, 60%, 88%); } /* Lighter background */
-        .summary .card:nth-child(3) { background-color: hsl(200, 70%, 92%); color: var(--accent-blue); border: 1px solid hsl(200, 70%, 88%); } /* Lighter background */
-
-        .summary .card h3 i {
-            font-size: 22px;
-            margin-right: 8px;
-            color: inherit;
-        }
-
-        /* General cards */
+        /* General card styles */
         .card {
-            background: white;
+            background: var(--bg-secondary);
             padding: var(--padding-base);
             border-radius: var(--border-radius-base);
-            box-shadow: 0 6px 20px var(--shadow-medium); /* More refined shadow */
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            display: flex;
-            flex-direction: column;
+            box-shadow: 0 6px 20px var(--shadow-medium);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
             border: 1px solid var(--border-color);
-            position: relative;
             margin-bottom: var(--gap-base);
         }
-
         .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 12px 30px var(--shadow-strong); /* More pronounced hover shadow */
+            box-shadow: 0 12px 30px var(--shadow-strong);
         }
-
         .card h3 {
             font-family: 'Montserrat', sans-serif;
             margin-top: 0;
             margin-bottom: 20px;
-            color: var(--primary-dark);
+            color: var(--text-dark);
             font-size: 22px;
             font-weight: 700;
             border-bottom: 2px solid var(--border-color);
@@ -284,166 +240,11 @@
             gap: 10px;
         }
         .card h3 i {
-            color: var(--accent-blue);
+            color: var(--accent-purple);
             font-size: 1.2em;
         }
 
-        /* Forms */
-        form {
-            display: flex;
-            flex-direction: column;
-            gap: 18px; /* Slightly more space between form elements */
-        }
-        form label {
-            font-weight: 600; /* Bolder labels */
-            margin-bottom: -12px; /* Pull label closer to input */
-            color: var(--text-dark);
-            font-size: 0.98em; /* Slightly larger font */
-        }
-        form input, form select, form textarea {
-            padding: 14px 18px; /* Larger padding */
-            margin: 0;
-            width: 100%;
-            border-radius: 10px; /* Slightly more rounded */
-            border: 1px solid var(--border-color);
-            font-size: 16px; /* Larger font size */
-            box-sizing: border-box;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        form input:focus, form select:focus, form textarea:focus {
-            border-color: var(--accent-blue);
-            box-shadow: 0 0 0 5px hsla(200, 55%, 45%, 0.25); /* More prominent focus ring */
-            outline: none;
-        }
-        form button {
-            padding: 14px 30px; /* Larger padding for buttons */
-            background-color: var(--primary-dark);
-            color: var(--text-light);
-            border: none;
-            border-radius: var(--border-radius-base);
-            cursor: pointer;
-            font-weight: 700;
-            font-size: 17px; /* Slightly larger font */
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-            margin-top: 20px; /* More space above button */
-            width: auto;
-            align-self: flex-start;
-            display: flex;
-            align-items: center;
-            gap: 10px; /* Larger gap for icon */
-            box-shadow: 0 4px 12px var(--shadow-medium); /* Refined shadow */
-        }
-
-        form button:hover {
-            background-color: var(--primary-medium);
-            transform: translateY(-3px); /* More pronounced lift */
-            box-shadow: 0 8px 18px var(--shadow-strong);
-        }
-
-        .filter-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px; /* Consistent gap */
-            margin-top: 15px;
-        }
-        .filter-buttons button {
-            flex-grow: 1;
-            margin-top: 0;
-            align-self: stretch;
-        }
-
-        #descargarExcel { background-color: var(--accent-green); }
-        #descargarExcel:hover { background-color: hsl(140, 55%, 30%); }
-        #limpiarFiltros { background-color: hsl(210, 10%, 45%); } /* Slightly darker grey */
-        #limpiarFiltros:hover { background-color: hsl(210, 10%, 35%); }
-
-        /* Item list (visits, nominations, uploaded forms) */
-        .lista-items {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            margin-top: 20px;
-        }
-
-        .item-card {
-            background-color: white;
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius-base);
-            padding: 18px 22px; /* Slightly more padding */
-            margin-bottom: 15px; /* More space between cards */
-            display: flex;
-            flex-direction: column;
-            gap: 10px; /* More space between internal elements */
-            box-shadow: 0 2px 10px var(--shadow-light); /* Softer shadow */
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .item-card:hover {
-            transform: translateY(-4px); /* Slightly more lift */
-            box-shadow: 0 5px 18px var(--shadow-medium); /* More pronounced hover shadow */
-        }
-        .item-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 700; /* Bolder header */
-            color: var(--primary-dark);
-            font-size: 1.05em; /* Slightly larger font */
-            margin-bottom: 8px;
-        }
-        .item-card-details {
-            font-size: 0.9em;
-            color: #555;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px; /* More space between details */
-        }
-        .item-card-action-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px; /* Larger gap for icon */
-            background-color: var(--accent-blue);
-            color: white;
-            padding: 10px 18px; /* Larger padding */
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 0.95em; /* Slightly larger font */
-            margin-top: 12px; /* More space above link */
-            align-self: flex-start;
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 2px 8px var(--shadow-light); /* Subtle shadow */
-        }
-        .item-card-action-link:hover {
-            background-color: hsl(200, 55%, 35%); /* Darker on hover */
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px var(--shadow-medium);
-        }
-        /* Style for delete button */
-        .delete-btn {
-            background-color: var(--accent-red);
-            color: white;
-            padding: 10px 18px; /* Larger padding */
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-size: 0.95em; /* Slightly larger font */
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px; /* Larger gap for icon */
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-            margin-top: 12px;
-            align-self: flex-start;
-            box-shadow: 0 2px 8px var(--shadow-light); /* Subtle shadow */
-        }
-        .delete-btn:hover {
-            background-color: hsl(0, 65%, 40%); /* Darker on hover */
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px var(--shadow-medium);
-        }
-
-
-        /* Welcome Section Specific Styles */
+        /* Welcome card */
         .welcome-card {
             display: flex;
             flex-direction: column;
@@ -451,93 +252,307 @@
             justify-content: center;
             text-align: center;
             min-height: 400px;
-            background: linear-gradient(145deg, #e7f5fe, #d0efff); /* Brighter, softer gradient */
-            border: 1px solid var(--accent-blue); /* Softer border */
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15); /* More refined shadow */
-            padding: var(--padding-base);
-            border-radius: var(--border-radius-base);
+            background: linear-gradient(145deg, var(--bg-secondary), #242424);
+            border: 1px solid var(--accent-purple);
+            box-shadow: 0 12px 40px var(--shadow-medium);
             animation: slideInFromTop 0.8s ease-out;
         }
-
         .welcome-card img {
             width: 180px;
-            height: auto;
-            filter: drop-shadow(0 8px 15px rgba(0,0,0,0.2)); /* Stronger, softer shadow */
-            margin-bottom: 30px; /* More space */
+            filter: drop-shadow(0 8px 15px rgba(0,0,0,0.5));
+            margin-bottom: 30px;
             animation: bounceIn 1s ease-out;
         }
-
         .welcome-card h2 {
             font-family: 'Montserrat', sans-serif;
-            font-size: 48px; /* Larger font size */
+            font-size: 48px;
             font-weight: 800;
-            color: var(--primary-dark);
-            margin-bottom: 20px; /* More space */
-            text-shadow: 2px 2px 8px rgba(0,0,0,0.15); /* Softer, larger shadow */
+            color: var(--text-dark);
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
             animation: fadeInText 1.2s ease-out 0.3s forwards;
             opacity: 0;
         }
-
         .welcome-card p {
             font-family: 'Inter', sans-serif;
-            font-size: 22px; /* Larger font size */
-            color: var(--text-dark);
-            max-width: 700px; /* Wider text block */
-            margin-bottom: 40px; /* More space */
+            font-size: 22px;
+            color: var(--text-medium);
+            max-width: 700px;
+            margin-bottom: 40px;
             animation: fadeInText 1.2s ease-out 0.6s forwards;
             opacity: 0;
         }
 
-        /* Doctor performance card for admin */
-        .doctor-performance-item {
+        /* Summary cards */
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--gap-base);
+            margin-bottom: var(--gap-base);
+        }
+        .summary .card {
+            text-align: center;
+            font-weight: 600;
+            font-size: 16px;
+            padding: 20px;
             display: flex;
-            justify-content: space-between;
-            padding: 12px 18px; /* More padding */
-            margin-bottom: 10px; /* More space */
-            background-color: var(--primary-light); /* Lighter background */
-            border-radius: 8px;
-            font-weight: 500;
-            box-shadow: 0 1px 5px var(--shadow-light); /* Softer shadow */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 15px var(--shadow-medium);
         }
-        .doctor-performance-item span:first-child {
-            color: var(--primary-dark);
+        .summary .card p {
+            font-size: 30px;
+            margin: 10px 0 0;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: var(--accent-purple);
         }
-        .doctor-performance-item span:last-child {
+        .summary .card h3 {
+            border: none;
+            padding: 0;
+            margin-bottom: 10px;
+            color: var(--text-light);
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .summary .card h3 i {
+            font-size: 22px;
+            margin-right: 8px;
+            color: inherit;
+        }
+        .summary .card:nth-child(1) { background-color: #2e2a33; border: 1px solid #4a4550; }
+        .summary .card:nth-child(2) { background-color: #2a2c33; border: 1px solid #444a52; }
+        .summary .card:nth-child(3) { background-color: #262c33; border: 1px solid #3c4450; }
+
+        /* Form elements */
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        form label {
+            font-weight: 600;
+            margin-bottom: -12px;
+            color: var(--text-light);
+            font-size: 0.98em;
+        }
+        form input, form select, form textarea {
+            padding: 14px 18px;
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background-color: #242424;
+            color: var(--text-light);
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+        form input:focus, form select:focus, form textarea:focus {
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 0 4px rgba(187, 134, 252, 0.25);
+            outline: none;
+        }
+        form button {
+            padding: 14px 30px;
+            background-color: var(--accent-purple);
+            color: var(--bg-secondary);
+            border: none;
+            border-radius: var(--border-radius-base);
+            cursor: pointer;
             font-weight: 700;
-            color: var(--accent-blue);
+            font-size: 17px;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            width: auto;
+            align-self: flex-start;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px var(--shadow-medium);
+        }
+        form button:hover {
+            background-color: #d8a6ff;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 18px var(--shadow-strong);
         }
 
-        /* Chart container styles */
-        .chart-container {
-            position: relative;
-            height: 400px;
-            width: 100%;
+        .filter-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 15px;
+        }
+        .filter-buttons button {
+            flex-grow: 1;
+            margin-top: 0;
+            align-self: stretch;
+        }
+        #descargarExcel { background-color: var(--accent-green); }
+        #descargarExcel:hover { background-color: #04b3a4; }
+        #limpiarFiltros { background-color: #555; }
+        #limpiarFiltros:hover { background-color: #777; }
+
+        /* Item lists */
+        .lista-items {
+            list-style: none;
+            padding: 0;
+            margin: 0;
             margin-top: 20px;
         }
-        
-        @keyframes slideInFromTop {
-            from { transform: translateY(-50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+        .item-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-base);
+            padding: 18px 22px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        .item-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 5px 18px var(--shadow-medium);
+        }
+        .item-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            color: var(--text-dark);
+            font-size: 1.05em;
+            margin-bottom: 8px;
+        }
+        .item-card-details {
+            font-size: 0.9em;
+            color: var(--text-medium);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .item-card-action-link, .fill-students-btn, .delete-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.95em;
+            font-weight: 600;
+            margin-top: 12px;
+            transition: all 0.3s ease;
+        }
+        .item-card-action-link {
+            background-color: #4a4a4a;
+            color: var(--text-light);
+            border: 1px solid #666;
+        }
+        .item-card-action-link:hover {
+            background-color: #666;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .delete-btn {
+            background-color: var(--accent-red);
+            color: var(--bg-secondary);
+            border: none;
+            cursor: pointer;
+        }
+        .delete-btn:hover {
+            background-color: #d15165;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(207, 102, 121, 0.3);
+        }
+        .fill-students-btn {
+            background-color: var(--accent-green);
+            color: var(--bg-secondary);
+        }
+        .fill-students-btn:hover {
+            background-color: #04b3a4;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(3, 218, 198, 0.3);
         }
 
-        @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.1); opacity: 1; }
-            70% { transform: scale(0.9); }
-            100% { transform: scale(1); }
+        /* Tables */
+        .overflow-x-auto { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
         }
-
-        @keyframes fadeInText {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        th {
+            background-color: #242424;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-medium);
+            font-size: 0.8rem;
         }
+        tr:hover { background-color: #2c2c2c; }
 
+        /* Visit list styles */
+        .date-group {
+            margin-bottom: 30px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-base);
+            overflow: hidden;
+            box-shadow: 0 6px 20px var(--shadow-medium);
+        }
+        .date-group-header {
+            background-color: var(--accent-purple);
+            color: var(--bg-secondary);
+            padding: 18px 25px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .date-group-header i { font-size: 1.2em; }
+        .date-group-content { padding: 20px; background-color: var(--bg-secondary); }
+        .visit-card {
+            background-color: #242424;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .visit-card-title { font-weight: 700; color: var(--text-dark); font-size: 1.15rem; margin-bottom: 10px; }
+        .visit-card-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 25px;
+            font-size: 0.95em;
+            color: var(--text-medium);
+            margin-bottom: 12px;
+        }
+        .visit-card-details span { display: flex; align-items: center; gap: 8px; }
+        .visit-card-details span i { color: var(--accent-purple); font-size: 1.05em; }
+        .visit-card-doctor-info { font-weight: 600; color: var(--accent-green); display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+        .visit-card-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; justify-content: flex-end; }
+        .visit-card-actions .register-evaluated-btn {
+            background-color: var(--accent-purple);
+            color: var(--bg-secondary);
+        }
+        .visit-card-actions .register-evaluated-btn:hover {
+            background-color: #d8a6ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(187, 134, 252, 0.3);
+        }
 
         /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .menu-toggle-btn {
-                display: block;
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 250px;
             }
+        }
+        @media (max-width: 768px) {
+            .menu-toggle-btn { display: block; }
             .sidebar {
                 position: fixed;
                 left: 0;
@@ -550,270 +565,51 @@
                 box-shadow: 4px 0 15px var(--shadow-strong);
                 height: 100vh;
             }
-            .sidebar.active {
-                transform: translateX(0);
-            }
-            .dashboard-wrapper {
-                flex-direction: column;
-            }
-            .dashboard-content {
-                padding: 15px;
-                margin-left: 0;
-            }
-            .summary {
-                grid-template-columns: 1fr;
-            }
-            .card {
-                padding: 20px;
-            }
-            form input, form select, form textarea {
-                font-size: 14px;
-            }
-            form button {
-                font-size: 15px;
-            }
-            .item-card-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .item-card-action-link {
-                align-self: flex-start;
-            }
-            .welcome-card h2 {
-                font-size: 32px;
-            }
-            .welcome-card p {
-                font-size: 16px;
-            }
-            .welcome-card img {
-                width: 100px;
-            }
-            .chart-container {
-                height: 300px;
-            }
-        }
-        /* To prevent double scroll and ensure sticky sidebar design */
-        html {
-            overflow-y: hidden;
-        }
-        body {
-            overflow-y: auto;
+            .sidebar.active { transform: translateX(0); }
+            .dashboard-wrapper { flex-direction: column; }
+            .dashboard-content { padding: 15px; }
+            .summary { grid-template-columns: 1fr; }
+            .card { padding: 20px; }
+            form input, form select, form textarea { font-size: 14px; }
+            form button { font-size: 15px; }
+            .item-card-header { flex-direction: column; align-items: flex-start; }
+            .visit-card-details { flex-direction: column; gap: 8px; }
+            .visit-card-actions { flex-direction: column; align-items: stretch; }
+            .visit-card-actions button { width: 100%; justify-content: center; }
+            .welcome-card h2 { font-size: 32px; }
+            .welcome-card p { font-size: 16px; }
+            .welcome-card img { width: 100px; }
+            .chart-container { height: 300px; }
+            .logout-btn { position: relative; top: 0; right: 0; margin-top: 15px; }
+            header { padding-top: 5rem; }
         }
 
-        /* Estilos para la tabla de proyectos (ajustados para ser más genéricos) */
-        .overflow-x-auto {
-            overflow-x: auto;
+        /* Keyframes for animations */
+        @keyframes slideInFromTop {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 1; }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); }
         }
-
-        th, td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #e2e8f0; /* gray-200 */
-            text-align: left;
+        @keyframes fadeInText {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-
-        th {
-            background-color: #f8fafc; /* gray-50 */
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #4a5568; /* gray-700 */
-            font-size: 0.8rem;
-        }
-
-        tr:hover {
-            background-color: #f0f4f8; /* lighter gray for hover */
-        }
-
-        /* NEW STYLES FOR VISITS LIST */
-        .date-group {
-            margin-bottom: 30px;
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius-base);
-            overflow: hidden;
-            box-shadow: 0 6px 20px var(--shadow-medium); /* Consistent shadow with cards */
-        }
-
-        .date-group-header {
-            background-color: var(--accent-blue);
-            color: white;
-            padding: 18px 25px; /* More padding */
-            font-size: 1.3rem; /* Larger font */
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 12px; /* More space for icon */
-        }
-
-        .date-group-header i {
-            font-size: 1.2em; /* Larger icon */
-        }
-
-        .date-group-content {
-            padding: 20px; /* More padding */
-            background-color: white;
-        }
-
-        .visit-card {
-            background-color: var(--primary-light); /* Lighter background for individual visits */
-            border: 1px solid hsl(210, 10%, 90%); /* Softer border */
-            border-radius: 10px;
-            padding: 18px; /* More padding */
-            margin-bottom: 15px;
-            box-shadow: 0 2px 10px var(--shadow-light); /* Softer shadow */
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .visit-card:last-child {
-            margin-bottom: 0; /* No margin for the last card in a group */
-        }
-
-        .visit-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 15px var(--shadow-medium); /* More pronounced hover shadow */
-        }
-
-        .visit-card-title {
-            font-weight: 700;
-            color: var(--primary-dark);
-            font-size: 1.15rem; /* Slightly larger title */
-            margin-bottom: 10px; /* More space */
-        }
-
-        .visit-card-details {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px 25px; /* Increased column gap */
-            font-size: 0.95em; /* Slightly larger font */
-            color: #555;
-            margin-bottom: 12px; /* More space */
-        }
-
-        .visit-card-details span {
-            display: flex;
-            align-items: center;
-            gap: 8px; /* More space for icon */
-        }
-
-        .visit-card-details span i {
-            color: var(--accent-blue);
-            font-size: 1.05em; /* Slightly larger icon */
-        }
-
-        .visit-card-doctor-info {
-            font-weight: 600;
-            color: var(--accent-green);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 5px;
-        }
-        .visit-card-doctor-info i {
-            color: var(--accent-green);
-        }
-
-        .visit-card-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 15px;
-            justify-content: flex-end;
-        }
-
-        .visit-card-actions .item-card-action-link,
-        .visit-card-actions .delete-btn,
-        .visit-card-actions button {
-            margin-top: 0;
-            flex-shrink: 0;
-        }
-        
-        /* Specific style for "Rellenar y Ver Estudiantes" button */
-        .fill-students-btn {
-            background-color: var(--accent-green); /* Use green for this action */
-            color: white;
-            padding: 10px 18px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-size: 0.95em;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 2px 8px var(--shadow-light);
-        }
-        .fill-students-btn:hover {
-            background-color: hsl(140, 55%, 30%); /* Darker green on hover */
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px var(--shadow-medium);
-        }
-
-        /* Specific style for "Registrar Evaluados" button */
-        .register-evaluated-btn {
-            background-color: var(--accent-blue);
-            color: white;
-            padding: 10px 18px; /* Consistent padding */
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-size: 0.95em;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 2px 8px var(--shadow-light);
-        }
-        .register-evaluated-btn:hover {
-            background-color: hsl(200, 55%, 35%);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px var(--shadow-medium);
-        }
-
-        /* Responsive adjustments for new visit styles */
-        @media (max-width: 768px) {
-            .date-group-header {
-                font-size: 1.1rem;
-                padding: 15px;
-            }
-            .visit-card {
-                padding: 15px;
-            }
-            .visit-card-title {
-                font-size: 1.05rem;
-            }
-            .visit-card-details {
-                flex-direction: column;
-                gap: 8px;
-            }
-            .visit-card-actions {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .visit-card-actions .item-card-action-link,
-            .visit-card-actions .delete-btn,
-            .visit-card-actions button {
-                width: 100%;
-                justify-content: center;
-            }
-        }
-
     </style>
 </head>
 <body>
     <header>
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo CardioHome" />
-        <h1>Bienvenido a tu Panel de CardioHome</h1>
-        <button class="logout-btn" onclick="cerrarSesion()">
-            <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
-        </button>
         <button class="menu-toggle-btn" id="menuToggle">
             <i class="fa-solid fa-bars"></i>
+        </button>
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo CardioHome" />
+        <h1>Bienvenido a tu Panel</h1>
+        <button class="logout-btn" onclick="cerrarSesion()">
+            <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
         </button>
     </header>
 
@@ -875,7 +671,7 @@
                                 <canvas id="adminPerformanceChart"></canvas>
                             </div>
                         {% else %}
-                            <p style="text-align: center; color: #777;">No hay datos de rendimiento de doctoras disponibles para graficar.</p>
+                            <p style="text-align: center; color: #a0a0a0;">No hay datos de rendimiento de doctoras disponibles para graficar.</p>
                         {% endif %}
                     </div>
                 </div>
@@ -977,7 +773,7 @@
                                             <i class="fa-solid fa-calendar-day"></i> {{ fecha }}
                                         </div>
                                         <div class="date-group-content">
-                                            <ul class="lista-items !mt-0"> {# Override default margin-top #}
+                                            <ul class="lista-items !mt-0">
                                                 {% for evento in eventos_del_dia %}
                                                     <li class="visit-card" data-doctor-id="{{ evento.doctora_id }}" data-name="{{ evento.nombre | lower }}" data-obs="{{ evento.observaciones | lower }}">
                                                         <div class="visit-card-title">{{ evento.nombre }}</div>
@@ -1005,7 +801,7 @@
                                     </div>
                                 {% endfor %}
                             {% else %}
-                                <p style="text-align: center; color: #777;">No hay visitas programadas.</p>
+                                <p style="text-align: center; color: #a0a0a0;">No hay visitas programadas.</p>
                             {% endif %}
                         </div>
                     </div>
@@ -1056,7 +852,7 @@
                                     </li>
                                 {% endfor %}
                             {% else %}
-                                <p id="adminNominaNoResults" style="text-align: center; color: #777;">No hay nóminas médicas cargadas.</p>
+                                <p id="adminNominaNoResults" style="text-align: center; color: #a0a0a0;">No hay nóminas médicas cargadas.</p>
                             {% endif %}
                         </ul>
                     </div>
@@ -1077,13 +873,13 @@
                                             <span>Doctora: {% set doc_info = (doctoras | selectattr('id', 'equalto', form_subido.doctoras_id) | first) %}{{ doc_info.usuario if doc_info else 'Desconocida' }}</span>
                                             <span>Establecimiento: {% set est_info = (establecimientos | selectattr('id', 'equalto', form_subido.establecimientos_id) | first) %}{{ est_info.nombre if est_info else 'Desconocido' }}</span>
                                         </div>
-                                        <a href="{{ form_subido.url_archivo }}" target="_blank" class="item-card-action-link" style="background-color: var(--primary-medium);">
+                                        <a href="{{ form_subido.url_archivo }}" target="_blank" class="item-card-action-link">
                                             <i class="fa-solid fa-eye"></i> Ver Archivo
                                         </a>
                                     </li>
                                 {% endfor %}
                             {% else %}
-                                <p style="text-align: center; color: #777;">No hay formularios subidos aún.</p>
+                                <p style="text-align: center; color: #a0a0a0;">No hay formularios subidos aún.</p>
                             {% endif %}
                         </ul>
                     </div>
@@ -1095,10 +891,8 @@
                         <form action="{{ url_for('crear_proyecto') }}" method="POST">
                             <label for="nombre_proyecto">Nombre del Proyecto:</label>
                             <input type="text" id="nombre_proyecto" name="nombre_proyecto" placeholder="Ej: Proyecto Colegio Las Acacias" required>
-
                             <label for="descripcion_proyecto">Descripción (opcional):</label>
                             <textarea id="descripcion_proyecto" name="descripcion_proyecto" rows="4" placeholder="Breve descripción del proyecto..."></textarea>
-                            
                             <button type="submit"><i class="fas fa-plus-circle"></i> Crear Proyecto</button>
                         </form>
                     </div>
@@ -1146,7 +940,7 @@
                     <div class="card">
                         <h3><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento (Formularios)</h3>
                         {% if doctor_performance_data_single_doctor %}
-                            <p class="text-center text-4xl font-extrabold text-accent-blue my-4">
+                            <p class="text-center text-4xl font-extrabold text-accent-purple my-4">
                                 {{ doctor_performance_data_single_doctor.completed }}
                             </p>
                             <p class="text-center text-lg text-gray-600 mb-4">Formularios Completados</p>
@@ -1157,7 +951,7 @@
                                 Total de formularios en tus nóminas: {{ doctor_performance_data_single_doctor.total }}
                             </div>
                         {% else %}
-                            <p style="text-align: center; color: #777;">No hay datos de rendimiento disponibles para graficar.</p>
+                            <p style="text-align: center; color: #a0a0a0;">No hay datos de rendimiento disponibles para graficar.</p>
                         {% endif %}
                     </div>
                 </div>
@@ -1180,7 +974,7 @@
                                             <i class="fa-solid fa-calendar-day"></i> {{ fecha }}
                                         </div>
                                         <div class="date-group-content">
-                                            <ul class="lista-items !mt-0"> {# Override default margin-top #}
+                                            <ul class="lista-items !mt-0">
                                                 {% for evento in eventos_del_dia %}
                                                     <li class="visit-card" data-name="{{ evento.nombre | lower }}" data-obs="{{ evento.observaciones | lower }}">
                                                         <div class="visit-card-title">{{ evento.nombre }}</div>
@@ -1208,7 +1002,7 @@
                                     </div>
                                 {% endfor %}
                             {% else %}
-                                <p id="doctorVisitNoResults" style="text-align: center; color: #777;">No tienes visitas programadas.</p>
+                                <p id="doctorVisitNoResults" style="text-align: center; color: #a0a0a0;">No tienes visitas programadas.</p>
                             {% endif %}
                         </div>
                     </div>
@@ -1243,7 +1037,7 @@
                                     </li>
                                 {% endfor %}
                             {% else %}
-                                <p id="doctorNominaNoResults" style="text-align: center; color: #777;">No tienes nóminas médicas asignadas en este momento.</p>
+                                <p id="doctorNominaNoResults" style="text-align: center; color: #a0a0a0;">No tienes nóminas médicas asignadas en este momento.</p>
                             {% endif %}
                         </ul>
                     </div>
@@ -1267,14 +1061,14 @@
                                                     {{ est.nombre if est else 'Desconocido' }}
                                                 </span>
                                             </div>
-                                            <a href="{{ form_subido.url_archivo }}" target="_blank" class="item-card-action-link" style="background-color: var(--primary-medium);">
+                                            <a href="{{ form_subido.url_archivo }}" target="_blank" class="item-card-action-link">
                                                 <i class="fa-solid fa-eye"></i> Ver Archivo
                                             </a>
                                         </li>
                                     {% endif %}
                                 {% endfor %}
                             {% else %}
-                                <p style="text-align: center; color: #777;">No has subido ningún formulario aún.</p>
+                                <p style="text-align: center; color: #a0a0a0;">No has subido ningún formulario aún.</p>
                             {% endif %}
                         </ul>
                     </div>
@@ -1297,7 +1091,6 @@
             const formTypeNominaSelect = document.getElementById('form_type_nomina');
             const doctoraParaFormularioDiv = document.getElementById('doctora_para_formulario_div');
 
-            // Function to activate a section and deactivate others
             function showSection(sectionId) {
                 contentSections.forEach(section => {
                     section.classList.remove('active');
@@ -1307,7 +1100,6 @@
                     activeSection.classList.add('active');
                     activeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-                    // If it's the performance section, render the chart
                     if (sectionId === 'admin-performance') {
                         renderAdminPerformanceChart();
                     } else if (sectionId === 'doctor-performance') {
@@ -1316,7 +1108,6 @@
                 }
             }
 
-            // Handle clicks on navigation links
             navLinks.forEach(link => {
                 link.addEventListener('click', function(event) {
                     event.preventDefault();
@@ -1333,7 +1124,6 @@
                 });
             });
 
-            // Handle menu button for mobile
             if (menuToggle) {
                 menuToggle.addEventListener('click', function() {
                     sidebar.classList.toggle('active');
@@ -1341,7 +1131,6 @@
                 });
             }
 
-            // Hide sidebar if clicked outside on mobile
             document.addEventListener('click', function(event) {
                 if (window.innerWidth <= 768 && sidebar.classList.contains('active')) {
                     const isClickInsideSidebar = sidebar.contains(event.target);
@@ -1353,18 +1142,15 @@
                 }
             });
 
-            // Lógica para mostrar/ocultar el campo "Doctora para el Formulario"
             if (formTypeNominaSelect && doctoraParaFormularioDiv) {
                 formTypeNominaSelect.addEventListener('change', function() {
                     if (this.value === 'neurologia') {
                         doctoraParaFormularioDiv.style.display = 'block';
                     } else {
                         doctoraParaFormularioDiv.style.display = 'none';
-                        // Opcional: limpiar la selección si se oculta
                         document.getElementById('doctora_id_para_formulario').value = '';
                     }
                 });
-                // Ejecutar al cargar la página para el estado inicial
                 if (formTypeNominaSelect.value === 'neurologia') {
                     doctoraParaFormularioDiv.style.display = 'block';
                 } else {
@@ -1372,8 +1158,6 @@
                 }
             }
 
-
-            // Initialize by showing the first active section by default
             const initialActiveLink = document.querySelector('.nav-link.active');
             if (initialActiveLink) {
                 showSection(initialActiveLink.dataset.section);
@@ -1383,7 +1167,6 @@
             }
         });
 
-        // Function to confirm and perform deletion
         function confirmDelete(type, id, name) {
             let titleText = '';
             let confirmText = '';
@@ -1400,10 +1183,10 @@
                 confirmText = `Esta acción es irreversible y eliminará todos los datos asociados a los estudiantes de esta nómina.`;
                 endpoint = `/admin/eliminar_nomina/${id}`;
                 successMessage = 'Nómina y estudiantes eliminados exitosamente.';
-            } else if (type === 'proyecto') { // Nuevo tipo para proyectos
+            } else if (type === 'proyecto') {
                 titleText = `¿Estás seguro de eliminar el proyecto "${name}"?`;
                 confirmText = `Esta acción es irreversible y eliminará el proyecto de la base de datos.`;
-                endpoint = `/admin/eliminar_proyecto/${id}`; // Asegúrate de que esta ruta exista en tu Flask
+                endpoint = `/admin/eliminar_proyecto/${id}`;
                 successMessage = 'Proyecto eliminado exitosamente.';
             } else {
                 Swal.fire('Error', 'Tipo de eliminación no reconocido.', 'error');
@@ -1415,8 +1198,8 @@
                 text: confirmText,
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
+                confirmButtonColor: '#cf6679',
+                cancelButtonColor: '#bb86fc',
                 confirmButtonText: 'Sí, eliminar',
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
@@ -1435,7 +1218,7 @@
                                 successMessage,
                                 'success'
                             ).then(() => {
-                                window.location.reload(); // Recargar para actualizar la lista
+                                window.location.reload();
                             });
                         } else {
                             Swal.fire(
@@ -1457,26 +1240,14 @@
             });
         }
 
-
-        // Doctor performance data for Chart.js (Admin)
-        // Injected from Flask into the template
         const adminPerformanceData = {{ doctor_performance_data | tojson }};
 
         function renderAdminPerformanceChart() {
             const ctx = document.getElementById('adminPerformanceChart');
-            if (!ctx) {
-                console.error('Canvas element not found for adminPerformanceChart');
-                return;
-            }
-
-            // Destroy any existing chart instance to avoid duplicates
-            if (window.adminChartInstance) {
-                window.adminChartInstance.destroy();
-            }
-
+            if (!ctx) { return; }
+            if (window.adminChartInstance) { window.adminChartInstance.destroy(); }
             const labels = Object.keys(adminPerformanceData);
             const data = Object.values(adminPerformanceData);
-
             window.adminChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -1484,22 +1255,8 @@
                     datasets: [{
                         label: 'Formularios Completados',
                         data: data,
-                        backgroundColor: [
-                            'rgba(75, 192, 192, 0.6)', /* Greenish-blue */
-                            'rgba(153, 102, 255, 0.6)', /* Purple */
-                            'rgba(255, 159, 64, 0.6)',  /* Orange */
-                            'rgba(54, 162, 235, 0.6)',  /* Blue */
-                            'rgba(255, 99, 132, 0.6)',  /* Red */
-                            'rgba(201, 203, 207, 0.6)'  /* Grey */
-                        ],
-                        borderColor: [
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(153, 102, 255, 1)',
-                            'rgba(255, 159, 64, 1)',
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(201, 203, 207, 1)'
-                        ],
+                        backgroundColor: 'rgba(187, 134, 252, 0.6)',
+                        borderColor: 'rgba(187, 134, 252, 1)',
                         borderWidth: 1
                     }]
                 },
@@ -1511,11 +1268,9 @@
                             display: true,
                             text: 'Formularios Evaluados por Doctora',
                             font: { size: 18, family: 'Montserrat' },
-                            color: '#333'
+                            color: '#e0e0e0'
                         },
-                        legend: {
-                            display: false
-                        }
+                        legend: { display: false },
                     },
                     scales: {
                         y: {
@@ -1524,41 +1279,32 @@
                                 display: true,
                                 text: 'Cantidad de Formularios',
                                 font: { size: 14, family: 'Inter' },
-                                color: '#555'
+                                color: '#a0a0a0'
                             },
-                            ticks: {
-                                precision: 0
-                            }
+                            ticks: { precision: 0, color: '#a0a0a0' },
+                            grid: { color: '#2c2c2c' }
                         },
                         x: {
                             title: {
                                 display: true,
                                 text: 'Doctora',
                                 font: { size: 14, family: 'Inter' },
-                                color: '#555'
-                            }
+                                color: '#a0a0a0'
+                            },
+                            ticks: { color: '#a0a0a0' },
+                            grid: { color: '#2c2c2c' }
                         }
                     }
                 }
             });
         }
 
-        /* Doctor's own performance data (if doctor is logged in) */
-        /* Injected from Flask into the template */
         const doctorPerformanceDataSingleDoctor = {{ doctor_performance_data_single_doctor | tojson }};
 
         function renderDoctorPerformanceChart() {
             const ctx = document.getElementById('doctorPerformanceChart');
-            if (!ctx) {
-                console.error('Canvas element not found for doctorPerformanceChart');
-                return;
-            }
-
-            // Destroy any existing chart instance to avoid duplicates
-            if (window.doctorChartInstance) {
-                window.doctorChartInstance.destroy();
-            }
-
+            if (!ctx) { return; }
+            if (window.doctorChartInstance) { window.doctorChartInstance.destroy(); }
             if (!doctorPerformanceDataSingleDoctor || doctorPerformanceDataSingleDoctor.total === 0) {
                  ctx.style.display = 'none';
                  const parent = ctx.closest('.chart-container');
@@ -1577,11 +1323,8 @@
                  if (noDataMsg) noDataMsg.remove();
                  ctx.style.display = 'block';
             }
-
-
             const completed = doctorPerformanceDataSingleDoctor.completed;
-            const pending = doctorPerformanceDataSingleDoctor.total - completed; /* Calculated dynamically from total */
-
+            const pending = doctorPerformanceDataSingleDoctor.total - completed;
             window.doctorChartInstance = new Chart(ctx, {
                 type: 'pie',
                 data: {
@@ -1589,14 +1332,8 @@
                     datasets: [{
                         label: 'Formularios',
                         data: [completed, pending],
-                        backgroundColor: [
-                            'rgba(54, 162, 235, 0.6)', /* Blue for completed */
-                            'rgba(255, 99, 132, 0.6)'  /* Light red for pending */
-                        ],
-                        borderColor: [
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(255, 99, 132, 1)'
-                        ],
+                        backgroundColor: ['#bb86fc', '#cf6679'],
+                        borderColor: ['#bb86fc', '#cf6679'],
                         borderWidth: 1
                     }]
                 },
@@ -1608,23 +1345,20 @@
                             display: true,
                             text: 'Estado de Mis Formularios',
                             font: { size: 18, family: 'Montserrat' },
-                            color: '#333'
+                            color: '#e0e0e0'
                         },
                         legend: {
                             position: 'bottom',
                             labels: {
-                                font: {
-                                    family: 'Inter'
-                                }
+                                font: { family: 'Inter' },
+                                color: '#e0e0e0'
                             }
                         },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
                                     let label = context.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
+                                    if (label) { label += ': '; }
                                     if (context.parsed !== null) {
                                         label += context.parsed + ' (' + ((context.parsed / doctorPerformanceDataSingleDoctor.total) * 100).toFixed(1) + '%)';
                                     }
@@ -1637,51 +1371,41 @@
             });
         }
 
-        // --- NEW FILTERING LOGIC ---
-
         function filterNominas(userType) {
             let searchText;
             let doctorFilterId;
             let containerId;
             let noResultsMessageId;
-
             if (userType === 'admin') {
                 searchText = document.getElementById('adminNominaSearch').value.toLowerCase();
                 doctorFilterId = document.getElementById('adminNominaDoctorFilter').value;
                 containerId = 'adminNominasContainer';
                 noResultsMessageId = 'adminNominaNoResults';
-            } else { // userType === 'doctor'
+            } else {
                 searchText = document.getElementById('doctorNominaSearch').value.toLowerCase();
                 containerId = 'doctorNominasContainer';
                 noResultsMessageId = 'doctorNominaNoResults';
-                doctorFilterId = null; // No doctor filter for doctors' own nominations
+                doctorFilterId = null;
             }
-
             const nominaItems = document.getElementById(containerId).getElementsByClassName('item-card');
             let resultsFound = false;
-
             for (let i = 0; i < nominaItems.length; i++) {
                 const item = nominaItems[i];
-                const nominaName = item.dataset.name; // Stored in lowercase
-                const nominaType = item.dataset.type; // Stored in lowercase
-
+                const nominaName = item.dataset.name;
+                const nominaType = item.dataset.type;
                 const matchesSearch = (nominaName.includes(searchText) || nominaType.includes(searchText));
-                
-                let matchesDoctor = true; // Default to true for doctor's view
+                let matchesDoctor = true;
                 if (userType === 'admin') {
                     const assignedDoctorId = item.dataset.doctorId;
                     matchesDoctor = (doctorFilterId === "" || assignedDoctorId === doctorFilterId);
                 }
-
                 if (matchesSearch && matchesDoctor) {
-                    item.style.display = ''; // Show the item
+                    item.style.display = '';
                     resultsFound = true;
                 } else {
-                    item.style.display = 'none'; // Hide the item
+                    item.style.display = 'none';
                 }
             }
-
-            // Show/hide no results message
             const noResultsElement = document.getElementById(noResultsMessageId);
             if (noResultsElement) {
                 if (resultsFound) {
@@ -1699,67 +1423,55 @@
             } else {
                 document.getElementById('doctorNominaSearch').value = '';
             }
-            filterNominas(userType); // Re-apply filters to clear
+            filterNominas(userType);
         }
-
 
         function filterVisits(userType) {
             let searchText;
             let doctorFilterId;
             let containerId;
             let noResultsMessageId;
-
             if (userType === 'admin') {
                 searchText = document.getElementById('adminVisitSearch').value.toLowerCase();
                 doctorFilterId = document.getElementById('adminVisitDoctorFilter').value;
                 containerId = 'adminVisitsContainer';
-                noResultsMessageId = 'adminVisitNoResults'; // Add ID for no results message
-            } else { // userType === 'doctor'
+                noResultsMessageId = 'adminVisitNoResults';
+            } else {
                 searchText = document.getElementById('doctorVisitSearch').value.toLowerCase();
                 containerId = 'doctorVisitsContainer';
-                noResultsMessageId = 'doctorVisitNoResults'; // Add ID for no results message
-                doctorFilterId = null; // No doctor filter for doctors' own visits
+                noResultsMessageId = 'doctorVisitNoResults';
+                doctorFilterId = null;
             }
-
             const dateGroups = document.getElementById(containerId).getElementsByClassName('date-group');
             let totalResultsFound = false;
-
             for (let i = 0; i < dateGroups.length; i++) {
                 const dateGroup = dateGroups[i];
                 const visitCards = dateGroup.getElementsByClassName('visit-card');
                 let anyCardVisibleInGroup = false;
-
                 for (let j = 0; j < visitCards.length; j++) {
                     const card = visitCards[j];
-                    const visitName = card.dataset.name; // Stored in lowercase
-                    const visitObs = card.dataset.obs;   // Stored in lowercase
-                    const assignedDoctorId = card.dataset.doctorId; // Only present for admin view
-
+                    const visitName = card.dataset.name;
+                    const visitObs = card.dataset.obs;
+                    const assignedDoctorId = card.dataset.doctorId;
                     const matchesSearch = (visitName.includes(searchText) || visitObs.includes(searchText));
-                    
-                    let matchesDoctor = true; // Assume true if no doctor filter or for doctor's own view
-                    if (userType === 'admin') { // Only apply doctor filter for admin
+                    let matchesDoctor = true;
+                    if (userType === 'admin') {
                         matchesDoctor = (doctorFilterId === "" || assignedDoctorId === doctorFilterId);
                     }
-
                     if (matchesSearch && matchesDoctor) {
-                        card.style.display = ''; // Show the card
+                        card.style.display = '';
                         anyCardVisibleInGroup = true;
                         totalResultsFound = true;
                     } else {
-                        card.style.display = 'none'; // Hide the card
+                        card.style.display = 'none';
                     }
                 }
-
-                // Show/hide the date group based on whether any of its children are visible
                 if (anyCardVisibleInGroup) {
                     dateGroup.style.display = '';
                 } else {
                     dateGroup.style.display = 'none';
                 }
             }
-
-            // Show/hide no results message for visits
             const noResultsElement = document.getElementById(noResultsMessageId);
             if (noResultsElement) {
                 if (totalResultsFound) {
@@ -1777,9 +1489,8 @@
             } else {
                 document.getElementById('doctorVisitSearch').value = '';
             }
-            filterVisits(userType); // Re-apply filters to clear
+            filterVisits(userType);
         }
-
     </script>
 </body>
 </html>

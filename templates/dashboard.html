@@ -427,57 +427,72 @@
             box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
         }
 
-        /* --- NUEVO CÓDIGO DE ANIMACIÓN --- */
-        .welcome-animation-container {
+        /* --- NUEVO CÓDIGO DE BIENVENIDA MÁS PROFESIONAL --- */
+        .welcome-section-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 400px; /* Asegura un buen espacio para la animación */
-            text-align: center;
-            gap: 1.5rem;
-            animation: fadeIn 1s ease-out forwards;
+            min-height: 500px;
+            position: relative;
+            z-index: 10;
         }
 
-        .animated-logo {
-            width: 120px;
-            height: 120px;
-            animation: pulse 2s infinite ease-in-out, rotate 8s linear infinite; /* Animación de pulso y giro */
-            filter: drop-shadow(0 0 10px var(--color-accent));
+        .welcome-section-container::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 150%;
+            height: 150%;
+            background: radial-gradient(circle at 50% 50%, rgba(100, 255, 218, 0.05) 0%, rgba(10, 25, 47, 0) 70%);
+            transform: translate(-50%, -50%);
+            z-index: -1;
+            animation: gradientFadeIn 2s ease-out forwards;
         }
 
-        .animated-title {
+        @keyframes gradientFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .welcome-logo {
+            width: 150px;
+            height: 150px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideInFadeIn 1s ease-out forwards;
+        }
+        
+        .welcome-title {
             font-family: 'Poppins', sans-serif;
-            font-size: 3.5rem;
+            font-size: 4rem;
             font-weight: 800;
             color: var(--color-accent);
-            text-shadow: 0 0 15px var(--color-accent);
-            animation: fadeInScale 2s ease-out forwards;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-        }
-
-        @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes fadeInScale {
-            from { opacity: 0; transform: scale(0.8); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        .welcome-text {
-            font-size: 1.2rem;
-            max-width: 600px;
-            line-height: 1.7;
-            animation: fadeIn 2s ease-out forwards 1s; /* Retrasa la animación del texto */
+            text-shadow: 0 0 10px rgba(100, 255, 218, 0.5);
+            margin-top: 1rem;
             opacity: 0;
+            transform: translateY(20px);
+            animation: slideInFadeIn 1s ease-out 0.5s forwards;
         }
-        /* --- FIN DEL CÓDIGO DE ANIMACIÓN --- */
+
+        .welcome-text-professional {
+            font-size: 1.25rem;
+            max-width: 700px;
+            text-align: center;
+            line-height: 1.7;
+            margin-top: 2rem;
+            color: var(--color-text-dark);
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideInFadeIn 1s ease-out 1s forwards;
+        }
+        
+        @keyframes slideInFadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* --- FIN DEL CÓDIGO DE BIENVENIDA MÁS PROFESIONAL --- */
 
         /* Responsive adjustments */
         @media (max-width: 768px) {
@@ -546,11 +561,11 @@
 
         <main class="dashboard-content">
             <div id="welcome-section" class="content-section active">
-                <div class="welcome-animation-container">
-                    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo CardioHome" class="animated-logo" />
-                    <h2 class="animated-title">CardioHome</h2>
-                    <p class="welcome-text">
-                        Tu plataforma integral para la gestión eficiente de visitas médicas, nóminas de pacientes y formularios. Aquí podrás optimizar tu trabajo y asegurar un seguimiento completo de cada caso.
+                <div class="welcome-section-container">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo CardioHome" class="welcome-logo" />
+                    <h2 class="welcome-title">Plataforma Integral de Salud</h2>
+                    <p class="welcome-text-professional">
+                        Te damos la bienvenida al sistema de gestión de visitas médicas, nóminas y formularios. Aquí podrás optimizar tu flujo de trabajo, asegurando un seguimiento detallado y eficiente de cada caso.
                     </p>
                 </div>
             </div>

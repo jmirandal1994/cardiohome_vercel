@@ -937,7 +937,6 @@
                                 <option value="medicina_familiar">Medicina Familiar</option>
                             </select>
 
-                            <!-- Nuevo campo para seleccionar la doctora cuyo PDF base de neurología se usará -->
                             <div id="doctora_para_formulario_div" class="mb-4" style="display: none;">
                                 <label for="doctora_id_para_formulario" class="block text-gray-700 text-sm font-bold mb-2">Doctora para el Formulario (solo Neurología):</label>
                                 <select name="doctora_id_para_formulario" id="doctora_id_para_formulario" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
@@ -1038,7 +1037,6 @@
                                         <div class="item-card-details">
                                             <span>Archivo Original: {{ nomina.nombre_excel_original }}</span>
                                             <span>Tipo de Formulario: {{ nomina.form_type | default('No especificado') | capitalize }}</span>
-                                            <!-- Corregido: Manejo seguro para 'doctora_id_para_formulario' -->
                                             {% if nomina.form_type == 'neurologia' and nomina.doctora_id_para_formulario %}
                                                 {% set doctora_form_obj = doctoras | selectattr('id', 'equalto', nomina.doctora_id_para_formulario) | first %}
                                                 <span>Formulario base de: {{ doctora_form_obj.usuario if doctora_form_obj else 'Doctora no encontrada' }}</span>
@@ -1234,7 +1232,6 @@
                                             <span>Tipo: {{ nomina.tipo_nomina_display }}</span>
                                         </div>
                                         <div class="item-card-details">
-                                            <!-- Corregido: Manejo seguro para 'doctora_id_para_formulario' -->
                                             {% if nomina.form_type == 'neurologia' and nomina.doctora_id_para_formulario %}
                                                 {% set doctora_form_obj = doctoras | selectattr('id', 'equalto', nomina.doctora_id_para_formulario) | first %}
                                                 <span>Formulario base de: {{ doctora_form_obj.usuario if doctora_form_obj else 'Doctora no encontrada' }}</span>

@@ -427,53 +427,67 @@
             box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
         }
 
-        /* --- NUEVO CÓDIGO DE BIENVENIDA MÁS PROFESIONAL --- */
+        /* --- NUEVO CÓDIGO DE BIENVENIDA V2 --- */
         .welcome-section-container {
+            position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 500px;
-            position: relative;
-            z-index: 10;
+            height: calc(100vh - 10rem); /* Ajuste de altura para que se vea mejor */
+            overflow: hidden;
+            text-align: center;
         }
-
+        
         .welcome-section-container::before {
             content: '';
             position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 150%;
-            height: 150%;
-            background: radial-gradient(circle at 50% 50%, rgba(100, 255, 218, 0.05) 0%, rgba(10, 25, 47, 0) 70%);
-            transform: translate(-50%, -50%);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, rgba(100, 255, 218, 0.05) 0%, rgba(10, 25, 47, 0) 50%, rgba(100, 255, 218, 0.05) 100%);
+            animation: moveGradient 10s linear infinite;
             z-index: -1;
-            animation: gradientFadeIn 2s ease-out forwards;
+            opacity: 0.2;
         }
 
-        @keyframes gradientFadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        @keyframes moveGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         .welcome-logo {
             width: 150px;
             height: 150px;
             opacity: 0;
-            transform: translateY(20px);
-            animation: slideInFadeIn 1s ease-out forwards;
+            animation: fadeIn 1s ease-out forwards;
         }
-        
+
         .welcome-title {
             font-family: 'Poppins', sans-serif;
-            font-size: 4rem;
+            font-size: 3.5rem;
             font-weight: 800;
             color: var(--color-accent);
             text-shadow: 0 0 10px rgba(100, 255, 218, 0.5);
             margin-top: 1rem;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: slideInFadeIn 1s ease-out 0.5s forwards;
+            overflow: hidden; /* Oculta el texto que no ha sido animado */
+            white-space: nowrap; /* Evita que el texto se salte de línea */
+            border-right: 2px solid var(--color-accent); /* Cursor */
+            animation: typing 2.5s steps(22, end) forwards, blink-caret 0.75s step-end infinite;
+            width: 0; /* Empieza con ancho 0 */
+            transition: width 2.5s steps(22, end);
+        }
+
+        @keyframes typing {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        @keyframes blink-caret {
+            from, to { border-color: transparent; }
+            50% { border-color: var(--color-accent); }
         }
 
         .welcome-text-professional {
@@ -484,15 +498,9 @@
             margin-top: 2rem;
             color: var(--color-text-dark);
             opacity: 0;
-            transform: translateY(20px);
-            animation: slideInFadeIn 1s ease-out 1s forwards;
+            animation: fadeIn 1s ease-out 3s forwards; /* Aparece después del título */
         }
-        
-        @keyframes slideInFadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        /* --- FIN DEL CÓDIGO DE BIENVENIDA MÁS PROFESIONAL --- */
+        /* --- FIN DEL CÓDIGO DE BIENVENIDA V2 --- */
 
         /* Responsive adjustments */
         @media (max-width: 768px) {
@@ -520,6 +528,14 @@
             .logo-container img { width: 40px; }
             .top-bar { padding: 1rem; }
             .logout-btn { padding: 6px 12px; }
+
+            /* Ajuste para móvil en el nuevo diseño de bienvenida */
+            .welcome-title {
+                font-size: 2rem;
+            }
+            .welcome-text-professional {
+                font-size: 1rem;
+            }
         }
     </style>
 </head>
@@ -563,9 +579,9 @@
             <div id="welcome-section" class="content-section active">
                 <div class="welcome-section-container">
                     <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo CardioHome" class="welcome-logo" />
-                    <h2 class="welcome-title">Plataforma Integral de Salud</h2>
+                    <h2 class="welcome-title">Bienvenido a CardioHome</h2>
                     <p class="welcome-text-professional">
-                        Te damos la bienvenida al sistema de gestión de visitas médicas, nóminas y formularios. Aquí podrás optimizar tu flujo de trabajo, asegurando un seguimiento detallado y eficiente de cada caso.
+                        Una plataforma de gestión integral diseñada para la eficiencia en la salud.
                     </p>
                 </div>
             </div>

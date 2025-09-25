@@ -534,7 +534,8 @@ def marcar_evaluado():
     
     nombre = get_form_field_value('nombre', request.form)
     rut = get_form_field_value('rut', request.form)
-
+    edad = get_form_field_value('edad', request.form)
+    
     fecha_nac_formato = ''
     fecha_nac_original_str = get_form_field_value('fecha_nacimiento_original', request.form)
     if fecha_nac_original_str:

@@ -531,6 +531,9 @@ def marcar_evaluado():
     doctora_id = session.get('usuario_id')
 
     form_type = session.get('current_form_type', 'neurologia') 
+    
+    nombre = get_form_field_value('nombre', request.form)
+    rut = get_form_field_value('rut', request.form)
 
     print(f"DEBUG: Recibida solicitud para marcar como evaluado: estudiante_id={estudiante_id}, nomina_id={nomina_id}, doctora_id={doctora_id}, form_type={form_type}")
     print(f"DEBUG: Contenido completo de request.form: {request.form.to_dict()}")

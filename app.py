@@ -529,10 +529,10 @@ def marcar_evaluado():
     nomina_id = request.form.get('nomina_id')
     doctora_id = session.get('usuario_id')
     
-    # 💥 MOVIDO: Esta línea ahora se ejecuta antes de que se use 'form_type' 💥
+    # MOVIDO: Esta línea ahora se ejecuta antes de que se use 'form_type'
     form_type = session.get('current_form_type', 'neurologia')
     
-    # 💥 ESTA SECCIÓN DEBE IR AL PRINCIPIO PARA QUE TODAS LAS VARIABLES EXISTAN 💥
+    # ESTA SECCIÓN DEBE IR AL PRINCIPIO PARA QUE TODAS LAS VARIABLES EXISTAN
     nombre = get_form_field_value('nombre', request.form)
     rut = get_form_field_value('rut', request.form)
     edad = get_form_field_value('edad', request.form)
@@ -571,7 +571,7 @@ def marcar_evaluado():
     check_hipoacusia = get_form_field_value('check_hipoacusia', request.form)
     check_tapondecerumen = get_form_field_value('check_tapondecerumen', request.form)
     check_sinhallazgos = get_form_field_value('check_sinhallazgos', request.form)
-    check_caries = get_form_field_value('caries', request.form)
+    check_caries = get_form_field_value('check_caries', request.form) # Corregido de 'caries' a 'check_caries'
     check_apinamientodental = get_form_field_value('check_apinamientodental', request.form)
     check_frenillolingual = get_form_field_value('check_frenillolingual', request.form)
     check_hipertrofia = get_form_field_value('check_hipertrofia', request.form)
@@ -621,8 +621,6 @@ def marcar_evaluado():
         'nacionalidad': nacionalidad,
     }
 
-    form_type = session.get('current_form_type', 'neurologia')
-
     if form_type == 'neurologia':
         update_data.update({
             'sexo': get_form_field_value('sexo', request.form),
@@ -633,22 +631,15 @@ def marcar_evaluado():
         })
 
     elif form_type == 'medicina_familiar':
-        # Campos para medicina familiar
-        campos = {
-            "nombre": nombre,
-            "rut": rut,
-            "fecha_nacimiento": fecha_nac_formato,
-            "edad": edad,
-            "nacionalidad": nacionalidad,
+        # Mapeo de campos del formulario a nombres de columna en Supabase
+        update_data.update({
             "sexo_f": sexo_f,
             "sexo_m": sexo_m,
             "diagnostico_1": diagnostico_1,
             "diagnostico_2": diagnostico_2,
             "diagnostico_complementario": diagnostico_complementario,
-            "clasificación": clasificacion_imc,
+            "clasificacion_imc": clasificacion_imc,
             "derivaciones": derivaciones,
-            "fecha_evaluacion": fecha_evaluacion_formatted,
-            "fecha_reevaluacion": fecha_reeval_pdf,
             "observacion_1": observacion_1,
             "observacion_2": observacion_2,
             "observacion_3": observacion_3,
@@ -656,35 +647,34 @@ def marcar_evaluado():
             "observacion_5": observacion_5,
             "observacion_6": observacion_6,
             "observacion_7": observacion_7,
+            "altura": altura,
+            "peso": peso,
+            "imc": imc,
+            "clasificacion_imc": clasificacion_imc,
             "check_cesarea": "/Yes" if check_cesarea == 'CESAREA' else "",
             "check_atermino": "/Yes" if check_atermino == 'A_TERMINO' else "",
             "check_vaginal": "/Yes" if check_vaginal == 'VAGINAL' else "",
             "check_prematuro": "/Yes" if check_prematuro == 'PREMATURO' else "",
-            "LOGRADO ACORDE A LA EDAD": "/Yes" if check_acorde == 'LOGRADO_ACORDE_A_LA_EDAD' else "",
-            "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if check_retrasogeneralizado == 'RETRASO_GENERALIZADO_DEL_DESARROLLO' else "",
-            "ESQUEMA COMPLETO": "/Yes" if check_esquemac == 'ESQUEMA_COMPLETO' else "",
-            "ESQUEMA INCOMPLETO": "/Yes" if check_esquemai == 'ESQUEMA_INCOMPLETO' else "",
-            "NO": "/Yes" if check_alergiano == 'NO_ALERGIAS' else "",
-            "SI": "/Yes" if check_alergiasi == 'SI_ALERGIAS' else "",
-            "NO_2": "/Yes" if check_cirugiano == 'NO_CIRUGIAS' else "",
-            "SI_2": "/Yes" if check_cirugiasi == 'SI_2' else "",
-            "SIN ALTERACIÓN": "/Yes" if check_visionsinalteracion == 'SIN_ALTERACION_VISION' else "",
-            "VICIOS DE REFRACCION": "/Yes" if check_visionrefraccion == 'VICIOS_DE_REFRACCION' else "",
-            "NORMAL": "/Yes" if check_audicionnormal == 'NORMAL_AUDICION' else "",
-            "HIPOACUSIA": "/Yes" if check_hipoacusia == 'HIPOACUSIA' else "",
-            "TAPÓN DE CERUMEN": "/Yes" if check_tapondecerumen == 'TAPON_DE_CERUMEN' else "",
-            "SIN HALLAZGOS": "/Yes" if check_sinhallazgos == 'SIN_HALLAZGOS' else "",
-            "CARIES": "/Yes" if check_caries == 'CARIES' else "",
-            "APIÑAMIENTO DENTAL": "/Yes" if check_apinamientodental == 'APINAMIENTO_DENTAL' else "",
-            "RETENCIÓN DENTAL": "/Yes" if check_retenciondental == 'RETENCION_DENTAL' else "",
-            "FRENILLO LINGUAL": "/Yes" if check_frenillolingual == 'FRENILLO_LINGUAL' else "",
-            "HIPERTROFIA AMIGDALINA": "/Yes" if check_hipertrofia == 'HIPERTROFIA_AMIGDALINA' else "",
-            "Altura": altura,
-            "Peso": peso,
-            "I.M.C": imc,
-            "Clasificación_IMC": clasificacion_imc,
-        }
-        update_data.update(campos)
+            "check_acorde": "/Yes" if check_acorde == 'LOGRADO_ACORDE_A_LA_EDAD' else "",
+            "check_retraso_generalizado": "/Yes" if check_retrasogeneralizado == 'RETRASO_GENERALIZADO_DEL_DESARROLLO' else "",
+            "check_esquemac": "/Yes" if check_esquemac == 'ESQUEMA_COMPLETO' else "",
+            "check_esquemai": "/Yes" if check_esquemai == 'ESQUEMA_INCOMPLETO' else "",
+            "check_alergiano": "/Yes" if check_alergiano == 'NO_ALERGIAS' else "",
+            "check_alergiasi": "/Yes" if check_alergiasi == 'SI_ALERGIAS' else "",
+            "check_cirugiano": "/Yes" if check_cirugiano == 'NO_CIRUGIAS' else "",
+            "check_cirugiasi": "/Yes" if check_cirugiasi == 'SI_2' else "",
+            "check_visionsinalteracion": "/Yes" if check_visionsinalteracion == 'SIN_ALTERACION_VISION' else "",
+            "check_visionrefraccion": "/Yes" if check_visionrefraccion == 'VICIOS_DE_REFRACCION' else "",
+            "check_audicionnormal": "/Yes" if check_audicionnormal == 'NORMAL_AUDICION' else "",
+            "check_hipoacusia": "/Yes" if check_hipoacusia == 'HIPOACUSIA' else "",
+            "check_tapondecerumen": "/Yes" if check_tapondecerumen == 'TAPON_DE_CERUMEN' else "",
+            "check_sinhallazgos": "/Yes" if check_sinhallazgos == 'SIN_HALLAZGOS' else "",
+            "check_caries": "/Yes" if check_caries == 'CARIES' else "",
+            "check_apinamientodental": "/Yes" if check_apinamientodental == 'APINAMIENTO_DENTAL' else "",
+            "check_retenciondental": "/Yes" if check_retenciondental == 'RETENCION_DENTAL' else "",
+            "check_frenillolingual": "/Yes" if check_frenillolingual == 'FRENILLO_LINGUAL' else "",
+            "check_hipertrofia": "/Yes" if check_hipertrofia == 'HIPERTROFIA_AMIGDALINA' else "",
+        })
         
     print(f"DEBUG: Payload final para Supabase PATCH en /marcar_evaluado: {update_data}")
     

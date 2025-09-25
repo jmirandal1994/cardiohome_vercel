@@ -562,62 +562,60 @@ def marcar_evaluado():
             # 'plazo' se elimina completamente para neurología
         })
     elif form_type == 'medicina_familiar':
-        # Manejo de género (radio buttons en HTML, se guardan como booleanos en Supabase)
-        update_data["genero_f"] = get_form_field_value('genero_f', request.form) == 'Femenino'
-        update_data["genero_m"] = get_form_field_value('genero_m', request.form) == 'Masculino'
+    # Campos para medicina familiar (actualiza los nombres de la izquierda para que coincidan con tu PDF)
+    campos = {
+        # Campos de texto y fechas
+        "nombre": nombre,
+        "rut": rut,
+        "fecha_nacimiento": fecha_nac_formato,
+        "edad": edad,
+        "nacionalidad": nacionalidad,
+        "sexo_f": sexo_f_pdf,
+        "sexo_m": sexo_m_pdf,
+        "diagnostico_1": get_form_field_value('diagnostico_1', request.form),
+        "diagnostico_2": get_form_field_value('diagnostico_2', request.form),
+        "diagnostico_complementario": get_form_field_value('diagnostico_complementario', request.form),
+        "clasificacion": get_form_field_value('clasificacion_imc', request.form),
+        "derivaciones": get_form_field_value('derivaciones', request.form),
+        "fecha_evaluacion": fecha_evaluacion_formatted,
+        "fecha_reevaluacion": fecha_reeval_pdf,
+        "observacion_1": get_form_field_value('observacion_1', request.form),
+        "observacion_2": get_form_field_value('observacion_2', request.form),
+        "observacion_3": get_form_field_value('observacion_3', request.form),
+        "observacion_4": get_form_field_value('observacion_4', request.form),
+        "observacion_5": get_form_field_value('observacion_5', request.form),
+        "observacion_6": get_form_field_value('observacion_6', request.form),
+        "observacion_7": get_form_field_value('observacion_7', request.form),
+        "Altura": get_form_field_value('altura', request.form),
+        "Peso": get_form_field_value('peso', request.form),
+        "I.M.C": get_form_field_value('imc', request.form),
+        "Clasificación_IMC": get_form_field_value('clasificacion_imc', request.form),
         
-        # Actualizar el campo 'sexo' general basado en los radio buttons de familiar
-        if update_data["genero_f"]:
-            update_data["sexo"] = 'F'
-        elif update_data["genero_m"]:
-            update_data["sexo"] = 'M'
-        else:
-            update_data["sexo"] = None # O un valor por defecto si ninguno está marcado
-
-        update_data.update({
-            "diagnostico_1": get_form_field_value('diagnostico_1', request.form),
-            "diagnostico_2": get_form_field_value('diagnostico_2', request.form),
-            "clasificacion": get_form_field_value('clasificacion', request.form),
-            "derivaciones": get_form_field_value('derivaciones', request.form),
-            "observacion_1": get_form_field_value('observacion_1', request.form),
-            "observacion_2": get_form_field_value('observacion_2', request.form),
-            "observacion_3": get_form_field_value('observacion_3', request.form),
-            "observacion_4": get_form_field_value('observacion_4', request.form),
-            "observacion_5": get_form_field_value('observacion_5', request.form),
-            "observacion_6": get_form_field_value('observacion_6', request.form),
-            "observacion_7": get_form_field_value('observacion_7', request.form),
-            "altura": float(get_form_field_value('altura', request.form, return_none_if_empty=True)) if get_form_field_value('altura', request.form, return_none_if_empty=True) else None,
-            "peso": float(get_form_field_value('peso', request.form, return_none_if_empty=True)) if get_form_field_value('peso', request.form, return_none_if_empty=True) else None,
-            "imc": get_form_field_value('imc', request.form),
-            "clasificacion_imc": get_form_field_value('clasificacion_imc', request.form),
-            "fecha_reevaluacion_select": get_form_field_value('fecha_reevaluacion_select', request.form, return_none_if_empty=True),
-            "diagnostico_complementario": get_form_field_value('diagnostico_complementario', request.form),
-            # Checkboxes - Asegúrate de que los nombres de los campos en HTML coincidan
-            "check_cesarea": get_form_field_value('check_cesarea', request.form) == 'CESAREA',
-            "check_atermino": get_form_field_value('check_atermino', request.form) == 'A_TERMINO',
-            "check_vaginal": get_form_field_value('check_vaginal', request.form) == 'VAGINAL',
-            "check_prematuro": get_form_field_value('check_prematuro', request.form) == 'PREMATURO',
-            "check_acorde": get_form_field_value('check_acorde', request.form) == 'LOGRADO_ACORDE_A_LA_EDAD',
-            "check_retrasogeneralizado": get_form_field_value('check_retrasogeneralizado', request.form) == 'RETRASO_GENERALIZADO_DEL_DESARROLLO',
-            "check_esquemac": get_form_field_value('check_esquemac', request.form) == 'ESQUEMA_COMPLETO',
-            "check_esquemai": get_form_field_value('check_esquemai', request.form) == 'ESQUEMA_INCOMPLETO',
-            "check_alergiano": get_form_field_value('check_alergiano', request.form) == 'NO_ALERGIAS',
-            "check_alergiasi": get_form_field_value('check_alergiasi', request.form) == 'SI_ALERGIAS',
-            "check_cirugiano": get_form_field_value('check_cirugiano', request.form) == 'NO_CIRUGIAS',
-            "si_2": get_form_field_value('si_2', request.form) == 'SI_2', # Corregido nombre de campo
-            "check_visionsinalteracion": get_form_field_value('check_visionsinalteracion', request.form) == 'SIN_ALTERACION_VISION',
-            "check_visionrefraccion": get_form_field_value('check_visionrefraccion', request.form) == 'VICIOS_DE_REFRACCION',
-            "check_audicionnormal": get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION',
-            "check_hipoacusia": get_form_field_value('check_hipoacusia', request.form) == 'HIPOACUSIA',
-            "check_tapondecerumen": get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN',
-            "check_sinhallazgos": get_form_field_value('check_sinhallazgos', request.form) == 'SIN_HALLAZGOS',
-            "check_caries": get_form_field_value('caries', request.form) == 'CARIES',
-            "check_apinamientodental": get_form_field_value('check_apinamientodental', request.form) == 'APINAMIENTO_DENTAL',
-            "check_retenciondental": get_form_field_value('check_retenciondental', request.form) == 'RETENCION_DENTAL',
-            "check_frenillolingual": get_form_field_value('check_frenillolingual', request.form) == 'FRENILLO_LINGUAL',
-            "check_hipertrofia": get_form_field_value('check_hipertrofia', request.form) == 'HIPERTROFIA_AMIGDALINA',
-        })
-
+        # Checkboxes (reemplaza las claves de la izquierda)
+        "check_cesarea": "/Yes" if get_form_field_value('check_cesarea', request.form) == 'CESAREA' else "",
+        "check_atermino": "/Yes" if get_form_field_value('check_atermino', request.form) == 'A_TERMINO' else "",
+        "check_vaginal": "/Yes" if get_form_field_value('check_vaginal', request.form) == 'VAGINAL' else "",
+        "check_prematuro": "/Yes" if get_form_field_value('check_prematuro', request.form) == 'PREMATURO' else "",
+        "check_acorde": "/Yes" if get_form_field_value('check_acorde', request.form) == 'LOGRADO_ACORDE_A_LA_EDAD' else "",
+        "check_retrasogeneralizado": "/Yes" if get_form_field_value('check_retrasogeneralizado', request.form) == 'RETRASO_GENERALIZADO_DEL_DESARROLLO' else "",
+        "check_esquemac": "/Yes" if get_form_field_value('check_esquemac', request.form) == 'ESQUEMA_COMPLETO' else "",
+        "check_esquemai": "/Yes" if get_form_field_value('check_esquemai', request.form) == 'ESQUEMA_INCOMPLETO' else "",
+        "check_alergiano": "/Yes" if get_form_field_value('check_alergiano', request.form) == 'NO_ALERGIAS' else "",
+        "check_alergiasi": "/Yes" if get_form_field_value('check_alergiasi', request.form) == 'SI_ALERGIAS' else "",
+        "check_cirugiano": "/Yes" if get_form_field_value('check_cirugiano', request.form) == 'NO_CIRUGIAS' else "",
+        "check_cirugiasi": "/Yes" if get_form_field_value('si_2', request.form) == 'SI_2' else "", # Usa un nombre más descriptivo
+        "check_visionsinalteracion": "/Yes" if get_form_field_value('check_visionsinalteracion', request.form) == 'SIN_ALTERACION_VISION' else "",
+        "check_visionrefraccion": "/Yes" if get_form_field_value('check_visionrefraccion', request.form) == 'VICIOS_DE_REFRACCION' else "",
+        "check_audicionnormal": "/Yes" if get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION' else "",
+        "check_hipoacusia": "/Yes" if get_form_field_value('check_hipoacusia', request.form) == 'HIPOACUSIA' else "",
+        "check_tapondecerumen": "/Yes" if get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN' else "",
+        "check_sinhallazgos": "/Yes" if get_form_field_value('check_sinhallazgos', request.form) == 'SIN_HALLAZGOS' else "",
+        "check_caries": "/Yes" if get_form_field_value('caries', request.form) == 'CARIES' else "",
+        "check_apinamientodental": "/Yes" if get_form_field_value('check_apinamientodental', request.form) == 'APINAMIENTO_DENTAL' else "",
+        "check_retenciondental": "/Yes" if get_form_field_value('check_retenciondental', request.form) == 'RETENCION_DENTAL' else "",
+        "check_frenillolingual": "/Yes" if get_form_field_value('check_frenillolingual', request.form) == 'FRENILLO_LINGUAL' else "",
+        "check_hipertrofia": "/Yes" if get_form_field_value('check_hipertrofia', request.form) == 'HIPERTROFIA_AMIGDALINA' else "",
+    }
     print(f"DEBUG: Payload final para Supabase PATCH en /marcar_evaluado: {update_data}")
 
     try:

@@ -529,6 +529,9 @@ def marcar_evaluado():
     nomina_id = request.form.get('nomina_id')
     doctora_id = session.get('usuario_id')
     
+    # 💥 MOVIDO: Esta línea ahora se ejecuta antes de que se use 'form_type' 💥
+    form_type = session.get('current_form_type', 'neurologia')
+    
     # 💥 ESTA SECCIÓN DEBE IR AL PRINCIPIO PARA QUE TODAS LAS VARIABLES EXISTAN 💥
     nombre = get_form_field_value('nombre', request.form)
     rut = get_form_field_value('rut', request.form)
@@ -709,7 +712,7 @@ def marcar_evaluado():
     except Exception as e:
         print(f"ERROR: Error inesperado al marcar estudiante como evaluado: {e}")
         return jsonify({"success": False, "message": f"Error interno del servidor: {str(e)}"}), 500
-
+        
 @app.route('/')
 def index():
     return render_template('login.html')

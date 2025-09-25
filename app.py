@@ -571,7 +571,7 @@ def marcar_evaluado():
     check_hipoacusia = get_form_field_value('check_hipoacusia', request.form)
     check_tapondecerumen = get_form_field_value('check_tapondecerumen', request.form)
     check_sinhallazgos = get_form_field_value('check_sinhallazgos', request.form)
-    check_caries = get_form_field_value('check_caries', request.form) # Corregido de 'caries' a 'check_caries'
+    check_caries = get_form_field_value('check_caries', request.form)
     check_apinamientodental = get_form_field_value('check_apinamientodental', request.form)
     check_frenillolingual = get_form_field_value('check_frenillolingual', request.form)
     check_hipertrofia = get_form_field_value('check_hipertrofia', request.form)
@@ -656,7 +656,7 @@ def marcar_evaluado():
             "check_vaginal": "/Yes" if check_vaginal == 'VAGINAL' else "",
             "check_prematuro": "/Yes" if check_prematuro == 'PREMATURO' else "",
             "check_acorde": "/Yes" if check_acorde == 'LOGRADO_ACORDE_A_LA_EDAD' else "",
-            "check_retraso_generalizado": "/Yes" if check_retrasogeneralizado == 'RETRASO_GENERALIZADO_DEL_DESARROLLO' else "",
+            "check_retrasogeneralizado": "/Yes" if check_retrasogeneralizado == 'RETRASO_GENERALIZADO_DEL_DESARROLLO' else "",
             "check_esquemac": "/Yes" if check_esquemac == 'ESQUEMA_COMPLETO' else "",
             "check_esquemai": "/Yes" if check_esquemai == 'ESQUEMA_INCOMPLETO' else "",
             "check_alergiano": "/Yes" if check_alergiano == 'NO_ALERGIAS' else "",

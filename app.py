@@ -535,6 +535,30 @@ def marcar_evaluado():
     nombre = get_form_field_value('nombre', request.form)
     rut = get_form_field_value('rut', request.form)
 
+    fecha_nac_formato = ''
+    fecha_nac_original_str = get_form_field_value('fecha_nacimiento_original', request.form)
+    if fecha_nac_original_str:
+        try:
+            fecha_nac_formato = datetime.strptime(fecha_nac_original_str, '%Y-%m-%d').strftime('%d/%m/%Y')
+        except ValueError:
+            pass
+
+    fecha_evaluacion_form_value = get_form_field_value('fecha_evaluacion', request.form)
+    fecha_evaluacion_formatted = ''
+    if fecha_evaluacion_form_value:
+        try:
+            fecha_evaluacion_formatted = datetime.strptime(fecha_evaluacion_form_value, '%Y-%m-%d').strftime('%d/%m/%Y')
+        except ValueError:
+            pass
+
+    fecha_reevaluacion_form_value = get_form_field_value('fecha_reevaluacion', request.form)
+    fecha_reeval_pdf = ''
+    if fecha_reevaluacion_form_value:
+        try:
+            fecha_reeval_pdf = datetime.strptime(fecha_reevaluacion_form_value, '%Y-%m-%d').strftime('%d/%m/%Y')
+        except ValueError:
+            pass
+            
     print(f"DEBUG: Recibida solicitud para marcar como evaluado: estudiante_id={estudiante_id}, nomina_id={nomina_id}, doctora_id={doctora_id}, form_type={form_type}")
     print(f"DEBUG: Contenido completo de request.form: {request.form.to_dict()}")
 

@@ -685,118 +685,119 @@
             {% endif %}
 
             {% if usuario == 'admin' %}
-            <div id="admin-performance" class="content-section card hidden">
-                <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento del Administrador</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-                    <div class="summary-card bg-blue-600 text-white rounded-2xl p-6 shadow-lg">
-                        <h3 class="text-sm font-light uppercase tracking-wider text-white">Colegios Asignados</h3>
-                        <p class="text-5xl font-extrabold mt-4">{{ eventos|length }}</p>
-                    </div>
-                    <div class="summary-card bg-green-600 text-white rounded-2xl p-6 shadow-lg">
-                        <h3 class="text-sm font-light uppercase tracking-wider text-white">Nóminas Asignadas</h3>
-                        <p class="text-5xl font-extrabold mt-4">{{ admin_nominas_cargadas|length }}</p>
-                    </div>
-                    <div class="summary-card bg-yellow-500 text-white rounded-2xl p-6 shadow-lg">
-                        <h3 class="text-sm font-light uppercase tracking-wider text-white">Total Doctoras</h3>
-                        <p class="text-5xl font-extrabold mt-4">{{ doctoras|length }}</p>
-                    </div>
-                </div>
-                <div class="card mt-8">
-                    <h3><i class="fa-solid fa-chart-pie"></i> Rendimiento por Doctora (Formularios Completados)</h3>
-                    {% if doctor_performance_data %}
-                        <div class="chart-container">
-                            <canvas id="adminPerformanceChart"></canvas>
+                <div id="admin-performance" class="content-section card hidden">
+                    <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento del Administrador</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+                        <div class="summary-card bg-blue-600 text-white rounded-2xl p-6 shadow-lg">
+                            <h3 class="text-sm font-light uppercase tracking-wider text-white">Colegios Asignados</h3>
+                            <p class="text-5xl font-extrabold mt-4">{{ eventos|length }}</p>
                         </div>
-                    {% else %}
-                        <p class="text-center text-gray-500 mt-6 text-lg font-medium">No hay datos de rendimiento de doctoras disponibles para graficar.</p>
-                    {% endif %}
+                        <div class="summary-card bg-green-600 text-white rounded-2xl p-6 shadow-lg">
+                            <h3 class="text-sm font-light uppercase tracking-wider text-white">Nóminas Asignadas</h3>
+                            <p class="text-5xl font-extrabold mt-4">{{ admin_nominas_cargadas|length }}</p>
+                        </div>
+                        <div class="summary-card bg-yellow-500 text-white rounded-2xl p-6 shadow-lg">
+                            <h3 class="text-sm font-light uppercase tracking-wider text-white">Total Doctoras</h3>
+                            <p class="text-5xl font-extrabold mt-4">{{ doctoras|length }}</p>
+                        </div>
+                    </div>
+                    <div class="card mt-8">
+                        <h3><i class="fa-solid fa-chart-pie"></i> Rendimiento por Doctora (Formularios Completados)</h3>
+                        {% if doctor_performance_data %}
+                            <div class="chart-container">
+                                <canvas id="adminPerformanceChart"></canvas>
+                            </div>
+                        {% else %}
+                            <p class="text-center text-gray-500 mt-6 text-lg font-medium">No hay datos de rendimiento de doctoras disponibles para graficar.</p>
+                        {% endif %}
+                    </div>
                 </div>
-            </div>
 
-            <div id="admin-add-visit" class="content-section card hidden">
-                <h3><i class="fa-solid fa-calendar-plus"></i> Agregar Visita Programada</h3>
-                <form action="{{ url_for('admin_agregar') }}" method="POST" class="space-y-6">
-                    <div>
-                        <label for="nombre_establecimiento" class="block text-gray-700 font-semibold mb-2">Nombre Establecimiento:</label>
-                        <input type="text" id="nombre_establecimiento" name="nombre" placeholder="Ej: Liceo Bicentenario" required class="form-input">
-                    </div>
-                    <div>
-                        <label for="fecha_establecimiento" class="block text-gray-700 font-semibold mb-2">Fecha:</label>
-                        <input type="date" id="fecha_establecimiento" name="fecha" required class="form-input">
-                    </div>
-                    <div>
-                        <label for="horario_establecimiento" class="block text-gray-700 font-semibold mb-2">Horario:</label>
-                        <input type="text" id="horario_establecimiento" name="horario" placeholder="Ej: 09:00 - 11:00" required class="form-input">
-                    </div>
-                    <div>
-                        <label for="doctora_establecimiento" class="block text-gray-700 font-semibold mb-2">Asignar a Doctora:</label>
-                        <select id="doctora_establecimiento" name="doctora" required class="form-select">
-                            <option value="">Selecciona una doctora</option>
-                            {% for doc in doctoras %}
-                                <option value="{{ doc.id }}">{{ doc.usuario }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div>
-                        <label for="alumnos_establecimiento" class="block text-gray-700 font-semibold mb-2">Cantidad de Alumnos:</label>
-                        <input type="number" id="alumnos_establecimiento" name="alumnos" min="0" placeholder="Ej: 30" class="form-input">
-                    </div>
-                    <div>
-                        <label for="obs_establecimiento" class="block text-gray-700 font-semibold mb-2">Observaciones:</label>
-                        <textarea id="obs_establecimiento" name="obs" rows="3" placeholder="Notas adicionales..." class="form-input"></textarea>
-                    </div>
-                    <div class="flex justify-end space-x-4">
-                        <button type="submit" class="bg-blue-600 text-white p-4 rounded-xl shadow hover:bg-blue-700 transition duration-200"><i class="fa-solid fa-plus"></i> Agregar Visita</button>
-                    </div>
-                </form>
-            </div>
+                <div id="admin-add-visit" class="content-section card hidden">
+                    <h3><i class="fa-solid fa-calendar-plus"></i> Agregar Visita Programada</h3>
+                    <form action="{{ url_for('admin_agregar') }}" method="POST" class="space-y-6">
+                        <div>
+                            <label for="nombre_establecimiento" class="block text-gray-700 font-semibold mb-2">Nombre Establecimiento:</label>
+                            <input type="text" id="nombre_establecimiento" name="nombre" placeholder="Ej: Liceo Bicentenario" required class="form-input">
+                        </div>
+                        <div>
+                            <label for="fecha_establecimiento" class="block text-gray-700 font-semibold mb-2">Fecha:</label>
+                            <input type="date" id="fecha_establecimiento" name="fecha" required class="form-input">
+                        </div>
+                        <div>
+                            <label for="horario_establecimiento" class="block text-gray-700 font-semibold mb-2">Horario:</label>
+                            <input type="text" id="horario_establecimiento" name="horario" placeholder="Ej: 09:00 - 11:00" required class="form-input">
+                        </div>
+                        <div>
+                            <label for="doctora_establecimiento" class="block text-gray-700 font-semibold mb-2">Asignar a Doctora:</label>
+                            <select id="doctora_establecimiento" name="doctora" required class="form-select">
+                                <option value="">Selecciona una doctora</option>
+                                {% for doc in doctoras %}
+                                    <option value="{{ doc.id }}">{{ doc.usuario }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="alumnos_establecimiento" class="block text-gray-700 font-semibold mb-2">Cantidad de Alumnos:</label>
+                            <input type="number" id="alumnos_establecimiento" name="alumnos" min="0" placeholder="Ej: 30" class="form-input">
+                        </div>
+                        <div>
+                            <label for="obs_establecimiento" class="block text-gray-700 font-semibold mb-2">Observaciones:</label>
+                            <textarea id="obs_establecimiento" name="obs" rows="3" placeholder="Notas adicionales..." class="form-input"></textarea>
+                        </div>
+                        <div class="flex justify-end space-x-4">
+                            <button type="submit" class="bg-blue-600 text-white p-4 rounded-xl shadow hover:bg-blue-700 transition duration-200"><i class="fa-solid fa-plus"></i> Agregar Visita</button>
+                        </div>
+                    </form>
+                </div>
 
-            <div id="admin-upload-nomina" class="content-section card hidden">
-                <h3><i class="fa-solid fa-file-excel"></i> Cargar Nómina Médica (Excel/CSV)</h3>
-                <form action="{{ url_for('admin_cargar_nomina') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
-                    <div>
-                        <label for="tipo_nomina" class="block text-gray-700 font-semibold mb-2">Tipo de Nómina:</label>
-                        <input type="text" id="tipo_nomina" name="tipo_nomina" placeholder="Ej: General, Dental, Oftalmológica" required class="form-input">
-                    </div>
-                    <div>
-                        <label for="nombre_especifico" class="block text-gray-700 font-semibold mb-2">Nombre Específico (Ej: Liceo X - Nómina Mayo):</label>
-                        <input type="text" id="nombre_especifico" name="nombre_especifico" placeholder="Nombre único para esta nómina" required class="form-input">
-                    </div>
-                    <div>
-                        <label for="doctora_nomina" class="block text-gray-700 font-semibold mb-2">Asignar a Doctora:</label>
-                        <select id="doctora_nomina" name="doctora" required class="form-select">
-                            <option value="">Selecciona una doctora</option>
-                            {% for doc in doctoras %}
-                                <option value="{{ doc.id }}">{{ doc.usuario }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div>
-                        <label for="form_type_nomina" class="block text-gray-700 font-semibold mb-2">Tipo de Formulario Asociado:</label>
-                        <select id="form_type_nomina" name="form_type" required class="form-select">
-                            <option value="">Selecciona el tipo de formulario</option>
-                            <option value="neurologia">Neurología</option>
-                            <option value="medicina_familiar">Medicina Familiar</option>
-                        </select>
-                    </div>
-                    <div id="doctora_para_formulario_div" class="mb-4 hidden">
-                        <label for="doctora_id_para_formulario" class="block text-gray-700 font-semibold mb-2">Doctora para el Formulario (solo Neurología):</label>
-                        <select name="doctora_id_para_formulario" id="doctora_id_para_formulario" class="form-select">
-                            <option value="">Seleccione una doctora...</option>
-                            {% for doc in doctoras %}
-                                <option value="{{ doc.id }}">{{ doc.usuario }}</option>
-                            {% endfor %}
-                        </select>
-                        <p class="text-xs text-gray-500 mt-1">Este campo es obligatorio si el tipo de nómina es "Neurología".</p>
-                    </div>
-                    <div>
-                        <label for="excel_nomina" class="block text-gray-700 font-semibold mb-2">Archivo Excel/CSV de la Nómina:</label>
-                        <input type="file" id="excel_nomina" name="excel" accept=".xls,.xlsx,.csv" required class="form-input">
-                    </div>
-                    <div class="flex justify-end space-x-4">
-                        <button type="submit" class="bg-green-600 text-white p-4 rounded-xl shadow hover:bg-green-700 transition duration-200"><i class="fa-solid fa-upload"></i> Cargar Nómina</button>
-                    </div>
-                </form>
+                <div id="admin-upload-nomina" class="content-section card hidden">
+                    <h3><i class="fa-solid fa-file-excel"></i> Cargar Nómina Médica (Excel/CSV)</h3>
+                    <form action="{{ url_for('admin_cargar_nomina') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+                        <div>
+                            <label for="tipo_nomina" class="block text-gray-700 font-semibold mb-2">Tipo de Nómina:</label>
+                            <input type="text" id="tipo_nomina" name="tipo_nomina" placeholder="Ej: General, Dental, Oftalmológica" required class="form-input">
+                        </div>
+                        <div>
+                            <label for="nombre_especifico" class="block text-gray-700 font-semibold mb-2">Nombre Específico (Ej: Liceo X - Nómina Mayo):</label>
+                            <input type="text" id="nombre_especifico" name="nombre_especifico" placeholder="Nombre único para esta nómina" required class="form-input">
+                        </div>
+                        <div>
+                            <label for="doctora_nomina" class="block text-gray-700 font-semibold mb-2">Asignar a Doctora:</label>
+                            <select id="doctora_nomina" name="doctora" required class="form-select">
+                                <option value="">Selecciona una doctora</option>
+                                {% for doc in doctoras %}
+                                    <option value="{{ doc.id }}">{{ doc.usuario }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="form_type_nomina" class="block text-gray-700 font-semibold mb-2">Tipo de Formulario Asociado:</label>
+                            <select id="form_type_nomina" name="form_type" required class="form-select">
+                                <option value="">Selecciona el tipo de formulario</option>
+                                <option value="neurologia">Neurología</option>
+                                <option value="medicina_familiar">Medicina Familiar</option>
+                            </select>
+                        </div>
+                        <div id="doctora_para_formulario_div" class="mb-4 hidden">
+                            <label for="doctora_id_para_formulario" class="block text-gray-700 font-semibold mb-2">Doctora para el Formulario (solo Neurología):</label>
+                            <select name="doctora_id_para_formulario" id="doctora_id_para_formulario" class="form-select">
+                                <option value="">Seleccione una doctora...</option>
+                                {% for doc in doctoras %}
+                                    <option value="{{ doc.id }}">{{ doc.usuario }}</option>
+                                {% endfor %}
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Este campo es obligatorio si el tipo de nómina es "Neurología".</p>
+                        </div>
+                        <div>
+                            <label for="excel_nomina" class="block text-gray-700 font-semibold mb-2">Archivo Excel/CSV de la Nómina:</label>
+                            <input type="file" id="excel_nomina" name="excel" accept=".xls,.xlsx,.csv" required class="form-input">
+                        </div>
+                        <div class="flex justify-end space-x-4">
+                            <button type="submit" class="bg-green-600 text-white p-4 rounded-xl shadow hover:bg-green-700 transition duration-200"><i class="fa-solid fa-upload"></i> Cargar Nómina</button>
+                        </div>
+                    </form>
+                </div>
             </div>
 
             <div id="admin-visits-list" class="content-section card hidden">
@@ -988,6 +989,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
             const navLinks = document.querySelectorAll('.nav-link');
             const contentSections = document.querySelectorAll('.content-section');
             const formTypeNominaSelect = document.getElementById('form_type_nomina');

@@ -126,38 +126,38 @@
 
         /* --- Sidebar (Panel Lateral) --- */
         .sidebar {
-            width: 260px;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            color: #2C3E50;
-            padding: 2rem 1.2rem;
-            border-radius: 20px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-            position: sticky;
-            top: 1.5rem;
-            height: calc(100vh - 3rem);
-            overflow-y: auto;
-            transition: all 0.35s ease-in-out;
-            border: 1px solid rgba(255,255,255,0.3);
+        width: 260px;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        color: #2C3E50;
+        padding: 2rem 1.2rem;
+        border-radius: 20px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        position: sticky;
+        top: 1.5rem;
+        height: calc(100vh - 3rem);
+        overflow-y: auto;
+        transition: all 0.35s ease-in-out;
+        border: 1px solid rgba(255,255,255,0.3);
         }
 
         .sidebar.collapsed {
-            width: 0;
-            padding: 0;
-            transform: translateX(-100%);
-            overflow: hidden;
+        width: 0;
+        padding: 0;
+        transform: translateX(-100%);
+        overflow: hidden;
         }
 
         .sidebar-header {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #1E3A8A;
-            margin-bottom: 1.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            padding-left: 10px;
-            border-left: 4px solid #2563EB;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1E3A8A;
+        margin-bottom: 1.8rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding-left: 10px;
+        border-left: 4px solid #2563EB;
         }
 
        .sidebar-nav {
@@ -999,28 +999,28 @@
                 <div class="summary-panel">
                     <h2>Resumen del Proyecto</h2>
                     <div class="summary">
-                        <div class="summary-card-v2" style="background: linear-gradient(145deg, var(--card-blue), #2A79B3);">
+                        <div class="summary-card-v2" style="background: linear-gradient(145deg, #3498DB, #2A79B3);">
                             <div class="summary-card-header">
                                 <span>EVALUACIONES<br>PENDIENTES</span>
                                 <i class="fa-solid fa-clipboard-list"></i>
                             </div>
                             <p class="count">430</p>
                         </div>
-                        <div class="summary-card-v2 bg-green-600">
+                        <div class="summary-card-v2" style="background: linear-gradient(145deg, #2ECC71, #27A661);">
                             <div class="summary-card-header">
                                 <span>ESTUDIANTES<br>EVALUADOS</span>
                                 <i class="fa-solid fa-user-check"></i>
                             </div>
                             <p class="count">587</p>
                         </div>
-                        <div class="summary-card-v2 bg-yellow-500">
+                        <div class="summary-card-v2" style="background: linear-gradient(145deg, #F1C40F, #D4A80F);">
                             <div class="summary-card-header">
                                 <span>DERIVACIONES</span>
                                 <i class="fa-solid fa-arrow-right"></i>
                             </div>
                             <p class="count">3</p>
                         </div>
-                        <div class="summary-card-v2 bg-red-600">
+                        <div class="summary-card-v2" style="background: linear-gradient(145deg, #E74C3C, #C2382B);">
                             <div class="summary-card-header">
                                 <span>CASOS DE<br>URGENCIA</span>
                                 <i class="fa-solid fa-triangle-exclamation"></i>
@@ -1034,30 +1034,30 @@
                     <h3><i class="fa-solid fa-gauge-high"></i> Rendimiento de Evaluaciones en Vivo</h3>
                     <p class="text-gray-600 mb-6">Métricas en tiempo real de la actividad de evaluaciones.</p>
                     <div class="summary grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-                         <div class="summary-card-v2" style="background: linear-gradient(145deg, var(--card-blue), #2A79B3);">
+                        <div class="summary-card-v2" style="background: linear-gradient(145deg, #3498DB, #2A79B3);">
                             <div class="summary-card-header">
                                 <span>EVALUACIONES<br>REALIZADAS</span>
                                 <i class="fa-solid fa-user-check"></i>
                             </div>
                             <p class="count">587</p>
                         </div>
-                        <div class="summary-card-v2 bg-green-600">
+                        <div class="summary-card-v2" style="background: linear-gradient(145deg, #2ECC71, #27AE60);">
                             <div class="summary-card-header">
-                                <span>EVALUACIONES<br>NEUROLOGÍA REALIZADAS</span>
+                                <span>EVALUACIONES<br>NEUROLOGÍA COMPLETADAS</span>
                                 <i class="fa-solid fa-brain"></i>
                             </div>
                             <p class="count">300</p>
                         </div>
-                        <div class="summary-card-v2 bg-yellow-500">
+                        <div class="summary-card-v2" style="background: linear-gradient(145deg, #F1C40F, #D4A80F);">
                             <div class="summary-card-header">
-                                <span>EVALUACIONES<br>MEDICINA FAMILIAR REALIZADAS</span>
+                                <span>EVALUACIONES<br>MEDICINA FAMILIAR COMPLETADAS</span>
                                 <i class="fa-solid fa-house-chimney-medical"></i>
                             </div>
                             <p class="count">287</p>
                         </div>
-                        <div class="summary-card-v2 bg-red-600">
+                        <div class="summary-card-v2" style="background: linear-gradient(145deg, #E74C3C, #C2382B);">
                             <div class="summary-card-header">
-                                <span>ESTABLECIMIENTOS<br>REALIZADOS</span>
+                                <span>ESTABLECIMIENTOS<br>COMPLETADOS</span>
                                 <i class="fa-solid fa-school"></i>
                             </div>
                             <p class="count">12</p>
@@ -1079,67 +1079,55 @@
                 </div>
             </div>
             
-            <div id="coord-evaluaciones" class="content-section">
+            <div id="coord-evaluaciones" class="content-section active">
                 <div class="card">
                     <h3><i class="fa-solid fa-folder-tree"></i> Evaluaciones por Establecimiento</h3>
                     <p class="text-gray-600 mb-6">Selecciona un proyecto para ver y descargar los formularios completados.</p>
                     <div class="space-y-6">
-                        <div class="bg-gray-100 p-6 rounded-xl shadow-inner">
-                            <h4 class="text-xl font-bold text-primary-blue mb-4 flex items-center gap-3"><i class="fas fa-folder text-lg"></i> Proyecto Santiago</h4>
-                            <div class="grid md:grid-cols-2 gap-4">
-                                <div class="item-card bg-white">
-                                    <div class="item-card-header flex justify-between items-center mb-4">
-                                        <div class="flex items-center space-x-3">
-                                            <i class="fa-solid fa-tree text-green-600 text-2xl"></i>
-                                            <span class="text-lg font-semibold">Colegio Los Bosquinos</span>
+                        <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                            <h4 class="text-xl font-bold text-primary-blue mb-4 flex items-center gap-3"><i class="fas fa-folder-open text-lg"></i> Proyecto Santiago</h4>
+                            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <a href="#" class="project-line-card" data-line="Linea 1 (Maipu, Cerrillos)">
+                                    <div class="bg-blue-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <span class="text-lg font-bold">Línea 1</span>
+                                            <i class="fa-solid fa-location-dot text-2xl opacity-75"></i>
                                         </div>
+                                        <p class="text-sm">Comunas: Maipú, Cerrillos</p>
                                     </div>
-                                    <div class="item-card-details space-y-2 text-sm text-gray-600">
-                                        <p>Evaluaciones completadas: 150</p>
-                                        <p>Evaluaciones faltantes: 50</p>
-                                    </div>
-                                    <div class="item-card-actions mt-4">
-                                        <button class="action-button blue" onclick="showNominas('los-bosquinos')">
-                                            <i class="fa-solid fa-file-pdf"></i> Ver y Descargar
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="item-card bg-white">
-                                    <div class="item-card-header flex justify-between items-center mb-4">
-                                        <div class="flex items-center space-x-3">
-                                            <i class="fa-solid fa-chess-rook text-gray-500 text-2xl"></i>
-                                            <span class="text-lg font-semibold">Colegio Alicante</span>
+                                </a>
+                                <a href="#" class="project-line-card" data-line="Linea 2 (Estacion Central, Maipu)">
+                                    <div class="bg-green-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <span class="text-lg font-bold">Línea 2</span>
+                                            <i class="fa-solid fa-location-dot text-2xl opacity-75"></i>
                                         </div>
+                                        <p class="text-sm">Comunas: Estación Central, Maipú</p>
                                     </div>
-                                    <div class="item-card-details space-y-2 text-sm text-gray-600">
-                                        <p>Evaluaciones completadas: 120</p>
-                                        <p>Evaluaciones faltantes: 30</p>
-                                    </div>
-                                    <div class="item-card-actions mt-4">
-                                        <button class="action-button blue" onclick="showNominas('alicante')">
-                                            <i class="fa-solid fa-file-pdf"></i> Ver y Descargar
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="item-card bg-white">
-                                    <div class="item-card-header flex justify-between items-center mb-4">
-                                        <div class="flex items-center space-x-3">
-                                            <i class="fa-solid fa-cross text-yellow-500 text-2xl"></i>
-                                            <span class="text-lg font-semibold">Colegio San Juan</span>
+                                </a>
+                                <a href="#" class="project-line-card" data-line="Linea 3 (Estacion Central)">
+                                    <div class="bg-yellow-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <span class="text-lg font-bold">Línea 3</span>
+                                            <i class="fa-solid fa-location-dot text-2xl opacity-75"></i>
                                         </div>
+                                        <p class="text-sm">Comunas: Estación Central</p>
                                     </div>
-                                    <div class="item-card-details space-y-2 text-sm text-gray-600">
-                                        <p>Evaluaciones completadas: 200</p>
-                                        <p>Evaluaciones faltantes: 5</p>
+                                </a>
+                                <a href="#" class="project-line-card" data-line="Linea 4 (Cerrillos)">
+                                    <div class="bg-red-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <span class="text-lg font-bold">Línea 4</span>
+                                            <i class="fa-solid fa-location-dot text-2xl opacity-75"></i>
+                                        </div>
+                                        <p class="text-sm">Comunas: Cerrillos</p>
                                     </div>
-                                    <div class="item-card-actions mt-4">
-                                        <button class="action-button blue" onclick="showNominas('san-juan')">
-                                            <i class="fa-solid fa-file-pdf"></i> Ver y Descargar
-                                        </button>
-                                    </div>
-                                </div>
+                                </a>
                             </div>
                         </div>
+
+                        <div id="colegios-container" class="mt-8 grid md:grid-cols-2 gap-4" style="display:none;">
+                            </div>
                     </div>
                 </div>
             </div>
@@ -1338,6 +1326,89 @@
     </div>
 
     <script>
+        // Datos de maqueta para la demostración
+        const colegiosMaqueta = {
+            "Linea 1 (Maipu, Cerrillos)": [
+                {
+                    nombre: "Colegio Los Bosquinos",
+                    evaluacionesCompletadas: 150,
+                    evaluacionesFaltantes: 50,
+                    icono: "fa-tree"
+                },
+                {
+                    nombre: "Colegio Las Acacias",
+                    evaluacionesCompletadas: 80,
+                    evaluacionesFaltantes: 10,
+                    icono: "fa-school"
+                }
+            ],
+            "Linea 2 (Estacion Central, Maipu)": [
+                {
+                    nombre: "Colegio El Sol",
+                    evaluacionesCompletadas: 200,
+                    evaluacionesFaltantes: 20,
+                    icono: "fa-sun"
+                },
+                {
+                    nombre: "Liceo Bicentenario",
+                    evaluacionesCompletadas: 100,
+                    evaluacionesFaltantes: 0,
+                    icono: "fa-graduation-cap"
+                }
+            ],
+            "Linea 3 (Estacion Central)": [
+                {
+                    nombre: "Colegio San Juan",
+                    evaluacionesCompletadas: 200,
+                    evaluacionesFaltantes: 0,
+                    icono: "fa-cross"
+                }
+            ],
+            "Linea 4 (Cerrillos)": [
+                {
+                    nombre: "Colegio Alicante",
+                    evaluacionesCompletadas: 120,
+                    evaluacionesFaltantes: 30,
+                    icono: "fa-chess-rook"
+                }
+            ]
+        };
+
+        function showColegios(linea) {
+            const colegiosContainer = document.getElementById('colegios-container');
+            const colegios = colegiosMaqueta[linea];
+            let htmlContent = '';
+
+            if (colegios && colegios.length > 0) {
+                colegios.forEach(colegio => {
+                    htmlContent += `
+                        <div class="item-card bg-white">
+                            <div class="item-card-header flex justify-between items-center mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fa-solid ${colegio.icono} text-2xl text-blue-600"></i>
+                                    <span class="text-lg font-semibold">${colegio.nombre}</span>
+                                </div>
+                            </div>
+                            <div class="item-card-details space-y-2 text-sm text-gray-600">
+                                <p>Evaluaciones completadas: **${colegio.evaluacionesCompletadas}**</p>
+                                <p>Evaluaciones faltantes: **${colegio.evaluacionesFaltantes}**</p>
+                            </div>
+                            <div class="item-card-actions mt-4">
+                                <button class="action-button blue" onclick="showNominas('${colegio.nombre}')">
+                                    <i class="fa-solid fa-file-pdf"></i> Ver y Descargar
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                htmlContent = '<p class="text-center text-gray-500">No hay colegios en esta línea.</p>';
+            }
+
+            colegiosContainer.innerHTML = htmlContent;
+            colegiosContainer.style.display = 'grid';
+        }
+
         function cerrarSesion() {
             window.location.href = "/logout";
         }
@@ -1397,6 +1468,15 @@
                     if (window.innerWidth <= 1024) {
                         sidebar.classList.remove('active');
                     }
+                });
+            });
+
+            const projectLineCards = document.querySelectorAll('.project-line-card');
+            projectLineCards.forEach(card => {
+                card.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const lineName = this.dataset.line;
+                    showColegios(lineName);
                 });
             });
 

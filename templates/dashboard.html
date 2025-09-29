@@ -126,38 +126,38 @@
 
         /* --- Sidebar (Panel Lateral) --- */
         .sidebar {
-        width: 260px;
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        color: #2C3E50;
-        padding: 2rem 1.2rem;
-        border-radius: 20px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-        position: sticky;
-        top: 1.5rem;
-        height: calc(100vh - 3rem);
-        overflow-y: auto;
-        transition: all 0.35s ease-in-out;
-        border: 1px solid rgba(255,255,255,0.3);
+            width: 260px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            color: #2C3E50;
+            padding: 2rem 1.2rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 1.5rem;
+            height: calc(100vh - 3rem);
+            overflow-y: auto;
+            transition: all 0.35s ease-in-out;
+            border: 1px solid rgba(255,255,255,0.3);
         }
 
         .sidebar.collapsed {
-        width: 0;
-        padding: 0;
-        transform: translateX(-100%);
-        overflow: hidden;
+            width: 0;
+            padding: 0;
+            transform: translateX(-100%);
+            overflow: hidden;
         }
 
         .sidebar-header {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #1E3A8A;
-        margin-bottom: 1.8rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        padding-left: 10px;
-        border-left: 4px solid #2563EB;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1E3A8A;
+            margin-bottom: 1.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding-left: 10px;
+            border-left: 4px solid #2563EB;
         }
 
        .sidebar-nav {
@@ -633,28 +633,28 @@
                 <div class="summary-panel">
                     <h2>Resumen del Proyecto</h2>
                     <div class="summary">
-                        <div class="summary-card-v2" style="background: linear-gradient(145deg, var(--card-blue), #2A79B3);">
+                        <div class="summary-card-v2" style="background: linear-gradient(145deg, #3498DB, #2A79B3);">
                             <div class="summary-card-header">
                                 <span>EVALUACIONES<br>PENDIENTES</span>
                                 <i class="fa-solid fa-clipboard-list"></i>
                             </div>
                             <p class="count">430</p>
                         </div>
-                        <div class="summary-card-v2 bg-green-600">
+                        <div class="summary-card-v2" style="background: linear-gradient(145deg, #2ECC71, #27A661);">
                             <div class="summary-card-header">
                                 <span>ESTUDIANTES<br>EVALUADOS</span>
                                 <i class="fa-solid fa-user-check"></i>
                             </div>
                             <p class="count">587</p>
                         </div>
-                        <div class="summary-card-v2 bg-yellow-500">
+                        <div class="summary-card-v2" style="background: linear-gradient(145deg, #F1C40F, #D4A80F);">
                             <div class="summary-card-header">
                                 <span>DERIVACIONES</span>
                                 <i class="fa-solid fa-arrow-right"></i>
                             </div>
                             <p class="count">3</p>
                         </div>
-                        <div class="summary-card-v2 bg-red-600">
+                        <div class="summary-card-v2" style="background: linear-gradient(145deg, #E74C3C, #C2382B);">
                             <div class="summary-card-header">
                                 <span>CASOS DE<br>URGENCIA</span>
                                 <i class="fa-solid fa-triangle-exclamation"></i>
@@ -1079,7 +1079,7 @@
                 </div>
             </div>
             
-            <div id="coord-evaluaciones" class="content-section active">
+            <div id="coord-evaluaciones" class="content-section">
                 <div class="card">
                     <h3><i class="fa-solid fa-folder-tree"></i> Evaluaciones por Establecimiento</h3>
                     <p class="text-gray-600 mb-6">Selecciona un proyecto para ver y descargar los formularios completados.</p>

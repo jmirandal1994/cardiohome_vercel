@@ -552,7 +552,7 @@
                     <p><strong>Teléfono:</strong> +56 9 1234 5678</p>
                 </div>
 
-                <div id="doctor-performance" class="content-section card">
+                <div id="doctor-performance" class="content-section card hidden">
                     <h3><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento (Formularios)</h3>
                     {% if doctor_performance_data_single_doctor %}
                         <p class="text-center text-4xl font-extrabold text-accent-blue my-4">
@@ -570,7 +570,7 @@
                     {% endif %}
                 </div>
 
-                <div id="doctor-visits" class="content-section card">
+                <div id="doctor-visits" class="content-section card hidden">
                     <h3><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</h3>
                     <div class="flex flex-col md:flex-row gap-4 mb-6">
                         <input type="text" id="doctorVisitSearch" placeholder="Buscar por nombre o descripción..." class="flex-grow p-2 border rounded-md form-input" onkeyup="filterVisits('doctor')" />
@@ -620,7 +620,7 @@
                     </div>
                 </div>
 
-                <div id="doctor-nominas" class="content-section card">
+                <div id="doctor-nominas" class="content-section card hidden">
                     <h3><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Médicas Asignadas</h3>
                     <div class="flex flex-col md:flex-row gap-4 mb-6">
                         <input type="text" id="doctorNominaSearch" placeholder="Buscar por nombre o tipo de nómina..." class="flex-grow p-2 border rounded-md form-input" onkeyup="filterNominas('doctor')" />
@@ -631,9 +631,9 @@
                     <ul class="lista-items" id="doctorNominasContainer">
                         {% if assigned_nominations %}
                             {% for nomina in assigned_nominations %}
-                                <li class="item-card" data-name="{{ nomina.nombre_establecimiento | lower }}" data-type="{{ nomina.tipo_nomina_display | lower }}">
+                                <li class="item-card" data-name="{{ nomina.nombre_nomina | lower }}" data-type="{{ nomina.tipo_nomina_display | lower }}">
                                     <div class="item-card-header">
-                                        <span><i class="fa-solid fa-building mr-2 text-primary-dark"></i>{{ nomina.nombre_establecimiento }}</span>
+                                        <span><i class="fa-solid fa-building mr-2 text-primary-dark"></i>{{ nomina.nombre_nomina }}</span>
                                         <span>Tipo: {{ nomina.tipo_nomina_display }}</span>
                                     </div>
                                     <div class="item-card-details">
@@ -652,344 +652,334 @@
                         {% endif %}
                     </ul>
                 </div>
+            </div>
 
-                <div id="doctor-uploaded-forms" class="content-section card">
-                    <h3><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</h3>
-                    <ul class="lista-items">
-                        {% if formularios %}
-                            {% for form_subido in formularios %}
-                                {% if form_subido.doctoras_id == usuario_id %}
-                                    <li class="item-card">
-                                        <div class="item-card-header">
-                                            <span>{{ form_subido.nombre_archivo }}</span>
-                                            <span>Fecha: {{ form_subido.fecha_subida.strftime('%d-%m-%Y') if form_subido.fecha_subida else 'N/A' }}</span>
-                                        </div>
-                                        <div class="item-card-details">
-                                            <span>Establecimiento:
-                                                {% set est = (eventos | selectattr('id', 'equalto', form_subido.establecimientos_id) | first) %}
-                                                {{ est.nombre if est else 'Desconocido' }}
-                                            </span>
-                                        </div>
-                                        <a href="{{ form_subido.url_archivo }}" target="_blank" class="item-card-action-link" style="background-color: var(--primary-medium);">
-                                            <i class="fa-solid fa-eye"></i> Ver Archivo
-                                        </a>
-                                    </li>
-                                {% endif %}
-                            {% endfor %}
-                        {% else %}
-                            <p class="text-center text-gray-500 mt-6 text-lg font-medium">No has subido ningún formulario aún.</p>
-                        {% endif %}
-                    </ul>
-                </div>
-            {% endif %}
-
-            {% if usuario == 'admin' %}
-                <div id="admin-performance" class="content-section card">
-                    <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento del Administrador</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-                        <div class="summary-card bg-blue-600 text-white rounded-2xl p-6 shadow-lg">
-                            <h3 class="text-sm font-light uppercase tracking-wider text-white">Colegios Asignados</h3>
-                            <p class="text-5xl font-extrabold mt-4">{{ eventos|length }}</p>
-                        </div>
-                        <div class="summary-card bg-green-600 text-white rounded-2xl p-6 shadow-lg">
-                            <h3 class="text-sm font-light uppercase tracking-wider text-white">Nóminas Asignadas</h3>
-                            <p class="text-5xl font-extrabold mt-4">{{ admin_nominas_cargadas|length }}</p>
-                        </div>
-                        <div class="summary-card bg-yellow-500 text-white rounded-2xl p-6 shadow-lg">
-                            <h3 class="text-sm font-light uppercase tracking-wider text-white">Total Doctoras</h3>
-                            <p class="text-5xl font-extrabold mt-4">{{ doctoras|length }}</p>
-                        </div>
-                    </div>
-                    <div class="card mt-8">
-                        <h3><i class="fa-solid fa-chart-pie"></i> Rendimiento por Doctora (Formularios Completados)</h3>
-                        {% if doctor_performance_data %}
-                            <div class="chart-container">
-                                <canvas id="adminPerformanceChart"></canvas>
-                            </div>
-                        {% else %}
-                            <p class="text-center text-gray-500 mt-6 text-lg font-medium">No hay datos de rendimiento de doctoras disponibles para graficar.</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div id="admin-add-visit" class="content-section card">
-                    <h3><i class="fa-solid fa-calendar-plus"></i> Agregar Visita Programada</h3>
-                    <form action="{{ url_for('admin_agregar') }}" method="POST" class="space-y-6">
-                        <div>
-                            <label for="nombre_establecimiento" class="block text-gray-700 font-semibold mb-2">Nombre Establecimiento:</label>
-                            <input type="text" id="nombre_establecimiento" name="nombre" placeholder="Ej: Liceo Bicentenario" required class="form-input">
-                        </div>
-                        <div>
-                            <label for="fecha_establecimiento" class="block text-gray-700 font-semibold mb-2">Fecha:</label>
-                            <input type="date" id="fecha_establecimiento" name="fecha" required class="form-input">
-                        </div>
-                        <div>
-                            <label for="horario_establecimiento" class="block text-gray-700 font-semibold mb-2">Horario:</label>
-                            <input type="text" id="horario_establecimiento" name="horario" placeholder="Ej: 09:00 - 11:00" required class="form-input">
-                        </div>
-                        <div>
-                            <label for="doctora_establecimiento" class="block text-gray-700 font-semibold mb-2">Asignar a Doctora:</label>
-                            <select id="doctora_establecimiento" name="doctora" required class="form-select">
-                                <option value="">Selecciona una doctora</option>
-                                {% for doc in doctoras %}
-                                    <option value="{{ doc.id }}">{{ doc.usuario }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div>
-                            <label for="alumnos_establecimiento" class="block text-gray-700 font-semibold mb-2">Cantidad de Alumnos:</label>
-                            <input type="number" id="alumnos_establecimiento" name="alumnos" min="0" placeholder="Ej: 30" class="form-input">
-                        </div>
-                        <div>
-                            <label for="obs_establecimiento" class="block text-gray-700 font-semibold mb-2">Observaciones:</label>
-                            <textarea id="obs_establecimiento" name="obs" rows="3" placeholder="Notas adicionales..." class="form-input"></textarea>
-                        </div>
-                        <div class="flex justify-end space-x-4">
-                            <button type="submit" class="bg-blue-600 text-white p-4 rounded-xl shadow hover:bg-blue-700 transition duration-200"><i class="fa-solid fa-plus"></i> Agregar Visita</button>
-                        </div>
-                    </form>
-                </div>
-
-                <div id="admin-upload-nomina" class="content-section card">
-                    <h3><i class="fa-solid fa-file-excel"></i> Cargar Nómina Médica (Excel/CSV)</h3>
-                    <form action="{{ url_for('admin_cargar_nomina') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
-                        <div>
-                            <label for="tipo_nomina" class="block text-gray-700 font-semibold mb-2">Tipo de Nómina:</label>
-                            <input type="text" id="tipo_nomina" name="tipo_nomina" placeholder="Ej: General, Dental, Oftalmológica" required class="form-input">
-                        </div>
-                        <div>
-                            <label for="nombre_especifico" class="block text-gray-700 font-semibold mb-2">Nombre Específico (Ej: Liceo X - Nómina Mayo):</label>
-                            <input type="text" id="nombre_especifico" name="nombre_especifico" placeholder="Nombre único para esta nómina" required class="form-input">
-                        </div>
-                        <div>
-                            <label for="doctora_nomina" class="block text-gray-700 font-semibold mb-2">Asignar a Doctora:</label>
-                            <select id="doctora_nomina" name="doctora" required class="form-select">
-                                <option value="">Selecciona una doctora</option>
-                                {% for doc in doctoras %}
-                                    <option value="{{ doc.id }}">{{ doc.usuario }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div>
-                            <label for="form_type_nomina" class="block text-gray-700 font-semibold mb-2">Tipo de Formulario Asociado:</label>
-                            <select id="form_type_nomina" name="form_type" required class="form-select">
-                                <option value="">Selecciona el tipo de formulario</option>
-                                <option value="neurologia">Neurología</option>
-                                <option value="medicina_familiar">Medicina Familiar</option>
-                            </select>
-                        </div>
-                        <div id="doctora_para_formulario_div" class="mb-4 hidden">
-                            <label for="doctora_id_para_formulario" class="block text-gray-700 font-semibold mb-2">Doctora para el Formulario (solo Neurología):</label>
-                            <select name="doctora_id_para_formulario" id="doctora_id_para_formulario" class="form-select">
-                                <option value="">Seleccione una doctora...</option>
-                                {% for doc in doctoras %}
-                                    <option value="{{ doc.id }}">{{ doc.usuario }}</option>
-                                {% endfor %}
-                            </select>
-                            <p class="text-xs text-gray-500 mt-1">Este campo es obligatorio si el tipo de nómina es "Neurología".</p>
-                        </div>
-                        <div>
-                            <label for="excel_nomina" class="block text-gray-700 font-semibold mb-2">Archivo Excel/CSV de la Nómina:</label>
-                            <input type="file" id="excel_nomina" name="excel" accept=".xls,.xlsx,.csv" required class="form-input">
-                        </div>
-                        <div class="flex justify-end space-x-4">
-                            <button type="submit" class="bg-green-600 text-white p-4 rounded-xl shadow hover:bg-green-700 transition duration-200"><i class="fa-solid fa-upload"></i> Cargar Nómina</button>
-                        </div>
-                    </form>
-                </div>
-
-                <div id="admin-visits-list" class="content-section card">
-                    <h3><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas Programadas</h3>
-                    <div class="flex flex-col md:flex-row gap-4 mb-6">
-                        <input type="text" id="adminVisitSearch" placeholder="Buscar por nombre o descripción..." class="flex-grow p-2 border rounded-md form-input" onkeyup="filterVisits('admin')" />
-                        <select id="adminVisitDoctorFilter" class="p-2 border rounded-md form-select" onchange="filterVisits('admin')">
-                            <option value="">Todas las Doctoras</option>
-                            {% for doc in doctoras %}
-                                <option value="{{ doc.id }}">{{ doc.usuario }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div id="adminVisitsContainer" class="space-y-6">
-                        {% if eventos %}
-                            {% set grouped_events = eventos | groupby('fecha') %}
-                            {% for fecha, eventos_del_dia in grouped_events %}
-                                <div class="date-group" data-date="{{ fecha }}">
-                                    <div class="date-group-header">
-                                        <i class="fa-solid fa-calendar-day"></i> {{ fecha }}
-                                    </div>
-                                    <div class="date-group-content">
-                                        <ul class="lista-items !mt-0">
-                                            {% for evento in eventos_del_dia %}
-                                                <li class="visit-card" data-doctor-id="{{ evento.doctora_id }}" data-name="{{ evento.nombre | lower }}" data-obs="{{ evento.observaciones | lower }}">
-                                                    <div class="visit-card-title">{{ evento.nombre }}</div>
-                                                    <div class="visit-card-details">
-                                                        <span><i class="fa-solid fa-clock"></i> {{ evento.horario }}</span>
-                                                        <span><i class="fa-solid fa-users"></i> Alumnos: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
-                                                        {% set doc_info = doctoras | selectattr('id', 'equalto', evento.doctora_id) | first %}
-                                                        <span class="visit-card-doctor-info"><i class="fa-solid fa-user-doctor"></i> Doctora: {{ doc_info.usuario if doc_info else 'N/A' }}</span>
-                                                        <span><i class="fa-solid fa-clipboard"></i> Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
-                                                    </div>
-                                                    <div class="visit-card-actions">
-                                                        {% if evento.url_archivo %}
-                                                            <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
-                                                                <i class="fa-solid fa-file-alt"></i> Ver Formulario Base
-                                                            </a>
-                                                        {% endif %}
-                                                        <button class="delete-btn" onclick="confirmDelete('establecimiento', '{{ evento.id }}', '{{ evento.nombre }}')">
-                                                            <i class="fas fa-trash"></i> Eliminar Visita
-                                                        </button>
-                                                    </div>
-                                                </li>
-                                            {% endfor %}
-                                        </ul>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        {% else %}
-                            <p id="adminVisitNoResults" class="text-center text-gray-500 mt-6 text-lg font-medium">No hay visitas programadas.</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div id="admin-nominas-list" class="content-section card">
-                    <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Médicas Cargadas</h3>
-                    <div class="flex flex-col md:flex-row gap-4 mb-6">
-                        <input type="text" id="adminNominaSearch" placeholder="Buscar por nombre o tipo de nómina..." class="flex-grow p-2 border rounded-md form-input" onkeyup="filterNominas('admin')" />
-                        <select id="adminNominaDoctorFilter" class="p-2 border rounded-md form-select" onchange="filterNominas('admin')">
-                            <option value="">Todas las Doctoras</option>
-                            {% for doc in doctoras %}
-                                <option value="{{ doc.id }}">{{ doc.usuario }}</option>
-                            {% endfor %}
-                        </select>
-                        <button onclick="clearNominaFilters('admin')" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out flex items-center justify-center gap-2">
-                            <i class="fas fa-filter-circle-xmark"></i> Limpiar Filtros
-                        </button>
-                    </div>
-                    <ul class="lista-items" id="adminNominasContainer">
-                        {% if admin_nominas_cargadas %}
-                            {% for nomina in admin_nominas_cargadas %}
-                                <li class="item-card" data-doctor-id="{{ nomina.doctora_id }}" data-name="{{ nomina.nombre_nomina | lower }}" data-type="{{ nomina.tipo_nomina | lower }}">
-                                    <div class="item-card-header">
-                                        <span><i class="fa-solid fa-building mr-2 text-primary-dark"></i>{{ nomina.nombre_nomina }} ({{ nomina.tipo_nomina.replace('_', ' ').title() }})</span>
-                                        <span>Asignada a: {{ (doctoras | selectattr('id', 'equalto', nomina.doctora_id) | first).usuario if nomina.doctora_id else 'N/A' }}</span>
-                                    </div>
-                                    <div class="item-card-details">
-                                        <span>Archivo Original: {{ nomina.nombre_excel_original }}</span>
-                                        <span>Tipo de Formulario: {{ nomina.form_type | default('No especificado') | capitalize }}</span>
-                                        {% if nomina.form_type == 'neurologia' and nomina.doctora_id_para_formulario %}
-                                            {% set doctora_form_obj = doctoras | selectattr('id', 'equalto', nomina.doctora_id_para_formulario) | first %}
-                                            <span>Formulario base de: {{ doctora_form_obj.usuario if doctora_form_obj else 'Doctora no encontrada' }}</span>
-                                        {% endif %}
-                                    </div>
-                                    {% if nomina.url_excel_original %}
-                                        <a href="{{ nomina.url_excel_original }}" target="_blank" class="item-card-action-link">
-                                            <i class="fa-solid fa-file-excel"></i> Ver Excel Original
-                                        </a>
-                                    {% endif %}
-                                    <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="fill-students-btn">
-                                        <i class="fa-solid fa-list-ul"></i> Rellenar y Ver Estudiantes
-                                    </a>
-                                    <button class="delete-btn" onclick="confirmDelete('nomina', '{{ nomina.id }}', '{{ nomina.nombre_nomina }}')">
-                                        <i class="fas fa-trash"></i> Eliminar Nómina y Estudiantes
-                                        </button>
-                                </li>
-                            {% endfor %}
-                        {% else %}
-                            <p id="adminNominaNoResults" class="text-center text-gray-500 mt-6 text-lg font-medium">No hay nóminas médicas cargadas.</p>
-                        {% endif %}
-                    </ul>
-                </div>
-
-                <div id="admin-uploaded-forms-all" class="content-section card">
-                    <h3><i class="fa-solid fa-folder-open"></i> Todos los Formularios Subidos</h3>
-                    <ul class="lista-items">
-                        {% if formularios %}
-                            {% for form_subido in formularios %}
+            <div id="doctor-uploaded-forms" class="content-section card hidden">
+                <h3><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</h3>
+                <ul class="lista-items">
+                    {% if formularios %}
+                        {% for form_subido in formularios %}
+                            {% if form_subido.doctoras_id == usuario_id %}
                                 <li class="item-card">
                                     <div class="item-card-header">
                                         <span>{{ form_subido.nombre_archivo }}</span>
                                         <span>Fecha: {{ form_subido.fecha_subida.strftime('%d-%m-%Y') if form_subido.fecha_subida else 'N/A' }}</span>
                                     </div>
                                     <div class="item-card-details">
-                                        <span>Doctora: {% set doc_info = (doctoras | selectattr('id', 'equalto', form_subido.doctoras_id) | first) %}{{ doc_info.usuario if doc_info else 'Desconocida' }}</span>
-                                        <span>Establecimiento: {% set est_info = (establecimientos | selectattr('id', 'equalto', form_subido.establecimientos_id) | first) %}{{ est_info.nombre if est_info else 'Desconocido' }}</span>
+                                        <span>Establecimiento: 
+                                            {% set est = (eventos | selectattr('id', 'equalto', form_subido.establecimientos_id) | first) %}
+                                            {{ est.nombre if est else 'Desconocido' }}
+                                        </span>
                                     </div>
                                     <a href="{{ form_subido.url_archivo }}" target="_blank" class="item-card-action-link" style="background-color: var(--primary-medium);">
                                         <i class="fa-solid fa-eye"></i> Ver Archivo
                                     </a>
                                 </li>
-                            {% endfor %}
-                        {% else %}
-                            <p class="text-center text-gray-500 mt-6 text-lg font-medium">No hay formularios subidos aún.</p>
-                        {% endif %}
-                    </ul>
-                </div>
-
-                <div id="crear_proyecto" class="content-section card">
-                    <h3><i class="fas fa-folder-plus"></i> Crear Nuevo Proyecto</h3>
-                    <form action="{{ url_for('crear_proyecto') }}" method="POST" class="space-y-6">
-                        <div>
-                            <label for="nombre_proyecto" class="block text-gray-700 font-semibold mb-2">Nombre del Proyecto:</label>
-                            <input type="text" id="nombre_proyecto" name="nombre_proyecto" placeholder="Ej: Proyecto Colegio Las Acacias" required class="form-input">
-                        </div>
-                        <div>
-                            <label for="descripcion_proyecto" class="block text-gray-700 font-semibold mb-2">Descripción (opcional):</label>
-                            <textarea id="descripcion_proyecto" name="descripcion_proyecto" rows="4" placeholder="Breve descripción del proyecto..." class="form-input"></textarea>
-                        </div>
-                        <div class="flex justify-end space-x-4">
-                            <button type="submit" class="bg-blue-600 text-white p-4 rounded-xl shadow hover:bg-blue-700 transition duration-200"><i class="fas fa-plus-circle"></i> Crear Proyecto</button>
-                        </div>
-                    </form>
-                </div>
-
-                <div id="gestionar_proyectos" class="content-section card">
-                    <h3><i class="fas fa-list-check"></i> Gestionar Proyectos</h3>
-                    {% if proyectos %}
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
-                            <thead class="bg-gray-100">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre del Proyecto</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Creación</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-200">
-                                {% for proyecto in proyectos %}
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap">{{ proyecto.nombre_proyecto }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">{{ proyecto.descripcion or 'N/A' }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">{{ proyecto.fecha_creacion | default('N/A') }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <a href="#" class="text-blue-600 hover:text-blue-900 mr-3" title="Editar"><i class="fas fa-edit"></i></a>
-                                        <button class="text-red-600 hover:text-red-900" title="Eliminar" onclick="confirmDelete('proyecto', '{{ proyecto.id }}', '{{ proyecto.nombre_proyecto }}')">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                            {% endif %}
+                        {% endfor %}
                     {% else %}
-                    <p class="text-center text-gray-500 mt-6 text-lg font-medium">No hay proyectos creados aún.</p>
+                        <p class="text-center text-gray-500 mt-6 text-lg font-medium">No has subido ningún formulario aún.</p>
+                    {% endif %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if usuario == 'admin' %}
+            <div id="admin-performance" class="content-section card hidden">
+                <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento del Administrador</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+                    <div class="summary-card bg-blue-600 text-white rounded-2xl p-6 shadow-lg">
+                        <h3 class="text-sm font-light uppercase tracking-wider text-white">Colegios Asignados</h3>
+                        <p class="text-5xl font-extrabold mt-4">{{ eventos|length }}</p>
+                    </div>
+                    <div class="summary-card bg-green-600 text-white rounded-2xl p-6 shadow-lg">
+                        <h3 class="text-sm font-light uppercase tracking-wider text-white">Nóminas Asignadas</h3>
+                        <p class="text-5xl font-extrabold mt-4">{{ admin_nominas_cargadas|length }}</p>
+                    </div>
+                    <div class="summary-card bg-yellow-500 text-white rounded-2xl p-6 shadow-lg">
+                        <h3 class="text-sm font-light uppercase tracking-wider text-white">Total Doctoras</h3>
+                        <p class="text-5xl font-extrabold mt-4">{{ doctoras|length }}</p>
+                    </div>
+                </div>
+                <div class="card mt-8">
+                    <h3><i class="fa-solid fa-chart-pie"></i> Rendimiento por Doctora (Formularios Completados)</h3>
+                    {% if doctor_performance_data %}
+                        <div class="chart-container">
+                            <canvas id="adminPerformanceChart"></canvas>
+                        </div>
+                    {% else %}
+                        <p class="text-center text-gray-500 mt-6 text-lg font-medium">No hay datos de rendimiento de doctoras disponibles para graficar.</p>
                     {% endif %}
                 </div>
-            {% endif %}
-        </main>
-    </div>
-
-    <div id="studentDetailModal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <button class="modal-close-btn" onclick="toggleModal('studentDetailModal')">&times;</button>
-            <h3 class="text-2xl font-bold mb-4 text-gray-800" id="modalStudentName"></h3>
-            <div id="modalStudentInfo" class="space-y-3"></div>
-            <div class="flex justify-end space-x-4 mt-6">
-                <button class="bg-red-600 text-white p-3 rounded-xl hover:bg-red-700" onclick="deleteStudent()">Eliminar</button>
-                <button class="bg-yellow-500 text-white p-3 rounded-xl hover:bg-yellow-600" onclick="editStudent()">Editar</button>
             </div>
-        </div>
+
+            <div id="admin-add-visit" class="content-section card hidden">
+                <h3><i class="fa-solid fa-calendar-plus"></i> Agregar Visita Programada</h3>
+                <form action="{{ url_for('admin_agregar') }}" method="POST" class="space-y-6">
+                    <div>
+                        <label for="nombre_establecimiento" class="block text-gray-700 font-semibold mb-2">Nombre Establecimiento:</label>
+                        <input type="text" id="nombre_establecimiento" name="nombre" placeholder="Ej: Liceo Bicentenario" required class="form-input">
+                    </div>
+                    <div>
+                        <label for="fecha_establecimiento" class="block text-gray-700 font-semibold mb-2">Fecha:</label>
+                        <input type="date" id="fecha_establecimiento" name="fecha" required class="form-input">
+                    </div>
+                    <div>
+                        <label for="horario_establecimiento" class="block text-gray-700 font-semibold mb-2">Horario:</label>
+                        <input type="text" id="horario_establecimiento" name="horario" placeholder="Ej: 09:00 - 11:00" required class="form-input">
+                    </div>
+                    <div>
+                        <label for="doctora_establecimiento" class="block text-gray-700 font-semibold mb-2">Asignar a Doctora:</label>
+                        <select id="doctora_establecimiento" name="doctora" required class="form-select">
+                            <option value="">Selecciona una doctora</option>
+                            {% for doc in doctoras %}
+                                <option value="{{ doc.id }}">{{ doc.usuario }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="alumnos_establecimiento" class="block text-gray-700 font-semibold mb-2">Cantidad de Alumnos:</label>
+                        <input type="number" id="alumnos_establecimiento" name="alumnos" min="0" placeholder="Ej: 30" class="form-input">
+                    </div>
+                    <div>
+                        <label for="obs_establecimiento" class="block text-gray-700 font-semibold mb-2">Observaciones:</label>
+                        <textarea id="obs_establecimiento" name="obs" rows="3" placeholder="Notas adicionales..." class="form-input"></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-4">
+                        <button type="submit" class="bg-blue-600 text-white p-4 rounded-xl shadow hover:bg-blue-700 transition duration-200"><i class="fa-solid fa-plus"></i> Agregar Visita</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="admin-upload-nomina" class="content-section card hidden">
+                <h3><i class="fa-solid fa-file-excel"></i> Cargar Nómina Médica (Excel/CSV)</h3>
+                <form action="{{ url_for('admin_cargar_nomina') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+                    <div>
+                        <label for="tipo_nomina" class="block text-gray-700 font-semibold mb-2">Tipo de Nómina:</label>
+                        <input type="text" id="tipo_nomina" name="tipo_nomina" placeholder="Ej: General, Dental, Oftalmológica" required class="form-input">
+                    </div>
+                    <div>
+                        <label for="nombre_especifico" class="block text-gray-700 font-semibold mb-2">Nombre Específico (Ej: Liceo X - Nómina Mayo):</label>
+                        <input type="text" id="nombre_especifico" name="nombre_especifico" placeholder="Nombre único para esta nómina" required class="form-input">
+                    </div>
+                    <div>
+                        <label for="doctora_nomina" class="block text-gray-700 font-semibold mb-2">Asignar a Doctora:</label>
+                        <select id="doctora_nomina" name="doctora" required class="form-select">
+                            <option value="">Selecciona una doctora</option>
+                            {% for doc in doctoras %}
+                                <option value="{{ doc.id }}">{{ doc.usuario }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="form_type_nomina" class="block text-gray-700 font-semibold mb-2">Tipo de Formulario Asociado:</label>
+                        <select id="form_type_nomina" name="form_type" required class="form-select">
+                            <option value="">Selecciona el tipo de formulario</option>
+                            <option value="neurologia">Neurología</option>
+                            <option value="medicina_familiar">Medicina Familiar</option>
+                        </select>
+                    </div>
+                    <div id="doctora_para_formulario_div" class="mb-4 hidden">
+                        <label for="doctora_id_para_formulario" class="block text-gray-700 font-semibold mb-2">Doctora para el Formulario (solo Neurología):</label>
+                        <select name="doctora_id_para_formulario" id="doctora_id_para_formulario" class="form-select">
+                            <option value="">Seleccione una doctora...</option>
+                            {% for doc in doctoras %}
+                                <option value="{{ doc.id }}">{{ doc.usuario }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Este campo es obligatorio si el tipo de nómina es "Neurología".</p>
+                    </div>
+                    <div>
+                        <label for="excel_nomina" class="block text-gray-700 font-semibold mb-2">Archivo Excel/CSV de la Nómina:</label>
+                        <input type="file" id="excel_nomina" name="excel" accept=".xls,.xlsx,.csv" required class="form-input">
+                    </div>
+                    <div class="flex justify-end space-x-4">
+                        <button type="submit" class="bg-green-600 text-white p-4 rounded-xl shadow hover:bg-green-700 transition duration-200"><i class="fa-solid fa-upload"></i> Cargar Nómina</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="admin-visits-list" class="content-section card hidden">
+                <h3><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas Programadas</h3>
+                <div class="flex flex-col md:flex-row gap-4 mb-6">
+                    <input type="text" id="adminVisitSearch" placeholder="Buscar por nombre o descripción..." class="flex-grow p-2 border rounded-md form-input" onkeyup="filterVisits('admin')" />
+                    <select id="adminVisitDoctorFilter" class="p-2 border rounded-md form-select" onchange="filterVisits('admin')">
+                        <option value="">Todas las Doctoras</option>
+                        {% for doc in doctoras %}
+                            <option value="{{ doc.id }}">{{ doc.usuario }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div id="adminVisitsContainer" class="space-y-6">
+                    {% if eventos %}
+                        {% set grouped_events = eventos | groupby('fecha') %}
+                        {% for fecha, eventos_del_dia in grouped_events %}
+                            <div class="date-group" data-date="{{ fecha }}">
+                                <div class="date-group-header">
+                                    <i class="fa-solid fa-calendar-day"></i> {{ fecha }}
+                                </div>
+                                <div class="date-group-content">
+                                    <ul class="lista-items !mt-0">
+                                        {% for evento in eventos_del_dia %}
+                                            <li class="visit-card" data-doctor-id="{{ evento.doctora_id }}" data-name="{{ evento.nombre | lower }}" data-obs="{{ evento.observaciones | lower }}">
+                                                <div class="visit-card-title">{{ evento.nombre }}</div>
+                                                <div class="visit-card-details">
+                                                    <span><i class="fa-solid fa-clock"></i> {{ evento.horario }}</span>
+                                                    <span><i class="fa-solid fa-users"></i> Alumnos: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
+                                                    {% set doc_info = doctoras | selectattr('id', 'equalto', evento.doctora_id) | first %}
+                                                    <span class="visit-card-doctor-info"><i class="fa-solid fa-user-doctor"></i> Doctora: {{ doc_info.usuario if doc_info else 'N/A' }}</span>
+                                                    <span><i class="fa-solid fa-clipboard"></i> Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
+                                                </div>
+                                                <div class="visit-card-actions">
+                                                    {% if evento.url_archivo %}
+                                                        <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
+                                                            <i class="fa-solid fa-file-alt"></i> Ver Formulario Base
+                                                        </a>
+                                                    {% endif %}
+                                                    <button class="delete-btn" onclick="confirmDelete('establecimiento', '{{ evento.id }}', '{{ evento.nombre }}')">
+                                                        <i class="fas fa-trash"></i> Eliminar Visita
+                                                    </button>
+                                                </div>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p id="adminVisitNoResults" class="text-center text-gray-500 mt-6 text-lg font-medium">No hay visitas programadas.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div id="admin-nominas-list" class="content-section card hidden">
+                <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Médicas Cargadas</h3>
+                <div class="flex flex-col md:flex-row gap-4 mb-6">
+                    <input type="text" id="adminNominaSearch" placeholder="Buscar por nombre o tipo de nómina..." class="flex-grow p-2 border rounded-md form-input" onkeyup="filterNominas('admin')" />
+                    <select id="adminNominaDoctorFilter" class="p-2 border rounded-md form-select" onchange="filterNominas('admin')">
+                        <option value="">Todas las Doctoras</option>
+                        {% for doc in doctoras %}
+                            <option value="{{ doc.id }}">{{ doc.usuario }}</option>
+                        {% endfor %}
+                    </select>
+                    <button onclick="clearNominaFilters('admin')" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out flex items-center justify-center gap-2">
+                        <i class="fas fa-filter-circle-xmark"></i> Limpiar Filtros
+                    </button>
+                </div>
+                <ul class="lista-items" id="adminNominasContainer">
+                    {% if admin_nominas_cargadas %}
+                        {% for nomina in admin_nominas_cargadas %}
+                            <li class="item-card" data-doctor-id="{{ nomina.doctora_id }}" data-name="{{ nomina.nombre_nomina | lower }}" data-type="{{ nomina.tipo_nomina | lower }}">
+                                <div class="item-card-header">
+                                    <span><i class="fa-solid fa-building mr-2 text-primary-dark"></i>{{ nomina.nombre_nomina }} ({{ nomina.tipo_nomina.replace('_', ' ').title() }})</span>
+                                    <span>Asignada a: {{ (doctoras | selectattr('id', 'equalto', nomina.doctora_id) | first).usuario if nomina.doctora_id else 'N/A' }}</span>
+                                </div>
+                                <div class="item-card-details">
+                                    <span>Archivo Original: {{ nomina.nombre_excel_original }}</span>
+                                    <span>Tipo de Formulario: {{ nomina.form_type | default('No especificado') | capitalize }}</span>
+                                    {% if nomina.form_type == 'neurologia' and nomina.doctora_id_para_formulario %}
+                                        {% set doctora_form_obj = doctoras | selectattr('id', 'equalto', nomina.doctora_id_para_formulario) | first %}
+                                        <span>Formulario base de: {{ doctora_form_obj.usuario if doctora_form_obj else 'Doctora no encontrada' }}</span>
+                                    {% endif %}
+                                </div>
+                                {% if nomina.url_excel_original %}
+                                    <a href="{{ nomina.url_excel_original }}" target="_blank" class="item-card-action-link">
+                                        <i class="fa-solid fa-file-excel"></i> Ver Excel Original
+                                    </a>
+                                {% endif %}
+                                <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="fill-students-btn">
+                                    <i class="fa-solid fa-list-ul"></i> Rellenar y Ver Estudiantes
+                                </a>
+                                <button class="delete-btn" onclick="confirmDelete('nomina', '{{ nomina.id }}', '{{ nomina.nombre_nomina }}')">
+                                    <i class="fas fa-trash"></i> Eliminar Nómina y Estudiantes
+                                    </button>
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <p id="adminNominaNoResults" class="text-center text-gray-500 mt-6 text-lg font-medium">No hay nóminas médicas cargadas.</p>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <div id="admin-uploaded-forms-all" class="content-section card hidden">
+                <h3><i class="fa-solid fa-folder-open"></i> Todos los Formularios Subidos</h3>
+                <ul class="lista-items">
+                    {% if formularios %}
+                        {% for form_subido in formularios %}
+                            <li class="item-card">
+                                <div class="item-card-header">
+                                    <span>{{ form_subido.nombre_archivo }}</span>
+                                    <span>Fecha: {{ form_subido.fecha_subida.strftime('%d-%m-%Y') if form_subido.fecha_subida else 'N/A' }}</span>
+                                </div>
+                                <div class="item-card-details">
+                                    <span>Doctora: {% set doc_info = (doctoras | selectattr('id', 'equalto', form_subido.doctoras_id) | first) %}{{ doc_info.usuario if doc_info else 'Desconocida' }}</span>
+                                    <span>Establecimiento: {% set est_info = (establecimientos | selectattr('id', 'equalto', form_subido.establecimientos_id) | first) %}{{ est_info.nombre if est_info else 'Desconocido' }}</span>
+                                </div>
+                                <a href="{{ form_subido.url_archivo }}" target="_blank" class="item-card-action-link" style="background-color: var(--primary-medium);">
+                                    <i class="fa-solid fa-eye"></i> Ver Archivo
+                                </a>
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-center text-gray-500 mt-6 text-lg font-medium">No hay formularios subidos aún.</p>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <div id="crear_proyecto" class="content-section card hidden">
+                <h3><i class="fas fa-folder-plus"></i> Crear Nuevo Proyecto</h3>
+                <form action="{{ url_for('crear_proyecto') }}" method="POST" class="space-y-6">
+                    <div>
+                        <label for="nombre_proyecto" class="block text-gray-700 font-semibold mb-2">Nombre del Proyecto:</label>
+                        <input type="text" id="nombre_proyecto" name="nombre_proyecto" placeholder="Ej: Proyecto Colegio Las Acacias" required class="form-input">
+                    </div>
+                    <div>
+                        <label for="descripcion_proyecto" class="block text-gray-700 font-semibold mb-2">Descripción (opcional):</label>
+                        <textarea id="descripcion_proyecto" name="descripcion_proyecto" rows="4" placeholder="Breve descripción del proyecto..." class="form-input"></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-4">
+                        <button type="submit" class="bg-blue-600 text-white p-4 rounded-xl shadow hover:bg-blue-700 transition duration-200"><i class="fas fa-plus-circle"></i> Crear Proyecto</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="gestionar_proyectos" class="content-section card hidden">
+                <h3><i class="fas fa-list-check"></i> Gestionar Proyectos</h3>
+                {% if proyectos %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre del Proyecto</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Creación</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% for proyecto in proyectos %}
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">{{ proyecto.nombre_proyecto }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">{{ proyecto.descripcion or 'N/A' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">{{ proyecto.fecha_creacion | default('N/A') }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <a href="#" class="text-blue-600 hover:text-blue-900 mr-3" title="Editar"><i class="fas fa-edit"></i></a>
+                                    <button class="text-red-600 hover:text-red-900" title="Eliminar" onclick="confirmDelete('proyecto', '{{ proyecto.id }}', '{{ proyecto.nombre_proyecto }}')">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-gray-600">No hay proyectos creados aún.</p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+        </main>
     </div>
 
     <script>
@@ -998,7 +988,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            const sidebar = document.getElementById('sidebar');
             const navLinks = document.querySelectorAll('.nav-link');
             const contentSections = document.querySelectorAll('.content-section');
             const formTypeNominaSelect = document.getElementById('form_type_nomina');
@@ -1006,11 +995,11 @@
 
             function showSection(sectionId) {
                 contentSections.forEach(section => {
-                    section.classList.remove('active');
+                    section.classList.add('hidden');
                 });
                 const activeSection = document.getElementById(sectionId);
                 if (activeSection) {
-                    activeSection.classList.add('active');
+                    activeSection.classList.remove('hidden');
                     updateTitle(sectionId);
                     if (sectionId === 'admin-performance') {
                         renderAdminPerformanceChart();
@@ -1061,23 +1050,16 @@
                 });
                 if (formTypeNominaSelect.value === 'neurologia') {
                     doctoraParaFormularioDiv.classList.remove('hidden');
+                } else {
+                    doctoraParaFormularioDiv.classList.add('hidden');
                 }
             }
-            
+
             const initialActiveLink = document.querySelector('.nav-link.active');
             if (initialActiveLink) {
                 showSection(initialActiveLink.dataset.section);
             }
 
-            // Lógica para mostrar/ocultar el sidebar en móviles
-            const menuToggle = document.querySelector('.menu-toggle-btn');
-            if (menuToggle) {
-                menuToggle.addEventListener('click', () => {
-                    sidebar.classList.toggle('active');
-                });
-            }
-
-            // Mock Data and Functions from dashboard-11 for initial charts
             const mockStudents = [
                 { id: 1, name: 'Juan Pérez', rut: '12345678-9', school: 'Colegio A', risk: 'bajo' },
                 { id: 2, name: 'María López', rut: '98765432-1', school: 'Colegio B', risk: 'medio' },
@@ -1111,15 +1093,7 @@
                             pointHoverBorderWidth: 2,
                         }]
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
-                            x: { grid: { display: false } }
-                        },
-                        plugins: { legend: { display: false } }
-                    }
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
                 });
             }
 
@@ -1344,8 +1318,91 @@
                 }
                 filterVisits(userType);
             }
-
         });
+
+        // Lógica para Coordinadora - Datos Mockup
+        const mockCoordinadoraData = {
+            evaluacionesHoy: 45,
+            proyectosActivos: 3,
+            evaluacionesPendientes: 120,
+            dailyPerformance: {
+                labels: ['Proyecto A', 'Proyecto B', 'Proyecto C'],
+                data: [20, 15, 10]
+            },
+            projectProgress: {
+                labels: ['Proyecto A', 'Proyecto B', 'Proyecto C'],
+                data: [60, 45, 80]
+            },
+            liveEvaluations: [
+                { time: '10:45 AM', doctora: 'Dra. María Gómez', proyecto: 'Colegio A', tipo: 'Neurología' },
+                { time: '10:40 AM', doctora: 'Dra. Ana Pérez', proyecto: 'Colegio B', tipo: 'Medicina Familiar' },
+                { time: '10:35 AM', doctora: 'Dra. María Gómez', proyecto: 'Colegio A', tipo: 'Neurología' },
+                { time: '10:30 AM', doctora: 'Dra. Ana Pérez', proyecto: 'Colegio B', tipo: 'Medicina Familiar' },
+            ]
+        };
+
+        function renderCoordinadoraCharts() {
+            const dailyCtx = document.getElementById('dailyPerformanceChart');
+            if (dailyCtx) {
+                if (window.dailyChartInstance) { window.dailyChartInstance.destroy(); }
+                window.dailyChartInstance = new Chart(dailyCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: mockCoordinadoraData.dailyPerformance.labels,
+                        datasets: [{
+                            label: 'Evaluaciones Completadas Hoy',
+                            data: mockCoordinadoraData.dailyPerformance.data,
+                            backgroundColor: ['rgba(54, 162, 235, 0.6)', 'rgba(75, 192, 192, 0.6)', 'rgba(255, 159, 64, 0.6)'],
+                            borderColor: ['rgba(54, 162, 235, 1)', 'rgba(75, 192, 192, 1)', 'rgba(255, 159, 64, 1)'],
+                            borderWidth: 1
+                        }]
+                    }
+                });
+            }
+
+            const progressCtx = document.getElementById('projectProgressChart');
+            if (progressCtx) {
+                if (window.progressChartInstance) { window.progressChartInstance.destroy(); }
+                window.progressChartInstance = new Chart(progressCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: mockCoordinadoraData.projectProgress.labels,
+                        datasets: [{
+                            label: 'Avance del Proyecto',
+                            data: mockCoordinadoraData.projectProgress.data,
+                            backgroundColor: ['rgba(54, 162, 235, 0.6)', 'rgba(75, 192, 192, 0.6)', 'rgba(255, 159, 64, 0.6)'],
+                            borderColor: ['rgba(54, 162, 235, 1)', 'rgba(75, 192, 192, 1)', 'rgba(255, 159, 64, 1)'],
+                            borderWidth: 1
+                        }]
+                    }
+                });
+            }
+        }
+
+        function loadCoordinadoraData() {
+            if (document.getElementById('evaluacionesHoyCount')) {
+                document.getElementById('evaluacionesHoyCount').textContent = mockCoordinadoraData.evaluacionesHoy;
+                document.getElementById('proyectosActivosCount').textContent = mockCoordinadoraData.proyectosActivos;
+                document.getElementById('evaluacionesPendientesCount').textContent = mockCoordinadoraData.evaluacionesPendientes;
+            }
+            
+            const liveContainer = document.getElementById('evaluacionesEnVivoContainer');
+            if (liveContainer) {
+                liveContainer.innerHTML = '';
+                mockCoordinadoraData.liveEvaluations.forEach(eval => {
+                    const card = document.createElement('div');
+                    card.className = "item-card-header flex items-center justify-between";
+                    card.innerHTML = `
+                        <span><i class="fas fa-check-circle text-green-500 mr-2"></i><strong>${eval.doctora}</strong> - ${eval.proyecto}</span>
+                        <div class="text-gray-500 text-sm">
+                            <span class="mr-4">${eval.tipo}</span>
+                            <i class="fas fa-clock mr-1"></i>${eval.time}
+                        </div>
+                    `;
+                    liveContainer.appendChild(card);
+                });
+            }
+        }
     </script>
 </body>
 </html>

@@ -124,21 +124,21 @@
             flex-grow: 1;
         }
 
-        /* Sidebar (Panel Lateral) */
+        /* --- Sidebar (Panel Lateral) --- */
         .sidebar {
             width: 280px;
-            background: white;
+            background: #F8F9FA;
             color: var(--text-dark);
             padding: 2rem 1.5rem;
             box-shadow: 0 6px 20px rgba(0,0,0,0.05);
             flex-shrink: 0;
-            border-radius: var(--radius-base);
+            border-radius: 20px;
             position: sticky;
             top: 2rem;
             height: calc(100vh - 4rem);
             overflow-y: auto;
             transition: all 0.4s ease-in-out;
-            border: 1px solid #E2E8F0;
+            border: 1px solid #E9ECEF;
         }
         .sidebar.collapsed {
             width: 0;
@@ -159,15 +159,15 @@
             align-items: center;
             gap: 15px;
             padding: 18px 20px;
-            color: #778899;
+            color: #495057;
             text-decoration: none;
-            border-radius: 10px;
+            border-radius: 12px;
             transition: all 0.3s ease;
             font-weight: 500;
             position: relative;
         }
         .sidebar-nav a:hover {
-            background-color: #F0F4F8;
+            background-color: #E6F0F8;
             color: var(--primary-blue);
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
@@ -178,17 +178,7 @@
             font-weight: 600;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             transform: translateY(-2px);
-        }
-        .sidebar-nav a.active::before {
-            content: '';
-            position: absolute;
-            left: -1.5rem; /* Ajuste para que se vea la barra */
-            top: 0;
-            bottom: 0;
-            width: 6px;
-            background-color: var(--secondary-blue);
-            border-radius: 0 var(--radius-base) var(--radius-base) 0;
-            transition: all 0.3s ease;
+            border-bottom: 3px solid var(--secondary-blue);
         }
         .sidebar-nav a.active:hover {
             background-color: #E6F0F8;

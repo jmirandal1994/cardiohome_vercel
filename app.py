@@ -651,34 +651,42 @@ def index():
 def login():
     usuario = request.form['username']
     clave = request.form['password']
-    url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario}&password=eq.{clave}"
+    
+    # Nota: Tu consulta actual solo busca 'usuario' y 'password'.
+    # Deberías incluir el 'rol' en la selección para poder usarlo después.
+    # Por ejemplo, 'select=id,rol'
+    url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario}&password=eq.{clave}&select=id,rol"
+    
     print(f"DEBUG: Intento de login para usuario: {usuario}, URL: {url}")
     try:
         res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS) 
         res.raise_for_status()
         data = res.json()
         print(f"DEBUG: Respuesta Supabase login: {data}")
+
         if data:
-            session['usuario'] = usuario
+            session['usuario'] = data[0]['rol']  # **MODIFICADO AQUÍ** - Guardas el rol en la sesión
             session['usuario_id'] = data[0]['id']
             print(f"DEBUG: Sesión iniciada: usuario={session['usuario']}, usuario_id={session['usuario_id']}")
             flash(f'¡Bienvenido, {usuario}!', 'success')
-            return redirect(url_for('dashboard'))
+            
+            return redirect(url_for('dashboard')) # Rediriges al dashboard principal
+        
         flash('Usuario o contraseña incorrecta.', 'error')
         return redirect(url_for('index'))
     except requests.exceptions.RequestException as e:
         print(f"❌ Error en el login: {e} - {res.text if 'res' in locals() else ''}")
         flash('Error de conexión al intentar iniciar sesión. Intente de nuevo.', 'error')
         return redirect(url_for('index'))
-
+        
 @app.route('/dashboard')
 def dashboard():
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
-    usuario = session['usuario']
+    usuario_rol = session['usuario']
     usuario_id = session.get('usuario_id')
-    print(f"DEBUG: Accediendo a dashboard para usuario: {usuario}, ID: {usuario_id}")
+    print(f"DEBUG: Accediendo a dashboard para usuario: {usuario_rol}, ID: {usuario_id}")
 
     doctoras = []
     establecimientos_admin_list = []
@@ -966,7 +974,7 @@ def admin_agregar():
         print(f"❌ Error inesperado al guardar establecimiento: {e}")
         flash("❌ Error inesperado al guardar el establecimiento.", 'error')
 
-    return redirect(url_for('dashboard'))
+    return render_template('dashboard.html'),usuario=usuario_rol
 
 
 @app.route('/admin/cargar_nomina', methods=['POST'])

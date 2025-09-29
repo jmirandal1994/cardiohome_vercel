@@ -126,38 +126,38 @@
 
         /* --- Sidebar (Panel Lateral) --- */
         .sidebar {
-        width: 260px;
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        color: #2C3E50;
-        padding: 2rem 1.2rem;
-        border-radius: 20px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-        position: sticky;
-        top: 1.5rem;
-        height: calc(100vh - 3rem);
-        overflow-y: auto;
-        transition: all 0.35s ease-in-out;
-        border: 1px solid rgba(255,255,255,0.3);
+            width: 260px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            color: #2C3E50;
+            padding: 2rem 1.2rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 1.5rem;
+            height: calc(100vh - 3rem);
+            overflow-y: auto;
+            transition: all 0.35s ease-in-out;
+            border: 1px solid rgba(255,255,255,0.3);
         }
 
         .sidebar.collapsed {
-        width: 0;
-        padding: 0;
-        transform: translateX(-100%);
-        overflow: hidden;
+            width: 0;
+            padding: 0;
+            transform: translateX(-100%);
+            overflow: hidden;
         }
 
         .sidebar-header {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #1E3A8A;
-        margin-bottom: 1.8rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        padding-left: 10px;
-        border-left: 4px solid #2563EB;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1E3A8A;
+            margin-bottom: 1.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding-left: 10px;
+            border-left: 4px solid #2563EB;
         }
 
        .sidebar-nav {
@@ -203,6 +203,7 @@
         text-align: center;
         font-size: 1.25rem;
         }
+
         /* Secciones de Contenido */
         .content-section {
             display: none;
@@ -1042,21 +1043,21 @@
                         </div>
                         <div class="summary-card-v2 bg-green-600">
                             <div class="summary-card-header">
-                                <span>EVALUACIONES<br>NEUROLOGÍA REALIZADAS</span>
+                                <span>EVALUACIONES<br>NEUROLOGÍA COMPLETEDAS</span>
                                 <i class="fa-solid fa-brain"></i>
                             </div>
                             <p class="count">300</p>
                         </div>
                         <div class="summary-card-v2 bg-yellow-500">
                             <div class="summary-card-header">
-                                <span>EVALUACIONES<br>MEDICINA FAMILIAR REALIZADAS</span>
+                                <span>EVALUACIONES<br>MEDICINA FAMILIAR COMPLETEDAS</span>
                                 <i class="fa-solid fa-house-chimney-medical"></i>
                             </div>
                             <p class="count">287</p>
                         </div>
                         <div class="summary-card-v2 bg-red-600">
                             <div class="summary-card-header">
-                                <span>ESTABLECIMIENTOS<br>REALIZADOS</span>
+                                <span>ESTABLECIMIENTOS<br>COMPLETADOS</span>
                                 <i class="fa-solid fa-school"></i>
                             </div>
                             <p class="count">12</p>
@@ -1081,26 +1082,65 @@
             <div id="coord-evaluaciones" class="content-section">
                 <div class="card">
                     <h3><i class="fa-solid fa-folder-tree"></i> Evaluaciones por Establecimiento</h3>
-                    <p class="text-gray-600 mb-6">Selecciona un establecimiento para ver y descargar los formularios completados.</p>
-                    <ul class="lista-items">
-                        {% if establecimientos %}
-                            {% for establecimiento in establecimientos %}
-                                <li class="item-card">
-                                    <div class="item-card-header">
-                                        <span><i class="fa-solid fa-building"></i>{{ establecimiento.nombre }}</span>
-                                        <span class="text-sm text-gray-600">Total Formularios: {{ establecimiento.total_formularios }}</span>
+                    <p class="text-gray-600 mb-6">Selecciona un proyecto para ver y descargar los formularios completados.</p>
+                    <div class="space-y-6">
+                        <div class="bg-gray-100 p-6 rounded-xl shadow-inner">
+                            <h4 class="text-xl font-bold text-primary-blue mb-4 flex items-center gap-3"><i class="fas fa-folder text-lg"></i> Proyecto Santiago</h4>
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div class="item-card bg-white">
+                                    <div class="item-card-header flex justify-between items-center mb-4">
+                                        <div class="flex items-center space-x-3">
+                                            <i class="fa-solid fa-tree text-green-600 text-2xl"></i>
+                                            <span class="text-lg font-semibold">Colegio Los Bosquinos</span>
+                                        </div>
                                     </div>
-                                    <div class="item-card-actions">
-                                        <button class="action-button blue" onclick="showNominas({{ establecimiento.id }})">
-                                            <i class="fa-solid fa-list-ul"></i> Ver Nóminas Completadas
+                                    <div class="item-card-details space-y-2 text-sm text-gray-600">
+                                        <p>Evaluaciones completadas: **150**</p>
+                                        <p>Evaluaciones faltantes: **50**</p>
+                                    </div>
+                                    <div class="item-card-actions mt-4">
+                                        <button class="action-button blue" onclick="showNominas('los-bosquinos')">
+                                            <i class="fa-solid fa-file-pdf"></i> Ver y Descargar
                                         </button>
                                     </div>
-                                </li>
-                            {% endfor %}
-                        {% else %}
-                            <p class="text-gray-600">No hay establecimientos (proyectos) con nóminas cargadas.</p>
-                        {% endif %}
-                    </ul>
+                                </div>
+                                <div class="item-card bg-white">
+                                    <div class="item-card-header flex justify-between items-center mb-4">
+                                        <div class="flex items-center space-x-3">
+                                            <i class="fa-solid fa-chess-rook text-gray-500 text-2xl"></i>
+                                            <span class="text-lg font-semibold">Colegio Alicante</span>
+                                        </div>
+                                    </div>
+                                    <div class="item-card-details space-y-2 text-sm text-gray-600">
+                                        <p>Evaluaciones completadas: **120**</p>
+                                        <p>Evaluaciones faltantes: **30**</p>
+                                    </div>
+                                    <div class="item-card-actions mt-4">
+                                        <button class="action-button blue" onclick="showNominas('alicante')">
+                                            <i class="fa-solid fa-file-pdf"></i> Ver y Descargar
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="item-card bg-white">
+                                    <div class="item-card-header flex justify-between items-center mb-4">
+                                        <div class="flex items-center space-x-3">
+                                            <i class="fa-solid fa-cross text-yellow-500 text-2xl"></i>
+                                            <span class="text-lg font-semibold">Colegio San Juan</span>
+                                        </div>
+                                    </div>
+                                    <div class="item-card-details space-y-2 text-sm text-gray-600">
+                                        <p>Evaluaciones completadas: **200**</p>
+                                        <p>Evaluaciones faltantes: **0**</p>
+                                    </div>
+                                    <div class="item-card-actions mt-4">
+                                        <button class="action-button blue" onclick="showNominas('san-juan')">
+                                            <i class="fa-solid fa-file-pdf"></i> Ver y Descargar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1116,7 +1156,7 @@
 
             <div id="coord-contact" class="content-section">
                 <div class="card">
-                    <h3><i class="fa-solid fa-envelope"></i> Contacto</h3>
+                    <h3><i class="fa-solid fa-envelope"></i> Solicitudes</h3>
                     <p class="text-gray-600 mb-6">Si tienes alguna duda o necesitas ayuda, por favor, rellena el siguiente formulario y nos pondremos en contacto contigo lo antes posible.</p>
                     <form id="coordinadora-contact-form" action="https://formspree.io/f/your-form-id" method="POST">
                         <label for="coord-name">Tu Nombre:</label>

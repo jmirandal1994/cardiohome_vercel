@@ -1276,7 +1276,14 @@
                 const activeSection = document.getElementById(sectionId);
                 if (activeSection) {
                     activeSection.classList.add('active');
-                    // No se fuerza el scroll
+                    
+                    if (sectionId === 'admin-performance') {
+                        renderAdminPerformanceChart();
+                    } else if (sectionId === 'doctor-performance') {
+                        renderDoctorPerformanceChart();
+                    } else if (sectionId === 'coord-performance') {
+                        renderCoordinadoraPerformanceChart();
+                    }
                 }
             }
 

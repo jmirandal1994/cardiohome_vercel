@@ -552,7 +552,7 @@
                     <p><strong>Teléfono:</strong> +56 9 1234 5678</p>
                 </div>
 
-                <div id="doctor-performance" class="content-section card">
+                <div id="doctor-performance" class="content-section card hidden">
                     <h3><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento (Formularios)</h3>
                     {% if doctor_performance_data_single_doctor %}
                         <p class="text-center text-4xl font-extrabold text-accent-blue my-4">
@@ -570,7 +570,7 @@
                     {% endif %}
                 </div>
 
-                <div id="doctor-visits" class="content-section card">
+                <div id="doctor-visits" class="content-section card hidden">
                     <h3><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</h3>
                     <div class="flex flex-col md:flex-row gap-4 mb-6">
                         <input type="text" id="doctorVisitSearch" placeholder="Buscar por nombre o descripción..." class="flex-grow p-2 border rounded-md form-input" onkeyup="filterVisits('doctor')" />
@@ -620,7 +620,7 @@
                     </div>
                 </div>
 
-                <div id="doctor-nominas" class="content-section card">
+                <div id="doctor-nominas" class="content-section card hidden">
                     <h3><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Médicas Asignadas</h3>
                     <div class="flex flex-col md:flex-row gap-4 mb-6">
                         <input type="text" id="doctorNominaSearch" placeholder="Buscar por nombre o tipo de nómina..." class="flex-grow p-2 border rounded-md form-input" onkeyup="filterNominas('doctor')" />
@@ -631,9 +631,9 @@
                     <ul class="lista-items" id="doctorNominasContainer">
                         {% if assigned_nominations %}
                             {% for nomina in assigned_nominations %}
-                                <li class="item-card" data-name="{{ nomina.nombre_establecimiento | lower }}" data-type="{{ nomina.tipo_nomina_display | lower }}">
+                                <li class="item-card" data-name="{{ nomina.nombre_nomina | lower }}" data-type="{{ nomina.tipo_nomina | lower }}">
                                     <div class="item-card-header">
-                                        <span><i class="fa-solid fa-building mr-2 text-primary-dark"></i>{{ nomina.nombre_establecimiento }}</span>
+                                        <span><i class="fa-solid fa-building mr-2 text-primary-dark"></i>{{ nomina.nombre_nomina }}</span>
                                         <span>Tipo: {{ nomina.tipo_nomina_display }}</span>
                                     </div>
                                     <div class="item-card-details">
@@ -653,7 +653,7 @@
                     </ul>
                 </div>
 
-                <div id="doctor-uploaded-forms" class="content-section card">
+                <div id="doctor-uploaded-forms" class="content-section card hidden">
                     <h3><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</h3>
                     <ul class="lista-items">
                         {% if formularios %}
@@ -684,7 +684,7 @@
             {% endif %}
 
             {% if usuario == 'admin' %}
-                <div id="admin-performance" class="content-section card">
+                <div id="admin-performance" class="content-section card hidden">
                     <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento del Administrador</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
                         <div class="summary-card bg-blue-600 text-white rounded-2xl p-6 shadow-lg">
@@ -712,7 +712,7 @@
                     </div>
                 </div>
 
-                <div id="admin-add-visit" class="content-section card">
+                <div id="admin-add-visit" class="content-section card hidden">
                     <h3><i class="fa-solid fa-calendar-plus"></i> Agregar Visita Programada</h3>
                     <form action="{{ url_for('admin_agregar') }}" method="POST" class="space-y-6">
                         <div>
@@ -798,7 +798,7 @@
                     </form>
                 </div>
 
-                <div id="admin-visits-list" class="content-section card">
+                <div id="admin-visits-list" class="content-section card hidden">
                     <h3><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas Programadas</h3>
                     <div class="flex flex-col md:flex-row gap-4 mb-6">
                         <input type="text" id="adminVisitSearch" placeholder="Buscar por nombre o descripción..." class="flex-grow p-2 border rounded-md form-input" onkeyup="filterVisits('admin')" />
@@ -851,7 +851,7 @@
                     </div>
                 </div>
 
-                <div id="admin-nominas-list" class="content-section card">
+                <div id="admin-nominas-list" class="content-section card hidden">
                     <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Médicas Cargadas</h3>
                     <div class="flex flex-col md:flex-row gap-4 mb-6">
                         <input type="text" id="adminNominaSearch" placeholder="Buscar por nombre o tipo de nómina..." class="flex-grow p-2 border rounded-md form-input" onkeyup="filterNominas('admin')" />
@@ -900,7 +900,7 @@
                     </ul>
                 </div>
 
-                <div id="admin-uploaded-forms-all" class="content-section card">
+                <div id="admin-uploaded-forms-all" class="content-section card hidden">
                     <h3><i class="fa-solid fa-folder-open"></i> Todos los Formularios Subidos</h3>
                     <ul class="lista-items">
                         {% if formularios %}
@@ -925,7 +925,7 @@
                     </ul>
                 </div>
 
-                <div id="crear_proyecto" class="content-section card">
+                <div id="crear_proyecto" class="content-section card hidden">
                     <h3><i class="fas fa-folder-plus"></i> Crear Nuevo Proyecto</h3>
                     <form action="{{ url_for('crear_proyecto') }}" method="POST" class="space-y-6">
                         <div>
@@ -942,7 +942,7 @@
                     </form>
                 </div>
 
-                <div id="gestionar_proyectos" class="content-section card">
+                <div id="gestionar_proyectos" class="content-section card hidden">
                     <h3><i class="fas fa-list-check"></i> Gestionar Proyectos</h3>
                     {% if proyectos %}
                     <div class="overflow-x-auto">
@@ -973,23 +973,13 @@
                         </table>
                     </div>
                     {% else %}
-                    <p class="text-center text-gray-500 mt-6 text-lg font-medium">No hay proyectos creados aún.</p>
+                    <p class="text-gray-600">No hay proyectos creados aún.</p>
                     {% endif %}
                 </div>
-            {% endif %}
-        </main>
-    </div>
-
-    <div id="studentDetailModal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <button class="modal-close-btn" onclick="toggleModal('studentDetailModal')">&times;</button>
-            <h3 class="text-2xl font-bold mb-4 text-gray-800" id="modalStudentName"></h3>
-            <div id="modalStudentInfo" class="space-y-3"></div>
-            <div class="flex justify-end space-x-4 mt-6">
-                <button class="bg-red-600 text-white p-3 rounded-xl hover:bg-red-700" onclick="deleteStudent()">Eliminar</button>
-                <button class="bg-yellow-500 text-white p-3 rounded-xl hover:bg-yellow-600" onclick="editStudent()">Editar</button>
             </div>
-        </div>
+            {% endif %}
+
+        </main>
     </div>
 
     <script>
@@ -998,7 +988,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            const sidebar = document.getElementById('sidebar');
             const navLinks = document.querySelectorAll('.nav-link');
             const contentSections = document.querySelectorAll('.content-section');
             const formTypeNominaSelect = document.getElementById('form_type_nomina');
@@ -1006,11 +995,11 @@
 
             function showSection(sectionId) {
                 contentSections.forEach(section => {
-                    section.classList.remove('active');
+                    section.classList.add('hidden');
                 });
                 const activeSection = document.getElementById(sectionId);
                 if (activeSection) {
-                    activeSection.classList.add('active');
+                    activeSection.classList.remove('hidden');
                     updateTitle(sectionId);
                     if (sectionId === 'admin-performance') {
                         renderAdminPerformanceChart();
@@ -1061,23 +1050,16 @@
                 });
                 if (formTypeNominaSelect.value === 'neurologia') {
                     doctoraParaFormularioDiv.classList.remove('hidden');
+                } else {
+                    doctoraParaFormularioDiv.classList.add('hidden');
                 }
             }
-            
+
             const initialActiveLink = document.querySelector('.nav-link.active');
             if (initialActiveLink) {
                 showSection(initialActiveLink.dataset.section);
             }
 
-            // Lógica para mostrar/ocultar el sidebar en móviles
-            const menuToggle = document.querySelector('.menu-toggle-btn');
-            if (menuToggle) {
-                menuToggle.addEventListener('click', () => {
-                    sidebar.classList.toggle('active');
-                });
-            }
-
-            // Mock Data and Functions from dashboard-11 for initial charts
             const mockStudents = [
                 { id: 1, name: 'Juan Pérez', rut: '12345678-9', school: 'Colegio A', risk: 'bajo' },
                 { id: 2, name: 'María López', rut: '98765432-1', school: 'Colegio B', risk: 'medio' },
@@ -1111,15 +1093,7 @@
                             pointHoverBorderWidth: 2,
                         }]
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
-                            x: { grid: { display: false } }
-                        },
-                        plugins: { legend: { display: false } }
-                    }
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
                 });
             }
 
@@ -1344,7 +1318,6 @@
                 }
                 filterVisits(userType);
             }
-
         });
     </script>
 </body>

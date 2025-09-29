@@ -257,13 +257,14 @@
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
         }
 
-        /* Summary Cards - ESTILO NUEVO */
+        /* Summary Cards - ESTILO FINAL */
         .summary-panel {
             background: white;
             padding: 2rem;
             border-radius: var(--radius-base);
             box-shadow: 0 6px 20px rgba(0,0,0,0.05);
             margin-bottom: 2rem;
+            border: 1px solid #E2E8F0;
         }
         .summary-panel h2 {
             font-family: 'Montserrat', sans-serif;
@@ -275,7 +276,7 @@
         .summary {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 2rem;
+            gap: 1.5rem;
         }
         .summary .card {
             background-color: transparent;
@@ -286,6 +287,7 @@
             flex-direction: column;
             align-items: center;
             text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
         .summary .card:hover {
             transform: translateY(-5px);
@@ -579,6 +581,9 @@
             }
             .user-info {
                 gap: 8px;
+            }
+            .user-info span {
+                display: none;
             }
         }
         

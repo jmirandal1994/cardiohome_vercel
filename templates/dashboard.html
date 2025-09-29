@@ -186,6 +186,11 @@
             background-color: #E6F0F8;
             color: var(--primary-blue);
         }
+        .sidebar-nav a i {
+            width: 20px;
+            text-align: center;
+            font-size: 1.25rem;
+        }
 
         /* Secciones de Contenido */
         .content-section {
@@ -571,13 +576,13 @@
                 <i class="fas fa-bars"></i>
             </button>
             <div class="flex items-center space-x-3">
-                <img src="{{ url_for('static', filename='logo.png') }}" alt="CardioHome Logo" class="w-10 h-10 rounded-full shadow-md">
+                <img src="https://via.placeholder.com/50x50/E8F1FF/3B82F6?text=CH" alt="CardioHome Logo" class="w-10 h-10 rounded-full shadow-md">
                 <h1 class="text-2xl font-bold text-gray-800 hidden sm:block">Dashboard</h1>
             </div>
         </div>
         <div class="flex items-center space-x-4">
             <span class="text-gray-600 hidden md:block">Hola, Dra. [Nombre]</span>
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="User Avatar" class="rounded-full shadow-lg border-2 border-white">
+            <img src="https://via.placeholder.com/40x40/cccccc/333333?text=Doc" alt="User Avatar" class="rounded-full shadow-lg border-2 border-white">
             <button onclick="cerrarSesion()" class="bg-red-500 text-white px-4 py-2 rounded-full shadow-md hover:bg-red-600 transition duration-200 hidden sm:block">Cerrar sesión</button>
         </div>
     </header>
@@ -586,25 +591,25 @@
         <aside class="sidebar" id="sidebar">
             <nav class="p-4">
                 <ul class="space-y-2">
-                    <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical mr-4 text-xl"></i> Bienvenida</a></li>
+                    <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical"></i> Bienvenida</a></li>
                     {% if usuario == 'admin' %}
-                        <li><a href="#" class="nav-link" data-section="admin-performance"><i class="fa-solid fa-chart-line mr-4 text-xl"></i> Rendimiento</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-add-visit"><i class="fa-solid fa-calendar-plus mr-4 text-xl"></i> Agregar Visita</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-upload-nomina"><i class="fa-solid fa-file-excel mr-4 text-xl"></i> Cargar Nómina</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-visits-list"><i class="fa-solid fa-calendar-alt mr-4 text-xl"></i> Todas las Visitas</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-nominas-list"><i class="fa-solid fa-file-invoice-dollar mr-4 text-xl"></i> Nóminas Cargadas</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-uploaded-forms-all"><i class="fa-solid fa-folder-open mr-4 text-xl"></i> Formularios Subidos</a></li>
-                        <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fa-solid fa-folder-plus mr-4 text-xl"></i> Crear Proyecto</a></li>
-                        <li><a href="#" class="nav-link" data-section="gestionar_proyectos"><i class="fa-solid fa-list-check mr-4 text-xl"></i> Gestionar Proyectos</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-performance"><i class="fa-solid fa-chart-line"></i> Rendimiento</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-add-visit"><i class="fa-solid fa-calendar-plus"></i> Agregar Visita</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-upload-nomina"><i class="fa-solid fa-file-excel"></i> Cargar Nómina</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-visits-list"><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-nominas-list"><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Cargadas</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-uploaded-forms-all"><i class="fa-solid fa-folder-open"></i> Formularios Subidos</a></li>
+                        <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fa-solid fa-folder-plus"></i> Crear Proyecto</a></li>
+                        <li><a href="#" class="nav-link" data-section="gestionar_proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
                     {% elif usuario == 'coordinadora' %}
-                        <li><a href="#" class="nav-link" data-section="coord-performance"><i class="fa-solid fa-gauge-high mr-4 text-xl"></i> Rendimiento en Vivo</a></li>
-                        <li><a href="#" class="nav-link" data-section="coord-contact"><i class="fa-solid fa-envelope mr-4 text-xl"></i> Contacto</a></li>
+                        <li><a href="#" class="nav-link" data-section="coord-performance"><i class="fa-solid fa-gauge-high"></i> Rendimiento en Vivo</a></li>
+                        <li><a href="#" class="nav-link" data-section="coord-contact"><i class="fa-solid fa-envelope"></i> Contacto</a></li>
                     {% else %}
-                        <li><a href="#" class="nav-link" data-section="doctor-performance"><i class="fa-solid fa-chart-bar mr-4 text-xl"></i> Mi Rendimiento</a></li>
-                        <li><a href="#" class="nav-link" data-section="doctor-visits"><i class="fa-solid fa-calendar-check mr-4 text-xl"></i> Mis Próximas Visitas</a></li>
-                        <li><a href="#" class="nav-link" data-section="doctor-nominas"><i class="fa-solid fa-file-invoice mr-4 text-xl"></i> Mis Nóminas Asignadas</a></li>
-                        <li><a href="#" class="nav-link" data-section="doctor-uploaded-forms"><i class="fa-solid fa-file-upload mr-4 text-xl"></i> Mis Formularios Subidos</a></li>
-                        <li><a href="#" class="nav-link" data-section="doctor-contact"><i class="fa-solid fa-envelope mr-4 text-xl"></i> Contacto</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-performance"><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-visits"><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-nominas"><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Asignadas</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-uploaded-forms"><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-contact"><i class="fa-solid fa-envelope"></i> Contacto</a></li>
                     {% endif %}
                 </ul>
             </nav>
@@ -1121,7 +1126,7 @@
                                                                 <i class="fa-solid fa-file-alt"></i> Descargar Formulario Base
                                                             </a>
                                                         {% endif %}
-                                                        <form action="{{ url_for('evaluados', establecimiento=evento.id) }}" method="POST">
+                                                        <form action="{{ url_for('evaluados', establecimiento=evento.id) }}" method="POST" class="flex items-center space-x-2">
                                                             <input type="number" name="alumnos" min="0" placeholder="N° de alumnos evaluados" required class="form-input w-40" />
                                                             <button type="submit" class="action-button green"><i class="fa-solid fa-check"></i> Registrar Evaluados</button>
                                                         </form>
@@ -1154,7 +1159,7 @@
                                 <li class="item-card" data-name="{{ nomina.nombre_establecimiento | lower }}" data-type="{{ nomina.tipo_nomina_display | lower }}">
                                     <div class="item-card-header">
                                         <span><i class="fa-solid fa-building mr-2 text-primary-dark"></i>{{ nomina.nombre_establecimiento }}</span>
-                                        <span>Tipo: {{ nomina.tipo_nomina_display }}</span>
+                                        <span class="text-sm text-gray-600">Tipo: {{ nomina.tipo_nomina_display }}</span>
                                     </div>
                                     <div class="item-card-details">
                                         {% if nomina.form_type == 'neurologia' and nomina.doctora_id_para_formulario %}
@@ -1184,17 +1189,19 @@
                                     <li class="item-card">
                                         <div class="item-card-header">
                                             <span>{{ form_subido.nombre_archivo }}</span>
-                                            <span>Fecha: {{ form_subido.fecha_subida.strftime('%d-%m-%Y') if form_subido.fecha_subida else 'N/A' }}</span>
+                                            <span class="text-sm text-gray-600">Fecha: {{ form_subido.fecha_subida.strftime('%d-%m-%Y') if form_subido.fecha_subida else 'N/A' }}</span>
                                     </div>
                                         <div class="item-card-details">
-                                            <span>Establecimiento: 
+                                            <span class="text-sm text-gray-600">Establecimiento: 
                                                 {% set est = (eventos | selectattr('id', 'equalto', form_subido.establecimientos_id) | first) %}
                                                 {{ est.nombre if est else 'Desconocido' }}
                                             </span>
                                         </div>
-                                        <a href="{{ form_subido.url_archivo }}" target="_blank" class="action-button blue">
-                                            <i class="fa-solid fa-eye"></i> Ver Archivo
-                                        </a>
+                                        <div class="item-card-actions">
+                                            <a href="{{ form_subido.url_archivo }}" target="_blank" class="action-button blue">
+                                                <i class="fa-solid fa-eye"></i> Ver Archivo
+                                            </a>
+                                        </div>
                                     </li>
                                 {% endif %}
                             {% endfor %}
@@ -1237,7 +1244,6 @@
             const menuToggle = document.getElementById('menuToggle');
             const navLinks = document.querySelectorAll('.nav-link');
             const contentSections = document.querySelectorAll('.content-section');
-            const dashboardWrapper = document.querySelector('.dashboard-wrapper');
             const formTypeNominaSelect = document.getElementById('form_type_nomina');
             const doctoraParaFormularioDiv = document.getElementById('doctora_para_formulario_div');
             
@@ -1265,7 +1271,7 @@
                 const activeSection = document.getElementById(sectionId);
                 if (activeSection) {
                     activeSection.classList.add('active');
-                    // Eliminamos el scroll automático
+                    // No se fuerza el scroll
                 }
             }
 

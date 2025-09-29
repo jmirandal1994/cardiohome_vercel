@@ -10,6 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
     <style>
         /* Variables y tipografía */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@400;700;800&display=swap');
+        
         :root {
             --primary-blue: #0A3D62; /* Azul oscuro corporativo */
             --secondary-blue: #1C67A3; /* Azul medio para acentos */
@@ -22,6 +24,12 @@
             --shadow-subtle: rgba(0, 0, 0, 0.08); /* Sombra suave */
             --shadow-hover: rgba(0, 0, 0, 0.15); /* Sombra más fuerte al pasar el ratón */
             --radius-base: 12px;
+            
+            /* Colores específicos para las tarjetas de resumen */
+            --card-blue: #3498DB;
+            --card-green: #2ECC71;
+            --card-yellow: #F1C40F;
+            --card-red: #E74C3C;
         }
 
         body {
@@ -32,6 +40,8 @@
             display: flex;
             flex-direction: column;
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         /* Header */
@@ -257,229 +267,105 @@
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
         }
 
-        /* Summary Cards - ESTILO FINAL */
+        /* --- NUEVOS ESTILOS PARA LAS TARJETAS DE RESUMEN --- */
         .summary-panel {
             background: white;
             padding: 2rem;
-            border-radius: var(--radius-base);
+            border-radius: 1.5rem;
             box-shadow: 0 6px 20px rgba(0,0,0,0.05);
             margin-bottom: 2rem;
-            border: 1px solid #E2E8F0;
+            border: 1px solid hsl(210, 10%, 88%);
         }
+
         .summary-panel h2 {
             font-family: 'Montserrat', sans-serif;
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--primary-blue);
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary-dark);
             margin-bottom: 1.5rem;
         }
+
         .summary {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 1.5rem;
         }
-        .summary .card {
-            background-color: #F8FAFC;
-            border: 1px solid #E2E8F0;
-            box-shadow: none;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
+        
+        .summary-card-v2 {
+            position: relative;
+            background: linear-gradient(145deg, var(--card-blue), #2A79B3);
+            color: white;
+            padding: 2rem 1.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .summary .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-        }
-        .summary .card .icon-circle {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 15px;
-            transition: all 0.3s ease;
-        }
-        .summary .card:hover .icon-circle {
-            transform: scale(1.1);
-        }
-        .summary .card i {
-            font-size: 28px;
-            color: white;
-        }
-        .summary .card .label {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #778899;
-            margin-bottom: 5px;
-        }
-        .summary .card .count {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: var(--text-dark);
-            margin: 0;
-        }
-        .card.pending .icon-circle { background-color: #3498DB; }
-        .card.evaluated .icon-circle { background-color: #2ECC71; }
-        .card.referrals .icon-circle { background-color: #F1C40F; }
-        .card.emergency .icon-circle { background-color: #E74C3C; }
-
-        /* Welcome Section */
-        .welcome-card {
-            min-height: 500px;
-            background: linear-gradient(135deg, #F0F4F8, #D8E2ED);
-            border: 1px solid #C4D3E3;
-            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.1);
-            text-align: center;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        .welcome-card img {
-            width: 150px;
-            filter: drop-shadow(0 8px 15px rgba(0,0,0,0.2));
-            animation: bounceIn 1.5s ease-out;
-            margin-bottom: 30px;
-        }
-        .welcome-card h2 {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 52px;
-            font-weight: 800;
-            color: var(--primary-blue);
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 8px rgba(0,0,0,0.1);
-            animation: slideInFromTop 1s ease-out 0.3s forwards;
-            opacity: 0;
-        }
-        .welcome-card p {
-            font-size: 20px;
-            color: var(--text-dark);
-            max-width: 800px;
-            animation: fadeInText 1.2s ease-out 0.6s forwards;
-            opacity: 0;
-        }
-
-        /* Animated effects */
-        @keyframes slideInFromTop {
-            from { transform: translateY(-50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.1); opacity: 1; }
-            70% { transform: scale(0.9); }
-            100% { transform: scale(1); }
-        }
-        @keyframes fadeInText {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .slide-in-up {
-            animation: slideInUp 0.6s ease-out forwards;
-        }
-        @keyframes slideInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* List items (Visitas, Nóminas) */
-        .lista-items {
-            list-style: none;
-            padding: 0;
-        }
-        .item-card {
-            background: #FDFEFE;
-            border-left: 5px solid #BDC3C7;
-            padding: 20px 25px;
-            margin-bottom: 1rem;
-            border-radius: var(--radius-base);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-            transition: all 0.3s ease;
-        }
-        .item-card:hover {
-            border-left: 5px solid var(--secondary-blue);
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-        }
-        .item-card-header {
-            display: flex;
             justify-content: space-between;
-            align-items: center;
-            font-weight: 700;
-            color: var(--primary-blue);
-            font-size: 1.15em;
-            margin-bottom: 10px;
+            overflow: hidden;
+            min-height: 150px;
         }
-        .item-card-details {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px 25px;
-            font-size: 0.9em;
-            color: #616A6B;
+
+        .summary-card-v2:hover {
+            transform: translateY(-5px) scale(1.01);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
         }
-        .item-card-action-link, .delete-btn, .fill-students-btn, .register-evaluated-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 18px;
-            border-radius: 50px;
-            text-decoration: none;
-            font-size: 0.95em;
-            font-weight: 600;
-            transition: all 0.3s ease;
+
+        .summary-card-v2::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            transform: skew(-15deg) translateY(-100%);
+            transition: transform 0.5s ease-out;
+            pointer-events: none;
         }
-        .item-card-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 15px;
+
+        .summary-card-v2:hover::before {
+            transform: skew(-15deg) translateY(0);
         }
-        .item-card-action-link {
-            background-color: #34495E;
-            color: white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+
+        .summary-card-v2.bg-green-600 {
+            background: linear-gradient(145deg, var(--card-green), #27A661);
         }
-        .item-card-action-link:hover {
-            background-color: #2C3E50;
-            transform: translateY(-2px);
+        .summary-card-v2.bg-yellow-500 {
+            background: linear-gradient(145deg, var(--card-yellow), #D4A80F);
         }
-        .delete-btn {
-            background-color: var(--danger-red);
-            color: white;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .delete-btn:hover {
-            background-color: #C0392B;
-            transform: translateY(-2px);
-        }
-        .fill-students-btn, .register-evaluated-btn {
-            background-color: var(--highlight-green);
-            color: white;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .fill-students-btn:hover, .register-evaluated-btn:hover {
-            background-color: #27AE60;
-            transform: translateY(-2px);
-        }
-        .visit-card-doctor-info {
-            color: var(--secondary-blue);
+        .summary-card-v2.bg-red-600 {
+            background: linear-gradient(145deg, var(--card-red), #C2382B);
         }
         
-        /* New Visit List Grouping */
-        .date-group {
-            margin-bottom: 2rem;
-            border-radius: var(--radius-base);
-            overflow: hidden;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+        .summary-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
         }
+
+        .summary-card-header span {
+            font-size: 1rem;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+        
+        .summary-card-header i {
+            font-size: 2.5rem;
+            opacity: 0.8;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+        }
+        
+        .summary-card-v2 .count {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 3.5rem;
+            line-height: 1;
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        /* Resto de estilos para el contenido */
         .date-group-header {
             background-color: #F0F4F8;
             color: var(--primary-blue);
@@ -491,36 +377,30 @@
             gap: 15px;
             border-bottom: 1px solid #E2E8F0;
         }
+
         .date-group-content {
             background-color: white;
             padding: 1.5rem;
         }
 
-        /* Filter inputs */
-        .filter-container {
+        .visit-card-actions {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 1.5rem;
-        }
-        .filter-container input, .filter-container select {
-            flex-grow: 1;
-        }
-        .filter-container button {
-            background-color: #7F8C8D;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 50px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .filter-container button:hover {
-            background-color: #5D6D7E;
-            transform: translateY(-2px);
+            gap: 1rem;
+            margin-top: 1rem;
         }
 
+        .item-card-action-link, .register-evaluated-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px; /* Tailwind's rounded-full */
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        
         /* Responsive Design */
         @media (max-width: 1024px) {
             .dashboard-wrapper {
@@ -530,135 +410,121 @@
             }
             .sidebar {
                 position: fixed;
-                top: 0;
                 left: 0;
-                height: 100vh;
-                z-index: 100;
+                top: 0;
+                bottom: 0;
+                z-index: 99;
                 transform: translateX(-100%);
-                box-shadow: 4px 0 15px var(--shadow-strong);
-                padding-top: 5rem;
+                width: 250px;
+                padding: 1.5rem;
+                box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+                height: 100vh;
             }
             .sidebar.active {
                 transform: translateX(0);
             }
-            .menu-toggle-btn {
-                display: block;
-                position: absolute;
-                top: 25px;
-                left: 20px;
-                background: none;
-                border: none;
-                font-size: 28px;
-                color: var(--primary-blue);
-                cursor: pointer;
-                z-index: 110;
-            }
-            header {
-                padding: 1rem 1.5rem;
-            }
-            .logout-btn {
-                position: static;
+            .main-content {
+                margin-left: 0;
             }
         }
         @media (max-width: 768px) {
-            header h1 {
-                font-size: 20px;
-            }
-            header img {
-                width: 40px;
-            }
-            .card {
-                padding: 1.5rem;
-            }
-            .welcome-card h2 {
-                font-size: 32px;
-            }
-            .welcome-card p {
-                font-size: 16px;
+            .summary-panel h2 {
+                font-size: 1.5rem;
             }
             .summary {
                 grid-template-columns: 1fr;
             }
-            .user-info {
-                gap: 8px;
+            .summary-card-v2 {
+                min-height: 120px;
+                padding: 1.5rem;
             }
-            .user-info span {
-                display: none;
+            .summary-card-header i {
+                font-size: 2rem;
+            }
+            .summary-card-v2 .count {
+                font-size: 3rem;
             }
         }
-        
     </style>
 </head>
-<body>
-    <header>
-        <button class="menu-toggle-btn" id="menuToggle">
-            <i class="fa-solid fa-bars"></i>
-        </button>
-        <div class="logo-title">
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo CardioHome" />
-            <h1>Dashboard de Salud</h1>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+    <header class="flex items-center justify-between p-4 bg-white shadow-md">
+        <div class="flex items-center space-x-4">
+            <button id="menuToggle" class="text-xl text-gray-700 focus:outline-none md:hidden">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="flex items-center space-x-3">
+                <img src="https://via.placeholder.com/50x50/E8F1FF/3B82F6?text=CH" alt="CardioHome Logo" class="w-10 h-10 rounded-full shadow-md">
+                <h1 class="text-2xl font-bold text-gray-800 hidden sm:block">Dashboard</h1>
+            </div>
         </div>
-        <div class="user-info">
-            <span>Hola, Dra. [Nombre]</span>
-            <div class="user-avatar">Doc</div>
+        <div class="flex items-center space-x-4">
+            <span class="text-gray-600 hidden md:block">Hola, Dra. [Nombre]</span>
+            <img src="https://via.placeholder.com/40x40/cccccc/333333?text=Doc" alt="User Avatar" class="rounded-full shadow-lg border-2 border-white">
+            <button onclick="cerrarSesion()" class="bg-red-500 text-white px-4 py-2 rounded-full shadow-md hover:bg-red-600 transition duration-200 hidden sm:block">Cerrar sesión</button>
         </div>
-        <button class="logout-btn" onclick="cerrarSesion()">
-            <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
-        </button>
     </header>
 
     <div class="dashboard-wrapper">
         <aside class="sidebar" id="sidebar">
-            <nav>
-                <ul class="sidebar-nav">
-                    <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical"></i> Bienvenida</a></li>
+            <nav class="p-4">
+                <ul class="space-y-2">
+                    <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical mr-4 text-xl"></i> Bienvenida</a></li>
                     {% if usuario == 'admin' %}
-                        <li><a href="#" class="nav-link" data-section="admin-performance"><i class="fa-solid fa-chart-line"></i> Rendimiento</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-add-visit"><i class="fa-solid fa-calendar-plus"></i> Agregar Visita</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-upload-nomina"><i class="fa-solid fa-file-excel"></i> Cargar Nómina</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-visits-list"><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-nominas-list"><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Cargadas</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-uploaded-forms-all"><i class="fa-solid fa-folder-open"></i> Formularios Subidos</a></li>
-                        <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fa-solid fa-folder-plus"></i> Crear Proyecto</a></li>
-                        <li><a href="#" class="nav-link" data-section="gestionar_proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-performance"><i class="fa-solid fa-chart-line mr-4 text-xl"></i> Rendimiento</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-add-visit"><i class="fa-solid fa-calendar-plus mr-4 text-xl"></i> Agregar Visita</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-upload-nomina"><i class="fa-solid fa-file-excel mr-4 text-xl"></i> Cargar Nómina</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-visits-list"><i class="fa-solid fa-calendar-alt mr-4 text-xl"></i> Todas las Visitas</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-nominas-list"><i class="fa-solid fa-file-invoice-dollar mr-4 text-xl"></i> Nóminas Cargadas</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-uploaded-forms-all"><i class="fa-solid fa-folder-open mr-4 text-xl"></i> Formularios Subidos</a></li>
+                        <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fa-solid fa-folder-plus mr-4 text-xl"></i> Crear Proyecto</a></li>
+                        <li><a href="#" class="nav-link" data-section="gestionar_proyectos"><i class="fa-solid fa-list-check mr-4 text-xl"></i> Gestionar Proyectos</a></li>
                     {% elif usuario == 'coordinadora' %}
-                        <li><a href="#" class="nav-link" data-section="coord-performance"><i class="fa-solid fa-gauge-high"></i> Rendimiento en Vivo</a></li>
-                        <li><a href="#" class="nav-link" data-section="coord-contact"><i class="fa-solid fa-envelope"></i> Contacto</a></li>
+                        <li><a href="#" class="nav-link" data-section="coord-performance"><i class="fa-solid fa-gauge-high mr-4 text-xl"></i> Rendimiento en Vivo</a></li>
+                        <li><a href="#" class="nav-link" data-section="coord-contact"><i class="fa-solid fa-envelope mr-4 text-xl"></i> Contacto</a></li>
                     {% else %}
-                        <li><a href="#" class="nav-link" data-section="doctor-performance"><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento</a></li>
-                        <li><a href="#" class="nav-link" data-section="doctor-visits"><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</a></li>
-                        <li><a href="#" class="nav-link" data-section="doctor-nominas"><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Asignadas</a></li>
-                        <li><a href="#" class="nav-link" data-section="doctor-uploaded-forms"><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</a></li>
-                        <li><a href="#" class="nav-link" data-section="doctor-contact"><i class="fa-solid fa-envelope"></i> Contacto</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-performance"><i class="fa-solid fa-chart-bar mr-4 text-xl"></i> Mi Rendimiento</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-visits"><i class="fa-solid fa-calendar-check mr-4 text-xl"></i> Mis Próximas Visitas</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-nominas"><i class="fa-solid fa-file-invoice mr-4 text-xl"></i> Mis Nóminas Asignadas</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-uploaded-forms"><i class="fa-solid fa-file-upload mr-4 text-xl"></i> Mis Formularios Subidos</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-contact"><i class="fa-solid fa-envelope mr-4 text-xl"></i> Contacto</a></li>
                     {% endif %}
                 </ul>
             </nav>
         </aside>
 
-        <main class="dashboard-content">
+        <main class="flex-1 overflow-y-auto p-10 bg-gray-50 main-content">
             <div id="welcome-section" class="content-section active">
                 <div class="summary-panel">
                     <h2>Resumen del Mes</h2>
                     <div class="summary">
-                        <div class="card pending">
-                            <div class="icon-circle"><i class="fa-solid fa-hourglass-half"></i></div>
+                        <div class="summary-card-v2" style="background: linear-gradient(145deg, var(--card-blue), #2A79B3);">
+                            <div class="summary-card-header">
+                                <span>EVALUACIONES<br>PENDIENTES</span>
+                                <i class="fa-solid fa-clipboard-list"></i>
+                            </div>
                             <p class="count">0</p>
-                            <p class="label">Evaluaciones Pendientes</p>
                         </div>
-                        <div class="card evaluated">
-                            <div class="icon-circle"><i class="fa-solid fa-user-check"></i></div>
+                        <div class="summary-card-v2 bg-green-600">
+                            <div class="summary-card-header">
+                                <span>ESTUDIANTES<br>EVALUADOS</span>
+                                <i class="fa-solid fa-user-check"></i>
+                            </div>
                             <p class="count">0</p>
-                            <p class="label">Estudiantes Evaluados</p>
                         </div>
-                        <div class="card referrals">
-                            <div class="icon-circle"><i class="fa-solid fa-arrow-right"></i></div>
+                        <div class="summary-card-v2 bg-yellow-500">
+                            <div class="summary-card-header">
+                                <span>DERIVACIONES</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </div>
                             <p class="count">0</p>
-                            <p class="label">Derivaciones</p>
                         </div>
-                        <div class="card emergency">
-                            <div class="icon-circle"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                        <div class="summary-card-v2 bg-red-600">
+                            <div class="summary-card-header">
+                                <span>CASOS DE<br>URGENCIA</span>
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
                             <p class="count">0</p>
-                            <p class="label">Casos de Urgencia</p>
                         </div>
                     </div>
                 </div>
@@ -673,20 +539,26 @@
             <div id="admin-performance" class="content-section">
                 <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento del Administrador</h2>
                 <div class="summary">
-                    <div class="card evaluated">
-                        <div class="icon-circle"><i class="fa-solid fa-school"></i></div>
+                    <div class="summary-card-v2 bg-green-600">
+                        <div class="summary-card-header">
+                            <span>COLEGIOS<br>ASIGNADOS</span>
+                            <i class="fa-solid fa-school"></i>
+                        </div>
                         <p class="count">{{ eventos|length }}</p>
-                        <p class="label">Colegios Asignados</p>
                     </div>
-                    <div class="card pending">
-                        <div class="icon-circle"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                    <div class="summary-card-v2" style="background: linear-gradient(145deg, var(--card-blue), #2A79B3);">
+                        <div class="summary-card-header">
+                            <span>NÓMINAS<br>CARGADAS</span>
+                            <i class="fa-solid fa-file-invoice-dollar"></i>
+                        </div>
                         <p class="count">{{ admin_nominas_cargadas|length }}</p>
-                        <p class="label">Nóminas Cargadas</p>
                     </div>
-                    <div class="card referrals">
-                        <div class="icon-circle"><i class="fa-solid fa-user-doctor"></i></div>
+                    <div class="summary-card-v2 bg-yellow-500">
+                        <div class="summary-card-header">
+                            <span>TOTAL<br>DOCTORAS</span>
+                            <i class="fa-solid fa-user-doctor"></i>
+                        </div>
                         <p class="count">{{ doctoras|length }}</p>
-                        <p class="label">Total Doctoras</p>
                     </div>
                 </div>
 
@@ -987,19 +859,57 @@
 
             {% elif usuario == 'coordinadora' %}
             <div id="coord-performance" class="content-section">
-                <div class="card">
+                <div class="summary-panel">
+                    <h2>Resumen del Mes</h2>
+                    <div class="summary">
+                        <div class="summary-card-v2" style="background: linear-gradient(145deg, var(--card-blue), #2A79B3);">
+                            <div class="summary-card-header">
+                                <span>EVALUACIONES<br>PENDIENTES</span>
+                                <i class="fa-solid fa-clipboard-list"></i>
+                            </div>
+                            <p class="count">0</p>
+                        </div>
+                        <div class="summary-card-v2 bg-green-600">
+                            <div class="summary-card-header">
+                                <span>ESTUDIANTES<br>EVALUADOS</span>
+                                <i class="fa-solid fa-user-check"></i>
+                            </div>
+                            <p class="count">0</p>
+                        </div>
+                        <div class="summary-card-v2 bg-yellow-500">
+                            <div class="summary-card-header">
+                                <span>DERIVACIONES</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </div>
+                            <p class="count">0</p>
+                        </div>
+                        <div class="summary-card-v2 bg-red-600">
+                            <div class="summary-card-header">
+                                <span>CASOS DE<br>URGENCIA</span>
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                            <p class="count">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-8">
                     <h3><i class="fa-solid fa-gauge-high"></i> Rendimiento de Evaluaciones en Vivo</h3>
                     <p class="text-gray-600 mb-6">Métricas en tiempo real de la actividad de evaluaciones.</p>
-                    <div class="summary">
-                        <div class="card evaluated">
-                            <div class="icon-circle"><i class="fa-solid fa-user-check"></i></div>
+                    <div class="summary grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
+                         <div class="summary-card-v2" style="background: linear-gradient(145deg, var(--card-blue), #2A79B3);">
+                            <div class="summary-card-header">
+                                <span>EVALUACIONES<br>REALIZADAS</span>
+                                <i class="fa-solid fa-user-check"></i>
+                            </div>
                             <p class="count">{{ evaluaciones_en_vivo }}</p>
-                            <p class="label">Evaluaciones Realizadas</p>
                         </div>
-                        <div class="card referrals">
-                            <div class="icon-circle"><i class="fa-solid fa-school"></i></div>
+                        <div class="summary-card-v2 bg-yellow-500">
+                            <div class="summary-card-header">
+                                <span>ESTABLECIMIENTOS<br>LISTOS</span>
+                                <i class="fa-solid fa-school"></i>
+                            </div>
                             <p class="count">{{ establecimientos_listos }}</p>
-                            <p class="label">Establecimientos Listos</p>
                         </div>
                     </div>
                     
@@ -1011,7 +921,7 @@
                                 <option value="semana">Por Semana</option>
                             </select>
                         </div>
-                        <div class="chart-container">
+                        <div class="chart-container" style="height: 300px;">
                             <canvas id="coordinadoraPerformanceChart"></canvas>
                         </div>
                     </div>
@@ -1346,6 +1256,8 @@
             if (periodoSelect) {
                 periodoSelect.addEventListener('change', renderCoordinadoraPerformanceChart);
             }
+            
+            showSection('welcome-section');
 
         });
 

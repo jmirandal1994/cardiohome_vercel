@@ -257,7 +257,7 @@
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
         }
 
-        /* Summary Cards - ESTILO FINAL */
+        /* Summary Panel y Cards (NUEVOS ESTILOS AQUÍ) */
         .summary-panel {
             background: white;
             padding: 2rem;
@@ -279,111 +279,76 @@
             gap: 1.5rem;
         }
         .summary .card {
-            background-color: #F8FAFC;
-            border: 1px solid #E2E8F0;
-            box-shadow: none;
-            padding: 1.5rem;
+            border: none; /* Quitamos el borde para un look más limpio */
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); /* Sombra más pronunciada */
+            padding: 2rem;
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden; /* Para el pseudo-elemento de brillo */
         }
         .summary .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            transform: translateY(-8px); /* Elevación más notoria */
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15); /* Sombra al pasar el ratón */
         }
+
+        /* Colores de las tarjetas de resumen */
+        .summary .card.pending { background-color: #3498DB; } /* Azul */
+        .summary .card.evaluated { background-color: #2ECC71; } /* Verde */
+        .summary .card.referrals { background-color: #F1C40F; } /* Amarillo */
+        .summary .card.emergency { background-color: #E74C3C; } /* Rojo */
+
+        /* Efecto de brillo de fondo */
+        .summary .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.0) 100%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
         .summary .card .icon-circle {
-            width: 60px;
-            height: 60px;
+            width: 70px; /* Tamaño más grande */
+            height: 70px;
             border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
             margin-bottom: 15px;
             transition: all 0.3s ease;
+            background-color: rgba(255, 255, 255, 0.2); /* Fondo semitransparente para el círculo */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* Sombra sutil para el círculo */
+            z-index: 2; /* Aseguramos que el ícono esté por encima del brillo de fondo */
         }
         .summary .card:hover .icon-circle {
-            transform: scale(1.1);
+            transform: scale(1.1) rotate(5deg); /* Efecto al pasar el ratón */
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
         }
         .summary .card i {
-            font-size: 28px;
-            color: white;
+            font-size: 32px; /* Íconos más grandes */
+            color: white; /* Color blanco para los íconos */
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8); /* Efecto de brillo en el ícono */
         }
         .summary .card .label {
-            font-size: 1rem;
+            font-size: 1.1rem; /* Texto de etiqueta más grande */
             font-weight: 600;
-            color: #778899;
+            color: white; /* Texto blanco */
             margin-bottom: 5px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3); /* Sombra para mejor lectura */
         }
         .summary .card .count {
-            font-size: 2.5rem;
+            font-size: 3.5rem; /* Número más grande */
             font-weight: 800;
-            color: var(--text-dark);
+            color: white; /* Color blanco */
             margin: 0;
-        }
-        .card.pending .icon-circle { background-color: #3498DB; }
-        .card.evaluated .icon-circle { background-color: #2ECC71; }
-        .card.referrals .icon-circle { background-color: #F1C40F; }
-        .card.emergency .icon-circle { background-color: #E74C3C; }
-
-        /* Welcome Section */
-        .welcome-card {
-            min-height: 500px;
-            background: linear-gradient(135deg, #F0F4F8, #D8E2ED);
-            border: 1px solid #C4D3E3;
-            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        .welcome-card img {
-            width: 150px;
-            filter: drop-shadow(0 8px 15px rgba(0,0,0,0.2));
-            animation: bounceIn 1.5s ease-out;
-            margin-bottom: 30px;
-        }
-        .welcome-card h2 {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 52px;
-            font-weight: 800;
-            color: var(--primary-blue);
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 8px rgba(0,0,0,0.1);
-            animation: slideInFromTop 1s ease-out 0.3s forwards;
-            opacity: 0;
-        }
-        .welcome-card p {
-            font-size: 20px;
-            color: var(--text-dark);
-            max-width: 800px;
-            animation: fadeInText 1.2s ease-out 0.6s forwards;
-            opacity: 0;
-        }
-
-        /* Animated effects */
-        @keyframes slideInFromTop {
-            from { transform: translateY(-50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.1); opacity: 1; }
-            70% { transform: scale(0.9); }
-            100% { transform: scale(1); }
-        }
-        @keyframes fadeInText {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .slide-in-up {
-            animation: slideInUp 0.6s ease-out forwards;
-        }
-        @keyframes slideInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4); /* Sombra para el número */
         }
 
         /* Responsive Design */
@@ -454,7 +419,7 @@
             <i class="fa-solid fa-bars"></i>
         </button>
         <div class="logo-title">
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo CardioHome" />
+            <img src="https://via.placeholder.com/50/0A3D62/FFFFFF?text=Logo" alt="Logo CardioHome" />
             <h1>Dashboard de Salud</h1>
         </div>
         <div class="user-info">
@@ -478,19 +443,43 @@
 
         <main class="dashboard-content">
             <div id="coord-performance" class="content-section active">
-                <div class="card">
+                <div class="summary-panel">
+                    <h2>Resumen del Mes</h2>
+                    <div class="summary">
+                        <div class="card pending">
+                            <div class="icon-circle"><i class="fa-solid fa-clipboard-list"></i></div>
+                            <p class="count">0</p>
+                            <p class="label">Evaluaciones Pendientes</p>
+                        </div>
+                        <div class="card evaluated">
+                            <div class="icon-circle"><i class="fa-solid fa-user-check"></i></div>
+                            <p class="count">0</p>
+                            <p class="label">Estudiantes Evaluados</p>
+                        </div>
+                        <div class="card referrals">
+                            <div class="icon-circle"><i class="fa-solid fa-arrow-right"></i></div>
+                            <p class="count">0</p>
+                            <p class="label">Derivaciones</p>
+                        </div>
+                        <div class="card emergency">
+                            <div class="icon-circle"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                            <p class="count">0</p>
+                            <p class="label">Casos de Urgencia</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-8">
                     <h3><i class="fa-solid fa-gauge-high"></i> Rendimiento de Evaluaciones en Vivo</h3>
                     <p class="text-gray-600 mb-6">Métricas en tiempo real de la actividad de evaluaciones.</p>
                     <div class="summary">
                         <div class="card evaluated">
                             <div class="icon-circle"><i class="fa-solid fa-user-check"></i></div>
-                            <p class="count">{{ evaluaciones_en_vivo }}</p>
-                            <p class="label">Evaluaciones Realizadas</p>
+                            <p class="count">125</p> <p class="label">Evaluaciones Realizadas</p>
                         </div>
                         <div class="card referrals">
                             <div class="icon-circle"><i class="fa-solid fa-school"></i></div>
-                            <p class="count">{{ establecimientos_listos }}</p>
-                            <p class="label">Establecimientos Listos</p>
+                            <p class="count">12</p> <p class="label">Establecimientos Listos</p>
                         </div>
                     </div>
                     
@@ -502,7 +491,7 @@
                                 <option value="semana">Por Semana</option>
                             </select>
                         </div>
-                        <div class="chart-container">
+                        <div class="chart-container" style="height: 300px;">
                             <canvas id="coordinadoraPerformanceChart"></canvas>
                         </div>
                     </div>
@@ -532,7 +521,9 @@
 
     <script>
         function cerrarSesion() {
-            window.location.href = "/logout";
+            // En un entorno real, esto redirigiría a tu ruta de logout en Flask
+            alert("Cerrar sesión (en un entorno real, redirigiría a /logout)");
+            // window.location.href = "/logout"; 
         }
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -541,7 +532,7 @@
             const navLinks = document.querySelectorAll('.nav-link');
             const contentSections = document.querySelectorAll('.content-section');
 
-            // Datos de ejemplo para la coordinadora. DEBES REEMPLAZAR ESTO CON LOS DATOS DE TU BACKEND.
+            // Datos de ejemplo para la coordinadora. DEBES REEMPLAZAR ESTO CON LOS DATOS REALES DE TU BACKEND.
             const evaluaciones_por_dia = {
                 '2025-09-22': 5,
                 '2025-09-23': 8,
@@ -653,9 +644,6 @@
 
         });
 
-        function cerrarSesion() {
-            window.location.href = "/logout";
-        }
     </script>
 </body>
 </html>

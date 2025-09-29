@@ -651,7 +651,10 @@ def index():
 def login():
     usuario = request.form['username']
     clave = request.form['password']
-    url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario}&password=eq.{clave}"
+    
+    # Se añade '&select=id,rol' para obtener el rol del usuario de la base de datos
+    url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario}&password=eq.{clave}&select=id,rol"
+    
     print(f"DEBUG: Intento de login para usuario: {usuario}, URL: {url}")
     try:
         res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS) 
@@ -659,18 +662,22 @@ def login():
         data = res.json()
         print(f"DEBUG: Respuesta Supabase login: {data}")
         if data:
-            session['usuario'] = usuario
+            # Ahora, 'session['usuario']' almacena el rol, como 'admin', 'coordinadora' o 'doctora'
+            session['usuario'] = data[0]['rol']
             session['usuario_id'] = data[0]['id']
             print(f"DEBUG: Sesión iniciada: usuario={session['usuario']}, usuario_id={session['usuario_id']}")
             flash(f'¡Bienvenido, {usuario}!', 'success')
+            
+            # El código de redireccionamiento a 'dashboard' ya no necesita ser modificado
             return redirect(url_for('dashboard'))
+        
         flash('Usuario o contraseña incorrecta.', 'error')
         return redirect(url_for('index'))
     except requests.exceptions.RequestException as e:
         print(f"❌ Error en el login: {e} - {res.text if 'res' in locals() else ''}")
         flash('Error de conexión al intentar iniciar sesión. Intente de nuevo.', 'error')
         return redirect(url_for('index'))
-
+        
 @app.route('/dashboard')
 def dashboard():
     if 'usuario' not in session:

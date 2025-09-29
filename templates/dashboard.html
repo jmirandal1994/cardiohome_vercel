@@ -6,202 +6,138 @@
     <title>Dashboard - CardioHome</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
     <style>
-        /* Custom CSS variables - Adjusted for a softer, more professional look */
+        /* Estilos del dashboard-13.html */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
         :root {
-            --primary-dark: hsl(210, 29%, 20%); /* Slightly darker, richer blue */
-            --primary-medium: hsl(210, 15%, 30%); /* Deeper grayish blue */
-            --primary-light: hsl(210, 16%, 96%); /* Very light gray-blue */
-            --background-accent: hsl(210, 20%, 98%); /* A very subtle light blue, almost white */
-            --accent-green: hsl(140, 45%, 48%); /* Muted, professional green */
-            --accent-red: hsl(0, 50%, 55%); /* Softer, muted red */
-            --accent-blue: hsl(200, 45%, 55%); /* Muted, elegant blue */
-            --text-dark: hsl(210, 10%, 18%); /* Darker text for contrast */
-            --text-light: hsl(0, 0%, 98%);
-            --border-color: hsl(210, 10%, 88%); /* Softer border color */
-            --shadow-light: rgba(0, 0, 0, 0.02);
-            --shadow-medium: rgba(0, 0, 0, 0.05);
-            --shadow-strong: rgba(0, 0, 0, 0.1); /* More subtle strong shadow */
-            --border-radius-base: 12px;
-            --padding-base: 25px;
-            --gap-base: 25px;
+            --primary-dark: hsl(210, 29%, 20%);
+            --primary-medium: hsl(210, 15%, 30%);
+            --primary-light: hsl(210, 16%, 96%);
+            --background-accent: hsl(210, 20%, 98%);
+            --accent-green: hsl(140, 45%, 48%);
+            --accent-red: hsl(0, 50%, 55%);
+            --accent-blue: hsl(215, 60%, 50%);
+            --soft-white: #FFFFFF;
         }
 
-        /* Google Fonts for a more professional look */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap');
-
-        /* General body styles */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--background-accent);
-            color: var(--text-dark);
-            line-height: 1.6;
+            background: linear-gradient(135deg, var(--primary-light), var(--background-accent));
+            color: var(--primary-dark);
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
 
-        /* Header styles */
-        header {
-            background: linear-gradient(135deg, hsl(200, 40%, 95%) 0%, #ffffff 100%);
-            color: var(--primary-dark);
-            padding: 1.5rem 0;
-            text-align: center;
-            box-shadow: 0 4px 15px var(--shadow-medium); /* Soft shadow */
+        .gradient-bg {
+            background: linear-gradient(135deg, #F3F4F6, #E5E7EB);
+        }
+
+        .card-container {
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+            will-change: transform, box-shadow;
+        }
+
+        .card-container:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.15);
+            background-color: #F8FAFC;
+        }
+
+        .summary-card {
             position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            transform-origin: center;
         }
 
-        header img {
-            width: 100px;
-            height: auto;
-            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
-            margin: 0 auto 5px auto;
-            display: block;
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.1);
         }
 
-        header h1 {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 28px;
-            margin-top: 0;
-            margin-bottom: 0;
-            font-weight: 800;
-            letter-spacing: 0.8px;
-            color: var(--primary-dark);
-            text-shadow: none;
-        }
-
-        /* Logout button */
-        .logout-btn {
-            background-color: var(--accent-red);
-            color: var(--text-light);
-            border: none;
-            padding: 10px 20px;
-            border-radius: var(--border-radius-base);
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+        .summary-card::before {
+            content: '';
             position: absolute;
-            top: 15px;
-            right: 20px;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(45deg) translate(0%, -100%);
+            transition: transform 0.5s ease-out;
+        }
+
+        .summary-card:hover::before {
+            transform: rotate(45deg) translate(0%, 100%);
+        }
+
+        .logo-anim {
+            animation: pulse-logo 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+            transform-origin: center;
+        }
+
+        @keyframes pulse-logo {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
             display: flex;
+            justify-content: center;
             align-items: center;
-            gap: 8px;
-            box-shadow: 0 3px 10px var(--shadow-medium); /* Refined shadow */
+            z-index: 1000;
         }
 
-        .logout-btn:hover {
-            background-color: hsl(0, 50%, 45%); /* Slightly darker on hover */
-            transform: translateY(-3px); /* More pronounced lift */
-            box-shadow: 0 6px 15px var(--shadow-strong);
-        }
-        .logout-btn i {
-            font-size: 15px;
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            position: relative;
         }
 
-        /* Menu button for mobile */
-        .menu-toggle-btn {
+        .modal-close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
             background: none;
             border: none;
-            color: var(--primary-dark);
-            font-size: 24px;
+            font-size: 1.5rem;
             cursor: pointer;
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 100;
-            display: none;
         }
 
-        /* Main dashboard wrapper */
-        .dashboard-wrapper {
-            display: flex;
-            flex: 1;
-            padding-top: var(--gap-base);
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
         }
 
-        /* Sidebar */
-        .sidebar {
-            width: 250px;
-            background-color: white;
-            color: var(--text-dark);
-            padding: var(--padding-base);
-            box-shadow: 4px 0 15px var(--shadow-medium);
-            flex-shrink: 0;
-            transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
-            position: sticky;
-            top: 0;
-            height: calc(100vh - 80px);
-            overflow-y: auto;
-            border-radius: 0 var(--border-radius-base) var(--border-radius-base) 0;
-            border-right: 1px solid var(--border-color);
+        .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
         }
 
-        .sidebar.collapsed {
-            width: 0;
-            transform: translateX(-250px);
-            padding: 0;
-            overflow: hidden;
-        }
-
-        .sidebar-nav {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .sidebar-nav li {
-            margin-bottom: 10px;
-        }
-
-        .sidebar-nav a {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 15px;
-            color: var(--primary-dark);
-            text-decoration: none;
-            border-radius: 8px;
-            transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; /* Added transform */
-            font-weight: 500;
-            transform: translateX(0); /* Default state */
-        }
-
-        .sidebar-nav a:hover,
-        .sidebar-nav a.active {
-            background-color: hsl(210, 10%, 95%);
-            color: var(--accent-blue);
-            box-shadow: 0 2px 8px var(--shadow-medium);
-            transform: translateX(5px); /* Slide effect */
-        }
-
-        .sidebar-nav a i {
-            font-size: 18px;
-        }
-
-        /* Main dashboard content */
-        .dashboard-content {
-            flex-grow: 1;
-            padding: 0 var(--gap-base) var(--gap-base) var(--gap-base);
-            transition: margin-left 0.3s ease-in-out;
-        }
-
-        /* Adjustment when sidebar is collapsed */
-        .dashboard-wrapper.sidebar-active .dashboard-content {
-            margin-left: 250px;
-        }
-
-        /* Content section */
         .content-section {
             display: none;
             animation: fadeIn 0.5s ease-out forwards;
@@ -216,330 +152,273 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Statistics cards */
-        .summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: var(--gap-base);
-            margin-bottom: var(--gap-base);
-        }
-
-        .summary .card {
-            text-align: center;
-            font-weight: 600;
-            font-size: 16px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 4px 15px var(--shadow-medium); /* Enhanced shadow */
-        }
-
-        .summary .card p {
-            font-size: 30px;
-            margin: 10px 0 0;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-        }
-
-        .summary .card:nth-child(1) { background-color: hsl(140, 50%, 97%); color: var(--accent-green); border: 1px solid hsl(140, 50%, 90%); } /* Very light background */
-        .summary .card:nth-child(2) { background-color: hsl(0, 50%, 97%); color: var(--accent-red); border: 1px solid hsl(0, 50%, 90%); } /* Very light background */
-        .summary .card:nth-child(3) { background-color: hsl(200, 50%, 97%); color: var(--accent-blue); border: 1px solid hsl(200, 50%, 90%); } /* Very light background */
-
-        .summary .card h3 i {
-            font-size: 22px;
-            margin-right: 8px;
-            color: inherit;
-        }
-
-        /* General cards */
         .card {
             background: white;
-            padding: var(--padding-base);
-            border-radius: var(--border-radius-base);
-            box-shadow: 0 6px 20px var(--shadow-medium); /* More refined shadow */
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.05);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
-            display: flex;
-            flex-direction: column;
-            border: 1px solid var(--border-color);
-            position: relative;
-            margin-bottom: var(--gap-base);
+            border: 1px solid hsl(210, 10%, 88%);
         }
 
         .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 12px 30px var(--shadow-strong); /* More pronounced hover shadow */
+            box-shadow: 0 12px 30px rgba(0,0,0,0.1);
         }
 
         .card h3 {
-            font-family: 'Montserrat', sans-serif;
-            margin-top: 0;
-            margin-bottom: 20px;
-            color: var(--primary-dark);
-            font-size: 22px;
+            font-family: 'Inter', sans-serif;
+            font-size: 1.5rem;
             font-weight: 700;
-            border-bottom: 2px solid var(--border-color);
-            padding-bottom: 15px;
+            color: var(--primary-dark);
+            border-bottom: 2px solid hsl(210, 10%, 88%);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 1rem;
         }
+        
         .card h3 i {
             color: var(--accent-blue);
             font-size: 1.2em;
         }
 
-        /* Forms */
-        form {
-            display: flex;
-            flex-direction: column;
-            gap: 18px; /* Slightly more space between form elements */
-        }
-        form label {
-            font-weight: 600; /* Bolder labels */
-            margin-bottom: -12px; /* Pull label closer to input */
-            color: var(--text-dark);
-            font-size: 0.98em; /* Slightly larger font */
-        }
-        form input, form select, form textarea {
-            padding: 14px 18px; /* Larger padding */
-            margin: 0;
-            width: 100%;
-            border-radius: 10px; /* Slightly more rounded */
-            border: 1px solid var(--border-color);
-            font-size: 16px; /* Larger font size */
-            box-sizing: border-box;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        form input:focus, form select:focus, form textarea:focus {
-            border-color: var(--accent-blue);
-            box-shadow: 0 0 0 5px hsla(200, 45%, 55%, 0.2); /* More prominent focus ring */
-            outline: none;
-        }
-        form button {
-            padding: 14px 30px; /* Larger padding for buttons */
-            background-color: var(--primary-dark);
-            color: var(--text-light);
-            border: none;
-            border-radius: var(--border-radius-base);
+        .logout-btn {
+            background-color: var(--accent-red);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
             cursor: pointer;
-            font-weight: 700;
-            font-size: 17px; /* Slightly larger font */
+            font-weight: 600;
             transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-            margin-top: 20px; /* More space above button */
-            width: auto;
-            align-self: flex-start;
             display: flex;
             align-items: center;
-            gap: 10px; /* Larger gap for icon */
-            box-shadow: 0 4px 12px var(--shadow-medium); /* Refined shadow */
+            gap: 0.5rem;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
         }
 
-        form button:hover {
-            background-color: var(--primary-medium);
-            transform: translateY(-3px); /* More pronounced lift */
-            box-shadow: 0 8px 18px var(--shadow-strong);
+        .logout-btn:hover {
+            background-color: hsl(0, 50%, 45%);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
         }
 
-        .filter-buttons {
+        .nav-link {
             display: flex;
-            flex-wrap: wrap;
-            gap: 12px; /* Consistent gap */
-            margin-top: 15px;
-        }
-        .filter-buttons button {
-            flex-grow: 1;
-            margin-top: 0;
-            align-self: stretch;
-        }
-
-        #descargarExcel { background-color: var(--accent-green); }
-        #descargarExcel:hover { background-color: hsl(140, 45%, 35%); }
-        #limpiarFiltros { background-color: hsl(210, 10%, 45%); } /* Slightly darker grey */
-        #limpiarFiltros:hover { background-color: hsl(210, 10%, 35%); }
-
-        /* Item list (visits, nominations, uploaded forms) */
-        .lista-items {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            margin-top: 20px;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            color: #4B5563;
+            text-decoration: none;
+            border-radius: 1rem;
+            transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+            font-weight: 500;
         }
 
-        .item-card {
-            background-color: white;
+        .nav-link:hover, .nav-link.active {
+            background-color: hsl(210, 10%, 95%);
+            color: var(--accent-blue);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transform: translateX(5px);
+        }
+
+        .date-group {
+            margin-bottom: 30px;
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius-base);
-            padding: 18px 22px; /* Slightly more padding */
-            margin-bottom: 15px; /* More space between cards */
+            overflow: hidden;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+        }
+
+        .date-group-header {
+            background-color: var(--accent-blue);
+            color: white;
+            padding: 18px 25px;
+            font-size: 1.3rem;
+            font-weight: 700;
             display: flex;
-            flex-direction: column;
-            gap: 10px; /* More space between internal elements */
-            box-shadow: 0 2px 10px var(--shadow-light); /* Softer shadow */
+            align-items: center;
+            gap: 12px;
+        }
+
+        .date-group-content {
+            padding: 20px;
+            background-color: white;
+        }
+
+        .visit-card {
+            background-color: var(--background-accent);
+            border: 1px solid hsl(210, 10%, 90%);
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        .item-card:hover {
-            transform: translateY(-4px); /* Slightly more lift */
-            box-shadow: 0 5px 18px var(--shadow-medium); /* More pronounced hover shadow */
-        }
-        .item-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 700; /* Bolder header */
-            color: var(--primary-dark);
-            font-size: 1.05em; /* Slightly larger font */
-            margin-bottom: 8px;
-        }
-        .item-card-details {
-            font-size: 0.9em;
-            color: #555;
+        
+        .visit-card-actions {
             display: flex;
             flex-wrap: wrap;
-            gap: 12px; /* More space between details */
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: flex-end;
         }
+
+        .visit-card-title {
+            font-weight: 700;
+            color: var(--primary-dark);
+            font-size: 1.15rem;
+            margin-bottom: 10px;
+        }
+
+        .visit-card-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 25px;
+            font-size: 0.95em;
+            color: #555;
+            margin-bottom: 12px;
+        }
+        
+        .item-card {
+            background-color: white;
+            border: 1px solid hsl(210, 10%, 88%);
+            border-radius: 1.5rem;
+            padding: 18px 22px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .item-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 5px 18px rgba(0,0,0,0.05);
+        }
+
         .item-card-action-link {
             display: inline-flex;
             align-items: center;
-            gap: 8px; /* Larger gap for icon */
+            gap: 8px;
             background-color: var(--accent-blue);
             color: white;
-            padding: 10px 18px; /* Larger padding */
+            padding: 10px 18px;
             border-radius: 8px;
             text-decoration: none;
-            font-size: 0.95em; /* Slightly larger font */
-            margin-top: 12px; /* More space above link */
+            font-size: 0.95em;
+            margin-top: 12px;
             align-self: flex-start;
             transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 2px 8px var(--shadow-light); /* Subtle shadow */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
+
         .item-card-action-link:hover {
-            background-color: hsl(200, 45%, 45%); /* Darker on hover */
+            background-color: hsl(200, 45%, 45%);
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px var(--shadow-medium);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
-        /* Style for delete button */
+
         .delete-btn {
             background-color: var(--accent-red);
             color: white;
-            padding: 10px 18px; /* Larger padding */
+            padding: 10px 18px;
             border-radius: 8px;
             border: none;
             cursor: pointer;
-            font-size: 0.95em; /* Slightly larger font */
+            font-size: 0.95em;
             font-weight: 600;
             display: flex;
             align-items: center;
-            gap: 8px; /* Larger gap for icon */
+            gap: 8px;
             transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
             margin-top: 12px;
             align-self: flex-start;
-            box-shadow: 0 2px 8px var(--shadow-light); /* Subtle shadow */
-        }
-        .delete-btn:hover {
-            background-color: hsl(0, 50%, 45%); /* Darker on hover */
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px var(--shadow-medium);
-        }
-
-
-        /* Welcome Section Specific Styles */
-        .welcome-card {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            min-height: 400px;
-            background: linear-gradient(145deg, #e7f5fe, #d0efff); /* Brighter, softer gradient */
-            border: 1px solid var(--accent-blue); /* Softer border */
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15); /* More refined shadow */
-            padding: var(--padding-base);
-            border-radius: var(--border-radius-base);
-            animation: slideInFromTop 0.8s ease-out;
-        }
-
-        .welcome-card img {
-            width: 180px;
-            height: auto;
-            filter: drop-shadow(0 8px 15px rgba(0,0,0,0.2)); /* Stronger, softer shadow */
-            margin-bottom: 30px; /* More space */
-            animation: bounceIn 1s ease-out;
-        }
-
-        .welcome-card h2 {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 48px; /* Larger font size */
-            font-weight: 800;
-            color: var(--primary-dark);
-            margin-bottom: 20px; /* More space */
-            text-shadow: 2px 2px 8px rgba(0,0,0,0.15); /* Softer, larger shadow */
-            animation: fadeInText 1.2s ease-out 0.3s forwards;
-            opacity: 0;
-        }
-
-        .welcome-card p {
-            font-family: 'Inter', sans-serif;
-            font-size: 22px; /* Larger font size */
-            color: var(--text-dark);
-            max-width: 700px; /* Wider text block */
-            margin-bottom: 40px; /* More space */
-            animation: fadeInText 1.2s ease-out 0.6s forwards;
-            opacity: 0;
-        }
-
-        /* Doctor performance card for admin */
-        .doctor-performance-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 18px; /* More padding */
-            margin-bottom: 10px; /* More space */
-            background-color: var(--primary-light); /* Lighter background */
-            border-radius: 8px;
-            font-weight: 500;
-            box-shadow: 0 1px 5px var(--shadow-light); /* Softer shadow */
-        }
-        .doctor-performance-item span:first-child {
-            color: var(--primary-dark);
-        }
-        .doctor-performance-item span:last-child {
-            font-weight: 700;
-            color: var(--accent-blue);
-        }
-
-        /* Chart container styles */
-        .chart-container {
-            position: relative;
-            height: 400px;
-            width: 100%;
-            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
         
-        @keyframes slideInFromTop {
-            from { transform: translateY(-50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+        .delete-btn:hover {
+            background-color: hsl(0, 50%, 45%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
-        @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.1); opacity: 1; }
-            70% { transform: scale(0.9); }
-            100% { transform: scale(1); }
+        .fill-students-btn {
+            background-color: var(--accent-green);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
 
-        @keyframes fadeInText {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .fill-students-btn:hover {
+            background-color: hsl(140, 45%, 35%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
+        .register-evaluated-btn {
+            background-color: var(--accent-blue);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+
+        .register-evaluated-btn:hover {
+            background-color: hsl(200, 45%, 45%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .summary-card.bg-blue-600 {
+            background-color: var(--accent-blue);
+        }
+        .summary-card.bg-green-600 {
+            background-color: var(--accent-green);
+        }
+        .summary-card.bg-yellow-500 {
+            background-color: hsl(45, 100%, 50%);
+        }
+        .summary-card.bg-red-600 {
+            background-color: var(--accent-red);
+        }
+        .dashboard-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: white;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.05);
+            flex-shrink: 0;
+            transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            border-right: 1px solid hsl(210, 10%, 88%);
+        }
 
         /* Responsive adjustments */
         @media (max-width: 768px) {
-            .menu-toggle-btn {
-                display: block;
-            }
             .sidebar {
                 position: fixed;
                 left: 0;
@@ -548,8 +427,8 @@
                 z-index: 99;
                 transform: translateX(-100%);
                 width: 250px;
-                padding: var(--padding-base);
-                box-shadow: 4px 0 15px var(--shadow-strong);
+                padding: 1.5rem;
+                box-shadow: 4px 0 15px rgba(0,0,0,0.1);
                 height: 100vh;
             }
             .sidebar.active {
@@ -562,314 +441,265 @@
                 padding: 15px;
                 margin-left: 0;
             }
-            .summary {
-                grid-template-columns: 1fr;
+            .summary-card {
+                padding: 1.5rem;
             }
-            .card {
-                padding: 20px;
-            }
-            form input, form select, form textarea {
-                font-size: 14px;
-            }
-            form button {
-                font-size: 15px;
-            }
-            .item-card-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .item-card-action-link {
-                align-self: flex-start;
-            }
-            .welcome-card h2 {
-                font-size: 32px;
-            }
-            .welcome-card p {
-                font-size: 16px;
-            }
-            .welcome-card img {
-                width: 100px;
-            }
-            .chart-container {
-                height: 300px;
-            }
-        }
-        /* To prevent double scroll and ensure sticky sidebar design */
-        html {
-            overflow-y: hidden;
-        }
-        body {
-            overflow-y: auto;
-        }
-
-        /* Estilos para la tabla de proyectos (ajustados para ser más genéricos) */
-        .overflow-x-auto {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #e2e8f0; /* gray-200 */
-            text-align: left;
-        }
-
-        th {
-            background-color: #f8fafc; /* gray-50 */
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #4a5568; /* gray-700 */
-            font-size: 0.8rem;
-        }
-
-        tr:hover {
-            background-color: #f0f4f8; /* lighter gray for hover */
-        }
-
-        /* NEW STYLES FOR VISITS LIST */
-        .date-group {
-            margin-bottom: 30px;
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius-base);
-            overflow: hidden;
-            box-shadow: 0 6px 20px var(--shadow-medium); /* Consistent shadow with cards */
-        }
-
-        .date-group-header {
-            background-color: var(--accent-blue);
-            color: white;
-            padding: 18px 25px; /* More padding */
-            font-size: 1.3rem; /* Larger font */
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 12px; /* More space for icon */
-        }
-
-        .date-group-header i {
-            font-size: 1.2em; /* Larger icon */
-        }
-
-        .date-group-content {
-            padding: 20px; /* More padding */
-            background-color: white;
-        }
-
-        .visit-card {
-            background-color: var(--background-accent); /* Lighter background for individual visits */
-            border: 1px solid hsl(210, 10%, 90%); /* Softer border */
-            border-radius: 10px;
-            padding: 18px; /* More padding */
-            margin-bottom: 15px;
-            box-shadow: 0 2px 10px var(--shadow-light); /* Softer shadow */
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .visit-card:last-child {
-            margin-bottom: 0; /* No margin for the last card in a group */
-        }
-
-        .visit-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 15px var(--shadow-medium); /* More pronounced hover shadow */
-        }
-
-        .visit-card-title {
-            font-weight: 700;
-            color: var(--primary-dark);
-            font-size: 1.15rem; /* Slightly larger title */
-            margin-bottom: 10px; /* More space */
-        }
-
-        .visit-card-details {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px 25px; /* Increased column gap */
-            font-size: 0.95em; /* Slightly larger font */
-            color: #555;
-            margin-bottom: 12px; /* More space */
-        }
-
-        .visit-card-details span {
-            display: flex;
-            align-items: center;
-            gap: 8px; /* More space for icon */
-        }
-
-        .visit-card-details span i {
-            color: var(--accent-blue);
-            font-size: 1.05em; /* Slightly larger icon */
-        }
-
-        .visit-card-doctor-info {
-            font-weight: 600;
-            color: var(--accent-green);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 5px;
-        }
-        .visit-card-doctor-info i {
-            color: var(--accent-green);
-        }
-
-        .visit-card-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 15px;
-            justify-content: flex-end;
-        }
-
-        .visit-card-actions .item-card-action-link,
-        .visit-card-actions .delete-btn,
-        .visit-card-actions button {
-            margin-top: 0;
-            flex-shrink: 0;
         }
         
-        /* Specific style for "Rellenar y Ver Estudiantes" button */
-        .fill-students-btn {
-            background-color: var(--accent-green); /* Use green for this action */
-            color: white;
-            padding: 10px 18px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-size: 0.95em;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 2px 8px var(--shadow-light);
-        }
-        .fill-students-btn:hover {
-            background-color: hsl(140, 45%, 35%); /* Darker green on hover */
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px var(--shadow-medium);
-        }
-
-        /* Specific style for "Registrar Evaluados" button */
-        .register-evaluated-btn {
-            background-color: var(--accent-blue);
-            color: white;
-            padding: 10px 18px; /* Consistent padding */
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-size: 0.95em;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 2px 8px var(--shadow-light);
-        }
-        .register-evaluated-btn:hover {
-            background-color: hsl(200, 45%, 45%);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px var(--shadow-medium);
-        }
-
-        /* Responsive adjustments for new visit styles */
-        @media (max-width: 768px) {
-            .date-group-header {
-                font-size: 1.1rem;
-                padding: 15px;
-            }
-            .visit-card {
-                padding: 15px;
-            }
-            .visit-card-title {
-                font-size: 1.05rem;
-            }
-            .visit-card-details {
-                flex-direction: column;
-                gap: 8px;
-            }
-            .visit-card-actions {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .visit-card-actions .item-card-action-link,
-            .visit-card-actions .delete-btn,
-            .visit-card-actions button {
-                width: 100%;
-                justify-content: center;
-            }
-        }
-
     </style>
 </head>
-<body>
-    <header>
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo CardioHome" />
-        <h1>Bienvenido a tu Panel de CardioHome</h1>
-        <button class="logout-btn" onclick="cerrarSesion()">
-            <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
-        </button>
-        <button class="menu-toggle-btn" id="menuToggle">
-            <i class="fa-solid fa-bars"></i>
-        </button>
-    </header>
-
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
     <div class="dashboard-wrapper">
         <aside class="sidebar" id="sidebar">
-            <nav>
-                <ul class="sidebar-nav">
-                    <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical"></i> Bienvenida</a></li>
+            <div class="logo-anim mb-12">
+                <img src="https://placehold.co/120x120/E8F1FF/3B82F6?text=CardioHome" alt="CardioHome Logo" class="h-auto w-28 mx-auto rounded-full shadow-xl">
+            </div>
+            <nav class="w-full">
+                <ul class="space-y-2">
                     {% if usuario == 'admin' %}
-                        <li><a href="#" class="nav-link" data-section="admin-performance"><i class="fa-solid fa-chart-line"></i> Rendimiento Admin</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-add-visit"><i class="fa-solid fa-calendar-plus"></i> Agregar Visita</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-upload-nomina"><i class="fa-solid fa-file-excel"></i> Cargar Nómina</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-visits-list"><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-nominas-list"><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Cargadas</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-uploaded-forms-all"><i class="fa-solid fa-folder-open"></i> Formularios Subidos</a></li>
-                        <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fa-solid fa-folder-plus"></i> Crear Proyecto</a></li>
-                        <li><a href="#" class="nav-link" data-section="gestionar_proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
+                        <li><a href="#" class="nav-link active" data-section="dashboardSection"><i class="fas fa-chart-line mr-4 text-xl"></i> Dashboard</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-performance"><i class="fas fa-chart-bar mr-4 text-xl"></i> Rendimiento Admin</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-add-visit"><i class="fas fa-calendar-plus mr-4 text-xl"></i> Agregar Visita</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-upload-nomina"><i class="fas fa-file-excel mr-4 text-xl"></i> Cargar Nómina</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-visits-list"><i class="fas fa-calendar-alt mr-4 text-xl"></i> Todas las Visitas</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-nominas-list"><i class="fas fa-file-invoice-dollar mr-4 text-xl"></i> Nóminas Cargadas</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-uploaded-forms-all"><i class="fas fa-folder-open mr-4 text-xl"></i> Formularios Subidos</a></li>
+                        <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fas fa-folder-plus mr-4 text-xl"></i> Crear Proyecto</a></li>
+                        <li><a href="#" class="nav-link" data-section="gestionar_proyectos"><i class="fas fa-list-check mr-4 text-xl"></i> Gestionar Proyectos</a></li>
                     {% else %}
-                        <li><a href="#" class="nav-link" data-section="doctor-performance"><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento</a></li>
-                        <li><a href="#" class="nav-link" data-section="doctor-visits"><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</a></li>
-                        <li><a href="#" class="nav-link" data-section="doctor-nominas"><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Asignadas</a></li>
-                        <li><a href="#" class="nav-link" data-section="doctor-uploaded-forms"><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</a></li>
+                        <li><a href="#" class="nav-link active" data-section="dashboardSection"><i class="fas fa-chart-line mr-4 text-xl"></i> Dashboard</a></li>
+                        <li><a href="#" class="nav-link" data-section="perfilSection"><i class="fas fa-user-circle mr-4 text-xl"></i> Mi Perfil</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-visits"><i class="fas fa-calendar-check mr-4 text-xl"></i> Mis Próximas Visitas</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-nominas"><i class="fas fa-file-invoice mr-4 text-xl"></i> Mis Nóminas Asignadas</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-uploaded-forms"><i class="fas fa-file-upload mr-4 text-xl"></i> Mis Formularios Subidos</a></li>
                     {% endif %}
                 </ul>
             </nav>
+            <a href="#" class="flex items-center px-6 py-4 text-red-500 hover:bg-red-100 hover:text-red-700 rounded-xl transition duration-300 ease-in-out mt-auto font-medium" id="logoutBtn" onclick="cerrarSesion()">
+                <i class="fas fa-sign-out-alt mr-4 text-xl"></i>
+                Cerrar Sesión
+            </a>
         </aside>
 
-        <main class="dashboard-content">
-            <div id="welcome-section" class="content-section active">
-                <div class="card welcome-card">
-                    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo CardioHome" />
-                    <h2>¡Bienvenido a CardioHome!</h2>
-                    <p>Tu plataforma integral para la gestión eficiente de visitas médicas, nóminas de pacientes y formularios. Aquí podrás optimizar tu trabajo y asegurar un seguimiento completo de cada caso.</p>
+        <main class="flex-1 overflow-y-auto p-10 bg-gray-50">
+            <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-10">
+                <h1 class="text-4xl font-extrabold text-gray-800 tracking-tight" id="mainTitle">Dashboard de Salud</h1>
+                <div class="flex items-center space-x-4 mt-4 sm:mt-0">
+                    <span class="text-gray-600 text-lg font-medium" id="userName">Hola, Dra. [Nombre]</span>
+                    <img src="https://placehold.co/50x50/cccccc/333333?text=Doc" alt="User Avatar" class="rounded-full shadow-lg border-2 border-white">
                 </div>
-            </div>
+            </header>
+
+            <section id="dashboardSection" class="content-section card mb-10 active">
+                <h2 class="text-3xl font-bold mb-8 text-gray-800">Resumen del Mes</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="summary-card bg-blue-600 text-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-light uppercase tracking-wider">Evaluaciones Pendientes</span>
+                            <i class="fas fa-tasks text-3xl opacity-75"></i>
+                        </div>
+                        <p class="text-5xl font-extrabold mt-4" id="pendingCount">0</p>
+                    </div>
+                    <div class="summary-card bg-green-600 text-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-light uppercase tracking-wider">Estudiantes Evaluados</span>
+                            <i class="fas fa-clipboard-check text-3xl opacity-75"></i>
+                        </div>
+                        <p class="text-5xl font-extrabold mt-4" id="evaluatedCount">0</p>
+                    </div>
+                    <div class="summary-card bg-yellow-500 text-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-light uppercase tracking-wider">Derivaciones</span>
+                            <i class="fas fa-arrow-right-to-bracket text-3xl opacity-75"></i>
+                        </div>
+                        <p class="text-5xl font-extrabold mt-4" id="derivationsCount">0</p>
+                    </div>
+                    <div class="summary-card bg-red-600 text-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-light uppercase tracking-wider">Casos de Urgencia</span>
+                            <i class="fas fa-exclamation-triangle text-3xl opacity-75"></i>
+                        </div>
+                        <p class="text-5xl font-extrabold mt-4" id="urgencyCount">0</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="chartsSection" class="content-section card mb-10">
+                <h2 class="text-3xl font-bold mb-8 text-gray-800">Análisis de Datos</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-gray-50 p-6 rounded-2xl shadow-inner">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-700">Evaluaciones por Semana</h3>
+                        <canvas id="evaluationsChart"></canvas>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-2xl shadow-inner">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-700">Derivaciones por Tipo</h3>
+                        <canvas id="derivationsChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            {% if usuario == 'doctor' %}
+                <div id="perfilSection" class="content-section card hidden">
+                    <h2 class="text-3xl font-bold mb-8 text-gray-800">Mi Perfil</h2>
+                    <div class="flex flex-col items-center">
+                        <img src="https://placehold.co/150x150/cccccc/333333?text=Doc" alt="User Avatar" class="w-32 h-32 rounded-full mb-4 border-4 border-blue-200">
+                        <p class="text-xl font-semibold text-gray-800 mb-2">Nombre del Doctor</p>
+                        <p class="text-gray-600">Especialidad: Cardiología</p>
+                        <p class="text-gray-600">ID: DOC12345</p>
+                    </div>
+                    <h3 class="text-2xl font-bold mt-8 mb-4">Información de Contacto</h3>
+                    <p><strong>Email:</strong> doctor@cardiohome.com</p>
+                    <p><strong>Teléfono:</strong> +56 9 1234 5678</p>
+                </div>
+
+                <div id="doctor-performance" class="content-section card">
+                    <h3><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento (Formularios)</h3>
+                    {% if doctor_performance_data_single_doctor %}
+                        <p class="text-center text-4xl font-extrabold text-accent-blue my-4">
+                            {{ doctor_performance_data_single_doctor.completed }}
+                        </p>
+                        <p class="text-center text-lg text-gray-600 mb-4">Formularios Completados</p>
+                        <div class="chart-container">
+                            <canvas id="doctorPerformanceChart"></canvas>
+                        </div>
+                        <div class="text-center text-sm text-gray-500 mt-4">
+                            Total de formularios en tus nóminas: {{ doctor_performance_data_single_doctor.total }}
+                        </div>
+                    {% else %}
+                        <p style="text-align: center; color: #777;">No hay datos de rendimiento disponibles para graficar.</p>
+                    {% endif %}
+                </div>
+
+                <div id="doctor-visits" class="content-section card">
+                    <h3><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</h3>
+                    <div class="flex flex-col md:flex-row gap-4 mb-6">
+                        <input type="text" id="doctorVisitSearch" placeholder="Buscar por nombre o descripción..." class="flex-grow p-2 border rounded-md form-input" onkeyup="filterVisits('doctor')" />
+                        <button onclick="clearVisitFilters('doctor')" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out flex items-center justify-center gap-2">
+                            <i class="fas fa-filter-circle-xmark"></i> Limpiar Filtros
+                        </button>
+                    </div>
+                    <div id="doctorVisitsContainer" class="space-y-6">
+                        {% if eventos %}
+                            {% set grouped_events = eventos | groupby('fecha') %}
+                            {% for fecha, eventos_del_dia in grouped_events %}
+                                <div class="date-group" data-date="{{ fecha }}">
+                                    <div class="date-group-header">
+                                        <i class="fa-solid fa-calendar-day"></i> {{ fecha }}
+                                    </div>
+                                    <div class="date-group-content">
+                                        <ul class="lista-items !mt-0">
+                                            {% for evento in eventos_del_dia %}
+                                                <li class="visit-card" data-name="{{ evento.nombre | lower }}" data-obs="{{ evento.observaciones | lower }}">
+                                                    <div class="visit-card-title">{{ evento.nombre }}</div>
+                                                    <div class="visit-card-details">
+                                                        <span><i class="fa-solid fa-clock"></i> {{ evento.horario }}</span>
+                                                        <span><i class="fa-solid fa-users"></i> Alumnos esperados: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
+                                                        <span><i class="fa-solid fa-clipboard"></i> Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
+                                                    </div>
+                                                    <div class="visit-card-actions">
+                                                        {% if evento.url_archivo %}
+                                                            <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
+                                                                <i class="fa-solid fa-file-alt"></i> Descargar Formulario Base
+                                                            </a>
+                                                        {% endif %}
+                                                        <form action="{{ url_for('evaluados', establecimiento=evento.id) }}" method="POST" class="mt-4 flex flex-col gap-2">
+                                                            <label for="alumnos_evaluados_{{ loop.index }}" class="sr-only">Alumnos Evaluados:</label>
+                                                            <input type="number" id="alumnos_evaluados_{{ loop.index }}" name="alumnos" min="0" placeholder="N° de alumnos evaluados" required class="w-full form-input" />
+                                                            <button type="submit" class="register-evaluated-btn w-full"><i class="fa-solid fa-check"></i> Registrar Evaluados</button>
+                                                        </form>
+                                                    </div>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p id="doctorVisitNoResults" class="text-center text-gray-500 mt-6 text-lg font-medium">No tienes visitas programadas.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div id="doctor-nominas" class="content-section card">
+                    <h3><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Médicas Asignadas</h3>
+                    <div class="flex flex-col md:flex-row gap-4 mb-6">
+                        <input type="text" id="doctorNominaSearch" placeholder="Buscar por nombre o tipo de nómina..." class="flex-grow p-2 border rounded-md form-input" onkeyup="filterNominas('doctor')" />
+                        <button onclick="clearNominaFilters('doctor')" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out flex items-center justify-center gap-2">
+                            <i class="fas fa-filter-circle-xmark"></i> Limpiar Filtros
+                        </button>
+                    </div>
+                    <ul class="lista-items" id="doctorNominasContainer">
+                        {% if assigned_nominations %}
+                            {% for nomina in assigned_nominations %}
+                                <li class="item-card" data-name="{{ nomina.nombre_establecimiento | lower }}" data-type="{{ nomina.tipo_nomina_display | lower }}">
+                                    <div class="item-card-header">
+                                        <span><i class="fa-solid fa-building mr-2 text-primary-dark"></i>{{ nomina.nombre_establecimiento }}</span>
+                                        <span>Tipo: {{ nomina.tipo_nomina_display }}</span>
+                                    </div>
+                                    <div class="item-card-details">
+                                        {% if nomina.form_type == 'neurologia' and nomina.doctora_id_para_formulario %}
+                                            {% set doctora_form_obj = doctoras | selectattr('id', 'equalto', nomina.doctora_id_para_formulario) | first %}
+                                            <span>Formulario base de: {{ doctora_form_obj.usuario if doctora_form_obj else 'Doctora no encontrada' }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="fill-students-btn">
+                                        <i class="fa-solid fa-edit"></i> Rellenar y Ver Estudiantes
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        {% else %}
+                            <p id="doctorNominaNoResults" class="text-center text-gray-500 mt-6 text-lg font-medium">No tienes nóminas médicas asignadas en este momento.</p>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <div id="doctor-uploaded-forms" class="content-section card">
+                    <h3><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</h3>
+                    <ul class="lista-items">
+                        {% if formularios %}
+                            {% for form_subido in formularios %}
+                                {% if form_subido.doctoras_id == usuario_id %}
+                                    <li class="item-card">
+                                        <div class="item-card-header">
+                                            <span>{{ form_subido.nombre_archivo }}</span>
+                                            <span>Fecha: {{ form_subido.fecha_subida.strftime('%d-%m-%Y') if form_subido.fecha_subida else 'N/A' }}</span>
+                                        </div>
+                                        <div class="item-card-details">
+                                            <span>Establecimiento:
+                                                {% set est = (eventos | selectattr('id', 'equalto', form_subido.establecimientos_id) | first) %}
+                                                {{ est.nombre if est else 'Desconocido' }}
+                                            </span>
+                                        </div>
+                                        <a href="{{ form_subido.url_archivo }}" target="_blank" class="item-card-action-link" style="background-color: var(--primary-medium);">
+                                            <i class="fa-solid fa-eye"></i> Ver Archivo
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-center text-gray-500 mt-6 text-lg font-medium">No has subido ningún formulario aún.</p>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% endif %}
 
             {% if usuario == 'admin' %}
-                <div id="admin-performance" class="content-section">
+                <div id="admin-performance" class="content-section card">
                     <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento del Administrador</h2>
-                    <div class="summary">
-                        <div class="card">
-                            <h3><i class="fa-solid fa-school"></i> Colegios Asignados</h3>
-                            <p>{{ eventos|length }}</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+                        <div class="summary-card bg-blue-600 text-white rounded-2xl p-6 shadow-lg">
+                            <h3 class="text-sm font-light uppercase tracking-wider text-white">Colegios Asignados</h3>
+                            <p class="text-5xl font-extrabold mt-4">{{ eventos|length }}</p>
                         </div>
-                        <div class="card">
-                            <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Médicas Asignadas</h3>
-                            <p>{{ admin_nominas_cargadas|length }}</p>
+                        <div class="summary-card bg-green-600 text-white rounded-2xl p-6 shadow-lg">
+                            <h3 class="text-sm font-light uppercase tracking-wider text-white">Nóminas Asignadas</h3>
+                            <p class="text-5xl font-extrabold mt-4">{{ admin_nominas_cargadas|length }}</p>
                         </div>
-                        <div class="card">
-                            <h3><i class="fa-solid fa-user-doctor"></i> Total Doctoras</h3>
-                            <p>{{ doctoras|length }}</p>
+                        <div class="summary-card bg-yellow-500 text-white rounded-2xl p-6 shadow-lg">
+                            <h3 class="text-sm font-light uppercase tracking-wider text-white">Total Doctoras</h3>
+                            <p class="text-5xl font-extrabold mt-4">{{ doctoras|length }}</p>
                         </div>
                     </div>
-
                     <div class="card mt-8">
                         <h3><i class="fa-solid fa-chart-pie"></i> Rendimiento por Doctora (Formularios Completados)</h3>
                         {% if doctor_performance_data %}
@@ -877,412 +707,289 @@
                                 <canvas id="adminPerformanceChart"></canvas>
                             </div>
                         {% else %}
-                            <p style="text-align: center; color: #777;">No hay datos de rendimiento de doctoras disponibles para graficar.</p>
+                            <p class="text-center text-gray-500 mt-6 text-lg font-medium">No hay datos de rendimiento de doctoras disponibles para graficar.</p>
                         {% endif %}
                     </div>
                 </div>
 
-                <div id="admin-add-visit" class="content-section">
-                    <div class="card admin-form">
-                        <h3><i class="fa-solid fa-calendar-plus"></i> Agregar Visita Programada</h3>
-                        <form action="{{ url_for('admin_agregar') }}" method="POST">
-                            <label for="nombre_establecimiento">Nombre Establecimiento:</label>
-                            <input type="text" id="nombre_establecimiento" name="nombre" placeholder="Ej: Liceo Bicentenario" required />
-
-                            <label for="fecha_establecimiento">Fecha:</label>
-                            <input type="date" id="fecha_establecimiento" name="fecha" required />
-
-                            <label for="horario_establecimiento">Horario:</label>
-                            <input type="text" id="horario_establecimiento" name="horario" placeholder="Ej: 09:00 - 11:00" required />
-
-                            <label for="doctora_establecimiento">Asignar a Doctora:</label>
-                            <select id="doctora_establecimiento" name="doctora" required>
+                <div id="admin-add-visit" class="content-section card">
+                    <h3><i class="fa-solid fa-calendar-plus"></i> Agregar Visita Programada</h3>
+                    <form action="{{ url_for('admin_agregar') }}" method="POST" class="space-y-6">
+                        <div>
+                            <label for="nombre_establecimiento" class="block text-gray-700 font-semibold mb-2">Nombre Establecimiento:</label>
+                            <input type="text" id="nombre_establecimiento" name="nombre" placeholder="Ej: Liceo Bicentenario" required class="form-input">
+                        </div>
+                        <div>
+                            <label for="fecha_establecimiento" class="block text-gray-700 font-semibold mb-2">Fecha:</label>
+                            <input type="date" id="fecha_establecimiento" name="fecha" required class="form-input">
+                        </div>
+                        <div>
+                            <label for="horario_establecimiento" class="block text-gray-700 font-semibold mb-2">Horario:</label>
+                            <input type="text" id="horario_establecimiento" name="horario" placeholder="Ej: 09:00 - 11:00" required class="form-input">
+                        </div>
+                        <div>
+                            <label for="doctora_establecimiento" class="block text-gray-700 font-semibold mb-2">Asignar a Doctora:</label>
+                            <select id="doctora_establecimiento" name="doctora" required class="form-select">
                                 <option value="">Selecciona una doctora</option>
                                 {% for doc in doctoras %}
                                     <option value="{{ doc.id }}">{{ doc.usuario }}</option>
                                 {% endfor %}
                             </select>
-
-                            <label for="alumnos_establecimiento">Cantidad de Alumnos:</label>
-                            <input type="number" id="alumnos_establecimiento" name="alumnos" min="0" placeholder="Ej: 30" />
-
-                            <label for="obs_establecimiento">Observaciones:</label>
-                            <textarea id="obs_establecimiento" name="obs" rows="3" placeholder="Notas adicionales..."></textarea>
-                            
-                            <button type="submit"><i class="fa-solid fa-plus"></i> Agregar Visita</button>
-                        </form>
-                    </div>
+                        </div>
+                        <div>
+                            <label for="alumnos_establecimiento" class="block text-gray-700 font-semibold mb-2">Cantidad de Alumnos:</label>
+                            <input type="number" id="alumnos_establecimiento" name="alumnos" min="0" placeholder="Ej: 30" class="form-input">
+                        </div>
+                        <div>
+                            <label for="obs_establecimiento" class="block text-gray-700 font-semibold mb-2">Observaciones:</label>
+                            <textarea id="obs_establecimiento" name="obs" rows="3" placeholder="Notas adicionales..." class="form-input"></textarea>
+                        </div>
+                        <div class="flex justify-end space-x-4">
+                            <button type="submit" class="bg-blue-600 text-white p-4 rounded-xl shadow hover:bg-blue-700 transition duration-200"><i class="fa-solid fa-plus"></i> Agregar Visita</button>
+                        </div>
+                    </form>
                 </div>
 
-                <div id="admin-upload-nomina" class="content-section">
-                    <div class="card admin-form">
-                        <h3><i class="fa-solid fa-file-excel"></i> Cargar Nómina Médica (Excel/CSV)</h3>
-                        <form action="{{ url_for('admin_cargar_nomina') }}" method="POST" enctype="multipart/form-data">
-                            <label for="tipo_nomina">Tipo de Nómina:</label>
-                            <input type="text" id="tipo_nomina" name="tipo_nomina" placeholder="Ej: General, Dental, Oftalmológica" required />
-
-                            <label for="nombre_especifico">Nombre Específico (Ej: Liceo X - Nómina Mayo):</label>
-                            <input type="text" id="nombre_especifico" name="nombre_especifico" placeholder="Nombre único para esta nómina" required />
-
-                            <label for="doctora_nomina">Asignar a Doctora:</label>
-                            <select id="doctora_nomina" name="doctora" required>
+                <div id="admin-upload-nomina" class="content-section card">
+                    <h3><i class="fa-solid fa-file-excel"></i> Cargar Nómina Médica (Excel/CSV)</h3>
+                    <form action="{{ url_for('admin_cargar_nomina') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+                        <div>
+                            <label for="tipo_nomina" class="block text-gray-700 font-semibold mb-2">Tipo de Nómina:</label>
+                            <input type="text" id="tipo_nomina" name="tipo_nomina" placeholder="Ej: General, Dental, Oftalmológica" required class="form-input">
+                        </div>
+                        <div>
+                            <label for="nombre_especifico" class="block text-gray-700 font-semibold mb-2">Nombre Específico (Ej: Liceo X - Nómina Mayo):</label>
+                            <input type="text" id="nombre_especifico" name="nombre_especifico" placeholder="Nombre único para esta nómina" required class="form-input">
+                        </div>
+                        <div>
+                            <label for="doctora_nomina" class="block text-gray-700 font-semibold mb-2">Asignar a Doctora:</label>
+                            <select id="doctora_nomina" name="doctora" required class="form-select">
                                 <option value="">Selecciona una doctora</option>
                                 {% for doc in doctoras %}
                                     <option value="{{ doc.id }}">{{ doc.usuario }}</option>
                                 {% endfor %}
                             </select>
-
-                            <label for="form_type_nomina">Tipo de Formulario Asociado:</label>
-                            <select id="form_type_nomina" name="form_type" required>
+                        </div>
+                        <div>
+                            <label for="form_type_nomina" class="block text-gray-700 font-semibold mb-2">Tipo de Formulario Asociado:</label>
+                            <select id="form_type_nomina" name="form_type" required class="form-select">
                                 <option value="">Selecciona el tipo de formulario</option>
                                 <option value="neurologia">Neurología</option>
                                 <option value="medicina_familiar">Medicina Familiar</option>
                             </select>
-
-                            <div id="doctora_para_formulario_div" class="mb-4" style="display: none;">
-                                <label for="doctora_id_para_formulario" class="block text-gray-700 text-sm font-bold mb-2">Doctora para el Formulario (solo Neurología):</label>
-                                <select name="doctora_id_para_formulario" id="doctora_id_para_formulario" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                                    <option value="">Seleccione una doctora...</option>
-                                    {% for doc in doctoras %}
-                                        <option value="{{ doc.id }}">{{ doc.usuario }}</option>
-                                    {% endfor %}
-                                </select>
-                                <p class="text-xs text-gray-500 mt-1">Este campo es obligatorio si el tipo de nómina es "Neurología".</p>
-                            </div>
-                            
-                            <label for="excel_nomina">Archivo Excel/CSV de la Nómina:</label>
-                            <input type="file" id="excel_nomina" name="excel" accept=".xls,.xlsx,.csv" required />
-                            
-                            <button type="submit"><i class="fa-solid fa-upload"></i> Cargar Nómina</button>
-                        </form>
-                    </div>
-                </div>
-
-                <div id="admin-visits-list" class="content-section">
-                    <div class="card admin-list">
-                        <h3><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas Programadas</h3>
-                        <div class="flex flex-col md:flex-row gap-4 mb-6">
-                            <input type="text" id="adminVisitSearch" placeholder="Buscar por nombre o descripción..." class="flex-grow p-2 border rounded-md" onkeyup="filterVisits('admin')" />
-                            <select id="adminVisitDoctorFilter" class="p-2 border rounded-md" onchange="filterVisits('admin')">
-                                <option value="">Todas las Doctoras</option>
+                        </div>
+                        <div id="doctora_para_formulario_div" class="mb-4 hidden">
+                            <label for="doctora_id_para_formulario" class="block text-gray-700 font-semibold mb-2">Doctora para el Formulario (solo Neurología):</label>
+                            <select name="doctora_id_para_formulario" id="doctora_id_para_formulario" class="form-select">
+                                <option value="">Seleccione una doctora...</option>
                                 {% for doc in doctoras %}
                                     <option value="{{ doc.id }}">{{ doc.usuario }}</option>
                                 {% endfor %}
                             </select>
+                            <p class="text-xs text-gray-500 mt-1">Este campo es obligatorio si el tipo de nómina es "Neurología".</p>
                         </div>
-                        <div id="adminVisitsContainer">
-                            {% if eventos %}
-                                {% set grouped_events = eventos | groupby('fecha') %}
-                                {% for fecha, eventos_del_dia in grouped_events %}
-                                    <div class="date-group" data-date="{{ fecha }}">
-                                        <div class="date-group-header">
-                                            <i class="fa-solid fa-calendar-day"></i> {{ fecha }}
-                                        </div>
-                                        <div class="date-group-content">
-                                            <ul class="lista-items !mt-0"> {# Override default margin-top #}
-                                                {% for evento in eventos_del_dia %}
-                                                    <li class="visit-card" data-doctor-id="{{ evento.doctora_id }}" data-name="{{ evento.nombre | lower }}" data-obs="{{ evento.observaciones | lower }}">
-                                                        <div class="visit-card-title">{{ evento.nombre }}</div>
-                                                        <div class="visit-card-details">
-                                                            <span><i class="fa-solid fa-clock"></i> {{ evento.horario }}</span>
-                                                            <span><i class="fa-solid fa-users"></i> Alumnos: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
-                                                            {% set doc_info = doctoras | selectattr('id', 'equalto', evento.doctora_id) | first %}
-                                                            <span class="visit-card-doctor-info"><i class="fa-solid fa-user-doctor"></i> Doctora: {{ doc_info.usuario if doc_info else 'N/A' }}</span>
-                                                            <span><i class="fa-solid fa-clipboard"></i> Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
-                                                        </div>
-                                                        <div class="visit-card-actions">
-                                                            {% if evento.url_archivo %}
-                                                                <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
-                                                                    <i class="fa-solid fa-file-alt"></i> Ver Formulario Base
-                                                                </a>
-                                                            {% endif %}
-                                                            <button class="delete-btn" onclick="confirmDelete('establecimiento', '{{ evento.id }}', '{{ evento.nombre }}')">
-                                                                <i class="fas fa-trash"></i> Eliminar Visita
-                                                            </button>
-                                                        </div>
-                                                    </li>
-                                                {% endfor %}
-                                            </ul>
-                                        </div>
+                        <div>
+                            <label for="excel_nomina" class="block text-gray-700 font-semibold mb-2">Archivo Excel/CSV de la Nómina:</label>
+                            <input type="file" id="excel_nomina" name="excel" accept=".xls,.xlsx,.csv" required class="form-input">
+                        </div>
+                        <div class="flex justify-end space-x-4">
+                            <button type="submit" class="bg-green-600 text-white p-4 rounded-xl shadow hover:bg-green-700 transition duration-200"><i class="fa-solid fa-upload"></i> Cargar Nómina</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="admin-visits-list" class="content-section card">
+                    <h3><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas Programadas</h3>
+                    <div class="flex flex-col md:flex-row gap-4 mb-6">
+                        <input type="text" id="adminVisitSearch" placeholder="Buscar por nombre o descripción..." class="flex-grow p-2 border rounded-md form-input" onkeyup="filterVisits('admin')" />
+                        <select id="adminVisitDoctorFilter" class="p-2 border rounded-md form-select" onchange="filterVisits('admin')">
+                            <option value="">Todas las Doctoras</option>
+                            {% for doc in doctoras %}
+                                <option value="{{ doc.id }}">{{ doc.usuario }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div id="adminVisitsContainer" class="space-y-6">
+                        {% if eventos %}
+                            {% set grouped_events = eventos | groupby('fecha') %}
+                            {% for fecha, eventos_del_dia in grouped_events %}
+                                <div class="date-group" data-date="{{ fecha }}">
+                                    <div class="date-group-header">
+                                        <i class="fa-solid fa-calendar-day"></i> {{ fecha }}
                                     </div>
-                                {% endfor %}
-                            {% else %}
-                                <p id="adminVisitNoResults" style="text-align: center; color: #777;">No hay visitas programadas.</p>
-                            {% endif %}
-                        </div>
+                                    <div class="date-group-content">
+                                        <ul class="lista-items !mt-0">
+                                            {% for evento in eventos_del_dia %}
+                                                <li class="visit-card" data-doctor-id="{{ evento.doctora_id }}" data-name="{{ evento.nombre | lower }}" data-obs="{{ evento.observaciones | lower }}">
+                                                    <div class="visit-card-title">{{ evento.nombre }}</div>
+                                                    <div class="visit-card-details">
+                                                        <span><i class="fa-solid fa-clock"></i> {{ evento.horario }}</span>
+                                                        <span><i class="fa-solid fa-users"></i> Alumnos: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
+                                                        {% set doc_info = doctoras | selectattr('id', 'equalto', evento.doctora_id) | first %}
+                                                        <span class="visit-card-doctor-info"><i class="fa-solid fa-user-doctor"></i> Doctora: {{ doc_info.usuario if doc_info else 'N/A' }}</span>
+                                                        <span><i class="fa-solid fa-clipboard"></i> Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
+                                                    </div>
+                                                    <div class="visit-card-actions">
+                                                        {% if evento.url_archivo %}
+                                                            <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
+                                                                <i class="fa-solid fa-file-alt"></i> Ver Formulario Base
+                                                            </a>
+                                                        {% endif %}
+                                                        <button class="delete-btn" onclick="confirmDelete('establecimiento', '{{ evento.id }}', '{{ evento.nombre }}')">
+                                                            <i class="fas fa-trash"></i> Eliminar Visita
+                                                        </button>
+                                                    </div>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p id="adminVisitNoResults" class="text-center text-gray-500 mt-6 text-lg font-medium">No hay visitas programadas.</p>
+                        {% endif %}
                     </div>
                 </div>
 
-                <div id="admin-nominas-list" class="content-section">
-                    <div class="card admin-list">
-                        <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Médicas Cargadas</h3>
-                        <div class="flex flex-col md:flex-row gap-4 mb-6">
-                            <input type="text" id="adminNominaSearch" placeholder="Buscar por nombre o tipo de nómina..." class="flex-grow p-2 border rounded-md" onkeyup="filterNominas('admin')" />
-                            <select id="adminNominaDoctorFilter" class="p-2 border rounded-md" onchange="filterNominas('admin')">
-                                <option value="">Todas las Doctoras</option>
-                                {% for doc in doctoras %}
-                                    <option value="{{ doc.id }}">{{ doc.usuario }}</option>
-                                {% endfor %}
-                            </select>
-                            <button onclick="clearNominaFilters('admin')" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out flex items-center justify-center gap-2">
-                                <i class="fas fa-filter-circle-xmark"></i> Limpiar Filtros
-                            </button>
-                        </div>
-                        <ul class="lista-items" id="adminNominasContainer">
-                            {% if admin_nominas_cargadas %}
-                                {% for nomina in admin_nominas_cargadas %}
-                                    <li class="item-card" data-doctor-id="{{ nomina.doctora_id }}" data-name="{{ nomina.nombre_nomina | lower }}" data-type="{{ nomina.tipo_nomina | lower }}">
-                                        <div class="item-card-header">
-                                            <span><i class="fa-solid fa-building mr-2 text-primary-dark"></i>{{ nomina.nombre_nomina }} ({{ nomina.tipo_nomina.replace('_', ' ').title() }})</span>
-                                            <span>Asignada a: {{ (doctoras | selectattr('id', 'equalto', nomina.doctora_id) | first).usuario if nomina.doctora_id else 'N/A' }}</span>
-                                        </div>
-                                        <div class="item-card-details">
-                                            <span>Archivo Original: {{ nomina.nombre_excel_original }}</span>
-                                            <span>Tipo de Formulario: {{ nomina.form_type | default('No especificado') | capitalize }}</span>
-                                            {% if nomina.form_type == 'neurologia' and nomina.doctora_id_para_formulario %}
-                                                {% set doctora_form_obj = doctoras | selectattr('id', 'equalto', nomina.doctora_id_para_formulario) | first %}
-                                                <span>Formulario base de: {{ doctora_form_obj.usuario if doctora_form_obj else 'Doctora no encontrada' }}</span>
-                                            {% endif %}
-                                        </div>
-                                        {% if nomina.url_excel_original %}
-                                            <a href="{{ nomina.url_excel_original }}" target="_blank" class="item-card-action-link">
-                                                <i class="fa-solid fa-file-excel"></i> Ver Excel Original
-                                            </a>
+                <div id="admin-nominas-list" class="content-section card">
+                    <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Médicas Cargadas</h3>
+                    <div class="flex flex-col md:flex-row gap-4 mb-6">
+                        <input type="text" id="adminNominaSearch" placeholder="Buscar por nombre o tipo de nómina..." class="flex-grow p-2 border rounded-md form-input" onkeyup="filterNominas('admin')" />
+                        <select id="adminNominaDoctorFilter" class="p-2 border rounded-md form-select" onchange="filterNominas('admin')">
+                            <option value="">Todas las Doctoras</option>
+                            {% for doc in doctoras %}
+                                <option value="{{ doc.id }}">{{ doc.usuario }}</option>
+                            {% endfor %}
+                        </select>
+                        <button onclick="clearNominaFilters('admin')" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out flex items-center justify-center gap-2">
+                            <i class="fas fa-filter-circle-xmark"></i> Limpiar Filtros
+                        </button>
+                    </div>
+                    <ul class="lista-items" id="adminNominasContainer">
+                        {% if admin_nominas_cargadas %}
+                            {% for nomina in admin_nominas_cargadas %}
+                                <li class="item-card" data-doctor-id="{{ nomina.doctora_id }}" data-name="{{ nomina.nombre_nomina | lower }}" data-type="{{ nomina.tipo_nomina | lower }}">
+                                    <div class="item-card-header">
+                                        <span><i class="fa-solid fa-building mr-2 text-primary-dark"></i>{{ nomina.nombre_nomina }} ({{ nomina.tipo_nomina.replace('_', ' ').title() }})</span>
+                                        <span>Asignada a: {{ (doctoras | selectattr('id', 'equalto', nomina.doctora_id) | first).usuario if nomina.doctora_id else 'N/A' }}</span>
+                                    </div>
+                                    <div class="item-card-details">
+                                        <span>Archivo Original: {{ nomina.nombre_excel_original }}</span>
+                                        <span>Tipo de Formulario: {{ nomina.form_type | default('No especificado') | capitalize }}</span>
+                                        {% if nomina.form_type == 'neurologia' and nomina.doctora_id_para_formulario %}
+                                            {% set doctora_form_obj = doctoras | selectattr('id', 'equalto', nomina.doctora_id_para_formulario) | first %}
+                                            <span>Formulario base de: {{ doctora_form_obj.usuario if doctora_form_obj else 'Doctora no encontrada' }}</span>
                                         {% endif %}
-                                        <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="fill-students-btn">
-                                            <i class="fa-solid fa-list-ul"></i> Rellenar y Ver Estudiantes
-                                        </a>
-                                        <button class="delete-btn" onclick="confirmDelete('nomina', '{{ nomina.id }}', '{{ nomina.nombre_nomina }}')">
-                                            <i class="fas fa-trash"></i> Eliminar Nómina y Estudiantes
-                                            </button>
-                                    </li>
-                                {% endfor %}
-                            {% else %}
-                                <p id="adminNominaNoResults" style="text-align: center; color: #777;">No hay nóminas médicas cargadas.</p>
-                            {% endif %}
-                        </ul>
-                    </div>
-                </div>
-
-                <div id="admin-uploaded-forms-all" class="content-section">
-                    <div class="card">
-                        <h3><i class="fa-solid fa-folder-open"></i> Todos los Formularios Subidos</h3>
-                        <ul class="lista-items">
-                            {% if formularios %}
-                                {% for form_subido in formularios %}
-                                    <li class="item-card">
-                                        <div class="item-card-header">
-                                            <span>{{ form_subido.nombre_archivo }}</span>
-                                            <span>Fecha: {{ form_subido.fecha_subida.strftime('%d-%m-%Y') if form_subido.fecha_subida else 'N/A' }}</span>
-                                        </div>
-                                        <div class="item-card-details">
-                                            <span>Doctora: {% set doc_info = (doctoras | selectattr('id', 'equalto', form_subido.doctoras_id) | first) %}{{ doc_info.usuario if doc_info else 'Desconocida' }}</span>
-                                            <span>Establecimiento: {% set est_info = (establecimientos | selectattr('id', 'equalto', form_subido.establecimientos_id) | first) %}{{ est_info.nombre if est_info else 'Desconocido' }}</span>
-                                        </div>
-                                        <a href="{{ form_subido.url_archivo }}" target="_blank" class="item-card-action-link" style="background-color: var(--primary-medium);">
-                                            <i class="fa-solid fa-eye"></i> Ver Archivo
-                                        </a>
-                                    </li>
-                                {% endfor %}
-                            {% else %}
-                                <p style="text-align: center; color: #777;">No hay formularios subidos aún.</p>
-                            {% endif %}
-                        </ul>
-                    </div>
-                </div>
-
-                <div id="crear_proyecto" class="content-section">
-                    <div class="card admin-form">
-                        <h3><i class="fas fa-folder-plus"></i> Crear Nuevo Proyecto</h3>
-                        <form action="{{ url_for('crear_proyecto') }}" method="POST">
-                            <label for="nombre_proyecto">Nombre del Proyecto:</label>
-                            <input type="text" id="nombre_proyecto" name="nombre_proyecto" placeholder="Ej: Proyecto Colegio Las Acacias" required>
-
-                            <label for="descripcion_proyecto">Descripción (opcional):</label>
-                            <textarea id="descripcion_proyecto" name="descripcion_proyecto" rows="4" placeholder="Breve descripción del proyecto..."></textarea>
-                            
-                            <button type="submit"><i class="fas fa-plus-circle"></i> Crear Proyecto</button>
-                        </form>
-                    </div>
-                </div>
-
-                <div id="gestionar_proyectos" class="content-section">
-                    <div class="card admin-list">
-                        <h3><i class="fas fa-list-check"></i> Gestionar Proyectos</h3>
-                        {% if proyectos %}
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
-                                <thead class="bg-gray-100">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre del Proyecto</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Creación</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-200">
-                                    {% for proyecto in proyectos %}
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap">{{ proyecto.nombre_proyecto }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">{{ proyecto.descripcion or 'N/A' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">{{ proyecto.fecha_creacion | default('N/A') }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <a href="#" class="text-blue-600 hover:text-blue-900 mr-3" title="Editar"><i class="fas fa-edit"></i></a>
-                                            <button class="text-red-600 hover:text-red-900" title="Eliminar" onclick="confirmDelete('proyecto', '{{ proyecto.id }}', '{{ proyecto.nombre_proyecto }}')">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% else %}
-                        <p class="text-gray-600">No hay proyectos creados aún.</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-            {% else %}
-                <div id="doctor-performance" class="content-section">
-                    <div class="card">
-                        <h3><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento (Formularios)</h3>
-                        {% if doctor_performance_data_single_doctor %}
-                            <p class="text-center text-4xl font-extrabold text-accent-blue my-4">
-                                {{ doctor_performance_data_single_doctor.completed }}
-                            </p>
-                            <p class="text-center text-lg text-gray-600 mb-4">Formularios Completados</p>
-                            <div class="chart-container">
-                                <canvas id="doctorPerformanceChart"></canvas>
-                            </div>
-                            <div class="text-center text-sm text-gray-500 mt-4">
-                                Total de formularios en tus nóminas: {{ doctor_performance_data_single_doctor.total }}
-                            </div>
-                        {% else %}
-                            <p style="text-align: center; color: #777;">No hay datos de rendimiento disponibles para graficar.</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div id="doctor-visits" class="content-section">
-                    <div class="card">
-                        <h3><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</h3>
-                        <div class="flex flex-col md:flex-row gap-4 mb-6">
-                            <input type="text" id="doctorVisitSearch" placeholder="Buscar por nombre o descripción..." class="flex-grow p-2 border rounded-md" onkeyup="filterVisits('doctor')" />
-                            <button onclick="clearVisitFilters('doctor')" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out flex items-center justify-center gap-2">
-                                <i class="fas fa-filter-circle-xmark"></i> Limpiar Filtros
-                            </button>
-                        </div>
-                        <div id="doctorVisitsContainer">
-                            {% if eventos %}
-                                {% set grouped_events = eventos | groupby('fecha') %}
-                                {% for fecha, eventos_del_dia in grouped_events %}
-                                    <div class="date-group" data-date="{{ fecha }}">
-                                        <div class="date-group-header">
-                                            <i class="fa-solid fa-calendar-day"></i> {{ fecha }}
-                                        </div>
-                                        <div class="date-group-content">
-                                            <ul class="lista-items !mt-0"> {# Override default margin-top #}
-                                                {% for evento in eventos_del_dia %}
-                                                    <li class="visit-card" data-name="{{ evento.nombre | lower }}" data-obs="{{ evento.observaciones | lower }}">
-                                                        <div class="visit-card-title">{{ evento.nombre }}</div>
-                                                        <div class="visit-card-details">
-                                                            <span><i class="fa-solid fa-clock"></i> {{ evento.horario }}</span>
-                                                            <span><i class="fa-solid fa-users"></i> Alumnos esperados: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
-                                                            <span><i class="fa-solid fa-clipboard"></i> Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
-                                                        </div>
-                                                        <div class="visit-card-actions">
-                                                            {% if evento.url_archivo %}
-                                                                <a href="{{ evento.url_archivo }}" target="_blank" class="item-card-action-link">
-                                                                    <i class="fa-solid fa-file-alt"></i> Descargar Formulario Base
-                                                                </a>
-                                                            {% endif %}
-                                                            <form action="{{ url_for('evaluados', establecimiento=evento.id) }}" method="POST" class="mt-4 flex flex-col gap-2">
-                                                                <label for="alumnos_evaluados_{{ loop.index }}" class="sr-only">Alumnos Evaluados:</label>
-                                                                <input type="number" id="alumnos_evaluados_{{ loop.index }}" name="alumnos" min="0" placeholder="N° de alumnos evaluados" required class="w-full" />
-                                                                <button type="submit" class="register-evaluated-btn w-full"><i class="fa-solid fa-check"></i> Registrar Evaluados</button>
-                                                            </form>
-                                                        </div>
-                                                    </li>
-                                                {% endfor %}
-                                            </ul>
-                                        </div>
                                     </div>
-                                {% endfor %}
-                            {% else %}
-                                <p id="doctorVisitNoResults" style="text-align: center; color: #777;">No tienes visitas programadas.</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-
-                <div id="doctor-nominas" class="content-section">
-                    <div class="card">
-                        <h3><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Médicas Asignadas</h3>
-                        <div class="flex flex-col md:flex-row gap-4 mb-6">
-                            <input type="text" id="doctorNominaSearch" placeholder="Buscar por nombre o tipo de nómina..." class="flex-grow p-2 border rounded-md" onkeyup="filterNominas('doctor')" />
-                            <button onclick="clearNominaFilters('doctor')" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out flex items-center justify-center gap-2">
-                                <i class="fas fa-filter-circle-xmark"></i> Limpiar Filtros
-                            </button>
-                        </div>
-                        <ul class="lista-items" id="doctorNominasContainer">
-                            {% if assigned_nominations %}
-                                {% for nomina in assigned_nominations %}
-                                    <li class="item-card" data-name="{{ nomina.nombre_establecimiento | lower }}" data-type="{{ nomina.tipo_nomina_display | lower }}">
-                                        <div class="item-card-header">
-                                            <span><i class="fa-solid fa-building mr-2 text-primary-dark"></i>{{ nomina.nombre_establecimiento }}</span>
-                                            <span>Tipo: {{ nomina.tipo_nomina_display }}</span>
-                                        </div>
-                                        <div class="item-card-details">
-                                            {% if nomina.form_type == 'neurologia' and nomina.doctora_id_para_formulario %}
-                                                {% set doctora_form_obj = doctoras | selectattr('id', 'equalto', nomina.doctora_id_para_formulario) | first %}
-                                                <span>Formulario base de: {{ doctora_form_obj.usuario if doctora_form_obj else 'Doctora no encontrada' }}</span>
-                                            {% endif %}
-                                        </div>
-                                        <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="fill-students-btn">
-                                            <i class="fa-solid fa-edit"></i> Rellenar y Ver Estudiantes
+                                    {% if nomina.url_excel_original %}
+                                        <a href="{{ nomina.url_excel_original }}" target="_blank" class="item-card-action-link">
+                                            <i class="fa-solid fa-file-excel"></i> Ver Excel Original
                                         </a>
-                                    </li>
-                                {% endfor %}
-                            {% else %}
-                                <p id="doctorNominaNoResults" style="text-align: center; color: #777;">No tienes nóminas médicas asignadas en este momento.</p>
-                            {% endif %}
-                        </ul>
-                    </div>
+                                    {% endif %}
+                                    <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="fill-students-btn">
+                                        <i class="fa-solid fa-list-ul"></i> Rellenar y Ver Estudiantes
+                                    </a>
+                                    <button class="delete-btn" onclick="confirmDelete('nomina', '{{ nomina.id }}', '{{ nomina.nombre_nomina }}')">
+                                        <i class="fas fa-trash"></i> Eliminar Nómina y Estudiantes
+                                        </button>
+                                </li>
+                            {% endfor %}
+                        {% else %}
+                            <p id="adminNominaNoResults" class="text-center text-gray-500 mt-6 text-lg font-medium">No hay nóminas médicas cargadas.</p>
+                        {% endif %}
+                    </ul>
                 </div>
 
-                <div id="doctor-uploaded-forms" class="content-section">
-                    <div class="card">
-                        <h3><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</h3>
-                        <ul class="lista-items">
-                            {% if formularios %}
-                                {% for form_subido in formularios %}
-                                    {% if form_subido.doctoras_id == usuario_id %}
-                                        <li class="item-card">
-                                            <div class="item-card-header">
-                                                <span>{{ form_subido.nombre_archivo }}</span>
-                                                <span>Fecha: {{ form_subido.fecha_subida.strftime('%d-%m-%Y') if form_subido.fecha_subida else 'N/A' }}</span>
-                                        </div>
-                                            <div class="item-card-details">
-                                                <span>Establecimiento: 
-                                                    {% set est = (eventos | selectattr('id', 'equalto', form_subido.establecimientos_id) | first) %}
-                                                    {{ est.nombre if est else 'Desconocido' }}
-                                                </span>
-                                            </div>
-                                            <a href="{{ form_subido.url_archivo }}" target="_blank" class="item-card-action-link" style="background-color: var(--primary-medium);">
-                                                <i class="fa-solid fa-eye"></i> Ver Archivo
-                                            </a>
-                                        </li>
-                                    {% endif %}
+                <div id="admin-uploaded-forms-all" class="content-section card">
+                    <h3><i class="fa-solid fa-folder-open"></i> Todos los Formularios Subidos</h3>
+                    <ul class="lista-items">
+                        {% if formularios %}
+                            {% for form_subido in formularios %}
+                                <li class="item-card">
+                                    <div class="item-card-header">
+                                        <span>{{ form_subido.nombre_archivo }}</span>
+                                        <span>Fecha: {{ form_subido.fecha_subida.strftime('%d-%m-%Y') if form_subido.fecha_subida else 'N/A' }}</span>
+                                    </div>
+                                    <div class="item-card-details">
+                                        <span>Doctora: {% set doc_info = (doctoras | selectattr('id', 'equalto', form_subido.doctoras_id) | first) %}{{ doc_info.usuario if doc_info else 'Desconocida' }}</span>
+                                        <span>Establecimiento: {% set est_info = (establecimientos | selectattr('id', 'equalto', form_subido.establecimientos_id) | first) %}{{ est_info.nombre if est_info else 'Desconocido' }}</span>
+                                    </div>
+                                    <a href="{{ form_subido.url_archivo }}" target="_blank" class="item-card-action-link" style="background-color: var(--primary-medium);">
+                                        <i class="fa-solid fa-eye"></i> Ver Archivo
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-center text-gray-500 mt-6 text-lg font-medium">No hay formularios subidos aún.</p>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <div id="crear_proyecto" class="content-section card">
+                    <h3><i class="fas fa-folder-plus"></i> Crear Nuevo Proyecto</h3>
+                    <form action="{{ url_for('crear_proyecto') }}" method="POST" class="space-y-6">
+                        <div>
+                            <label for="nombre_proyecto" class="block text-gray-700 font-semibold mb-2">Nombre del Proyecto:</label>
+                            <input type="text" id="nombre_proyecto" name="nombre_proyecto" placeholder="Ej: Proyecto Colegio Las Acacias" required class="form-input">
+                        </div>
+                        <div>
+                            <label for="descripcion_proyecto" class="block text-gray-700 font-semibold mb-2">Descripción (opcional):</label>
+                            <textarea id="descripcion_proyecto" name="descripcion_proyecto" rows="4" placeholder="Breve descripción del proyecto..." class="form-input"></textarea>
+                        </div>
+                        <div class="flex justify-end space-x-4">
+                            <button type="submit" class="bg-blue-600 text-white p-4 rounded-xl shadow hover:bg-blue-700 transition duration-200"><i class="fas fa-plus-circle"></i> Crear Proyecto</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="gestionar_proyectos" class="content-section card">
+                    <h3><i class="fas fa-list-check"></i> Gestionar Proyectos</h3>
+                    {% if proyectos %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre del Proyecto</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Creación</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                {% for proyecto in proyectos %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">{{ proyecto.nombre_proyecto }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">{{ proyecto.descripcion or 'N/A' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">{{ proyecto.fecha_creacion | default('N/A') }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <a href="#" class="text-blue-600 hover:text-blue-900 mr-3" title="Editar"><i class="fas fa-edit"></i></a>
+                                        <button class="text-red-600 hover:text-red-900" title="Eliminar" onclick="confirmDelete('proyecto', '{{ proyecto.id }}', '{{ proyecto.nombre_proyecto }}')">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </td>
+                                </tr>
                                 {% endfor %}
-                            {% else %}
-                                <p style="text-align: center; color: #777;">No has subido ningún formulario aún.</p>
-                            {% endif %}
-                        </ul>
+                            </tbody>
+                        </table>
                     </div>
+                    {% else %}
+                    <p class="text-center text-gray-500 mt-6 text-lg font-medium">No hay proyectos creados aún.</p>
+                    {% endif %}
                 </div>
             {% endif %}
         </main>
+    </div>
+
+    <div id="studentDetailModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="modal-close-btn" onclick="toggleModal('studentDetailModal')">&times;</button>
+            <h3 class="text-2xl font-bold mb-4 text-gray-800" id="modalStudentName"></h3>
+            <div id="modalStudentInfo" class="space-y-3"></div>
+            <div class="flex justify-end space-x-4 mt-6">
+                <button class="bg-red-600 text-white p-3 rounded-xl hover:bg-red-700" onclick="deleteStudent()">Eliminar</button>
+                <button class="bg-yellow-500 text-white p-3 rounded-xl hover:bg-yellow-600" onclick="editStudent()">Editar</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -1292,14 +999,11 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar');
-            const menuToggle = document.getElementById('menuToggle');
             const navLinks = document.querySelectorAll('.nav-link');
             const contentSections = document.querySelectorAll('.content-section');
-            const dashboardWrapper = document.querySelector('.dashboard-wrapper');
             const formTypeNominaSelect = document.getElementById('form_type_nomina');
             const doctoraParaFormularioDiv = document.getElementById('doctora_para_formulario_div');
 
-            // Function to activate a section and deactivate others
             function showSection(sectionId) {
                 contentSections.forEach(section => {
                     section.classList.remove('active');
@@ -1307,9 +1011,7 @@
                 const activeSection = document.getElementById(sectionId);
                 if (activeSection) {
                     activeSection.classList.add('active');
-                    activeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-                    // If it's the performance section, render the chart
+                    updateTitle(sectionId);
                     if (sectionId === 'admin-performance') {
                         renderAdminPerformanceChart();
                     } else if (sectionId === 'doctor-performance') {
@@ -1318,470 +1020,332 @@
                 }
             }
 
-            // Handle clicks on navigation links
+            function updateTitle(sectionId) {
+                const titleMap = {
+                    'dashboardSection': 'Dashboard de Salud',
+                    'perfilSection': 'Mi Perfil',
+                    'doctor-performance': 'Mi Rendimiento',
+                    'doctor-visits': 'Mis Próximas Visitas',
+                    'doctor-nominas': 'Mis Nóminas Asignadas',
+                    'doctor-uploaded-forms': 'Mis Formularios Subidos',
+                    'admin-performance': 'Rendimiento del Administrador',
+                    'admin-add-visit': 'Agregar Visita Programada',
+                    'admin-upload-nomina': 'Cargar Nómina Médica',
+                    'admin-visits-list': 'Todas las Visitas Programadas',
+                    'admin-nominas-list': 'Nóminas Médicas Cargadas',
+                    'admin-uploaded-forms-all': 'Todos los Formularios Subidos',
+                    'crear_proyecto': 'Crear Nuevo Proyecto',
+                    'gestionar_proyectos': 'Gestionar Proyectos'
+                };
+                document.getElementById('mainTitle').textContent = titleMap[sectionId] || 'Dashboard';
+            }
+
             navLinks.forEach(link => {
                 link.addEventListener('click', function(event) {
                     event.preventDefault();
                     navLinks.forEach(item => item.classList.remove('active'));
                     this.classList.add('active');
-
                     const sectionId = this.dataset.section;
                     showSection(sectionId);
-
-                    if (window.innerWidth <= 768) {
-                        sidebar.classList.remove('active');
-                        dashboardWrapper.classList.remove('sidebar-active');
-                    }
                 });
             });
 
-            // Handle menu button for mobile
-            if (menuToggle) {
-                menuToggle.addEventListener('click', function() {
-                    sidebar.classList.toggle('active');
-                    dashboardWrapper.classList.toggle('sidebar-active');
-                });
-            }
-
-            // Hide sidebar if clicked outside on mobile
-            document.addEventListener('click', function(event) {
-                if (window.innerWidth <= 768 && sidebar.classList.contains('active')) {
-                    const isClickInsideSidebar = sidebar.contains(event.target);
-                    const isClickOnMenuToggle = menuToggle && menuToggle.contains(event.target);
-                    if (!isClickInsideSidebar && !isClickOnMenuToggle) {
-                        sidebar.classList.remove('active');
-                        dashboardWrapper.classList.remove('sidebar-active');
-                    }
-                }
-            });
-
-            // Lógica para mostrar/ocultar el campo "Doctora para el Formulario"
             if (formTypeNominaSelect && doctoraParaFormularioDiv) {
                 formTypeNominaSelect.addEventListener('change', function() {
                     if (this.value === 'neurologia') {
-                        doctoraParaFormularioDiv.style.display = 'block';
+                        doctoraParaFormularioDiv.classList.remove('hidden');
                     } else {
-                        doctoraParaFormularioDiv.style.display = 'none';
-                        // Opcional: limpiar la selección si se oculta
+                        doctoraParaFormularioDiv.classList.add('hidden');
                         document.getElementById('doctora_id_para_formulario').value = '';
                     }
                 });
-                // Ejecutar al cargar la página para el estado inicial
                 if (formTypeNominaSelect.value === 'neurologia') {
-                    doctoraParaFormularioDiv.style.display = 'block';
-                } else {
-                    doctoraParaFormularioDiv.style.display = 'none';
+                    doctoraParaFormularioDiv.classList.remove('hidden');
                 }
             }
-
-
-            // Initialize by showing the first active section by default
+            
             const initialActiveLink = document.querySelector('.nav-link.active');
             if (initialActiveLink) {
                 showSection(initialActiveLink.dataset.section);
-            } else if (navLinks.length > 0) {
-                navLinks[0].classList.add('active');
-                showSection(navLinks[0].dataset.section);
-            }
-        });
-
-        // Function to confirm and perform deletion
-        function confirmDelete(type, id, name) {
-            let titleText = '';
-            let confirmText = '';
-            let endpoint = '';
-            let successMessage = '';
-
-            if (type === 'establecimiento') {
-                titleText = `¿Estás seguro de eliminar la visita al colegio "${name}"?`;
-                confirmText = `Esta acción es irreversible y eliminará todos los datos asociados a esta visita.`;
-                endpoint = `/admin/eliminar_establecimiento/${id}`;
-                successMessage = 'Visita eliminada exitosamente.';
-            } else if (type === 'nomina') {
-                titleText = `¿Estás seguro de eliminar la nómina "${name}"?`;
-                confirmText = `Esta acción es irreversible y eliminará todos los datos asociados a los estudiantes de esta nómina.`;
-                endpoint = `/admin/eliminar_nomina/${id}`;
-                successMessage = 'Nómina y estudiantes eliminados exitosamente.';
-            } else if (type === 'proyecto') { // Nuevo tipo para proyectos
-                titleText = `¿Estás seguro de eliminar el proyecto "${name}"?`;
-                confirmText = `Esta acción es irreversible y eliminará el proyecto de la base de datos.`;
-                endpoint = `/admin/eliminar_proyecto/${id}`; // Asegúrate de que esta ruta exista en tu Flask
-                successMessage = 'Proyecto eliminado exitosamente.';
-            } else {
-                Swal.fire('Error', 'Tipo de eliminación no reconocido.', 'error');
-                return;
             }
 
-            Swal.fire({
-                title: titleText,
-                text: confirmText,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    fetch(endpoint, {
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            Swal.fire(
-                                '¡Eliminado!',
-                                successMessage,
-                                'success'
-                            ).then(() => {
-                                window.location.reload(); // Recargar para actualizar la lista
-                            });
-                        } else {
-                            Swal.fire(
-                                'Error',
-                                data.message,
-                                'error'
-                            );
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error al eliminar:', error);
-                        Swal.fire(
-                            'Error',
-                            'No se pudo conectar con el servidor para eliminar.',
-                            'error'
-                        );
-                    });
-                }
-            });
-        }
-
-
-        // Doctor performance data for Chart.js (Admin)
-        // Injected from Flask into the template
-        const adminPerformanceData = {{ doctor_performance_data | tojson }};
-
-        function renderAdminPerformanceChart() {
-            const ctx = document.getElementById('adminPerformanceChart');
-            if (!ctx) {
-                console.error('Canvas element not found for adminPerformanceChart');
-                return;
+            // Lógica para mostrar/ocultar el sidebar en móviles
+            const menuToggle = document.querySelector('.menu-toggle-btn');
+            if (menuToggle) {
+                menuToggle.addEventListener('click', () => {
+                    sidebar.classList.toggle('active');
+                });
             }
 
-            // Destroy any existing chart instance to avoid duplicates
-            if (window.adminChartInstance) {
-                window.adminChartInstance.destroy();
+            // Mock Data and Functions from dashboard-11 for initial charts
+            const mockStudents = [
+                { id: 1, name: 'Juan Pérez', rut: '12345678-9', school: 'Colegio A', risk: 'bajo' },
+                { id: 2, name: 'María López', rut: '98765432-1', school: 'Colegio B', risk: 'medio' },
+                { id: 3, name: 'Carlos Gómez', rut: '11223344-5', school: 'Colegio A', risk: 'alto' },
+            ];
+
+            function getCounts() {
+                document.getElementById('pendingCount').textContent = '25';
+                document.getElementById('evaluatedCount').textContent = mockStudents.length;
+                document.getElementById('derivationsCount').textContent = '10';
+                document.getElementById('urgencyCount').textContent = '2';
             }
 
-            const labels = Object.keys(adminPerformanceData);
-            const data = Object.values(adminPerformanceData);
-
-            window.adminChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Formularios Completados',
-                        data: data,
-                        backgroundColor: [
-                            'rgba(75, 192, 192, 0.6)', /* Greenish-blue */
-                            'rgba(153, 102, 255, 0.6)', /* Purple */
-                            'rgba(255, 159, 64, 0.6)',  /* Orange */
-                            'rgba(54, 162, 235, 0.6)',  /* Blue */
-                            'rgba(255, 99, 132, 0.6)',  /* Red */
-                            'rgba(201, 203, 207, 0.6)'  /* Grey */
-                        ],
-                        borderColor: [
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(153, 102, 255, 1)',
-                            'rgba(255, 159, 64, 1)',
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(201, 203, 207, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Formularios Evaluados por Doctora',
-                            font: { size: 18, family: 'Montserrat' },
-                            color: '#333'
-                        },
-                        legend: {
-                            display: false
-                        }
+            function createMockChart(chartId, chartType, label, data, borderColor, bgColor) {
+                const ctx = document.getElementById(chartId);
+                if (!ctx) return;
+                new Chart(ctx.getContext('2d'), {
+                    type: chartType,
+                    data: {
+                        labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'],
+                        datasets: [{
+                            label: label,
+                            data: data,
+                            borderColor: borderColor,
+                            backgroundColor: bgColor,
+                            tension: 0.4,
+                            fill: true,
+                            pointBackgroundColor: borderColor,
+                            pointBorderColor: '#fff',
+                            pointHoverRadius: 8,
+                            pointHoverBorderWidth: 2,
+                        }]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Cantidad de Formularios',
-                                font: { size: 14, family: 'Inter' },
-                                color: '#555'
-                            },
-                            ticks: {
-                                precision: 0
-                            }
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+                            x: { grid: { display: false } }
                         },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Doctora',
-                                font: { size: 14, family: 'Inter' },
-                                color: '#555'
-                            }
-                        }
+                        plugins: { legend: { display: false } }
                     }
+                });
+            }
+
+            getCounts();
+            createMockChart('evaluationsChart', 'line', 'Evaluaciones por Semana', [12, 19, 3, 5], 'hsl(205, 50%, 50%)', 'hsla(205, 50%, 50%, 0.2)');
+            createMockChart('derivationsChart', 'bar', 'Derivaciones por Tipo', [5, 3, 2, 8], 'hsl(140, 45%, 48%)', 'hsla(140, 45%, 48%, 0.5)');
+
+
+            function confirmDelete(type, id, name) {
+                let titleText = '';
+                let confirmText = '';
+                let endpoint = '';
+                let successMessage = '';
+
+                if (type === 'establecimiento') {
+                    titleText = `¿Estás seguro de eliminar la visita al colegio "${name}"?`;
+                    confirmText = `Esta acción es irreversible y eliminará todos los datos asociados a esta visita.`;
+                    endpoint = `/admin/eliminar_establecimiento/${id}`;
+                    successMessage = 'Visita eliminada exitosamente.';
+                } else if (type === 'nomina') {
+                    titleText = `¿Estás seguro de eliminar la nómina "${name}"?`;
+                    confirmText = `Esta acción es irreversible y eliminará todos los datos asociados a los estudiantes de esta nómina.`;
+                    endpoint = `/admin/eliminar_nomina/${id}`;
+                    successMessage = 'Nómina y estudiantes eliminados exitosamente.';
+                } else if (type === 'proyecto') {
+                    titleText = `¿Estás seguro de eliminar el proyecto "${name}"?`;
+                    confirmText = `Esta acción es irreversible y eliminará el proyecto de la base de datos.`;
+                    endpoint = `/admin/eliminar_proyecto/${id}`;
+                    successMessage = 'Proyecto eliminado exitosamente.';
+                } else {
+                    Swal.fire('Error', 'Tipo de eliminación no reconocido.', 'error');
+                    return;
                 }
-            });
-        }
 
-        /* Doctor's own performance data (if doctor is logged in) */
-        /* Injected from Flask into the template */
-        const doctorPerformanceDataSingleDoctor = {{ doctor_performance_data_single_doctor | tojson }};
-
-        function renderDoctorPerformanceChart() {
-            const ctx = document.getElementById('doctorPerformanceChart');
-            if (!ctx) {
-                console.error('Canvas element not found for doctorPerformanceChart');
-                return;
-            }
-
-            // Destroy any existing chart instance to avoid duplicates
-            if (window.doctorChartInstance) {
-                window.doctorChartInstance.destroy();
-            }
-
-            if (!doctorPerformanceDataSingleDoctor || doctorPerformanceDataSingleDoctor.total === 0) {
-                 ctx.style.display = 'none';
-                 const parent = ctx.closest('.chart-container');
-                 if (parent) {
-                    let noDataMsg = parent.querySelector('.no-data-message');
-                    if (!noDataMsg) {
-                        noDataMsg = document.createElement('p');
-                        noDataMsg.className = 'no-data-message text-center text-gray-500 mt-4';
-                        noDataMsg.textContent = 'No hay suficientes datos para mostrar el gráfico.';
-                        parent.appendChild(noDataMsg);
+                Swal.fire({
+                    title: titleText,
+                    text: confirmText,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        fetch(endpoint, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire('¡Eliminado!', successMessage, 'success').then(() => {
+                                    window.location.reload();
+                                });
+                            } else {
+                                Swal.fire('Error', data.message, 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error al eliminar:', error);
+                            Swal.fire('Error', 'No se pudo conectar con el servidor para eliminar.', 'error');
+                        });
                     }
-                 }
-                 return;
-            } else {
-                 const noDataMsg = ctx.closest('.chart-container').querySelector('.no-data-message');
-                 if (noDataMsg) noDataMsg.remove();
-                 ctx.style.display = 'block';
+                });
             }
 
+            const adminPerformanceData = {{ doctor_performance_data | tojson }};
+            function renderAdminPerformanceChart() {
+                const ctx = document.getElementById('adminPerformanceChart');
+                if (!ctx) return;
+                if (window.adminChartInstance) { window.adminChartInstance.destroy(); }
+                const labels = Object.keys(adminPerformanceData);
+                const data = Object.values(adminPerformanceData);
+                window.adminChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Formularios Completados',
+                            data: data,
+                            backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(153, 102, 255, 0.6)', 'rgba(255, 159, 64, 0.6)', 'rgba(54, 162, 235, 0.6)'],
+                            borderColor: ['rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)', 'rgba(255, 159, 64, 1)', 'rgba(54, 162, 235, 1)'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Formularios Evaluados por Doctora' }, legend: { display: false } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Cantidad de Formularios' }, ticks: { precision: 0 } }, x: { title: { display: true, text: 'Doctora' } } } }
+                });
+            }
 
-            const completed = doctorPerformanceDataSingleDoctor.completed;
-            const pending = doctorPerformanceDataSingleDoctor.total - completed; /* Calculated dynamically from total */
-
-            window.doctorChartInstance = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: ['Completados', 'Pendientes'],
-                    datasets: [{
-                        label: 'Formularios',
-                        data: [completed, pending],
-                        backgroundColor: [
-                            'rgba(54, 162, 235, 0.6)', /* Blue for completed */
-                            'rgba(255, 99, 132, 0.6)'  /* Light red for pending */
-                        ],
-                        borderColor: [
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(255, 99, 132, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Estado de Mis Formularios',
-                            font: { size: 18, family: 'Montserrat' },
-                            color: '#333'
-                        },
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                font: {
-                                    family: 'Inter'
-                                }
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.parsed !== null) {
-                                        label += context.parsed + ' (' + ((context.parsed / doctorPerformanceDataSingleDoctor.total) * 100).toFixed(1) + '%)';
-                                    }
-                                    return label;
-                                }
-                            }
+            const doctorPerformanceDataSingleDoctor = {{ doctor_performance_data_single_doctor | tojson }};
+            function renderDoctorPerformanceChart() {
+                const ctx = document.getElementById('doctorPerformanceChart');
+                if (!ctx) return;
+                if (window.doctorChartInstance) { window.doctorChartInstance.destroy(); }
+                if (!doctorPerformanceDataSingleDoctor || doctorPerformanceDataSingleDoctor.total === 0) {
+                     ctx.style.display = 'none';
+                     const parent = ctx.closest('.chart-container');
+                     if (parent) {
+                        let noDataMsg = parent.querySelector('.no-data-message');
+                        if (!noDataMsg) {
+                            noDataMsg = document.createElement('p');
+                            noDataMsg.className = 'no-data-message text-center text-gray-500 mt-4';
+                            noDataMsg.textContent = 'No hay suficientes datos para mostrar el gráfico.';
+                            parent.appendChild(noDataMsg);
                         }
-                    }
+                     }
+                     return;
+                } else {
+                     const noDataMsg = ctx.closest('.chart-container').querySelector('.no-data-message');
+                     if (noDataMsg) noDataMsg.remove();
+                     ctx.style.display = 'block';
                 }
-            });
-        }
-
-        // --- NEW FILTERING LOGIC ---
-
-        function filterNominas(userType) {
-            let searchText;
-            let doctorFilterId;
-            let containerId;
-            let noResultsMessageId;
-
-            if (userType === 'admin') {
-                searchText = document.getElementById('adminNominaSearch').value.toLowerCase();
-                doctorFilterId = document.getElementById('adminNominaDoctorFilter').value;
-                containerId = 'adminNominasContainer';
-                noResultsMessageId = 'adminNominaNoResults';
-            } else { // userType === 'doctor'
-                searchText = document.getElementById('doctorNominaSearch').value.toLowerCase();
-                containerId = 'doctorNominasContainer';
-                noResultsMessageId = 'doctorNominaNoResults';
-                doctorFilterId = null; // No doctor filter for doctors' own nominations
+                const completed = doctorPerformanceDataSingleDoctor.completed;
+                const pending = doctorPerformanceDataSingleDoctor.total - completed;
+                window.doctorChartInstance = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Completados', 'Pendientes'],
+                        datasets: [{
+                            label: 'Formularios',
+                            data: [completed, pending],
+                            backgroundColor: ['rgba(54, 162, 235, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+                            borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Estado de Mis Formularios' }, legend: { position: 'bottom' }, tooltip: { callbacks: { label: function(context) { let label = context.label || ''; if (label) { label += ': '; } if (context.parsed !== null) { label += context.parsed + ' (' + ((context.parsed / doctorPerformanceDataSingleDoctor.total) * 100).toFixed(1) + '%)'; } return label; } } } } }
+                });
             }
 
-            const nominaItems = document.getElementById(containerId).getElementsByClassName('item-card');
-            let resultsFound = false;
-
-            for (let i = 0; i < nominaItems.length; i++) {
-                const item = nominaItems[i];
-                const nominaName = item.dataset.name; // Stored in lowercase
-                const nominaType = item.dataset.type; // Stored in lowercase
-
-                const matchesSearch = (nominaName.includes(searchText) || nominaType.includes(searchText));
-                
-                let matchesDoctor = true; // Default to true for doctor's view
+            function filterNominas(userType) {
+                let searchText; let doctorFilterId; let containerId; let noResultsMessageId;
                 if (userType === 'admin') {
-                    const assignedDoctorId = item.dataset.doctorId;
-                    matchesDoctor = (doctorFilterId === "" || assignedDoctorId === doctorFilterId);
-                }
-
-                if (matchesSearch && matchesDoctor) {
-                    item.style.display = ''; // Show the item
-                    resultsFound = true;
+                    searchText = document.getElementById('adminNominaSearch').value.toLowerCase();
+                    doctorFilterId = document.getElementById('adminNominaDoctorFilter').value;
+                    containerId = 'adminNominasContainer';
+                    noResultsMessageId = 'adminNominaNoResults';
                 } else {
-                    item.style.display = 'none'; // Hide the item
+                    searchText = document.getElementById('doctorNominaSearch').value.toLowerCase();
+                    containerId = 'doctorNominasContainer';
+                    noResultsMessageId = 'doctorNominaNoResults';
+                    doctorFilterId = null;
                 }
-            }
-
-            // Show/hide no results message
-            const noResultsElement = document.getElementById(noResultsMessageId);
-            if (noResultsElement) {
-                if (resultsFound) {
-                    noResultsElement.style.display = 'none';
-                } else {
-                    noResultsElement.style.display = 'block';
-                }
-            }
-        }
-
-        function clearNominaFilters(userType) {
-            if (userType === 'admin') {
-                document.getElementById('adminNominaSearch').value = '';
-                document.getElementById('adminNominaDoctorFilter').value = '';
-            } else {
-                document.getElementById('doctorNominaSearch').value = '';
-            }
-            filterNominas(userType); // Re-apply filters to clear
-        }
-
-
-        function filterVisits(userType) {
-            let searchText;
-            let doctorFilterId;
-            let containerId;
-            let noResultsMessageId;
-
-            if (userType === 'admin') {
-                searchText = document.getElementById('adminVisitSearch').value.toLowerCase();
-                doctorFilterId = document.getElementById('adminVisitDoctorFilter').value;
-                containerId = 'adminVisitsContainer';
-                noResultsMessageId = 'adminVisitNoResults'; // Add ID for no results message
-            } else { // userType === 'doctor'
-                searchText = document.getElementById('doctorVisitSearch').value.toLowerCase();
-                containerId = 'doctorVisitsContainer';
-                noResultsMessageId = 'doctorVisitNoResults'; // Add ID for no results message
-                doctorFilterId = null; // No doctor filter for doctors' own visits
-            }
-
-            const dateGroups = document.getElementById(containerId).getElementsByClassName('date-group');
-            let totalResultsFound = false;
-
-            for (let i = 0; i < dateGroups.length; i++) {
-                const dateGroup = dateGroups[i];
-                const visitCards = dateGroup.getElementsByClassName('visit-card');
-                let anyCardVisibleInGroup = false;
-
-                for (let j = 0; j < visitCards.length; j++) {
-                    const card = visitCards[j];
-                    const visitName = card.dataset.name; // Stored in lowercase
-                    const visitObs = card.dataset.obs;   // Stored in lowercase
-                    const assignedDoctorId = card.dataset.doctorId; // Only present for admin view
-
-                    const matchesSearch = (visitName.includes(searchText) || visitObs.includes(searchText));
-                    
-                    let matchesDoctor = true; // Assume true if no doctor filter or for doctor's own view
-                    if (userType === 'admin') { // Only apply doctor filter for admin
+                const nominaItems = document.getElementById(containerId).getElementsByClassName('item-card');
+                let resultsFound = false;
+                for (let i = 0; i < nominaItems.length; i++) {
+                    const item = nominaItems[i];
+                    const nominaName = item.dataset.name;
+                    const nominaType = item.dataset.type;
+                    const matchesSearch = (nominaName.includes(searchText) || nominaType.includes(searchText));
+                    let matchesDoctor = true;
+                    if (userType === 'admin') {
+                        const assignedDoctorId = item.dataset.doctorId;
                         matchesDoctor = (doctorFilterId === "" || assignedDoctorId === doctorFilterId);
                     }
+                    if (matchesSearch && matchesDoctor) { item.style.display = ''; resultsFound = true; } else { item.style.display = 'none'; }
+                }
+                const noResultsElement = document.getElementById(noResultsMessageId);
+                if (noResultsElement) {
+                    if (resultsFound) { noResultsElement.style.display = 'none'; } else { noResultsElement.style.display = 'block'; }
+                }
+            }
 
-                    if (matchesSearch && matchesDoctor) {
-                        card.style.display = ''; // Show the card
-                        anyCardVisibleInGroup = true;
-                        totalResultsFound = true;
-                    } else {
-                        card.style.display = 'none'; // Hide the card
+            function clearNominaFilters(userType) {
+                if (userType === 'admin') {
+                    document.getElementById('adminNominaSearch').value = '';
+                    document.getElementById('adminNominaDoctorFilter').value = '';
+                } else {
+                    document.getElementById('doctorNominaSearch').value = '';
+                }
+                filterNominas(userType);
+            }
+
+            function filterVisits(userType) {
+                let searchText; let doctorFilterId; let containerId; let noResultsMessageId;
+                if (userType === 'admin') {
+                    searchText = document.getElementById('adminVisitSearch').value.toLowerCase();
+                    doctorFilterId = document.getElementById('adminVisitDoctorFilter').value;
+                    containerId = 'adminVisitsContainer';
+                    noResultsMessageId = 'adminVisitNoResults';
+                } else {
+                    searchText = document.getElementById('doctorVisitSearch').value.toLowerCase();
+                    containerId = 'doctorVisitsContainer';
+                    noResultsMessageId = 'doctorVisitNoResults';
+                    doctorFilterId = null;
+                }
+                const dateGroups = document.getElementById(containerId).getElementsByClassName('date-group');
+                let totalResultsFound = false;
+                for (let i = 0; i < dateGroups.length; i++) {
+                    const dateGroup = dateGroups[i];
+                    const visitCards = dateGroup.getElementsByClassName('visit-card');
+                    let anyCardVisibleInGroup = false;
+                    for (let j = 0; j < visitCards.length; j++) {
+                        const card = visitCards[j];
+                        const visitName = card.dataset.name;
+                        const visitObs = card.dataset.obs;
+                        const assignedDoctorId = card.dataset.doctorId;
+                        const matchesSearch = (visitName.includes(searchText) || visitObs.includes(searchText));
+                        let matchesDoctor = true;
+                        if (userType === 'admin') { matchesDoctor = (doctorFilterId === "" || assignedDoctorId === doctorFilterId); }
+                        if (matchesSearch && matchesDoctor) {
+                            card.style.display = ''; anyCardVisibleInGroup = true; totalResultsFound = true;
+                        } else {
+                            card.style.display = 'none';
+                        }
                     }
+                    if (anyCardVisibleInGroup) { dateGroup.style.display = ''; } else { dateGroup.style.display = 'none'; }
                 }
+                const noResultsElement = document.getElementById(noResultsMessageId);
+                if (noResultsElement) {
+                    if (totalResultsFound) { noResultsElement.style.display = 'none'; } else { noResultsElement.style.display = 'block'; }
+                }
+            }
 
-                // Show/hide the date group based on whether any of its children are visible
-                if (anyCardVisibleInGroup) {
-                    dateGroup.style.display = '';
+            function clearVisitFilters(userType) {
+                if (userType === 'admin') {
+                    document.getElementById('adminVisitSearch').value = '';
+                    document.getElementById('adminVisitDoctorFilter').value = '';
                 } else {
-                    dateGroup.style.display = 'none';
+                    document.getElementById('doctorVisitSearch').value = '';
                 }
+                filterVisits(userType);
             }
 
-            // Show/hide no results message for visits
-            const noResultsElement = document.getElementById(noResultsMessageId);
-            if (noResultsElement) {
-                if (totalResultsFound) {
-                    noResultsElement.style.display = 'none';
-                } else {
-                    noResultsElement.style.display = 'block';
-                }
-            }
-        }
-
-        function clearVisitFilters(userType) {
-            if (userType === 'admin') {
-                document.getElementById('adminVisitSearch').value = '';
-                document.getElementById('adminVisitDoctorFilter').value = '';
-            } else {
-                document.getElementById('doctorVisitSearch').value = '';
-            }
-            filterVisits(userType); // Re-apply filters to clear
-        }
-
+        });
     </script>
 </body>
 </html>

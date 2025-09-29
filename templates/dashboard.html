@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-1.0">
     <title>Dashboard - CardioHome</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -257,7 +257,7 @@
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
         }
 
-        /* Summary Cards - ESTILO FINAL */
+        /* Summary Cards - ESTILO NUEVO Y MEJORADO */
         .summary-panel {
             background: white;
             padding: 2rem;
@@ -279,7 +279,7 @@
             gap: 1.5rem;
         }
         .summary .card {
-            background-color: transparent;
+            background-color: #F8FAFC;
             border: 1px solid #E2E8F0;
             box-shadow: none;
             padding: 1.5rem;
@@ -621,11 +621,13 @@
                         <li><a href="#" class="nav-link" data-section="admin-uploaded-forms-all"><i class="fa-solid fa-folder-open"></i> Formularios Subidos</a></li>
                         <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fa-solid fa-folder-plus"></i> Crear Proyecto</a></li>
                         <li><a href="#" class="nav-link" data-section="gestionar_proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-contact"><i class="fa-solid fa-envelope"></i> Contacto</a></li>
                     {% else %}
                         <li><a href="#" class="nav-link" data-section="doctor-performance"><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-visits"><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-nominas"><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Asignadas</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-uploaded-forms"><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-contact"><i class="fa-solid fa-envelope"></i> Contacto</a></li>
                     {% endif %}
                 </ul>
             </nav>
@@ -962,6 +964,25 @@
                 </div>
             </div>
 
+            <div id="admin-contact" class="content-section">
+                <div class="card">
+                    <h3><i class="fa-solid fa-envelope"></i> Contacto</h3>
+                    <p class="text-gray-600 mb-6">Si tienes alguna duda o necesitas ayuda, por favor, rellena el siguiente formulario y nos pondremos en contacto contigo lo antes posible.</p>
+                    <form id="contact-form" action="https://formspree.io/f/your-form-id" method="POST">
+                        <label for="name">Tu Nombre:</label>
+                        <input type="text" id="name" name="name" required />
+                        
+                        <label for="email">Tu Correo Electrónico:</label>
+                        <input type="email" id="email" name="email" required />
+
+                        <label for="message">Mensaje:</label>
+                        <textarea id="message" name="message" rows="5" required></textarea>
+                        
+                        <button type="submit">Enviar Mensaje</button>
+                    </form>
+                </div>
+            </div>
+
             {% else %}
             <div id="doctor-performance" class="content-section">
                 <div class="card">
@@ -1004,11 +1025,11 @@
                                         <ul class="lista-items !mt-0">
                                             {% for evento in eventos_del_dia %}
                                                 <li class="visit-card" data-name="{{ evento.nombre | lower }}" data-obs="{{ evento.observaciones | lower }}">
-                                                    <div class="visit-card-title">{{ evento.nombre }}</div>
                                                     <div class="visit-card-details">
-                                                        <span><i class="fa-solid fa-clock"></i> {{ evento.horario }}</span>
-                                                        <span><i class="fa-solid fa-users"></i> Alumnos esperados: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</span>
-                                                        <span><i class="fa-solid fa-clipboard"></i> Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</span>
+                                                        <p class="text-lg font-bold text-primary-blue"><i class="fa-solid fa-building mr-2 text-secondary-blue"></i>{{ evento.nombre }}</p>
+                                                        <p class="text-sm text-gray-600"><i class="fa-solid fa-clock mr-2 text-gray-500"></i>{{ evento.horario }}</p>
+                                                        <p class="text-sm text-gray-600"><i class="fa-solid fa-users mr-2 text-gray-500"></i>Alumnos esperados: {{ evento.cantidad_alumnos if evento.cantidad_alumnos is not none else 'N/A' }}</p>
+                                                        <p class="text-sm text-gray-600"><i class="fa-solid fa-clipboard mr-2 text-gray-500"></i>Obs: {{ evento.observaciones if evento.observaciones else 'Ninguna' }}</p>
                                                     </div>
                                                     <div class="visit-card-actions">
                                                         {% if evento.url_archivo %}
@@ -1097,6 +1118,25 @@
                             <p style="text-align: center; color: #777;">No has subido ningún formulario aún.</p>
                         {% endif %}
                     </ul>
+                </div>
+            </div>
+
+            <div id="doctor-contact" class="content-section">
+                <div class="card">
+                    <h3><i class="fa-solid fa-envelope"></i> Contacto</h3>
+                    <p class="text-gray-600 mb-6">Si tienes alguna duda o necesitas ayuda, por favor, rellena el siguiente formulario y nos pondremos en contacto contigo lo antes posible.</p>
+                    <form id="contact-form" action="https://formspree.io/f/your-form-id" method="POST">
+                        <label for="name">Tu Nombre:</label>
+                        <input type="text" id="name" name="name" required />
+                        
+                        <label for="email">Tu Correo Electrónico:</label>
+                        <input type="email" id="email" name="email" required />
+
+                        <label for="message">Mensaje:</label>
+                        <textarea id="message" name="message" rows="5" required></textarea>
+                        
+                        <button type="submit">Enviar Mensaje</button>
+                    </form>
                 </div>
             </div>
             {% endif %}

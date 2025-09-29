@@ -11,7 +11,7 @@
     <style>
         /* Variables y tipografía */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@400;700;800&display=swap');
-        
+
         :root {
             --primary-blue: #0A3D62;
             --secondary-blue: #1C67A3;
@@ -607,6 +607,7 @@
                         <li><a href="#" class="nav-link" data-section="gestionar_proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
                     {% elif usuario == 'coordinadora' %}
                         <li><a href="#" class="nav-link" data-section="coord-performance"><i class="fa-solid fa-gauge-high"></i> Rendimiento en Vivo</a></li>
+                        <li><a href="#" class="nav-link" data-section="coord-evaluaciones"><i class="fa-solid fa-folder-tree"></i> Evaluaciones por Establecimiento</a></li>
                         <li><a href="#" class="nav-link" data-section="coord-contact"><i class="fa-solid fa-envelope"></i> Contacto</a></li>
                     {% else %}
                         <li><a href="#" class="nav-link" data-section="doctor-performance"><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento</a></li>
@@ -995,14 +996,14 @@
                                 <span>EVALUACIONES<br>PENDIENTES</span>
                                 <i class="fa-solid fa-clipboard-list"></i>
                             </div>
-                            <p class="count">0</p>
+                            <p class="count">{{ evaluaciones_pendientes }}</p>
                         </div>
                         <div class="summary-card-v2 bg-green-600">
                             <div class="summary-card-header">
                                 <span>ESTUDIANTES<br>EVALUADOS</span>
                                 <i class="fa-solid fa-user-check"></i>
                             </div>
-                            <p class="count">0</p>
+                            <p class="count">{{ evaluaciones_en_vivo }}</p>
                         </div>
                         <div class="summary-card-v2 bg-yellow-500">
                             <div class="summary-card-header">
@@ -1058,31 +1059,36 @@
             
             <div id="coord-evaluaciones" class="content-section">
                 <div class="card">
-                    <h3><i class="fa-solid fa-school"></i> Evaluaciones por Establecimiento</h3>
-                    <p class="text-gray-600 mb-6">Selecciona un establecimiento para ver las nóminas completadas y descargar sus PDFs.</p>
+                    <h3><i class="fa-solid fa-folder-tree"></i> Evaluaciones por Establecimiento</h3>
+                    <p class="text-gray-600 mb-6">Selecciona un establecimiento para ver y descargar los formularios completados.</p>
                     <ul class="lista-items">
-                        {% for establecimiento in establecimientos %}
-                            <li class="item-card" data-establecimiento-id="{{ establecimiento.id }}">
-                                <div class="item-card-header">
-                                    <span><i class="fa-solid fa-building"></i>{{ establecimiento.nombre }}</span>
-                                </div>
-                                <div class="item-card-actions">
-                                    <button class="action-button blue" onclick="verNóminasEstablecimiento('{{ establecimiento.id }}')">
-                                        <i class="fa-solid fa-list-ul"></i> Ver Nóminas Completadas
-                                    </button>
-                                </div>
-                            </li>
-                        {% endfor %}
+                        {% if establecimientos %}
+                            {% for establecimiento in establecimientos %}
+                                <li class="item-card">
+                                    <div class="item-card-header">
+                                        <span><i class="fa-solid fa-building"></i>{{ establecimiento.nombre }}</span>
+                                        <span class="text-sm text-gray-600">Total Formularios: {{ establecimiento.total_formularios }}</span>
+                                    </div>
+                                    <div class="item-card-actions">
+                                        <button class="action-button blue" onclick="showNominas({{ establecimiento.id }})">
+                                            <i class="fa-solid fa-list-ul"></i> Ver Nóminas Completadas
+                                        </button>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-gray-600">No hay establecimientos (proyectos) con nóminas cargadas.</p>
+                        {% endif %}
                     </ul>
                 </div>
             </div>
 
             <div id="coord-nominas" class="content-section">
                 <div class="card">
-                    <h3><i class="fa-solid fa-file-invoice"></i> Nóminas Completadas de [Nombre Establecimiento]</h3>
-                    <p class="text-gray-600 mb-6">Aquí puedes ver y descargar las nóminas que ya han sido completadas.</p>
+                    <h3><i class="fa-solid fa-file-invoice"></i> Nóminas de <span id="nombreEstablecimiento"></span></h3>
+                    <p class="text-gray-600 mb-6">Aquí puedes ver y descargar los formularios de la nómina.</p>
                     <ul class="lista-items" id="nominasCompletadasContainer">
-                        <p class="text-center text-gray-500">Cargando nóminas...</p>
+                        <p class="text-center text-gray-500">Selecciona un establecimiento para ver sus nóminas.</p>
                     </ul>
                 </div>
             </div>
@@ -1280,7 +1286,6 @@
             const menuToggle = document.getElementById('menuToggle');
             const navLinks = document.querySelectorAll('.nav-link');
             const contentSections = document.querySelectorAll('.content-section');
-            const dashboardWrapper = document.querySelector('.dashboard-wrapper');
             const formTypeNominaSelect = document.getElementById('form_type_nomina');
             const doctoraParaFormularioDiv = document.getElementById('doctora_para_formulario_div');
             
@@ -1635,6 +1640,47 @@
             document.getElementById(`${userType}VisitSearch`).value = '';
             if (userType === 'admin') document.getElementById('adminVisitDoctorFilter').value = '';
             filterVisits(userType);
+        }
+
+        function showNominas(establecimientoId) {
+            const nominasContainer = document.getElementById('nominasCompletadasContainer');
+            const nombreEstablecimientoSpan = document.getElementById('nombreEstablecimiento');
+            
+            // Simulación de una llamada a la API
+            fetch(`/api/nominas_completadas/${establecimientoId}`)
+                .then(response => response.json())
+                .then(data => {
+                    nombreEstablecimientoSpan.textContent = data.establecimiento_nombre;
+                    nominasContainer.innerHTML = '';
+                    if (data.nominas.length > 0) {
+                        data.nominas.forEach(nomina => {
+                            const nominaCard = `
+                                <li class="item-card">
+                                    <div class="item-card-header">
+                                        <span><i class="fa-solid fa-file-invoice-dollar"></i> ${nomina.nombre_nomina}</span>
+                                    </div>
+                                    <div class="item-card-details">
+                                        <span><i class="fa-solid fa-user-doctor"></i> Asignada a: ${nomina.doctora_nombre}</span>
+                                        <span><i class="fa-solid fa-file-alt"></i> Formularios Completados: ${nomina.formularios_completados}</span>
+                                    </div>
+                                    <div class="item-card-actions">
+                                        <a href="${nomina.url_pdf_consolidado}" target="_blank" class="action-button blue">
+                                            <i class="fa-solid fa-file-pdf"></i> Descargar PDF Consolidado
+                                        </a>
+                                    </div>
+                                </li>
+                            `;
+                            nominasContainer.innerHTML += nominaCard;
+                        });
+                    } else {
+                        nominasContainer.innerHTML = '<p class="text-center text-gray-500">No hay nóminas completadas para este establecimiento.</p>';
+                    }
+                    showSection('coord-nominas');
+                })
+                .catch(error => {
+                    console.error('Error al cargar las nóminas:', error);
+                    nominasContainer.innerHTML = '<p class="text-center text-red-500">Error al cargar las nóminas. Inténtalo de nuevo más tarde.</p>';
+                });
         }
     </script>
 </body>

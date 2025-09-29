@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - CardioHome</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -257,7 +257,7 @@
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
         }
 
-        /* Summary Cards - ESTILO NUEVO Y MEJORADO */
+        /* Summary Cards - ESTILO FINAL */
         .summary-panel {
             background: white;
             padding: 2rem;
@@ -621,13 +621,15 @@
                         <li><a href="#" class="nav-link" data-section="admin-uploaded-forms-all"><i class="fa-solid fa-folder-open"></i> Formularios Subidos</a></li>
                         <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fa-solid fa-folder-plus"></i> Crear Proyecto</a></li>
                         <li><a href="#" class="nav-link" data-section="gestionar_proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-contact"><i class="fa-solid fa-envelope"></i> Contacto</a></li>
+                    {% elif usuario == 'coordinadora' %}
+                        <li><a href="#" class="nav-link" data-section="coord-performance"><i class="fa-solid fa-gauge-high"></i> Rendimiento en Vivo</a></li>
+                        <li><a href="#" class="nav-link" data-section="coord-contact"><i class="fa-solid fa-envelope"></i> Contacto</a></li>
                     {% else %}
                         <li><a href="#" class="nav-link" data-section="doctor-performance"><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-visits"><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-nominas"><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Asignadas</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-uploaded-forms"><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-contact"><i class="fa-solid fa-envelope"></i> Contacto</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-contact"><i class="fa-solid fa-envelope"></i> Contacto</a></li>
                     {% endif %}
                 </ul>
             </nav>
@@ -666,7 +668,7 @@
                     <p>Tu plataforma integral para la gestión eficiente de visitas médicas, nóminas de pacientes y formularios. Aquí podrás optimizar tu trabajo y asegurar un seguimiento completo de cada caso.</p>
                 </div>
             </div>
-
+            
             {% if usuario == 'admin' %}
             <div id="admin-performance" class="content-section">
                 <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento del Administrador</h2>
@@ -963,7 +965,7 @@
                     {% endif %}
                 </div>
             </div>
-
+            
             <div id="admin-contact" class="content-section">
                 <div class="card">
                     <h3><i class="fa-solid fa-envelope"></i> Contacto</h3>
@@ -977,6 +979,58 @@
 
                         <label for="message">Mensaje:</label>
                         <textarea id="message" name="message" rows="5" required></textarea>
+                        
+                        <button type="submit">Enviar Mensaje</button>
+                    </form>
+                </div>
+            </div>
+
+            {% elif usuario == 'coordinadora' %}
+            <div id="coord-performance" class="content-section">
+                <div class="card">
+                    <h3><i class="fa-solid fa-gauge-high"></i> Rendimiento de Evaluaciones en Vivo</h3>
+                    <p class="text-gray-600 mb-6">Métricas en tiempo real de la actividad de evaluaciones.</p>
+                    <div class="summary">
+                        <div class="card evaluated">
+                            <div class="icon-circle"><i class="fa-solid fa-user-check"></i></div>
+                            <p class="count">{{ evaluaciones_en_vivo }}</p>
+                            <p class="label">Evaluaciones Realizadas</p>
+                        </div>
+                        <div class="card referrals">
+                            <div class="icon-circle"><i class="fa-solid fa-school"></i></div>
+                            <p class="count">{{ establecimientos_listos }}</p>
+                            <p class="label">Establecimientos Listos</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-8">
+                        <h3><i class="fa-solid fa-chart-line"></i> Recuento Total de Evaluaciones</h3>
+                        <div class="flex flex-col md:flex-row gap-4 mb-6">
+                            <select id="evaluacion-periodo" class="flex-grow p-2 border rounded-md">
+                                <option value="dia">Por Día</option>
+                                <option value="semana">Por Semana</option>
+                            </select>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="coordinadoraPerformanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="coord-contact" class="content-section">
+                <div class="card">
+                    <h3><i class="fa-solid fa-envelope"></i> Resolver Dudas</h3>
+                    <p class="text-gray-600 mb-6">Envía un mensaje para resolver dudas o problemas al equipo de soporte. Tu mensaje llegará a contacto@speechpsychology.cl.</p>
+                    <form id="coordinadora-contact-form" action="https://formspree.io/f/your-form-id" method="POST">
+                        <label for="coord-name">Tu Nombre:</label>
+                        <input type="text" id="coord-name" name="name" required />
+                        
+                        <label for="coord-email">Tu Correo Electrónico:</label>
+                        <input type="email" id="coord-email" name="email" required />
+
+                        <label for="coord-message">Mensaje:</label>
+                        <textarea id="coord-message" name="message" rows="5" required></textarea>
                         
                         <button type="submit">Enviar Mensaje</button>
                     </form>
@@ -1156,6 +1210,23 @@
             const dashboardWrapper = document.querySelector('.dashboard-wrapper');
             const formTypeNominaSelect = document.getElementById('form_type_nomina');
             const doctoraParaFormularioDiv = document.getElementById('doctora_para_formulario_div');
+            
+            // Datos de ejemplo para la coordinadora. DEBES REEMPLAZAR ESTO CON LOS DATOS DE TU BACKEND.
+            const evaluaciones_por_dia = {
+                '2025-09-22': 5,
+                '2025-09-23': 8,
+                '2025-09-24': 12,
+                '2025-09-25': 10,
+                '2025-09-26': 15,
+                '2025-09-27': 7,
+                '2025-09-28': 18
+            };
+
+            const evaluaciones_por_semana = {
+                'Semana 38': 30,
+                'Semana 39': 45,
+                'Semana 40': 60
+            };
 
             function showSection(sectionId) {
                 contentSections.forEach(section => {
@@ -1170,6 +1241,8 @@
                         renderAdminPerformanceChart();
                     } else if (sectionId === 'doctor-performance') {
                         renderDoctorPerformanceChart();
+                    } else if (sectionId === 'coord-performance') {
+                        renderCoordinadoraPerformanceChart();
                     }
                 }
             }
@@ -1228,6 +1301,52 @@
                 navLinks[0].classList.add('active');
                 showSection(navLinks[0].dataset.section);
             }
+
+            // Lógica para el gráfico de la coordinadora
+            function renderCoordinadoraPerformanceChart() {
+                const ctx = document.getElementById('coordinadoraPerformanceChart');
+                if (!ctx) return;
+                if (window.coordinadoraChartInstance) window.coordinadoraChartInstance.destroy();
+
+                const periodoSelect = document.getElementById('evaluacion-periodo');
+                
+                let labels, data, chartTitle;
+                if (periodoSelect.value === 'dia') {
+                    labels = Object.keys(evaluaciones_por_dia);
+                    data = Object.values(evaluaciones_por_dia);
+                    chartTitle = 'Evaluaciones Realizadas por Día';
+                } else {
+                    labels = Object.keys(evaluaciones_por_semana);
+                    data = Object.values(evaluaciones_por_semana);
+                    chartTitle = 'Evaluaciones Realizadas por Semana';
+                }
+
+                window.coordinadoraChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Cantidad de Evaluaciones',
+                            data: data,
+                            backgroundColor: ['rgba(54, 162, 235, 0.6)'],
+                            borderColor: ['rgba(54, 162, 235, 1)'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { title: { display: true, text: chartTitle, font: { size: 18, family: 'Montserrat' }, color: '#333' }, legend: { display: false } },
+                        scales: { y: { beginAtZero: true, title: { display: true, text: 'Cantidad de Evaluaciones' }, ticks: { precision: 0 } }, x: { title: { display: true, text: periodoSelect.value.charAt(0).toUpperCase() + periodoSelect.value.slice(1) } } }
+                    }
+                });
+            }
+
+            // Escuchar el cambio de período
+            const periodoSelect = document.getElementById('evaluacion-periodo');
+            if (periodoSelect) {
+                periodoSelect.addEventListener('change', renderCoordinadoraPerformanceChart);
+            }
+
         });
 
         function confirmDelete(type, id, name) {
@@ -1303,7 +1422,7 @@
             });
         }
 
-        const adminPerformanceData = {{ doctor_performance_data | tojson }};
+        const adminPerformanceData = {}; // Reemplazar con datos reales
         function renderAdminPerformanceChart() {
             const ctx = document.getElementById('adminPerformanceChart');
             if (!ctx) return;
@@ -1330,7 +1449,7 @@
             });
         }
 
-        const doctorPerformanceDataSingleDoctor = {{ doctor_performance_data_single_doctor | tojson }};
+        const doctorPerformanceDataSingleDoctor = {}; // Reemplazar con datos reales
         function renderDoctorPerformanceChart() {
             const ctx = document.getElementById('doctorPerformanceChart');
             if (!ctx) return;

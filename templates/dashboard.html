@@ -466,11 +466,6 @@
                         <li><a href="#" class="nav-link" data-section="admin-uploaded-forms-all"><i class="fas fa-folder-open mr-4 text-xl"></i> Formularios Subidos</a></li>
                         <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fas fa-folder-plus mr-4 text-xl"></i> Crear Proyecto</a></li>
                         <li><a href="#" class="nav-link" data-section="gestionar_proyectos"><i class="fas fa-list-check mr-4 text-xl"></i> Gestionar Proyectos</a></li>
-                    {% elif usuario == 'coordinadora' %}
-                        <li><a href="#" class="nav-link active" data-section="coordinadora-dashboard"><i class="fas fa-chart-line mr-4 text-xl"></i> Dashboard</a></li>
-                        <li><a href="#" class="nav-link" data-section="coordinadora-evaluaciones-vivo"><i class="fas fa-stethoscope mr-4 text-xl"></i> Evaluaciones en Vivo</a></li>
-                        <li><a href="#" class="nav-link" data-section="coordinadora-proyectos"><i class="fas fa-project-diagram mr-4 text-xl"></i> Proyectos</a></li>
-                        <li><a href="#" class="nav-link" data-section="coordinadora-doctoras"><i class="fas fa-user-md mr-4 text-xl"></i> Doctoras</a></li>
                     {% else %}
                         <li><a href="#" class="nav-link active" data-section="dashboardSection"><i class="fas fa-chart-line mr-4 text-xl"></i> Dashboard</a></li>
                         <li><a href="#" class="nav-link" data-section="perfilSection"><i class="fas fa-user-circle mr-4 text-xl"></i> Mi Perfil</a></li>
@@ -495,118 +490,7 @@
                 </div>
             </header>
 
-            {% if usuario == 'coordinadora' %}
-            <div id="coordinadora-dashboard" class="content-section card mb-10 active">
-                <h2 class="text-3xl font-bold mb-8 text-gray-800">Resumen del Día</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <div class="summary-card bg-blue-600 text-white rounded-2xl p-6 shadow-lg">
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm font-light uppercase tracking-wider">Evaluaciones Hoy</span>
-                            <i class="fas fa-tasks text-3xl opacity-75"></i>
-                        </div>
-                        <p class="text-5xl font-extrabold mt-4" id="evaluacionesHoyCount">0</p>
-                    </div>
-                    <div class="summary-card bg-green-600 text-white rounded-2xl p-6 shadow-lg">
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm font-light uppercase tracking-wider">Proyectos Activos</span>
-                            <i class="fas fa-project-diagram text-3xl opacity-75"></i>
-                        </div>
-                        <p class="text-5xl font-extrabold mt-4" id="proyectosActivosCount">0</p>
-                    </div>
-                    <div class="summary-card bg-yellow-500 text-white rounded-2xl p-6 shadow-lg">
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm font-light uppercase tracking-wider">Evaluaciones Pendientes</span>
-                            <i class="fas fa-clipboard-list text-3xl opacity-75"></i>
-                        </div>
-                        <p class="text-5xl font-extrabold mt-4" id="evaluacionesPendientesCount">0</p>
-                    </div>
-                </div>
-
-                <div class="card mt-8">
-                    <h3><i class="fa-solid fa-chart-bar"></i> Rendimiento Diario por Proyecto</h3>
-                    <div class="chart-container">
-                        <canvas id="dailyPerformanceChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="card mt-8">
-                    <h3><i class="fa-solid fa-chart-pie"></i> Avance Total de Proyectos</h3>
-                    <div class="chart-container">
-                        <canvas id="projectProgressChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div id="coordinadora-evaluaciones-vivo" class="content-section card mb-10">
-                <h2 class="text-3xl font-bold mb-8 text-gray-800">Evaluaciones en Tiempo Real</h2>
-                <div class="flex flex-col md:flex-row gap-4 mb-6">
-                    <select id="filtroProyecto" class="flex-grow p-2 border rounded-md form-select">
-                        <option value="">Filtrar por Proyecto</option>
-                        {% for proyecto in proyectos %}
-                            <option value="{{ proyecto.id }}">{{ proyecto.nombre_proyecto }}</option>
-                        {% endfor %}
-                    </select>
-                    <select id="filtroDoctora" class="flex-grow p-2 border rounded-md form-select">
-                        <option value="">Filtrar por Doctora</option>
-                        {% for doc in doctoras %}
-                            <option value="{{ doc.id }}">{{ doc.usuario }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div id="evaluacionesEnVivoContainer" class="space-y-4">
-                    <div class="text-center text-gray-500 mt-6 text-lg font-medium">Cargando evaluaciones...</div>
-                </div>
-            </div>
-
-            <div id="coordinadora-proyectos" class="content-section card mb-10">
-                <h2 class="text-3xl font-bold mb-8 text-gray-800">Gestión de Proyectos</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {% for proyecto in proyectos %}
-                    <div class="card-container bg-white p-6 rounded-2xl shadow-md border border-gray-200">
-                        <h4 class="text-xl font-bold text-gray-800">{{ proyecto.nombre_proyecto }}</h4>
-                        <p class="text-sm text-gray-500 mt-1">{{ proyecto.descripcion or 'Sin descripción' }}</p>
-                        <div class="mt-4">
-                            <p class="text-lg font-semibold text-gray-700">Progreso: <span class="text-accent-blue">{{ 0 }}%</span></p>
-                            <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ 0 }}%"></div>
-                            </div>
-                        </div>
-                        <button class="bg-blue-600 text-white p-3 rounded-xl shadow hover:bg-blue-700 transition duration-200 mt-4 w-full">Ver Detalles</button>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div id="coordinadora-doctoras" class="content-section card mb-10">
-                <h2 class="text-3xl font-bold mb-8 text-gray-800">Rendimiento de Doctoras</h2>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctora</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Evaluaciones Hoy</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Evaluaciones</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proyectos Asignados</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200">
-                            {% for doc in doctoras %}
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">{{ doc.usuario }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap">{{ 0 }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap">{{ 0 }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap">{{ 0 }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            {% endif %}
-
-
-            {% if usuario == 'doctor' %}
-            <div id="dashboardSection" class="content-section card mb-10 active">
+            <section id="dashboardSection" class="content-section card mb-10 active">
                 <h2 class="text-3xl font-bold mb-8 text-gray-800">Resumen del Mes</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     <div class="summary-card bg-blue-600 text-white rounded-2xl p-6 shadow-lg">
@@ -638,8 +522,37 @@
                         <p class="text-5xl font-extrabold mt-4" id="urgencyCount">0</p>
                     </div>
                 </div>
+            </section>
 
-                <div class="card mt-8">
+            <section id="chartsSection" class="content-section card mb-10">
+                <h2 class="text-3xl font-bold mb-8 text-gray-800">Análisis de Datos</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-gray-50 p-6 rounded-2xl shadow-inner">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-700">Evaluaciones por Semana</h3>
+                        <canvas id="evaluationsChart"></canvas>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-2xl shadow-inner">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-700">Derivaciones por Tipo</h3>
+                        <canvas id="derivationsChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            {% if usuario == 'doctor' %}
+                <div id="perfilSection" class="content-section card hidden">
+                    <h2 class="text-3xl font-bold mb-8 text-gray-800">Mi Perfil</h2>
+                    <div class="flex flex-col items-center">
+                        <img src="https://placehold.co/150x150/cccccc/333333?text=Doc" alt="User Avatar" class="w-32 h-32 rounded-full mb-4 border-4 border-blue-200">
+                        <p class="text-xl font-semibold text-gray-800 mb-2">Nombre del Doctor</p>
+                        <p class="text-gray-600">Especialidad: Cardiología</p>
+                        <p class="text-gray-600">ID: DOC12345</p>
+                    </div>
+                    <h3 class="text-2xl font-bold mt-8 mb-4">Información de Contacto</h3>
+                    <p><strong>Email:</strong> doctor@cardiohome.com</p>
+                    <p><strong>Teléfono:</strong> +56 9 1234 5678</p>
+                </div>
+
+                <div id="doctor-performance" class="content-section card">
                     <h3><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento (Formularios)</h3>
                     {% if doctor_performance_data_single_doctor %}
                         <p class="text-center text-4xl font-extrabold text-accent-blue my-4">
@@ -656,23 +569,8 @@
                         <p style="text-align: center; color: #777;">No hay datos de rendimiento disponibles para graficar.</p>
                     {% endif %}
                 </div>
-            </div>
-            
-            <div id="perfilSection" class="content-section hidden">
-                <h2 class="text-3xl font-bold mb-8 text-gray-800">Mi Perfil</h2>
-                <div class="flex flex-col items-center">
-                    <img src="https://placehold.co/150x150/cccccc/333333?text=Doc" alt="User Avatar" class="w-32 h-32 rounded-full mb-4 border-4 border-blue-200">
-                    <p class="text-xl font-semibold text-gray-800 mb-2">Nombre del Doctor</p>
-                    <p class="text-gray-600">Especialidad: Cardiología</p>
-                    <p class="text-gray-600">ID: DOC12345</p>
-                </div>
-                <h3 class="text-2xl font-bold mt-8 mb-4">Información de Contacto</h3>
-                <p><strong>Email:</strong> doctor@cardiohome.com</p>
-                <p><strong>Teléfono:</strong> +56 9 1234 5678</p>
-            </div>
 
-            <div id="doctor-visits" class="content-section">
-                <div class="card">
+                <div id="doctor-visits" class="content-section card">
                     <h3><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</h3>
                     <div class="flex flex-col md:flex-row gap-4 mb-6">
                         <input type="text" id="doctorVisitSearch" placeholder="Buscar por nombre o descripción..." class="flex-grow p-2 border rounded-md form-input" onkeyup="filterVisits('doctor')" />
@@ -689,7 +587,7 @@
                                         <i class="fa-solid fa-calendar-day"></i> {{ fecha }}
                                     </div>
                                     <div class="date-group-content">
-                                        <ul class="lista-items !mt-0"> {# Override default margin-top #}
+                                        <ul class="lista-items !mt-0">
                                             {% for evento in eventos_del_dia %}
                                                 <li class="visit-card" data-name="{{ evento.nombre | lower }}" data-obs="{{ evento.observaciones | lower }}">
                                                     <div class="visit-card-title">{{ evento.nombre }}</div>
@@ -717,14 +615,12 @@
                                 </div>
                             {% endfor %}
                         {% else %}
-                            <p id="doctorVisitNoResults" style="text-align: center; color: #777;">No tienes visitas programadas.</p>
+                            <p id="doctorVisitNoResults" class="text-center text-gray-500 mt-6 text-lg font-medium">No tienes visitas programadas.</p>
                         {% endif %}
                     </div>
                 </div>
-            </div>
 
-            <div id="doctor-nominas" class="content-section">
-                <div class="card">
+                <div id="doctor-nominas" class="content-section card">
                     <h3><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Médicas Asignadas</h3>
                     <div class="flex flex-col md:flex-row gap-4 mb-6">
                         <input type="text" id="doctorNominaSearch" placeholder="Buscar por nombre o tipo de nómina..." class="flex-grow p-2 border rounded-md form-input" onkeyup="filterNominas('doctor')" />
@@ -752,14 +648,12 @@
                                 </li>
                             {% endfor %}
                         {% else %}
-                            <p id="doctorNominaNoResults" style="text-align: center; color: #777;">No tienes nóminas médicas asignadas en este momento.</p>
+                            <p id="doctorNominaNoResults" class="text-center text-gray-500 mt-6 text-lg font-medium">No tienes nóminas médicas asignadas en este momento.</p>
                         {% endif %}
                     </ul>
                 </div>
-            </div>
 
-            <div id="doctor-uploaded-forms" class="content-section">
-                <div class="card">
+                <div id="doctor-uploaded-forms" class="content-section card">
                     <h3><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</h3>
                     <ul class="lista-items">
                         {% if formularios %}
@@ -769,9 +663,9 @@
                                         <div class="item-card-header">
                                             <span>{{ form_subido.nombre_archivo }}</span>
                                             <span>Fecha: {{ form_subido.fecha_subida.strftime('%d-%m-%Y') if form_subido.fecha_subida else 'N/A' }}</span>
-                                    </div>
+                                        </div>
                                         <div class="item-card-details">
-                                            <span>Establecimiento: 
+                                            <span>Establecimiento:
                                                 {% set est = (eventos | selectattr('id', 'equalto', form_subido.establecimientos_id) | first) %}
                                                 {{ est.nombre if est else 'Desconocido' }}
                                             </span>
@@ -783,155 +677,110 @@
                                 {% endif %}
                             {% endfor %}
                         {% else %}
-                            <p style="text-align: center; color: #777;">No has subido ningún formulario aún.</p>
+                            <p class="text-center text-gray-500 mt-6 text-lg font-medium">No has subido ningún formulario aún.</p>
                         {% endif %}
                     </ul>
                 </div>
-            </div>
             {% endif %}
 
-             {% if usuario == 'admin' %}
-            <div id="dashboardSection" class="content-section card mb-10 active">
-                <h2 class="text-3xl font-bold mb-8 text-gray-800">Resumen del Mes</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                    <div class="summary-card bg-blue-600 text-white rounded-2xl p-6 shadow-lg">
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm font-light uppercase tracking-wider">Evaluaciones Pendientes</span>
-                            <i class="fas fa-tasks text-3xl opacity-75"></i>
+            {% if usuario == 'admin' %}
+                <div id="admin-performance" class="content-section card">
+                    <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento del Administrador</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+                        <div class="summary-card bg-blue-600 text-white rounded-2xl p-6 shadow-lg">
+                            <h3 class="text-sm font-light uppercase tracking-wider text-white">Colegios Asignados</h3>
+                            <p class="text-5xl font-extrabold mt-4">{{ eventos|length }}</p>
                         </div>
-                        <p class="text-5xl font-extrabold mt-4" id="pendingCount">0</p>
+                        <div class="summary-card bg-green-600 text-white rounded-2xl p-6 shadow-lg">
+                            <h3 class="text-sm font-light uppercase tracking-wider text-white">Nóminas Asignadas</h3>
+                            <p class="text-5xl font-extrabold mt-4">{{ admin_nominas_cargadas|length }}</p>
+                        </div>
+                        <div class="summary-card bg-yellow-500 text-white rounded-2xl p-6 shadow-lg">
+                            <h3 class="text-sm font-light uppercase tracking-wider text-white">Total Doctoras</h3>
+                            <p class="text-5xl font-extrabold mt-4">{{ doctoras|length }}</p>
+                        </div>
                     </div>
-                    <div class="summary-card bg-green-600 text-white rounded-2xl p-6 shadow-lg">
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm font-light uppercase tracking-wider">Estudiantes Evaluados</span>
-                            <i class="fas fa-clipboard-check text-3xl opacity-75"></i>
-                        </div>
-                        <p class="text-5xl font-extrabold mt-4" id="evaluatedCount">0</p>
-                    </div>
-                    <div class="summary-card bg-yellow-500 text-white rounded-2xl p-6 shadow-lg">
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm font-light uppercase tracking-wider">Derivaciones</span>
-                            <i class="fas fa-arrow-right-to-bracket text-3xl opacity-75"></i>
-                        </div>
-                        <p class="text-5xl font-extrabold mt-4" id="derivationsCount">0</p>
-                    </div>
-                    <div class="summary-card bg-red-600 text-white rounded-2xl p-6 shadow-lg">
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm font-light uppercase tracking-wider">Casos de Urgencia</span>
-                            <i class="fas fa-exclamation-triangle text-3xl opacity-75"></i>
-                        </div>
-                        <p class="text-5xl font-extrabold mt-4" id="urgencyCount">0</p>
+                    <div class="card mt-8">
+                        <h3><i class="fa-solid fa-chart-pie"></i> Rendimiento por Doctora (Formularios Completados)</h3>
+                        {% if doctor_performance_data %}
+                            <div class="chart-container">
+                                <canvas id="adminPerformanceChart"></canvas>
+                            </div>
+                        {% else %}
+                            <p class="text-center text-gray-500 mt-6 text-lg font-medium">No hay datos de rendimiento de doctoras disponibles para graficar.</p>
+                        {% endif %}
                     </div>
                 </div>
 
-                <div class="card mt-8">
-                    <h3><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento (Formularios)</h3>
-                    {% if doctor_performance_data_single_doctor %}
-                        <p class="text-center text-4xl font-extrabold text-accent-blue my-4">
-                            {{ doctor_performance_data_single_doctor.completed }}
-                        </p>
-                        <p class="text-center text-lg text-gray-600 mb-4">Formularios Completados</p>
-                        <div class="chart-container">
-                            <canvas id="doctorPerformanceChart"></canvas>
-                        </div>
-                        <div class="text-center text-sm text-gray-500 mt-4">
-                            Total de formularios en tus nóminas: {{ doctor_performance_data_single_doctor.total }}
-                        </div>
-                    {% else %}
-                        <p style="text-align: center; color: #777;">No hay datos de rendimiento disponibles para graficar.</p>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <div id="admin-performance" class="content-section">
-                <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento del Administrador</h2>
-                <div class="summary">
-                    <div class="card">
-                        <h3><i class="fa-solid fa-school"></i> Colegios Asignados</h3>
-                        <p>{{ eventos|length }}</p>
-                    </div>
-                    <div class="card">
-                        <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Médicas Asignadas</h3>
-                        <p>{{ admin_nominas_cargadas|length }}</p>
-                    </div>
-                    <div class="card">
-                        <h3><i class="fa-solid fa-user-doctor"></i> Total Doctoras</h3>
-                        <p>{{ doctoras|length }}</p>
-                    </div>
-                </div>
-
-                <div class="card mt-8">
-                    <h3><i class="fa-solid fa-chart-pie"></i> Rendimiento por Doctora (Formularios Completados)</h3>
-                    {% if doctor_performance_data %}
-                        <div class="chart-container">
-                            <canvas id="adminPerformanceChart"></canvas>
-                        </div>
-                    {% else %}
-                        <p style="text-align: center; color: #777;">No hay datos de rendimiento de doctoras disponibles para graficar.</p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div id="admin-add-visit" class="content-section">
-                <div class="card admin-form">
+                <div id="admin-add-visit" class="content-section card">
                     <h3><i class="fa-solid fa-calendar-plus"></i> Agregar Visita Programada</h3>
-                    <form action="{{ url_for('admin_agregar') }}" method="POST">
-                        <label for="nombre_establecimiento">Nombre Establecimiento:</label>
-                        <input type="text" id="nombre_establecimiento" name="nombre" placeholder="Ej: Liceo Bicentenario" required />
-
-                        <label for="fecha_establecimiento">Fecha:</label>
-                        <input type="date" id="fecha_establecimiento" name="fecha" required />
-
-                        <label for="horario_establecimiento">Horario:</label>
-                        <input type="text" id="horario_establecimiento" name="horario" placeholder="Ej: 09:00 - 11:00" required />
-
-                        <label for="doctora_establecimiento">Asignar a Doctora:</label>
-                        <select id="doctora_establecimiento" name="doctora" required>
-                            <option value="">Selecciona una doctora</option>
-                            {% for doc in doctoras %}
-                                <option value="{{ doc.id }}">{{ doc.usuario }}</option>
-                            {% endfor %}
-                        </select>
-
-                        <label for="alumnos_establecimiento">Cantidad de Alumnos:</label>
-                        <input type="number" id="alumnos_establecimiento" name="alumnos" min="0" placeholder="Ej: 30" />
-
-                        <label for="obs_establecimiento">Observaciones:</label>
-                        <textarea id="obs_establecimiento" name="obs" rows="3" placeholder="Notas adicionales..."></textarea>
-                        
-                        <button type="submit"><i class="fa-solid fa-plus"></i> Agregar Visita</button>
+                    <form action="{{ url_for('admin_agregar') }}" method="POST" class="space-y-6">
+                        <div>
+                            <label for="nombre_establecimiento" class="block text-gray-700 font-semibold mb-2">Nombre Establecimiento:</label>
+                            <input type="text" id="nombre_establecimiento" name="nombre" placeholder="Ej: Liceo Bicentenario" required class="form-input">
+                        </div>
+                        <div>
+                            <label for="fecha_establecimiento" class="block text-gray-700 font-semibold mb-2">Fecha:</label>
+                            <input type="date" id="fecha_establecimiento" name="fecha" required class="form-input">
+                        </div>
+                        <div>
+                            <label for="horario_establecimiento" class="block text-gray-700 font-semibold mb-2">Horario:</label>
+                            <input type="text" id="horario_establecimiento" name="horario" placeholder="Ej: 09:00 - 11:00" required class="form-input">
+                        </div>
+                        <div>
+                            <label for="doctora_establecimiento" class="block text-gray-700 font-semibold mb-2">Asignar a Doctora:</label>
+                            <select id="doctora_establecimiento" name="doctora" required class="form-select">
+                                <option value="">Selecciona una doctora</option>
+                                {% for doc in doctoras %}
+                                    <option value="{{ doc.id }}">{{ doc.usuario }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="alumnos_establecimiento" class="block text-gray-700 font-semibold mb-2">Cantidad de Alumnos:</label>
+                            <input type="number" id="alumnos_establecimiento" name="alumnos" min="0" placeholder="Ej: 30" class="form-input">
+                        </div>
+                        <div>
+                            <label for="obs_establecimiento" class="block text-gray-700 font-semibold mb-2">Observaciones:</label>
+                            <textarea id="obs_establecimiento" name="obs" rows="3" placeholder="Notas adicionales..." class="form-input"></textarea>
+                        </div>
+                        <div class="flex justify-end space-x-4">
+                            <button type="submit" class="bg-blue-600 text-white p-4 rounded-xl shadow hover:bg-blue-700 transition duration-200"><i class="fa-solid fa-plus"></i> Agregar Visita</button>
+                        </div>
                     </form>
                 </div>
-            </div>
 
-            <div id="admin-upload-nomina" class="content-section">
-                <div class="card admin-form">
+                <div id="admin-upload-nomina" class="content-section card">
                     <h3><i class="fa-solid fa-file-excel"></i> Cargar Nómina Médica (Excel/CSV)</h3>
-                    <form action="{{ url_for('admin_cargar_nomina') }}" method="POST" enctype="multipart/form-data">
-                        <label for="tipo_nomina">Tipo de Nómina:</label>
-                        <input type="text" id="tipo_nomina" name="tipo_nomina" placeholder="Ej: General, Dental, Oftalmológica" required />
-
-                        <label for="nombre_especifico">Nombre Específico (Ej: Liceo X - Nómina Mayo):</label>
-                        <input type="text" id="nombre_especifico" name="nombre_especifico" placeholder="Nombre único para esta nómina" required />
-
-                        <label for="doctora_nomina">Asignar a Doctora:</label>
-                        <select id="doctora_nomina" name="doctora" required>
-                            <option value="">Selecciona una doctora</option>
-                            {% for doc in doctoras %}
-                                <option value="{{ doc.id }}">{{ doc.usuario }}</option>
-                            {% endfor %}
-                        </select>
-
-                        <label for="form_type_nomina">Tipo de Formulario Asociado:</label>
-                        <select id="form_type_nomina" name="form_type" required>
-                            <option value="">Selecciona el tipo de formulario</option>
-                            <option value="neurologia">Neurología</option>
-                            <option value="medicina_familiar">Medicina Familiar</option>
-                        </select>
-
-                        <div id="doctora_para_formulario_div" class="mb-4" style="display: none;">
-                            <label for="doctora_id_para_formulario" class="block text-gray-700 text-sm font-bold mb-2">Doctora para el Formulario (solo Neurología):</label>
-                            <select name="doctora_id_para_formulario" id="doctora_id_para_formulario" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    <form action="{{ url_for('admin_cargar_nomina') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+                        <div>
+                            <label for="tipo_nomina" class="block text-gray-700 font-semibold mb-2">Tipo de Nómina:</label>
+                            <input type="text" id="tipo_nomina" name="tipo_nomina" placeholder="Ej: General, Dental, Oftalmológica" required class="form-input">
+                        </div>
+                        <div>
+                            <label for="nombre_especifico" class="block text-gray-700 font-semibold mb-2">Nombre Específico (Ej: Liceo X - Nómina Mayo):</label>
+                            <input type="text" id="nombre_especifico" name="nombre_especifico" placeholder="Nombre único para esta nómina" required class="form-input">
+                        </div>
+                        <div>
+                            <label for="doctora_nomina" class="block text-gray-700 font-semibold mb-2">Asignar a Doctora:</label>
+                            <select id="doctora_nomina" name="doctora" required class="form-select">
+                                <option value="">Selecciona una doctora</option>
+                                {% for doc in doctoras %}
+                                    <option value="{{ doc.id }}">{{ doc.usuario }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="form_type_nomina" class="block text-gray-700 font-semibold mb-2">Tipo de Formulario Asociado:</label>
+                            <select id="form_type_nomina" name="form_type" required class="form-select">
+                                <option value="">Selecciona el tipo de formulario</option>
+                                <option value="neurologia">Neurología</option>
+                                <option value="medicina_familiar">Medicina Familiar</option>
+                            </select>
+                        </div>
+                        <div id="doctora_para_formulario_div" class="mb-4 hidden">
+                            <label for="doctora_id_para_formulario" class="block text-gray-700 font-semibold mb-2">Doctora para el Formulario (solo Neurología):</label>
+                            <select name="doctora_id_para_formulario" id="doctora_id_para_formulario" class="form-select">
                                 <option value="">Seleccione una doctora...</option>
                                 {% for doc in doctoras %}
                                     <option value="{{ doc.id }}">{{ doc.usuario }}</option>
@@ -939,28 +788,28 @@
                             </select>
                             <p class="text-xs text-gray-500 mt-1">Este campo es obligatorio si el tipo de nómina es "Neurología".</p>
                         </div>
-                        
-                        <label for="excel_nomina">Archivo Excel/CSV de la Nómina:</label>
-                        <input type="file" id="excel_nomina" name="excel" accept=".xls,.xlsx,.csv" required />
-                        
-                        <button type="submit"><i class="fa-solid fa-upload"></i> Cargar Nómina</button>
+                        <div>
+                            <label for="excel_nomina" class="block text-gray-700 font-semibold mb-2">Archivo Excel/CSV de la Nómina:</label>
+                            <input type="file" id="excel_nomina" name="excel" accept=".xls,.xlsx,.csv" required class="form-input">
+                        </div>
+                        <div class="flex justify-end space-x-4">
+                            <button type="submit" class="bg-green-600 text-white p-4 rounded-xl shadow hover:bg-green-700 transition duration-200"><i class="fa-solid fa-upload"></i> Cargar Nómina</button>
+                        </div>
                     </form>
                 </div>
-            </div>
 
-            <div id="admin-visits-list" class="content-section">
-                <div class="card admin-list">
+                <div id="admin-visits-list" class="content-section card">
                     <h3><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas Programadas</h3>
                     <div class="flex flex-col md:flex-row gap-4 mb-6">
-                        <input type="text" id="adminVisitSearch" placeholder="Buscar por nombre o descripción..." class="flex-grow p-2 border rounded-md" onkeyup="filterVisits('admin')" />
-                        <select id="adminVisitDoctorFilter" class="p-2 border rounded-md" onchange="filterVisits('admin')">
+                        <input type="text" id="adminVisitSearch" placeholder="Buscar por nombre o descripción..." class="flex-grow p-2 border rounded-md form-input" onkeyup="filterVisits('admin')" />
+                        <select id="adminVisitDoctorFilter" class="p-2 border rounded-md form-select" onchange="filterVisits('admin')">
                             <option value="">Todas las Doctoras</option>
                             {% for doc in doctoras %}
                                 <option value="{{ doc.id }}">{{ doc.usuario }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div id="adminVisitsContainer">
+                    <div id="adminVisitsContainer" class="space-y-6">
                         {% if eventos %}
                             {% set grouped_events = eventos | groupby('fecha') %}
                             {% for fecha, eventos_del_dia in grouped_events %}
@@ -969,7 +818,7 @@
                                         <i class="fa-solid fa-calendar-day"></i> {{ fecha }}
                                     </div>
                                     <div class="date-group-content">
-                                        <ul class="lista-items !mt-0"> {# Override default margin-top #}
+                                        <ul class="lista-items !mt-0">
                                             {% for evento in eventos_del_dia %}
                                                 <li class="visit-card" data-doctor-id="{{ evento.doctora_id }}" data-name="{{ evento.nombre | lower }}" data-obs="{{ evento.observaciones | lower }}">
                                                     <div class="visit-card-title">{{ evento.nombre }}</div>
@@ -997,18 +846,16 @@
                                 </div>
                             {% endfor %}
                         {% else %}
-                            <p id="adminVisitNoResults" style="text-align: center; color: #777;">No hay visitas programadas.</p>
+                            <p id="adminVisitNoResults" class="text-center text-gray-500 mt-6 text-lg font-medium">No hay visitas programadas.</p>
                         {% endif %}
                     </div>
                 </div>
-            </div>
 
-            <div id="admin-nominas-list" class="content-section">
-                <div class="card admin-list">
+                <div id="admin-nominas-list" class="content-section card">
                     <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Médicas Cargadas</h3>
                     <div class="flex flex-col md:flex-row gap-4 mb-6">
-                        <input type="text" id="adminNominaSearch" placeholder="Buscar por nombre o tipo de nómina..." class="flex-grow p-2 border rounded-md" onkeyup="filterNominas('admin')" />
-                        <select id="adminNominaDoctorFilter" class="p-2 border rounded-md" onchange="filterNominas('admin')">
+                        <input type="text" id="adminNominaSearch" placeholder="Buscar por nombre o tipo de nómina..." class="flex-grow p-2 border rounded-md form-input" onkeyup="filterNominas('admin')" />
+                        <select id="adminNominaDoctorFilter" class="p-2 border rounded-md form-select" onchange="filterNominas('admin')">
                             <option value="">Todas las Doctoras</option>
                             {% for doc in doctoras %}
                                 <option value="{{ doc.id }}">{{ doc.usuario }}</option>
@@ -1048,14 +895,12 @@
                                 </li>
                             {% endfor %}
                         {% else %}
-                            <p id="adminNominaNoResults" style="text-align: center; color: #777;">No hay nóminas médicas cargadas.</p>
+                            <p id="adminNominaNoResults" class="text-center text-gray-500 mt-6 text-lg font-medium">No hay nóminas médicas cargadas.</p>
                         {% endif %}
                     </ul>
                 </div>
-            </div>
 
-            <div id="admin-uploaded-forms-all" class="content-section">
-                <div class="card">
+                <div id="admin-uploaded-forms-all" class="content-section card">
                     <h3><i class="fa-solid fa-folder-open"></i> Todos los Formularios Subidos</h3>
                     <ul class="lista-items">
                         {% if formularios %}
@@ -1075,29 +920,29 @@
                                 </li>
                             {% endfor %}
                         {% else %}
-                            <p style="text-align: center; color: #777;">No hay formularios subidos aún.</p>
+                            <p class="text-center text-gray-500 mt-6 text-lg font-medium">No hay formularios subidos aún.</p>
                         {% endif %}
                     </ul>
                 </div>
-            </div>
 
-            <div id="crear_proyecto" class="content-section">
-                <div class="card admin-form">
+                <div id="crear_proyecto" class="content-section card">
                     <h3><i class="fas fa-folder-plus"></i> Crear Nuevo Proyecto</h3>
-                    <form action="{{ url_for('crear_proyecto') }}" method="POST">
-                        <label for="nombre_proyecto">Nombre del Proyecto:</label>
-                        <input type="text" id="nombre_proyecto" name="nombre_proyecto" placeholder="Ej: Proyecto Colegio Las Acacias" required>
-
-                        <label for="descripcion_proyecto">Descripción (opcional):</label>
-                        <textarea id="descripcion_proyecto" name="descripcion_proyecto" rows="4" placeholder="Breve descripción del proyecto..."></textarea>
-                        
-                        <button type="submit"><i class="fas fa-plus-circle"></i> Crear Proyecto</button>
+                    <form action="{{ url_for('crear_proyecto') }}" method="POST" class="space-y-6">
+                        <div>
+                            <label for="nombre_proyecto" class="block text-gray-700 font-semibold mb-2">Nombre del Proyecto:</label>
+                            <input type="text" id="nombre_proyecto" name="nombre_proyecto" placeholder="Ej: Proyecto Colegio Las Acacias" required class="form-input">
+                        </div>
+                        <div>
+                            <label for="descripcion_proyecto" class="block text-gray-700 font-semibold mb-2">Descripción (opcional):</label>
+                            <textarea id="descripcion_proyecto" name="descripcion_proyecto" rows="4" placeholder="Breve descripción del proyecto..." class="form-input"></textarea>
+                        </div>
+                        <div class="flex justify-end space-x-4">
+                            <button type="submit" class="bg-blue-600 text-white p-4 rounded-xl shadow hover:bg-blue-700 transition duration-200"><i class="fas fa-plus-circle"></i> Crear Proyecto</button>
+                        </div>
                     </form>
                 </div>
-            </div>
 
-            <div id="gestionar_proyectos" class="content-section">
-                <div class="card admin-list">
+                <div id="gestionar_proyectos" class="content-section card">
                     <h3><i class="fas fa-list-check"></i> Gestionar Proyectos</h3>
                     {% if proyectos %}
                     <div class="overflow-x-auto">
@@ -1128,13 +973,23 @@
                         </table>
                     </div>
                     {% else %}
-                    <p class="text-gray-600">No hay proyectos creados aún.</p>
+                    <p class="text-center text-gray-500 mt-6 text-lg font-medium">No hay proyectos creados aún.</p>
                     {% endif %}
                 </div>
-            </div>
             {% endif %}
-
         </main>
+    </div>
+
+    <div id="studentDetailModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="modal-close-btn" onclick="toggleModal('studentDetailModal')">&times;</button>
+            <h3 class="text-2xl font-bold mb-4 text-gray-800" id="modalStudentName"></h3>
+            <div id="modalStudentInfo" class="space-y-3"></div>
+            <div class="flex justify-end space-x-4 mt-6">
+                <button class="bg-red-600 text-white p-3 rounded-xl hover:bg-red-700" onclick="deleteStudent()">Eliminar</button>
+                <button class="bg-yellow-500 text-white p-3 rounded-xl hover:bg-yellow-600" onclick="editStudent()">Editar</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -1161,8 +1016,6 @@
                         renderAdminPerformanceChart();
                     } else if (sectionId === 'doctor-performance') {
                         renderDoctorPerformanceChart();
-                    } else if (sectionId === 'coordinadora-dashboard') {
-                        renderCoordinadoraCharts();
                     }
                 }
             }
@@ -1182,11 +1035,7 @@
                     'admin-nominas-list': 'Nóminas Médicas Cargadas',
                     'admin-uploaded-forms-all': 'Todos los Formularios Subidos',
                     'crear_proyecto': 'Crear Nuevo Proyecto',
-                    'gestionar_proyectos': 'Gestionar Proyectos',
-                    'coordinadora-dashboard': 'Resumen de Coordinación',
-                    'coordinadora-evaluaciones-vivo': 'Evaluaciones en Tiempo Real',
-                    'coordinadora-proyectos': 'Gestión de Proyectos',
-                    'coordinadora-doctoras': 'Rendimiento de Doctoras'
+                    'gestionar_proyectos': 'Gestionar Proyectos'
                 };
                 document.getElementById('mainTitle').textContent = titleMap[sectionId] || 'Dashboard';
             }
@@ -1204,22 +1053,28 @@
             if (formTypeNominaSelect && doctoraParaFormularioDiv) {
                 formTypeNominaSelect.addEventListener('change', function() {
                     if (this.value === 'neurologia') {
-                        doctoraParaFormularioDiv.style.display = 'block';
+                        doctoraParaFormularioDiv.classList.remove('hidden');
                     } else {
-                        doctoraParaFormularioDiv.style.display = 'none';
+                        doctoraParaFormularioDiv.classList.add('hidden');
                         document.getElementById('doctora_id_para_formulario').value = '';
                     }
                 });
                 if (formTypeNominaSelect.value === 'neurologia') {
-                    doctoraParaFormularioDiv.style.display = 'block';
-                } else {
-                    doctoraParaFormularioDiv.style.display = 'none';
+                    doctoraParaFormularioDiv.classList.remove('hidden');
                 }
             }
-
+            
             const initialActiveLink = document.querySelector('.nav-link.active');
             if (initialActiveLink) {
                 showSection(initialActiveLink.dataset.section);
+            }
+
+            // Lógica para mostrar/ocultar el sidebar en móviles
+            const menuToggle = document.querySelector('.menu-toggle-btn');
+            if (menuToggle) {
+                menuToggle.addEventListener('click', () => {
+                    sidebar.classList.toggle('active');
+                });
             }
 
             // Mock Data and Functions from dashboard-11 for initial charts
@@ -1256,7 +1111,15 @@
                             pointHoverBorderWidth: 2,
                         }]
                     },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+                            x: { grid: { display: false } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
                 });
             }
 
@@ -1481,91 +1344,8 @@
                 }
                 filterVisits(userType);
             }
+
         });
-
-        // Lógica para Coordinadora - Datos Mockup
-        const mockCoordinadoraData = {
-            evaluacionesHoy: 45,
-            proyectosActivos: 3,
-            evaluacionesPendientes: 120,
-            dailyPerformance: {
-                labels: ['Proyecto A', 'Proyecto B', 'Proyecto C'],
-                data: [20, 15, 10]
-            },
-            projectProgress: {
-                labels: ['Proyecto A', 'Proyecto B', 'Proyecto C'],
-                data: [60, 45, 80]
-            },
-            liveEvaluations: [
-                { time: '10:45 AM', doctora: 'Dra. María Gómez', proyecto: 'Colegio A', tipo: 'Neurología' },
-                { time: '10:40 AM', doctora: 'Dra. Ana Pérez', proyecto: 'Colegio B', tipo: 'Medicina Familiar' },
-                { time: '10:35 AM', doctora: 'Dra. María Gómez', proyecto: 'Colegio A', tipo: 'Neurología' },
-                { time: '10:30 AM', doctora: 'Dra. Ana Pérez', proyecto: 'Colegio B', tipo: 'Medicina Familiar' },
-            ]
-        };
-
-        function renderCoordinadoraCharts() {
-            const dailyCtx = document.getElementById('dailyPerformanceChart');
-            if (dailyCtx) {
-                if (window.dailyChartInstance) { window.dailyChartInstance.destroy(); }
-                window.dailyChartInstance = new Chart(dailyCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: mockCoordinadoraData.dailyPerformance.labels,
-                        datasets: [{
-                            label: 'Evaluaciones Completadas Hoy',
-                            data: mockCoordinadoraData.dailyPerformance.data,
-                            backgroundColor: ['rgba(54, 162, 235, 0.6)', 'rgba(75, 192, 192, 0.6)', 'rgba(255, 159, 64, 0.6)'],
-                            borderColor: ['rgba(54, 162, 235, 1)', 'rgba(75, 192, 192, 1)', 'rgba(255, 159, 64, 1)'],
-                            borderWidth: 1
-                        }]
-                    }
-                });
-            }
-
-            const progressCtx = document.getElementById('projectProgressChart');
-            if (progressCtx) {
-                if (window.progressChartInstance) { window.progressChartInstance.destroy(); }
-                window.progressChartInstance = new Chart(progressCtx, {
-                    type: 'pie',
-                    data: {
-                        labels: mockCoordinadoraData.projectProgress.labels,
-                        datasets: [{
-                            label: 'Avance del Proyecto',
-                            data: mockCoordinadoraData.projectProgress.data,
-                            backgroundColor: ['rgba(54, 162, 235, 0.6)', 'rgba(75, 192, 192, 0.6)', 'rgba(255, 159, 64, 0.6)'],
-                            borderColor: ['rgba(54, 162, 235, 1)', 'rgba(75, 192, 192, 1)', 'rgba(255, 159, 64, 1)'],
-                            borderWidth: 1
-                        }]
-                    }
-                });
-            }
-        }
-
-        function loadCoordinadoraData() {
-            if (document.getElementById('evaluacionesHoyCount')) {
-                document.getElementById('evaluacionesHoyCount').textContent = mockCoordinadoraData.evaluacionesHoy;
-                document.getElementById('proyectosActivosCount').textContent = mockCoordinadoraData.proyectosActivos;
-                document.getElementById('evaluacionesPendientesCount').textContent = mockCoordinadoraData.evaluacionesPendientes;
-            }
-            
-            const liveContainer = document.getElementById('evaluacionesEnVivoContainer');
-            if (liveContainer) {
-                liveContainer.innerHTML = '';
-                mockCoordinadoraData.liveEvaluations.forEach(eval => {
-                    const card = document.createElement('div');
-                    card.className = "item-card-header flex items-center justify-between";
-                    card.innerHTML = `
-                        <span><i class="fas fa-check-circle text-green-500 mr-2"></i><strong>${eval.doctora}</strong> - ${eval.proyecto}</span>
-                        <div class="text-gray-500 text-sm">
-                            <span class="mr-4">${eval.tipo}</span>
-                            <i class="fas fa-clock mr-1"></i>${eval.time}
-                        </div>
-                    `;
-                    liveContainer.appendChild(card);
-                });
-            }
-        }
     </script>
 </body>
 </html>

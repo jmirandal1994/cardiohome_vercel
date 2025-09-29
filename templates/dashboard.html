@@ -986,8 +986,9 @@
 
             {% elif usuario == 'coordinadora' %}
             <div id="coord-performance" class="content-section">
+                <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento en Vivo</h2>
                 <div class="summary-panel">
-                    <h2>Resumen del Mes</h2>
+                    <h2>Resumen del Proyecto</h2>
                     <div class="summary">
                         <div class="summary-card-v2" style="background: linear-gradient(145deg, var(--card-blue), #2A79B3);">
                             <div class="summary-card-header">
@@ -1055,10 +1056,41 @@
                 </div>
             </div>
             
+            <div id="coord-evaluaciones" class="content-section">
+                <div class="card">
+                    <h3><i class="fa-solid fa-school"></i> Evaluaciones por Establecimiento</h3>
+                    <p class="text-gray-600 mb-6">Selecciona un establecimiento para ver las nóminas completadas y descargar sus PDFs.</p>
+                    <ul class="lista-items">
+                        {% for establecimiento in establecimientos %}
+                            <li class="item-card" data-establecimiento-id="{{ establecimiento.id }}">
+                                <div class="item-card-header">
+                                    <span><i class="fa-solid fa-building"></i>{{ establecimiento.nombre }}</span>
+                                </div>
+                                <div class="item-card-actions">
+                                    <button class="action-button blue" onclick="verNóminasEstablecimiento('{{ establecimiento.id }}')">
+                                        <i class="fa-solid fa-list-ul"></i> Ver Nóminas Completadas
+                                    </button>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <div id="coord-nominas" class="content-section">
+                <div class="card">
+                    <h3><i class="fa-solid fa-file-invoice"></i> Nóminas Completadas de [Nombre Establecimiento]</h3>
+                    <p class="text-gray-600 mb-6">Aquí puedes ver y descargar las nóminas que ya han sido completadas.</p>
+                    <ul class="lista-items" id="nominasCompletadasContainer">
+                        <p class="text-center text-gray-500">Cargando nóminas...</p>
+                    </ul>
+                </div>
+            </div>
+
             <div id="coord-contact" class="content-section">
                 <div class="card">
-                    <h3><i class="fa-solid fa-envelope"></i> Resolver Dudas</h3>
-                    <p class="text-gray-600 mb-6">Envía un mensaje para resolver dudas o problemas al equipo de soporte. Tu mensaje llegará a contacto@speechpsychology.cl.</p>
+                    <h3><i class="fa-solid fa-envelope"></i> Contacto</h3>
+                    <p class="text-gray-600 mb-6">Si tienes alguna duda o necesitas ayuda, por favor, rellena el siguiente formulario y nos pondremos en contacto contigo lo antes posible.</p>
                     <form id="coordinadora-contact-form" action="https://formspree.io/f/your-form-id" method="POST">
                         <label for="coord-name">Tu Nombre:</label>
                         <input type="text" id="coord-name" name="name" required class="form-input" />

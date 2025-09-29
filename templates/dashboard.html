@@ -43,6 +43,10 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
+        
+        html, body {
+            height: 100%;
+        }
 
         /* Header */
         header {
@@ -576,13 +580,13 @@
                 <i class="fas fa-bars"></i>
             </button>
             <div class="flex items-center space-x-3">
-                <img src="https://via.placeholder.com/50x50/E8F1FF/3B82F6?text=CH" alt="CardioHome Logo" class="w-10 h-10 rounded-full shadow-md">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="CardioHome Logo" class="w-10 h-10 rounded-full shadow-md">
                 <h1 class="text-2xl font-bold text-gray-800 hidden sm:block">Dashboard</h1>
             </div>
         </div>
         <div class="flex items-center space-x-4">
             <span class="text-gray-600 hidden md:block">Hola, Dra. [Nombre]</span>
-            <img src="https://via.placeholder.com/40x40/cccccc/333333?text=Doc" alt="User Avatar" class="rounded-full shadow-lg border-2 border-white">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="User Avatar" class="rounded-full shadow-lg border-2 border-white">
             <button onclick="cerrarSesion()" class="bg-red-500 text-white px-4 py-2 rounded-full shadow-md hover:bg-red-600 transition duration-200 hidden sm:block">Cerrar sesión</button>
         </div>
     </header>
@@ -1244,6 +1248,7 @@
             const menuToggle = document.getElementById('menuToggle');
             const navLinks = document.querySelectorAll('.nav-link');
             const contentSections = document.querySelectorAll('.content-section');
+            const dashboardWrapper = document.querySelector('.dashboard-wrapper');
             const formTypeNominaSelect = document.getElementById('form_type_nomina');
             const doctoraParaFormularioDiv = document.getElementById('doctora_para_formulario_div');
             

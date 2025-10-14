@@ -608,6 +608,73 @@
             font-weight: 700;
             color: var(--primary-blue);
         }
+        
+        /* ESTILOS MEJORADOS PARA LA TARJETA DEL COLEGIO */
+        .colegio-card-v3 {
+            position: relative;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            border-bottom: 6px solid;
+            border-color: var(--secondary-blue);
+        }
+        .colegio-card-v3:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+        }
+        .colegio-card-v3 .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #E2E8F0;
+        }
+        .colegio-card-v3 .header span {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
+        .colegio-card-v3 .icon {
+            font-size: 2.5rem;
+            color: var(--highlight-green);
+            opacity: 0.8;
+        }
+        .colegio-card-v3 .count-group {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        .colegio-card-v3 .count-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-basis: 48%;
+            padding: 0.5rem 0;
+            border-radius: 0.5rem;
+        }
+        .colegio-card-v3 .count-value {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .colegio-card-v3 .count-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #616A6B;
+            text-align: center;
+        }
+        .colegio-card-v3 .completed .count-value { color: var(--highlight-green); }
+        .colegio-card-v3 .missing .count-value { color: var(--danger-red); }
+        .colegio-card-v3 .action-button {
+            margin-top: 1rem;
+            width: 100%;
+            justify-content: center;
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
@@ -1116,37 +1183,37 @@
                         <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
                             <h4 class="text-xl font-bold text-primary-blue mb-4 flex items-center gap-3"><i class="fas fa-folder-open text-lg"></i> Proyecto Santiago</h4>
                             <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <a href="#" class="project-line-card" data-line="Linea 1 (Maipu, Cerrillos)">
+                                <a href="#" class="project-line-card" data-line="Linea 1 (280 evaluaciones)">
                                     <div class="bg-blue-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
                                         <div class="flex justify-between items-center mb-4">
-                                            <span class="text-lg font-bold">Línea 1</span>
+                                            <span class="text-lg font-bold">Línea 1 (280 evaluaciones)</span>
                                             <i class="fa-solid fa-location-dot text-2xl opacity-75"></i>
                                         </div>
                                         <p class="text-sm">Comunas: Maipú, Cerrillos</p>
                                     </div>
                                 </a>
-                                <a href="#" class="project-line-card" data-line="Linea 2 (Estacion Central, Maipu)">
+                                <a href="#" class="project-line-card" data-line="Linea 2 (320 evaluaciones)">
                                     <div class="bg-green-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
                                         <div class="flex justify-between items-center mb-4">
-                                            <span class="text-lg font-bold">Línea 2</span>
+                                            <span class="text-lg font-bold">Línea 2 (320 evaluaciones)</span>
                                             <i class="fa-solid fa-location-dot text-2xl opacity-75"></i>
                                         </div>
                                         <p class="text-sm">Comunas: Estación Central, Maipú</p>
                                     </div>
                                 </a>
-                                <a href="#" class="project-line-card" data-line="Linea 3 (Estacion Central)">
+                                <a href="#" class="project-line-card" data-line="Linea 3 (200 evaluaciones)">
                                     <div class="bg-yellow-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
                                         <div class="flex justify-between items-center mb-4">
-                                            <span class="text-lg font-bold">Línea 3</span>
+                                            <span class="text-lg font-bold">Línea 3 (200 evaluaciones)</span>
                                             <i class="fa-solid fa-location-dot text-2xl opacity-75"></i>
                                         </div>
                                         <p class="text-sm">Comunas: Estación Central</p>
                                     </div>
                                 </a>
-                                <a href="#" class="project-line-card" data-line="Linea 4 (Cerrillos)">
+                                <a href="#" class="project-line-card" data-line="Linea 4 (150 evaluaciones)">
                                     <div class="bg-red-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
                                         <div class="flex justify-between items-center mb-4">
-                                            <span class="text-lg font-bold">Línea 4</span>
+                                            <span class="text-lg font-bold">Línea 4 (150 evaluaciones)</span>
                                             <i class="fa-solid fa-location-dot text-2xl opacity-75"></i>
                                         </div>
                                         <p class="text-sm">Comunas: Cerrillos</p>
@@ -1364,7 +1431,7 @@
     <script>
         // Datos de maqueta para la demostración
         const colegiosMaqueta = {
-            "Linea 1 (Maipu, Cerrillos)": [
+            "Linea 1 (280 evaluaciones)": [
                 {
                     nombre: "Colegio Los Bosquinos",
                     evaluacionesCompletadas: 150,
@@ -1378,7 +1445,7 @@
                     icono: "fa-school"
                 }
             ],
-            "Linea 2 (Estacion Central, Maipu)": [
+            "Linea 2 (320 evaluaciones)": [
                 {
                     nombre: "Colegio El Sol",
                     evaluacionesCompletadas: 200,
@@ -1392,7 +1459,7 @@
                     icono: "fa-graduation-cap"
                 }
             ],
-            "Linea 3 (Estacion Central)": [
+            "Linea 3 (200 evaluaciones)": [
                 {
                     nombre: "Colegio San Juan",
                     evaluacionesCompletadas: 200,
@@ -1400,7 +1467,7 @@
                     icono: "fa-cross"
                 }
             ],
-            "Linea 4 (Cerrillos)": [
+            "Linea 4 (150 evaluaciones)": [
                 {
                     nombre: "Colegio Alicante",
                     evaluacionesCompletadas: 120,
@@ -1428,22 +1495,27 @@
             if (colegios && colegios.length > 0) {
                 colegios.forEach(colegio => {
                     htmlContent += `
-                        <div class="item-card bg-white">
-                            <div class="item-card-header flex justify-between items-center mb-4">
-                                <div class="flex items-center space-x-3">
-                                    <i class="fa-solid ${colegio.icono} text-2xl text-blue-600"></i>
-                                    <span class="text-lg font-semibold">${colegio.nombre}</span>
+                        <div class="colegio-card-v3">
+                            <div class="header">
+                                <span class="flex items-center space-x-3">
+                                    <i class="fa-solid ${colegio.icono} text-xl text-primary-blue"></i>
+                                    <span>${colegio.nombre}</span>
+                                </span>
+                                <i class="fa-solid fa-graduation-cap icon"></i>
+                            </div>
+                            <div class="count-group">
+                                <div class="count-item completed">
+                                    <span class="count-value">${colegio.evaluacionesCompletadas}</span>
+                                    <span class="count-label">Evaluaciones Completadas</span>
+                                </div>
+                                <div class="count-item missing">
+                                    <span class="count-value">${colegio.evaluacionesFaltantes}</span>
+                                    <span class="count-label">Evaluaciones Faltantes</span>
                                 </div>
                             </div>
-                            <div class="item-card-details space-y-2 text-sm text-gray-600">
-                                <p>Evaluaciones completadas: **${colegio.evaluacionesCompletadas}**</p>
-                                <p>Evaluaciones faltantes: **${colegio.evaluacionesFaltantes}**</p>
-                            </div>
-                            <div class="item-card-actions mt-4 justify-content-start">
-                                <button class="action-button blue" onclick="showAlumnosEvaluados('${colegio.nombre}')">
-                                    <i class="fa-solid fa-file-pdf"></i> Ver y Descargar Evaluaciones
-                                </button>
-                            </div>
+                            <button class="action-button blue" onclick="showAlumnosEvaluados('${colegio.nombre}')">
+                                <i class="fa-solid fa-file-pdf"></i> Ver y Descargar Evaluaciones
+                            </button>
                         </div>
                     `;
                 });
@@ -1617,7 +1689,7 @@
                     dataSet = [
                         { label: 'Evaluaciones Neurología', data: neuroData, backgroundColor: 'rgba(52, 152, 219, 0.7)', borderColor: 'rgba(52, 152, 219, 1)', borderWidth: 1, stack: 'Stack 0' },
                         { label: 'Evaluaciones Medicina Familiar', data: familiarData, backgroundColor: 'rgba(46, 204, 113, 0.7)', borderColor: 'rgba(46, 204, 113, 1)', borderWidth: 1, stack: 'Stack 0' },
-                        { label: 'Evaluaciones Totales', data: totalData, backgroundColor: 'rgba(241, 196, 15, 0.7)', borderColor: 'rgba(241, 196, 15, 1)', borderWidth: 1, type: 'line', yAxisID: 'y1' } // Total como línea
+                        { label: 'Evaluaciones Totales', data: totalData, backgroundColor: 'rgba(241, 196, 15, 0.7)', borderColor: 'rgba(241, 196, 15, 1)', borderWidth: 2, type: 'line', yAxisID: 'y1' } // Total como línea
                     ];
                     chartTitle = 'Evaluaciones Realizadas por Día';
                 } else {

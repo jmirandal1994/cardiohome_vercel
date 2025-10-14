@@ -389,7 +389,7 @@
     <script>
         function cerrarSesion() {
             alert("Cerrar sesión (en un entorno real, redirigiría a /logout)");
-            // window.location.href = "/logout"; 
+            // window.location.href = "/logout";
         }
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -398,8 +398,27 @@
             const navLinks = document.querySelectorAll('.nav-link');
             const contentSections = document.querySelectorAll('.content-section');
 
-            // Datos de ejemplo para la coordinadora. DEBES REEMPLAZAR ESTO CON LOS DATOS REALES DE TU BACKEND.
-            const evaluaciones_por_dia = {
+            // --- NUEVOS DATOS DE EJEMPLO PARA LA COORDINADORA ---
+            const evaluaciones_neurologia_por_dia = {
+                '2025-09-22': 3,
+                '2025-09-23': 5,
+                '2025-09-24': 7,
+                '2025-09-25': 6,
+                '2025-09-26': 9,
+                '2025-09-27': 4,
+                '2025-09-28': 11
+            };
+            const evaluaciones_familiar_por_dia = {
+                '2025-09-22': 2,
+                '2025-09-23': 3,
+                '2025-09-24': 5,
+                '2025-09-25': 4,
+                '2025-09-26': 6,
+                '2025-09-27': 3,
+                '2025-09-28': 7
+            };
+            // La suma de Neurología y Familiar es el Total
+            const evaluaciones_totales_por_dia = {
                 '2025-09-22': 5,
                 '2025-09-23': 8,
                 '2025-09-24': 12,
@@ -409,11 +428,23 @@
                 '2025-09-28': 18
             };
 
-            const evaluaciones_por_semana = {
+            const evaluaciones_neurologia_por_semana = {
+                'Semana 38': 18,
+                'Semana 39': 25,
+                'Semana 40': 35
+            };
+            const evaluaciones_familiar_por_semana = {
+                'Semana 38': 12,
+                'Semana 39': 20,
+                'Semana 40': 25
+            };
+            const evaluaciones_totales_por_semana = {
                 'Semana 38': 30,
                 'Semana 39': 45,
                 'Semana 40': 60
             };
+            // ---------------------------------------------
+
 
             function showSection(sectionId) {
                 contentSections.forEach(section => {
@@ -463,34 +494,92 @@
                 if (window.coordinadoraChartInstance) window.coordinadoraChartInstance.destroy();
 
                 const periodoSelect = document.getElementById('evaluacion-periodo');
-                
-                let labels, data, chartTitle;
+
+                let labels, datasets, chartTitle;
+
                 if (periodoSelect.value === 'dia') {
-                    labels = Object.keys(evaluaciones_por_dia);
-                    data = Object.values(evaluaciones_por_dia);
+                    labels = Object.keys(evaluaciones_totales_por_dia);
                     chartTitle = 'Evaluaciones Realizadas por Día';
+                    datasets = [
+                        {
+                            label: 'Evaluaciones Totales por Día',
+                            data: Object.values(evaluaciones_totales_por_dia),
+                            backgroundColor: 'rgba(54, 162, 235, 0.8)', // Azul
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Neurología por Día',
+                            data: Object.values(evaluaciones_neurologia_por_dia),
+                            backgroundColor: 'rgba(255, 99, 132, 0.8)', // Rojo
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Familiar por Día',
+                            data: Object.values(evaluaciones_familiar_por_dia),
+                            backgroundColor: 'rgba(75, 192, 192, 0.8)', // Verde
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }
+                    ];
                 } else {
-                    labels = Object.keys(evaluaciones_por_semana);
-                    data = Object.values(evaluaciones_por_semana);
+                    labels = Object.keys(evaluaciones_totales_por_semana);
                     chartTitle = 'Evaluaciones Realizadas por Semana';
+                    datasets = [
+                        {
+                            label: 'Evaluaciones Totales por Semana',
+                            data: Object.values(evaluaciones_totales_por_semana),
+                            backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Neurología por Semana',
+                            data: Object.values(evaluaciones_neurologia_por_semana),
+                            backgroundColor: 'rgba(255, 99, 132, 0.8)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Familiar por Semana',
+                            data: Object.values(evaluaciones_familiar_por_semana),
+                            backgroundColor: 'rgba(75, 192, 192, 0.8)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }
+                    ];
                 }
 
                 window.coordinadoraChartInstance = new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: labels,
-                        datasets: [{
-                            label: 'Cantidad de Evaluaciones',
-                            data: data,
-                            backgroundColor: ['rgba(54, 162, 235, 0.6)'],
-                            borderColor: ['rgba(54, 162, 235, 1)'],
-                            borderWidth: 1
-                        }]
+                        datasets: datasets
                     },
                     options: {
                         responsive: true, maintainAspectRatio: false,
-                        plugins: { title: { display: true, text: chartTitle, font: { size: 18, family: 'Montserrat' }, color: '#333' }, legend: { display: false } },
-                        scales: { y: { beginAtZero: true, title: { display: true, text: 'Cantidad de Evaluaciones' }, ticks: { precision: 0 } }, x: { title: { display: true, text: periodoSelect.value.charAt(0).toUpperCase() + periodoSelect.value.slice(1) } } }
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: chartTitle,
+                                font: { size: 18, family: 'Montserrat' },
+                                color: '#333'
+                            },
+                            legend: {
+                                display: true // Mostrar leyenda para múltiples datasets
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: 'Cantidad de Evaluaciones' },
+                                ticks: { precision: 0 }
+                            },
+                            x: {
+                                title: { display: true, text: periodoSelect.value.charAt(0).toUpperCase() + periodoSelect.value.slice(1) }
+                            }
+                        }
                     }
                 });
             }

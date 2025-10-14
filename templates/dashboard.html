@@ -579,6 +579,35 @@
                 width: 100%;
             }
         }
+        /* Estilos para el listado de alumnos (nuevo) */
+        .alumnos-list-container {
+            margin-top: 1.5rem;
+            background: #F4F7F9;
+            padding: 1rem;
+            border-radius: 1rem;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid #E2E8F0;
+        }
+        .alumno-item-card {
+            background: white;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 5px solid var(--secondary-blue);
+        }
+        .alumno-item-info {
+            font-size: 1rem;
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+        .alumno-item-info span {
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
@@ -1128,6 +1157,13 @@
 
                         <div id="colegios-container" class="mt-8 grid md:grid-cols-2 gap-4" style="display:none;">
                             </div>
+                        
+                        <div id="alumnos-container" class="alumnos-list-container" style="display:none;">
+                            <h4 id="alumnos-header" class="text-xl font-bold text-primary-blue mb-4 flex items-center gap-3"><i class="fas fa-user-graduate text-lg"></i> Alumnos Evaluados en [Nombre Colegio]</h4>
+                            <ul id="alumnos-list" class="lista-items !mt-0">
+                                </ul>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -1373,9 +1409,19 @@
                 }
             ]
         };
+        
+        const alumnosMaqueta = [
+            { nombre: "Agustín Barrera", rut: "18.983.920-7" },
+            { nombre: "Sofía Martínez", rut: "20.123.456-k" },
+            { nombre: "Javier Rojas", rut: "17.456.789-1" },
+            { nombre: "Valentina Soto", rut: "19.001.002-3" },
+            { nombre: "Pedro Naranjo", rut: "16.555.444-9" }
+        ];
 
         function showColegios(linea) {
             const colegiosContainer = document.getElementById('colegios-container');
+            const alumnosContainer = document.getElementById('alumnos-container');
+            alumnosContainer.style.display = 'none'; // Ocultar lista de alumnos al cambiar de línea
             const colegios = colegiosMaqueta[linea];
             let htmlContent = '';
 
@@ -1393,9 +1439,9 @@
                                 <p>Evaluaciones completadas: **${colegio.evaluacionesCompletadas}**</p>
                                 <p>Evaluaciones faltantes: **${colegio.evaluacionesFaltantes}**</p>
                             </div>
-                            <div class="item-card-actions mt-4">
-                                <button class="action-button blue" onclick="showNominas('${colegio.nombre}')">
-                                    <i class="fa-solid fa-file-pdf"></i> Ver y Descargar
+                            <div class="item-card-actions mt-4 justify-content-start">
+                                <button class="action-button blue" onclick="showAlumnosEvaluados('${colegio.nombre}')">
+                                    <i class="fa-solid fa-file-pdf"></i> Ver y Descargar Evaluaciones
                                 </button>
                             </div>
                         </div>
@@ -1407,6 +1453,40 @@
 
             colegiosContainer.innerHTML = htmlContent;
             colegiosContainer.style.display = 'grid';
+        }
+        
+        function showAlumnosEvaluados(nombreColegio) {
+            const alumnosContainer = document.getElementById('alumnos-container');
+            const alumnosHeader = document.getElementById('alumnos-header');
+            const alumnosList = document.getElementById('alumnos-list');
+            
+            alumnosHeader.innerHTML = `<i class="fas fa-user-graduate text-lg"></i> Alumnos Evaluados en ${nombreColegio}`;
+            
+            let htmlContent = '';
+            if (alumnosMaqueta.length > 0) {
+                alumnosMaqueta.forEach(alumno => {
+                    // Simulación de un enlace de descarga
+                    const downloadUrl = `/descargar_valoracion_pdf?rut=${alumno.rut}&colegio=${encodeURIComponent(nombreColegio)}`;
+                    
+                    htmlContent += `
+                        <li class="alumno-item-card">
+                            <div class="alumno-item-info">
+                                **${alumno.nombre}** | Rut: <span>${alumno.rut}</span>
+                            </div>
+                            <div class="alumno-item-actions">
+                                <a href="${downloadUrl}" target="_blank" class="action-button green" title="Descargar Valoración">
+                                    <i class="fa-solid fa-file-pdf"></i> Descargar Valoración de Salud (PDF)
+                                </a>
+                            </div>
+                        </li>
+                    `;
+                });
+            } else {
+                htmlContent = '<p class="text-center text-gray-500">No hay alumnos evaluados para este colegio.</p>';
+            }
+            
+            alumnosList.innerHTML = htmlContent;
+            alumnosContainer.style.display = 'block';
         }
 
         function cerrarSesion() {
@@ -1421,21 +1501,21 @@
             const formTypeNominaSelect = document.getElementById('form_type_nomina');
             const doctoraParaFormularioDiv = document.getElementById('doctora_para_formulario_div');
             
-            // Datos de ejemplo para la coordinadora. DEBES REEMPLAZAR ESTO CON LOS DATOS DE TU BACKEND.
+            // Datos de ejemplo para la coordinadora. MODIFICADOS PARA INCLUIR NEUROLOGÍA Y FAMILIAR.
             const evaluaciones_por_dia = {
-                '2025-09-22': 5,
-                '2025-09-23': 8,
-                '2025-09-24': 12,
-                '2025-09-25': 10,
-                '2025-09-26': 15,
-                '2025-09-27': 7,
-                '2025-09-28': 18
+                '2025-09-22': { neurologia: 2, familiar: 3, total: 5 },
+                '2025-09-23': { neurologia: 4, familiar: 4, total: 8 },
+                '2025-09-24': { neurologia: 6, familiar: 6, total: 12 },
+                '2025-09-25': { neurologia: 5, familiar: 5, total: 10 },
+                '2025-09-26': { neurologia: 8, familiar: 7, total: 15 },
+                '2025-09-27': { neurologia: 3, familiar: 4, total: 7 },
+                '2025-09-28': { neurologia: 10, familiar: 8, total: 18 }
             };
 
             const evaluaciones_por_semana = {
-                'Semana 38': 30,
-                'Semana 39': 45,
-                'Semana 40': 60
+                'Semana 38': { neurologia: 15, familiar: 15, total: 30 },
+                'Semana 39': { neurologia: 22, familiar: 23, total: 45 },
+                'Semana 40': { neurologia: 30, familiar: 30, total: 60 }
             };
 
             function showSection(sectionId) {
@@ -1520,7 +1600,7 @@
                 showSection(navLinks[0].dataset.section);
             }
 
-            // Lógica para el gráfico de la coordinadora
+            // Lógica para el gráfico de la coordinadora - MODIFICADA
             function renderCoordinadoraPerformanceChart() {
                 const ctx = document.getElementById('coordinadoraPerformanceChart');
                 if (!ctx) return;
@@ -1528,33 +1608,61 @@
 
                 const periodoSelect = document.getElementById('evaluacion-periodo');
                 
-                let labels, data, chartTitle;
+                let labels, dataSet;
                 if (periodoSelect.value === 'dia') {
                     labels = Object.keys(evaluaciones_por_dia);
-                    data = Object.values(evaluaciones_por_dia);
+                    const neuroData = labels.map(label => evaluaciones_por_dia[label].neurologia);
+                    const familiarData = labels.map(label => evaluaciones_por_dia[label].familiar);
+                    const totalData = labels.map(label => evaluaciones_por_dia[label].total);
+                    dataSet = [
+                        { label: 'Evaluaciones Neurología', data: neuroData, backgroundColor: 'rgba(52, 152, 219, 0.7)', borderColor: 'rgba(52, 152, 219, 1)', borderWidth: 1, stack: 'Stack 0' },
+                        { label: 'Evaluaciones Medicina Familiar', data: familiarData, backgroundColor: 'rgba(46, 204, 113, 0.7)', borderColor: 'rgba(46, 204, 113, 1)', borderWidth: 1, stack: 'Stack 0' },
+                        { label: 'Evaluaciones Totales', data: totalData, backgroundColor: 'rgba(241, 196, 15, 0.7)', borderColor: 'rgba(241, 196, 15, 1)', borderWidth: 1, type: 'line', yAxisID: 'y1' } // Total como línea
+                    ];
                     chartTitle = 'Evaluaciones Realizadas por Día';
                 } else {
                     labels = Object.keys(evaluaciones_por_semana);
-                    data = Object.values(evaluaciones_por_semana);
+                    const neuroData = labels.map(label => evaluaciones_por_semana[label].neurologia);
+                    const familiarData = labels.map(label => evaluaciones_por_semana[label].familiar);
+                    const totalData = labels.map(label => evaluaciones_por_semana[label].total);
+                    dataSet = [
+                        { label: 'Evaluaciones Neurología', data: neuroData, backgroundColor: 'rgba(52, 152, 219, 0.7)', borderColor: 'rgba(52, 152, 219, 1)', borderWidth: 1, stack: 'Stack 0' },
+                        { label: 'Evaluaciones Medicina Familiar', data: familiarData, backgroundColor: 'rgba(46, 204, 113, 0.7)', borderColor: 'rgba(46, 204, 113, 1)', borderWidth: 1, stack: 'Stack 0' },
+                        { label: 'Evaluaciones Totales', data: totalData, backgroundColor: 'rgba(241, 196, 15, 0.7)', borderColor: 'rgba(241, 196, 15, 1)', borderWidth: 2, type: 'line', yAxisID: 'y1' } // Total como línea
+                    ];
                     chartTitle = 'Evaluaciones Realizadas por Semana';
                 }
 
                 window.coordinadoraChartInstance = new Chart(ctx, {
-                    type: 'bar',
+                    type: 'bar', // Tipo de base de gráfico (Barra)
                     data: {
                         labels: labels,
-                        datasets: [{
-                            label: 'Cantidad de Evaluaciones',
-                            data: data,
-                            backgroundColor: ['rgba(54, 162, 235, 0.6)'],
-                            borderColor: ['rgba(54, 162, 235, 1)'],
-                            borderWidth: 1
-                        }]
+                        datasets: dataSet
                     },
                     options: {
                         responsive: true, maintainAspectRatio: false,
-                        plugins: { title: { display: true, text: chartTitle, font: { size: 18, family: 'Montserrat' }, color: '#333' }, legend: { display: false } },
-                        scales: { y: { beginAtZero: true, title: { display: true, text: 'Cantidad de Evaluaciones' }, ticks: { precision: 0 } }, x: { title: { display: true, text: periodoSelect.value.charAt(0).toUpperCase() + periodoSelect.value.slice(1) } } }
+                        plugins: { 
+                            title: { display: true, text: chartTitle, font: { size: 18, family: 'Montserrat' }, color: '#333' }, 
+                            legend: { position: 'bottom' } 
+                        },
+                        scales: { 
+                            x: { title: { display: true, text: periodoSelect.value.charAt(0).toUpperCase() + periodoSelect.value.slice(1) } },
+                            y: { 
+                                beginAtZero: true, 
+                                title: { display: true, text: 'Evaluaciones (Barra)', color: 'rgba(52, 152, 219, 1)' }, 
+                                ticks: { precision: 0 },
+                                stacked: true // Habilitar apilamiento para neurología y familiar
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right', // Eje Y secundario a la derecha
+                                grid: { drawOnChartArea: false }, // No dibujar la cuadrícula en el área del gráfico para este eje
+                                title: { display: true, text: 'Total Evaluaciones (Línea)', color: 'rgba(241, 196, 15, 1)' },
+                                ticks: { precision: 0 },
+                                beginAtZero: true
+                            }
+                        }
                     }
                 });
             }

@@ -646,12 +646,13 @@ def login():
     usuario_login = request.form['username'] # Renombrado a usuario_login para evitar conflicto con el rol
     clave = request.form['password']
     
-    # Buscamos el usuario, password, ID, rol y la nueva columna de IDs de establecimiento
-    url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario_login}&password=eq.{clave}&select=id,rol,establecimientos_ids" # CORREGIDO: SELECCIONAMOS 'establecimientos_ids'
+    # CORRECCIÓN CRÍTICA: SELECCIONAMOS SOLO ID y ROL para evitar el error 400 inicial.
+    # El resto de la información del perfil se obtiene después si el rol es 'coordinador_escuela'.
+    url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario_login}&password=eq.{clave}&select=id,rol"
     
     print(f"DEBUG: Intento de login para usuario: {usuario_login}, URL: {url}")
     try:
-        # Usamos SERVICE_HEADERS para asegurar que se pueda acceder a establecimiento_id y rol
+        # Usamos SERVICE_HEADERS para asegurar que se pueda acceder a ID y rol
         res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS) 
         res.raise_for_status()
         data = res.json()
@@ -667,38 +668,44 @@ def login():
             
             # 2. Lógica específica para COORDINADOR DE ESCUELA
             if role == 'coordinador_escuela':
-                # RECUPERAR EL ARRAY DE IDS ASIGNADOS
-                # Si es JSONB/Array, esto debería devolver una lista de Python (ej: [5, 6, 7, 10])
-                establecimientos_ids = user_data.get('establecimientos_ids')
                 
-                # Manejar si la columna es None o una lista vacía
-                if not establecimientos_ids:
-                    print("AVISO: Coordinador de Escuela logueado sin establecimientos_ids asignados.")
-                    session['colegios_asignados_ids'] = []
-                    session['colegios_asignados'] = [] # Lista vacía para la plantilla
+                # SEGUNDO SELECT: Obtenemos los IDs de los colegios SÓLO si es Coordinador de Escuela.
+                # Seleccionamos ambas columnas (singular y plural) para mayor compatibilidad con la DB.
+                url_profile_details = f"{SUPABASE_URL}/rest/v1/doctoras?id=eq.{user_data['id']}&select=establecimiento_id,establecimientos_ids"
+                res_details = requests.get(url_profile_details, headers=SUPABASE_SERVICE_HEADERS)
+                res_details.raise_for_status()
+                profile_details = res_details.json()[0]
+                
+                
+                # --- Lógica de unificación de IDs (soporte para plural y singular) ---
+                establecimientos_ids_raw = profile_details.get('establecimientos_ids') # Array (preferido)
+                
+                if isinstance(establecimientos_ids_raw, list) and establecimientos_ids_raw:
+                    establecimientos_ids = establecimientos_ids_raw
                 else:
-                    # Aseguramos que sea una lista (si JSONB lo devolvió como string en algunos casos, esto fallaría)
-                    if not isinstance(establecimientos_ids, list):
-                        # Intentar parsear si es una cadena JSON, si no, forzar lista vacía
-                        try:
-                            establecimientos_ids = json.loads(establecimientos_ids)
-                            if not isinstance(establecimientos_ids, list):
-                                raise TypeError
-                        except (json.JSONDecodeError, TypeError):
-                            print(f"ERROR: establecimientos_ids '{establecimientos_ids}' no es un array válido.")
-                            establecimientos_ids = []
+                    # Fallback al singular (si solo existe el singular)
+                    singular_id_raw = profile_details.get('establecimiento_id')
+                    if isinstance(singular_id_raw, int) and singular_id_raw is not None:
+                         establecimientos_ids = [singular_id_raw]
+                    else:
+                         establecimientos_ids = []
 
-
-                    # 3. Obtener los nombres de los colegios para el listado inicial (frontend)
+                # 3. Si hay IDs, obtener los nombres de los colegios para el listado inicial (frontend)
+                if not establecimientos_ids:
+                    print("AVISO: Coordinador de Escuela logueado sin IDs de establecimiento asignados.")
+                    colegios_asignados_data = []
+                else:
+                    # Usamos 'in_' para buscar múltiples IDs
                     ids_str = ",".join(map(str, establecimientos_ids)) 
                     
                     url_colegios = f"{SUPABASE_URL}/rest/v1/acceso_establecimientos?id=in.({ids_str})&select=id,nombre_colegio"
                     res_colegios = requests.get(url_colegios, headers=SUPABASE_SERVICE_HEADERS)
                     res_colegios.raise_for_status()
                     colegios_asignados_data = res_colegios.json()
-                    
-                    session['colegios_asignados_ids'] = establecimientos_ids # IDs para la verificación
-                    session['colegios_asignados'] = colegios_asignados_data # Lista de objetos para Jinja
+                
+                # 4. Guardar en sesión para el dashboard
+                session['colegios_asignados_ids'] = establecimientos_ids # IDs para la verificación
+                session['colegios_asignados'] = colegios_asignados_data # Lista de objetos para Jinja
             
             print(f"DEBUG: Sesión iniciada: usuario={session['usuario']}, usuario_id={session['usuario_id']}")
             flash(f'¡Bienvenido, {usuario_login}!', 'success')
@@ -1890,3 +1897,5 @@ def eliminar_nomina(nomina_id):
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+
+}

@@ -177,7 +177,7 @@ def get_form_field_value(field_name, form_data, return_none_if_empty=False):
     stripped_value = value.strip()
     if not stripped_value: # If it's an empty string after stripping
         return None if return_none_if_empty else '' # Return None for dates/numeric, empty string for text/select
-    return stripped_value
+    return value.strip()
 
 
 # Nuevo: Función para obtener el PDF de neurología específico para una doctora
@@ -647,7 +647,7 @@ def login():
     clave = request.form['password']
     
     # CORRECCIÓN CRÍTICA: SELECCIONAMOS SOLO ID y ROL para evitar el error 400 inicial.
-    # El resto de la información del perfil se obtiene después si el rol es 'coordinador_escuela'.
+    # Si la columna "establecimientos_ids" no existe, el primer SELECT funcionará.
     url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario_login}&password=eq.{clave}&select=id,rol"
     
     print(f"DEBUG: Intento de login para usuario: {usuario_login}, URL: {url}")
@@ -669,8 +669,7 @@ def login():
             # 2. Lógica específica para COORDINADOR DE ESCUELA
             if role == 'coordinador_escuela':
                 
-                # SEGUNDO SELECT: Obtenemos los IDs de los colegios SÓLO si es Coordinador de Escuela.
-                # Seleccionamos ambas columnas (singular y plural) para mayor compatibilidad con la DB.
+                # SEGUNDO SELECT: Seleccionamos ambas columnas (singular y plural) para compatibilidad.
                 url_profile_details = f"{SUPABASE_URL}/rest/v1/doctoras?id=eq.{user_data['id']}&select=establecimiento_id,establecimientos_ids"
                 res_details = requests.get(url_profile_details, headers=SUPABASE_SERVICE_HEADERS)
                 res_details.raise_for_status()
@@ -1897,5 +1896,3 @@ def eliminar_nomina(nomina_id):
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
-
-}

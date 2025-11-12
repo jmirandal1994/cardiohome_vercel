@@ -676,6 +676,40 @@
             justify-content: center;
         }
 
+        /* Estilos específicos del listado de colegios (múltiples) */
+        .colegios-grid {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+
+        .colegio-card-small {
+            background: #FDFEFE;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid #E2E8F0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .colegio-card-small:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-color: var(--highlight-green);
+        }
+        .colegio-card-small .info {
+            font-weight: 600;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .colegio-card-small .icon-lock {
+            font-size: 1.5rem;
+            color: var(--danger-red);
+        }
+
         /* Estilos específicos del modal de corrección */
         .modal-content {
             background: white;
@@ -754,8 +788,8 @@
                     {% elif usuario == 'coordinador_escuela' %}
                         <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical"></i> Bienvenida</a></li>
                         <!-- Esta es la sección crítica de la Carpeta Protegida -->
-                        <li><a href="#" class="nav-link" data-section="school-dashboard"><i class="fa-solid fa-school"></i> Mi Establecimiento</a></li>
-                        <li><a href="#" class="nav-link" data-section="school-contact"><i class="fa-solid fa-envelope"></i> Contacto</a></li>
+                        <li><a href="#" class="nav-link" data-section="school-dashboard"><i class="fa-solid fa-school"></i> Mis Establecimientos</a></li>
+                        <li><a href="#" class="nav-link" data-section="school-contact"><i class="fa-solid fa-envelope"></i> Contacto / Soporte</a></li>
 
                     <!-- PERFIL DE DOCTORA/MEDICO (o Default) -->
                     {% else %}
@@ -1237,7 +1271,7 @@
                                         <div class="bg-blue-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
                                             <div class="flex justify-between items-center mb-4">
                                                 <span class="text-lg font-bold">Línea 1 (280 evaluaciones)</span>
-                                                <i class="fa-solid fa-location-dot text-2xl opacity-75"></i>
+                                                <i class="fa-solid fa-location-dot text-2xl opacity-0.75"></i>
                                             </div>
                                             <p class="text-sm">Comunas: Maipú, Cerrillos</p>
                                         </div>
@@ -1246,7 +1280,7 @@
                                         <div class="bg-green-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
                                             <div class="flex justify-between items-center mb-4">
                                                 <span class="text-lg font-bold">Línea 2 (320 evaluaciones)</span>
-                                                <i class="fa-solid fa-location-dot text-2xl opacity-75"></i>
+                                                <i class="fa-solid fa-location-dot text-2xl opacity-0.75"></i>
                                             </div>
                                             <p class="text-sm">Comunas: Estación Central, Maipú</p>
                                         </div>
@@ -1255,7 +1289,7 @@
                                         <div class="bg-yellow-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
                                             <div class="flex justify-between items-center mb-4">
                                                 <span class="text-lg font-bold">Línea 3 (200 evaluaciones)</span>
-                                                <i class="fa-solid fa-location-dot text-2xl opacity-75"></i>
+                                                <i class="fa-solid fa-location-dot text-2xl opacity-0.75"></i>
                                             </div>
                                             <p class="text-sm">Comunas: Estación Central</p>
                                         </div>
@@ -1264,7 +1298,7 @@
                                         <div class="bg-red-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
                                             <div class="flex justify-between items-center mb-4">
                                                 <span class="text-lg font-bold">Línea 4 (150 evaluaciones)</span>
-                                                <i class="fa-solid fa-location-dot text-2xl opacity-75"></i>
+                                                <i class="fa-solid fa-location-dot text-2xl opacity-0.75"></i>
                                             </div>
                                             <p class="text-sm">Comunas: Cerrillos</p>
                                         </div>
@@ -1318,50 +1352,73 @@
             {% elif usuario == 'coordinador_escuela' %}
                 <div id="school-dashboard" class="content-section">
                     <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">
-                        <i class="fa-solid fa-user-shield text-secondary-blue mr-2"></i> Mi Acceso Confidencial
+                        <i class="fa-solid fa-school text-secondary-blue mr-2"></i> Establecimientos Asignados
                     </h2>
 
-                    <!-- La "CARPETA" o Tarjeta de Acceso al Establecimiento -->
-                    <div class="colegio-card-v3 max-w-2xl mx-auto">
-                        <div class="header">
-                            <span class="flex items-center space-x-3 text-2xl">
-                                <i class="fa-solid fa-school text-highlight-green text-3xl"></i>
-                                <!-- Muestra el nombre del colegio de la sesión -->
-                                <span id="school-name-display">{{ nombre_establecimiento_coordinador | default("Establecimiento No Asignado") }}</span>
-                            </span>
-                            <!-- Icono de Candado Rojo por defecto -->
-                            <i class="fa-solid fa-lock text-danger-red icon" id="lock-icon"></i>
-                        </div>
-
-                        <!-- Formulario de Contraseña para Desbloquear -->
-                        <div id="password-form-container" class="mt-4 p-4 bg-light-blue rounded-lg">
-                            <p class="text-lg font-medium text-text-dark mb-4">
-                                <i class="fa-solid fa-triangle-exclamation text-danger-red mr-2"></i> Esta información es confidencial. Por favor, ingrese el **Token de Acceso** para desbloquear la nómina.
-                            </p>
-                            <form id="access-password-form" onsubmit="return handleAccessPassword(event)">
-                                <label for="school_password" class="font-bold block mb-2">Token de Acceso de la Carpeta:</label>
-                                <input type="password" id="school_password" name="school_password" required class="form-input" placeholder="Ingrese el token secreto de acceso..." />
-                                <button type="submit" class="form-button mt-4 w-full justify-center">
-                                    <i class="fa-solid fa-unlock"></i> Desbloquear Nómina
-                                </button>
-                            </form>
-                        </div>
+                    <!-- Listado de Colegios Asignados (Vista inicial de la "carpeta") -->
+                    <div id="school-list-container" class="card">
+                        {% if colegios_asignados %}
+                            <p class="text-lg text-gray-600 mb-4">Seleccione un establecimiento para desbloquear su nómina de valoraciones:</p>
+                            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 colegios-grid">
+                                {% for colegio in colegios_asignados %}
+                                    <!-- Tarjeta de Colegio con botón de desbloqueo -->
+                                    <div class="colegio-card-small" 
+                                         onclick="showAccessForm('{{ colegio.id }}', '{{ colegio.nombre_colegio }}')">
+                                        <div class="info">
+                                            <i class="fa-solid fa-folder-closed text-xl text-primary-blue"></i>
+                                            <span>{{ colegio.nombre_colegio }}</span>
+                                        </div>
+                                        <i class="fa-solid fa-lock icon-lock"></i>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-center text-red-500 font-medium">No tiene establecimientos asignados. Contacte a su Coordinadora General.</p>
+                        {% endif %}
                     </div>
-                    
-                    <!-- Contenido Desbloqueado (Inicialmente Oculto) -->
-                    <div id="nomina-content-locked" class="mt-8" style="display: none;">
+
+                    <!-- MODAL/CONTENEDOR DE ACCESO PROTEGIDO (Carpeta Abierta) -->
+                    <div id="access-modal-container" style="display:none;" class="mt-8">
                         <div class="card">
-                            <h3><i class="fa-solid fa-list-ul"></i> Nómina de Valoraciones de Alumnos</h3>
-                            <p class="text-gray-600 mb-6">Lista de alumnos evaluados. Puede descargar su valoración individual o solicitar correcciones específicas.</p>
+                            <div class="flex justify-between items-center border-b pb-4 mb-4">
+                                <h3 class="text-2xl font-bold flex items-center gap-2 m-0 border-none pb-0">
+                                    <i class="fa-solid fa-unlock-keyhole text-highlight-green"></i>
+                                    Acceso a la Nómina: <span id="access-school-name" class="text-secondary-blue"></span>
+                                </h3>
+                                <button onclick="backToSchoolList()" class="action-button red text-sm">
+                                    <i class="fa-solid fa-arrow-left"></i> Volver al Listado
+                                </button>
+                            </div>
                             
-                            <!-- Contenedor que será llenado por JavaScript después del desbloqueo -->
-                            <ul class="lista-items" id="alumnos-nomina-list">
-                                <!-- Contenido cargado por JavaScript/Flask -->
-                            </ul>
-                            <p id="no-results-message" class="text-center text-gray-500 mt-4" style="display:none;">No hay alumnos evaluados para este establecimiento.</p>
+                            <!-- 1. Formulario de Contraseña para Desbloquear -->
+                            <div id="password-form-container" class="p-4 bg-light-blue rounded-lg">
+                                <p class="text-lg font-medium text-text-dark mb-4">
+                                    <i class="fa-solid fa-triangle-exclamation text-danger-red mr-2"></i> **Token de Acceso Requerido**
+                                </p>
+                                <form id="access-password-form" onsubmit="return handleAccessPassword(event)">
+                                    <!-- Campo oculto para guardar el ID del colegio que se está desbloqueando -->
+                                    <input type="hidden" id="current-school-id" value=""> 
+
+                                    <label for="school_password" class="font-bold block mb-2">Token Secreto:</label>
+                                    <input type="password" id="school_password" name="school_password" required class="form-input" placeholder="Ingrese el token secreto de acceso..." />
+                                    <button type="submit" class="form-button mt-4 w-full justify-center">
+                                        <i class="fa-solid fa-unlock"></i> Desbloquear Nómina
+                                    </button>
+                                </form>
+                            </div>
+                            
+                            <!-- 2. Contenido Desbloqueado (Lista de Alumnos) -->
+                            <div id="nomina-content-locked" class="mt-8" style="display: none;">
+                                <h4><i class="fa-solid fa-list-ul"></i> Nómina de Valoraciones Evaluadas</h4>
+                                <p class="text-gray-600 mb-6">Lista de alumnos evaluados. Puede descargar su valoración individual o solicitar correcciones específicas.</p>
+                                
+                                <ul class="lista-items" id="alumnos-nomina-list">
+                                    <!-- Contenido cargado dinámicamente por JavaScript -->
+                                </ul>
+                                <p id="nomina-no-results-message" class="text-center text-gray-500 mt-4" style="display:none;">No hay alumnos evaluados para este colegio.</p>
+                            </div>
                         </div>
                     </div>
-
                 </div>
 
                 <!-- Sección de Contacto para el Coordinador de Escuela -->
@@ -1580,6 +1637,14 @@
                 // Asegurar que al cambiar de sección, el modal de corrección esté oculto
                 const modal = document.getElementById('correction-modal');
                 if (modal) modal.style.display = 'none';
+                
+                // Ocultar el modal de acceso si se cambia la sección (solo para el coordinador)
+                const accessModal = document.getElementById('access-modal-container');
+                const schoolList = document.getElementById('school-list-container');
+                if (accessModal && schoolList && sectionId !== 'school-dashboard') {
+                    accessModal.style.display = 'none';
+                    schoolList.style.display = 'block';
+                }
             });
             navLinks.forEach(link => {
                 link.classList.remove('active');
@@ -1590,7 +1655,7 @@
             
             if (activeSection) {
                 activeSection.classList.add('active');
-                // Ejecutar funciones de gráfico si la sección lo requiere
+                
                 if (sectionId === 'admin-performance') {
                     renderAdminPerformanceChart();
                 } else if (sectionId === 'doctor-performance') {
@@ -1689,6 +1754,39 @@
             document.getElementById('correction_details').value = ''; 
             modal.style.display = 'flex';
         }
+        
+        // Muestra el formulario de acceso para el colegio seleccionado
+        function showAccessForm(schoolId, schoolName) {
+            const accessModal = document.getElementById('access-modal-container');
+            const schoolList = document.getElementById('school-list-container');
+            const accessSchoolName = document.getElementById('access-school-name');
+            const currentSchoolId = document.getElementById('current-school-id');
+            const contentLocked = document.getElementById('nomina-content-locked');
+            const formContainer = document.getElementById('password-form-container');
+
+            // 1. Ocultar el listado de colegios y mostrar el modal
+            schoolList.style.display = 'none';
+            accessModal.style.display = 'block';
+
+            // 2. Limpiar el estado previo del modal
+            document.getElementById('school_password').value = '';
+            contentLocked.style.display = 'none';
+            formContainer.style.display = 'block';
+            
+            // 3. Establecer el contexto del colegio actual
+            accessSchoolName.textContent = schoolName;
+            currentSchoolId.value = schoolId;
+        }
+
+        // Vuelve a la lista principal de colegios
+        function backToSchoolList() {
+            const accessModal = document.getElementById('access-modal-container');
+            const schoolList = document.getElementById('school-list-container');
+
+            accessModal.style.display = 'none';
+            schoolList.style.display = 'block';
+        }
+
 
         // 1. RENDERIZADO DE LA NÓMINA DESPUÉS DEL DESBLOQUEO
         function renderNominas(nominas, containerElement, noResultsMsg) {
@@ -1702,6 +1800,7 @@
 
             nominas.forEach(alumno => {
                 // El enlace de descarga apunta a la ruta de Flask que buscará el PDF por alumno.id
+                // Usamos el ID del alumno para la ruta que genera el PDF
                 const downloadUrl = `/descargar_pdf_alumno/${alumno.id}`;
                 
                 const itemCard = `
@@ -1710,8 +1809,7 @@
                             <i class="fa-solid fa-user-graduate mr-2 text-primary-blue"></i>
                             <span class="font-bold">${alumno.nombre_alumno}</span> | RUT: ${alumno.rut_alumno || 'N/A'}
                             <span class="text-sm text-gray-500 block md:inline-block md:ml-4">
-                                <!-- Asumimos que la nómina trae el tipo de formulario o fecha_evaluacion -->
-                                Evaluado: ${alumno.fecha_evaluacion || 'N/A'}
+                                Nomina: ${alumno.nombre_nomina || 'N/A'} | Evaluación: ${alumno.fecha_evaluacion || 'N/A'}
                             </span>
                         </div>
                         <div class="item-card-actions mt-3 md:mt-0 flex flex-wrap justify-end gap-3">
@@ -1737,11 +1835,12 @@
 
             const DESBLOQUEAR_URL = "/api/nomina/desbloquear";
             const inputPassword = document.getElementById('school_password').value;
+            const currentSchoolId = document.getElementById('current-school-id').value; // AHORA ENVIAMOS EL ID
+            
             const formContainer = document.getElementById('password-form-container');
             const contentLocked = document.getElementById('nomina-content-locked');
-            const lockIcon = document.getElementById('lock-icon');
             const nominasContainer = document.getElementById('alumnos-nomina-list');
-            const noResultsMsg = document.getElementById('no-results-message');
+            const noResultsMsg = document.getElementById('nomina-no-results-message');
 
             // Mostrar spinner mientras se valida con Supabase/Flask
             nominasContainer.innerHTML = '<p class="text-center text-gray-500 my-8"><i class="fa-solid fa-spinner fa-spin fa-2x"></i> Validando acceso y cargando datos...</p>';
@@ -1750,7 +1849,7 @@
             fetch(DESBLOQUEAR_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: inputPassword })
+                body: JSON.stringify({ password: inputPassword, school_id: currentSchoolId }) // ENVIAMOS ID y PASSWORD
             })
             .then(response => response.json())
             .then(data => {
@@ -1766,9 +1865,7 @@
                     // 1. Cambios visuales de la "carpeta"
                     formContainer.style.display = 'none'; 
                     contentLocked.style.display = 'block'; 
-                    lockIcon.classList.remove('fa-lock', 'text-danger-red');
-                    lockIcon.classList.add('fa-unlock', 'text-highlight-green');
-
+                    
                     // 2. Carga dinámica de la nómina
                     renderNominas(data.nominas, nominasContainer, noResultsMsg);
                     
@@ -1837,7 +1934,9 @@
             return false;
         }
 
-        // --- FUNCIONES DE MAQUETA DE COORDINADORA GENERAL (Mantengo las funciones existentes) ---
+
+        // --- FUNCIONES DE GRÁFICOS Y FILTROS (MANTENIDAS) ---
+        
         const colegiosMaqueta = {
             "Linea 1 (280 evaluaciones)": [
                 {
@@ -1969,83 +2068,6 @@
             alumnosContainer.style.display = 'block';
         }
 
-
-        // --- FUNCIONES DE GRÁFICOS (MANTENGO LAS EXISTENTES) ---
-
-        const adminPerformanceData = {}; // Reemplazar con datos reales
-        function renderAdminPerformanceChart() {
-            const ctx = document.getElementById('adminPerformanceChart');
-            if (!ctx) return;
-            if (window.adminChartInstance) window.adminChartInstance.destroy();
-            const labels = Object.keys(adminPerformanceData);
-            const data = Object.values(adminPerformanceData);
-            window.adminChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Formularios Completados',
-                        data: data,
-                        backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(153, 102, 255, 0.6)', 'rgba(255, 159, 64, 0.6)', 'rgba(54, 162, 235, 0.6)', 'rgba(255, 99, 132, 0.6)', 'rgba(201, 203, 207, 0.6)'],
-                        borderColor: ['rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)', 'rgba(255, 159, 64, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)', 'rgba(201, 203, 207, 1)'],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { title: { display: true, text: 'Formularios Evaluados por Doctora', font: { size: 18, family: 'Montserrat' }, color: '#333' }, legend: { display: false } },
-                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Cantidad de Formularios' }, ticks: { precision: 0 } }, x: { title: { display: true, text: 'Doctora' } } }
-                }
-            });
-        }
-
-        const doctorPerformanceDataSingleDoctor = {}; // Reemplazar con datos reales
-        function renderDoctorPerformanceChart() {
-            const ctx = document.getElementById('doctorPerformanceChart');
-            if (!ctx) return;
-            if (window.doctorChartInstance) window.doctorChartInstance.destroy();
-            if (!doctorPerformanceDataSingleDoctor || doctorPerformanceDataSingleDoctor.total === 0) {
-                 ctx.style.display = 'none';
-                 const parent = ctx.closest('.chart-container');
-                 if (parent) {
-                    let noDataMsg = parent.querySelector('.no-data-message');
-                    if (!noDataMsg) {
-                        noDataMsg = document.createElement('p');
-                        noDataMsg.className = 'no-data-message text-center text-gray-500 mt-4';
-                        noDataMsg.textContent = 'No hay suficientes datos para mostrar el gráfico.';
-                        parent.appendChild(noDataMsg);
-                    }
-                 }
-                 return;
-            } else {
-                 const noDataMsg = ctx.closest('.chart-container').querySelector('.no-data-message');
-                 if (noDataMsg) noDataMsg.remove();
-                 ctx.style.display = 'block';
-            }
-            const completed = doctorPerformanceDataSingleDoctor.completed;
-            const pending = doctorPerformanceDataSingleDoctor.total - completed;
-            window.doctorChartInstance = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: ['Completados', 'Pendientes'],
-                    datasets: [{
-                        label: 'Formularios',
-                        data: [completed, pending],
-                        backgroundColor: ['rgba(54, 162, 235, 0.6)', 'rgba(255, 99, 132, 0.6)'],
-                        borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)'],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { title: { display: true, text: 'Estado de Mis Formularios', font: { size: 18, family: 'Montserrat' }, color: '#333' }, legend: { position: 'bottom' },
-                        tooltip: { callbacks: { label: function(context) { let label = context.label || ''; if (label) label += ': '; if (context.parsed !== null) label += context.parsed + ' (' + ((context.parsed / doctorPerformanceDataSingleDoctor.total) * 100).toFixed(1) + '%)'; return label; } } }
-                    }
-                }
-            });
-        }
-        
-        // Datos de ejemplo para la coordinadora - MODIFICADOS PARA INCLUIR NEUROLOGÍA Y FAMILIAR.
         const evaluaciones_por_dia = {
             '2025-09-22': { neurologia: 2, familiar: 3, total: 5 },
             '2025-09-23': { neurologia: 4, familiar: 4, total: 8 },
@@ -2061,7 +2083,7 @@
             'Semana 39': { neurologia: 22, familiar: 23, total: 45 },
             'Semana 40': { neurologia: 30, familiar: 30, total: 60 }
         };
-
+        
         function renderCoordinadoraPerformanceChart() {
             const ctx = document.getElementById('coordinadoraPerformanceChart');
             if (!ctx) return;

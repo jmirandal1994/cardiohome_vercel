@@ -735,101 +735,187 @@ def login():
         
 # - Ruta /dashboard corregida y modificada para la Fase 3
 
+# - Ruta /dashboard Completa y Final
+
 @app.route('/dashboard')
 def dashboard():
+    # 1. Seguridad
     if 'usuario' not in session:
         flash('Por favor, inicia sesión para acceder.', 'error')
         return redirect(url_for('index'))
 
-    # SOLUCIÓN AL KEYERROR: Leer el rol desde session['usuario']
-    usuario = session['usuario'] # Contiene el rol: 'admin', 'doctora', 'coordinador_escuela', etc.
+    usuario = session['usuario']
     rol = usuario 
     usuario_id = session.get('usuario_id')
     
     print(f"DEBUG: Accediendo a dashboard para usuario: {usuario}, ID: {usuario_id}, Rol: {rol}")
 
-    # --- Variables pasadas a la plantilla ---
+    # 2. Inicialización de variables para la plantilla
     doctoras = [] 
     coordinadoras_generales = [] 
     coordinadores_escuela = [] 
     establecimientos = []
     admin_nominas_cargadas = []
-    # NUEVO: Lista de todos los usuarios para la búsqueda de nombres en el HTML
     all_users_for_lookup = [] 
-    eventos = []
-    formularios = []
-    assigned_nominations = []
+    eventos = [] 
+    formularios = [] 
+    assigned_nominations = [] 
     colegios_asignados = [] 
     
-    # Lógica de carga de admin
+    # 3. Lógica de carga de datos para TODOS los roles
+    try:
+        # Carga unificada de todos los usuarios (para lookups y selects)
+        url_doctoras = f"{SUPABASE_URL}/rest/v1/doctoras?select=id,usuario,rol" 
+        res_doctoras = requests.get(url_doctoras, headers=SUPABASE_SERVICE_HEADERS) 
+        res_doctoras.raise_for_status()
+        doctoras_raw = res_doctoras.json()
+        
+        all_users = [{'id': doc['id'], 'usuario': doc['usuario'], 'rol': doc.get('rol')} for doc in doctoras_raw]
+        all_users_for_lookup = all_users 
+        
+        doctoras = [user for user in all_users if user['rol'] == 'doctora'] 
+        coordinadoras_generales = [user for user in all_users if user['rol'] == 'coordinadora'] 
+        coordinadores_escuela = [user for user in all_users if user['rol'] == 'coordinador_escuela']
+        
+    except requests.exceptions.RequestException as e:
+        print(f"❌ ERROR AL OBTENER DATOS BASE: {e}")
+        flash('Error al cargar la base de datos de usuarios.', 'error')
+
+
+    # 4. Lógica específica por Rol
     if rol == 'admin':
         try:
-            # 1. OBTENER TODOS LOS USUARIOS (DOCTORAS Y COORDINADORES)
-            url_doctoras = f"{SUPABASE_URL}/rest/v1/doctoras?select=id,usuario,rol" 
-            res_doctoras = requests.get(url_doctoras, headers=SUPABASE_SERVICE_HEADERS) 
-            res_doctoras.raise_for_status()
-            doctoras_raw = res_doctoras.json()
-            
-            # FILTRADO DE ROLES EN PYTHON
-            all_users = [{'id': doc['id'], 'usuario': doc['usuario'], 'rol': doc.get('rol')} for doc in doctoras_raw]
-            
-            # ASIGNACIÓN DE LISTA UNIFICADA (Solución al UndefinedError)
-            all_users_for_lookup = all_users 
-            
-            # Separación de listas (Para los <select> del formulario de carga)
-            doctoras = [user for user in all_users if user['rol'] == 'doctora'] 
-            coordinadoras_generales = [user for user in all_users if user['rol'] == 'coordinadora'] 
-            coordinadores_escuela = [user for user in all_users if user['rol'] == 'coordinador_escuela']
-
-            # 2. OBTENER ESTABLECIMIENTOS (para el campo de asignación de colegio)
-            # Nota: Usamos 'acceso_establecimientos' como en el último código
+            # 1. OBTENER ESTABLECIMIENTOS (para el select de asignación en el formulario)
             url_establecimientos = f"{SUPABASE_URL}/rest/v1/acceso_establecimientos?select=id,nombre_colegio"
             res_establecimientos = requests.get(url_establecimientos, headers=SUPABASE_SERVICE_HEADERS) 
             res_establecimientos.raise_for_status()
-            establecimientos = [{'id': est['id'], 'nombre': est['nombre_colegio']} for est in res_establecimientos.json()] 
+            # Convertimos el ID BIGINT a STRING para pasarlo al HTML/select de forma segura
+            establecimientos = [{'id': str(est['id']), 'nombre': est['nombre_colegio']} for est in res_establecimientos.json()] 
 
-            # 3. OBTENER NÓMINAS CARGADAS (para gestión del admin)
+            # 2. OBTENER NÓMINAS CARGADAS (para gestión del admin)
             url_admin_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina,tipo_nomina,doctora_id,url_excel_original,nombre_excel_original,form_type,doctora_id_para_formulario,establecimiento_id,coord_general_id,coord_escuela_id"
             res_admin_nominas = requests.get(url_admin_nominas, headers=SUPABASE_SERVICE_HEADERS) 
             res_admin_nominas.raise_for_status()
-            admin_nominas_cargadas = res_admin_nominas.json()
+            # Asegurar que los IDs de establecimiento sean STRING para consistencia
+            admin_nominas_cargadas = [
+                {**nomina, 'establecimiento_id': str(nomina['establecimiento_id']) if nomina.get('establecimiento_id') is not None else None}
+                for nomina in res_admin_nominas.json()
+            ]
 
         except requests.exceptions.RequestException as e:
             print(f"❌ ERROR AL OBTENER DATOS (ADMIN DASHBOARD): {e}")
-            flash('Error al cargar datos de doctoras o establecimientos.', 'error')
+            flash('Error al cargar datos de nóminas y establecimientos.', 'error')
         
-    elif rol == 'doctora':
-        try:
-            # Lógica para Doctora (Simplificada)
-            url_nominas_asignadas = (
-                f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-                f"?doctora_id=eq.{usuario_id}"
-                f"&select=id,nombre_nomina,tipo_nomina,form_type,doctora_id_para_formulario"
-            )
-            res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_SERVICE_HEADERS) 
-            res_nominas_asignadas.raise_for_status()
-            raw_nominas = res_nominas_asignadas.json()
-            for nom in raw_nominas:
-                assigned_nominations.append({
-                    'id': nom['id'],
-                    'nombre_establecimiento': nom['nombre_nomina'],
-                    'tipo_nomina_display': nom['tipo_nomina'].replace('_', ' ').title(),
-                    'form_type': nom.get('form_type'),
-                    'doctora_id_para_formulario': nom.get('doctora_id_para_formulario')
-                })
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Error al obtener nóminas asignadas: {e}")
-            flash('Error al cargar nóminas asignadas.', 'error')
-
     elif rol == 'coordinador_escuela':
-        # Lógica para Coordinador de Escuela (preparación)
-        colegios_asignados = session.get('colegios_asignados', [])
-        establecimientos = [{'id': c['id'], 'nombre': c['nombre_colegio']} for c in colegios_asignados] if colegios_asignados else []
-        
+        try:
+            # SOLUCIÓN CRÍTICA: Cargar los colegios asignados a través de las nóminas por coord_escuela_id
+            
+            # 1. Buscar los IDs de establecimiento asociados a este coordinador en nominas_medicas
+            url_nominas_asignadas = (
+                f"{SUPABASE_URL}/rest/v1/nominas_medicas?"
+                f"coord_escuela_id=eq.{usuario_id}" 
+                f"&select=establecimiento_id"
+            )
+            res_nominas = requests.get(url_nominas_asignadas, headers=SUPABASE_SERVICE_HEADERS) 
+            res_nominas.raise_for_status()
+            nominas_raw = res_nominas.json()
 
-    # Variables de relleno para el render_template (para evitar KeyErrors en el HTML)
-    colegios_asignados = session.get('colegios_asignados', [])
-    
+            # Obtener solo los IDs únicos de los establecimientos (BIGINTs)
+            establecimiento_ids = [str(n['establecimiento_id']) for n in nominas_raw if n.get('establecimiento_id') is not None]
+            unique_ids_str = ",".join(set(establecimiento_ids))
+            
+            if unique_ids_str:
+                # 2. Obtener los nombres de los colegios de la tabla de acceso (id es BIGINT/int8)
+                url_colegios = (
+                    f"{SUPABASE_URL}/rest/v1/acceso_establecimientos?"
+                    f"id=in.({unique_ids_str})" # Usamos los IDs obtenidos
+                    f"&select=id,nombre_colegio"
+                )
+                res_colegios = requests.get(url_colegios, headers=SUPABASE_SERVICE_HEADERS) 
+                res_colegios.raise_for_status()
+                # CRÍTICO: Aseguramos que el ID de colegio se devuelva como STRING
+                colegios_asignados = [{'id': str(col['id']), 'nombre_colegio': col['nombre_colegio']} for col in res_colegios.json()]
+            else:
+                 colegios_asignados = []
+
+        except requests.exceptions.RequestException as e:
+            print(f"❌ ERROR AL CARGAR COLEGIOS (COORD. ESCUELA): {e}")
+            flash('Error al cargar la lista de establecimientos asignados.', 'error')
+            colegios_asignados = []
+        
+    elif rol == 'coordinadora':
+        # Lógica de Coordinadora General (Carga de nóminas asignadas para contadores)
+        try:
+            # 1. Obtener todas las nóminas asignadas
+            url_nominas = (
+                f"{SUPABASE_URL}/rest/v1/nominas_medicas?"
+                f"coord_general_id=eq.{usuario_id}" 
+                f"&select=*,establecimiento:establecimiento_id(nombre_colegio)" 
+            )
+            res_nominas = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
+            res_nominas.raise_for_status()
+            assigned_nominations = res_nominas.json()
+            
+            # Procesamiento de nóminas (calcular completados, totales)
+            for nomina in assigned_nominations:
+                nomina['nombre_colegio'] = nomina.get('establecimiento', {}).get('nombre_colegio', 'Colegio Desconocido')
+                
+                # 2. Obtener contadores para cada nómina (Total de estudiantes)
+                url_total_estudiantes = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nomina['id']}&select=count"
+                res_total_estudiantes = requests.get(url_total_estudiantes, headers=SUPABASE_SERVICE_HEADERS)
+                total_estudiantes = int(res_total_estudiantes.headers.get('Content-Range', '*/0').split('/')[1])
+                nomina['total_estudiantes'] = total_estudiantes
+                
+                # 3. Obtener contadores para cada nómina (Estudiantes completados)
+                url_completados = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nomina['id']}&fecha_relleno=not.is.null&select=count"
+                res_completados = requests.get(url_completados, headers=SUPABASE_SERVICE_HEADERS)
+                completados = int(res_completados.headers.get('Content-Range', '*/0').split('/')[1])
+                nomina['formularios_completados'] = completados
+                
+                # 4. Calcular porcentaje
+                nomina['porcentaje_completado'] = round((completados / total_estudiantes) * 100) if total_estudiantes > 0 else 0
+                
+        except requests.exceptions.RequestException as e:
+            print(f"❌ ERROR AL CARGAR DATOS (COORD. GENERAL): {e}")
+            flash('Error al cargar datos de nóminas asignadas.', 'error')
+            assigned_nominations = []
+
+    elif rol == 'doctora':
+        # Lógica de Doctora (Carga de nóminas asignadas para rellenar)
+        try:
+            url_nominas = (
+                f"{SUPABASE_URL}/rest/v1/nominas_medicas?"
+                f"doctora_id=eq.{usuario_id}" 
+                f"&select=*,establecimiento:establecimiento_id(nombre_colegio)"
+            )
+            res_nominas = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
+            res_nominas.raise_for_status()
+            assigned_nominations = res_nominas.json()
+            
+            # Obtener contadores de estudiantes para cada nómina
+            for nomina in assigned_nominations:
+                nomina['nombre_colegio'] = nomina.get('establecimiento', {}).get('nombre_colegio', 'Colegio Desconocido')
+                
+                # Total de estudiantes
+                url_total_estudiantes = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nomina['id']}&select=count"
+                res_total_estudiantes = requests.get(url_total_estudiantes, headers=SUPABASE_SERVICE_HEADERS)
+                total_estudiantes = int(res_total_estudiantes.headers.get('Content-Range', '*/0').split('/')[1])
+                nomina['total_estudiantes'] = total_estudiantes
+                
+                # Estudiantes completados
+                url_completados = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nomina['id']}&fecha_relleno=not.is.null&select=count"
+                res_completados = requests.get(url_completados, headers=SUPABASE_SERVICE_HEADERS)
+                completados = int(res_completados.headers.get('Content-Range', '*/0').split('/')[1])
+                nomina['formularios_completados'] = completados
+                
+                nomina['porcentaje_completado'] = round((completados / total_estudiantes) * 100) if total_estudiantes > 0 else 0
+                
+        except requests.exceptions.RequestException as e:
+            print(f"❌ ERROR AL CARGAR DATOS (DOCTORA): {e}")
+            flash('Error al cargar datos de nóminas asignadas.', 'error')
+            assigned_nominations = []
+
+    # 5. Renderizar la plantilla
     return render_template(
         'dashboard.html',
         usuario=usuario,
@@ -839,18 +925,14 @@ def dashboard():
         coordinadores_escuela=coordinadores_escuela, 
         establecimientos=establecimientos,
         admin_nominas_cargadas=admin_nominas_cargadas,
-        all_users_for_lookup=all_users_for_lookup, # CRUCIAL: Lista de todos los usuarios
+        all_users_for_lookup=all_users_for_lookup, 
         assigned_nominations=assigned_nominations,
-        # Variables de maqueta/vacías (de tu código original)
-        eventos=eventos,
+        colegios_asignados=colegios_asignados, # CRUCIAL: Lista de colegios asignados al coord. escuela
+        # Variables de maqueta/vacías:
+        eventos=eventos, 
         formularios=formularios,
-        conteo={},
-        doctor_performance_data={}, 
-        doctor_performance_data_single_doctor={'completed': 0, 'pending': 0, 'total': 0},
-        colegios_asignados=colegios_asignados, 
-        nombre_establecimiento_coordinador=session.get('nombre_establecimiento_coordinador'),
-        nominas_completadas_escuela=None
     )
+    
 @app.route('/logout')
 def logout():
     session.clear()

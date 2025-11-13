@@ -911,11 +911,19 @@ def admin_agregar():
 
 # - Modificar la función admin_cargar_nomina
 
+# - Ruta modificada /admin/cargar_nomina (Incluye nueva lógica de conversión a None)
+
 @app.route('/admin/cargar_nomina', methods=['POST'])
 def admin_cargar_nomina():
     if session.get('usuario') != 'admin':
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
+    
+    # --- FUNCIÓN AUXILIAR DE CONVERSIÓN RÍGIDA A NONE (Paso 1) ---
+    def to_none_if_empty(value):
+        """Convierte cadenas vacías, o cadenas con solo espacios a None."""
+        return None if not value or str(value).strip() == "" else value
+    # -------------------------------------------------------------------
     
     # 1. Obtener datos del formulario
     tipo_nomina_raw = request.form.get('tipo_nomina', '').strip()
@@ -924,14 +932,10 @@ def admin_cargar_nomina():
     excel_file = request.files.get('excel')
     doctora_id_para_formulario = request.form.get('doctora_id_para_formulario', '').strip()
 
-    # MODIFICADO: Obtener el ID del establecimiento de acceso (YA NO ES OBLIGATORIO)
-    # Si viene como cadena vacía (''), se almacenará como NULL en la base de datos BIGINT
+    # Obtener IDs y aplicar la conversión a None
     establecimiento_acceso_id = request.form.get('establecimiento_acceso_id', '').strip() 
-    
-    # NUEVOS CAMPOS (Opcionales)
     coord_general_id = request.form.get('coord_general_id', '').strip()
     coord_escuela_id = request.form.get('coord_escuela_id', '').strip()
-
 
     tipo_nomina_normalized = tipo_nomina_raw.strip().lower() if tipo_nomina_raw else ''
 
@@ -966,7 +970,6 @@ def admin_cargar_nomina():
     try:
         upload_path = f"nominas-medicas/{nomina_id}/{excel_filename}" 
         upload_url = f"{SUPABASE_URL}/storage/v1/object/{upload_path}"
-        #
         res_upload = requests.put(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=excel_file_data)
         res_upload.raise_for_status()
         
@@ -976,10 +979,10 @@ def admin_cargar_nomina():
         flash(f"❌ Error al subir el archivo de la nómina a Supabase Storage: {error_detail}", 'error')
         return redirect(url_for('dashboard'))
 
-    # Mapear IDs vacíos a None para la DB (clave para NULL en BIGINT/UUID)
-    final_establecimiento_id = establecimiento_acceso_id if establecimiento_acceso_id else None
-    final_coord_general_id = coord_general_id if coord_general_id else None
-    final_coord_escuela_id = coord_escuela_id if coord_escuela_id else None
+    # Mapear IDs vacíos a None
+    final_establecimiento_id = to_none_if_empty(establecimiento_acceso_id)
+    final_coord_general_id = to_none_if_empty(coord_general_id)
+    final_coord_escuela_id = to_none_if_empty(coord_escuela_id)
 
 
     # ACTUALIZADO: Agregar los IDs de coordinación a los datos de la nómina
@@ -993,12 +996,11 @@ def admin_cargar_nomina():
         "form_type": form_type, 
         "doctora_id_para_formulario": doctora_id_para_formulario if form_type == 'neurologia' else None,
         "establecimiento_id": final_establecimiento_id, 
-        "coord_general_id": final_coord_general_id,  # <-- NUEVO CAMPO
-        "coord_escuela_id": final_coord_escuela_id   # <-- NUEVO CAMPO
+        "coord_general_id": final_coord_general_id,  # <-- Usando la versión limpia
+        "coord_escuela_id": final_coord_escuela_id   # <-- Usando la versión limpia
     }
 
     try:
-        #
         res_insert_nomina = requests.post(
             f"{SUPABASE_URL}/rest/v1/nominas_medicas",
             headers=SUPABASE_SERVICE_HEADERS, 
@@ -1009,7 +1011,7 @@ def admin_cargar_nomina():
     except requests.exceptions.RequestException as e:
         error_detail = res_insert_nomina.text if 'res_insert_nomina' in locals() else 'No response from Supabase.'
         flash(f"❌ Error al guardar los datos de la nómina en la base de datos: {error_detail}", 'error')
-        # Rollback: Intentar limpiar el archivo subido si falla la inserción en la DB
+        # Rollback
         try:
             requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
         except Exception: pass
@@ -1020,11 +1022,10 @@ def admin_cargar_nomina():
     if excel_filename.endswith(('.xls', '.xlsx')):
         df = pd.read_excel(excel_data_stream)
     elif excel_filename.endswith('.csv'):
-        #
         df = pd.read_csv(excel_data_stream, encoding='utf-8')
     else:
         flash('❌ Formato de archivo no soportado para la nómina.', 'error')
-        # Rollback: eliminar la nómina y el archivo subido si el formato no es soportado
+        # Rollback
         try:
             requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
             requests.delete(f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}", headers=SUPABASE_SERVICE_HEADERS)
@@ -1052,7 +1053,7 @@ def admin_cargar_nomina():
     if not all(k in col_map for k in required_columns_excel):
         missing_cols = [col for col in required_columns_excel if col not in col_map]
         flash(f"❌ El archivo no contiene las columnas necesarias: {', '.join(missing_cols)}.", 'error')
-        # Rollback: eliminar la nómina y el archivo subido
+        # Rollback
         try:
             requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
             requests.delete(f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}", headers=SUPABASE_SERVICE_HEADERS)
@@ -1099,14 +1100,14 @@ def admin_cargar_nomina():
                 "nacionalidad": nacionalidad_valor,
                 "sexo": sexo_adivinado,
                 "fecha_relleno": None,
-                "establecimiento_id": final_establecimiento_id # <-- AÑADIDO (puede ser NULL)
+                "establecimiento_id": final_establecimiento_id 
             }
             estudiantes_a_insertar.append(estudiante)
             
         except Exception as e:
             print(f"❌ Error al procesar fila {index+2}: {e}. Datos de la fila: {row.to_dict()}")
             flash(f"Error al procesar la fila {index+2} del archivo. Verifique el formato de los datos. ({e})", 'error')
-            # Rollback: eliminar la nómina y el archivo subido
+            # Rollback
             try:
                 requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
                 requests.delete(f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}", headers=SUPABASE_SERVICE_HEADERS)
@@ -1118,7 +1119,6 @@ def admin_cargar_nomina():
         return redirect(url_for('dashboard'))
 
     try:
-        #
         res_insert_estudiantes = requests.post(
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina",
             headers=SUPABASE_SERVICE_HEADERS, 

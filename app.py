@@ -917,6 +917,8 @@ def admin_agregar():
 
 # - Ruta /admin/cargar_nomina modificada FINALMENTE
 
+# - Ruta /admin/cargar_nomina modificada FINAL Y ROBUSTA
+
 @app.route('/admin/cargar_nomina', methods=['POST'])
 def admin_cargar_nomina():
     if session.get('usuario') != 'admin':
@@ -926,8 +928,6 @@ def admin_cargar_nomina():
     # --- FUNCIÓN AUXILIAR DE CONVERSIÓN RÍGIDA A NONE ---
     def to_none_if_empty(value):
         """Convierte cadenas vacías, o cadenas con solo espacios a None."""
-        # Se usa 'str(value)' para que el booleano 'False' de request.form.get()
-        # o los valores nulos no rompan la función.
         return None if not value or str(value).strip() == "" or str(value).strip() == "None" else value
     # ----------------------------------------------------
     
@@ -935,7 +935,7 @@ def admin_cargar_nomina():
     tipo_nomina_raw = request.form.get('tipo_nomina', '').strip()
     nombre_especifico = request.form.get('nombre_especifico', '').strip()
     doctora_id_from_form = request.form.get('doctora', '').strip()
-    excel_file = request.files.get('excel') # Nota: el nombre del input debe ser 'excel'
+    excel_file = request.files.get('excel') 
     doctora_id_para_formulario = request.form.get('doctora_id_para_formulario', '').strip()
 
     # Obtener IDs y aplicar la conversión a None
@@ -952,9 +952,9 @@ def admin_cargar_nomina():
     elif 'familiar' in tipo_nomina_normalized or 'medicina familiar' in tipo_nomina_normalized: 
         form_type = 'medicina_familiar'
 
-    # Validaciones críticas (establecimiento_acceso_id ya no es obligatorio)
+    # Validaciones críticas
     if not all([tipo_nomina_raw, nombre_especifico, doctora_id_from_form, excel_file]):
-        flash('❌ Falta uno o más campos obligatorios para cargar la nómina (tipo, nombre, doctora, archivo).', 'error')
+        flash('❌ Faltan campos obligatorios para cargar la nómina (tipo, nombre, doctora, archivo).', 'error')
         return redirect(url_for('dashboard'))
 
     if form_type is None: 
@@ -982,11 +982,7 @@ def admin_cargar_nomina():
     if not establecimiento_acceso_id:
         
         nombre_colegio_nuevo = nombre_especifico.title() 
-        
-        # Generamos un nuevo ID único para este nuevo registro de colegio
         nuevo_establecimiento_id = str(uuid.uuid4()) 
-        
-        # El coordinador de escuela a asignar es el que seleccionó el admin (puede ser None)
         coord_escuela_asignado_a_colegio = to_none_if_empty(coord_escuela_id) 
 
         data_nuevo_colegio = {
@@ -997,7 +993,7 @@ def admin_cargar_nomina():
         }
         
         try:
-            print(f"DEBUG: Creando nuevo colegio en DB con ID: {nuevo_establecimiento_id}")
+            print(f"DEBUG: Intentando crear nuevo colegio: {nombre_colegio_nuevo}")
             res_insert_colegio = requests.post(
                 f"{SUPABASE_URL}/rest/v1/acceso_establecimientos",
                 headers=SUPABASE_SERVICE_HEADERS,
@@ -1005,7 +1001,6 @@ def admin_cargar_nomina():
             )
             res_insert_colegio.raise_for_status()
             
-            # Usar el ID recién creado para la nómina y los estudiantes
             establecimiento_acceso_id = nuevo_establecimiento_id 
             flash(f"✅ Nuevo Colegio de Acceso '{nombre_colegio_nuevo}' creado automáticamente. Token: {data_nuevo_colegio['token_acceso']}", 'success')
             
@@ -1024,7 +1019,7 @@ def admin_cargar_nomina():
     final_coord_general_id = to_none_if_empty(coord_general_id)
     final_coord_escuela_id = to_none_if_empty(coord_escuela_id)
 
-    print(f"DEBUG: IDs de Coordinación Finales - CG: {final_coord_general_id}, CE: {final_coord_escuela_id}")
+    print(f"DEBUG: IDs de Coordinación Finales - CG: {final_coord_general_id}, CE: {final_coord_escuela_id}, EstID: {final_establecimiento_id}")
 
 
     # ACTUALIZADO: Datos de la nómina
@@ -1044,6 +1039,7 @@ def admin_cargar_nomina():
 
     try:
         # 4. Insertar datos de la nómina
+        print(f"DEBUG: Insertando nómina principal: {nomina_id}")
         res_insert_nomina = requests.post(
             f"{SUPABASE_URL}/rest/v1/nominas_medicas",
             headers=SUPABASE_SERVICE_HEADERS, 
@@ -1053,8 +1049,8 @@ def admin_cargar_nomina():
 
     except requests.exceptions.RequestException as e:
         error_detail = res_insert_nomina.text if 'res_insert_nomina' in locals() else 'No response from Supabase.'
-        print(f"CRÍTICO: Error al insertar nómina médica: {error_detail}")
-        flash(f"❌ Error al guardar los datos de la nómina en la base de datos: {error_detail}", 'error')
+        print(f"CRÍTICO: Error al insertar nómina médica (Paso 4): {error_detail}")
+        flash(f"❌ Error al guardar la nómina (BASE): {error_detail}", 'error')
         # Rollback: Limpiar archivo
         try:
             requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
@@ -1165,6 +1161,8 @@ def admin_cargar_nomina():
         return redirect(url_for('dashboard'))
 
     try:
+        # 5. Insertar estudiantes (CRÍTICO)
+        print(f"DEBUG: Insertando {len(estudiantes_a_insertar)} estudiantes.")
         res_insert_estudiantes = requests.post(
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina",
             headers=SUPABASE_SERVICE_HEADERS, 
@@ -1177,7 +1175,8 @@ def admin_cargar_nomina():
 
     except requests.exceptions.RequestException as e:
         error_detail = res_insert_estudiantes.text if 'res_insert_estudiantes' in locals() else 'No response from Supabase.'
-        flash(f"❌ Error al guardar los estudiantes en la base de datos. La nómina fue creada, pero no se agregaron los estudiantes. ({e}). Detalles: {error_detail}", 'error')
+        print(f"CRÍTICO: Error al insertar estudiantes (Paso 5): {error_detail}")
+        flash(f"❌ Error al guardar los estudiantes: {error_detail}", 'error')
         return redirect(url_for('dashboard'))
         
 # La ruta '/enviar_formulario_a_drive' ha sido eliminada por completo.

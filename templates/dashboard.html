@@ -754,7 +754,6 @@
             </div>
         </div>
         <div class="flex items-center space-x-4">
-            <!-- Usamos Jinja para mostrar el usuario correcto -->
             <span class="text-gray-600 hidden md:block">Hola, {{ session.get('usuario') | replace('_', ' ') | capitalize }}.</span>
             <img src="{{ url_for('static', filename='logo.png') }}" alt="User Avatar" class="rounded-full shadow-lg border-2 border-white">
             <button onclick="cerrarSesion()" class="bg-red-500 text-white px-4 py-2 rounded-full shadow-md hover:bg-red-600 transition duration-200 hidden sm:block">Cerrar sesión</button>
@@ -765,7 +764,6 @@
         <aside class="sidebar" id="sidebar">
             <nav class="p-4">
                 <ul class="space-y-2">
-                    <!-- PERFIL DE ADMINISTRADOR -->
                     {% if usuario == 'admin' %}
                         <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical"></i> Bienvenida</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-performance"><i class="fa-solid fa-chart-line"></i> Rendimiento</a></li>
@@ -777,21 +775,17 @@
                         <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fa-solid fa-folder-plus"></i> Crear Proyecto</a></li>
                         <li><a href="#" class="nav-link" data-section="gestionar_proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
 
-                    <!-- PERFIL DE COORDINADORA GENERAL (EXISTENTE) -->
                     {% elif usuario == 'coordinadora' %}
                         <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical"></i> Bienvenida</a></li>
                         <li><a href="#" class="nav-link" data-section="coord-performance"><i class="fa-solid fa-gauge-high"></i> Rendimiento en Vivo</a></li>
                         <li><a href="#" class="nav-link" data-section="coord-evaluaciones"><i class="fa-solid fa-folder-tree"></i> Evaluaciones por Establecimiento</a></li>
                         <li><a href="#" class="nav-link" data-section="coord-contact"><i class="fa-solid fa-envelope"></i> Solicitudes</a></li>
                     
-                    <!-- NUEVO PERFIL: COORDINADOR DE ESCUELA -->
                     {% elif usuario == 'coordinador_escuela' %}
                         <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical"></i> Bienvenida</a></li>
-                        <!-- Esta es la sección crítica de la Carpeta Protegida -->
                         <li><a href="#" class="nav-link" data-section="school-dashboard"><i class="fa-solid fa-school"></i> Mis Establecimientos</a></li>
                         <li><a href="#" class="nav-link" data-section="school-contact"><i class="fa-solid fa-envelope"></i> Contacto / Soporte</a></li>
 
-                    <!-- PERFIL DE DOCTORA/MEDICO (o Default) -->
                     {% else %}
                         <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical"></i> Bienvenida</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-performance"><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento</a></li>
@@ -805,7 +799,6 @@
         </aside>
 
         <main class="flex-1 overflow-y-auto p-10 bg-gray-50 main-content">
-            <!-- SECCIÓN DE BIENVENIDA (Común a todos los perfiles) -->
             <div id="welcome-section" class="content-section active">
                 <div class="summary-panel">
                     <h2>Resumen del Proyecto</h2>
@@ -822,7 +815,7 @@
                                 <span>ESTUDIANTES<br>EVALUADOS</span>
                                 <i class="fa-solid fa-user-check"></i>
                             </div>
-                            <p class="count">587</p>
+                            <p class="count" id="welcome-evaluados-count">587</p>
                         </div>
                         <div class="summary-card-v2" style="background: linear-gradient(145deg, #F1C40F, #D4A80F);">
                             <div class="summary-card-header">
@@ -842,9 +835,7 @@
                 </div>
             </div>
             
-            <!-- CONTENIDO DE ADMINISTRADOR -->
             {% if usuario == 'admin' %}
-                <!-- ... (TODAS LAS SECCIONES DE ADMIN EXISTENTES) ... -->
                 <div id="admin-performance" class="content-section">
                     <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento del Administrador</h2>
                     <div class="summary">
@@ -1173,8 +1164,7 @@
                 </div>
 
             {% elif usuario == 'coordinadora' %}
-            <!-- CONTENIDO DE COORDINADORA GENERAL -->
-                <div id="coord-performance" class="content-section">
+            <div id="coord-performance" class="content-section">
                     <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento en Vivo</h2>
                     <div class="summary-panel">
                         <h2>Resumen del Proyecto</h2>
@@ -1191,7 +1181,7 @@
                                     <span>ESTUDIANTES<br>EVALUADOS</span>
                                     <i class="fa-solid fa-user-check"></i>
                                 </div>
-                                <p class="count">587</p>
+                                <p class="count" id="coord-evaluados-count-top">587</p>
                             </div>
                             <div class="summary-card-v2" style="background: linear-gradient(145deg, #F1C40F, #D4A80F);">
                                 <div class="summary-card-header">
@@ -1214,26 +1204,26 @@
                         <h3><i class="fa-solid fa-gauge-high"></i> Rendimiento de Evaluaciones en Vivo</h3>
                         <p class="text-gray-600 mb-6">Métricas en tiempo real de la actividad de evaluaciones.</p>
                         <div class="summary grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-                            <div class="summary-card-v2" style="background: linear-gradient(145deg, #3498DB, #2A79B3);">
+                            <div class="summary-card-v2" style="background: linear-gradient(145deg, #0A3D62, #1C67A3);">
                                 <div class="summary-card-header">
-                                    <span>EVALUACIONES<br>REALIZADAS</span>
+                                    <span>TOTAL ESTUDIANTES<br>EVALUADOS</span>
                                     <i class="fa-solid fa-user-check"></i>
                                 </div>
-                                <p class="count">587</p>
+                                <p class="count" id="coord-total-evaluados-count">0</p> 
                             </div>
-                            <div class="summary-card-v2" style="background: linear-gradient(145deg, #2ECC71, #27AE60);">
+                            <div class="summary-card-v2" style="background: linear-gradient(145deg, #2ECC71, #27A661);">
                                 <div class="summary-card-header">
-                                    <span>EVALUACIONES<br>NEUROLOGÍA COMPLETADAS</span>
+                                    <span>NEUROLOGÍA<br>COMPLETADOS</span>
                                     <i class="fa-solid fa-brain"></i>
                                 </div>
-                                <p class="count">300</p>
+                                <p class="count" id="coord-neurologia-count">0</p> 
                             </div>
-                            <div class="summary-card-v2" style="background: linear-gradient(145deg, #F1C40F, #D4A80F);">
+                            <div class="summary-card-v2" style="background: linear-gradient(145deg, #F39C12, #D68910);">
                                 <div class="summary-card-header">
-                                    <span>EVALUACIONES<br>MEDICINA FAMILIAR COMPLETADAS</span>
-                                    <i class="fa-solid fa-house-chimney-medical"></i>
+                                    <span>MED. FAMILIAR<br>COMPLETADOS</span>
+                                    <i class="fa-solid fa-user-friends"></i>
                                 </div>
-                                <p class="count">287</p>
+                                <p class="count" id="coord-familiar-count">0</p> 
                             </div>
                             <div class="summary-card-v2" style="background: linear-gradient(145deg, #E74C3C, #C2382B);">
                                 <div class="summary-card-header">
@@ -1348,20 +1338,17 @@
                     </div>
                 </div>
 
-            <!-- CONTENIDO EXCLUSIVO: COORDINADOR DE ESCUELA -->
             {% elif usuario == 'coordinador_escuela' %}
                 <div id="school-dashboard" class="content-section">
                     <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">
                         <i class="fa-solid fa-school text-secondary-blue mr-2"></i> Establecimientos Asignados
                     </h2>
 
-                    <!-- Listado de Colegios Asignados (Vista inicial de la "carpeta") -->
                     <div id="school-list-container" class="card">
                         {% if colegios_asignados %}
                             <p class="text-lg text-gray-600 mb-4">Seleccione un establecimiento para desbloquear su nómina de valoraciones:</p>
                             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 colegios-grid">
                                 {% for colegio in colegios_asignados %}
-                                    <!-- Tarjeta de Colegio con botón de desbloqueo -->
                                     <div class="colegio-card-small" 
                                          onclick="showAccessForm('{{ colegio.id }}', '{{ colegio.nombre_colegio }}')">
                                         <div class="info">
@@ -1377,7 +1364,6 @@
                         {% endif %}
                     </div>
 
-                    <!-- MODAL/CONTENEDOR DE ACCESO PROTEGIDO (Carpeta Abierta) -->
                     <div id="access-modal-container" style="display:none;" class="mt-8">
                         <div class="card">
                             <div class="flex justify-between items-center border-b pb-4 mb-4">
@@ -1390,13 +1376,11 @@
                                 </button>
                             </div>
                             
-                            <!-- 1. Formulario de Contraseña para Desbloquear -->
                             <div id="password-form-container" class="p-4 bg-light-blue rounded-lg">
                                 <p class="text-lg font-medium text-text-dark mb-4">
                                     <i class="fa-solid fa-triangle-exclamation text-danger-red mr-2"></i> **Token de Acceso Requerido**
                                 </p>
                                 <form id="access-password-form" onsubmit="return handleAccessPassword(event)">
-                                    <!-- Campo oculto para guardar el ID del colegio que se está desbloqueando -->
                                     <input type="hidden" id="current-school-id" value=""> 
 
                                     <label for="school_password" class="font-bold block mb-2">Token Secreto:</label>
@@ -1407,21 +1391,18 @@
                                 </form>
                             </div>
                             
-                            <!-- 2. Contenido Desbloqueado (Lista de Alumnos) -->
                             <div id="nomina-content-locked" class="mt-8" style="display: none;">
                                 <h4><i class="fa-solid fa-list-ul"></i> Nómina de Valoraciones Evaluadas</h4>
                                 <p class="text-gray-600 mb-6">Lista de alumnos evaluados. Puede descargar su valoración individual o solicitar correcciones específicas.</p>
                                 
                                 <ul class="lista-items" id="alumnos-nomina-list">
-                                    <!-- Contenido cargado dinámicamente por JavaScript -->
-                                </ul>
+                                    </ul>
                                 <p id="nomina-no-results-message" class="text-center text-gray-500 mt-4" style="display:none;">No hay alumnos evaluados para este colegio.</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Sección de Contacto para el Coordinador de Escuela -->
                 <div id="school-contact" class="content-section">
                     <div class="card">
                         <h3><i class="fa-solid fa-envelope"></i> Contacto de Soporte</h3>
@@ -1438,7 +1419,6 @@
                     </div>
                 </div>
 
-            <!-- CONTENIDO DE DOCTORA/MEDICO (o Default) -->
             {% else %}
                 <div id="doctor-performance" class="content-section">
                     <div class="card">
@@ -1603,13 +1583,11 @@
         </main>
     </div>
 
-    <!-- MODAL PARA SOLICITUD DE CORRECCIÓN (Ubicado al final del body) -->
     <div id="correction-modal" class="modal-backdrop">
         <div class="modal-content relative">
             <span class="modal-close-btn" onclick="document.getElementById('correction-modal').style.display='none'">&times;</span>
             <h4 class="text-xl font-bold mb-4">Solicitar Corrección para <span id="correction-alumno-name" class="text-primary-blue font-semibold"></span></h4>
             
-            <!-- Usamos un formulario AJAX para no recargar la página -->
             <form id="correction-form" onsubmit="return submitCorrection(event)">
                 <input type="hidden" id="correction-alumno-id" name="alumno_id" required>
                 <label for="correction_details" class="block mb-2 font-medium">Detalle Específico de la Corrección Necesaria:</label>
@@ -1628,9 +1606,19 @@
             window.location.href = "/logout";
         }
         
+        // Almacena la referencia al setInterval
+        let coordinatorPollingInterval;
+
         function showSection(sectionId) {
             const contentSections = document.querySelectorAll('.content-section');
             const navLinks = document.querySelectorAll('.nav-link');
+            
+            // Lógica para detener el polling al cambiar de sección
+            if (coordinatorPollingInterval) {
+                clearInterval(coordinatorPollingInterval);
+                coordinatorPollingInterval = null;
+                console.log("Polling detenido.");
+            }
 
             contentSections.forEach(section => {
                 section.classList.remove('active');
@@ -1661,7 +1649,11 @@
                 } else if (sectionId === 'doctor-performance') {
                     renderDoctorPerformanceChart();
                 } else if (sectionId === 'coord-performance') {
+                    // INICIO DE POLLING PARA COORDINADORA GENERAL
+                    syncCoordinatorCounts(); // Sincronización inicial
+                    coordinatorPollingInterval = setInterval(syncCoordinatorCounts, 5000); // Repetir cada 5 segundos
                     renderCoordinadoraPerformanceChart();
+                    console.log("Polling iniciado para Coordinadora General (5s).");
                 }
             }
             if (activeLink) {
@@ -1744,6 +1736,61 @@
 
         });
         
+        // --- FUNCIÓN DE SINCRONIZACIÓN DE LA COORDINADORA GENERAL (NUEVO) ---
+        async function syncCoordinatorCounts() {
+            // We use the Jinja variable 'usuario' to check the role
+            const userRole = '{{ usuario }}'; 
+            if (userRole !== 'coordinadora') return; // Solo ejecutar para la Coordinadora
+
+            // Check if the coord-performance section is visible to avoid unnecessary calls 
+            const coordPerformanceSection = document.getElementById('coord-performance');
+            if (coordPerformanceSection && !coordPerformanceSection.classList.contains('active')) {
+                 if(coordinatorPollingInterval) {
+                     clearInterval(coordinatorPollingInterval);
+                     coordinatorPollingInterval = null;
+                 }
+                 return;
+            }
+
+            try {
+                const response = await fetch('/api/dashboard_counts');
+                const data = await response.json();
+
+                if (data.success) {
+                    // Actualizar Contador Total (sección Rendimiento)
+                    const total = document.getElementById('coord-total-evaluados-count');
+                    if (total) total.textContent = data.total_evaluados; 
+                    
+                    // Actualizar Contador Neurología
+                    const neuro = document.getElementById('coord-neurologia-count');
+                    if (neuro) neuro.textContent = data.neurologia_count;
+                    
+                    // Actualizar Contador Familiar
+                    const familiar = document.getElementById('coord-familiar-count');
+                    if (familiar) familiar.textContent = data.familiar_count;
+
+                    // Actualizar el contador del Resumen del Proyecto (welcome-section)
+                    const welcomeCount = document.getElementById('welcome-evaluados-count');
+                    if (welcomeCount) {
+                         welcomeCount.textContent = data.total_evaluados;
+                    }
+
+                    // Actualizar el contador del Resumen del Proyecto (coord-performance top)
+                    const coordTopCount = document.getElementById('coord-evaluados-count-top');
+                    if (coordTopCount) {
+                         coordTopCount.textContent = data.total_evaluados;
+                    }
+
+                } else {
+                    console.error("❌ Error al obtener los conteos de evaluaciones:", data.message);
+                }
+            } catch (error) {
+                console.error("❌ Error de conexión al sincronizar el contador:", error);
+            }
+        }
+        // --- FIN FUNCIÓN DE SINCRONIZACIÓN DE LA COORDINADORA GENERAL ---
+
+
         // --- FUNCIONES ESPECÍFICAS DEL COORDINADOR DE ESCUELA ---
 
         function showCorrectionModal(alumnoId, alumnoNombre) {
@@ -1813,11 +1860,9 @@
                             </span>
                         </div>
                         <div class="item-card-actions mt-3 md:mt-0 flex flex-wrap justify-end gap-3">
-                            <!-- Botón 1: Descarga del Formulario PDF -->
                             <a href="${downloadUrl}" target="_blank" class="action-button blue">
                                 <i class="fa-solid fa-file-pdf"></i> Descargar Valoración (PDF)
                             </a>
-                            <!-- Botón 2: Solicitar Corrección (abre modal/form) -->
                             <button class="action-button red" onclick="showCorrectionModal('${alumno.id}', '${alumno.nombre_alumno}')">
                                 <i class="fa-solid fa-triangle-exclamation"></i> Solicitar Corrección
                             </button>

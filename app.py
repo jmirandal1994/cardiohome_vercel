@@ -1003,6 +1003,8 @@ def admin_agregar():
 
 # - Ruta /admin/cargar_nomina Final y Alineada
 
+# - Ruta /admin/cargar_nomina Final y Alineada a BIGINT
+
 @app.route('/admin/cargar_nomina', methods=['POST'])
 def admin_cargar_nomina():
     if session.get('usuario') != 'admin':
@@ -1057,6 +1059,20 @@ def admin_cargar_nomina():
     nomina_id = str(uuid.uuid4())
     excel_filename = secure_filename(excel_file.filename)
     excel_file_data = excel_file.read()
+    
+    # Proceso de subida de archivo (antes de la inserción principal, para poder hacer rollback)
+    try:
+        upload_path = f"nominas-medicas/{nomina_id}/{excel_filename}" 
+        upload_url = f"{SUPABASE_URL}/storage/v1/object/{upload_path}"
+        res_upload = requests.put(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=excel_file_data)
+        res_upload.raise_for_status()
+        
+        url_excel_publica = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path}" 
+    except requests.exceptions.RequestException as e:
+        error_detail = res_upload.text if 'res_upload' in locals() else 'No response from Supabase Storage.'
+        flash(f"❌ Error al subir el archivo de la nómina a Supabase Storage: {error_detail}", 'error')
+        return redirect(url_for('dashboard'))
+
 
     # ====================================================================
     # 2. LÓGICA CRÍTICA: CREAR EL COLEGIO DE ACCESO SI NO SE SELECCIONÓ UNO
@@ -1070,7 +1086,6 @@ def admin_cargar_nomina():
         # *** CORRECCIÓN CRÍTICA: OMITIR LA GENERACIÓN DEL ID ***
         # Dejamos que Supabase genere el BIGINT automáticamente.
         data_nuevo_colegio = {
-            # "id": nuevo_establecimiento_id, <-- ELIMINADO para forzar la generación de BIGINT
             "nombre_colegio": nombre_colegio_nuevo,
             "token_acceso": str(uuid.uuid4())[:8], 
             "coordinador_asignado_id": to_none_if_empty(coord_escuela_id) 
@@ -1097,11 +1112,14 @@ def admin_cargar_nomina():
         except requests.exceptions.RequestException as e:
             error_detail = res_insert_colegio.text if 'res_insert_colegio' in locals() else 'No response.'
             print(f"CRÍTICO: Error al crear Colegio de Acceso: {error_detail}")
+            # Rollback: Limpiar archivo
+            try: requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
+            except Exception: pass
             flash(f"❌ Error al crear el nuevo Colegio de Acceso: {error_detail}", 'error')
             return redirect(url_for('dashboard'))
 
     # --------------------------------------------------------------------
-    # 3. CONTINUAR CON LA CARGA DE NÓMINA (SUBIDA DE ARCHIVO y DB)
+    # 3. CONTINUAR CON LA CARGA DE NÓMINA (DB)
     # --------------------------------------------------------------------
 
     # Mapear IDs vacíos a None (Aplicamos la conversión robusta aquí)
@@ -1142,8 +1160,7 @@ def admin_cargar_nomina():
         print(f"CRÍTICO: Error al insertar nómina médica (Paso 4): {error_detail}")
         flash(f"❌ Error al guardar la nómina (BASE): {error_detail}", 'error')
         # Rollback: Limpiar archivo
-        try:
-            requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
+        try: requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
         except Exception: pass
         return redirect(url_for('dashboard'))
 
@@ -1161,8 +1178,7 @@ def admin_cargar_nomina():
         try:
             requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
             requests.delete(f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}", headers=SUPABASE_SERVICE_HEADERS)
-            # Asegurar que el colegio creado también se borre si es un rollback de nómina/excel
-            if final_establecimiento_id and not establecimiento_acceso_id:
+            if final_establecimiento_id and not establecimiento_acceso_id: # Rollback del colegio solo si se creó ahora
                 requests.delete(f"{SUPABASE_URL}/rest/v1/acceso_establecimientos?id=eq.{final_establecimiento_id}", headers=SUPABASE_SERVICE_HEADERS)
         except Exception: pass
         return redirect(url_for('dashboard'))
@@ -1275,7 +1291,8 @@ def admin_cargar_nomina():
         print(f"CRÍTICO: Error al guardar los estudiantes (Paso 5): {error_detail}")
         flash(f"❌ Error al guardar los estudiantes: {error_detail}", 'error')
         return redirect(url_for('dashboard'))
-        
+
+
 # La ruta '/enviar_formulario_a_drive' ha sido eliminada por completo.
 
 @app.route('/subir/<establecimiento>', methods=['POST'])

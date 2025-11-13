@@ -38,7 +38,7 @@ SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsIn
 
 SUPABASE_HEADERS = {
     "apikey": SUPABASE_KEY,
-    "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}", # Usamos SERVICE_KEY aquí para evitar errores de RLS en el backend
+    "Authorization": f"Bearer {SUPABASE_KEY}",
     "Content-Type": "application/json",
     "Accept": "application/json" 
 }
@@ -680,25 +680,27 @@ def login():
                 # 2.1. FUNCIÓN AUXILIAR PARA OBTENER LOS IDs DE COLEGIO DEL PERFIL
                 def get_college_ids(details):
                     ids = []
-                    # Intentar leer el ARRAY PLURAL (establecimientos_ids)
-                    ids_plural = details.get('establecimientos_ids')
-                    if isinstance(ids_plural, list) and ids_plural:
-                        return [int(x) for x in ids_plural if isinstance(x, (int, str)) and str(x).isdigit()]
-                    elif isinstance(ids_plural, str):
+                    
+                    # 1. Intentar leer el ARRAY PLURAL (establecimientos_ids)
+                    ids_plural_raw = details.get('establecimientos_ids')
+                    if isinstance(ids_plural_raw, list) and ids_plural_raw:
+                        ids = ids_plural_raw
+                    elif isinstance(ids_plural_raw, str):
                         try:
-                            # Intentar parsear JSON string a lista
-                            temp_list = json.loads(ids_plural)
+                            temp_list = json.loads(ids_plural_raw)
                             if isinstance(temp_list, list):
-                                return [int(x) for x in temp_list if isinstance(x, (int, str)) and str(x).isdigit()]
+                                ids = temp_list
                         except (json.JSONDecodeError, TypeError):
                             pass
 
-                    # Fallback 2: Intentar leer el ID SINGULAR (establecimiento_id)
-                    singular_id_raw = details.get('establecimiento_id')
-                    if isinstance(singular_id_raw, int) and singular_id_raw is not None:
-                         return [singular_id_raw]
+                    # 2. Si el array falló o estaba vacío, intentar leer el ID SINGULAR (establecimiento_id)
+                    if not ids:
+                        singular_id_raw = details.get('establecimiento_id')
+                        if isinstance(singular_id_raw, int) and singular_id_raw is not None:
+                             ids = [singular_id_raw]
                     
-                    return []
+                    # Convertir todos los IDs a int para la consulta 'in_'
+                    return [int(x) for x in ids if isinstance(x, (int, str)) and str(x).isdigit()]
                 
                 establecimientos_ids = get_college_ids(profile_details)
                 

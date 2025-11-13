@@ -933,6 +933,8 @@ def admin_agregar():
 
 # - Modificar la función admin_cargar_nomina
 
+# - Modificar la función admin_cargar_nomina
+
 @app.route('/admin/cargar_nomina', methods=['POST'])
 def admin_cargar_nomina():
     if session.get('usuario') != 'admin':
@@ -946,7 +948,8 @@ def admin_cargar_nomina():
     excel_file = request.files.get('excel')
     doctora_id_para_formulario = request.form.get('doctora_id_para_formulario', '').strip()
 
-    # NUEVO: Obtener el ID del establecimiento de acceso (BIGINT)
+    # MODIFICADO: Obtener el ID del establecimiento de acceso (YA NO ES OBLIGATORIO)
+    # Si viene como cadena vacía (''), se almacenará como NULL en la base de datos BIGINT
     establecimiento_acceso_id = request.form.get('establecimiento_acceso_id', '').strip() 
 
     tipo_nomina_normalized = tipo_nomina_raw.strip().lower() if tipo_nomina_raw else ''
@@ -957,9 +960,9 @@ def admin_cargar_nomina():
     elif 'familiar' in tipo_nomina_normalized or 'medicina familiar' in tipo_nomina_normalized: 
         form_type = 'medicina_familiar'
 
-    # MODIFICADO: Añadir establecimiento_acceso_id a la validación
-    if not all([tipo_nomina_raw, nombre_especifico, doctora_id_from_form, excel_file, establecimiento_acceso_id]):
-        flash('❌ Falta uno o más campos obligatorios para cargar la nómina (tipo, nombre, doctora, archivo, establecimiento de acceso).', 'error')
+    # MODIFICADO: Se elimina 'establecimiento_acceso_id' de la validación 'all'
+    if not all([tipo_nomina_raw, nombre_especifico, doctora_id_from_form, excel_file]):
+        flash('❌ Falta uno o más campos obligatorios para cargar la nómina (tipo, nombre, doctora, archivo).', 'error')
         return redirect(url_for('dashboard'))
 
     if form_type is None: 
@@ -992,6 +995,9 @@ def admin_cargar_nomina():
         flash(f"❌ Error al subir el archivo de la nómina a Supabase Storage: {error_detail}", 'error')
         return redirect(url_for('dashboard'))
 
+    # MODIFICADO: Mapear el ID vacío a None para la DB (clave para NULL en BIGINT)
+    final_establecimiento_id = establecimiento_acceso_id if establecimiento_acceso_id else None
+
     # MODIFICADO: Agregar establecimiento_id a los datos de la nómina
     data_nomina = {
         "id": nomina_id,
@@ -1002,7 +1008,7 @@ def admin_cargar_nomina():
         "nombre_excel_original": excel_filename,
         "form_type": form_type, 
         "doctora_id_para_formulario": doctora_id_para_formulario if form_type == 'neurologia' else None,
-        "establecimiento_id": establecimiento_acceso_id # <-- AÑADIDO
+        "establecimiento_id": final_establecimiento_id # <-- AÑADIDO (puede ser NULL)
     }
 
     try:
@@ -1107,7 +1113,7 @@ def admin_cargar_nomina():
                 "nacionalidad": nacionalidad_valor,
                 "sexo": sexo_adivinado,
                 "fecha_relleno": None,
-                "establecimiento_id": establecimiento_acceso_id # <-- AÑADIDO: Clave para el filtro del Coordinador.
+                "establecimiento_id": final_establecimiento_id # <-- AÑADIDO (puede ser NULL)
             }
             estudiantes_a_insertar.append(estudiante)
             

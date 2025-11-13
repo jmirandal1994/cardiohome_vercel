@@ -924,6 +924,14 @@
                                 {% endfor %}
                             </select>
 
+                            <label for="establecimiento_acceso_id">Asignar a Colegio de Acceso (Coord. Esc.):</label>
+                            <select id="establecimiento_acceso_id" name="establecimiento_acceso_id" required class="form-input">
+                                <option value="">Selecciona un colegio/establecimiento</option>
+                                {# 'establecimientos' es la lista de establecimientos cargada para el admin #}
+                                {% for est in establecimientos %}
+                                    <option value="{{ est.id }}">{{ est.nombre }}</option>
+                                {% endfor %}
+                            </select>
                             <label for="form_type_nomina">Tipo de Formulario Asociado:</label>
                             <select id="form_type_nomina" name="form_type" required class="form-input">
                                 <option value="">Selecciona el tipo de formulario</option>
@@ -1270,7 +1278,7 @@
                                         <div class="bg-green-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
                                             <div class="flex justify-between items-center mb-4">
                                                 <span class="text-lg font-bold">Línea 2 (320 evaluaciones)</span>
-                                                <i class="fa-solid fa-location-dot text-2xl opacity-0.75"></i>
+                                                <i class="fa-solid fa-location-dot text-2xl opacity:0.75"></i>
                                             </div>
                                             <p class="text-sm">Comunas: Estación Central, Maipú</p>
                                         </div>
@@ -1279,7 +1287,7 @@
                                         <div class="bg-yellow-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
                                             <div class="flex justify-between items-center mb-4">
                                                 <span class="text-lg font-bold">Línea 3 (200 evaluaciones)</span>
-                                                <i class="fa-solid fa-location-dot text-2xl opacity-0.75"></i>
+                                                <i class="fa-solid fa-location-dot text-2xl opacity:0.75"></i>
                                             </div>
                                             <p class="text-sm">Comunas: Estación Central</p>
                                         </div>
@@ -1288,7 +1296,7 @@
                                         <div class="bg-red-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
                                             <div class="flex justify-between items-center mb-4">
                                                 <span class="text-lg font-bold">Línea 4 (150 evaluaciones)</span>
-                                                <i class="fa-solid fa-location-dot text-2xl opacity-0.75"></i>
+                                                <i class="fa-solid fa-location-dot text-2xl opacity:0.75"></i>
                                             </div>
                                             <p class="text-sm">Comunas: Cerrillos</p>
                                         </div>
@@ -1591,7 +1599,7 @@
             <form id="correction-form" onsubmit="return submitCorrection(event)">
                 <input type="hidden" id="correction-alumno-id" name="alumno_id" required>
                 <label for="correction_details" class="block mb-2 font-medium">Detalle Específico de la Corrección Necesaria:</label>
-                <textarea id="correction_details" name="detalles" rows="4" placeholder="Escriba ESPECÍFICAMENTE qué necesita corregir (Ej: Corregir fecha de evaluación al 15/03/2025. Revisar la sección 3.1, el dato es erróneo)." required class="form-input w-full"></textarea>
+                <textarea id="correction_details" name="detalles" rows="4" placeholder="Escriba ESPECÍFICAMENTE qué necesita corregir (Ej: Error en el diagnóstico, la fecha de reevaluación debe ser 15/10/2025)." required class="form-input w-full"></textarea>
                 <div class="flex justify-end gap-3 mt-4">
                     <button type="button" class="action-button red" onclick="document.getElementById('correction-modal').style.display='none'">Cancelar</button>
                     <button type="submit" class="action-button green"><i class="fa-solid fa-paper-plane"></i> Enviar Solicitud</button>
@@ -1736,13 +1744,11 @@
 
         });
         
-        // --- FUNCIÓN DE SINCRONIZACIÓN DE LA COORDINADORA GENERAL (NUEVO) ---
+        // --- FUNCIÓN DE SINCRONIZACIÓN DE LA COORDINADORA GENERAL (FASE 1) ---
         async function syncCoordinatorCounts() {
-            // We use the Jinja variable 'usuario' to check the role
             const userRole = '{{ usuario }}'; 
-            if (userRole !== 'coordinadora') return; // Solo ejecutar para la Coordinadora
+            if (userRole !== 'coordinadora') return; 
 
-            // Check if the coord-performance section is visible to avoid unnecessary calls 
             const coordPerformanceSection = document.getElementById('coord-performance');
             if (coordPerformanceSection && !coordPerformanceSection.classList.contains('active')) {
                  if(coordinatorPollingInterval) {
@@ -1757,25 +1763,20 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    // Actualizar Contador Total (sección Rendimiento)
                     const total = document.getElementById('coord-total-evaluados-count');
                     if (total) total.textContent = data.total_evaluados; 
                     
-                    // Actualizar Contador Neurología
                     const neuro = document.getElementById('coord-neurologia-count');
                     if (neuro) neuro.textContent = data.neurologia_count;
                     
-                    // Actualizar Contador Familiar
                     const familiar = document.getElementById('coord-familiar-count');
                     if (familiar) familiar.textContent = data.familiar_count;
 
-                    // Actualizar el contador del Resumen del Proyecto (welcome-section)
                     const welcomeCount = document.getElementById('welcome-evaluados-count');
                     if (welcomeCount) {
                          welcomeCount.textContent = data.total_evaluados;
                     }
 
-                    // Actualizar el contador del Resumen del Proyecto (coord-performance top)
                     const coordTopCount = document.getElementById('coord-evaluados-count-top');
                     if (coordTopCount) {
                          coordTopCount.textContent = data.total_evaluados;
@@ -1791,18 +1792,16 @@
         // --- FIN FUNCIÓN DE SINCRONIZACIÓN DE LA COORDINADORA GENERAL ---
 
 
-        // --- FUNCIONES ESPECÍFICAS DEL COORDINADOR DE ESCUELA ---
+        // --- FUNCIONES ESPECÍFICAS DEL COORDINADOR DE ESCUELA (FASE 2) ---
 
         function showCorrectionModal(alumnoId, alumnoNombre) {
             const modal = document.getElementById('correction-modal');
             document.getElementById('correction-alumno-name').textContent = alumnoNombre;
             document.getElementById('correction-alumno-id').value = alumnoId;
-            // Limpiar mensaje previo
             document.getElementById('correction_details').value = ''; 
             modal.style.display = 'flex';
         }
         
-        // Muestra el formulario de acceso para el colegio seleccionado
         function showAccessForm(schoolId, schoolName) {
             const accessModal = document.getElementById('access-modal-container');
             const schoolList = document.getElementById('school-list-container');
@@ -1811,21 +1810,17 @@
             const contentLocked = document.getElementById('nomina-content-locked');
             const formContainer = document.getElementById('password-form-container');
 
-            // 1. Ocultar el listado de colegios y mostrar el modal
             schoolList.style.display = 'none';
             accessModal.style.display = 'block';
 
-            // 2. Limpiar el estado previo del modal
             document.getElementById('school_password').value = '';
             contentLocked.style.display = 'none';
             formContainer.style.display = 'block';
             
-            // 3. Establecer el contexto del colegio actual
             accessSchoolName.textContent = schoolName;
             currentSchoolId.value = schoolId;
         }
 
-        // Vuelve a la lista principal de colegios
         function backToSchoolList() {
             const accessModal = document.getElementById('access-modal-container');
             const schoolList = document.getElementById('school-list-container');
@@ -1846,8 +1841,6 @@
             noResultsMsg.style.display = 'none';
 
             nominas.forEach(alumno => {
-                // El enlace de descarga apunta a la ruta de Flask que buscará el PDF por alumno.id
-                // Usamos el ID del alumno para la ruta que genera el PDF
                 const downloadUrl = `/descargar_pdf_alumno/${alumno.id}`;
                 
                 const itemCard = `
@@ -1880,21 +1873,20 @@
 
             const DESBLOQUEAR_URL = "/api/nomina/desbloquear";
             const inputPassword = document.getElementById('school_password').value;
-            const currentSchoolId = document.getElementById('current-school-id').value; // AHORA ENVIAMOS EL ID
+            const currentSchoolId = document.getElementById('current-school-id').value; 
             
             const formContainer = document.getElementById('password-form-container');
             const contentLocked = document.getElementById('nomina-content-locked');
             const nominasContainer = document.getElementById('alumnos-nomina-list');
             const noResultsMsg = document.getElementById('nomina-no-results-message');
 
-            // Mostrar spinner mientras se valida con Supabase/Flask
             nominasContainer.innerHTML = '<p class="text-center text-gray-500 my-8"><i class="fa-solid fa-spinner fa-spin fa-2x"></i> Validando acceso y cargando datos...</p>';
             noResultsMsg.style.display = 'none';
 
             fetch(DESBLOQUEAR_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: inputPassword, school_id: currentSchoolId }) // ENVIAMOS ID y PASSWORD
+                body: JSON.stringify({ password: inputPassword, school_id: currentSchoolId }) 
             })
             .then(response => response.json())
             .then(data => {
@@ -1907,11 +1899,9 @@
                         showConfirmButton: false
                     });
                     
-                    // 1. Cambios visuales de la "carpeta"
                     formContainer.style.display = 'none'; 
                     contentLocked.style.display = 'block'; 
                     
-                    // 2. Carga dinámica de la nómina
                     renderNominas(data.nominas, nominasContainer, noResultsMsg);
                     
                 } else {
@@ -1958,7 +1948,6 @@
                 document.getElementById('correction-modal').style.display='none';
                 if (data.success) {
                     Swal.fire('¡Enviado!', data.message, 'success');
-                    // Limpiar el formulario del modal
                     document.getElementById('correction-form').reset();
                 } else {
                     Swal.fire('Error', data.message, 'error');
@@ -2040,7 +2029,7 @@
         function showColegios(linea) {
             const colegiosContainer = document.getElementById('colegios-container');
             const alumnosContainer = document.getElementById('alumnos-container');
-            alumnosContainer.style.display = 'none'; // Ocultar lista de alumnos al cambiar de línea
+            alumnosContainer.style.display = 'none'; 
             const colegios = colegiosMaqueta[linea];
             let htmlContent = '';
 
@@ -2089,7 +2078,6 @@
             let htmlContent = '';
             if (alumnosMaqueta.length > 0) {
                 alumnosMaqueta.forEach(alumno => {
-                    // Simulación de un enlace de descarga
                     const downloadUrl = `/descargar_valoracion_pdf?rut=${alumno.rut}&colegio=${encodeURIComponent(nombreColegio)}`;
                     
                     htmlContent += `
@@ -2145,7 +2133,7 @@
                 dataSet = [
                     { label: 'Evaluaciones Neurología', data: neuroData, backgroundColor: 'rgba(52, 152, 219, 0.7)', borderColor: 'rgba(52, 152, 219, 1)', borderWidth: 1, stack: 'Stack 0' },
                     { label: 'Evaluaciones Medicina Familiar', data: familiarData, backgroundColor: 'rgba(46, 204, 113, 0.7)', borderColor: 'rgba(46, 204, 113, 1)', borderWidth: 1, stack: 'Stack 0' },
-                    { label: 'Evaluaciones Totales', data: totalData, backgroundColor: 'rgba(241, 196, 15, 0.7)', borderColor: 'rgba(241, 196, 15, 1)', borderWidth: 2, type: 'line', yAxisID: 'y1' } // Total como línea
+                    { label: 'Evaluaciones Totales', data: totalData, backgroundColor: 'rgba(241, 196, 15, 0.7)', borderColor: 'rgba(241, 196, 15, 1)', borderWidth: 2, type: 'line', yAxisID: 'y1' }
                 ];
                 chartTitle = 'Evaluaciones Realizadas por Día';
             } else {
@@ -2156,13 +2144,13 @@
                 dataSet = [
                     { label: 'Evaluaciones Neurología', data: neuroData, backgroundColor: 'rgba(52, 152, 219, 0.7)', borderColor: 'rgba(52, 152, 219, 1)', borderWidth: 1, stack: 'Stack 0' },
                     { label: 'Evaluaciones Medicina Familiar', data: familiarData, backgroundColor: 'rgba(46, 204, 113, 0.7)', borderColor: 'rgba(46, 204, 113, 1)', borderWidth: 1, stack: 'Stack 0' },
-                    { label: 'Evaluaciones Totales', data: totalData, backgroundColor: 'rgba(241, 196, 15, 0.7)', borderColor: 'rgba(241, 196, 15, 1)', borderWidth: 2, type: 'line', yAxisID: 'y1' } // Total como línea
+                    { label: 'Evaluaciones Totales', data: totalData, backgroundColor: 'rgba(241, 196, 15, 0.7)', borderColor: 'rgba(241, 196, 15, 1)', borderWidth: 2, type: 'line', yAxisID: 'y1' }
                 ];
                 chartTitle = 'Evaluaciones Realizadas por Semana';
             }
 
             window.coordinadoraChartInstance = new Chart(ctx, {
-                type: 'bar', // Tipo de base de gráfico (Barra)
+                type: 'bar', 
                 data: {
                     labels: labels,
                     datasets: dataSet
@@ -2179,13 +2167,13 @@
                             beginAtZero: true, 
                             title: { display: true, text: 'Evaluaciones (Barra)', color: 'rgba(52, 152, 219, 1)' }, 
                             ticks: { precision: 0 },
-                            stacked: true // Habilitar apilamiento para neurología y familiar
+                            stacked: true 
                         },
                         y1: {
                             type: 'linear',
                             display: true,
-                            position: 'right', // Eje Y secundario a la derecha
-                            grid: { drawOnChartArea: false }, // No dibujar la cuadrícula en el área del gráfico para este eje
+                            position: 'right', 
+                            grid: { drawOnChartArea: false }, 
                             title: { display: true, text: 'Total Evaluaciones (Línea)', color: 'rgba(241, 196, 15, 1)' },
                             ticks: { precision: 0 },
                             beginAtZero: true
@@ -2195,7 +2183,6 @@
             });
         }
 
-        // Escuchar el cambio de período para la coordinadora
         const periodoSelect = document.getElementById('evaluacion-periodo');
         if (periodoSelect) {
             periodoSelect.addEventListener('change', renderCoordinadoraPerformanceChart);
@@ -2273,7 +2260,6 @@
             const nominasContainer = document.getElementById('nominasCompletadasContainer');
             const nombreEstablecimientoSpan = document.getElementById('nombreEstablecimiento');
             
-            // Simulación de una llamada a la API
             fetch(`/api/nominas_completadas/${establecimientoId}`)
                 .then(response => response.json())
                 .then(data => {

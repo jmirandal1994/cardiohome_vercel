@@ -466,7 +466,7 @@ def generar_pdf():
                 "NO": "/Yes" if get_form_field_value('check_alergiano', request.form) == 'NO_ALERGIAS' else "",
                 "SI": "/Yes" if get_form_field_value('check_alergiasi', request.form) == 'SI_ALERGIAS' else "",
                 "NO_2": "/Yes" if get_form_field_value('check_cirugiano', request.form) == 'NO_CIRUGIAS' else "",
-                "SI_2": "/Yes" if get_form_field_value('si_2', request.form) == 'SI_2' else "",
+                "SI_2": "/Yes" if get_form_field_value('si_2', request.form) == 'SI_2' else "", # Corregido nombre de campo
                 "SIN ALTERACIÓN": "/Yes" if get_form_field_value('check_visionsinalteracion', request.form) == 'SIN_ALTERACION_VISION' else "",
                 "VICIOS DE REFRACCION": "/Yes" if get_form_field_value('check_visionrefraccion', request.form) == 'VICIOS_DE_REFRACCION' else "",
                 "NORMAL": "/Yes" if get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION' else "",
@@ -667,15 +667,18 @@ def login():
             # 2. Lógica específica para COORDINADOR DE ESCUELA
             if role == 'coordinador_escuela':
                 
-                # CONSULTA 2 (DETALLES): Seleccionamos AMBAS posibles columnas de IDs por si solo existe una.
-                url_profile_details = f"{SUPABASE_URL}/rest/v1/doctoras?id=eq.{user_data['id']}&select=establecimiento_id,establecimientos_ids"
+                # CONSULTA 2 (DETALLES): Obtenemos *TODOS* los datos del perfil para verificar las columnas de IDs.
+                # Esto es más seguro que pedir columnas específicas que pueden no existir.
+                url_profile_details = f"{SUPABASE_URL}/rest/v1/doctoras?id=eq.{user_data['id']}&select=*"
                 res_details = requests.get(url_profile_details, headers=SUPABASE_SERVICE_HEADERS)
-                res_details.raise_for_status() # **SI EL ERROR ES AQUÍ, SIGNIFICA QUE UNA DE LAS DOS COLUMNAS EN EL SELECT NO EXISTE EN LA DB.**
+                res_details.raise_for_status() 
                 profile_details = res_details.json()[0]
                 
                 
                 # --- Lógica de unificación de IDs (soporte para plural y singular) ---
-                establecimientos_ids_raw = profile_details.get('establecimientos_ids') # Array (preferido)
+                
+                # Priorizamos la columna que el usuario intentó crear para el array
+                establecimientos_ids_raw = profile_details.get('establecimientos_ids') 
                 
                 if isinstance(establecimientos_ids_raw, list) and establecimientos_ids_raw:
                     establecimientos_ids = establecimientos_ids_raw
@@ -685,7 +688,19 @@ def login():
                     if isinstance(singular_id_raw, int) and singular_id_raw is not None:
                          establecimientos_ids = [singular_id_raw]
                     else:
-                         establecimientos_ids = []
+                         # Si el singular es un array (e.g., JSONB que no se deserializa automáticamente)
+                         if isinstance(singular_id_raw, str):
+                             try:
+                                 temp_list = json.loads(singular_id_raw)
+                                 if isinstance(temp_list, list):
+                                     establecimientos_ids = temp_list
+                                 else:
+                                     establecimientos_ids = []
+                             except (json.JSONDecodeError, TypeError):
+                                 establecimientos_ids = []
+                         else:
+                             establecimientos_ids = []
+
 
                 # 3. Si hay IDs, obtener los nombres de los colegios para el listado inicial (frontend)
                 if not establecimientos_ids:
@@ -713,8 +728,8 @@ def login():
         
     except requests.exceptions.RequestException as e:
         print(f"❌ Error en el login: {e} - {res.text if 'res' in locals() else ''}")
-        # Si la falla ocurre aquí, es un error de conexión o un error 4xx/5xx de la segunda consulta.
-        flash('Error de conexión al intentar iniciar sesión o al cargar su perfil (Error 4xx/5xx DB).', 'error')
+        # Si la falla ocurre aquí, es un error de conexión o un error 4xx/5xx general.
+        flash('Error de conexión al intentar iniciar sesión o error de base de datos.', 'error')
         return redirect(url_for('index'))
         
 @app.route('/dashboard')

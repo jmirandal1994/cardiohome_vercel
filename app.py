@@ -931,29 +931,35 @@ def admin_agregar():
     return redirect(url_for('dashboard'))
 
 
+# - Modificar la función admin_cargar_nomina
+
 @app.route('/admin/cargar_nomina', methods=['POST'])
 def admin_cargar_nomina():
     if session.get('usuario') != 'admin':
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
     
-    # ... (Lógica existente para cargar nómina) ...
-    tipo_nomina_raw = request.form.get('tipo_nomina')
-    nombre_especifico = request.form.get('nombre_especifico')
+    # 1. Obtener datos del formulario
+    tipo_nomina_raw = request.form.get('tipo_nomina', '').strip()
+    nombre_especifico = request.form.get('nombre_especifico', '').strip()
     doctora_id_from_form = request.form.get('doctora', '').strip()
     excel_file = request.files.get('excel')
     doctora_id_para_formulario = request.form.get('doctora_id_para_formulario', '').strip()
+
+    # NUEVO: Obtener el ID del establecimiento de acceso (BIGINT)
+    establecimiento_acceso_id = request.form.get('establecimiento_acceso_id', '').strip() 
 
     tipo_nomina_normalized = tipo_nomina_raw.strip().lower() if tipo_nomina_raw else ''
 
     form_type = None
     if 'neurologia' in tipo_nomina_normalized: 
         form_type = 'neurologia'
-    elif 'familiar' in tipo_nomina_normalized: 
+    elif 'familiar' in tipo_nomina_normalized or 'medicina familiar' in tipo_nomina_normalized: 
         form_type = 'medicina_familiar'
 
-    if not all([tipo_nomina_raw, nombre_especifico, doctora_id_from_form, excel_file]):
-        flash('❌ Falta uno o más campos obligatorios para cargar la nómina (tipo, nombre, doctora, archivo).', 'error')
+    # MODIFICADO: Añadir establecimiento_acceso_id a la validación
+    if not all([tipo_nomina_raw, nombre_especifico, doctora_id_from_form, excel_file, establecimiento_acceso_id]):
+        flash('❌ Falta uno o más campos obligatorios para cargar la nómina (tipo, nombre, doctora, archivo, establecimiento de acceso).', 'error')
         return redirect(url_for('dashboard'))
 
     if form_type is None: 
@@ -976,6 +982,7 @@ def admin_cargar_nomina():
     try:
         upload_path = f"nominas-medicas/{nomina_id}/{excel_filename}" 
         upload_url = f"{SUPABASE_URL}/storage/v1/object/{upload_path}"
+        #
         res_upload = requests.put(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=excel_file_data)
         res_upload.raise_for_status()
         
@@ -985,6 +992,7 @@ def admin_cargar_nomina():
         flash(f"❌ Error al subir el archivo de la nómina a Supabase Storage: {error_detail}", 'error')
         return redirect(url_for('dashboard'))
 
+    # MODIFICADO: Agregar establecimiento_id a los datos de la nómina
     data_nomina = {
         "id": nomina_id,
         "nombre_nomina": nombre_especifico,
@@ -993,10 +1001,12 @@ def admin_cargar_nomina():
         "url_excel_original": url_excel_publica,
         "nombre_excel_original": excel_filename,
         "form_type": form_type, 
-        "doctora_id_para_formulario": doctora_id_para_formulario if form_type == 'neurologia' else None 
+        "doctora_id_para_formulario": doctora_id_para_formulario if form_type == 'neurologia' else None,
+        "establecimiento_id": establecimiento_acceso_id # <-- AÑADIDO
     }
 
     try:
+        #
         res_insert_nomina = requests.post(
             f"{SUPABASE_URL}/rest/v1/nominas_medicas",
             headers=SUPABASE_SERVICE_HEADERS, 
@@ -1018,6 +1028,7 @@ def admin_cargar_nomina():
     if excel_filename.endswith(('.xls', '.xlsx')):
         df = pd.read_excel(excel_data_stream)
     elif excel_filename.endswith('.csv'):
+        #
         df = pd.read_csv(excel_data_stream, encoding='utf-8')
     else:
         flash('❌ Formato de archivo no soportado para la nómina.', 'error')
@@ -1095,7 +1106,8 @@ def admin_cargar_nomina():
                 "fecha_nacimiento": fecha_nac_str, 
                 "nacionalidad": nacionalidad_valor,
                 "sexo": sexo_adivinado,
-                "fecha_relleno": None 
+                "fecha_relleno": None,
+                "establecimiento_id": establecimiento_acceso_id # <-- AÑADIDO: Clave para el filtro del Coordinador.
             }
             estudiantes_a_insertar.append(estudiante)
             
@@ -1114,6 +1126,7 @@ def admin_cargar_nomina():
         return redirect(url_for('dashboard'))
 
     try:
+        #
         res_insert_estudiantes = requests.post(
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina",
             headers=SUPABASE_SERVICE_HEADERS, 
@@ -1128,10 +1141,8 @@ def admin_cargar_nomina():
         error_detail = res_insert_estudiantes.text if 'res_insert_estudiantes' in locals() else 'No response from Supabase.'
         flash(f"❌ Error al guardar los estudiantes en la base de datos. La nómina fue creada, pero no se agregaron los estudiantes. ({e}). Detalles: {error_detail}", 'error')
         return redirect(url_for('dashboard'))
-
-
+        
 # La ruta '/enviar_formulario_a_drive' ha sido eliminada por completo.
-
 
 @app.route('/subir/<establecimiento>', methods=['POST'])
 def subir(establecimiento):

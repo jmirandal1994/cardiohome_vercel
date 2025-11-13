@@ -38,7 +38,7 @@ SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsIn
 
 SUPABASE_HEADERS = {
     "apikey": SUPABASE_KEY,
-    "Authorization": f"Bearer {SUPABASE_KEY}",
+    "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}", # Usamos SERVICE_KEY aquí para evitar errores de RLS en el backend
     "Content-Type": "application/json",
     "Accept": "application/json" 
 }
@@ -362,7 +362,7 @@ def generar_pdf():
     elif form_type == 'medicina_familiar':
         # En el formulario familiar, el género se maneja con checkboxes/radio buttons diferentes
         # Asegúrate de que los nombres de los campos HTML de género en 'formulario_medicina_familiar.html'
-        # sean 'genero_f' y 'genero_m' y que envíen 'Femenino' o 'Masculino' si están marcados.
+        # sean 'genero_f' y 'genero_m' y que envíen 'Femenino' o 'Masculino' if they are checked.
         sexo_f_pdf = "X" if get_form_field_value('genero_f', request.form) == 'Femenino' else ""
         sexo_m_pdf = "X" if get_form_field_value('genero_m', request.form) == 'Masculino' else ""
 
@@ -466,7 +466,7 @@ def generar_pdf():
                 "NO": "/Yes" if get_form_field_value('check_alergiano', request.form) == 'NO_ALERGIAS' else "",
                 "SI": "/Yes" if get_form_field_value('check_alergiasi', request.form) == 'SI_ALERGIAS' else "",
                 "NO_2": "/Yes" if get_form_field_value('check_cirugiano', request.form) == 'NO_CIRUGIAS' else "",
-                "SI_2": "/Yes" if get_form_field_value('si_2', request.form) == 'SI_2' else "", # Corregido nombre de campo
+                "SI_2": "/Yes" if get_form_field_value('si_2', request.form) == 'SI_2' else "",
                 "SIN ALTERACIÓN": "/Yes" if get_form_field_value('check_visionsinalteracion', request.form) == 'SIN_ALTERACION_VISION' else "",
                 "VICIOS DE REFRACCION": "/Yes" if get_form_field_value('check_visionrefraccion', request.form) == 'VICIOS_DE_REFRACCION' else "",
                 "NORMAL": "/Yes" if get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION' else "",
@@ -668,7 +668,7 @@ def login():
             if role == 'coordinador_escuela':
                 
                 # CONSULTA 2 (DETALLES): Obtenemos *TODOS* los datos del perfil para verificar las columnas de IDs.
-                # 'select=*' es la forma más segura de evitar errores 400 por nombres de columna.
+                # Es la forma más segura de evitar el error 400 por nombres de columna.
                 url_profile_details = f"{SUPABASE_URL}/rest/v1/doctoras?id=eq.{user_data['id']}&select=*"
                 res_details = requests.get(url_profile_details, headers=SUPABASE_SERVICE_HEADERS)
                 res_details.raise_for_status() 
@@ -676,38 +676,33 @@ def login():
                 
                 
                 # --- Lógica de unificación de IDs (soporte para plural y singular) ---
+                establecimientos_ids = []
                 
-                # 2.1. Buscar la columna plural/array de IDs
-                establecimientos_ids_raw = profile_details.get('establecimientos_ids')
-                
-                if isinstance(establecimientos_ids_raw, list) and establecimientos_ids_raw:
-                    establecimientos_ids = establecimientos_ids_raw
-                else:
-                    # Fallback al singular (si solo existe el singular)
+                # 2.1. Intentar leer el ARRAY (Plural - JSONB/INT[])
+                ids_plural = profile_details.get('establecimientos_ids')
+                if isinstance(ids_plural, list) and ids_plural:
+                    establecimientos_ids = ids_plural
+                elif isinstance(ids_plural, str):
+                    try:
+                        # Intentar parsear JSON string a lista
+                        temp_list = json.loads(ids_plural)
+                        if isinstance(temp_list, list):
+                            establecimientos_ids = temp_list
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+
+                # 2.2. Fallback al ID Singular si el array está vacío (para usuarios que solo tienen un ID)
+                if not establecimientos_ids:
                     singular_id_raw = profile_details.get('establecimiento_id')
                     if isinstance(singular_id_raw, int) and singular_id_raw is not None:
                          establecimientos_ids = [singular_id_raw]
-                    else:
-                         # Si el singular es un array (e.g., JSONB que no se deserializa automáticamente)
-                         if isinstance(singular_id_raw, str):
-                             try:
-                                 temp_list = json.loads(singular_id_raw)
-                                 if isinstance(temp_list, list):
-                                     establecimientos_ids = temp_list
-                                 else:
-                                     establecimientos_ids = []
-                             except (json.JSONDecodeError, TypeError):
-                                 establecimientos_ids = []
-                         else:
-                             establecimientos_ids = []
-
-
-                # 3. Si hay IDs, obtener los nombres de los colegios para el listado inicial (frontend)
+                
+                # 3. Si hay IDs válidos, obtener los nombres de los colegios para el listado inicial (frontend)
                 if not establecimientos_ids:
                     print("AVISO: Coordinador de Escuela logueado sin IDs de establecimiento asignados.")
                     colegios_asignados_data = []
                 else:
-                    # Usamos 'in_' para buscar múltiples IDs
+                    # Usamos 'in_' para buscar múltiples IDs en la tabla de acceso
                     ids_str = ",".join(map(str, establecimientos_ids)) 
                     
                     url_colegios = f"{SUPABASE_URL}/rest/v1/acceso_establecimientos?id=in.({ids_str})&select=id,nombre_colegio"
@@ -728,7 +723,6 @@ def login():
         
     except requests.exceptions.RequestException as e:
         print(f"❌ Error en el login: {e} - {res.text if 'res' in locals() else ''}")
-        # Si la falla ocurre aquí, es un error de conexión o un error 4xx/5xx general.
         flash('Error de conexión al intentar iniciar sesión o error de base de datos.', 'error')
         return redirect(url_for('index'))
         

@@ -646,7 +646,7 @@ def login():
     usuario_login = request.form['username'] # Renombrado a usuario_login para evitar conflicto con el rol
     clave = request.form['password']
     
-    # CONSULTA 1 (INICIAL): SELECCIONAMOS SOLO ID y ROL para evitar el error 400 por columnas inexistentes.
+    # CONSULTA 1 (INICIAL): Solo pedimos ID y ROL para evitar el error 400 de columnas desconocidas.
     url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario_login}&password=eq.{clave}&select=id,rol"
     
     print(f"DEBUG: Intento de login para usuario: {usuario_login}, URL: {url}")
@@ -668,7 +668,7 @@ def login():
             if role == 'coordinador_escuela':
                 
                 # CONSULTA 2 (DETALLES): Obtenemos *TODOS* los datos del perfil para verificar las columnas de IDs.
-                # Esto es más seguro que pedir columnas específicas que pueden no existir.
+                # 'select=*' es la forma más segura de evitar errores 400 por nombres de columna.
                 url_profile_details = f"{SUPABASE_URL}/rest/v1/doctoras?id=eq.{user_data['id']}&select=*"
                 res_details = requests.get(url_profile_details, headers=SUPABASE_SERVICE_HEADERS)
                 res_details.raise_for_status() 
@@ -677,8 +677,8 @@ def login():
                 
                 # --- Lógica de unificación de IDs (soporte para plural y singular) ---
                 
-                # Priorizamos la columna que el usuario intentó crear para el array
-                establecimientos_ids_raw = profile_details.get('establecimientos_ids') 
+                # 2.1. Buscar la columna plural/array de IDs
+                establecimientos_ids_raw = profile_details.get('establecimientos_ids')
                 
                 if isinstance(establecimientos_ids_raw, list) and establecimientos_ids_raw:
                     establecimientos_ids = establecimientos_ids_raw

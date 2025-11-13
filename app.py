@@ -177,7 +177,7 @@ def get_form_field_value(field_name, form_data, return_none_if_empty=False):
     stripped_value = value.strip()
     if not stripped_value: # If it's an empty string after stripping
         return None if return_none_if_empty else '' # Return None for dates/numeric, empty string for text/select
-    return value.strip()
+    return stripped_value
 
 
 # Nuevo: Función para obtener el PDF de neurología específico para una doctora
@@ -466,7 +466,7 @@ def generar_pdf():
                 "NO": "/Yes" if get_form_field_value('check_alergiano', request.form) == 'NO_ALERGIAS' else "",
                 "SI": "/Yes" if get_form_field_value('check_alergiasi', request.form) == 'SI_ALERGIAS' else "",
                 "NO_2": "/Yes" if get_form_field_value('check_cirugiano', request.form) == 'NO_CIRUGIAS' else "",
-                "SI_2": "/Yes" if get_form_field_value('si_2', request.form) == 'SI_2' else "", # Corregido nombre de campo
+                "SI_2": "/Yes" if get_form_field_value('si_2', request.form) == 'SI_2' else "",
                 "SIN ALTERACIÓN": "/Yes" if get_form_field_value('check_visionsinalteracion', request.form) == 'SIN_ALTERACION_VISION' else "",
                 "VICIOS DE REFRACCION": "/Yes" if get_form_field_value('check_visionrefraccion', request.form) == 'VICIOS_DE_REFRACCION' else "",
                 "NORMAL": "/Yes" if get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION' else "",
@@ -646,17 +646,15 @@ def login():
     usuario_login = request.form['username'] # Renombrado a usuario_login para evitar conflicto con el rol
     clave = request.form['password']
     
-    # CORRECCIÓN CRÍTICA: SELECCIONAMOS SOLO ID y ROL para evitar el error 400 inicial.
-    # Si la columna "establecimientos_ids" no existe, el primer SELECT funcionará.
+    # CONSULTA 1 (INICIAL): SELECCIONAMOS SOLO ID y ROL para evitar el error 400 por columnas inexistentes.
     url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario_login}&password=eq.{clave}&select=id,rol"
     
     print(f"DEBUG: Intento de login para usuario: {usuario_login}, URL: {url}")
     try:
-        # Usamos SERVICE_HEADERS para asegurar que se pueda acceder a ID y rol
         res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS) 
         res.raise_for_status()
         data = res.json()
-        print(f"DEBUG: Respuesta Supabase login: {data}")
+        print(f"DEBUG: Respuesta Supabase login (Initial): {data}")
         
         if data:
             user_data = data[0]
@@ -669,10 +667,10 @@ def login():
             # 2. Lógica específica para COORDINADOR DE ESCUELA
             if role == 'coordinador_escuela':
                 
-                # SEGUNDO SELECT: Seleccionamos ambas columnas (singular y plural) para compatibilidad.
+                # CONSULTA 2 (DETALLES): Seleccionamos AMBAS posibles columnas de IDs por si solo existe una.
                 url_profile_details = f"{SUPABASE_URL}/rest/v1/doctoras?id=eq.{user_data['id']}&select=establecimiento_id,establecimientos_ids"
                 res_details = requests.get(url_profile_details, headers=SUPABASE_SERVICE_HEADERS)
-                res_details.raise_for_status()
+                res_details.raise_for_status() # **SI EL ERROR ES AQUÍ, SIGNIFICA QUE UNA DE LAS DOS COLUMNAS EN EL SELECT NO EXISTE EN LA DB.**
                 profile_details = res_details.json()[0]
                 
                 
@@ -715,7 +713,8 @@ def login():
         
     except requests.exceptions.RequestException as e:
         print(f"❌ Error en el login: {e} - {res.text if 'res' in locals() else ''}")
-        flash('Error de conexión al intentar iniciar sesión. Intente de nuevo.', 'error')
+        # Si la falla ocurre aquí, es un error de conexión o un error 4xx/5xx de la segunda consulta.
+        flash('Error de conexión al intentar iniciar sesión o al cargar su perfil (Error 4xx/5xx DB).', 'error')
         return redirect(url_for('index'))
         
 @app.route('/dashboard')

@@ -733,19 +733,13 @@ def login():
         flash('Error de conexión al intentar iniciar sesión o error de base de datos.', 'error')
         return redirect(url_for('index'))
         
-# - Ruta modificada /dashboard
-
 # - Ruta /dashboard corregida y modificada para la Fase 3
-
-# - Ruta /dashboard corregida (KeyError y UndefinedError) y modificada para la Fase 3
 
 @app.route('/dashboard')
 def dashboard():
     if 'usuario' not in session:
-        # Aquí también deberías asegurar que se maneje la redirección si el usuario
-        # no está completamente logueado o si su sesión expiró
         flash('Por favor, inicia sesión para acceder.', 'error')
-        return redirect(url_for('login')) 
+        return redirect(url_for('index'))
 
     # SOLUCIÓN AL KEYERROR: Leer el rol desde session['usuario']
     usuario = session['usuario'] # Contiene el rol: 'admin', 'doctora', 'coordinador_escuela', etc.
@@ -765,6 +759,7 @@ def dashboard():
     eventos = []
     formularios = []
     assigned_nominations = []
+    colegios_asignados = [] 
     
     # Lógica de carga de admin
     if rol == 'admin':
@@ -932,6 +927,11 @@ def admin_cargar_nomina():
     # MODIFICADO: Obtener el ID del establecimiento de acceso (YA NO ES OBLIGATORIO)
     # Si viene como cadena vacía (''), se almacenará como NULL en la base de datos BIGINT
     establecimiento_acceso_id = request.form.get('establecimiento_acceso_id', '').strip() 
+    
+    # NUEVOS CAMPOS (Opcionales)
+    coord_general_id = request.form.get('coord_general_id', '').strip()
+    coord_escuela_id = request.form.get('coord_escuela_id', '').strip()
+
 
     tipo_nomina_normalized = tipo_nomina_raw.strip().lower() if tipo_nomina_raw else ''
 
@@ -941,7 +941,7 @@ def admin_cargar_nomina():
     elif 'familiar' in tipo_nomina_normalized or 'medicina familiar' in tipo_nomina_normalized: 
         form_type = 'medicina_familiar'
 
-    # MODIFICADO: Se elimina 'establecimiento_acceso_id' de la validación 'all'
+    # Validaciones básicas (establecimiento_acceso_id ya no es obligatorio)
     if not all([tipo_nomina_raw, nombre_especifico, doctora_id_from_form, excel_file]):
         flash('❌ Falta uno o más campos obligatorios para cargar la nómina (tipo, nombre, doctora, archivo).', 'error')
         return redirect(url_for('dashboard'))
@@ -976,10 +976,13 @@ def admin_cargar_nomina():
         flash(f"❌ Error al subir el archivo de la nómina a Supabase Storage: {error_detail}", 'error')
         return redirect(url_for('dashboard'))
 
-    # MODIFICADO: Mapear el ID vacío a None para la DB (clave para NULL en BIGINT)
+    # Mapear IDs vacíos a None para la DB (clave para NULL en BIGINT/UUID)
     final_establecimiento_id = establecimiento_acceso_id if establecimiento_acceso_id else None
+    final_coord_general_id = coord_general_id if coord_general_id else None
+    final_coord_escuela_id = coord_escuela_id if coord_escuela_id else None
 
-    # MODIFICADO: Agregar establecimiento_id a los datos de la nómina
+
+    # ACTUALIZADO: Agregar los IDs de coordinación a los datos de la nómina
     data_nomina = {
         "id": nomina_id,
         "nombre_nomina": nombre_especifico,
@@ -989,7 +992,9 @@ def admin_cargar_nomina():
         "nombre_excel_original": excel_filename,
         "form_type": form_type, 
         "doctora_id_para_formulario": doctora_id_para_formulario if form_type == 'neurologia' else None,
-        "establecimiento_id": final_establecimiento_id # <-- AÑADIDO (puede ser NULL)
+        "establecimiento_id": final_establecimiento_id, 
+        "coord_general_id": final_coord_general_id,  # <-- NUEVO CAMPO
+        "coord_escuela_id": final_coord_escuela_id   # <-- NUEVO CAMPO
     }
 
     try:
@@ -1360,20 +1365,151 @@ def desbloquear_nomina():
 
 
 # --- NUEVA RUTA: DESCARGA DE PDF POR ALUMNO ID ---
-# Se necesita una ruta que simule la descarga, ya que no guardamos los PDFs generados
 @app.route('/descargar_pdf_alumno/<alumno_id>', methods=['GET'])
 def descargar_pdf_alumno(alumno_id):
+    """
+    Genera y descarga el PDF de evaluación para un alumno específico
+    usando los datos guardados en la base de datos (para Coordinador de Escuela).
+    """
     if session.get('usuario') != 'coordinador_escuela':
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
 
-    # Esta ruta debería ejecutar la lógica de rellenado y descarga del PDF para el alumno_id
-    # Dado que generar_pdf usa el request.form, esta es una simulación que redirige.
-    # En un sistema real, necesitaría una función que cargue los datos del estudiante por ID 
-    # desde la base de datos y llame a la lógica de relleno de PDF.
-    
-    flash(f"✅ La descarga del PDF para el alumno ID: {alumno_id} ha sido solicitada. (Función de descarga real no implementada en este endpoint)", 'success')
-    return redirect(url_for('dashboard')) 
+    try:
+        # 1. Obtener datos del estudiante y de la nómina asociada
+        url_student_data = (
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            f"?id=eq.{alumno_id}"
+            f"&select=*,nominas_medicas(form_type,doctora_id_para_formulario,nombre_nomina)" # Obtener metadata
+        )
+        res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
+        res_student.raise_for_status()
+        student_data = res_student.json()
+
+        if not student_data or not student_data[0].get('fecha_relleno'):
+            flash(f"❌ Alumno ID {alumno_id} no encontrado o no evaluado.", 'error')
+            return redirect(url_for('dashboard'))
+
+        est = student_data[0]
+        
+        # Extracción segura de la metadata de la nómina
+        nomina_info = est.get('nominas_medicas', {})
+        if isinstance(nomina_info, list):
+            nomina_info = nomina_info[0] if nomina_info else {}
+        elif not isinstance(nomina_info, dict):
+             nomina_info = {}
+        
+        form_type = nomina_info.get('form_type', 'neurologia')
+        doctora_id_para_formulario = nomina_info.get('doctora_id_para_formulario')
+        nombre_nomina = nomina_info.get('nombre_nomina', 'Valoracion')
+        
+        # 2. Seleccionar el PDF base (Lógica replicada de generar_pdf)
+        pdf_base_path = ''
+        if form_type == 'neurologia':
+            pdf_base_path = get_doctor_specific_neurologia_pdf(doctora_id_para_formulario)
+        elif form_type == 'medicina_familiar':
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
+        else:
+             raise FileNotFoundError(f"Tipo de formulario no reconocido: {form_type}")
+        
+        if not os.path.exists(pdf_base_path):
+             raise FileNotFoundError(f"Archivo base del formulario no encontrado: {pdf_base_path}")
+
+        # 3. Inicializar el rellenador de PDF
+        reader = PdfReader(pdf_base_path)
+        writer = PdfWriter()
+        writer.add_page(reader.pages[0])
+
+        # 4. Preparar y Mapear Campos del PDF (usando datos de la DB)
+        nombre = est.get('nombre', '')
+        rut = format_rut_python(est.get('rut', ''))
+        
+        # Formato de fechas
+        fecha_nac_formato = ''
+        if est.get('fecha_nacimiento'):
+            try:
+                fecha_nac_formato = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').strftime('%d/%m/%Y')
+            except ValueError: pass 
+
+        fecha_evaluacion_formatted = ''
+        if est.get('fecha_evaluacion'):
+            try:
+                fecha_evaluacion_formatted = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
+            except ValueError: pass
+
+        fecha_reeval_pdf = ''
+        if est.get('fecha_reevaluacion'):
+            try:
+                fecha_reeval_pdf = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
+            except ValueError: pass
+
+        campos = {}
+        if form_type == 'neurologia':
+            campos = {
+                "nombre": nombre,
+                "rut": rut, 
+                "fecha_nacimiento": fecha_nac_formato, 
+                "nacionalidad": est.get('nacionalidad', ''),
+                "edad": est.get('edad', ''),
+                "diagnostico_1": est.get('diagnostico', ''),
+                "diagnostico_2": est.get('diagnostico', ''), 
+                "estado_general": est.get('estado_general', ''),
+                "fecha_evaluacion": fecha_evaluacion_formatted, 
+                "fecha_reevaluacion": fecha_reeval_pdf,
+                "derivaciones": est.get('derivaciones', ''),
+                "sexo_f": "X" if est.get('sexo') == "F" else "",
+                "sexo_m": "X" if est.get('sexo') == "M" else "",
+            }
+        elif form_type == 'medicina_familiar':
+             campos = {
+                "nombre": nombre,
+                "rut": rut,
+                "fecha_nacimiento": fecha_nac_formato,
+                "edad": est.get('edad', ''),
+                "nacionalidad": est.get('nacionalidad', ''),
+                "sexo_f": "X" if est.get('sexo') == "F" else "",
+                "sexo_m": "X" if est.get('sexo') == "M" else "",
+                "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
+                "derivaciones": est.get('derivaciones', ''),
+                "fecha_evaluacion": fecha_evaluacion_formatted, 
+                "fecha_reevaluacion": fecha_reeval_pdf,
+                # NOTA: Debes asegurar que todos los campos del PDF de Medicina Familiar
+                # tengan un mapeo a la columna correspondiente en estudiantes_nomina (est.get('columna_db'))
+            }
+
+        # Llenado final del PDF y configuración
+        if "/AcroForm" not in writer._root_object:
+            writer._root_object.update({
+                NameObject("/AcroForm"): DictionaryObject()
+            })
+        writer.update_page_form_field_values(writer.pages[0], campos)
+        writer._root_object["/AcroForm"].update({
+            NameObject("/NeedAppearances"): BooleanObject(True)
+        })
+        
+        output = io.BytesIO()
+        writer.write(output)
+        output.seek(0)
+
+        # Nombre del archivo para la descarga
+        nombre_archivo_descarga = f"Valoracion_{nombre.replace(' ', '_')}_{rut}_{nombre_nomina.replace(' ', '_')}.pdf"
+        
+        return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error al obtener datos de Supabase para PDF: {e} - {res_student.text if 'res_student' in locals() else ''}")
+        flash('Error al generar PDF: Fallo de conexión o datos.', 'error')
+        return redirect(url_for('dashboard'))
+    except FileNotFoundError as e:
+        print(f"❌ Error File Not Found: {e}")
+        flash(f"❌ Error al generar el PDF: {e}", 'error')
+        return redirect(url_for('dashboard'))
+    except Exception as e:
+        print(f"❌ Error inesperado al generar PDF de alumno: {e}")
+        flash(f"❌ Error al generar el PDF: {e}", 'error')
+        return redirect(url_for('dashboard'))
+
 
 # - Añadir en la sección de rutas
 def get_supabase_count(filter_params=""):
@@ -1381,23 +1517,27 @@ def get_supabase_count(filter_params=""):
     # El conteo se pide usando el filtro 'select=count()' y se obtiene del encabezado 'Content-Range'.
     url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count(){filter_params}"
     
-    # Es crucial usar los SERVICE_HEADERS para evitar problemas de RLS (Row Level Security)
-    # y asegurar que el conteo sea preciso a nivel de todo el sistema.
-    response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS, params={'limit': 1})
-    response.raise_for_status()
+    try:
+        response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS, params={'limit': 1})
+        response.raise_for_status()
 
-    content_range = response.headers.get('Content-Range')
-    if content_range:
-        count_str = content_range.split('/')[-1]
-        return int(count_str)
-    return 0
+        content_range = response.headers.get('Content-Range')
+        if content_range:
+            count_str = content_range.split('/')[-1]
+            return int(count_str)
+        return 0
+    except Exception as e:
+        print(f"ERROR en get_supabase_count con filtro {filter_params}: {e}")
+        return 0
 
 
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
     """Retorna el conteo total y por especialidad de evaluaciones completadas."""
-    if 'usuario' not in session or session.get('rol') != 'coordinadora':
-        return jsonify({"success": False, "message": "Acceso denegado."}), 401
+    
+    # Asumimos que la Coordinadora General tiene el rol 'coordinadora'
+    if session.get('usuario') != 'coordinadora':
+        return jsonify({"success": False, "message": "Acceso denegado."}), 403
 
     try:
         # Filtro base para evaluaciones completadas: fecha_relleno no es nulo.
@@ -1406,14 +1546,17 @@ def dashboard_counts():
         # 1. Conteo Total
         total_evaluados = get_supabase_count(base_filter)
         
-        # 2. Conteo por Especialidad: Neurología
-        # Asumiendo columna 'especialidad' en estudiantes_nomina
-        filter_neurologia = f"{base_filter}&especialidad=eq.Neurologia"
+        # 2. Conteo por Neurología (Usando un proxy de diagnóstico o asumiendo el campo 'form_type' si existe)
+        filter_neurologia = f"{base_filter}&diagnostico=in.('Trastorno Del Espectro Autista','TDAH','Trastorno Motor Moderado','Hipoacusia')" 
         neurologia_count = get_supabase_count(filter_neurologia)
         
-        # 3. Conteo por Especialidad: Familiar
-        filter_familiar = f"{base_filter}&especialidad=eq.Familiar"
-        familiar_count = get_supabase_count(filter_familiar)
+        # 3. Conteo por Familiar (Proxy: el resto)
+        familiar_count = total_evaluados - neurologia_count
+        
+        # Si la columna form_type existe en estudiantes_nomina, el filtrado ideal sería:
+        # filter_neurologia = f"{base_filter}&form_type=eq.neurologia"
+        # filter_familiar = f"{base_filter}&form_type=eq.medicina_familiar"
+
 
         return jsonify({
             "success": True, 
@@ -1422,12 +1565,9 @@ def dashboard_counts():
             "familiar_count": familiar_count
         })
 
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Error al obtener los conteos de evaluaciones: {e}")
-        return jsonify({"success": False, "message": f"Error de conexión con Supabase: {str(e)}"}), 500
     except Exception as e:
         print(f"❌ Error interno en dashboard_counts: {e}")
-        return jsonify({"success": False, "message": "Error interno del servidor al obtener conteos."}), 500
+        return jsonify({"success": False, "message": f"Error interno del servidor al obtener conteos: {e}"}), 500
 
 # --- NUEVA RUTA: SOLICITUD DE CORRECCIÓN ---
 @app.route('/api/correccion/solicitar', methods=['POST'])

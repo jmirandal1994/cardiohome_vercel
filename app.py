@@ -677,34 +677,34 @@ def login():
                 
                 # --- Lógica de unificación de IDs (soporte para plural y singular) ---
                 
-                # 2.1. FUNCIÓN AUXILIAR PARA OBTENER LOS IDs DE COLEGIO DEL PERFIL
-                def get_college_ids(details):
-                    ids = []
-                    
-                    # 1. Intentar leer el ARRAY PLURAL (establecimientos_ids)
-                    ids_plural_raw = details.get('establecimientos_ids')
-                    if isinstance(ids_plural_raw, list) and ids_plural_raw:
-                        ids = ids_plural_raw
-                    elif isinstance(ids_plural_raw, str):
-                        try:
-                            temp_list = json.loads(ids_plural_raw)
-                            if isinstance(temp_list, list):
-                                ids = temp_list
-                        except (json.JSONDecodeError, TypeError):
-                            pass
+                # CORRECCIÓN CLAVE: Buscamos el nombre de columna correcto, 'establecimiento_ids' (singular, terminado en _ids)
+                ids_plural_raw = profile_details.get('establecimiento_ids')
+                
+                establecimientos_ids = []
+                
+                if isinstance(ids_plural_raw, list) and ids_plural_raw:
+                    # 1. Caso A: Si ya es una lista (JSONB deserializado correctamente)
+                    establecimientos_ids = ids_plural_raw
+                elif isinstance(ids_plural_raw, str):
+                    try:
+                        # 2. Caso B: Si es una cadena JSON que necesita deserializarse
+                        temp_list = json.loads(ids_plural_raw)
+                        if isinstance(temp_list, list):
+                            establecimientos_ids = temp_list
+                    except (json.JSONDecodeError, TypeError):
+                        pass
 
-                    # 2. Si el array falló o estaba vacío, intentar leer el ID SINGULAR (establecimiento_id)
-                    if not ids:
-                        singular_id_raw = details.get('establecimiento_id')
-                        if isinstance(singular_id_raw, int) and singular_id_raw is not None:
-                             ids = [singular_id_raw]
-                    
-                    # Convertir todos los IDs a int para la consulta 'in_'
-                    return [int(x) for x in ids if isinstance(x, (int, str)) and str(x).isdigit()]
+                # 3. Fallback al ID Singular (solo si los arrays son vacíos)
+                if not establecimientos_ids:
+                    singular_id_raw = profile_details.get('establecimiento_id')
+                    if isinstance(singular_id_raw, int) and singular_id_raw is not None:
+                         establecimientos_ids = [singular_id_raw]
                 
-                establecimientos_ids = get_college_ids(profile_details)
-                
-                # 3. Si hay IDs, obtener los nombres de los colegios para el listado inicial (frontend)
+                # 4. Limpieza final y conversión a entero (necesario para el IN de la API)
+                establecimientos_ids = [int(x) for x in establecimientos_ids if isinstance(x, (int, str)) and str(x).isdigit()]
+
+
+                # 5. Si hay IDs, obtener los nombres de los colegios para el listado inicial (frontend)
                 if not establecimientos_ids:
                     print("AVISO: Coordinador de Escuela logueado sin IDs de establecimiento asignados.")
                     colegios_asignados_data = []
@@ -717,7 +717,7 @@ def login():
                     res_colegios.raise_for_status()
                     colegios_asignados_data = res_colegios.json()
                 
-                # 4. Guardar en sesión para el dashboard
+                # 6. Guardar en sesión para el dashboard
                 session['colegios_asignados_ids'] = establecimientos_ids # IDs para la verificación
                 session['colegios_asignados'] = colegios_asignados_data # Lista de objetos para Jinja
             

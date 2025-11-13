@@ -1377,6 +1377,59 @@ def descargar_pdf_alumno(alumno_id):
     flash(f"✅ La descarga del PDF para el alumno ID: {alumno_id} ha sido solicitada. (Función de descarga real no implementada en este endpoint)", 'success')
     return redirect(url_for('dashboard')) 
 
+# - Añadir en la sección de rutas
+def get_supabase_count(filter_params=""):
+    """Función auxiliar para obtener un conteo de Supabase usando SERVICE HEADERS."""
+    # El conteo se pide usando el filtro 'select=count()' y se obtiene del encabezado 'Content-Range'.
+    url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count(){filter_params}"
+    
+    # Es crucial usar los SERVICE_HEADERS para evitar problemas de RLS (Row Level Security)
+    # y asegurar que el conteo sea preciso a nivel de todo el sistema.
+    response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS, params={'limit': 1})
+    response.raise_for_status()
+
+    content_range = response.headers.get('Content-Range')
+    if content_range:
+        count_str = content_range.split('/')[-1]
+        return int(count_str)
+    return 0
+
+
+@app.route('/api/dashboard_counts', methods=['GET'])
+def dashboard_counts():
+    """Retorna el conteo total y por especialidad de evaluaciones completadas."""
+    if 'usuario' not in session or session.get('rol') != 'coordinadora':
+        return jsonify({"success": False, "message": "Acceso denegado."}), 401
+
+    try:
+        # Filtro base para evaluaciones completadas: fecha_relleno no es nulo.
+        base_filter = "&fecha_relleno.not.is.null"
+        
+        # 1. Conteo Total
+        total_evaluados = get_supabase_count(base_filter)
+        
+        # 2. Conteo por Especialidad: Neurología
+        # Asumiendo columna 'especialidad' en estudiantes_nomina
+        filter_neurologia = f"{base_filter}&especialidad=eq.Neurologia"
+        neurologia_count = get_supabase_count(filter_neurologia)
+        
+        # 3. Conteo por Especialidad: Familiar
+        filter_familiar = f"{base_filter}&especialidad=eq.Familiar"
+        familiar_count = get_supabase_count(filter_familiar)
+
+        return jsonify({
+            "success": True, 
+            "total_evaluados": total_evaluados,
+            "neurologia_count": neurologia_count,
+            "familiar_count": familiar_count
+        })
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error al obtener los conteos de evaluaciones: {e}")
+        return jsonify({"success": False, "message": f"Error de conexión con Supabase: {str(e)}"}), 500
+    except Exception as e:
+        print(f"❌ Error interno en dashboard_counts: {e}")
+        return jsonify({"success": False, "message": "Error interno del servidor al obtener conteos."}), 500
 
 # --- NUEVA RUTA: SOLICITUD DE CORRECCIÓN ---
 @app.route('/api/correccion/solicitar', methods=['POST'])

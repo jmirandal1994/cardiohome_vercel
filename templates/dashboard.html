@@ -1619,7 +1619,7 @@
             <form id="correction-form" onsubmit="return submitCorrection(event)">
                 <input type="hidden" id="correction-alumno-id" name="alumno_id" required>
                 <label for="correction_details" class="block mb-2 font-medium">Detalle Específico de la Corrección Necesaria:</label>
-                <textarea id="correction_details" name="detalles" rows="4" placeholder="Escriba ESPECÍFICAMENTE qué necesita corregir (Ej: Error en el diagnóstico, la fecha de reevaluación debe ser 15/10/2025)." required class="form-input w-full"></textarea>
+                <textarea id="correction_details" name="detalles" rows="4" placeholder="Ej: Error en el diagnóstico, la fecha de reevaluación debe ser 15/10/2025." required class="form-input w-full"></textarea>
                 <div class="flex justify-end gap-3 mt-4">
                     <button type="button" class="action-button red" onclick="document.getElementById('correction-modal').style.display='none'">Cancelar</button>
                     <button type="submit" class="action-button green"><i class="fa-solid fa-paper-plane"></i> Enviar Solicitud</button>
@@ -1649,18 +1649,26 @@
             const activeSection = document.getElementById(sectionId);
             const activeLink = document.querySelector(`a[data-section="${sectionId}"]`);
             
+            // Detener el polling si salimos del rendimiento de coordinación
+            if (coordinatorPollingInterval && sectionId !== 'coord-performance') {
+                clearInterval(coordinatorPollingInterval);
+                coordinatorPollingInterval = null;
+                console.log("Polling detenido.");
+            }
+
+
             if (activeSection) {
                 activeSection.classList.add('active');
-                activeSection.style.display = 'block'; // Asegura que la sección se muestre
+                activeSection.style.display = 'block'; 
                 
                 // Lógica específica para iniciar gráficos/polling
                 if (sectionId === 'admin-performance') {
-                    // renderAdminPerformanceChart();
+                    // renderAdminPerformanceChart(); // Lógica de gráficos de Admin
                 } else if (sectionId === 'coord-performance') {
                     // INICIO DE POLLING PARA COORDINADORA GENERAL
-                    syncCoordinatorCounts(); // Sincronización inicial
-                    coordinatorPollingInterval = setInterval(syncCoordinatorCounts, 5000); // Repetir cada 5 segundos
-                    // renderCoordinadoraPerformanceChart();
+                    syncCoordinatorCounts(); 
+                    coordinatorPollingInterval = setInterval(syncCoordinatorCounts, 5000); 
+                    // renderCoordinadoraPerformanceChart(); // Lógica de gráficos de Coordinadora
                 }
             }
             if (activeLink) {
@@ -1729,23 +1737,16 @@
         
         // --- FUNCIÓN DE SINCRONIZACIÓN DE LA COORDINADORA GENERAL (FASE 1) ---
         async function syncCoordinatorCounts() {
+            // Nota: Esta función asume que /api/dashboard_counts existe en el backend.
             const userRole = '{{ usuario }}'; 
             if (userRole !== 'coordinadora') return; 
-
-            const coordPerformanceSection = document.getElementById('coord-performance');
-            if (coordPerformanceSection && !coordPerformanceSection.classList.contains('active')) {
-                 if(coordinatorPollingInterval) {
-                     clearInterval(coordinatorPollingInterval);
-                     coordinatorPollingInterval = null;
-                 }
-                 return;
-            }
 
             try {
                 const response = await fetch('/api/dashboard_counts');
                 const data = await response.json();
 
                 if (data.success) {
+                    // Actualizar contadores totales y por especialidad
                     const total = document.getElementById('coord-total-evaluados-count');
                     if (total) total.textContent = data.total_evaluados; 
                     
@@ -1755,15 +1756,12 @@
                     const familiar = document.getElementById('coord-familiar-count');
                     if (familiar) familiar.textContent = data.familiar_count;
 
+                    // Actualizar contadores en la sección de Bienvenida/Resumen
                     const welcomeCount = document.getElementById('welcome-evaluados-count');
-                    if (welcomeCount) {
-                         welcomeCount.textContent = data.total_evaluados;
-                    }
-
+                    if (welcomeCount) welcomeCount.textContent = data.total_evaluados;
+                    
                     const coordTopCount = document.getElementById('coord-evaluados-count-top');
-                    if (coordTopCount) {
-                         coordTopCount.textContent = data.total_evaluados;
-                    }
+                    if (coordTopCount) coordTopCount.textContent = data.total_evaluados;
 
                 } else {
                     console.error("❌ Error al obtener los conteos de evaluaciones:", data.message);
@@ -1947,8 +1945,123 @@
             return false;
         }
 
-        // --- FUNCIONES DE GRÁFICOS Y FILTROS (MANTENIDAS) ---
-        // (Las funciones de gráficos y filtros no se modifican en este paso)
+
+        // --- FUNCIONES DE GRÁFICOS Y FILTROS RESTAURADAS ---
+
+        // Función de filtro para Nóminas (Admin/Doctora)
+        function filterNominas(userType) {
+            let searchText = document.getElementById(`${userType}NominaSearch`).value.toLowerCase();
+            // Asumiendo que el filtro de Doctora solo existe para Admin
+            let doctorFilterId = userType === 'admin' ? document.getElementById('adminNominaDoctorFilter').value : null; 
+            
+            // Usamos una clase única si es posible, o nos basamos en el ID del contenedor
+            const containerId = `${userType}NominasContainer`;
+            const nominaItems = document.getElementById(containerId).querySelectorAll('.item-card');
+            
+            let resultsFound = false;
+
+            nominaItems.forEach(item => {
+                const nominaName = item.getAttribute('data-name');
+                const nominaType = item.getAttribute('data-type');
+                const assignedDoctorId = item.getAttribute('data-doctor-id');
+
+                const matchesSearch = (nominaName && nominaName.includes(searchText)) || (nominaType && nominaType.includes(searchText));
+                const matchesDoctor = userType !== 'admin' || doctorFilterId === "" || assignedDoctorId === doctorFilterId;
+
+                if (matchesSearch && matchesDoctor) {
+                    item.style.display = '';
+                    resultsFound = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            const noResultsElement = document.getElementById(`${userType}NominaNoResults`);
+            if (noResultsElement) noResultsElement.style.display = resultsFound ? 'none' : 'block';
+        }
+
+        function clearNominaFilters(userType) {
+            document.getElementById(`${userType}NominaSearch`).value = '';
+            if (userType === 'admin') document.getElementById('adminNominaDoctorFilter').value = '';
+            filterNominas(userType);
+        }
+
+        // Lógica de gráficos de maqueta (ejemplo para Coordinadora)
+        const evaluaciones_por_dia = {
+            '2025-09-22': { neurologia: 2, familiar: 3, total: 5 },
+            '2025-09-23': { neurologia: 4, familiar: 4, total: 8 },
+            '2025-09-24': { neurologia: 6, familiar: 6, total: 12 },
+            '2025-09-25': { neurologia: 5, familiar: 5, total: 10 },
+            '2025-09-26': { neurologia: 8, familiar: 7, total: 15 },
+            '2025-09-27': { neurologia: 3, familiar: 4, total: 7 },
+            '2025-09-28': { neurologia: 10, familiar: 8, total: 18 }
+        };
+        const evaluaciones_por_semana = {
+            'Semana 38': { neurologia: 15, familiar: 15, total: 30 },
+            'Semana 39': { neurologia: 22, familiar: 23, total: 45 },
+            'Semana 40': { neurologia: 30, familiar: 30, total: 60 }
+        };
+
+        function renderCoordinadoraPerformanceChart() {
+            const ctx = document.getElementById('coordinadoraPerformanceChart');
+            if (!ctx) return;
+            if (window.coordinadoraChartInstance) window.coordinadoraChartInstance.destroy();
+
+            const periodoSelect = document.getElementById('evaluacion-periodo');
+            
+            let labels, dataSet, chartTitle;
+            const sourceData = (periodoSelect && periodoSelect.value === 'dia') ? evaluaciones_por_dia : evaluaciones_por_semana;
+            
+            labels = Object.keys(sourceData);
+            const neuroData = labels.map(label => sourceData[label].neurologia);
+            const familiarData = labels.map(label => sourceData[label].familiar);
+            const totalData = labels.map(label => sourceData[label].total);
+            
+            chartTitle = (periodoSelect && periodoSelect.value === 'dia') ? 'Evaluaciones Realizadas por Día (Maqueta)' : 'Evaluaciones Realizadas por Semana (Maqueta)';
+
+            dataSet = [
+                { label: 'Evaluaciones Neurología', data: neuroData, backgroundColor: 'rgba(52, 152, 219, 0.7)', borderColor: 'rgba(52, 152, 219, 1)', borderWidth: 1, stack: 'Stack 0' },
+                { label: 'Evaluaciones Medicina Familiar', data: familiarData, backgroundColor: 'rgba(46, 204, 113, 0.7)', borderColor: 'rgba(46, 204, 113, 1)', borderWidth: 1, stack: 'Stack 0' },
+                { label: 'Evaluaciones Totales', data: totalData, backgroundColor: 'rgba(241, 196, 15, 0.7)', borderColor: 'rgba(241, 196, 15, 1)', borderWidth: 2, type: 'line', yAxisID: 'y1' }
+            ];
+
+            window.coordinadoraChartInstance = new Chart(ctx, {
+                type: 'bar', 
+                data: {
+                    labels: labels,
+                    datasets: dataSet
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { 
+                        title: { display: true, text: chartTitle, font: { size: 18, family: 'Montserrat' }, color: '#333' }, 
+                        legend: { position: 'bottom' } 
+                    },
+                    scales: { 
+                        x: { title: { display: true, text: (periodoSelect && periodoSelect.value).charAt(0).toUpperCase() + (periodoSelect && periodoSelect.value).slice(1) } },
+                        y: { 
+                            beginAtZero: true, 
+                            title: { display: true, text: 'Evaluaciones (Barra)' }, 
+                            ticks: { precision: 0 },
+                            stacked: true 
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right', 
+                            grid: { drawOnChartArea: false }, 
+                            title: { display: true, text: 'Total Evaluaciones (Línea)' },
+                            ticks: { precision: 0 },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        const periodoSelect = document.getElementById('evaluacion-periodo');
+        if (periodoSelect) {
+            periodoSelect.addEventListener('change', renderCoordinadoraPerformanceChart);
+        }
         
     </script>
 </body>

@@ -362,7 +362,7 @@ def generar_pdf():
     elif form_type == 'medicina_familiar':
         # En el formulario familiar, el género se maneja con checkboxes/radio buttons diferentes
         # Asegúrate de que los nombres de los campos HTML de género en 'formulario_medicina_familiar.html'
-        # sean 'genero_f' y 'genero_m' y que envíen 'Femenino' o 'Masculino' if they are checked.
+        # sean 'genero_f' y 'genero_m' y que envíen 'Femenino' o 'Masculino' si están marcados.
         sexo_f_pdf = "X" if get_form_field_value('genero_f', request.form) == 'Femenino' else ""
         sexo_m_pdf = "X" if get_form_field_value('genero_m', request.form) == 'Masculino' else ""
 
@@ -676,33 +676,38 @@ def login():
                 
                 
                 # --- Lógica de unificación de IDs (soporte para plural y singular) ---
-                establecimientos_ids = []
                 
-                # 2.1. Intentar leer el ARRAY (Plural - JSONB/INT[])
-                ids_plural = profile_details.get('establecimientos_ids')
-                if isinstance(ids_plural, list) and ids_plural:
-                    establecimientos_ids = ids_plural
-                elif isinstance(ids_plural, str):
-                    try:
-                        # Intentar parsear JSON string a lista
-                        temp_list = json.loads(ids_plural)
-                        if isinstance(temp_list, list):
-                            establecimientos_ids = temp_list
-                    except (json.JSONDecodeError, TypeError):
-                        pass
+                # 2.1. FUNCIÓN AUXILIAR PARA OBTENER LOS IDs DE COLEGIO DEL PERFIL
+                def get_college_ids(details):
+                    ids = []
+                    # Intentar leer el ARRAY PLURAL (establecimientos_ids)
+                    ids_plural = details.get('establecimientos_ids')
+                    if isinstance(ids_plural, list) and ids_plural:
+                        return [int(x) for x in ids_plural if isinstance(x, (int, str)) and str(x).isdigit()]
+                    elif isinstance(ids_plural, str):
+                        try:
+                            # Intentar parsear JSON string a lista
+                            temp_list = json.loads(ids_plural)
+                            if isinstance(temp_list, list):
+                                return [int(x) for x in temp_list if isinstance(x, (int, str)) and str(x).isdigit()]
+                        except (json.JSONDecodeError, TypeError):
+                            pass
 
-                # 2.2. Fallback al ID Singular si el array está vacío (para usuarios que solo tienen un ID)
-                if not establecimientos_ids:
-                    singular_id_raw = profile_details.get('establecimiento_id')
+                    # Fallback 2: Intentar leer el ID SINGULAR (establecimiento_id)
+                    singular_id_raw = details.get('establecimiento_id')
                     if isinstance(singular_id_raw, int) and singular_id_raw is not None:
-                         establecimientos_ids = [singular_id_raw]
+                         return [singular_id_raw]
+                    
+                    return []
                 
-                # 3. Si hay IDs válidos, obtener los nombres de los colegios para el listado inicial (frontend)
+                establecimientos_ids = get_college_ids(profile_details)
+                
+                # 3. Si hay IDs, obtener los nombres de los colegios para el listado inicial (frontend)
                 if not establecimientos_ids:
                     print("AVISO: Coordinador de Escuela logueado sin IDs de establecimiento asignados.")
                     colegios_asignados_data = []
                 else:
-                    # Usamos 'in_' para buscar múltiples IDs en la tabla de acceso
+                    # Usamos 'in_' para buscar múltiples IDs
                     ids_str = ",".join(map(str, establecimientos_ids)) 
                     
                     url_colegios = f"{SUPABASE_URL}/rest/v1/acceso_establecimientos?id=in.({ids_str})&select=id,nombre_colegio"

@@ -733,148 +733,115 @@ def login():
         flash('Error de conexión al intentar iniciar sesión o error de base de datos.', 'error')
         return redirect(url_for('index'))
         
+# - Ruta modificada /dashboard
+
 @app.route('/dashboard')
 def dashboard():
-    if 'usuario' not in session:
-        return redirect(url_for('index'))
+    if not session.get('usuario'):
+        flash('Por favor, inicia sesión para acceder.', 'error')
+        return redirect(url_for('login'))
 
     usuario = session['usuario']
-    usuario_id = session.get('usuario_id')
-    print(f"DEBUG: Accediendo a dashboard para usuario: {usuario}, ID: {usuario_id}")
-
-    # Variables que necesitan ser pasadas a la plantilla
-    colegios_asignados = []
+    rol = session['rol']
     
-    # Si el usuario es COORDINADOR DE ESCUELA, cargamos la lista de colegios guardada en sesión
-    if usuario == 'coordinador_escuela':
-        colegios_asignados = session.get('colegios_asignados', [])
-    
-    # Nómina inicial del Coordinador de Escuela, se carga con JS después del desbloqueo
-    nominas_completadas_escuela = None 
-    nombre_establecimiento_coordinador = session.get('nombre_establecimiento_coordinador') # Solo por si acaso para otros perfiles
-
     # --- Carga de datos existentes (ADMIN/DOCTORA) ---
-    doctoras = []
-    establecimientos_admin_list = []
-    admin_nominas_cargadas = []
-    conteo = {}
-    doctor_performance_data = {} 
-    doctor_performance_data_single_doctor = {'completed': 0, 'pending': 0, 'total': 0}
-    campos_establecimientos = "id,nombre,fecha,horario,observaciones,cantidad_alumnos,url_archivo,nombre_archivo,doctora_id"
-    eventos = []
-    
-    # Lógica de carga de eventos/visitas
-    try:
-        if usuario == 'doctora':
-            url_eventos = (
-                f"{SUPABASE_URL}/rest/v1/establecimientos"
-                f"?doctora_id=eq.{usuario_id}"
-                f"&select={campos_establecimientos}"
-            )
-        else:
-             url_eventos = f"{SUPABASE_URL}/rest/v1/establecimientos?select={campos_establecimientos}"
-        
-        if url_eventos and usuario != 'coordinador_escuela':
-            print(f"DEBUG: URL para obtener eventos: {url_eventos}")
-            res_eventos = requests.get(url_eventos, headers=SUPABASE_HEADERS)
-            res_eventos.raise_for_status()
-            eventos = res_eventos.json()
-            if isinstance(eventos, list):
-                eventos.sort(key=lambda e: e.get('horario', '').split(' - ')[0] if e.get('horario') else '')
-        else:
-            eventos = []
-
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Error al obtener eventos: {e}")
-        flash('Error al cargar el calendario de visitas.', 'error')
-    except Exception as e:
-        print(f"❌ Error inesperado al cargar eventos: {e}")
-        flash('Error inesperado al cargar eventos.', 'error')
-
-    # Lógica de carga de formularios subidos (para todos los que tienen la vista)
-    formularios = []
-    try:
-        url_formularios_subidos = f"{SUPABASE_URL}/rest/v1/formularios_subidos"
-        res_formularios = requests.get(url_formularios_subidos, headers=SUPABASE_HEADERS)
-        res_formularios.raise_for_status()
-        formularios = res_formularios.json()
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Error al obtener formularios subidos: {e}")
-
-    # Lógica de carga de nominaciones asignadas (para doctora)
-    assigned_nominations = []
-    if usuario == 'doctora':
-        try:
-            url_nominas_asignadas = (
-                f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-                f"?doctora_id=eq.{usuario_id}"
-                f"&select=id,nombre_nomina,tipo_nomina,form_type,doctora_id_para_formulario"
-            )
-            res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_SERVICE_HEADERS) 
-            res_nominas_asignadas.raise_for_status()
-            raw_nominas = res_nominas_asignadas.json()
-            for nom in raw_nominas:
-                assigned_nominations.append({
-                    'id': nom['id'],
-                    'nombre_establecimiento': nom['nombre_nomina'],
-                    'tipo_nomina_display': nom['tipo_nomina'].replace('_', ' ').title(),
-                    'form_type': nom.get('form_type'),
-                    'doctora_id_para_formulario': nom.get('doctora_id_para_formulario')
-                })
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Error al obtener nóminas asignadas: {e}")
-
-        # Lógica de rendimiento individual (omitida por brevedad, se mantiene la misma lógica de conteo)
+    doctoras = [] # Lista final de doctoras para asignar
+    coordinadoras_generales = [] # NUEVO: Lista de coordinadores generales
+    coordinadores_escuela = [] # NUEVO: Lista de coordinadores de escuela
+    establecimientos = []
+    nominas_doctora = [] 
+    nomina_id_pendiente = None
+    alumnos_nomina_pendiente = []
     
     # Lógica de carga de admin
     if usuario == 'admin':
         try:
-            url_doctoras = f"{SUPABASE_URL}/rest/v1/doctoras"
+            # OBTENER TODOS LOS USUARIOS (DOCTORAS Y COORDINADORES)
+            url_doctoras = f"{SUPABASE_URL}/rest/v1/doctoras?select=id,usuario,rol" 
             res_doctoras = requests.get(url_doctoras, headers=SUPABASE_SERVICE_HEADERS) 
             res_doctoras.raise_for_status()
             doctoras_raw = res_doctoras.json()
-            doctoras = [{'id': doc['id'], 'usuario': doc['usuario']} for doc in doctoras_raw]
-        except requests.exceptions.RequestException as e:
-            print(f"❌ ERROR AL OBTENER DOCTORAS (ADMIN DASHBOARD): {e}")
-            doctoras = [] 
+            
+            # FILTRADO DE ROLES EN PYTHON
+            all_users = [{'id': doc['id'], 'usuario': doc['usuario'], 'rol': doc.get('rol')} for doc in doctoras_raw]
+            
+            # 1. Doctoras (rol 'doctora' o similar, para asignación de nómina)
+            doctoras = [user for user in all_users if user['rol'] == 'doctora'] 
+            
+            # 2. Coordinadoras Generales (para asignación de proyecto)
+            coordinadoras_generales = [user for user in all_users if user['rol'] == 'coordinadora'] 
+            
+            # 3. Coordinadores de Escuela (para asignación de acceso)
+            coordinadores_escuela = [user for user in all_users if user['rol'] == 'coordinador_escuela']
 
-        try:
-            url_establecimientos_admin = f"{SUPABASE_URL}/rest/v1/establecimientos?select=id,nombre"
-            res_establecimientos = requests.get(url_establecimientos_admin, headers=SUPABASE_SERVICE_HEADERS) 
+            # OBTENER ESTABLECIMIENTOS (para el campo de asignación de colegio)
+            url_establecimientos = f"{SUPABASE_URL}/rest/v1/establecimientos?select=id,nombre"
+            res_establecimientos = requests.get(url_establecimientos, headers=SUPABASE_SERVICE_HEADERS) 
             res_establecimientos.raise_for_status()
-            establecimientos_admin_list = res_establecimientos.json()
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Error al obtener establecimientos (ADMIN DASHBOARD): {e}")
-            establecimientos_admin_list = [] 
+            establecimientos = res_establecimientos.json()
 
+            # OBTENER NÓMINAS COMPLETADAS (para el área de administración)
+            url_nominas_admin = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina,tipo_nomina,doctora_id,nombre_excel_original,form_type"
+            res_nominas_admin = requests.get(url_nominas_admin, headers=SUPABASE_SERVICE_HEADERS) 
+            res_nominas_admin.raise_for_status()
+            nominas_admin_raw = res_nominas_admin.json()
+            
+            # Aquí puedes procesar 'nominas_admin_raw' para mostrar un listado general al admin si lo necesitas.
+            # Por simplicidad, solo cargamos los datos.
+
+        except requests.exceptions.RequestException as e:
+            print(f"❌ ERROR AL OBTENER DATOS (ADMIN DASHBOARD): {e}")
+            flash('Error al cargar datos de doctoras o establecimientos.', 'error')
+            
+    elif rol == 'doctora':
+        # ... (Lógica para Doctora) ...
+        doctora_id = session['id']
         try:
-            url_admin_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina,tipo_nomina,doctora_id,url_excel_original,nombre_excel_original,form_type,doctora_id_para_formulario"
-            res_admin_nominas = requests.get(url_admin_nominas, headers=SUPABASE_SERVICE_HEADERS) 
-            res_admin_nominas.raise_for_status()
-            admin_nominas_cargadas = res_admin_nominas.json()
+            # 1. Obtener nóminas asignadas a la doctora
+            url_nominas = (
+                f"{SUPABASE_URL}/rest/v1/nominas_medicas?"
+                f"select=id,nombre_nomina,tipo_nomina,nombre_excel_original,form_type"
+                f"&doctora_id=eq.{doctora_id}"
+            )
+            res_nominas = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
+            res_nominas.raise_for_status()
+            nominas_doctora = res_nominas.json()
+            
+            # 2. Buscar si hay una nómina pendiente de rellenar
+            # (Asumimos la lógica de buscar la nómina más reciente sin alumnos evaluados)
+            # Implementación simple: buscar la nómina más antigua (por orden de creación)
+            # que aún tenga alumnos pendientes (no evaluados)
+            
+            # ... (Lógica de carga de nómina pendiente) ...
+            
         except requests.exceptions.RequestException as e:
-            print(f"❌ Error al obtener nóminas cargadas por admin: {e}")
+            print(f"❌ ERROR AL OBTENER NÓMINAS (DOCTORA DASHBOARD): {e}")
+            flash('Error al cargar nóminas asignadas.', 'error')
 
-        # Lógica de rendimiento por doctora (omitida por brevedad)
+    elif rol == 'coordinador_escuela':
+        # ... (Lógica para Coordinador de Escuela) ...
+        coord_id = session['id']
+        # La lógica para cargar las nóminas para el coordinador de escuela será implementada
+        # cuando se cargue la sección de su dashboard. Por ahora, solo cargamos los datos
+        # mínimos para el render.
+        
+    else:
+        # Cualquier otro rol, o rol no reconocido
+        flash('Rol de usuario no reconocido o no autorizado.', 'error')
+        return redirect(url_for('login'))
 
     return render_template(
         'dashboard.html',
         usuario=usuario,
-        eventos=eventos,
+        rol=rol,
         doctoras=doctoras,
-        establecimientos=establecimientos_admin_list,
-        formularios=formularios,
-        conteo=conteo,
-        assigned_nominations=assigned_nominations,
-        admin_nominas_cargadas=admin_nominas_cargadas,
-        doctor_performance_data=doctor_performance_data, 
-        doctor_performance_data_single_doctor=doctor_performance_data_single_doctor,
-        # NUEVA VARIABLE CLAVE: LISTA DE COLEGIOS PARA EL COORDINADOR
-        colegios_asignados=colegios_asignados, 
-        nombre_establecimiento_coordinador=nombre_establecimiento_coordinador,
-        nominas_completadas_escuela=nominas_completadas_escuela 
+        coordinadoras_generales=coordinadoras_generales, # NUEVO: Pasado a la plantilla
+        coordinadores_escuela=coordinadores_escuela, # NUEVO: Pasado a la plantilla
+        establecimientos=establecimientos,
+        nominas_doctora=nominas_doctora,
+        nomina_id_pendiente=nomina_id_pendiente,
+        alumnos_nomina_pendiente=alumnos_nomina_pendiente
     )
-
 @app.route('/logout')
 def logout():
     session.clear()

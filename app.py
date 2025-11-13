@@ -737,24 +737,31 @@ def login():
 
 # - Ruta /dashboard corregida y modificada para la Fase 3
 
+# - Ruta /dashboard corregida (KeyError y UndefinedError) y modificada para la Fase 3
+
 @app.route('/dashboard')
 def dashboard():
     if 'usuario' not in session:
-        return redirect(url_for('index'))
+        # Aquí también deberías asegurar que se maneje la redirección si el usuario
+        # no está completamente logueado o si su sesión expiró
+        flash('Por favor, inicia sesión para acceder.', 'error')
+        return redirect(url_for('login')) 
 
     # SOLUCIÓN AL KEYERROR: Leer el rol desde session['usuario']
-    usuario = session['usuario']
-    rol = usuario # El valor de 'usuario' es el rol ('admin', 'doctora', etc.)
+    usuario = session['usuario'] # Contiene el rol: 'admin', 'doctora', 'coordinador_escuela', etc.
+    rol = usuario 
     usuario_id = session.get('usuario_id')
     
     print(f"DEBUG: Accediendo a dashboard para usuario: {usuario}, ID: {usuario_id}, Rol: {rol}")
 
     # --- Variables pasadas a la plantilla ---
     doctoras = [] 
-    coordinadoras_generales = [] # NUEVO
-    coordinadores_escuela = [] # NUEVO
+    coordinadoras_generales = [] 
+    coordinadores_escuela = [] 
     establecimientos = []
     admin_nominas_cargadas = []
+    # NUEVO: Lista de todos los usuarios para la búsqueda de nombres en el HTML
+    all_users_for_lookup = [] 
     eventos = []
     formularios = []
     assigned_nominations = []
@@ -771,20 +778,23 @@ def dashboard():
             # FILTRADO DE ROLES EN PYTHON
             all_users = [{'id': doc['id'], 'usuario': doc['usuario'], 'rol': doc.get('rol')} for doc in doctoras_raw]
             
-            # Separación de listas (Fase 3.A)
+            # ASIGNACIÓN DE LISTA UNIFICADA (Solución al UndefinedError)
+            all_users_for_lookup = all_users 
+            
+            # Separación de listas (Para los <select> del formulario de carga)
             doctoras = [user for user in all_users if user['rol'] == 'doctora'] 
             coordinadoras_generales = [user for user in all_users if user['rol'] == 'coordinadora'] 
             coordinadores_escuela = [user for user in all_users if user['rol'] == 'coordinador_escuela']
 
             # 2. OBTENER ESTABLECIMIENTOS (para el campo de asignación de colegio)
+            # Nota: Usamos 'acceso_establecimientos' como en el último código
             url_establecimientos = f"{SUPABASE_URL}/rest/v1/acceso_establecimientos?select=id,nombre_colegio"
             res_establecimientos = requests.get(url_establecimientos, headers=SUPABASE_SERVICE_HEADERS) 
             res_establecimientos.raise_for_status()
-            # Renombramos 'nombre_colegio' a 'nombre' para que coincida con la maqueta del HTML
             establecimientos = [{'id': est['id'], 'nombre': est['nombre_colegio']} for est in res_establecimientos.json()] 
 
             # 3. OBTENER NÓMINAS CARGADAS (para gestión del admin)
-            url_admin_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina,tipo_nomina,doctora_id,url_excel_original,nombre_excel_original,form_type,doctora_id_para_formulario"
+            url_admin_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina,tipo_nomina,doctora_id,url_excel_original,nombre_excel_original,form_type,doctora_id_para_formulario,establecimiento_id,coord_general_id,coord_escuela_id"
             res_admin_nominas = requests.get(url_admin_nominas, headers=SUPABASE_SERVICE_HEADERS) 
             res_admin_nominas.raise_for_status()
             admin_nominas_cargadas = res_admin_nominas.json()
@@ -795,7 +805,7 @@ def dashboard():
         
     elif rol == 'doctora':
         try:
-            # Lógica para Doctora (solo simplificada, mantiene la original de tu app.py)
+            # Lógica para Doctora (Simplificada)
             url_nominas_asignadas = (
                 f"{SUPABASE_URL}/rest/v1/nominas_medicas"
                 f"?doctora_id=eq.{usuario_id}"
@@ -814,30 +824,29 @@ def dashboard():
                 })
         except requests.exceptions.RequestException as e:
             print(f"❌ Error al obtener nóminas asignadas: {e}")
+            flash('Error al cargar nóminas asignadas.', 'error')
 
     elif rol == 'coordinador_escuela':
-        # Lógica para Coordinador de Escuela (mantiene la lógica de asignación de colegio)
+        # Lógica para Coordinador de Escuela (preparación)
         colegios_asignados = session.get('colegios_asignados', [])
-        # Para evitar el KeyError, pasamos las variables de sesión aquí
         establecimientos = [{'id': c['id'], 'nombre': c['nombre_colegio']} for c in colegios_asignados] if colegios_asignados else []
         
 
-    # (Lógica de carga de eventos y formularios subidos omitida por brevedad, asumiendo que está intacta en tu app.py)
-    
-    # Variables de relleno para evitar KeyError en el render
-    colegios_asignados = session.get('colegios_asignados', []) # Necesario para coord_escuela
+    # Variables de relleno para el render_template (para evitar KeyErrors en el HTML)
+    colegios_asignados = session.get('colegios_asignados', [])
     
     return render_template(
         'dashboard.html',
         usuario=usuario,
-        rol=rol, # Pasamos el rol corregido
+        rol=rol, 
         doctoras=doctoras,
         coordinadoras_generales=coordinadoras_generales, 
         coordinadores_escuela=coordinadores_escuela, 
         establecimientos=establecimientos,
         admin_nominas_cargadas=admin_nominas_cargadas,
+        all_users_for_lookup=all_users_for_lookup, # CRUCIAL: Lista de todos los usuarios
         assigned_nominations=assigned_nominations,
-        # Variables de maqueta/vacías
+        # Variables de maqueta/vacías (de tu código original)
         eventos=eventos,
         formularios=formularios,
         conteo={},

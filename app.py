@@ -1005,6 +1005,8 @@ def admin_agregar():
 
 # - Ruta /admin/cargar_nomina Final y Alineada a BIGINT
 
+# - Ruta /admin/cargar_nomina Final y Alineada a BIGINT
+
 @app.route('/admin/cargar_nomina', methods=['POST'])
 def admin_cargar_nomina():
     if session.get('usuario') != 'admin':
@@ -1079,12 +1081,14 @@ def admin_cargar_nomina():
     # ====================================================================
     
     # Si el administrador *no* seleccionó un ID de colegio existente, lo creamos.
+    colegio_id_final_str = establecimiento_acceso_id
+    colegio_creado_en_paso = False
+    
     if not establecimiento_acceso_id:
-        
+        colegio_creado_en_paso = True
         nombre_colegio_nuevo = nombre_especifico.title() 
         
-        # *** CORRECCIÓN CRÍTICA: OMITIR LA GENERACIÓN DEL ID ***
-        # Dejamos que Supabase genere el BIGINT automáticamente.
+        # OMITIMOS el ID para que la DB (BIGINT) lo genere automáticamente
         data_nuevo_colegio = {
             "nombre_colegio": nombre_colegio_nuevo,
             "token_acceso": str(uuid.uuid4())[:8], 
@@ -1093,29 +1097,30 @@ def admin_cargar_nomina():
         
         try:
             print(f"DEBUG: Intentando crear nuevo colegio: {nombre_colegio_nuevo}")
+            # Insertar y pedir el ID (BIGINT) de vuelta
             res_insert_colegio = requests.post(
-                f"{SUPABASE_URL}/rest/v1/acceso_establecimientos?select=id", # Pedimos el ID de vuelta
+                f"{SUPABASE_URL}/rest/v1/acceso_establecimientos?select=id",
                 headers=SUPABASE_SERVICE_HEADERS,
                 json=data_nuevo_colegio
             )
             res_insert_colegio.raise_for_status()
             
-            # Capturamos el ID BIGINT generado por la base de datos
             nuevo_registro = res_insert_colegio.json()
             if nuevo_registro and isinstance(nuevo_registro, list) and nuevo_registro[0].get('id'):
-                 establecimiento_acceso_id = str(nuevo_registro[0]['id']) # Capturar el BIGINT como string
+                 # CRÍTICO: Capturar el BIGINT generado por la DB como string
+                 colegio_id_final_str = str(nuevo_registro[0]['id']) 
             else:
-                 raise Exception("No se pudo obtener el ID BIGINT generado por Supabase.")
+                 raise Exception("Fallo al capturar el ID BIGINT generado por Supabase.")
 
-            flash(f"✅ Nuevo Colegio de Acceso '{nombre_colegio_nuevo}' creado automáticamente. Token: {data_nuevo_colegio['token_acceso']}", 'success')
+            flash(f"✅ Nuevo Colegio de Acceso '{nombre_colegio_nuevo}' creado automáticamente. ID: {colegio_id_final_str}", 'success')
             
         except requests.exceptions.RequestException as e:
-            error_detail = res_insert_colegio.text if 'res_insert_colegio' in locals() else 'No response.'
-            print(f"CRÍTICO: Error al crear Colegio de Acceso: {error_detail}")
             # Rollback: Limpiar archivo
             try: requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
             except Exception: pass
-            flash(f"❌ Error al crear el nuevo Colegio de Acceso: {error_detail}", 'error')
+            error_detail = res_insert_colegio.text if 'res_insert_colegio' in locals() else 'No response.'
+            print(f"CRÍTICO: Error FATAL al crear Colegio de Acceso: {error_detail}")
+            flash(f"❌ Error FATAL al crear el nuevo Colegio de Acceso. Código: {res_insert_colegio.status_code}", 'error')
             return redirect(url_for('dashboard'))
 
     # --------------------------------------------------------------------
@@ -1123,7 +1128,7 @@ def admin_cargar_nomina():
     # --------------------------------------------------------------------
 
     # Mapear IDs vacíos a None (Aplicamos la conversión robusta aquí)
-    final_establecimiento_id = to_none_if_empty(establecimiento_acceso_id)
+    final_establecimiento_id = to_none_if_empty(colegio_id_final_str)
     final_coord_general_id = to_none_if_empty(coord_general_id)
     final_coord_escuela_id = to_none_if_empty(coord_escuela_id)
 
@@ -1159,8 +1164,11 @@ def admin_cargar_nomina():
         error_detail = res_insert_nomina.text if 'res_insert_nomina' in locals() else 'No response from Supabase.'
         print(f"CRÍTICO: Error al insertar nómina médica (Paso 4): {error_detail}")
         flash(f"❌ Error al guardar la nómina (BASE): {error_detail}", 'error')
-        # Rollback: Limpiar archivo
-        try: requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
+        # Rollback: Limpiar archivo y colegio
+        try: 
+            requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
+            if colegio_creado_en_paso and final_establecimiento_id: # Borrar colegio si se creó en este intento
+                requests.delete(f"{SUPABASE_URL}/rest/v1/acceso_establecimientos?id=eq.{colegio_id_final_str}", headers=SUPABASE_SERVICE_HEADERS)
         except Exception: pass
         return redirect(url_for('dashboard'))
 
@@ -1178,8 +1186,8 @@ def admin_cargar_nomina():
         try:
             requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
             requests.delete(f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}", headers=SUPABASE_SERVICE_HEADERS)
-            if final_establecimiento_id and not establecimiento_acceso_id: # Rollback del colegio solo si se creó ahora
-                requests.delete(f"{SUPABASE_URL}/rest/v1/acceso_establecimientos?id=eq.{final_establecimiento_id}", headers=SUPABASE_SERVICE_HEADERS)
+            if colegio_creado_en_paso and final_establecimiento_id:
+                requests.delete(f"{SUPABASE_URL}/rest/v1/acceso_establecimientos?id=eq.{colegio_id_final_str}", headers=SUPABASE_SERVICE_HEADERS)
         except Exception: pass
         return redirect(url_for('dashboard'))
 
@@ -1208,8 +1216,8 @@ def admin_cargar_nomina():
         try:
             requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
             requests.delete(f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}", headers=SUPABASE_SERVICE_HEADERS)
-            if final_establecimiento_id and not establecimiento_acceso_id:
-                requests.delete(f"{SUPABASE_URL}/rest/v1/acceso_establecimientos?id=eq.{final_establecimiento_id}", headers=SUPABASE_SERVICE_HEADERS)
+            if colegio_creado_en_paso and final_establecimiento_id:
+                requests.delete(f"{SUPABASE_URL}/rest/v1/acceso_establecimientos?id=eq.{colegio_id_final_str}", headers=SUPABASE_SERVICE_HEADERS)
         except Exception: pass
         return redirect(url_for('dashboard'))
         
@@ -1264,8 +1272,8 @@ def admin_cargar_nomina():
             try:
                 requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
                 requests.delete(f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}", headers=SUPABASE_SERVICE_HEADERS)
-                if final_establecimiento_id and not establecimiento_acceso_id:
-                    requests.delete(f"{SUPABASE_URL}/rest/v1/acceso_establecimientos?id=eq.{final_establecimiento_id}", headers=SUPABASE_SERVICE_HEADERS)
+                if colegio_creado_en_paso and final_establecimiento_id:
+                    requests.delete(f"{SUPABASE_URL}/rest/v1/acceso_establecimientos?id=eq.{colegio_id_final_str}", headers=SUPABASE_SERVICE_HEADERS)
             except Exception: pass
             return redirect(url_for('dashboard'))
 
@@ -1291,7 +1299,6 @@ def admin_cargar_nomina():
         print(f"CRÍTICO: Error al guardar los estudiantes (Paso 5): {error_detail}")
         flash(f"❌ Error al guardar los estudiantes: {error_detail}", 'error')
         return redirect(url_for('dashboard'))
-
 
 # La ruta '/enviar_formulario_a_drive' ha sido eliminada por completo.
 

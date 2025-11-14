@@ -643,10 +643,10 @@ def index():
 
 @app.route('/login', methods=['POST'])
 def login():
-    usuario_login = request.form['username'] # Renombrado a usuario_login para evitar conflicto con el rol
+    usuario_login = request.form['username']
     clave = request.form['password']
     
-    # CONSULTA 1 (INICIAL): Solo pedimos ID y ROL para evitar el error 400 de columnas desconocidas.
+    # CONSULTA 1 (INICIAL): Solo pedimos ID y ROL
     url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario_login}&password=eq.{clave}&select=id,rol"
     
     print(f"DEBUG: Intento de login para usuario: {usuario_login}, URL: {url}")
@@ -667,59 +667,38 @@ def login():
             # 2. Lógica específica para COORDINADOR DE ESCUELA
             if role == 'coordinador_escuela':
                 
-                # CONSULTA 2 (DETALLES): Obtenemos *TODOS* los datos del perfil para verificar las columnas de IDs.
-                # Es la forma más segura de evitar el error 400 por nombres de columna.
-                url_profile_details = f"{SUPABASE_URL}/rest/v1/doctoras?id=eq.{user_data['id']}&select=*"
-                res_details = requests.get(url_profile_details, headers=SUPABASE_SERVICE_HEADERS)
-                res_details.raise_for_status() 
-                profile_details = res_details.json()[0]
+                # --- LÓGICA CORREGIDA: Obtener colegios asignados desde la tabla NOMINAS_MEDICAS ---
+                # Usamos el JOIN implícito para obtener el nombre del colegio desde acceso_establecimientos
+                url_colegios_asignados_por_nomina = (
+                    f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+                    f"?coord_escuela_id=eq.{user_data['id']}" # Filtrar por el ID del coordinador
+                    f"&establecimiento_id.not.is.null"         # Que tenga un colegio asignado
+                    f"&select=establecimiento_id,acceso_establecimientos(nombre_colegio)" # Obtener el ID y el nombre del colegio (via JOIN)
+                )
+                res_colegios = requests.get(url_colegios_asignados_por_nomina, headers=SUPABASE_SERVICE_HEADERS)
+                res_colegios.raise_for_status()
+                nominas_raw = res_colegios.json()
                 
-                
-                # --- Lógica de unificación de IDs (soporte para plural y singular) ---
-                
-                # CORRECCIÓN CLAVE: Buscamos el nombre de columna correcto, 'establecimiento_ids' (singular, terminado en _ids)
-                ids_plural_raw = profile_details.get('establecimiento_ids')
-                
-                establecimientos_ids = []
-                
-                if isinstance(ids_plural_raw, list) and ids_plural_raw:
-                    # 1. Caso A: Si ya es una lista (JSONB deserializado correctamente)
-                    establecimientos_ids = ids_plural_raw
-                elif isinstance(ids_plural_raw, str):
-                    try:
-                        # 2. Caso B: Si es una cadena JSON que necesita deserializarse
-                        temp_list = json.loads(ids_plural_raw)
-                        if isinstance(temp_list, list):
-                            establecimientos_ids = temp_list
-                    except (json.JSONDecodeError, TypeError):
-                        pass
+                # Agrupar por ID para tener una lista única de colegios (ya que puede haber varias nóminas por colegio)
+                colegios_asignados_data = {}
+                for nom in nominas_raw:
+                    # El JOIN devuelve un objeto anidado: nom['acceso_establecimientos']
+                    # Verificamos si el JOIN fue exitoso (es decir, si el colegio existe en acceso_establecimientos)
+                    if nom.get('acceso_establecimientos'):
+                        est_id = nom['establecimiento_id']
+                        est_nombre = nom['acceso_establecimientos'].get('nombre_colegio')
+                        
+                        if est_id and est_nombre and est_id not in colegios_asignados_data:
+                            colegios_asignados_data[est_id] = {
+                                'id': est_id, 
+                                'nombre_colegio': est_nombre
+                            }
 
-                # 3. Fallback al ID Singular (solo si los arrays son vacíos)
-                if not establecimientos_ids:
-                    singular_id_raw = profile_details.get('establecimiento_id')
-                    if isinstance(singular_id_raw, int) and singular_id_raw is not None:
-                         establecimientos_ids = [singular_id_raw]
-                
-                # 4. Limpieza final y conversión a entero (necesario para el IN de la API)
-                establecimientos_ids = [int(x) for x in establecimientos_ids if isinstance(x, (int, str)) and str(x).isdigit()]
+                colegios_asignados_list = list(colegios_asignados_data.values())
+                establecimientos_ids = [c['id'] for c in colegios_asignados_list]
 
-
-                # 5. Si hay IDs, obtener los nombres de los colegios para el listado inicial (frontend)
-                if not establecimientos_ids:
-                    print("AVISO: Coordinador de Escuela logueado sin IDs de establecimiento asignados.")
-                    colegios_asignados_data = []
-                else:
-                    # Usamos 'in_' para buscar múltiples IDs
-                    ids_str = ",".join(map(str, establecimientos_ids)) 
-                    
-                    url_colegios = f"{SUPABASE_URL}/rest/v1/acceso_establecimientos?id=in.({ids_str})&select=id,nombre_colegio"
-                    res_colegios = requests.get(url_colegios, headers=SUPABASE_SERVICE_HEADERS)
-                    res_colegios.raise_for_status()
-                    colegios_asignados_data = res_colegios.json()
-                
-                # 6. Guardar en sesión para el dashboard
-                session['colegios_asignados_ids'] = establecimientos_ids # IDs para la verificación
-                session['colegios_asignados'] = colegios_asignados_data # Lista de objetos para Jinja
+                session['colegios_asignados_ids'] = establecimientos_ids
+                session['colegios_asignados'] = colegios_asignados_list
             
             print(f"DEBUG: Sesión iniciada: usuario={session['usuario']}, usuario_id={session['usuario_id']}")
             flash(f'¡Bienvenido, {usuario_login}!', 'success')
@@ -732,7 +711,8 @@ def login():
         print(f"❌ Error en el login: {e} - {res.text if 'res' in locals() else ''}")
         flash('Error de conexión al intentar iniciar sesión o error de base de datos.', 'error')
         return redirect(url_for('index'))
-        
+
+
 # - Ruta /dashboard corregida y modificada para la Fase 3
 
 @app.route('/dashboard')
@@ -911,6 +891,9 @@ def admin_agregar():
 
 # - Modificar la función admin_cargar_nomina
 
+# Asegúrate de que esta importación esté en la parte superior de app-30.py:
+# import secrets 
+
 @app.route('/admin/cargar_nomina', methods=['POST'])
 def admin_cargar_nomina():
     if session.get('usuario') != 'admin':
@@ -924,11 +907,8 @@ def admin_cargar_nomina():
     excel_file = request.files.get('excel')
     doctora_id_para_formulario = request.form.get('doctora_id_para_formulario', '').strip()
 
-    # MODIFICADO: Obtener el ID del establecimiento de acceso (YA NO ES OBLIGATORIO)
-    # Si viene como cadena vacía (''), se almacenará como NULL en la base de datos BIGINT
+    # Obtener IDs de coordinación y establecimiento
     establecimiento_acceso_id = request.form.get('establecimiento_acceso_id', '').strip() 
-    
-    # NUEVOS CAMPOS (Opcionales)
     coord_general_id = request.form.get('coord_general_id', '').strip()
     coord_escuela_id = request.form.get('coord_escuela_id', '').strip()
 
@@ -941,7 +921,7 @@ def admin_cargar_nomina():
     elif 'familiar' in tipo_nomina_normalized or 'medicina familiar' in tipo_nomina_normalized: 
         form_type = 'medicina_familiar'
 
-    # Validaciones básicas (establecimiento_acceso_id ya no es obligatorio)
+    # Validaciones básicas
     if not all([tipo_nomina_raw, nombre_especifico, doctora_id_from_form, excel_file]):
         flash('❌ Falta uno o más campos obligatorios para cargar la nómina (tipo, nombre, doctora, archivo).', 'error')
         return redirect(url_for('dashboard'))
@@ -953,6 +933,11 @@ def admin_cargar_nomina():
     if form_type == 'neurologia' and not doctora_id_para_formulario:
         flash('❌ Para nóminas de tipo "Neurología", debe seleccionar la Doctora para el formulario.', 'error')
         return redirect(url_for('dashboard'))
+
+    # Validar que si se asigna un coordinador de escuela, debe haber un establecimiento
+    if coord_escuela_id and not establecimiento_acceso_id:
+         flash('❌ Si asigna un Coordinador de Escuela, debe seleccionar un Colegio de Acceso.', 'error')
+         return redirect(url_for('dashboard'))
 
 
     if not permitido(excel_file.filename):
@@ -981,8 +966,13 @@ def admin_cargar_nomina():
     final_coord_general_id = coord_general_id if coord_general_id else None
     final_coord_escuela_id = coord_escuela_id if coord_escuela_id else None
 
+    # GENERACIÓN DEL TOKEN DE ACCESO (solo si hay colegio asignado)
+    token_generado = None
+    if final_establecimiento_id: 
+        # Genera un token simple de 4 caracteres hexadecimales (ej: "a3f5")
+        token_generado = secrets.token_hex(2) 
 
-    # ACTUALIZADO: Agregar los IDs de coordinación a los datos de la nómina
+    # ACTUALIZADO: Agregar los IDs de coordinación y el nuevo token de acceso
     data_nomina = {
         "id": nomina_id,
         "nombre_nomina": nombre_especifico,
@@ -993,8 +983,9 @@ def admin_cargar_nomina():
         "form_type": form_type, 
         "doctora_id_para_formulario": doctora_id_para_formulario if form_type == 'neurologia' else None,
         "establecimiento_id": final_establecimiento_id, 
-        "coord_general_id": final_coord_general_id,  # <-- NUEVO CAMPO
-        "coord_escuela_id": final_coord_escuela_id   # <-- NUEVO CAMPO
+        "coord_general_id": final_coord_general_id,
+        "coord_escuela_id": final_coord_escuela_id,
+        "token_acceso": token_generado # <-- NUEVO CAMPO DE ACCESO
     }
 
     try:
@@ -1017,6 +1008,8 @@ def admin_cargar_nomina():
 
     excel_data_stream = io.BytesIO(excel_file_data)
     
+    # ... (Resto de la lógica de lectura y guardado de estudiantes) ...
+
     if excel_filename.endswith(('.xls', '.xlsx')):
         df = pd.read_excel(excel_data_stream)
     elif excel_filename.endswith('.csv'):
@@ -1126,14 +1119,15 @@ def admin_cargar_nomina():
         )
         res_insert_estudiantes.raise_for_status()
 
-        flash(f"✅ Nómina '{nombre_especifico}' cargada con éxito. Se agregaron {len(estudiantes_a_insertar)} estudiantes.", 'success')
+        flash(f"✅ Nómina '{nombre_especifico}' cargada con éxito. Se agregaron {len(estudiantes_a_insertar)} estudiantes. Token de Acceso: {token_generado if token_generado else 'N/A'}", 'success')
         return redirect(url_for('dashboard'))
 
     except requests.exceptions.RequestException as e:
         error_detail = res_insert_estudiantes.text if 'res_insert_estudiantes' in locals() else 'No response from Supabase.'
         flash(f"❌ Error al guardar los estudiantes en la base de datos. La nómina fue creada, pero no se agregaron los estudiantes. ({e}). Detalles: {error_detail}", 'error')
         return redirect(url_for('dashboard'))
-        
+
+
 # La ruta '/enviar_formulario_a_drive' ha sido eliminada por completo.
 
 @app.route('/subir/<establecimiento>', methods=['POST'])

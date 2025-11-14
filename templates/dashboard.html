@@ -940,15 +940,7 @@
                                     <option value="{{ coord.id }}">{{ coord.usuario }}</option>
                                 {% endfor %}
                             </select>
-                            <label for="establecimiento_acceso_id">Asignar a Colegio de Acceso (Coord. Esc.):</label>
-                            <select id="establecimiento_acceso_id" name="establecimiento_acceso_id" class="form-input">
-                                <option value="">Selecciona un colegio/establecimiento (Opcional)</option>
-                                {# 'establecimientos' es la lista de establecimientos cargada para el admin #}
-                                {% for est in establecimientos %}
-                                    <option value="{{ est.id }}">{{ est.nombre }}</option>
-                                {% endfor %}
-                            </select>
-                            
+                           
                             <label for="form_type_nomina">Tipo de Formulario Asociado:</label>
                             <select id="form_type_nomina" name="form_type" required class="form-input">
                                 <option value="">Selecciona el tipo de formulario</option>

@@ -1300,15 +1300,22 @@ def desbloquear_nomina():
     if school_id_int not in colegios_permitidos:
         return jsonify({"success": False, "message": "No tiene permiso asignado para este establecimiento."}), 403
         
-    # B. Validar el token de acceso para ese colegio específico
+    # B. Validar el token de acceso para ese colegio específico (Buscando en nominas_medicas)
     try:
-        # Buscamos el token_acceso en la tabla 'acceso_establecimientos'
-        establecimiento = requests.get(
-            f"{SUPABASE_URL}/rest/v1/acceso_establecimientos?id=eq.{school_id_int}&select=token_acceso",
-            headers=SUPABASE_SERVICE_HEADERS
-        ).json()
+        # Buscamos el TOKEN en la tabla NOMINAS_MEDICAS
+        # Filtramos por el colegio Y por el coordinador logueado (doble seguridad)
+        url_token = (
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?establecimiento_id=eq.{school_id_int}"
+            f"&coord_escuela_id=eq.{session.get('usuario_id')}"
+            f"&select=token_acceso"
+        )
         
-        token_esperado = establecimiento[0].get('token_acceso') if establecimiento else None
+        # Obtenemos el token de la nómina
+        nominas_con_token = requests.get(url_token, headers=SUPABASE_SERVICE_HEADERS).json()
+        
+        # Obtenemos el token del primer resultado encontrado (asumimos que todos los tokens son iguales por colegio)
+        token_esperado = nominas_con_token[0].get('token_acceso') if nominas_con_token and nominas_con_token[0] else None
         
         # 2. Comparamos la contraseña
         if token_esperado and token_esperado == password_ingresada:
@@ -1356,7 +1363,7 @@ def desbloquear_nomina():
     except Exception as e:
         print(f"❌ ERROR INESPERADO AL DESBLOQUEAR NÓMINA: {e}")
         return jsonify({"success": False, "message": f"Error inesperado: {str(e)}"}), 500
-
+        
 
 # --- NUEVA RUTA: DESCARGA DE PDF POR ALUMNO ID ---
 @app.route('/descargar_pdf_alumno/<alumno_id>', methods=['GET'])

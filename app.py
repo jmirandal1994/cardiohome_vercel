@@ -646,7 +646,6 @@ def login():
     usuario_login = request.form['username']
     clave = request.form['password']
     
-    # CONSULTA 1 (INICIAL): Solo pedimos ID y ROL
     url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario_login}&password=eq.{clave}&select=id,rol"
     
     print(f"DEBUG: Intento de login para usuario: {usuario_login}, URL: {url}")
@@ -660,42 +659,37 @@ def login():
             user_data = data[0]
             role = user_data['rol']
             
-            # 1. Asignar rol e ID de usuario
             session['usuario'] = role
             session['usuario_id'] = user_data['id']
             
             # 2. Lógica específica para COORDINADOR DE ESCUELA
             if role == 'coordinador_escuela':
                 
-                # --- LÓGICA CORREGIDA: Obtener colegios asignados desde la tabla NOMINAS_MEDICAS ---
-                # Usamos el JOIN implícito para obtener el nombre del colegio desde acceso_establecimientos
-                url_colegios_asignados_por_nomina = (
+                # --- OBTENER COLEGIOS/NÓMINAS ASIGNADAS DESDE NOMINAS_MEDICAS ---
+                url_nominas_asignadas_por_colegio = (
                     f"{SUPABASE_URL}/rest/v1/nominas_medicas"
                     f"?coord_escuela_id=eq.{user_data['id']}" # Filtrar por el ID del coordinador
-                    f"&establecimiento_id.not.is.null"         # Que tenga un colegio asignado
-                    f"&select=establecimiento_id,acceso_establecimientos(nombre_colegio)" # Obtener el ID y el nombre del colegio (via JOIN)
+                    f"&select=nombre_colegio,token_acceso"
                 )
-                res_colegios = requests.get(url_colegios_asignados_por_nomina, headers=SUPABASE_SERVICE_HEADERS)
-                res_colegios.raise_for_status()
-                nominas_raw = res_colegios.json()
+                res_nominas = requests.get(url_nominas_asignadas_por_colegio, headers=SUPABASE_SERVICE_HEADERS)
+                res_nominas.raise_for_status()
+                nominas_raw = res_nominas.json()
                 
-                # Agrupar por ID para tener una lista única de colegios (ya que puede haber varias nóminas por colegio)
+                # Agrupar por nombre_colegio para tener una lista única de colegios
                 colegios_asignados_data = {}
                 for nom in nominas_raw:
-                    # El JOIN devuelve un objeto anidado: nom['acceso_establecimientos']
-                    # Verificamos si el JOIN fue exitoso (es decir, si el colegio existe en acceso_establecimientos)
-                    if nom.get('acceso_establecimientos'):
-                        est_id = nom['establecimiento_id']
-                        est_nombre = nom['acceso_establecimientos'].get('nombre_colegio')
-                        
-                        if est_id and est_nombre and est_id not in colegios_asignados_data:
-                            colegios_asignados_data[est_id] = {
-                                'id': est_id, 
-                                'nombre_colegio': est_nombre
-                            }
+                    nombre_colegio = nom.get('nombre_colegio')
+                    
+                    if nombre_colegio and nombre_colegio not in colegios_asignados_data:
+                        # Usamos el nombre del colegio como ID temporal para el frontend
+                        colegios_asignados_data[nombre_colegio] = {
+                            'id': nombre_colegio, # Usar el nombre como ID/clave de acceso temporal
+                            'nombre_colegio': nombre_colegio
+                        }
 
                 colegios_asignados_list = list(colegios_asignados_data.values())
-                establecimientos_ids = [c['id'] for c in colegios_asignados_list]
+                # Los IDs ahora son los nombres de los colegios
+                establecimientos_ids = [c['id'] for c in colegios_asignados_list] 
 
                 session['colegios_asignados_ids'] = establecimientos_ids
                 session['colegios_asignados'] = colegios_asignados_list
@@ -711,8 +705,7 @@ def login():
         print(f"❌ Error en el login: {e} - {res.text if 'res' in locals() else ''}")
         flash('Error de conexión al intentar iniciar sesión o error de base de datos.', 'error')
         return redirect(url_for('index'))
-
-
+        
 # - Ruta /dashboard corregida y modificada para la Fase 3
 
 @app.route('/dashboard')
@@ -902,19 +895,17 @@ def admin_cargar_nomina():
     
     # 1. Obtener datos del formulario
     tipo_nomina_raw = request.form.get('tipo_nomina', '').strip()
-    nombre_especifico = request.form.get('nombre_especifico', '').strip()
+    nombre_colegio_o_establecimiento = request.form.get('nombre_especifico', '').strip() # ¡Usamos este campo como nombre del colegio!
     doctora_id_from_form = request.form.get('doctora', '').strip()
     excel_file = request.files.get('excel')
     doctora_id_para_formulario = request.form.get('doctora_id_para_formulario', '').strip()
 
-    # Obtener IDs de coordinación y establecimiento
-    establecimiento_acceso_id = request.form.get('establecimiento_acceso_id', '').strip() 
-    coord_general_id = request.form.get('coord_general_id', '').strip()
-    coord_escuela_id = request.form.get('coord_escuela_id', '').strip()
-
-
+    # Obtener IDs de coordinación
+    coord_general_id_from_form = request.form.get('coord_general_id', '').strip()
+    coord_escuela_id_from_form = request.form.get('coord_escuela_id', '').strip()
+    
     tipo_nomina_normalized = tipo_nomina_raw.strip().lower() if tipo_nomina_raw else ''
-
+    
     form_type = None
     if 'neurologia' in tipo_nomina_normalized: 
         form_type = 'neurologia'
@@ -922,8 +913,8 @@ def admin_cargar_nomina():
         form_type = 'medicina_familiar'
 
     # Validaciones básicas
-    if not all([tipo_nomina_raw, nombre_especifico, doctora_id_from_form, excel_file]):
-        flash('❌ Falta uno o más campos obligatorios para cargar la nómina (tipo, nombre, doctora, archivo).', 'error')
+    if not all([tipo_nomina_raw, nombre_colegio_o_establecimiento, doctora_id_from_form, excel_file]):
+        flash('❌ Falta uno o más campos obligatorios.', 'error')
         return redirect(url_for('dashboard'))
 
     if form_type is None: 
@@ -933,11 +924,6 @@ def admin_cargar_nomina():
     if form_type == 'neurologia' and not doctora_id_para_formulario:
         flash('❌ Para nóminas de tipo "Neurología", debe seleccionar la Doctora para el formulario.', 'error')
         return redirect(url_for('dashboard'))
-
-    # Validar que si se asigna un coordinador de escuela, debe haber un establecimiento
-    if coord_escuela_id and not establecimiento_acceso_id:
-         flash('❌ Si asigna un Coordinador de Escuela, debe seleccionar un Colegio de Acceso.', 'error')
-         return redirect(url_for('dashboard'))
 
 
     if not permitido(excel_file.filename):
@@ -951,7 +937,7 @@ def admin_cargar_nomina():
     try:
         upload_path = f"nominas-medicas/{nomina_id}/{excel_filename}" 
         upload_url = f"{SUPABASE_URL}/storage/v1/object/{upload_path}"
-        #
+        
         res_upload = requests.put(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=excel_file_data)
         res_upload.raise_for_status()
         
@@ -961,35 +947,38 @@ def admin_cargar_nomina():
         flash(f"❌ Error al subir el archivo de la nómina a Supabase Storage: {error_detail}", 'error')
         return redirect(url_for('dashboard'))
 
-    # Mapear IDs vacíos a None para la DB (clave para NULL en BIGINT/UUID)
-    final_establecimiento_id = establecimiento_acceso_id if establecimiento_acceso_id else None
-    final_coord_general_id = coord_general_id if coord_general_id else None
-    final_coord_escuela_id = coord_escuela_id if coord_escuela_id else None
+    # Mapear cadenas vacías a None para la DB (Crucial para NULL en UUID)
+    coord_general_id_db = coord_general_id_from_form if coord_general_id_from_form else None
+    coord_escuela_id_db = coord_escuela_id_from_form if coord_escuela_id_from_form else None
 
-    # GENERACIÓN DEL TOKEN DE ACCESO (solo si hay colegio asignado)
+    # GENERACIÓN DEL TOKEN DE ACCESO (solo si hay coordinador de escuela asignado)
     token_generado = None
-    if final_establecimiento_id: 
-        # Genera un token simple de 4 caracteres hexadecimales (ej: "a3f5")
+    if coord_escuela_id_db: 
         token_generado = secrets.token_hex(2) 
 
-    # ACTUALIZADO: Agregar los IDs de coordinación y el nuevo token de acceso
+    # 3. Payload de Inserción (NOMBRES DE COLUMNA EXACTOS)
     data_nomina = {
         "id": nomina_id,
-        "nombre_nomina": nombre_especifico,
+        "nombre_nomina": nombre_colegio_o_establecimiento, 
         "tipo_nomina": tipo_nomina_raw, 
         "doctora_id": doctora_id_from_form, 
         "url_excel_original": url_excel_publica,
         "nombre_excel_original": excel_filename,
         "form_type": form_type, 
         "doctora_id_para_formulario": doctora_id_para_formulario if form_type == 'neurologia' else None,
-        "establecimiento_id": final_establecimiento_id, 
-        "coord_general_id": final_coord_general_id,
-        "coord_escuela_id": final_coord_escuela_id,
-        "token_acceso": token_generado # <-- NUEVO CAMPO DE ACCESO
+        
+        # --- CAMPOS CLAVE 100% INTEGRADOS ---
+        "nombre_colegio": nombre_colegio_o_establecimiento, # <-- COLUMNA DE TEXTO EN NOMINAS_MEDICAS
+        "coord_general_id": coord_general_id_db,
+        "coord_escuela_id": coord_escuela_id_db,
+        "token_acceso": token_generado,
+        # Nota: Establecimiento_id se setea a None o debe ser eliminado/renombrado en tu DB.
+        "establecimiento_id": None 
+        # -----------------------------------------------------------
     }
-
+    
     try:
-        #
+        # Intento de inserción en nominas_medicas
         res_insert_nomina = requests.post(
             f"{SUPABASE_URL}/rest/v1/nominas_medicas",
             headers=SUPABASE_SERVICE_HEADERS, 
@@ -999,8 +988,9 @@ def admin_cargar_nomina():
 
     except requests.exceptions.RequestException as e:
         error_detail = res_insert_nomina.text if 'res_insert_nomina' in locals() else 'No response from Supabase.'
-        flash(f"❌ Error al guardar los datos de la nómina en la base de datos: {error_detail}", 'error')
-        # Rollback: Intentar limpiar el archivo subido si falla la inserción en la DB
+        print(f"❌ ERROR AL GUARDAR NÓMINA EN DB: {error_detail}")
+        flash(f"❌ Error al guardar los datos de la nómina en la base de datos. {error_detail}", 'error')
+        # Rollback
         try:
             requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
         except Exception: pass
@@ -1008,16 +998,14 @@ def admin_cargar_nomina():
 
     excel_data_stream = io.BytesIO(excel_file_data)
     
-    # ... (Resto de la lógica de lectura y guardado de estudiantes) ...
-
+    
     if excel_filename.endswith(('.xls', '.xlsx')):
         df = pd.read_excel(excel_data_stream)
     elif excel_filename.endswith('.csv'):
-        #
         df = pd.read_csv(excel_data_stream, encoding='utf-8')
     else:
         flash('❌ Formato de archivo no soportado para la nómina.', 'error')
-        # Rollback: eliminar la nómina y el archivo subido si el formato no es soportado
+        # Rollback
         try:
             requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
             requests.delete(f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}", headers=SUPABASE_SERVICE_HEADERS)
@@ -1045,13 +1033,15 @@ def admin_cargar_nomina():
     if not all(k in col_map for k in required_columns_excel):
         missing_cols = [col for col in required_columns_excel if col not in col_map]
         flash(f"❌ El archivo no contiene las columnas necesarias: {', '.join(missing_cols)}.", 'error')
-        # Rollback: eliminar la nómina y el archivo subido
+        # Rollback
         try:
             requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
             requests.delete(f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}", headers=SUPABASE_SERVICE_HEADERS)
         except Exception: pass
         return redirect(url_for('dashboard'))
         
+    establecimiento_id_db_para_estudiantes = None # Siempre NULL para no causar error si la columna era INT8 y ya no apunta a nada
+
     for index, row in df.iterrows():
         try:
             nombre_completo_raw = row.get(col_map.get('nombre_completo'))
@@ -1092,7 +1082,7 @@ def admin_cargar_nomina():
                 "nacionalidad": nacionalidad_valor,
                 "sexo": sexo_adivinado,
                 "fecha_relleno": None,
-                "establecimiento_id": final_establecimiento_id # <-- AÑADIDO (puede ser NULL)
+                "establecimiento_id": establecimiento_id_db_para_estudiantes # <-- Nulo
             }
             estudiantes_a_insertar.append(estudiante)
             
@@ -1111,7 +1101,6 @@ def admin_cargar_nomina():
         return redirect(url_for('dashboard'))
 
     try:
-        #
         res_insert_estudiantes = requests.post(
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina",
             headers=SUPABASE_SERVICE_HEADERS, 
@@ -1119,7 +1108,7 @@ def admin_cargar_nomina():
         )
         res_insert_estudiantes.raise_for_status()
 
-        flash(f"✅ Nómina '{nombre_especifico}' cargada con éxito. Se agregaron {len(estudiantes_a_insertar)} estudiantes. Token de Acceso: {token_generado if token_generado else 'N/A'}", 'success')
+        flash(f"✅ Nómina '{nombre_colegio_o_establecimiento}' cargada con éxito. Se agregaron {len(estudiantes_a_insertar)} estudiantes. Token: {token_generado if token_generado else 'N/A'}", 'success')
         return redirect(url_for('dashboard'))
 
     except requests.exceptions.RequestException as e:
@@ -1284,58 +1273,57 @@ def desbloquear_nomina():
     
     data = request.get_json()
     password_ingresada = data.get('password')
-    school_id = data.get('school_id') # ID del colegio que se intenta desbloquear (enviado por JS)
+    # school_id ahora es el NOMBRE del colegio (ej: "Liceo Bicentenario")
+    school_name = data.get('school_id') 
     
-    # Aseguramos que school_id sea un entero para las búsquedas en la lista y la DB
-    try:
-        school_id_int = int(school_id)
-    except (ValueError, TypeError):
-        return jsonify({"success": False, "message": "ID de colegio inválido."}), 400
-
-    # --- PASO CRÍTICO: VERIFICAR PERMISO Y TOKEN ---
-    
-    # A. Verificar que el Coordinador tenga ese colegio asignado (Doble seguridad)
+    # 2. Verificación de Asignación
     colegios_permitidos = session.get('colegios_asignados_ids', [])
     
-    if school_id_int not in colegios_permitidos:
+    if school_name not in colegios_permitidos:
         return jsonify({"success": False, "message": "No tiene permiso asignado para este establecimiento."}), 403
         
-    # B. Validar el token de acceso para ese colegio específico (Buscando en nominas_medicas)
+    # 3. Validar el token de acceso para ese colegio (Buscando en nominas_medicas)
     try:
         # Buscamos el TOKEN en la tabla NOMINAS_MEDICAS
-        # Filtramos por el colegio Y por el coordinador logueado (doble seguridad)
+        # Filtramos por el nombre del colegio Y por el coordinador logueado (doble seguridad)
         url_token = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?establecimiento_id=eq.{school_id_int}"
+            f"?nombre_colegio=eq.{school_name}"
             f"&coord_escuela_id=eq.{session.get('usuario_id')}"
-            f"&select=token_acceso"
+            f"&select=token_acceso,id"
         )
         
-        # Obtenemos el token de la nómina
         nominas_con_token = requests.get(url_token, headers=SUPABASE_SERVICE_HEADERS).json()
         
-        # Obtenemos el token del primer resultado encontrado (asumimos que todos los tokens son iguales por colegio)
+        # Asumimos que todas las nóminas del colegio tienen el mismo token
         token_esperado = nominas_con_token[0].get('token_acceso') if nominas_con_token and nominas_con_token[0] else None
         
-        # 2. Comparamos la contraseña
+        # Comparamos la contraseña
         if token_esperado and token_esperado == password_ingresada:
             
-            # C. Contraseña correcta! Recuperamos la nómina.
-            # RLS DESACTIVADO: Debemos usar SERVICE_HEADERS y un filtro estricto por school_id_int
-            url_nominas = (
+            # 4. Contraseña correcta! Recuperamos la nómina.
+            
+            # Obtenemos todos los IDs de nómina asociados a ese colegio
+            nomina_ids = [nom.get('id') for nom in nominas_con_token if nom.get('id')]
+            nomina_ids_str = ",".join(nomina_ids)
+
+            # Usamos la lista de IDs para obtener a los estudiantes
+            if not nomina_ids:
+                return jsonify({"success": True, "nominas": []}) # No hay nóminas asociadas
+                
+            url_students = (
                 f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                f"?establecimiento_id=eq.{school_id_int}" # Filtramos solo por el colegio desbloqueado
+                f"?nomina_id=in.({nomina_ids_str})" # Filtramos por todos los IDs de nómina de ese colegio
                 f"&select=id,nombre,rut,fecha_evaluacion,nominas_medicas(nombre_nomina)"
-                f"&fecha_relleno.not.is.null" # Solo alumnos evaluados
+                f"&fecha_relleno.not.is.null"
                 f"&order=nombre.asc"
             )
+
+            nominas_raw = requests.get(url_students, headers=SUPABASE_SERVICE_HEADERS).json()
             
-            # Usamos SERVICE_HEADERS porque la RLS está desactivada (y necesitamos acceso total filtrado)
-            nominas_raw = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS).json()
-            
+            # 5. Procesamiento de datos (igual que antes)
             nominas_procesadas = []
             for alumno in nominas_raw:
-                # El campo nominas_medicas(nombre_nomina) devuelve un array si está desnormalizado
                 nombre_nomina = alumno.get('nominas_medicas')
                 if isinstance(nombre_nomina, list) and nombre_nomina:
                      nombre_nomina = nombre_nomina[0].get('nombre_nomina', 'N/A')
@@ -1343,12 +1331,11 @@ def desbloquear_nomina():
                     nombre_nomina = nombre_nomina.get('nombre_nomina', 'N/A')
                 else:
                     nombre_nomina = 'N/A'
-
                 
                 nominas_procesadas.append({
                     'id': alumno['id'],
                     'nombre_alumno': alumno['nombre'],
-                    'rut_alumno': format_rut_python(alumno['rut']), # Formatear RUT para la vista
+                    'rut_alumno': format_rut_python(alumno['rut']), 
                     'fecha_evaluacion': alumno.get('fecha_evaluacion') or 'N/A',
                     'nombre_nomina': nombre_nomina
                 })
@@ -1363,7 +1350,6 @@ def desbloquear_nomina():
     except Exception as e:
         print(f"❌ ERROR INESPERADO AL DESBLOQUEAR NÓMINA: {e}")
         return jsonify({"success": False, "message": f"Error inesperado: {str(e)}"}), 500
-        
 
 # --- NUEVA RUTA: DESCARGA DE PDF POR ALUMNO ID ---
 @app.route('/descargar_pdf_alumno/<alumno_id>', methods=['GET'])

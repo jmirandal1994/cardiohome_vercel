@@ -1007,6 +1007,8 @@ def admin_agregar():
 
 # - Ruta /admin/cargar_nomina Final y Alineada a BIGINT
 
+# [cite: app-29.py] - Ruta /admin/cargar_nomina Final y Alineada a BIGINT
+
 @app.route('/admin/cargar_nomina', methods=['POST'])
 def admin_cargar_nomina():
     if session.get('usuario') != 'admin':
@@ -1088,7 +1090,7 @@ def admin_cargar_nomina():
         colegio_creado_en_paso = True
         nombre_colegio_nuevo = nombre_especifico.title() 
         
-        # OMITIMOS el ID para que la DB (BIGINT) lo genere automáticamente
+        # OMITIMOS el ID para que la DB (BIGINT) lo genere automáticamente.
         data_nuevo_colegio = {
             "nombre_colegio": nombre_colegio_nuevo,
             "token_acceso": str(uuid.uuid4())[:8], 
@@ -1110,7 +1112,8 @@ def admin_cargar_nomina():
                  # CRÍTICO: Capturar el BIGINT generado por la DB como string
                  colegio_id_final_str = str(nuevo_registro[0]['id']) 
             else:
-                 raise Exception("Fallo al capturar el ID BIGINT generado por Supabase.")
+                 # Si la inserción HTTP 201 fue exitosa pero no devolvió el ID, es un error de configuración
+                 raise Exception("Fallo al capturar el ID BIGINT generado por Supabase. Verifique RLS en INSERT.")
 
             flash(f"✅ Nuevo Colegio de Acceso '{nombre_colegio_nuevo}' creado automáticamente. ID: {colegio_id_final_str}", 'success')
             
@@ -1140,7 +1143,7 @@ def admin_cargar_nomina():
         "id": nomina_id,
         "nombre_nomina": nombre_especifico,
         "tipo_nomina": tipo_nomina_raw, 
-        "doctora_id": doctora_id_from_form, 
+        "doctora_id": to_none_if_empty(doctora_id_from_form), 
         "url_excel_original": url_excel_publica,
         "nombre_excel_original": excel_filename,
         "form_type": form_type, 
@@ -1153,6 +1156,7 @@ def admin_cargar_nomina():
     try:
         # 4. Insertar datos de la nómina
         print(f"DEBUG: Insertando nómina principal: {nomina_id}")
+        print(f"DEBUG: Payload de nómina a insertar: {data_nomina}") # LOG DE DIAGNÓSTICO
         res_insert_nomina = requests.post(
             f"{SUPABASE_URL}/rest/v1/nominas_medicas",
             headers=SUPABASE_SERVICE_HEADERS, 
@@ -1299,7 +1303,7 @@ def admin_cargar_nomina():
         print(f"CRÍTICO: Error al guardar los estudiantes (Paso 5): {error_detail}")
         flash(f"❌ Error al guardar los estudiantes: {error_detail}", 'error')
         return redirect(url_for('dashboard'))
-
+        
 # La ruta '/enviar_formulario_a_drive' ha sido eliminada por completo.
 
 @app.route('/subir/<establecimiento>', methods=['POST'])

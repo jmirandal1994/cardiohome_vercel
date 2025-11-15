@@ -209,8 +209,8 @@ def get_doctor_specific_neurologia_pdf(doctora_id):
 
 # -------------------- Rutas de la Aplicación --------------------
 
-# app-30.py (Asegúrate de que esta es la función que se llama al entrar al formulario)
-@app.route('/relleno_formulario/<int:nomina_id>', methods=['GET'])
+# app-30.py (Reemplaza la función relleno_formulario completa)
+@app.route('/relleno_formulario/<string:nomina_id>', methods=['GET'])
 def relleno_formulario(nomina_id):
     if 'usuario' not in session:
         return redirect(url_for('index'))
@@ -219,7 +219,6 @@ def relleno_formulario(nomina_id):
     user_id = session.get('usuario_id')
 
     # 1. Obtener detalles de la nómina
-    # Necesitamos el form_type, el id de la doctora asignada y el nombre de la nómina.
     url_nomina = (
         f"{SUPABASE_URL}/rest/v1/nominas_medicas"
         f"?id=eq.{nomina_id}"
@@ -253,16 +252,14 @@ def relleno_formulario(nomina_id):
         return redirect(url_for('dashboard'))
 
     # 2. Obtener la lista de estudiantes
-    # CRÍTICO: Usamos SELECT de columnas específicas en lugar de SELECT=*, y SERVICE HEADERS.
     url_estudiantes = (
         f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
         f"?nomina_id=eq.{nomina_id}"
-        f"&select=id,nombre_completo,rut,fecha_relleno,observaciones,historial_relleno"
-        f"&order=nombre_completo.asc"
+        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno"
+        f"&order=nombre.asc"
     )
 
     try:
-        # Usamos SERVICE HEADERS para evitar RLS que pueda estar bloqueando la consulta.
         res_estudiantes = requests.get(url_estudiantes, headers=SUPABASE_SERVICE_HEADERS) 
         res_estudiantes.raise_for_status()
         estudiantes_raw = res_estudiantes.json()
@@ -272,14 +269,35 @@ def relleno_formulario(nomina_id):
         # 3. Preparar los datos de estudiantes para el template
         estudiantes = []
         for est in estudiantes_raw:
+            # Asegurarse de que los campos existan o sean None/'' para evitar KeyErrors en el template/procesamiento
+            fecha_nacimiento_obj = None
+            if est.get('fecha_nacimiento') and est['fecha_nacimiento'].strip():
+                 try:
+                    fecha_nacimiento_obj = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
+                 except:
+                    pass
+
+            edad_calculada = "N/A"
+            if fecha_nacimiento_obj:
+                edad_calculada = calculate_age(fecha_nacimiento_obj) # Usamos tu función auxiliar
+
             estudiantes.append({
                 'id': est['id'],
-                'nombre_completo': est['nombre_completo'],
-                'rut': est['rut'],
-                # El estado de evaluación es True si tiene fecha_relleno (no es NULL)
-                'evaluated_status': bool(est.get('fecha_relleno')), 
-                'observaciones': est.get('observaciones', ''),
-                'historial_relleno': est.get('historial_relleno') # Para la funcionalidad avanzada
+                'nombre': est.get('nombre', ''),
+                'rut': est.get('rut', ''),
+                'fecha_nacimiento': est.get('fecha_nacimiento', ''), # ISO YYYY-MM-DD
+                'fecha_nacimiento_formato': fecha_nacimiento_obj.strftime("%d/%m/%Y") if fecha_nacimiento_obj else 'N/A',
+                'edad': edad_calculada,
+                'nacionalidad': est.get('nacionalidad', ''),
+                'sexo': est.get('sexo', ''),
+
+                # Campos de evaluación que vienen de la DB
+                'estado_general': est.get('estado_general', ''),
+                'diagnostico': est.get('diagnostico', ''),
+                'derivaciones': est.get('derivaciones', ''),
+                'fecha_evaluacion': est.get('fecha_evaluacion', ''), # Campo de fecha_evaluacion (YYYY-MM-DD)
+                'fecha_reevaluacion': est.get('fecha_reevaluacion', ''),
+                'fecha_relleno': est.get('fecha_relleno'),
             })
         
         # 4. Obtener la doctora asignada (para el nombre del archivo PDF)
@@ -287,15 +305,19 @@ def relleno_formulario(nomina_id):
         url_doctora = f"{SUPABASE_URL}/rest/v1/doctoras?id=eq.{doctora_asignada_id}&select=nombre"
         res_doctora = requests.get(url_doctora, headers=SUPABASE_SERVICE_HEADERS) 
         doctora_nombre = res_doctora.json()[0]['nombre'] if res_doctora.ok and res_doctora.json() else 'Doctora Asignada'
+        
+        # Total de formularios completados (necesario para el contador del formulario_relleno.html)
+        total_forms_completed_for_nomina = sum(1 for est in estudiantes if est['fecha_relleno'] is not None)
 
 
         # 5. Renderizar
         return render_template(
             'formulario_relleno.html',
             nomina_id=nomina_id,
-            nombre_nomina=nomina['nombre_nomina'],
+            establecimiento_nombre=nomina['nombre_nomina'], # Usamos nombre_nomina como nombre del establecimiento
             form_type=form_type,
             estudiantes=estudiantes,
+            total_forms_completed_for_nomina=total_forms_completed_for_nomina,
             doctora_asignada_id=doctora_asignada_id,
             doctora_nombre=doctora_nombre,
             usuario=user_role
@@ -305,7 +327,11 @@ def relleno_formulario(nomina_id):
         print(f"❌ ERROR al obtener estudiantes para nómina {nomina_id}: {e}")
         flash('Error al cargar la lista de estudiantes. Verifique su conexión y permisos en Supabase.', 'error')
         return redirect(url_for('dashboard'))
-
+    except Exception as e:
+        print(f"❌ ERROR Inesperado en relleno_formulario: {e}")
+        flash('Error interno del servidor. Detalle: ' + str(e), 'error')
+        return redirect(url_for('dashboard'))
+        
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
     if 'usuario' not in session:

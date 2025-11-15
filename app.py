@@ -1127,7 +1127,7 @@ def admin_cargar_nomina():
                 "nacionalidad": nacionalidad_valor,
                 "sexo": sexo_adivinado,
                 "fecha_relleno": None,
-                "establecimiento_id": establecimiento_id_db_para_estudiantes # <-- Nulo
+                 # <-- Nulo
             }
             estudiantes_a_insertar.append(estudiante)
             

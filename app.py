@@ -209,108 +209,102 @@ def get_doctor_specific_neurologia_pdf(doctora_id):
 
 # -------------------- Rutas de la Aplicación --------------------
 
-@app.route('/relleno_formularios/<nomina_id>', methods=['GET'])
-def relleno_formularios(nomina_id):
+# app-30.py (Asegúrate de que esta es la función que se llama al entrar al formulario)
+@app.route('/relleno_formulario/<int:nomina_id>', methods=['GET'])
+def relleno_formulario(nomina_id):
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
-    print(f"DEBUG: Accediendo a /relleno_formularios con nomina_id: {nomina_id}")
-    print(f"DEBUG: ID de usuario en sesión (doctora) para /relleno_formularios: {session.get('usuario_id')}")
+    user_role = session.get('usuario')
+    user_id = session.get('usuario_id')
 
-    nomina_data = None
+    # 1. Obtener detalles de la nómina
+    # Necesitamos el form_type, el id de la doctora asignada y el nombre de la nómina.
+    url_nomina = (
+        f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+        f"?id=eq.{nomina_id}"
+        f"&select=form_type,doctora_id,nombre_nomina"
+    )
+    
     try:
-        # Obtener form_type y doctora_id_para_formulario desde la nómina
-        url_nomina = f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}&select=nombre_nomina,tipo_nomina,form_type,doctora_id_para_formulario"
-        print(f"DEBUG: URL para obtener nómina en /relleno_formularios: {url_nomina}")
-        res_nomina = requests.get(url_nomina, headers=SUPABASE_HEADERS)
+        res_nomina = requests.get(url_nomina, headers=SUPABASE_SERVICE_HEADERS) 
         res_nomina.raise_for_status()
         nomina_data = res_nomina.json()
-        print(f"DEBUG: Datos de la nómina recibidos en /relleno_formularios: {nomina_data}")
-
+        
         if not nomina_data:
-            flash("❌ Nómina no encontrada.", 'error')
+            flash(f'Error: Nómina con ID {nomina_id} no encontrada.', 'error')
+            return redirect(url_for('dashboard'))
+        
+        nomina = nomina_data[0]
+        form_type = nomina['form_type']
+        
+        # Validación de acceso: Solo el Admin o la Doctora Asignada pueden acceder
+        if user_role == 'doctora' and nomina['doctora_id'] != user_id:
+            flash('Acceso no autorizado a esta nómina.', 'error')
             return redirect(url_for('dashboard'))
 
-        nomina = nomina_data[0]
-        session['establecimiento'] = f"{nomina['nombre_nomina']} ({nomina['tipo_nomina'].replace('_', ' ').title()})"
-        session['current_nomina_id'] = nomina_id
-        session['establecimiento_nombre'] = nomina['nombre_nomina']
-        # Guardar el form_type y doctora_id_para_formulario en la sesión
-        session['current_form_type'] = nomina.get('form_type', 'neurologia') 
-        session['doctora_id_para_formulario'] = nomina.get('doctora_id_para_formulario') # Nuevo: Guardar el ID de la doctora para el formulario
-
     except requests.exceptions.RequestException as e:
-        print(f"❌ Error al obtener datos de la nómina en /relleno_formularios: {e}")
-        print(f"Response text: {res_nomina.text if 'res_nomina' in locals() else 'No response'}")
-        flash('Error al cargar la información de la nómina.', 'error')
+        print(f"❌ ERROR al obtener detalles de la nómina {nomina_id}: {e}")
+        flash('Error al cargar la nómina.', 'error')
         return redirect(url_for('dashboard'))
     except Exception as e:
-        print(f"❌ Error inesperado al procesar nómina en /relleno_formularios: {e}")
-        flash('Error inesperado al cargar la información de la nómina.', 'error')
+        print(f"❌ ERROR Inesperado al procesar detalles de la nómina: {e}")
+        flash('Error interno del servidor.', 'error')
         return redirect(url_for('dashboard'))
 
-    estudiantes = []
-    total_forms_completed_for_nomina = 0
+    # 2. Obtener la lista de estudiantes
+    # CRÍTICO: Usamos SELECT de columnas específicas en lugar de SELECT=*, y SERVICE HEADERS.
+    url_estudiantes = (
+        f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+        f"?nomina_id=eq.{nomina_id}"
+        f"&select=id,nombre_completo,rut,fecha_relleno,observaciones,historial_relleno"
+        f"&order=nombre_completo.asc"
+    )
+
     try:
-        url_estudiantes = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nomina_id}&select=*"
-        print(f"DEBUG: URL para obtener estudiantes en /relleno_formularios: {url_estudiantes}")
-        res_estudiantes = requests.get(url_estudiantes, headers=SUPABASE_SERVICE_HEADERS) # Usar SERVICE_HEADERS para obtener todos los datos
+        # Usamos SERVICE HEADERS para evitar RLS que pueda estar bloqueando la consulta.
+        res_estudiantes = requests.get(url_estudiantes, headers=SUPABASE_SERVICE_HEADERS) 
         res_estudiantes.raise_for_status()
         estudiantes_raw = res_estudiantes.json()
-        print(f"DEBUG: Estudiantes raw recibidos en /relleno_formularios: {estudiantes_raw}")
-
-
+        
+        print(f"DEBUG: Se encontraron {len(estudiantes_raw)} estudiantes para la nómina {nomina_id}.")
+        
+        # 3. Preparar los datos de estudiantes para el template
+        estudiantes = []
         for est in estudiantes_raw:
-            # Manejo de fecha_nacimiento y cálculo de edad
-            if 'fecha_nacimiento' in est and isinstance(est['fecha_nacimiento'], str) and est['fecha_nacimiento'].strip():
-                try:
-                    fecha_nac_obj = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
-                    est['edad'] = calculate_age(fecha_nac_obj)
-                    est['fecha_nacimiento_formato'] = fecha_nac_obj.strftime("%d/%m/%Y") # Formato para mostrar en HTML
-                except ValueError:
-                    print(f"ADVERTENCIA: Fecha de nacimiento inválida para estudiante {est.get('nombre', 'N/A')}: {est['fecha_nacimiento']}")
-                    est['fecha_nacimiento_formato'] = 'N/A'
-                    est['edad'] = 'N/A'
-            else:
-                est['fecha_nacimiento_formato'] = 'N/A'
-                est['edad'] = 'N/A'
-            
-            # Asegurar que los campos que pueden ser None se conviertan a cadena vacía para HTML
-            # Esto evita que 'None' aparezca en los campos de texto/select si no hay valor en la DB
-            est['estado_general'] = est.get('estado_general') or ''
-            est['diagnostico'] = est.get('diagnostico') or ''
-            est['derivaciones'] = est.get('derivaciones') or ''
-            # Para neurología, aseguramos que estos campos no se esperen del HTML.
-            est['fecha_evaluacion'] = est.get('fecha_evaluacion') or '' # Asegurar que sea string
-            est['fecha_reevaluacion'] = est.get('fecha_reevaluacion') or '' # Asegurar que sea string
+            estudiantes.append({
+                'id': est['id'],
+                'nombre_completo': est['nombre_completo'],
+                'rut': est['rut'],
+                # El estado de evaluación es True si tiene fecha_relleno (no es NULL)
+                'evaluated_status': bool(est.get('fecha_relleno')), 
+                'observaciones': est.get('observaciones', ''),
+                'historial_relleno': est.get('historial_relleno') # Para la funcionalidad avanzada
+            })
+        
+        # 4. Obtener la doctora asignada (para el nombre del archivo PDF)
+        doctora_asignada_id = nomina['doctora_id']
+        url_doctora = f"{SUPABASE_URL}/rest/v1/doctoras?id=eq.{doctora_asignada_id}&select=nombre"
+        res_doctora = requests.get(url_doctora, headers=SUPABASE_SERVICE_HEADERS) 
+        doctora_nombre = res_doctora.json()[0]['nombre'] if res_doctora.ok and res_doctora.json() else 'Doctora Asignada'
 
-            if est.get('fecha_relleno') is not None:
-                total_forms_completed_for_nomina += 0 # Se mantiene la variable pero sin incrementar ya que no se usa aquí.
 
-            estudiantes.append(est)
-        print(f"DEBUG: Estudiantes procesados para plantilla en /relleno_formularios: {estudiantes}")
+        # 5. Renderizar
+        return render_template(
+            'formulario_relleno.html',
+            nomina_id=nomina_id,
+            nombre_nomina=nomina['nombre_nomina'],
+            form_type=form_type,
+            estudiantes=estudiantes,
+            doctora_asignada_id=doctora_asignada_id,
+            doctora_nombre=doctora_nombre,
+            usuario=user_role
+        )
 
     except requests.exceptions.RequestException as e:
-        print(f"❌ Error al obtener estudiantes de la nómina en /relleno_formularios: {e}")
-        print(f"Response text: {res_estudiantes.text if 'res_estudiantes' in locals() else 'No response'}")
-        flash('Error al cargar la lista de estudiantes.', 'error')
-        estudiantes = []
-    except Exception as e:
-        print(f"❌ Error inesperado al procesar estudiantes en /relleno_formularios: {e}")
-        flash('Error inesperado al cargar la lista de estudiantes.', 'error')
-        estudiantes = []
-
-    # Determinar qué plantilla HTML renderizar según el form_type
-    template_name = 'formulario_relleno.html' # Default para neurologia
-    if session.get('current_form_type') == 'medicina_familiar':
-        template_name = 'formulario_medicina_familiar.html'
-    # 'neurologia' ya usa 'formulario_relleno.html' por defecto.
-
-    return render_template(template_name, 
-                           estudiantes=estudiantes, 
-                           total_forms_completed_for_nomina=total_forms_completed_for_nomina,
-                           establecimiento_nombre=nomina['nombre_nomina'])
-
+        print(f"❌ ERROR al obtener estudiantes para nómina {nomina_id}: {e}")
+        flash('Error al cargar la lista de estudiantes. Verifique su conexión y permisos en Supabase.', 'error')
+        return redirect(url_for('dashboard'))
 
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():

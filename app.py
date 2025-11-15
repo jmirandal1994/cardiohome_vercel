@@ -1472,6 +1472,7 @@ def evaluados(establecimiento):
     return redirect(url_for('dashboard'))
 
 # --- NUEVA RUTA: RUTA DE DESBLOQUEO DEL COORDINADOR DE ESCUELA ---
+# app-30.py (Reemplaza la función /api/nomina/desbloquear completa)
 @app.route('/api/nomina/desbloquear', methods=['POST'])
 def desbloquear_nomina():
     # 1. Verificación Inicial de Seguridad
@@ -1480,7 +1481,6 @@ def desbloquear_nomina():
     
     data = request.get_json()
     password_ingresada = data.get('password')
-    # school_id ahora es el NOMBRE del colegio (ej: "Liceo Bicentenario")
     school_name = data.get('school_id') 
     
     # 2. Verificación de Asignación
@@ -1491,8 +1491,6 @@ def desbloquear_nomina():
         
     # 3. Validar el token de acceso para ese colegio (Buscando en nominas_medicas)
     try:
-        # Buscamos el TOKEN en la tabla NOMINAS_MEDICAS
-        # Filtramos por el nombre del colegio Y por el coordinador logueado (doble seguridad)
         url_token = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?nombre_colegio=eq.{school_name}"
@@ -1502,42 +1500,45 @@ def desbloquear_nomina():
         
         nominas_con_token = requests.get(url_token, headers=SUPABASE_SERVICE_HEADERS).json()
         
-        # Asumimos que todas las nóminas del colegio tienen el mismo token
         token_esperado = nominas_con_token[0].get('token_acceso') if nominas_con_token and nominas_con_token[0] else None
         
-        # Comparamos la contraseña
+        # 4. Comparamos la contraseña
         if token_esperado and token_esperado == password_ingresada:
-            
-            # 4. Contraseña correcta! Recuperamos la nómina.
             
             # Obtenemos todos los IDs de nómina asociados a ese colegio
             nomina_ids = [nom.get('id') for nom in nominas_con_token if nom.get('id')]
             nomina_ids_str = ",".join(nomina_ids)
 
-            # Usamos la lista de IDs para obtener a los estudiantes
+            # Usamos la lista de IDs para obtener a los estudiantes evaluados
             if not nomina_ids:
-                return jsonify({"success": True, "nominas": []}) # No hay nóminas asociadas
+                return jsonify({"success": True, "nominas": []}) 
                 
             url_students = (
                 f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                f"?nomina_id=in.({nomina_ids_str})" # Filtramos por todos los IDs de nómina de ese colegio
-                f"&select=id,nombre,rut,fecha_evaluacion,nominas_medicas(nombre_nomina)"
+                f"?nomina_id=in.({nomina_ids_str})"
+                f"&select=id,nombre,rut,fecha_evaluacion,nominas_medicas(nombre_nomina)" # Aquí se genera el dato anidado
                 f"&fecha_relleno.not.is.null"
                 f"&order=nombre.asc"
             )
 
             nominas_raw = requests.get(url_students, headers=SUPABASE_SERVICE_HEADERS).json()
             
-            # 5. Procesamiento de datos (igual que antes)
+            # 5. Procesamiento de datos (CORRECCIÓN APLICADA AQUÍ)
             nominas_procesadas = []
             for alumno in nominas_raw:
-                nombre_nomina = alumno.get('nominas_medicas')
-                if isinstance(nombre_nomina, list) and nombre_nomina:
-                     nombre_nomina = nombre_nomina[0].get('nombre_nomina', 'N/A')
-                elif isinstance(nombre_nomina, dict):
-                    nombre_nomina = nombre_nomina.get('nombre_nomina', 'N/A')
-                else:
-                    nombre_nomina = 'N/A'
+                nombre_nomina_raw = alumno.get('nominas_medicas')
+                nombre_nomina = 'N/A'
+                
+                if isinstance(nombre_nomina_raw, list) and nombre_nomina_raw:
+                     # Caso 1: Es una lista de resultados (toma el primer nombre)
+                     nombre_nomina = nombre_nomina_raw[0].get('nombre_nomina', 'N/A')
+                elif isinstance(nombre_nomina_raw, dict):
+                    # Caso 2: Es un diccionario (toma el nombre directamente)
+                    nombre_nomina = nombre_nomina_raw.get('nombre_nomina', 'N/A')
+                elif nombre_nomina_raw is not None:
+                    # Caso 3: Es otra cosa (como una cadena simple si Supabase cambia el formato)
+                    nombre_nomina = str(nombre_nomina_raw)
+
                 
                 nominas_procesadas.append({
                     'id': alumno['id'],
@@ -1557,7 +1558,7 @@ def desbloquear_nomina():
     except Exception as e:
         print(f"❌ ERROR INESPERADO AL DESBLOQUEAR NÓMINA: {e}")
         return jsonify({"success": False, "message": f"Error inesperado: {str(e)}"}), 500
-
+        
 # --- NUEVA RUTA: DESCARGA DE PDF POR ALUMNO ID ---
 @app.route('/descargar_pdf_alumno/<alumno_id>', methods=['GET'])
 def descargar_pdf_alumno(alumno_id):

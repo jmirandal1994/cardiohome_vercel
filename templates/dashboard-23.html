@@ -1064,14 +1064,15 @@
                                             {% if nomina.nombre_colegio %}
                                                 <span><i class="fa-solid fa-school"></i>Colegio: {{ nomina.nombre_colegio }}</span>
                                             {% endif %}
-                                            </div>
+                                            
+                                        </div>
                                         <div class="item-card-actions">
                                             {% if nomina.url_excel_original %}
                                                 <a href="{{ nomina.url_excel_original }}" target="_blank" class="action-button blue">
                                                     <i class="fa-solid fa-file-excel"></i> Ver Excel Original
                                                 </a>
                                             {% endif %}
-                                            <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="action-button green">
+                                            <a href="{{ url_for('relleno_formulario', nomina_id=nomina.id) }}" class="action-button green">
                                                 <i class="fa-solid fa-list-ul"></i> Rellenar y Ver Estudiantes
                                             </a>
                                             <button class="action-button red" onclick="confirmDelete('nomina', '{{ nomina.id }}', '{{ nomina.nombre_nomina }}')">
@@ -1544,8 +1545,9 @@
                                             {% if nomina.nombre_colegio %}
                                                 <span><i class="fa-solid fa-school"></i>Colegio: {{ nomina.nombre_colegio }}</span>
                                             {% endif %}
-                                            </div>
-                                        <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="action-button green">
+                                            
+                                        </div>
+                                        <a href="{{ url_for('relleno_formulario', nomina_id=nomina.id) }}" class="action-button green">
                                             <i class="fa-solid fa-edit"></i> Rellenar y Ver Estudiantes
                                         </a>
                                     </li>

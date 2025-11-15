@@ -163,6 +163,147 @@ def enviar_correo_sendgrid(asunto, cuerpo, adjuntos=None):
     except Exception as e:
         print(f"Error al enviar correo con SendGrid: {e}")
 
+# app-30.py (Función generate_and_upload_pdf corregida)
+
+# Asegúrate de que 'os' y 'requests' estén importados al inicio de app-30.py
+# import os
+# import requests
+# ...
+# import io
+# from PyPDF2 import PdfReader, PdfWriter
+# ...
+
+def generate_and_upload_pdf(estudiante_id, nomina_id, doctora_id, form_type, datos_actualizacion):
+    """Genera el PDF rellenado y lo sube al almacenamiento de Supabase."""
+    
+    # ---------------------------------------------------------------------
+    # 1. LÓGICA DE SELECCIÓN DE PLANTILLA BASE (CORREGIDA)
+    # ---------------------------------------------------------------------
+    pdf_template_path = None
+    
+    if form_type == 'neurologia':
+        # 1.1. Definir la ruta del formulario específico para la Doctora
+        # El nombre de archivo debe coincidir con tu convención (incluyendo el ID de la doctora)
+        doctora_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{doctora_id}.pdf"
+        doctora_pdf_path = os.path.join(PDF_BASES_NEUROLOGIA_DIR, doctora_pdf_filename)
+
+        # 1.2. Comprobar si existe el archivo PDF específico de la doctora
+        if os.path.exists(doctora_pdf_path):
+            pdf_template_path = doctora_pdf_path
+            print(f"DEBUG: Usando PDF específico de Doctora Neurología: {pdf_template_path}")
+        else:
+            # Si no existe, usar el genérico
+            pdf_template_path = PDF_BASE_NEUROLOGIA
+            print(f"DEBUG: Usando PDF genérico de Neurología: {pdf_template_path}")
+            
+    elif form_type == 'medicina_familiar':
+        pdf_template_path = PDF_BASE_FAMILIAR
+        print(f"DEBUG: Usando PDF de Medicina Familiar: {pdf_template_path}")
+    
+    if not pdf_template_path or not os.path.exists(pdf_template_path):
+        message = f"ERROR: Plantilla PDF no encontrada para el tipo de formulario '{form_type}' en la ruta: {pdf_template_path}"
+        print(message)
+        return {"success": False, "message": message}
+
+    # ---------------------------------------------------------------------
+    # 2. CONTINUACIÓN DE LA GENERACIÓN Y RELLENO DEL PDF
+    # ---------------------------------------------------------------------
+
+    try:
+        # Leer el PDF base
+        with open(pdf_template_path, 'rb') as file:
+            reader = PdfReader(file)
+            writer = PdfWriter()
+            page = reader.pages[0]
+            writer.add_page(page)
+
+            # Preparar los datos para rellenar (esto es solo un ejemplo, debes expandirlo)
+            # Aquí necesitarías recuperar todos los datos del estudiante de la DB
+            # para rellenar todos los campos del formulario.
+            # Por simplicidad, usaremos los datos de 'update_data' + consulta adicional.
+            
+            # 2.1. Recuperar información completa del estudiante (ya que update_data solo tiene lo nuevo)
+            url_estudiante_completo = (
+                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                f"?id=eq.{estudiante_id}"
+                f"&select=nombre,rut,fecha_nacimiento,edad,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion"
+            )
+            res_est = requests.get(url_estudiante_completo, headers=SUPABASE_SERVICE_HEADERS)
+            estudiante_data = res_est.json()[0] if res_est.ok and res_est.json() else {}
+
+            # 2.2. Recuperar información de la Doctora (Firma)
+            url_doctora = f"{SUPABASE_URL}/rest/v1/doctoras?id=eq.{doctora_id}&select=nombre"
+            res_doc = requests.get(url_doctora, headers=SUPABASE_SERVICE_HEADERS)
+            doctora_nombre = res_doc.json()[0]['nombre'] if res_doc.ok and res_doc.json() else 'Doctora Asignada'
+            
+            # --- MAPEO DE CAMPOS (ADAPTAR ESTO A TU FORMATO PDF REAL) ---
+            # Aquí debes mapear los datos a los nombres internos de los campos de tu PDF
+            campos_pdf = {} 
+            # Campos comunes
+            campos_pdf['NOMBRE_ESTUDIANTE'] = estudiante_data.get('nombre', '')
+            campos_pdf['RUT'] = estudiante_data.get('rut', '')
+            campos_pdf['FECHA_EVALUACION'] = estudiante_data.get('fecha_evaluacion', '')
+            campos_pdf['FECHA_REVALUACION'] = estudiante_data.get('fecha_reevaluacion', '')
+            campos_pdf['DOCTORA_NOMBRE'] = doctora_nombre
+            # Si form_type es neurologia (solo un ejemplo)
+            if form_type == 'neurologia':
+                campos_pdf['ESTADO_GENERAL'] = estudiante_data.get('estado_general', '')
+                campos_pdf['DIAGNOSTICO'] = estudiante_data.get('diagnostico', '')
+                campos_pdf['DERIVACIONES'] = estudiante_data.get('derivaciones', '')
+            # Si form_type es medicina_familiar (solo un ejemplo)
+            elif form_type == 'medicina_familiar':
+                # Aquí iría el mapeo de todos los campos específicos de medicina familiar
+                pass
+            # --------------------------------------------------------------
+            
+            # Rellenar los campos
+            if reader.get_form_text_fields():
+                writer.update_page_form_field_values(writer.pages[0], campos_pdf)
+                print(f"DEBUG: Campos PDF rellenados: {list(campos_pdf.keys())}")
+            else:
+                print("ADVERTENCIA: No se encontraron campos de formulario en el PDF.")
+
+            # Crear un buffer en memoria para el PDF
+            output_buffer = io.BytesIO()
+            writer.write(output_buffer)
+            output_buffer.seek(0)
+            
+            # 2.3. Definir el nombre de archivo de salida
+            rut_estudiante = estudiante_data.get('rut', 'SinRut')
+            filename = f"Evaluacion_{form_type}_{rut_estudiante}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+            
+            # 2.4. Subir a Supabase Storage
+            # La ruta de Supabase Storage debe ser 'pdfs/nomina_id/nombre_archivo.pdf'
+            supabase_path = f"pdfs/{nomina_id}/{filename}"
+            supabase_url = f"{SUPABASE_URL}/storage/v1/object/pdfs/{nomina_id}/{filename}"
+            
+            upload_res = requests.post(
+                supabase_url,
+                data=output_buffer.getvalue(),
+                headers={
+                    "Authorization": f"Bearer {SUPABASE_KEY}",
+                    "Content-Type": "application/pdf",
+                    "x-upsert": "true" # Sobrescribe si ya existe
+                }
+            )
+            upload_res.raise_for_status()
+            print(f"DEBUG: PDF subido con éxito a: {supabase_path}")
+            
+            return {"success": True, "path": supabase_path}
+
+    except requests.exceptions.RequestException as e:
+        message = f"Error de conexión al generar/subir PDF: {str(e)}"
+        print(f"❌ ERROR: {message}")
+        return {"success": False, "message": message}
+    except Exception as e:
+        message = f"Error inesperado al generar/subir PDF: {str(e)}"
+        print(f"❌ ERROR: {message}")
+        return {"success": False, "message": message}
+
+# Nota: Si tu código no incluye la función generate_and_upload_pdf, es posible que la lógica
+# deba ser insertada directamente en /marcar_evaluado en el paso 4 (Generar PDF).
+# Si ese fuera el caso, la lógica de selección (paso 1) es la misma.
+
 # Helper function to get form field values, converting None to empty string
 def get_form_field_value(field_name, form_data, return_none_if_empty=False):
     """
@@ -546,10 +687,14 @@ def marcar_evaluado():
         return jsonify({"success": False, "message": "No autorizado"}), 401
 
     estudiante_id = request.form.get('estudiante_id')
-    nomina_id = request.form.get('nomina_id') # Asumimos que este valor ya se corrige en el frontend/sesión
+    
+    # --- CORRECCIÓN CLAVE: Fallback si nomina_id no viene en el formulario (era "") ---
+    nomina_id = request.form.get('nomina_id')
+    if not nomina_id:
+        nomina_id = session.get('current_nomina_id')
+    # ----------------------------------------------------------------------------------
+    
     doctora_id = session.get('usuario_id')
-
-    # form_type se mantiene, pero usaremos request.form.get('form_type') para más seguridad si lo envías en oculto
     form_type = session.get('current_form_type', 'neurologia') 
     
     nombre = get_form_field_value('nombre', request.form)
@@ -558,6 +703,7 @@ def marcar_evaluado():
     print(f"DEBUG: Recibida solicitud para marcar como evaluado: estudiante_id={estudiante_id}, nomina_id={nomina_id}, doctora_id={doctora_id}, form_type={form_type}")
     print(f"DEBUG: Contenido completo de request.form: {request.form.to_dict()}")
 
+    # Validación básica de datos obligatorios (ahora nomina_id ya no debería ser vacío)
     if not all([estudiante_id, nomina_id, doctora_id]):
         print(f"ERROR: Datos faltantes en /marcar_evaluado. Estudiante ID: {estudiante_id}, Nomina ID: {nomina_id}, Doctora ID: {doctora_id}. Campos del formulario: {request.form.to_dict()}")
         return jsonify({"success": False, "message": "Faltan datos obligatorios para marcar y guardar la evaluación."}), 400
@@ -588,27 +734,49 @@ def marcar_evaluado():
         })
     elif form_type == 'medicina_familiar':
         # Campos específicos de Medicina Familiar se añaden a update_data
-        # OJO: Los campos con checkbox/radio que guardan '/Yes' en PDF, se guardan como texto/booleano en DB
         update_data.update({
+            # Diagnósticos
             'diagnostico_1': get_form_field_value('diagnostico_1', request.form),
             'diagnostico_2': get_form_field_value('diagnostico_2', request.form),
             'diagnostico_complementario': get_form_field_value('diagnostico_complementario', request.form),
-            'clasificacion': get_form_field_value('clasificacion_imc', request.form), # Clasificación del IMC
+            'clasificacion': get_form_field_value('clasificacion_imc', request.form),
             'derivaciones': get_form_field_value('derivaciones', request.form),
+            
             # Observaciones
             'observacion_1': get_form_field_value('observacion_1', request.form),
             'observacion_2': get_form_field_value('observacion_2', request.form),
             'observacion_3': get_form_field_value('observacion_3', request.form),
-            # ... (Añade todas las demás observaciones si existen en la DB) ...
-            
-            # Campos de chequeo (Guardar el valor del checkbox o el string para la DB)
+            'observacion_4': get_form_field_value('observacion_4', request.form),
+            'observacion_5': get_form_field_value('observacion_5', request.form),
+            'observacion_6': get_form_field_value('observacion_6', request.form),
+            'observacion_7': get_form_field_value('observacion_7', request.form),
+
+            # Checkboxes (Guardar el valor del formulario si está presente)
             'check_cesarea': get_form_field_value('check_cesarea', request.form),
             'check_atermino': get_form_field_value('check_atermino', request.form),
+            'check_vaginal': get_form_field_value('check_vaginal', request.form),
+            'check_prematuro': get_form_field_value('check_prematuro', request.form),
             'check_acorde': get_form_field_value('check_acorde', request.form),
+            'check_retrasogeneralizado': get_form_field_value('check_retrasogeneralizado', request.form),
+            'check_esquemac': get_form_field_value('check_esquemac', request.form),
+            'check_esquemai': get_form_field_value('check_esquemai', request.form),
+            'check_alergiano': get_form_field_value('check_alergiano', request.form),
             'check_alergiasi': get_form_field_value('check_alergiasi', request.form),
-            # ... (Añade todos los demás campos de formulario que deban persistir) ...
-
-            # Medidas
+            'check_cirugiano': get_form_field_value('check_cirugiano', request.form),
+            'si_2': get_form_field_value('si_2', request.form),
+            'check_visionsinalteracion': get_form_field_value('check_visionsinalteracion', request.form),
+            'check_visionrefraccion': get_form_field_value('check_visionrefraccion', request.form),
+            'check_audicionnormal': get_form_field_value('check_audicionnormal', request.form),
+            'check_hipoacusia': get_form_field_value('check_hipoacusia', request.form),
+            'check_tapondecerumen': get_form_field_value('check_tapondecerumen', request.form),
+            'check_sinhallazgos': get_form_field_value('check_sinhallazgos', request.form),
+            'caries': get_form_field_value('caries', request.form),
+            'check_apinamientodental': get_form_field_value('check_apinamientodental', request.form),
+            'check_retenciondental': get_form_field_value('check_retenciondental', request.form),
+            'check_frenillolingual': get_form_field_value('check_frenillolingual', request.form),
+            'check_hipertrofia': get_form_field_value('check_hipertrofia', request.form),
+            
+            # Medidas (Usando return_none_if_empty=True para numéricos)
             'altura': get_form_field_value('altura', request.form, return_none_if_empty=True),
             'peso': get_form_field_value('peso', request.form, return_none_if_empty=True),
             'imc': get_form_field_value('imc', request.form, return_none_if_empty=True),

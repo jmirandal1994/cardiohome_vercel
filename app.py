@@ -173,8 +173,12 @@ def enviar_correo_sendgrid(asunto, cuerpo, adjuntos=None):
 # from PyPDF2 import PdfReader, PdfWriter
 # ...
 
+# app-30.py (Función auxiliar generate_and_upload_pdf COMPLETA)
+
 def generate_and_upload_pdf(estudiante_id, nomina_id, doctora_id, form_type, datos_actualizacion):
-    """Genera el PDF rellenado y lo sube al almacenamiento de Supabase."""
+    """Genera el PDF rellenado y lo sube al almacenamiento de Supabase.
+       Incluye lógica para seleccionar plantilla específica por doctora.
+    """
     
     # ---------------------------------------------------------------------
     # 1. LÓGICA DE SELECCIÓN DE PLANTILLA BASE (CORREGIDA)
@@ -183,16 +187,20 @@ def generate_and_upload_pdf(estudiante_id, nomina_id, doctora_id, form_type, dat
     
     if form_type == 'neurologia':
         # 1.1. Definir la ruta del formulario específico para la Doctora
-        # El nombre de archivo debe coincidir con tu convención (incluyendo el ID de la doctora)
+        # Usamos el ID de la Doctora para la búsqueda del archivo
         doctora_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{doctora_id}.pdf"
+        # La carpeta donde deben estar tus archivos personalizados
         doctora_pdf_path = os.path.join(PDF_BASES_NEUROLOGIA_DIR, doctora_pdf_filename)
 
-        # 1.2. Comprobar si existe el archivo PDF específico de la doctora
-        if os.path.exists(doctora_pdf_path):
+        # 1.2. Comprobar si existe el archivo PDF específico de la doctora Y si tenemos el ID
+        # CRÍTICO: session.get('usuario_id') se usa aquí como fallback si no se pasó doctora_id
+        current_doctora_id = doctora_id if doctora_id else session.get('usuario_id')
+        
+        if current_doctora_id and os.path.exists(doctora_pdf_path):
             pdf_template_path = doctora_pdf_path
             print(f"DEBUG: Usando PDF específico de Doctora Neurología: {pdf_template_path}")
         else:
-            # Si no existe, usar el genérico
+            # Si no existe el archivo específico O no tenemos el ID, usar el genérico
             pdf_template_path = PDF_BASE_NEUROLOGIA
             print(f"DEBUG: Usando PDF genérico de Neurología: {pdf_template_path}")
             
@@ -208,54 +216,47 @@ def generate_and_upload_pdf(estudiante_id, nomina_id, doctora_id, form_type, dat
     # ---------------------------------------------------------------------
     # 2. CONTINUACIÓN DE LA GENERACIÓN Y RELLENO DEL PDF
     # ---------------------------------------------------------------------
-
     try:
-        # Leer el PDF base
+        # 2.1. Recuperar información completa del estudiante (ya que update_data solo tiene lo nuevo)
+        url_estudiante_completo = (
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            f"?id=eq.{estudiante_id}"
+            f"&select=nombre,rut,fecha_nacimiento,edad,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion"
+        )
+        res_est = requests.get(url_estudiante_completo, headers=SUPABASE_SERVICE_HEADERS)
+        estudiante_data = res_est.json()[0] if res_est.ok and res_est.json() else {}
+
+        # 2.2. Recuperar información de la Doctora (Firma)
+        url_doctora = f"{SUPABASE_URL}/rest/v1/doctoras?id=eq.{doctora_id}&select=nombre"
+        res_doc = requests.get(url_doctora, headers=SUPABASE_SERVICE_HEADERS)
+        doctora_nombre = res_doc.json()[0]['nombre'] if res_doc.ok and res_doc.json() else 'Doctora Asignada'
+        
+        # --- MAPEO DE CAMPOS (ADAPTAR ESTO A TU FORMATO PDF REAL) ---
+        campos_pdf = {} 
+        # Campos comunes
+        campos_pdf['NOMBRE_ESTUDIANTE'] = estudiante_data.get('nombre', '')
+        campos_pdf['RUT'] = estudiante_data.get('rut', '')
+        campos_pdf['FECHA_EVALUACION'] = estudiante_data.get('fecha_evaluacion', '')
+        campos_pdf['FECHA_REVALUACION'] = estudiante_data.get('fecha_reevaluacion', '')
+        campos_pdf['DOCTORA_NOMBRE'] = doctora_nombre
+        # Si form_type es neurologia (solo un ejemplo)
+        if form_type == 'neurologia':
+            campos_pdf['ESTADO_GENERAL'] = estudiante_data.get('estado_general', '')
+            campos_pdf['DIAGNOSTICO'] = estudiante_data.get('diagnostico', '')
+            campos_pdf['DERIVACIONES'] = estudiante_data.get('derivaciones', '')
+        # Si form_type es medicina_familiar (solo un ejemplo)
+        elif form_type == 'medicina_familiar':
+            # Aquí iría el mapeo de todos los campos específicos de medicina familiar
+            pass
+        # --------------------------------------------------------------
+        
+        # 2.3. Rellenar PDF
         with open(pdf_template_path, 'rb') as file:
             reader = PdfReader(file)
             writer = PdfWriter()
             page = reader.pages[0]
             writer.add_page(page)
 
-            # Preparar los datos para rellenar (esto es solo un ejemplo, debes expandirlo)
-            # Aquí necesitarías recuperar todos los datos del estudiante de la DB
-            # para rellenar todos los campos del formulario.
-            # Por simplicidad, usaremos los datos de 'update_data' + consulta adicional.
-            
-            # 2.1. Recuperar información completa del estudiante (ya que update_data solo tiene lo nuevo)
-            url_estudiante_completo = (
-                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                f"?id=eq.{estudiante_id}"
-                f"&select=nombre,rut,fecha_nacimiento,edad,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion"
-            )
-            res_est = requests.get(url_estudiante_completo, headers=SUPABASE_SERVICE_HEADERS)
-            estudiante_data = res_est.json()[0] if res_est.ok and res_est.json() else {}
-
-            # 2.2. Recuperar información de la Doctora (Firma)
-            url_doctora = f"{SUPABASE_URL}/rest/v1/doctoras?id=eq.{doctora_id}&select=nombre"
-            res_doc = requests.get(url_doctora, headers=SUPABASE_SERVICE_HEADERS)
-            doctora_nombre = res_doc.json()[0]['nombre'] if res_doc.ok and res_doc.json() else 'Doctora Asignada'
-            
-            # --- MAPEO DE CAMPOS (ADAPTAR ESTO A TU FORMATO PDF REAL) ---
-            # Aquí debes mapear los datos a los nombres internos de los campos de tu PDF
-            campos_pdf = {} 
-            # Campos comunes
-            campos_pdf['NOMBRE_ESTUDIANTE'] = estudiante_data.get('nombre', '')
-            campos_pdf['RUT'] = estudiante_data.get('rut', '')
-            campos_pdf['FECHA_EVALUACION'] = estudiante_data.get('fecha_evaluacion', '')
-            campos_pdf['FECHA_REVALUACION'] = estudiante_data.get('fecha_reevaluacion', '')
-            campos_pdf['DOCTORA_NOMBRE'] = doctora_nombre
-            # Si form_type es neurologia (solo un ejemplo)
-            if form_type == 'neurologia':
-                campos_pdf['ESTADO_GENERAL'] = estudiante_data.get('estado_general', '')
-                campos_pdf['DIAGNOSTICO'] = estudiante_data.get('diagnostico', '')
-                campos_pdf['DERIVACIONES'] = estudiante_data.get('derivaciones', '')
-            # Si form_type es medicina_familiar (solo un ejemplo)
-            elif form_type == 'medicina_familiar':
-                # Aquí iría el mapeo de todos los campos específicos de medicina familiar
-                pass
-            # --------------------------------------------------------------
-            
             # Rellenar los campos
             if reader.get_form_text_fields():
                 writer.update_page_form_field_values(writer.pages[0], campos_pdf)
@@ -268,22 +269,23 @@ def generate_and_upload_pdf(estudiante_id, nomina_id, doctora_id, form_type, dat
             writer.write(output_buffer)
             output_buffer.seek(0)
             
-            # 2.3. Definir el nombre de archivo de salida
-            rut_estudiante = estudiante_data.get('rut', 'SinRut')
-            filename = f"Evaluacion_{form_type}_{rut_estudiante}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
-            
             # 2.4. Subir a Supabase Storage
-            # La ruta de Supabase Storage debe ser 'pdfs/nomina_id/nombre_archivo.pdf'
-            supabase_path = f"pdfs/{nomina_id}/{filename}"
-            supabase_url = f"{SUPABASE_URL}/storage/v1/object/pdfs/{nomina_id}/{filename}"
+            rut_estudiante = estudiante_data.get('rut', 'SinRut')
+            # Usamos UUID para asegurar unicidad del archivo
+            unique_id = str(uuid.uuid4())
+            filename = f"Evaluacion_{form_type}_{rut_estudiante}_{unique_id}.pdf"
+            
+            # Ruta de Storage: formularios_completados/nomina_id/nombre_archivo.pdf
+            supabase_path = f"formularios_completados/{nomina_id}/{filename}"
+            supabase_url = f"{SUPABASE_URL}/storage/v1/object/formularios_completados/{nomina_id}/{filename}"
             
             upload_res = requests.post(
                 supabase_url,
                 data=output_buffer.getvalue(),
                 headers={
-                    "Authorization": f"Bearer {SUPABASE_KEY}",
+                    "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}", # Usar SERVICE KEY para Storage
                     "Content-Type": "application/pdf",
-                    "x-upsert": "true" # Sobrescribe si ya existe
+                    "x-upsert": "true" 
                 }
             )
             upload_res.raise_for_status()
@@ -294,16 +296,15 @@ def generate_and_upload_pdf(estudiante_id, nomina_id, doctora_id, form_type, dat
     except requests.exceptions.RequestException as e:
         message = f"Error de conexión al generar/subir PDF: {str(e)}"
         print(f"❌ ERROR: {message}")
+        # Si la respuesta tiene texto, lo imprimimos para debug de Supabase
+        if 'upload_res' in locals() and upload_res.text:
+             print(f"ERROR DETAIL: {upload_res.text}")
         return {"success": False, "message": message}
     except Exception as e:
         message = f"Error inesperado al generar/subir PDF: {str(e)}"
         print(f"❌ ERROR: {message}")
         return {"success": False, "message": message}
-
-# Nota: Si tu código no incluye la función generate_and_upload_pdf, es posible que la lógica
-# deba ser insertada directamente en /marcar_evaluado en el paso 4 (Generar PDF).
-# Si ese fuera el caso, la lógica de selección (paso 1) es la misma.
-
+        
 # Helper function to get form field values, converting None to empty string
 def get_form_field_value(field_name, form_data, return_none_if_empty=False):
     """

@@ -509,6 +509,7 @@
             outline: none;
             border-color: var(--secondary-blue);
             box-shadow: 0 0 0 3px rgba(28, 103, 163, 0.2);
+            outline: none;
         }
         .filter-button {
             padding: 0.75rem 1.5rem;
@@ -1059,7 +1060,11 @@
                                                 {% set doctora_form_obj = all_users_for_lookup | selectattr('id', 'equalto', nomina.doctora_id_para_formulario) | first %}
                                                 <span><i class="fa-solid fa-user-doctor"></i>Formulario base de: {{ doctora_form_obj.usuario if doctora_form_obj else 'Doctora no encontrada' }}</span>
                                             {% endif %}
-                                        </div>
+                                            
+                                            {% if nomina.nombre_colegio %}
+                                                <span><i class="fa-solid fa-school"></i>Colegio: {{ nomina.nombre_colegio }}</span>
+                                            {% endif %}
+                                            </div>
                                         <div class="item-card-actions">
                                             {% if nomina.url_excel_original %}
                                                 <a href="{{ nomina.url_excel_original }}" target="_blank" class="action-button blue">
@@ -1535,7 +1540,11 @@
                                                 {% set doctora_form_obj = doctoras | selectattr('id', 'equalto', nomina.doctora_id_para_formulario) | first %}
                                                 <span>Formulario base de: {{ doctora_form_obj.usuario if doctora_form_obj else 'Doctora no encontrada' }}</span>
                                             {% endif %}
-                                        </div>
+                                            
+                                            {% if nomina.nombre_colegio %}
+                                                <span><i class="fa-solid fa-school"></i>Colegio: {{ nomina.nombre_colegio }}</span>
+                                            {% endif %}
+                                            </div>
                                         <a href="{{ url_for('relleno_formularios', nomina_id=nomina.id) }}" class="action-button green">
                                             <i class="fa-solid fa-edit"></i> Rellenar y Ver Estudiantes
                                         </a>

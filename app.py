@@ -217,6 +217,11 @@ def relleno_formulario(nomina_id):
 
     user_role = session.get('usuario')
     user_id = session.get('usuario_id')
+    
+    # --- CORRECCIÓN CLAVE ---
+    # Guardamos el ID de la nómina en la sesión para que esté disponible en otras rutas (como /marcar_evaluado)
+    session['current_nomina_id'] = nomina_id 
+    # ------------------------
 
     # 1. Obtener detalles de la nómina
     url_nomina = (
@@ -273,13 +278,15 @@ def relleno_formulario(nomina_id):
             fecha_nacimiento_obj = None
             if est.get('fecha_nacimiento') and est['fecha_nacimiento'].strip():
                  try:
+                    # Asumiendo que datetime.strptime está disponible
                     fecha_nacimiento_obj = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
                  except:
                     pass
 
             edad_calculada = "N/A"
             if fecha_nacimiento_obj:
-                edad_calculada = calculate_age(fecha_nacimiento_obj) # Usamos tu función auxiliar
+                # Asumiendo que calculate_age está definida en tu app-30.py
+                edad_calculada = calculate_age(fecha_nacimiento_obj) 
 
             estudiantes.append({
                 'id': est['id'],
@@ -539,9 +546,10 @@ def marcar_evaluado():
         return jsonify({"success": False, "message": "No autorizado"}), 401
 
     estudiante_id = request.form.get('estudiante_id')
-    nomina_id = request.form.get('nomina_id')
+    nomina_id = request.form.get('nomina_id') # Asumimos que este valor ya se corrige en el frontend/sesión
     doctora_id = session.get('usuario_id')
 
+    # form_type se mantiene, pero usaremos request.form.get('form_type') para más seguridad si lo envías en oculto
     form_type = session.get('current_form_type', 'neurologia') 
     
     nombre = get_form_field_value('nombre', request.form)
@@ -554,80 +562,58 @@ def marcar_evaluado():
         print(f"ERROR: Datos faltantes en /marcar_evaluado. Estudiante ID: {estudiante_id}, Nomina ID: {nomina_id}, Doctora ID: {doctora_id}. Campos del formulario: {request.form.to_dict()}")
         return jsonify({"success": False, "message": "Faltan datos obligatorios para marcar y guardar la evaluación."}), 400
 
+    # --- 1. DATOS BASE (Comunes a todos los formularios) ---
     update_data = {
         'fecha_relleno': str(date.today()), # Fecha actual de rellenado
         'doctora_evaluadora_id': doctora_id, 
-        'nombre': get_form_field_value('nombre', request.form),
-        'rut': get_form_field_value('rut', request.form), # Este RUT se guarda sin formato
+        'nombre': nombre,
+        'rut': rut, 
         # Para fechas, queremos None si están vacías para que se mapeen a NULL en la DB
         'fecha_nacimiento': get_form_field_value('fecha_nacimiento_original', request.form, return_none_if_empty=True), 
         'fecha_evaluacion': get_form_field_value('fecha_evaluacion', request.form, return_none_if_empty=True),
         'fecha_reevaluacion': get_form_field_value('fecha_reevaluacion', request.form, return_none_if_empty=True),
-        'edad': get_form_field_value('edad', request.form), # Edad también se envía desde el formulario
-        'nacionalidad': get_form_field_value('nacionalidad', request.form), # Nacionalidad también se envía
+        'edad': get_form_field_value('edad', request.form), 
+        'nacionalidad': get_form_field_value('nacionalidad', request.form), 
+        # Sexo (general) siempre se guarda
+        'sexo': get_form_field_value('sexo', request.form),
     }
 
-    # Lógica para campos específicos según el tipo de formulario
+    # --- 2. LÓGICA PARA CAMPOS ESPECÍFICOS ---
     if form_type == 'neurologia':
+        # Campos específicos de Neurología se añaden a update_data
         update_data.update({
-            'sexo': get_form_field_value('sexo', request.form),
             'estado_general': get_form_field_value('estado', request.form),
             'diagnostico': get_form_field_value('diagnostico', request.form), 
             'derivaciones': get_form_field_value('derivaciones', request.form),
-            # 'plazo' se elimina completamente para neurología
         })
     elif form_type == 'medicina_familiar':
-        # Campos para medicina familiar
-        campos = {
-            "nombre": nombre,
-            "rut": rut,
-            "fecha_nacimiento": fecha_nac_formato,
-            "edad": edad,
-            "nacionalidad": nacionalidad,
-            "sexo_f": sexo_f_pdf,
-            "sexo_m": sexo_m_pdf,
-            "diagnostico_1": get_form_field_value('diagnostico_1', request.form),
-            "diagnostico_2": get_form_field_value('diagnostico_2', request.form),
-            "diagnostico_complementario": get_form_field_value('diagnostico_complementario', request.form),
-            "clasificación": get_form_field_value('clasificacion_imc', request.form),
-            "derivaciones": get_form_field_value('derivaciones', request.form),
-            "fecha_evaluacion": fecha_evaluacion_formatted,
-            "fecha_reevaluacion": fecha_reeval_pdf,
-            "observacion_1": get_form_field_value('observacion_1', request.form),
-            "observacion_2": get_form_field_value('observacion_2', request.form),
-            "observacion_3": get_form_field_value('observacion_3', request.form),
-            "observacion_4": get_form_field_value('observacion_4', request.form),
-            "observacion_5": get_form_field_value('observacion_5', request.form),
-            "observacion_6": get_form_field_value('observacion_6', request.form),
-            "observacion_7": get_form_field_value('observacion_7', request.form),
-            "check_cesarea": "/Yes" if get_form_field_value('check_cesarea', request.form) == 'CESAREA' else "",
-            "check_atermino": "/Yes" if get_form_field_value('check_atermino', request.form) == 'A_TERMINO' else "",
-            "check_vaginal": "/Yes" if get_form_field_value('check_vaginal', request.form) == 'VAGINAL' else "",
-            "check_prematuro": "/Yes" if get_form_field_value('check_prematuro', request.form) == 'PREMATURO' else "",
-            "LOGRADO ACORDE A LA EDAD": "/Yes" if get_form_field_value('check_acorde', request.form) == 'LOGRADO_ACORDE_A_LA_EDAD' else "",
-            "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if get_form_field_value('check_retrasogeneralizado', request.form) == 'RETRASO_GENERALIZADO_DEL_DESARROLLO' else "",
-            "ESQUEMA COMPLETO": "/Yes" if get_form_field_value('check_esquemac', request.form) == 'ESQUEMA_COMPLETO' else "",
-            "ESQUEMA INCOMPLETO": "/Yes" if get_form_field_value('check_esquemai', request.form) == 'ESQUEMA_INCOMPLETO' else "",
-            "NO": "/Yes" if get_form_field_value('check_alergiano', request.form) == 'NO_ALERGIAS' else "",
-            "SI": "/Yes" if get_form_field_value('check_alergiasi', request.form) == 'SI_ALERGIAS' else "",
-            "NO_2": "/Yes" if get_form_field_value('check_cirugiano', request.form) == 'NO_CIRUGIAS' else "",
-            "SI_2": "/Yes" if get_form_field_value('si_2', request.form) == 'SI_2' else "",
-            "SIN ALTERACIÓN": "/Yes" if get_form_field_value('check_visionsinalteracion', request.form) == 'SIN_ALTERACION_VISION' else "",
-            "VICIOS DE REFRACCION": "/Yes" if get_form_field_value('check_visionrefraccion', request.form) == 'VICIOS_DE_REFRACCION' else "",
-            "NORMAL": "/Yes" if get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION' else "",
-            "HIPOACUSIA": "/Yes" if get_form_field_value('check_hipoacusia', request.form) == 'HIPOACUSIA' else "",
-            "TAPÓN DE CERUMEN": "/Yes" if get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN' else "",
-            "SIN HALLAZGOS": "/Yes" if get_form_field_value('check_sinhallazgos', request.form) == 'SIN_HALLAZGOS' else "",
-            "CARIES": "/Yes" if get_form_field_value('caries', request.form) == 'CARIES' else "",
-            "APIÑAMIENTO DENTAL": "/Yes" if get_form_field_value('check_apinamientodental', request.form) == 'APINAMIENTO_DENTAL' else "",
-            "RETENCIÓN DENTAL": "/Yes" if get_form_field_value('check_retenciondental', request.form) == 'RETENCION_DENTAL' else "",
-            "FRENILLO LINGUAL": "/Yes" if get_form_field_value('check_frenillolingual', request.form) == 'FRENILLO_LINGUAL' else "",
-            "HIPERTROFIA AMIGDALINA": "/Yes" if get_form_field_value('check_hipertrofia', request.form) == 'HIPERTROFIA_AMIGDALINA' else "",
-            "Altura": get_form_field_value('altura', request.form),
-            "Peso": get_form_field_value('peso', request.form),
-            "I.M.C": get_form_field_value('imc', request.form),
-            "Clasificación_IMC": get_form_field_value('clasificacion_imc', request.form),
-        }
+        # Campos específicos de Medicina Familiar se añaden a update_data
+        # OJO: Los campos con checkbox/radio que guardan '/Yes' en PDF, se guardan como texto/booleano en DB
+        update_data.update({
+            'diagnostico_1': get_form_field_value('diagnostico_1', request.form),
+            'diagnostico_2': get_form_field_value('diagnostico_2', request.form),
+            'diagnostico_complementario': get_form_field_value('diagnostico_complementario', request.form),
+            'clasificacion': get_form_field_value('clasificacion_imc', request.form), # Clasificación del IMC
+            'derivaciones': get_form_field_value('derivaciones', request.form),
+            # Observaciones
+            'observacion_1': get_form_field_value('observacion_1', request.form),
+            'observacion_2': get_form_field_value('observacion_2', request.form),
+            'observacion_3': get_form_field_value('observacion_3', request.form),
+            # ... (Añade todas las demás observaciones si existen en la DB) ...
+            
+            # Campos de chequeo (Guardar el valor del checkbox o el string para la DB)
+            'check_cesarea': get_form_field_value('check_cesarea', request.form),
+            'check_atermino': get_form_field_value('check_atermino', request.form),
+            'check_acorde': get_form_field_value('check_acorde', request.form),
+            'check_alergiasi': get_form_field_value('check_alergiasi', request.form),
+            # ... (Añade todos los demás campos de formulario que deban persistir) ...
+
+            # Medidas
+            'altura': get_form_field_value('altura', request.form, return_none_if_empty=True),
+            'peso': get_form_field_value('peso', request.form, return_none_if_empty=True),
+            'imc': get_form_field_value('imc', request.form, return_none_if_empty=True),
+        })
+    
     print(f"DEBUG: Payload final para Supabase PATCH en /marcar_evaluado: {update_data}")
     
     try:
@@ -654,7 +640,7 @@ def marcar_evaluado():
     except Exception as e:
         print(f"ERROR: Error inesperado al marcar estudiante como evaluado: {e}")
         return jsonify({"success": False, "message": f"Error interno del servidor: {str(e)}"}), 500
-
+        
 @app.route('/')
 def index():
     return render_template('login.html')

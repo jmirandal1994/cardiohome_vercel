@@ -720,7 +720,7 @@ def dashboard():
     doctoras = []
     
     # URL base de las nóminas (Admin y Doctora usan la misma)
-    url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=*,doctoras!nominas_medicas_doctora_id_fkey(nombre)"
+    url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=*,doctoras!doctora_id(nombre)"
     
     # Filtro específico para Doctora
     if user_role == 'doctora':

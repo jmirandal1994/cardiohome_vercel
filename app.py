@@ -181,32 +181,32 @@ def generate_and_upload_pdf(estudiante_id, nomina_id, doctora_id, form_type, dat
     """
     
     # ---------------------------------------------------------------------
-    # 1. LÓGICA DE SELECCIÓN DE PLANTILLA BASE (CORREGIDA)
+    # 1. OBTENCIÓN DEL ID PARA EL FORMULARIO (CORRECCIÓN CLAVE)
     # ---------------------------------------------------------------------
     pdf_template_path = None
     
-    if form_type == 'neurologia':
-        # 1.1. Definir la ruta del formulario específico para la Doctora
-        # Usamos el ID de la Doctora para la búsqueda del archivo
-        doctora_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{doctora_id}.pdf"
+    # Usamos el ID de la Doctora LOGUEADA como la clave para la plantilla.
+    # El ID de la sesión es la única fuente de verdad fiable en este punto.
+    current_doctora_id = session.get('usuario_id')
+    
+    if form_type == 'neurologia' and current_doctora_id:
+
+        # 1.1. Definir la ruta del formulario específico usando el ID LOGUEADO
+        doctora_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{current_doctora_id}.pdf"
         # La carpeta donde deben estar tus archivos personalizados
         doctora_pdf_path = os.path.join(PDF_BASES_NEUROLOGIA_DIR, doctora_pdf_filename)
 
-        # 1.2. Comprobar si existe el archivo PDF específico de la doctora Y si tenemos el ID
-        # CRÍTICO: session.get('usuario_id') se usa aquí como fallback si no se pasó doctora_id
-        current_doctora_id = doctora_id if doctora_id else session.get('usuario_id')
-        
-        if current_doctora_id and os.path.exists(doctora_pdf_path):
+        # 1.2. Comprobar si existe el archivo PDF específico
+        if os.path.exists(doctora_pdf_path):
             pdf_template_path = doctora_pdf_path
-            print(f"DEBUG: Usando PDF específico de Doctora Neurología: {pdf_template_path}")
+            print(f"DEBUG: Usando PDF específico de Doctora LOGUEADA: {pdf_template_path}")
         else:
-            # Si no existe el archivo específico O no tenemos el ID, usar el genérico
+            # Fallback: Si no existe el archivo específico, usar el genérico
             pdf_template_path = PDF_BASE_NEUROLOGIA
-            print(f"DEBUG: Usando PDF genérico de Neurología: {pdf_template_path}")
+            print(f"DEBUG: Usando PDF genérico de Neurología.")
             
     elif form_type == 'medicina_familiar':
         pdf_template_path = PDF_BASE_FAMILIAR
-        print(f"DEBUG: Usando PDF de Medicina Familiar: {pdf_template_path}")
     
     if not pdf_template_path or not os.path.exists(pdf_template_path):
         message = f"ERROR: Plantilla PDF no encontrada para el tipo de formulario '{form_type}' en la ruta: {pdf_template_path}"
@@ -251,6 +251,7 @@ def generate_and_upload_pdf(estudiante_id, nomina_id, doctora_id, form_type, dat
         # --------------------------------------------------------------
         
         # 2.3. Rellenar PDF
+        # Nota: Asegúrate de que PdfReader y PdfWriter estén importados
         with open(pdf_template_path, 'rb') as file:
             reader = PdfReader(file)
             writer = PdfWriter()
@@ -279,7 +280,8 @@ def generate_and_upload_pdf(estudiante_id, nomina_id, doctora_id, form_type, dat
             supabase_path = f"formularios_completados/{nomina_id}/{filename}"
             supabase_url = f"{SUPABASE_URL}/storage/v1/object/formularios_completados/{nomina_id}/{filename}"
             
-            upload_res = requests.post(
+            # Usar requests.put para subir el archivo
+            upload_res = requests.put(
                 supabase_url,
                 data=output_buffer.getvalue(),
                 headers={
@@ -296,7 +298,6 @@ def generate_and_upload_pdf(estudiante_id, nomina_id, doctora_id, form_type, dat
     except requests.exceptions.RequestException as e:
         message = f"Error de conexión al generar/subir PDF: {str(e)}"
         print(f"❌ ERROR: {message}")
-        # Si la respuesta tiene texto, lo imprimimos para debug de Supabase
         if 'upload_res' in locals() and upload_res.text:
              print(f"ERROR DETAIL: {upload_res.text}")
         return {"success": False, "message": message}

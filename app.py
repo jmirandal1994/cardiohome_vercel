@@ -708,6 +708,7 @@ def login():
         
 # - Ruta /dashboard corregida y modificada para la Fase 3
 
+# app-30.py (Reemplaza la función dashboard completa)
 @app.route('/dashboard')
 def dashboard():
     if 'usuario' not in session:
@@ -716,102 +717,137 @@ def dashboard():
     user_role = session.get('usuario')
     user_id = session.get('usuario_id')
     
-    # ------------------ Carga de Datos Comunes ------------------
-    doctoras = []
-    
-    # URL base de las nóminas (Admin y Doctora usan la misma)
-    url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=*,doctoras!doctora_id(nombre)"
-    
-    # Filtro específico para Doctora
-    if user_role == 'doctora':
-        url_nominas += f"&doctora_id=eq.{user_id}"
-        
-    # Ordenar por nombre de nómina (o la columna que prefieras)
-    url_nominas += "&order=nombre_nomina.asc"
+    print(f"DEBUG: Accediendo a dashboard para usuario: {user_role}, ID: {user_id}")
 
+    # --- Variables de inicialización ---
+    doctoras_all = [] # Lista completa de doctoras (para select en admin)
+    admin_nominas_cargadas = [] # Lista de nóminas para admin
+    assigned_nominations = [] # Lista de nóminas para doctora
+
+    # --- Lógica de carga de USUARIOS (Necesaria para Admin/Coord.) ---
     try:
-        # Petición para obtener todas las nóminas (o las asignadas a la doctora)
-        res_nominas = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
-        res_nominas.raise_for_status()
-        nominas_raw = res_nominas.json()
+        url_doctoras = f"{SUPABASE_URL}/rest/v1/doctoras?select=id,usuario,rol,nombre" 
+        res_doctoras = requests.get(url_doctoras, headers=SUPABASE_SERVICE_HEADERS) 
+        res_doctoras.raise_for_status()
+        doctoras_raw = res_doctoras.json()
         
-        # Procesamiento de Nóminas
-        nominas = []
-        for nom in nominas_raw:
-            doctora_nombre = nom.get('doctoras')
-            if isinstance(doctora_nombre, list) and doctora_nombre:
-                doctora_nombre = doctora_nombre[0].get('nombre', 'N/A')
-            elif isinstance(doctora_nombre, dict):
-                doctora_nombre = doctora_nombre.get('nombre', 'N/A')
-            else:
-                doctora_nombre = 'N/A'
-                
-            nominas.append({
-                'id': nom['id'],
-                'nombre_nomina': nom['nombre_nomina'],
-                'tipo_nomina': nom['tipo_nomina'],
-                'doctora_nombre': doctora_nombre,
-                'form_type': nom['form_type'],
-                'nombre_colegio': nom.get('nombre_colegio', 'N/A') # <-- ¡NUEVA CLAVE!
-            })
+        # Filtros de roles
+        doctoras_all = [{'id': doc['id'], 'usuario': doc['usuario'], 'rol': doc.get('rol'), 'nombre': doc.get('nombre')} for doc in doctoras_raw]
+        all_users_for_lookup = doctoras_all # Para las búsquedas en el HTML
+        doctoras_relleno = [user for user in doctoras_all if user['rol'] == 'doctora'] 
+        coordinadoras_generales = [user for user in doctoras_all if user['rol'] == 'coordinadora'] 
+        coordinadores_escuela = [user for user in doctoras_all if user['rol'] == 'coordinador_escuela']
 
     except requests.exceptions.RequestException as e:
-        print(f"ERROR: No se pudo obtener la lista de nóminas: {e}")
-        flash('Error al cargar la lista de nóminas.', 'error')
-        nominas = []
+        print(f"❌ ERROR AL OBTENER DATOS DE DOCTORAS: {e}")
+        flash('Error al cargar datos de doctoras o usuarios.', 'error')
+        all_users_for_lookup = []
+        doctoras_relleno = []
+        coordinadoras_generales = []
+        coordinadores_escuela = []
+
+
+    # --- Lógica de carga de NÓMINAS (Admin y Doctora) ---
+    if user_role == 'admin':
+        # Admin ve TODAS las nóminas
+        url_nominas = (
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?select=id,nombre_nomina,tipo_nomina,doctora_id,url_excel_original,nombre_excel_original,form_type,doctora_id_para_formulario,nombre_colegio,coord_general_id,coord_escuela_id"
+            f"&order=nombre_nomina.asc"
+        )
         
-    # Lógica de carga de datos para ADMIN (y Coordinador General)
-    if user_role in ['admin', 'coordinadora']:
-        # Solo el ADMIN o la COORDINADORA pueden cargar la lista de Doctoras
         try:
-            res_doctoras = requests.get(f"{SUPABASE_URL}/rest/v1/doctoras?select=id,nombre,rol,usuario", headers=SUPABASE_SERVICE_HEADERS)
-            res_doctoras.raise_for_status()
-            doctoras = res_doctoras.json()
-            
-            # Filtrar listas por rol (para los Selects del Admin)
-            coordinadores_escuela = [d for d in doctoras if d['rol'] == 'coordinador_escuela']
-            coordinadores_general = [d for d in doctoras if d['rol'] == 'coordinadora']
-            doctoras_relleno = [d for d in doctoras if d['rol'] == 'doctora']
-            
-            # Para el formulario de asignación de Doctora para formulario (solo Neurología)
-            doctoras_formularios = [d for d in doctoras if d['rol'] == 'doctora' or d['rol'] == 'coordinadora']
-            
+            res_nominas = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS) 
+            res_nominas.raise_for_status()
+            nominas_raw = res_nominas.json()
+
+            for nom in nominas_raw:
+                # Buscar nombre de la doctora principal en la lista local de usuarios
+                doctora_obj = next((doc for doc in all_users_for_lookup if doc['id'] == nom.get('doctora_id')), None)
+                doctora_nombre = doctora_obj['usuario'] if doctora_obj else 'N/A'
+                
+                admin_nominas_cargadas.append({
+                    'id': nom['id'],
+                    'nombre_nomina': nom['nombre_nomina'],
+                    'tipo_nomina': nom['tipo_nomina'],
+                    'doctora_id': nom['doctora_id'],
+                    'url_excel_original': nom['url_excel_original'],
+                    'nombre_excel_original': nom['nombre_excel_original'],
+                    'form_type': nom['form_type'],
+                    'doctora_id_para_formulario': nom.get('doctora_id_para_formulario'),
+                    'coord_general_id': nom.get('coord_general_id'),
+                    'coord_escuela_id': nom.get('coord_escuela_id'),
+                    
+                    # --- ARREGLO CLAVE PARA NÓMINAS ANTIGUAS ---
+                    # Si 'nombre_colegio' es NULL, usamos 'nombre_nomina' (o un placeholder)
+                    'nombre_colegio': nom.get('nombre_colegio') or nom['nombre_nomina'] 
+                })
+
         except requests.exceptions.RequestException as e:
-            print(f"ERROR: No se pudo obtener la lista de doctoras: {e}")
-            flash('Error al cargar la lista de doctoras.', 'error')
-            coordinadores_escuela = []
-            coordinadores_general = []
-            doctoras_relleno = []
-            doctoras_formularios = []
-            
-        return render_template('dashboard-23.html', 
-                               usuario=user_role, 
-                               nominas=nominas, 
-                               doctoras=doctoras_relleno,
-                               coordinadores_escuela=coordinadores_escuela,
-                               coordinadores_general=coordinadores_general,
-                               doctoras_formularios=doctoras_formularios,
-                               # Establecimientos ya no se usa
-                               establecimientos=[] 
-                               )
+            print(f"❌ ERROR AL OBTENER NÓMINAS (ADMIN): {e}")
+            flash('Error al cargar nóminas del administrador.', 'error')
+            admin_nominas_cargadas = []
 
-    # Lógica de carga de datos para DOCTORA y COORDINADOR DE ESCUELA
+
     elif user_role == 'doctora':
-        # La Doctora solo ve su lista de nóminas
-        return render_template('dashboard-23.html', 
-                               usuario=user_role, 
-                               nominas=nominas
-                               )
-                               
-    elif user_role == 'coordinador_escuela':
-        # El Coordinador de Escuela ve su lista de colegios y nóminas (ya cargada en la sesión)
-        return render_template('dashboard-23.html', 
-                               usuario=user_role, 
-                               colegios_asignados=session.get('colegios_asignados', [])
-                               )
+        # Doctora ve solo sus nóminas asignadas (filtrando por doctora_id)
+        url_nominas_asignadas = (
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?doctora_id=eq.{user_id}"
+            f"&select=id,nombre_nomina,tipo_nomina,form_type,doctora_id_para_formulario,nombre_colegio"
+            f"&order=nombre_nomina.asc"
+        )
+        
+        try:
+            res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_SERVICE_HEADERS) 
+            res_nominas_asignadas.raise_for_status()
+            nominas_raw = res_nominas_asignadas.json()
+            
+            for nom in nominas_raw:
+                assigned_nominations.append({
+                    'id': nom['id'],
+                    'nombre_establecimiento': nom['nombre_nomina'],
+                    'tipo_nomina_display': nom['tipo_nomina'].replace('_', ' ').title(),
+                    'form_type': nom.get('form_type'),
+                    'doctora_id_para_formulario': nom.get('doctora_id_para_formulario'),
+                    
+                    # --- ARREGLO CLAVE PARA NÓMINAS ANTIGUAS ---
+                    # Si 'nombre_colegio' es NULL, usa 'nombre_nomina'
+                    'nombre_colegio': nom.get('nombre_colegio') or nom['nombre_nomina']
+                })
+        
+        except requests.exceptions.RequestException as e:
+            print(f"❌ ERROR AL OBTENER NÓMINAS ASIGNADAS (DOCTORA): {e}")
+            flash('Error al cargar nóminas asignadas.', 'error')
+            assigned_nominations = []
 
-    # Si llega aquí, el rol no está reconocido
-    return render_template('dashboard-23.html', usuario=user_role, nominas=[])
+    # --- Lógica de carga para Coordinador de Escuela (Usa datos de Session) ---
+    colegios_asignados_escuela = session.get('colegios_asignados', [])
+
+    # ------------------ Renderizado del Dashboard ------------------
+    return render_template(
+        'dashboard-23.html',
+        usuario=user_role,
+        rol=user_role, # Mantener rol para compatibilidad
+        
+        # Datos para ADMIN/COORDINADORA
+        admin_nominas_cargadas=admin_nominas_cargadas,
+        doctoras=doctoras_relleno, # Doctoras para SELECTS
+        coordinadoras_generales=coordinadoras_generales, 
+        coordinadores_escuela=coordinadores_escuela,
+        all_users_for_lookup=all_users_for_lookup, # CRUCIAL: Lista de todos los usuarios
+        
+        # Datos para DOCTORA
+        assigned_nominations=assigned_nominations,
+        
+        # Datos para COORDINADOR DE ESCUELA
+        colegios_asignados=colegios_asignados_escuela,
+        
+        # Relleno de variables vacías (para evitar TemplateErrors)
+        eventos=[], formularios=[], conteo={}, establecimientos=[],
+        doctor_performance_data={}, doctor_performance_data_single_doctor={'completed': 0, 'pending': 0, 'total': 0},
+        nombre_establecimiento_coordinador=None, nominas_completadas_escuela=None
+    )
     
 @app.route('/logout')
 def logout():

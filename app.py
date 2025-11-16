@@ -1575,13 +1575,18 @@ def descargar_pdf_alumno(alumno_id):
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
 
+    # Inicializar objetos fuera del try para que existan en el scope general
+    writer = None 
+    nombre = ""
+    rut = ""
+    nombre_nomina = "Valoracion"
+    
     try:
-        # 1. Obtener datos del estudiante y de la nómina asociada
-        # SELECT MÍNIMO MÁS SEGURO: Solo los campos básicos de identificación y fechas de control.
+        # 1. Obtener datos del estudiante y de la nómina asociada (SELECT MÍNIMO MÁS SEGURO)
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            f"&select=id,nombre,rut,fecha_nacimiento,sexo,nacionalidad,fecha_evaluacion,fecha_reevaluacion,doctora_evaluadora_id,fecha_relleno,nomina_id"
+            f"&select=id,nombre,rut,fecha_nacimiento,sexo,nacionalidad,fecha_evaluacion,fecha_reevaluacion,doctora_evaluadora_id,fecha_relleno,nomina_id,nominas_medicas(form_type,nombre_nomina)"
         )
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
         res_student.raise_for_status() 
@@ -1592,22 +1597,49 @@ def descargar_pdf_alumno(alumno_id):
             return redirect(url_for('dashboard'))
 
         est = student_data[0]
-        nomina_id_fk = est.get('nomina_id') 
+        nomina_info = est.get('nominas_medicas')
         
-        # 2. Consulta de Metadata
-        url_nomina_meta = (
-            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?id=eq.{nomina_id_fk}"
-            f"&select=form_type,nombre_nomina"
-        )
-        res_nomina = requests.get(url_nomina_meta, headers=SUPABASE_SERVICE_HEADERS)
-        res_nomina.raise_for_status()
-        nomina_meta = res_nomina.json()[0] if res_nomina.json() else {}
-
-        # 3. Mapeo de Variables y Lógica de Plantilla
-        form_type = nomina_meta.get('form_type', 'neurologia')
-        nombre_nomina = nomina_meta.get('nombre_nomina', 'Valoracion')
+        # Extracción segura de la metadata
+        if isinstance(nomina_info, list) and nomina_info:
+            nomina_info = nomina_info[0]
+        elif not isinstance(nomina_info, dict):
+             nomina_info = {}
+        
+        form_type = nomina_info.get('form_type', 'neurologia')
+        nombre_nomina = nomina_info.get('nombre_nomina', 'Valoracion')
         doctora_evaluadora_id = est.get('doctora_evaluadora_id')
+        
+        # 2. Lógica de plantilla (sin cambios)
+        pdf_base_path = ''
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        if form_type == 'neurologia':
+            specific_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{doctora_evaluadora_id}.pdf"
+            full_pdf_bases_dir_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR)
+            specific_pdf_path = os.path.join(full_pdf_bases_dir_path, specific_pdf_filename)
+
+            if doctora_evaluadora_id and os.path.exists(specific_pdf_path):
+                pdf_base_path = specific_pdf_path
+            else:
+                pdf_base_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
+                
+        elif form_type == 'medicina_familiar':
+            pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
+        
+        else:
+             raise FileNotFoundError(f"Tipo de formulario no reconocido: {form_type}")
+        
+        if not os.path.exists(pdf_base_path):
+             raise FileNotFoundError(f"Archivo base del formulario no encontrado: {pdf_base_path}")
+
+        # 3. Inicializar PyPDF2 (DENTRO DEL TRY, DEBE EJECUTARSE SI EL RESTO FUNCIONÓ)
+        reader = PdfReader(pdf_base_path)
+        writer = PdfWriter() # <--- DEFINICIÓN CRÍTICA
+        writer.add_page(reader.pages[0])
+
+        # 4. Preparar y Mapear Campos del PDF (usando datos de la DB)
+        nombre = est.get('nombre', '')
+        rut = format_rut_python(est.get('rut', ''))
         
         # --- Cálculo de campos no almacenados ---
         edad = 'N/A'
@@ -1617,59 +1649,24 @@ def descargar_pdf_alumno(alumno_id):
                 edad = calculate_age(birth_date)
             except: pass
         
-        # Formato de fechas
-        fecha_nac_formato = ''
-        if est.get('fecha_nacimiento'):
-            try:
-                fecha_nac_formato = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').strftime('%d/%m/%Y')
-            except ValueError: pass 
+        fecha_nac_formato = est.get('fecha_nacimiento')
+        fecha_evaluacion_formatted = est.get('fecha_evaluacion')
+        fecha_reeval_pdf = est.get('fecha_reevaluacion')
 
-        fecha_evaluacion_formatted = ''
-        if est.get('fecha_evaluacion'):
-            try:
-                fecha_evaluacion_formatted = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
-            except ValueError: pass
-
-        fecha_reeval_pdf = ''
-        if est.get('fecha_reevaluacion'):
-            try:
-                fecha_reeval_pdf = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
-            except ValueError: pass
-
-        # 4. Preparar y Mapear Campos del PDF (usando est.get() para seguridad)
-        nombre = est.get('nombre', '')
-        rut = format_rut_python(est.get('rut', ''))
-        
         campos = {}
         if form_type == 'neurologia':
             campos = {
-                "nombre": nombre,
-                "rut": rut, 
-                "fecha_nacimiento": fecha_nac_formato, 
-                "nacionalidad": est.get('nacionalidad', ''),
-                "edad": edad, 
-                "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
-                "diagnostico_2": est.get('diagnostico_2', ''), 
-                "estado_general": est.get('estado_general', ''),
-                "fecha_evaluacion": fecha_evaluacion_formatted, 
-                "fecha_reevaluacion": fecha_reeval_pdf,
-                "derivaciones": est.get('derivaciones', ''),
-                "sexo_f": "X" if est.get('sexo') == "F" else "",
-                "sexo_m": "X" if est.get('sexo') == "M" else "",
+                "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato, "nacionalidad": est.get('nacionalidad', ''),
+                "edad": edad, "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
+                "diagnostico_2": est.get('diagnostico_2', ''), "estado_general": est.get('estado_general', ''),
+                "fecha_evaluacion": fecha_evaluacion_formatted, "fecha_reevaluacion": fecha_reeval_pdf,
+                "derivaciones": est.get('derivaciones', ''), "sexo_f": "X" if est.get('sexo') == "F" else "", "sexo_m": "X" if est.get('sexo') == "M" else "",
             }
         elif form_type == 'medicina_familiar':
              campos = {
-                 "nombre": nombre,
-                 "rut": rut,
-                 "fecha_nacimiento": fecha_nac_formato,
-                 "edad": edad, 
-                 "nacionalidad": est.get('nacionalidad', ''),
-                 "sexo_f": "X" if est.get('sexo') == "F" else "",
-                 "sexo_m": "X" if est.get('sexo') == "M" else "",
-                 "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
-                 "derivaciones": est.get('derivaciones', ''),
-                 "fecha_evaluacion": fecha_evaluacion_formatted,
-                 "fecha_reevaluacion": fecha_reeval_pdf,
+                 "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato, "nacionalidad": est.get('nacionalidad', ''),
+                 "edad": edad, "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
+                 "derivaciones": est.get('derivaciones', ''), "fecha_evaluacion": fecha_evaluacion_formatted, "fecha_reevaluacion": fecha_reeval_pdf,
              }
 
 
@@ -1691,17 +1688,18 @@ def descargar_pdf_alumno(alumno_id):
         nombre_archivo_descarga = f"Valoracion_{nombre.replace(' ', '_')}_{rut}_{nombre_nomina.replace(' ', '_')}.pdf"
         
         # Usamos send_file con as_attachment=True para forzar la descarga
-        return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf') # <-- ¡CORRECCIÓN DEL SYNTAXERROR!
+        return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
 
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener datos de Supabase para PDF: {e}")
-        flash(f"❌ Error crítico: Fallo de conexión/consulta. Detalles: {e}. Revise el log para las columnas.", 'error')
-        return redirect(url_for('dashboard')) # <-- Redirección con Flash Message
+        flash(f"❌ Error al generar PDF: Fallo de conexión/consulta. Detalles: {e}. Revise el log para las columnas.", 'error')
+        return redirect(url_for('dashboard'))
     except FileNotFoundError as e:
         print(f"❌ Error File Not Found: {e}")
         flash(f"❌ Error al generar el PDF: Archivo base no encontrado.", 'error')
         return redirect(url_for('dashboard'))
     except Exception as e:
+        # Si ocurre un error aquí, es porque la lógica de PDF falló DESPUÉS del mapeo de datos.
         print(f"❌ Error inesperado al generar PDF de alumno: {e}")
         flash(f"❌ Error inesperado al generar el PDF. Detalle: {e}", 'error')
         return redirect(url_for('dashboard'))

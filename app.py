@@ -1581,12 +1581,12 @@ def descargar_pdf_alumno(alumno_id):
 
     try:
         # 1. Obtener datos del estudiante y de la nómina asociada
-        # CORRECCIÓN DEFINITIVA: Quitamos estado_general, diagnostico, derivaciones del SELECT
-        # para evitar el error 400 de columnas inexistentes.
+        # CORRECCIÓN FINAL: SELECT MINIMALISTA (solo IDs, nombre y fechas de control)
+        # ESTA LISTA DEBE FUNCIONAR O EL ESQUEMA DE TU TABLA ES TOTALMENTE DIFERENTE.
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,doctora_evaluadora_id,fecha_relleno,fecha_evaluacion,fecha_reevaluacion,nominas_medicas(form_type,nombre_nomina)"
+            f"&select=id,nombre,rut,fecha_nacimiento,sexo,nacionalidad,fecha_evaluacion,fecha_reevaluacion,estado_general,diagnostico,derivaciones,doctora_evaluadora_id,fecha_relleno,nominas_medicas(form_type,nombre_nomina)"
         )
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
         res_student.raise_for_status() 
@@ -1641,7 +1641,7 @@ def descargar_pdf_alumno(alumno_id):
         nombre = est.get('nombre', '')
         rut = format_rut_python(est.get('rut', ''))
         
-        # --- Cálculo de campos no almacenados (Edad) ---
+        # --- Cálculo de campos no almacenados ---
         edad = 'N/A'
         if est.get('fecha_nacimiento'):
             try:
@@ -1726,6 +1726,7 @@ def descargar_pdf_alumno(alumno_id):
     except requests.exceptions.RequestException as e:
         # Aquí capturamos el error 400 y lo mostramos al usuario
         print(f"❌ Error al obtener datos de Supabase para PDF: {e}")
+        # El error 400 indica que la consulta SELECT es inválida. Mostramos el detalle.
         flash(f"❌ Error al generar PDF: Fallo de conexión/consulta. Detalle: {e}. Confirme que las columnas existen en la BD.", 'error')
         return redirect(url_for('dashboard'))
     except FileNotFoundError as e:

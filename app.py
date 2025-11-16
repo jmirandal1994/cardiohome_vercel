@@ -1575,18 +1575,13 @@ def descargar_pdf_alumno(alumno_id):
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
 
-    # --- CORRECCIÓN CLAVE: Inicializar variables al inicio del scope ---
-    nombre = ""
-    rut = ""
-    nombre_nomina = "N_A" 
-    # -------------------------------------------------------------------
-    
     try:
-        # 1. Obtener datos del estudiante y de la nómina asociada (SELECT MÍNIMO MÁS SEGURO)
+        # 1. Obtener datos del estudiante y de la nómina asociada
+        # SELECT FINAL: Solo los campos vitales, eliminando sexo, nacionalidad y fecha_reevaluacion.
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            f"&select=id,nombre,rut,fecha_nacimiento,sexo,nacionalidad,fecha_evaluacion,fecha_reevaluacion,doctora_evaluadora_id,fecha_relleno,nominas_medicas(form_type,nombre_nomina)"
+            f"&select=id,nombre,rut,fecha_nacimiento,fecha_evaluacion,doctora_evaluadora_id,fecha_relleno,nomina_id,nominas_medicas(form_type,nombre_nomina)"
         )
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
         res_student.raise_for_status() 
@@ -1606,13 +1601,42 @@ def descargar_pdf_alumno(alumno_id):
              nomina_info = {}
         
         form_type = nomina_info.get('form_type', 'neurologia')
-        nombre_nomina = nomina_info.get('nombre_nomina', 'Valoracion') # <--- DEFINICIÓN DE NOMBRE_NOMINA
-
-        # 4. Preparar y Mapear Campos del PDF (usando datos de la DB)
-        nombre = est.get('nombre', '') # <--- RE-DEFINICIÓN DE NOMBRE
-        rut = format_rut_python(est.get('rut', '')) # <--- RE-DEFINICIÓN DE RUT
+        nombre_nomina = nomina_info.get('nombre_nomina', 'Valoracion')
+        doctora_evaluadora_id = est.get('doctora_evaluadora_id')
         
-        # --- Cálculo de campos no almacenados (omisiones por brevedad) ---
+        # 2. Lógica de plantilla (sin cambios)
+        pdf_base_path = ''
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        if form_type == 'neurologia':
+            specific_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{doctora_evaluadora_id}.pdf"
+            full_pdf_bases_dir_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR)
+            specific_pdf_path = os.path.join(full_pdf_bases_dir_path, specific_pdf_filename)
+
+            if doctora_evaluadora_id and os.path.exists(specific_pdf_path):
+                pdf_base_path = specific_pdf_path
+            else:
+                pdf_base_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
+                
+        elif form_type == 'medicina_familiar':
+            pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
+        
+        else:
+             raise FileNotFoundError(f"Tipo de formulario no reconocido: {form_type}")
+        
+        if not os.path.exists(pdf_base_path):
+             raise FileNotFoundError(f"Archivo base del formulario no encontrado: {pdf_base_path}")
+
+        # 3. Inicializar el rellenador de PDF
+        reader = PdfReader(pdf_base_path)
+        writer = PdfWriter()
+        writer.add_page(reader.pages[0])
+
+        # 4. Preparar y Mapear Campos del PDF (usando est.get() para los campos omitidos)
+        nombre = est.get('nombre', '')
+        rut = format_rut_python(est.get('rut', ''))
+        
+        # --- Cálculo de campos no almacenados ---
         edad = 'N/A'
         if est.get('fecha_nacimiento'):
             try:
@@ -1634,25 +1658,21 @@ def descargar_pdf_alumno(alumno_id):
                 fecha_evaluacion_formatted = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
             except ValueError: pass
 
-        fecha_reeval_pdf = ''
-        if est.get('fecha_reevaluacion'):
-            try:
-                fecha_reeval_pdf = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
-            except ValueError: pass
-
+        # Nota: Usamos est.get('campo_antiguo', '') para llenar campos de evaluación que ya no están en el SELECT.
+        
         campos = {}
         if form_type == 'neurologia':
             campos = {
                 "nombre": nombre,
                 "rut": rut, 
                 "fecha_nacimiento": fecha_nac_formato, 
-                "nacionalidad": est.get('nacionalidad', ''),
+                "nacionalidad": est.get('nacionalidad', ''), # Devolverá ''
                 "edad": edad, 
                 "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
                 "diagnostico_2": est.get('diagnostico_2', ''), 
-                "estado_general": est.get('estado_general', ''),
+                "estado_general": est.get('estado_general', ''), 
                 "fecha_evaluacion": fecha_evaluacion_formatted, 
-                "fecha_reevaluacion": fecha_reeval_pdf,
+                "fecha_reevaluacion": est.get('fecha_reevaluacion', ''),
                 "derivaciones": est.get('derivaciones', ''),
                 "sexo_f": "X" if est.get('sexo') == "F" else "",
                 "sexo_m": "X" if est.get('sexo') == "M" else "",
@@ -1669,7 +1689,7 @@ def descargar_pdf_alumno(alumno_id):
                  "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
                  "derivaciones": est.get('derivaciones', ''),
                  "fecha_evaluacion": fecha_evaluacion_formatted,
-                 "fecha_reevaluacion": fecha_reeval_pdf,
+                 "fecha_reevaluacion": est.get('fecha_reevaluacion', ''),
              }
 
 
@@ -1687,7 +1707,7 @@ def descargar_pdf_alumno(alumno_id):
         writer.write(output)
         output.seek(0)
 
-        # Nombre del archivo para la descarga (Ahora 'rut', 'nombre', y 'nombre_nomina' están definidos)
+        # Nombre del archivo para la descarga
         nombre_archivo_descarga = f"Valoracion_{nombre.replace(' ', '_')}_{rut}_{nombre_nomina.replace(' ', '_')}.pdf"
         
         # Usamos send_file con as_attachment=True para forzar la descarga

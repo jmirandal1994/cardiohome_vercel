@@ -1569,6 +1569,7 @@ def desbloquear_nomina():
         return jsonify({"success": False, "message": f"Error inesperado del servidor: {str(e)}"}), 500
         
 # --- NUEVA RUTA: DESCARGA DE PDF POR ALUMNO ID ---@app.route('/descargar_pdf_alumno/<alumno_id>', methods=['GET'])
+@app.route('/descargar_pdf_alumno/<alumno_id>', methods=['GET'])
 def descargar_pdf_alumno(alumno_id):
     """
     Genera y descarga el PDF de evaluación para un alumno específico
@@ -1580,11 +1581,12 @@ def descargar_pdf_alumno(alumno_id):
 
     try:
         # 1. Obtener datos del estudiante y de la nómina asociada
-        # SELECT FINAL Y ABSOLUTAMENTE MÍNIMO (IDs y nombres)
+        # SELECT FINAL Y MÁS SEGURO: Solo los campos básicos de identificación y fechas de control.
+        # Esto elimina los campos que causaban el error 400.
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            f"&select=id,nombre,rut,fecha_nacimiento,doctora_evaluadora_id,fecha_relleno,nominas_medicas(form_type,nombre_nomina)"
+            f"&select=id,nombre,rut,fecha_nacimiento,sexo,nacionalidad,fecha_evaluacion,fecha_reevaluacion,doctora_evaluadora_id,fecha_relleno,nominas_medicas(form_type,nombre_nomina)"
         )
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
         res_student.raise_for_status() 
@@ -1596,26 +1598,8 @@ def descargar_pdf_alumno(alumno_id):
 
         est = student_data[0]
         
-        # 2. SEGUNDA CONSULTA COMPLETA (Recuperar el resto de los campos de evaluación)
-        # Hacemos una segunda consulta para obtener TODAS las columnas sin causar conflicto
-        # en la consulta principal, ya que el * en una consulta simple puede funcionar.
-        url_full_data = (
-            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-            f"?id=eq.{alumno_id}"
-            f"&select=*,nominas_medicas(form_type,nombre_nomina)" # Intentamos el SELECT * para el cuerpo
-        )
-        res_full_data = requests.get(url_full_data, headers=SUPABASE_SERVICE_HEADERS)
-        
-        # Usamos los datos completos si el SELECT * pasa. Si no, usamos solo los datos iniciales.
-        if res_full_data.ok and res_full_data.json():
-            est_full = res_full_data.json()[0]
-        else:
-            # Fallback a los datos mínimos de la primera consulta.
-            est_full = est 
-            print("ADVERTENCIA: Falló el SELECT * para datos completos. Usando datos mínimos.")
-
-        # 3. Lógica de Mapeo y Preparación
-        nomina_info = est_full.get('nominas_medicas')
+        # Extracción segura de la metadata
+        nomina_info = est.get('nominas_medicas')
         if isinstance(nomina_info, list) and nomina_info:
             nomina_info = nomina_info[0]
         elif not isinstance(nomina_info, dict):
@@ -1623,39 +1607,120 @@ def descargar_pdf_alumno(alumno_id):
         
         form_type = nomina_info.get('form_type', 'neurologia')
         nombre_nomina = nomina_info.get('nombre_nomina', 'Valoracion')
-        doctora_evaluadora_id = est_full.get('doctora_evaluadora_id')
+        doctora_evaluadora_id = est.get('doctora_evaluadora_id')
+        
+        # 2. Lógica de plantilla (sin cambios)
+        pdf_base_path = ''
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        if form_type == 'neurologia':
+            specific_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{doctora_evaluadora_id}.pdf"
+            full_pdf_bases_dir_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR)
+            specific_pdf_path = os.path.join(full_pdf_bases_dir_path, specific_pdf_filename)
+
+            if doctora_evaluadora_id and os.path.exists(specific_pdf_path):
+                pdf_base_path = specific_pdf_path
+            else:
+                pdf_base_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
+                
+        elif form_type == 'medicina_familiar':
+            pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
+        
+        else:
+             raise FileNotFoundError(f"Tipo de formulario no reconocido: {form_type}")
+        
+        if not os.path.exists(pdf_base_path):
+             raise FileNotFoundError(f"Archivo base del formulario no encontrado: {pdf_base_path}")
+
+        # 3. Inicializar el rellenador de PDF
+        reader = PdfReader(pdf_base_path)
+        writer = PdfWriter()
+        writer.add_page(reader.pages[0])
+
+        # 4. Preparar y Mapear Campos del PDF (usando datos de la DB)
+        nombre = est.get('nombre', '')
+        rut = format_rut_python(est.get('rut', ''))
         
         # --- Cálculo de campos no almacenados ---
         edad = 'N/A'
-        if est_full.get('fecha_nacimiento'):
+        if est.get('fecha_nacimiento'):
             try:
-                birth_date = datetime.strptime(est_full['fecha_nacimiento'], '%Y-%m-%d').date()
+                birth_date = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
                 edad = calculate_age(birth_date)
             except: pass
+        # ----------------------------------------
         
-        fecha_nac_formato = est_full.get('fecha_nacimiento')
-        fecha_evaluacion_formatted = est_full.get('fecha_evaluacion')
-        fecha_reeval_pdf = est_full.get('fecha_reevaluacion')
+        # Formato de fechas
+        fecha_nac_formato = ''
+        if est.get('fecha_nacimiento'):
+            try:
+                fecha_nac_formato = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').strftime('%d/%m/%Y')
+            except ValueError: pass 
 
-        # 4. Generación del PDF (el código de relleno debe ser seguro y usar .get())
-        pdf_base_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), PDF_BASE_NEUROLOGIA) # Fallback simple
+        fecha_evaluacion_formatted = ''
+        if est.get('fecha_evaluacion'):
+            try:
+                fecha_evaluacion_formatted = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
+            except ValueError: pass
 
-        # 5. Llenado y Descarga (simplificado)
-        # ... (código de PyPDF2) ...
+        fecha_reeval_pdf = ''
+        if est.get('fecha_reevaluacion'):
+            try:
+                fecha_reeval_pdf = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
+            except ValueError: pass
+
+        campos = {}
+        if form_type == 'neurologia':
+            campos = {
+                "nombre": nombre,
+                "rut": rut, 
+                "fecha_nacimiento": fecha_nac_formato, 
+                "nacionalidad": est.get('nacionalidad', ''),
+                "edad": edad, 
+                "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')), # Intentamos obtener el mejor diagnostico
+                "diagnostico_2": est.get('diagnostico_2', ''), 
+                "estado_general": est.get('estado_general', ''),
+                "fecha_evaluacion": fecha_evaluacion_formatted, 
+                "fecha_reevaluacion": fecha_reeval_pdf,
+                "derivaciones": est.get('derivaciones', ''),
+                "sexo_f": "X" if est.get('sexo') == "F" else "",
+                "sexo_m": "X" if est.get('sexo') == "M" else "",
+            }
+        elif form_type == 'medicina_familiar':
+             campos = {
+                 "nombre": nombre,
+                 "rut": rut,
+                 "fecha_nacimiento": fecha_nac_formato,
+                 "edad": edad, 
+                 "nacionalidad": est.get('nacionalidad', ''),
+                 "sexo_f": "X" if est.get('sexo') == "F" else "",
+                 "sexo_m": "X" if est.get('sexo') == "M" else "",
+                 "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
+                 "derivaciones": est.get('derivaciones', ''),
+                 "fecha_evaluacion": fecha_evaluacion_formatted,
+                 "fecha_reevaluacion": fecha_reeval_pdf,
+                 # ... (Otros campos de Medicina Familiar que persistan en la DB) ...
+             }
+
+
+        # 5. Llenado y Descarga
+        if "/AcroForm" not in writer._root_object:
+            writer._root_object.update({
+                NameObject("/AcroForm"): DictionaryObject()
+            })
+        writer.update_page_form_field_values(writer.pages[0], campos)
+        writer._root_object["/AcroForm"].update({
+            NameObject("/NeedAppearances"): BooleanObject(True)
+        })
         
-        # Usamos los datos de est_full para llenar los campos de PDF
-        campos = {
-            "nombre": est_full.get('nombre', ''),
-            "rut": format_rut_python(est_full.get('rut', '')),
-            "edad": edad,
-            "estado_general": est_full.get('estado_general', ''), # Ahora se obtiene del select *
-            "diagnostico_1": est_full.get('diagnostico_1', est_full.get('diagnostico', '')),
-            "fecha_evaluacion": fecha_evaluacion_formatted,
-            # ... (Llenado del resto de campos de evaluación) ...
-        }
+        output = io.BytesIO()
+        writer.write(output)
+        output.seek(0)
 
-        # ... (Resto del código de llenado PyPDF2 y send_file) ...
-
+        # Nombre del archivo para la descarga
+        nombre_archivo_descarga = f"Valoracion_{nombre.replace(' ', '_')}_{rut}_{nombre_nomina.replace(' ', '_')}.pdf"
+        
+        # Usamos send_file con as_attachment=True para forzar la descarga
         return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
 
     except requests.exceptions.RequestException as e:
@@ -1669,9 +1734,8 @@ def descargar_pdf_alumno(alumno_id):
         return redirect(url_for('dashboard'))
     except Exception as e:
         print(f"❌ Error inesperado al generar PDF de alumno: {e}")
-        flash(f"❌ Error inesperado al generar el PDF. Detalle: {e}", 'error')
-        return redirect(url_for('dashboard'))
-        
+        flash(f"❌ Error inesperado al generar PDF. Detalle: {e}", 'error')
+        return redirect(url_for('dashboard'))        
         
 # - Añadir en la sección de rutas
 def get_supabase_count(filter_params=""):

@@ -1577,12 +1577,12 @@ def descargar_pdf_alumno(alumno_id):
 
     try:
         # 1. Obtener datos del estudiante y de la nómina asociada
-        # SELECT AHORA INCLUYE TODOS LOS CAMPOS DE EVALUACIÓN (diagnostico_1, diagnostico_2, estado_general, derivaciones)
-        # Y LOS CAMPOS DE METADATOS (sexo, nacionalidad, fecha_reevaluacion)
+        # SELECT FINAL Y CORREGIDO: Usamos 'nomina_id' como nombre de la relación (join) para evitar el error 400.
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            f"&select=id,nombre,rut,fecha_nacimiento,sexo,nacionalidad,fecha_evaluacion,fecha_reevaluacion,doctora_evaluadora_id,fecha_relleno,nomina_id,nominas_medicas(form_type,nombre_nomina),diagnostico_1,diagnostico_2,estado_general,derivaciones"
+            # NOTA: Se cambió nominas_medicas(...) por nomina_id(...)
+            f"&select=id,nombre,rut,fecha_nacimiento,sexo,nacionalidad,fecha_evaluacion,fecha_reevaluacion,doctora_evaluadora_id,fecha_relleno,nomina_id(form_type,nombre_nomina),diagnostico_1,diagnostico_2,estado_general,derivaciones"
         )
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
         res_student.raise_for_status() 
@@ -1594,8 +1594,10 @@ def descargar_pdf_alumno(alumno_id):
 
         est = student_data[0]
         
-        # Extracción segura de la metadata
-        nomina_info = est.get('nominas_medicas')
+        # 2. Extracción segura de la metadata (AJUSTE NECESARIO por el cambio en el SELECT)
+        # Ahora el objeto de la nómina viene anidado bajo la clave 'nomina_id' (el nombre de la FK).
+        nomina_info = est.get('nomina_id') 
+        
         if isinstance(nomina_info, list) and nomina_info:
             nomina_info = nomina_info[0]
         elif not isinstance(nomina_info, dict):
@@ -1605,7 +1607,7 @@ def descargar_pdf_alumno(alumno_id):
         nombre_nomina = nomina_info.get('nombre_nomina', 'Valoracion')
         doctora_evaluadora_id = est.get('doctora_evaluadora_id')
         
-        # 2. Lógica de plantilla (sin cambios)
+        # 3. Lógica de plantilla (sin cambios)
         pdf_base_path = ''
         base_dir = os.path.dirname(os.path.abspath(__file__))
         
@@ -1628,12 +1630,12 @@ def descargar_pdf_alumno(alumno_id):
         if not os.path.exists(pdf_base_path):
              raise FileNotFoundError(f"Archivo base del formulario no encontrado: {pdf_base_path}")
 
-        # 3. Inicializar el rellenador de PDF
+        # 4. Inicializar el rellenador de PDF
         reader = PdfReader(pdf_base_path)
         writer = PdfWriter()
         writer.add_page(reader.pages[0])
 
-        # 4. Preparar y Mapear Campos del PDF (usando datos de la DB)
+        # 5. Preparar y Mapear Campos del PDF (usando datos de la DB)
         nombre = est.get('nombre', '')
         rut = format_rut_python(est.get('rut', ''))
         
@@ -1662,7 +1664,6 @@ def descargar_pdf_alumno(alumno_id):
         fecha_reeval_pdf = ''
         if est.get('fecha_reevaluacion'):
             try:
-                # Aquí se utiliza la fecha_reevaluacion obtenida de la DB
                 fecha_reeval_pdf = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
             except ValueError: pass
 
@@ -1674,7 +1675,7 @@ def descargar_pdf_alumno(alumno_id):
                 "fecha_nacimiento": fecha_nac_formato, 
                 "nacionalidad": est.get('nacionalidad', ''),
                 "edad": edad, 
-                # ESTOS CAMPOS AHORA TIENEN DATA DE LA CONSULTA
+                # CAMPOS DE EVALUACIÓN OBTENIDOS DEL SELECT CORREGIDO
                 "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
                 "diagnostico_2": est.get('diagnostico_2', ''), 
                 "estado_general": est.get('estado_general', ''),
@@ -1700,7 +1701,7 @@ def descargar_pdf_alumno(alumno_id):
              }
 
 
-        # 5. Llenado y Descarga
+        # 6. Llenado y Descarga (sin cambios)
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({
                 NameObject("/AcroForm"): DictionaryObject()
@@ -1722,8 +1723,7 @@ def descargar_pdf_alumno(alumno_id):
 
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener datos de Supabase para PDF: {e}")
-        # Mensaje claro si vuelve el 400
-        flash(f"❌ Error crítico: Fallo de conexión/consulta. Detalles: {e}. Si es error 400, revise la ortografía de las columnas de diagnóstico añadidas (`diagnostico_1`, `estado_general`, etc.).", 'error')
+        flash(f"❌ Error crítico: Fallo de conexión/consulta. Detalles: {e}. Si es error 400, revise la ortografía de las columnas del SELECT.", 'error')
         return redirect(url_for('dashboard'))
     except FileNotFoundError as e:
         print(f"❌ Error File Not Found: {e}")

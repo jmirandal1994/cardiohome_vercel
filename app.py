@@ -1485,7 +1485,7 @@ def desbloquear_nomina():
     password_ingresada = data.get('password')
     school_name = data.get('school_id') 
     
-    # 2. Verificación de Asignación (omitiendo por brevedad, asumiendo que ya funciona)
+    # 2. Verificación de Asignación (asumiendo que funciona)
     colegios_permitidos = session.get('colegios_asignados_ids', [])
     if school_name not in colegios_permitidos:
         return jsonify({"success": False, "message": "No tiene permiso asignado para este establecimiento."}), 403
@@ -1508,52 +1508,68 @@ def desbloquear_nomina():
             nomina_ids = [nom.get('id') for nom in nominas_con_token if nom.get('id')]
             nomina_ids_str = ",".join(nomina_ids)
 
-            # Usamos la lista de IDs para obtener a los estudiantes
             if not nomina_ids:
                 return jsonify({"success": True, "nominas": []}) 
                 
-            # 5. CONSULTA CORREGIDA: ELIMINANDO EL FILTRO DE ESTADO
+            # 5. CONSULTA CORREGIDA
             url_students = (
                 f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
                 f"?nomina_id=in.({nomina_ids_str})"
-                f"&select=id,nombre,rut,fecha_evaluacion,fecha_relleno,nominas_medicas(nombre_nomina)" # Agregamos fecha_relleno al select
+                f"&select=id,nombre,rut,fecha_evaluacion,fecha_relleno,nominas_medicas(nombre_nomina)" 
                 f"&order=nombre.asc"
             )
 
             nominas_raw = requests.get(url_students, headers=SUPABASE_SERVICE_HEADERS).json()
             
-            # 6. Procesamiento de datos (Adaptamos la presentación para mostrar el estado)
+            # 6. Procesamiento de datos (RESISTENCIA MÁXIMA A ERRORES DE FORMATO)
             nominas_procesadas = []
             for alumno in nominas_raw:
-                # [Verificación de tipo omitida por brevedad, asumiendo que el fix anterior funciona]
+                
+                # CRÍTICO 1: Si el elemento NO es un diccionario, lo saltamos y registramos.
+                if not isinstance(alumno, dict):
+                    print(f"ADVERTENCIA CRÍTICA: Elemento inesperado saltado: {alumno}")
+                    continue 
                 
                 nombre_nomina_raw = alumno.get('nominas_medicas')
                 nombre_nomina = 'N/A'
                 
-                if isinstance(nombre_nomina_raw, list) and nombre_nomina_raw:
-                    first_element = nombre_nomina_raw[0]
-                    if isinstance(first_element, dict):
-                        nombre_nomina = first_element.get('nombre_nomina', 'N/A')
-                    else:
-                        nombre_nomina = str(first_element) if first_element is not None else 'N/A'
-                elif isinstance(nombre_nomina_raw, dict):
-                    nombre_nomina = nombre_nomina_raw.get('nombre_nomina', 'N/A')
+                # CRÍTICO 2: Lógica de extracción más segura
+                try:
+                    if isinstance(nombre_nomina_raw, list) and len(nombre_nomina_raw) > 0:
+                        first_element = nombre_nomina_raw[0]
+                        if isinstance(first_element, dict):
+                            # CASO A: Lista de diccionarios (el esperado)
+                            nombre_nomina = first_element.get('nombre_nomina', 'N/A')
+                        else:
+                            # CASO B: Lista de strings u otros
+                            nombre_nomina = str(first_element)
+                    elif isinstance(nombre_nomina_raw, dict):
+                        # CASO C: Diccionario simple
+                        nombre_nomina = nombre_nomina_raw.get('nombre_nomina', 'N/A')
+                    elif nombre_nomina_raw is not None:
+                        # CASO D: Si es cualquier otra cosa (string crudo), lo convertimos.
+                        nombre_nomina = str(nombre_nomina_raw)
                 
-                
-                # Determinamos el estado para mostrarlo
-                estado_evaluacion = "Evaluado" if alumno.get('fecha_relleno') else "PENDIENTE"
-                
-                # La acción de descarga SOLO debe estar disponible si el estado es 'Evaluado'
+                except Exception as e:
+                    # En caso de cualquier error de formato en la extracción, loguear y seguir
+                    print(f"ERROR DE EXTRACCIÓN de nombre_nomina: {e} en alumno ID: {alumno.get('id', 'N/A')}")
+                    nombre_nomina = 'Error de Formato'
+
+
+                # Extracción de campos del alumno (seguro porque ya verificamos que alumno es un dict)
+                fecha_relleno = alumno.get('fecha_relleno')
+                estado_evaluacion = "Evaluado" if fecha_relleno else "PENDIENTE"
                 puede_descargar = estado_evaluacion == "Evaluado"
                 
                 nominas_procesadas.append({
-                    'id': alumno['id'],
+                    'id': alumno.get('id'),
                     'nombre_alumno': alumno.get('nombre'), 
+                    # Asegúrate que format_rut_python no sea la causa del error.
                     'rut_alumno': format_rut_python(alumno.get('rut')), 
                     'fecha_evaluacion': alumno.get('fecha_evaluacion') or 'N/A',
                     'nombre_nomina': nombre_nomina,
-                    'estado': estado_evaluacion, # Nuevo campo de estado
-                    'descarga_habilitada': puede_descargar # Nuevo flag para el frontend
+                    'estado': estado_evaluacion, 
+                    'descarga_habilitada': puede_descargar 
                 })
             
             return jsonify({"success": True, "nominas": nominas_procesadas})
@@ -1562,7 +1578,8 @@ def desbloquear_nomina():
             
     except Exception as e:
         print(f"❌ ERROR INESPERADO AL DESBLOQUEAR NÓMINA: {e}")
-        return jsonify({"success": False, "message": f"Error inesperado: {str(e)}"}), 500
+        # Retornar 500 para el cliente
+        return jsonify({"success": False, "message": f"Error inesperado del servidor: {str(e)}"}), 500
         
 # --- NUEVA RUTA: DESCARGA DE PDF POR ALUMNO ID ---
 @app.route('/descargar_pdf_alumno/<alumno_id>', methods=['GET'])

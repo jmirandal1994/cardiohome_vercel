@@ -1571,22 +1571,16 @@ def desbloquear_nomina():
 # --- NUEVA RUTA: DESCARGA DE PDF POR ALUMNO ID ---@app.route('/descargar_pdf_alumno/<alumno_id>', methods=['GET'])
 @app.route('/descargar_pdf_alumno/<alumno_id>', methods=['GET'])
 def descargar_pdf_alumno(alumno_id):
-    """
-    Genera y descarga el PDF de evaluación para un alumno específico
-    usando los datos guardados en la base de datos (para Coordinador de Escuela).
-    """
     if session.get('usuario') != 'coordinador_escuela':
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
 
     try:
-        # 1. Obtener datos del estudiante y de la nómina asociada
-        # SELECT MÍNIMO MÁS SEGURO: Sólo IDs, nombre, RUT, fecha de nacimiento, fecha de control, y el Join.
-        # Eliminamos: sexo, nacionalidad, fecha_reevaluacion, estado_general, diagnostico, derivaciones
+        # 1. CONSULTA MÍNIMA: Obtenemos solo los datos crudos del estudiante y el nomina_id.
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            f"&select=id,nombre,rut,fecha_nacimiento,fecha_evaluacion,doctora_evaluadora_id,fecha_relleno,nominas_medicas(form_type,nombre_nomina)"
+            f"&select=id,nombre,rut,fecha_nacimiento,sexo,nacionalidad,fecha_evaluacion,fecha_reevaluacion,doctora_evaluadora_id,fecha_relleno,nomina_id"
         )
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
         res_student.raise_for_status() 
@@ -1597,49 +1591,22 @@ def descargar_pdf_alumno(alumno_id):
             return redirect(url_for('dashboard'))
 
         est = student_data[0]
+        nomina_id_fk = est.get('nomina_id') # Obtenemos el ID de la FK
         
-        # Extracción segura de la metadata
-        nomina_info = est.get('nominas_medicas')
-        if isinstance(nomina_info, list) and nomina_info:
-            nomina_info = nomina_info[0]
-        elif not isinstance(nomina_info, dict):
-             nomina_info = {}
-        
-        form_type = nomina_info.get('form_type', 'neurologia')
-        nombre_nomina = nomina_info.get('nombre_nomina', 'Valoracion')
+        # 2. CONSULTA INDEPENDIENTE: Obtenemos la metadata de la nómina (sin JOIN)
+        url_nomina_meta = (
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?id=eq.{nomina_id_fk}"
+            f"&select=form_type,nombre_nomina"
+        )
+        res_nomina = requests.get(url_nomina_meta, headers=SUPABASE_SERVICE_HEADERS)
+        res_nomina.raise_for_status()
+        nomina_meta = res_nomina.json()[0] if res_nomina.json() else {}
+
+        # 3. Mapeo de Variables y Lógica de Plantilla
+        form_type = nomina_meta.get('form_type', 'neurologia')
+        nombre_nomina = nomina_meta.get('nombre_nomina', 'Valoracion')
         doctora_evaluadora_id = est.get('doctora_evaluadora_id')
-        
-        # 2. Lógica de plantilla (sin cambios)
-        pdf_base_path = ''
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        
-        if form_type == 'neurologia':
-            specific_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{doctora_evaluadora_id}.pdf"
-            full_pdf_bases_dir_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR)
-            specific_pdf_path = os.path.join(full_pdf_bases_dir_path, specific_pdf_filename)
-
-            if doctora_evaluadora_id and os.path.exists(specific_pdf_path):
-                pdf_base_path = specific_pdf_path
-            else:
-                pdf_base_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
-                
-        elif form_type == 'medicina_familiar':
-            pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
-        
-        else:
-             raise FileNotFoundError(f"Tipo de formulario no reconocido: {form_type}")
-        
-        if not os.path.exists(pdf_base_path):
-             raise FileNotFoundError(f"Archivo base del formulario no encontrado: {pdf_base_path}")
-
-        # 3. Inicializar el rellenador de PDF
-        reader = PdfReader(pdf_base_path)
-        writer = PdfWriter()
-        writer.add_page(reader.pages[0])
-
-        # 4. Preparar y Mapear Campos del PDF (usando datos de la DB)
-        nombre = est.get('nombre', '')
-        rut = format_rut_python(est.get('rut', ''))
         
         # --- Cálculo de campos no almacenados ---
         edad = 'N/A'
@@ -1663,30 +1630,62 @@ def descargar_pdf_alumno(alumno_id):
                 fecha_evaluacion_formatted = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
             except ValueError: pass
 
-        # Nota: Los campos de evaluación problemáticos (estado_general, diagnostico, fecha_reevaluacion)
-        # ahora usarán est.get('campo', '') para que se llenen como cadenas vacías en el PDF si no se devolvieron en el SELECT.
+        fecha_reeval_pdf = ''
+        if est.get('fecha_reevaluacion'):
+            try:
+                fecha_reeval_pdf = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
+            except ValueError: pass
 
+        # 4. Lógica de selección de PDF base (sin cambios)
+        pdf_base_path = ''
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        if form_type == 'neurologia':
+            specific_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{doctora_evaluadora_id}.pdf"
+            full_pdf_bases_dir_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR)
+            specific_pdf_path = os.path.join(full_pdf_bases_dir_path, specific_pdf_filename)
+
+            if doctora_evaluadora_id and os.path.exists(specific_pdf_path):
+                pdf_base_path = specific_pdf_path
+            else:
+                pdf_base_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
+                
+        elif form_type == 'medicina_familiar':
+            pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
+        
+        else:
+             raise FileNotFoundError(f"Tipo de formulario no reconocido: {form_type}")
+        
+        if not os.path.exists(pdf_base_path):
+             raise FileNotFoundError(f"Archivo base del formulario no encontrado: {pdf_base_path}")
+
+        # 5. Inicializar el rellenador de PDF
+        reader = PdfReader(pdf_base_path)
+        writer = PdfWriter()
+        writer.add_page(reader.pages[0])
+
+        # 6. Mapeo de Campos (Usando est.get() para seguridad, los campos de evaluación serán '' si no fueron consultados)
         campos = {}
         if form_type == 'neurologia':
             campos = {
-                "nombre": nombre,
-                "rut": rut, 
+                "nombre": est.get('nombre', ''),
+                "rut": format_rut_python(est.get('rut', '')),
                 "fecha_nacimiento": fecha_nac_formato, 
-                "nacionalidad": est.get('nacionalidad', ''), # Devolverá '' si no estaba en el SELECT
+                "nacionalidad": est.get('nacionalidad', ''),
                 "edad": edad, 
-                "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')), 
-                "diagnostico_2": est.get('diagnostico_2', ''),
-                "estado_general": est.get('estado_general', ''), 
+                "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
+                "diagnostico_2": est.get('diagnostico_2', ''), 
+                "estado_general": est.get('estado_general', ''),
                 "fecha_evaluacion": fecha_evaluacion_formatted, 
-                "fecha_reevaluacion": est.get('fecha_reevaluacion', ''),
+                "fecha_reevaluacion": fecha_reeval_pdf,
                 "derivaciones": est.get('derivaciones', ''),
                 "sexo_f": "X" if est.get('sexo') == "F" else "",
                 "sexo_m": "X" if est.get('sexo') == "M" else "",
             }
         elif form_type == 'medicina_familiar':
              campos = {
-                 "nombre": nombre,
-                 "rut": rut,
+                 "nombre": est.get('nombre', ''),
+                 "rut": format_rut_python(est.get('rut', '')),
                  "fecha_nacimiento": fecha_nac_formato,
                  "edad": edad, 
                  "nacionalidad": est.get('nacionalidad', ''),
@@ -1695,12 +1694,11 @@ def descargar_pdf_alumno(alumno_id):
                  "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
                  "derivaciones": est.get('derivaciones', ''),
                  "fecha_evaluacion": fecha_evaluacion_formatted,
-                 "fecha_reevaluacion": est.get('fecha_reevaluacion', ''),
-                 # ... (Otros campos de Medicina Familiar que persistan en la DB) ...
+                 "fecha_reevaluacion": fecha_reeval_pdf,
              }
 
 
-        # 5. Llenado y Descarga
+        # 7. Llenado y Descarga
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({
                 NameObject("/AcroForm"): DictionaryObject()
@@ -1715,14 +1713,14 @@ def descargar_pdf_alumno(alumno_id):
         output.seek(0)
 
         # Nombre del archivo para la descarga
-        nombre_archivo_descarga = f"Valoracion_{nombre.replace(' ', '_')}_{rut}_{nombre_nomina.replace(' ', '_')}.pdf"
+        nombre_archivo_descarga = f"Valoracion_{est.get('nombre', 'Alumno').replace(' ', '_')}_{rut}_{nombre_nomina.replace(' ', '_')}.pdf"
         
         # Usamos send_file con as_attachment=True para forzar la descarga
         return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
 
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener datos de Supabase para PDF: {e}")
-        flash(f"❌ Error crítico: Fallo de conexión/consulta. Detalles: {e}. Confirme que las columnas existen en la BD.", 'error')
+        flash(f"❌ Error crítico: Fallo de conexión/consulta. Detalles: {e}. Revise el log.", 'error')
         return redirect(url_for('dashboard'))
     except FileNotFoundError as e:
         print(f"❌ Error File Not Found: {e}")

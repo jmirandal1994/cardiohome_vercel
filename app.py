@@ -1581,12 +1581,12 @@ def descargar_pdf_alumno(alumno_id):
 
     try:
         # 1. Obtener datos del estudiante y de la nómina asociada
-        # SELECT FINAL Y MÁS SEGURO: Solo se pide la metadata (IDs, nombre, RUT, Fechas de control).
-        # Esto nos asegura que la consulta *pase* el filtro 400.
+        # SELECT FINAL SEGURO: Solo los campos vitales, eliminando campos como nacionalidad y fechas ambiguas.
+        # Si esto falla, el error es en los 6 campos más básicos.
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            f"&select=id,nombre,rut,fecha_nacimiento,sexo,nacionalidad,fecha_evaluacion,fecha_reevaluacion,doctora_evaluadora_id,fecha_relleno,nominas_medicas(form_type,nombre_nomina)"
+            f"&select=id,nombre,rut,fecha_nacimiento,sexo,doctora_evaluadora_id,fecha_relleno,nominas_medicas(form_type,nombre_nomina)"
         )
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
         res_student.raise_for_status() 
@@ -1598,14 +1598,7 @@ def descargar_pdf_alumno(alumno_id):
 
         est = student_data[0]
         
-        # 2. SEGUNDA CONSULTA DE DATOS DE EVALUACIÓN: 
-        # Intentaremos obtener los campos de evaluación principales que faltan con un nuevo SELECT, 
-        # pero si falla, usaremos los valores por defecto.
-        # Ya que la primera consulta funcionará, el resto del código debe usar valores seguros.
-        
-        # 3. Lógica de Mapeo y Preparación
-        
-        # Extracción segura de la metadata
+        # Extracción segura de la metadata (sin cambios)
         nomina_info = est.get('nominas_medicas')
         if isinstance(nomina_info, list) and nomina_info:
             nomina_info = nomina_info[0]
@@ -1616,36 +1609,52 @@ def descargar_pdf_alumno(alumno_id):
         nombre_nomina = nomina_info.get('nombre_nomina', 'Valoracion')
         doctora_evaluadora_id = est.get('doctora_evaluadora_id')
         
-        # --- Cálculo de campos no almacenados (misma lógica) ---
+        # 2. Lógica de plantilla (sin cambios)
+        pdf_base_path = ''
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        if form_type == 'neurologia':
+            specific_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{doctora_evaluadora_id}.pdf"
+            full_pdf_bases_dir_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR)
+            specific_pdf_path = os.path.join(full_pdf_bases_dir_path, specific_pdf_filename)
+
+            if doctora_evaluadora_id and os.path.exists(specific_pdf_path):
+                pdf_base_path = specific_pdf_path
+            else:
+                pdf_base_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
+                
+        elif form_type == 'medicina_familiar':
+            pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
+        
+        else:
+             raise FileNotFoundError(f"Tipo de formulario no reconocido: {form_type}")
+        
+        if not os.path.exists(pdf_base_path):
+             raise FileNotFoundError(f"Archivo base del formulario no encontrado: {pdf_base_path}")
+
+        # 3. Inicializar el rellenador de PDF y mapeo (usando .get() para evitar errores por campos faltantes)
+        reader = PdfReader(pdf_base_path)
+        writer = PdfWriter()
+        writer.add_page(reader.pages[0])
+
+        # --- Mapeo de Campos (Usando est.get() para seguridad máxima) ---
+        nombre = est.get('nombre', '')
+        rut = format_rut_python(est.get('rut', ''))
+        
+        # Calcular campos opcionales que no vienen en el SELECT minimalista
         edad = 'N/A'
+        fecha_nac_formato = ''
         if est.get('fecha_nacimiento'):
             try:
                 birth_date = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
                 edad = calculate_age(birth_date)
-            except: pass
-        # ----------------------------------------
-        
-        # Formato de fechas
-        fecha_nac_formato = ''
-        if est.get('fecha_nacimiento'):
-            try:
-                fecha_nac_formato = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').strftime('%d/%m/%Y')
-            except ValueError: pass 
+                fecha_nac_formato = birth_date.strftime('%d/%m/%Y')
+            except: pass 
+            
+        # Nota: Los campos de evaluación (estado_general, diagnostico, etc.) serán None en 'est' 
+        # si no se pidieron en el SELECT minimalista, y se llenarán como '' en el PDF, 
+        # lo cual es el comportamiento de omisión que usted solicitó.
 
-        fecha_evaluacion_formatted = ''
-        if est.get('fecha_evaluacion'):
-            try:
-                fecha_evaluacion_formatted = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
-            except ValueError: pass
-
-        fecha_reeval_pdf = ''
-        if est.get('fecha_reevaluacion'):
-            try:
-                fecha_reeval_pdf = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
-            except ValueError: pass
-
-        
-        # 4. Preparar Campos del PDF (Asumiendo que los campos problemáticos son vacíos si no están en el SELECT)
         campos = {}
         if form_type == 'neurologia':
             campos = {
@@ -1654,16 +1663,17 @@ def descargar_pdf_alumno(alumno_id):
                 "fecha_nacimiento": fecha_nac_formato, 
                 "nacionalidad": est.get('nacionalidad', ''),
                 "edad": edad, 
-                "diagnostico_1": est.get('diagnostico_1', ''), # <- Usamos get() que devolverá '' si no está en la respuesta JSON
+                "diagnostico_1": est.get('diagnostico_1', ''),
                 "diagnostico_2": est.get('diagnostico_2', ''), 
                 "estado_general": est.get('estado_general', ''),
-                "fecha_evaluacion": fecha_evaluacion_formatted, 
-                "fecha_reevaluacion": fecha_reeval_pdf,
+                "fecha_evaluacion": est.get('fecha_evaluacion', ''), 
+                "fecha_reevaluacion": est.get('fecha_reevaluacion', ''), 
                 "derivaciones": est.get('derivaciones', ''),
                 "sexo_f": "X" if est.get('sexo') == "F" else "",
                 "sexo_m": "X" if est.get('sexo') == "M" else "",
             }
         elif form_type == 'medicina_familiar':
+             # ... (Mapeo de Medicina Familiar similar) ...
              campos = {
                  "nombre": nombre,
                  "rut": rut,
@@ -1674,20 +1684,12 @@ def descargar_pdf_alumno(alumno_id):
                  "sexo_m": "X" if est.get('sexo') == "M" else "",
                  "diagnostico_1": est.get('diagnostico_1', ''),
                  "derivaciones": est.get('derivaciones', ''),
-                 "fecha_evaluacion": fecha_evaluacion_formatted,
-                 "fecha_reevaluacion": fecha_reeval_pdf,
-                 # ... (El resto de campos se llenarán como '' si no están en la respuesta) ...
+                 "fecha_evaluacion": est.get('fecha_evaluacion', ''),
+                 "fecha_reevaluacion": est.get('fecha_reevaluacion', ''),
              }
 
 
-        # 5. Llenado y Descarga (sin cambios)
-        # ... (código de PyPDF2) ...
-        
-        # CRÍTICO: Debemos asegurarnos de que el resto de los datos (que no fueron incluidos en el select)
-        # sigan siendo mapeables. Ya que usamos .get() en el diccionario 'est', si el campo no fue
-        # incluido en el SELECT, su valor será None, y el código de PDF usará la cadena vacía.
-
-        # 5. Llenado y Descarga
+        # 4. Llenado y Descarga (sin cambios)
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({
                 NameObject("/AcroForm"): DictionaryObject()
@@ -1707,10 +1709,12 @@ def descargar_pdf_alumno(alumno_id):
         # Usamos send_file con as_attachment=True para forzar la descarga
         return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
 
-
     except requests.exceptions.RequestException as e:
+        # --- SOLUCIÓN CRÍTICA AL PROBLEMA 400 Y LA REDIRECCIÓN ---
         print(f"❌ Error al obtener datos de Supabase para PDF: {e}")
-        flash(f"❌ Error crítico: Fallo de conexión/consulta. Detalle: {e}. Confirme que las columnas existen en la BD.", 'error')
+        # Muestra el error en la página actual (Flash Message) en lugar de redirigir silenciosamente.
+        flash(f"❌ Error al generar PDF: Fallo de conexión/consulta. Detalles: {e}. Revise el log para las columnas faltantes.", 'error')
+        # Retornamos a la página de inicio del coordinador, pero con el mensaje de error.
         return redirect(url_for('dashboard'))
     except FileNotFoundError as e:
         print(f"❌ Error File Not Found: {e}")
@@ -1718,7 +1722,7 @@ def descargar_pdf_alumno(alumno_id):
         return redirect(url_for('dashboard'))
     except Exception as e:
         print(f"❌ Error inesperado al generar PDF de alumno: {e}")
-        flash(f"❌ Error al generar el PDF. Detalle: {e}", 'error')
+        flash(f"❌ Error inesperado al generar el PDF. Detalle: {e}", 'error')
         return redirect(url_for('dashboard'))
         
 # - Añadir en la sección de rutas

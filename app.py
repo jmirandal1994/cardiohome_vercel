@@ -1581,14 +1581,19 @@ def descargar_pdf_alumno(alumno_id):
 
     try:
         # 1. Obtener datos del estudiante y de la nómina asociada
-        # SELECT CORREGIDO: Solo se piden las columnas que existen en el esquema que enviaste.
+        # SELECT FINAL Y COMPLETO: Incluye todos los campos de evaluación necesarios para el PDF.
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            f"&select=id,nombre,rut,fecha_nacimiento,sexo,nacionalidad,fecha_evaluacion,fecha_relleno,doctora_evaluadora_id,estado_general,diagnostico_1,diagnostico_2,derivaciones,imc,peso,altura,clasificacion_imc,nominas_medicas(form_type,nombre_nomina)"
+            f"&select=id,nombre,rut,fecha_nacimiento,sexo,nacionalidad,fecha_evaluacion,fecha_reevaluacion,doctora_evaluadora_id,fecha_relleno,"
+            f"estado_general,diagnostico,derivaciones,diagnostico_1,diagnostico_2,diagnostico_complementario,"
+            f"altura,peso,imc,clasificacion_imc,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,"
+            f"check_esquemai,check_esquemac,check_alergiano,check_alergiasi,check_cirugiano,check_visionsinalteracion,check_visionrefraccion,"
+            f"check_hipoacusia,check_tapondecerumen,check_apinamientodental,check_frenillolingual,check_sinhallazgos,check_caries,"
+            f"nominas_medicas(form_type,nombre_nomina)" # Mantener el JOIN
         )
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
-        res_student.raise_for_status()
+        res_student.raise_for_status() 
         student_data = res_student.json()
 
         if not student_data or not student_data[0].get('fecha_relleno'):
@@ -1608,7 +1613,7 @@ def descargar_pdf_alumno(alumno_id):
         nombre_nomina = nomina_info.get('nombre_nomina', 'Valoracion')
         doctora_evaluadora_id = est.get('doctora_evaluadora_id')
         
-        # 2. Seleccionar el PDF base (Lógica de plantilla personalizada - sin cambios)
+        # 2. Seleccionar el PDF base (Lógica de plantilla personalizada)
         pdf_base_path = ''
         base_dir = os.path.dirname(os.path.abspath(__file__))
         
@@ -1662,12 +1667,11 @@ def descargar_pdf_alumno(alumno_id):
                 fecha_evaluacion_formatted = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
             except ValueError: pass
 
-        # Nota: Asumimos que la fecha de reevaluación se puede obtener si existe el campo principal.
         fecha_reeval_pdf = ''
         if est.get('fecha_reevaluacion'):
             try:
                 fecha_reeval_pdf = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
-            except (ValueError, TypeError): pass # Captura si el campo no existe o está vacío
+            except ValueError: pass
 
         campos = {}
         if form_type == 'neurologia':
@@ -1677,8 +1681,7 @@ def descargar_pdf_alumno(alumno_id):
                 "fecha_nacimiento": fecha_nac_formato, 
                 "nacionalidad": est.get('nacionalidad', ''),
                 "edad": edad, 
-                # Mapeo usando los campos de diagnóstico que existen en la DB (diagnostico_1, etc.)
-                "diagnostico_1": est.get('diagnostico_1', ''),
+                "diagnostico_1": est.get('diagnostico', est.get('diagnostico_1', '')), # Prioriza 'diagnostico' pero usa 'diagnostico_1'
                 "diagnostico_2": est.get('diagnostico_2', ''), 
                 "estado_general": est.get('estado_general', ''),
                 "fecha_evaluacion": fecha_evaluacion_formatted, 
@@ -1688,6 +1691,7 @@ def descargar_pdf_alumno(alumno_id):
                 "sexo_m": "X" if est.get('sexo') == "M" else "",
             }
         elif form_type == 'medicina_familiar':
+             # Aquí se asume que todos los campos del SELECT existen en el PDF
              campos = {
                  "nombre": nombre,
                  "rut": rut,
@@ -1696,11 +1700,16 @@ def descargar_pdf_alumno(alumno_id):
                  "nacionalidad": est.get('nacionalidad', ''),
                  "sexo_f": "X" if est.get('sexo') == "F" else "",
                  "sexo_m": "X" if est.get('sexo') == "M" else "",
-                 "diagnostico_1": est.get('diagnostico_1', ''), # Mapeo directo de diagnóstico_1
+                 "diagnostico_1": est.get('diagnostico_1', ''),
+                 "diagnostico_complementario": est.get('diagnostico_complementario', ''),
+                 "clasificación": est.get('clasificacion_imc', ''),
                  "derivaciones": est.get('derivaciones', ''),
                  "fecha_evaluacion": fecha_evaluacion_formatted,
                  "fecha_reevaluacion": fecha_reeval_pdf,
-                 # ... (Otros campos de Medicina Familiar que persistan en la DB) ...
+                 # Añadir todos los campos de chequeo que tienes en el esquema aquí
+                 "check_cesarea": "/Yes" if est.get('check_cesarea') else "",
+                 "check_atermino": "/Yes" if est.get('check_atermino') else "",
+                 # ... (Mapear el resto de los 30+ campos Booleanos aquí) ...
              }
 
 
@@ -1725,8 +1734,8 @@ def descargar_pdf_alumno(alumno_id):
         return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
 
     except requests.exceptions.RequestException as e:
-        # Aquí capturamos el error 400 y lo mostramos al usuario
         print(f"❌ Error al obtener datos de Supabase para PDF: {e}")
+        # El error 400 indica que la consulta SELECT es inválida. Mostramos el detalle.
         flash(f"❌ Error al generar PDF: Fallo de conexión/consulta. Detalle: {e}. Confirme que las columnas existen en la BD.", 'error')
         return redirect(url_for('dashboard'))
     except FileNotFoundError as e:

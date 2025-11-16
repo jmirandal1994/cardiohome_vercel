@@ -1576,7 +1576,7 @@ def descargar_pdf_alumno(alumno_id):
         return redirect(url_for('dashboard'))
 
     try:
-        # 1. CONSULTA 1: DATOS MÍNIMOS (ID, Nombre, RUT, Fechas de control, Nomina_ID)
+        # 1. CONSULTA 1: DATOS MÍNIMOS 
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
@@ -1593,7 +1593,7 @@ def descargar_pdf_alumno(alumno_id):
         est = student_data[0]
         nomina_id_fk = est.get('nomina_id') 
         
-        # 2. CONSULTA 2: METADATA DE LA NÓMINA (Para form_type y nombre_nomina)
+        # 2. CONSULTA 2: METADATA DE LA NÓMINA
         url_nomina_meta = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?id=eq.{nomina_id_fk}"
@@ -1607,19 +1607,18 @@ def descargar_pdf_alumno(alumno_id):
         nombre_nomina = nomina_meta.get('nombre_nomina', 'Valoracion')
         doctora_evaluadora_id = est.get('doctora_evaluadora_id')
         
-        # 3. CONSULTA 3: DATOS DE EVALUACIÓN FALTANTES (¡NUEVA SECCIÓN!)
-        # Consultamos solo los campos de evaluación que faltan: estado_general, diagnostico_1, diagnostico_2, derivaciones
+        # 3. CONSULTA 3: DATOS DE EVALUACIÓN FALTANTES (Incluyendo 'diagnostico' original)
         url_evaluation_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            # Incluimos el campo 'diagnostico' que contiene el valor original para usarlo como respaldo.
             f"?id=eq.{alumno_id}"
-            f"&select=estado_general,diagnostico_1,diagnostico_2,derivaciones"
+            f"&select=estado_general,diagnostico,diagnostico_1,diagnostico_2,derivaciones" 
         )
         res_evaluation = requests.get(url_evaluation_data, headers=SUPABASE_SERVICE_HEADERS)
         
-        # Fusionamos los datos de evaluación con los datos básicos, si la consulta fue exitosa.
         if res_evaluation.ok and res_evaluation.json():
             evaluation_data = res_evaluation.json()[0] 
-            est.update(evaluation_data) # Los campos ahora están en 'est' y se usarán en 'campos'
+            est.update(evaluation_data) 
         
         
         # 4. Lógica de plantilla (Selección del PDF)
@@ -1681,6 +1680,16 @@ def descargar_pdf_alumno(alumno_id):
                 fecha_reeval_pdf = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
             except ValueError: pass
 
+        
+        # LÓGICA DE FALLBACK PARA DIAGNÓSTICO
+        diagnostico_1_valor = est.get('diagnostico_1')
+        diagnostico_2_valor = est.get('diagnostico_2')
+        
+        # Si diagnostico_1 está vacío, usamos el valor del campo 'diagnostico' original como respaldo.
+        if not diagnostico_1_valor and est.get('diagnostico'):
+            diagnostico_1_valor = est.get('diagnostico')
+
+
         campos = {}
         if form_type == 'neurologia':
             campos = {
@@ -1689,9 +1698,11 @@ def descargar_pdf_alumno(alumno_id):
                 "fecha_nacimiento": fecha_nac_formato, 
                 "nacionalidad": est.get('nacionalidad', ''),
                 "edad": edad, 
-                # CAMPOS FALTANTES AÑADIDOS EN LA CONSULTA 3
-                "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
-                "diagnostico_2": est.get('diagnostico_2', ''), 
+                
+                # APLICAMOS LA LÓGICA DE FALLBACK
+                "diagnostico_1": diagnostico_1_valor if diagnostico_1_valor else '',
+                "diagnostico_2": diagnostico_2_valor if diagnostico_2_valor else '',
+                
                 "estado_general": est.get('estado_general', ''),
                 "derivaciones": est.get('derivaciones', ''),
                 
@@ -1709,8 +1720,10 @@ def descargar_pdf_alumno(alumno_id):
                  "nacionalidad": est.get('nacionalidad', ''),
                  "sexo_f": "X" if est.get('sexo') == "F" else "",
                  "sexo_m": "X" if est.get('sexo') == "M" else "",
-                 # CAMPOS FALTANTES AÑADIDOS EN LA CONSULTA 3
-                 "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
+                 
+                 # APLICAMOS LA LÓGICA DE FALLBACK
+                 "diagnostico_1": diagnostico_1_valor if diagnostico_1_valor else '',
+                 
                  "derivaciones": est.get('derivaciones', ''),
                  
                  "fecha_evaluacion": fecha_evaluacion_formatted,
@@ -1740,7 +1753,7 @@ def descargar_pdf_alumno(alumno_id):
 
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener datos de Supabase para PDF: {e}")
-        flash(f"❌ Error al generar PDF: Fallo de conexión/consulta. Detalles: {e}. Revise el log para las columnas.", 'error')
+        flash(f"❌ Error al generar PDF: Fallo de conexión/consulta. Detalles: {e}.", 'error')
         return redirect(url_for('dashboard'))
     except FileNotFoundError as e:
         print(f"❌ Error File Not Found: {e}")

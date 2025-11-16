@@ -1581,15 +1581,13 @@ def descargar_pdf_alumno(alumno_id):
 
     try:
         # 1. Obtener datos del estudiante y de la nómina asociada
-        # CORRECCIÓN CLAVE: SELECT MINIMALISTA
-        # Solo seleccionamos: IDs, Identificación, y Fechas principales.
+        # CORRECCIÓN DEFINITIVA: Quitamos estado_general, diagnostico, derivaciones del SELECT
+        # para evitar el error 400 de columnas inexistentes.
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,doctora_evaluadora_id,fecha_relleno,fecha_evaluacion,fecha_reevaluacion,estado_general,diagnostico,derivaciones,nominas_medicas(form_type,nombre_nomina)"
+            f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,doctora_evaluadora_id,fecha_relleno,fecha_evaluacion,fecha_reevaluacion,nominas_medicas(form_type,nombre_nomina)"
         )
-        # NOTA: Si esta consulta vuelve a fallar, el problema es que el nombre de una de estas 13 columnas no existe.
-
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
         res_student.raise_for_status() 
         student_data = res_student.json()
@@ -1600,11 +1598,6 @@ def descargar_pdf_alumno(alumno_id):
 
         est = student_data[0]
         
-        # Validación de descarga (mantenida por seguridad)
-        if not est.get('fecha_relleno'):
-            flash("❌ El formulario aún está pendiente de evaluación.", 'error')
-            return redirect(url_for('dashboard'))
-
         # Extracción segura de la metadata
         nomina_info = est.get('nominas_medicas')
         if isinstance(nomina_info, list) and nomina_info:
@@ -1648,7 +1641,7 @@ def descargar_pdf_alumno(alumno_id):
         nombre = est.get('nombre', '')
         rut = format_rut_python(est.get('rut', ''))
         
-        # --- Cálculo de campos no almacenados ---
+        # --- Cálculo de campos no almacenados (Edad) ---
         edad = 'N/A'
         if est.get('fecha_nacimiento'):
             try:
@@ -1731,9 +1724,9 @@ def descargar_pdf_alumno(alumno_id):
         return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
 
     except requests.exceptions.RequestException as e:
+        # Aquí capturamos el error 400 y lo mostramos al usuario
         print(f"❌ Error al obtener datos de Supabase para PDF: {e}")
-        # El error 400 indica que la consulta SELECT es inválida. Mostramos el detalle.
-        flash(f"❌ Error al generar PDF: Fallo de conexión/consulta. Detalles: {e}", 'error')
+        flash(f"❌ Error al generar PDF: Fallo de conexión/consulta. Detalle: {e}. Confirme que las columnas existen en la BD.", 'error')
         return redirect(url_for('dashboard'))
     except FileNotFoundError as e:
         print(f"❌ Error File Not Found: {e}")

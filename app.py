@@ -1576,8 +1576,7 @@ def descargar_pdf_alumno(alumno_id):
         return redirect(url_for('dashboard'))
 
     try:
-        # 1. Obtener datos del estudiante y de la nómina asociada
-        # SELECT FINAL MÁS SEGURO (Mínimo de Metadatos)
+        # 1. CONSULTA 1: DATOS MÍNIMOS (ID, Nombre, RUT, Fechas de control, Nomina_ID)
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
@@ -1594,7 +1593,7 @@ def descargar_pdf_alumno(alumno_id):
         est = student_data[0]
         nomina_id_fk = est.get('nomina_id') 
         
-        # 2. Consulta de Metadata de la Nómina (Para form_type y nombre_nomina)
+        # 2. CONSULTA 2: METADATA DE LA NÓMINA (Para form_type y nombre_nomina)
         url_nomina_meta = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?id=eq.{nomina_id_fk}"
@@ -1608,7 +1607,22 @@ def descargar_pdf_alumno(alumno_id):
         nombre_nomina = nomina_meta.get('nombre_nomina', 'Valoracion')
         doctora_evaluadora_id = est.get('doctora_evaluadora_id')
         
-        # 3. Lógica de plantilla (Selección del PDF personalizado/genérico)
+        # 3. CONSULTA 3: DATOS DE EVALUACIÓN FALTANTES (¡NUEVA SECCIÓN!)
+        # Consultamos solo los campos de evaluación que faltan: estado_general, diagnostico_1, diagnostico_2, derivaciones
+        url_evaluation_data = (
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            f"?id=eq.{alumno_id}"
+            f"&select=estado_general,diagnostico_1,diagnostico_2,derivaciones"
+        )
+        res_evaluation = requests.get(url_evaluation_data, headers=SUPABASE_SERVICE_HEADERS)
+        
+        # Fusionamos los datos de evaluación con los datos básicos, si la consulta fue exitosa.
+        if res_evaluation.ok and res_evaluation.json():
+            evaluation_data = res_evaluation.json()[0] 
+            est.update(evaluation_data) # Los campos ahora están en 'est' y se usarán en 'campos'
+        
+        
+        # 4. Lógica de plantilla (Selección del PDF)
         pdf_base_path = ''
         base_dir = os.path.dirname(os.path.abspath(__file__))
         
@@ -1631,23 +1645,22 @@ def descargar_pdf_alumno(alumno_id):
         if not os.path.exists(pdf_base_path):
              raise FileNotFoundError(f"Archivo base del formulario no encontrado: {pdf_base_path}")
 
-        # 4. Inicializar el rellenador de PDF
+        # 5. Inicializar el rellenador de PDF
         reader = PdfReader(pdf_base_path)
         writer = PdfWriter()
         writer.add_page(reader.pages[0])
 
-        # 5. Preparar y Mapear Campos del PDF (usando datos de la DB)
+        # 6. Preparar y Mapear Campos del PDF 
         nombre = est.get('nombre', '')
         rut = format_rut_python(est.get('rut', ''))
         
-        # --- Cálculo de campos no almacenados ---
+        # --- Cálculo de campos ---
         edad = 'N/A'
         if est.get('fecha_nacimiento'):
             try:
                 birth_date = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
                 edad = calculate_age(birth_date)
             except: pass
-        # ----------------------------------------
         
         # Formato de fechas
         fecha_nac_formato = ''
@@ -1670,19 +1683,20 @@ def descargar_pdf_alumno(alumno_id):
 
         campos = {}
         if form_type == 'neurologia':
-            # Nota: Los campos de evaluación que faltan en el SELECT (como estado_general) se llenan como ''
             campos = {
                 "nombre": nombre,
                 "rut": rut, 
                 "fecha_nacimiento": fecha_nac_formato, 
                 "nacionalidad": est.get('nacionalidad', ''),
                 "edad": edad, 
+                # CAMPOS FALTANTES AÑADIDOS EN LA CONSULTA 3
                 "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
                 "diagnostico_2": est.get('diagnostico_2', ''), 
                 "estado_general": est.get('estado_general', ''),
+                "derivaciones": est.get('derivaciones', ''),
+                
                 "fecha_evaluacion": fecha_evaluacion_formatted, 
                 "fecha_reevaluacion": fecha_reeval_pdf,
-                "derivaciones": est.get('derivaciones', ''),
                 "sexo_f": "X" if est.get('sexo') == "F" else "",
                 "sexo_m": "X" if est.get('sexo') == "M" else "",
             }
@@ -1695,14 +1709,16 @@ def descargar_pdf_alumno(alumno_id):
                  "nacionalidad": est.get('nacionalidad', ''),
                  "sexo_f": "X" if est.get('sexo') == "F" else "",
                  "sexo_m": "X" if est.get('sexo') == "M" else "",
+                 # CAMPOS FALTANTES AÑADIDOS EN LA CONSULTA 3
                  "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
                  "derivaciones": est.get('derivaciones', ''),
+                 
                  "fecha_evaluacion": fecha_evaluacion_formatted,
                  "fecha_reevaluacion": fecha_reeval_pdf,
              }
 
 
-        # 6. Llenado final del PDF y configuración
+        # 7. Llenado final del PDF y configuración
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({
                 NameObject("/AcroForm"): DictionaryObject()

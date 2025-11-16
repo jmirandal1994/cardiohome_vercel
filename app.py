@@ -1478,7 +1478,7 @@ def evaluados(establecimiento):
 # app-30.py (Reemplaza la función /api/nomina/desbloquear completa)
 @app.route('/api/nomina/desbloquear', methods=['POST'])
 def desbloquear_nomina():
-    # 1. Verificación Inicial de Seguridad (unchanged)
+    # 1. Verificación Inicial de Seguridad
     if session.get('usuario') != 'coordinador_escuela':
         return jsonify({"success": False, "message": "Acceso no autorizado al recurso"}), 403
     
@@ -1486,67 +1486,88 @@ def desbloquear_nomina():
     password_ingresada = data.get('password')
     school_name = data.get('school_id') 
     
-    # ... (Token verification logic - unchanged) ...
-
-    # 4. Comparamos la contraseña
-    if token_esperado and token_esperado == password_ingresada:
+    # 2. Verificación de Asignación
+    colegios_permitidos = session.get('colegios_asignados_ids', [])
+    if school_name not in colegios_permitidos:
+        return jsonify({"success": False, "message": "No tiene permiso asignado para este establecimiento."}), 403
         
-        nomina_ids = [nom.get('id') for nom in nominas_con_token if nom.get('id')]
-        nomina_ids_str = ",".join(nomina_ids)
-
-        if not nomina_ids:
-            return jsonify({"success": True, "nominas": []}) 
-            
-        # --- 5. CONSULTA CORREGIDA Y SIMPLIFICADA AL MÁXIMO ---
-        url_students = (
-            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-            f"?nomina_id=in.({nomina_ids_str})"
-            f"&select=id,nombre,rut,fecha_evaluacion,fecha_relleno,nomina_id" # Quitamos el JOIN para evitar el error 400/500
-            f"&order=nombre.asc"
+    # 3. Validar el token de acceso para ese colegio (Envuelto en TRY/EXCEPT para errores de conexión)
+    try:
+        url_token = (
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?nombre_colegio=eq.{school_name}"
+            f"&coord_escuela_id=eq.{session.get('usuario_id')}"
+            f"&select=token_acceso,id"
         )
         
-        print(f"DEBUG: URL de estudiantes FINAL: {url_students}") # Log para verificar la URL
-
-        nominas_raw = requests.get(url_students, headers=SUPABASE_SERVICE_HEADERS).json()
+        res_token = requests.get(url_token, headers=SUPABASE_SERVICE_HEADERS)
+        res_token.raise_for_status()
+        nominas_con_token = res_token.json()
         
-        # 6. Procesamiento de datos (Ahora sin relaciones anidadas)
-        nominas_procesadas = []
-        for alumno in nominas_raw:
-            
-            if not isinstance(alumno, dict):
-                continue 
-            
-            # --- Recuperamos el nombre de la nómina con una consulta de apoyo (más lento, pero más seguro) ---
-            nombre_nomina = 'N/A'
-            if alumno.get('nomina_id'):
-                url_nomina_name = f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{alumno['nomina_id']}&select=nombre_nomina"
-                res_nomina_name = requests.get(url_nomina_name, headers=SUPABASE_SERVICE_HEADERS)
-                if res_nomina_name.ok and res_nomina_name.json():
-                    nombre_nomina = res_nomina_name.json()[0]['nombre_nomina']
-            # --------------------------------------------------------------------------------------------------
-
-            fecha_relleno = alumno.get('fecha_relleno')
-            estado_evaluacion = "Evaluado" if fecha_relleno else "PENDIENTE"
-            puede_descargar = estado_evaluacion == "Evaluado"
-            
-            nominas_procesadas.append({
-                'id': alumno.get('id'),
-                'nombre_alumno': alumno.get('nombre'), 
-                'rut_alumno': format_rut_python(alumno.get('rut')), 
-                'fecha_evaluacion': alumno.get('fecha_evaluacion') or 'N/A',
-                'nombre_nomina': nombre_nomina, # Usamos el nombre recuperado
-                'estado': estado_evaluacion, 
-                'descarga_habilitada': puede_descargar 
-            })
+        token_esperado = nominas_con_token[0].get('token_acceso') if nominas_con_token and nominas_con_token[0] else None
         
-        return jsonify({"success": True, "nominas": nominas_procesadas})
-    else:
-        return jsonify({"success": False, "message": "Token de acceso incorrecto"}), 401
+        # 4. Comparamos la contraseña
+        if token_esperado and token_esperado == password_ingresada:
             
+            nomina_ids = [nom.get('id') for nom in nominas_con_token if nom.get('id')]
+            nomina_ids_str = ",".join(nomina_ids)
+
+            if not nomina_ids:
+                return jsonify({"success": True, "nominas": []}) 
+                
+            # 5. CONSULTA FINAL DE ESTUDIANTES (Sin filtro de fecha)
+            url_students = (
+                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                f"?nomina_id=in.({nomina_ids_str})"
+                f"&select=id,nombre,rut,fecha_evaluacion,fecha_relleno"
+                f"&order=nombre.asc"
+            )
+
+            nominas_raw = requests.get(url_students, headers=SUPABASE_SERVICE_HEADERS).json()
+            
+            # 6. Procesamiento de datos (Recuperación del nombre de nómina en el bucle)
+            nominas_procesadas = []
+            for alumno in nominas_raw:
+                
+                if not isinstance(alumno, dict):
+                    print(f"ADVERTENCIA: Elemento inesperado saltado: {alumno}")
+                    continue 
+                
+                # Consulta de apoyo para el nombre de la nómina (usando el nomina_id)
+                nombre_nomina = 'N/A'
+                if alumno.get('nomina_id'):
+                    url_nomina_name = f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{alumno['nomina_id']}&select=nombre_nomina"
+                    res_nomina_name = requests.get(url_nomina_name, headers=SUPABASE_SERVICE_HEADERS)
+                    if res_nomina_name.ok and res_nomina_name.json():
+                        nombre_nomina = res_nomina_name.json()[0]['nombre_nomina']
+
+                fecha_relleno = alumno.get('fecha_relleno')
+                estado_evaluacion = "Evaluado" if fecha_relleno else "PENDIENTE"
+                puede_descargar = estado_evaluacion == "Evaluado"
+                
+                nominas_procesadas.append({
+                    'id': alumno.get('id'),
+                    'nombre_alumno': alumno.get('nombre'), 
+                    'rut_alumno': format_rut_python(alumno.get('rut')), 
+                    'fecha_evaluacion': alumno.get('fecha_evaluacion') or 'N/A',
+                    'nombre_nomina': nombre_nomina, 
+                    'estado': estado_evaluacion, 
+                    'descarga_habilitada': puede_descargar 
+                })
+            
+            return jsonify({"success": True, "nominas": nominas_procesadas})
+        else:
+            # Token incorrecto
+            return jsonify({"success": False, "message": "Token de acceso incorrecto"}), 401
+            
+    except requests.exceptions.RequestException as e:
+        print(f"❌ ERROR DE CONEXIÓN CON SUPABASE: {e}")
+        return jsonify({"success": False, "message": f"Error de conexión con Supabase al validar token: {str(e)}"}), 500
     except Exception as e:
         print(f"❌ ERROR INESPERADO AL DESBLOQUEAR NÓMINA: {e}")
+        # Retornar 500 para el cliente
         return jsonify({"success": False, "message": f"Error inesperado del servidor: {str(e)}"}), 500
-
+        
 # --- NUEVA RUTA: DESCARGA DE PDF POR ALUMNO ID ---
 @app.route('/descargar_pdf_alumno/<alumno_id>', methods=['GET'])
 def descargar_pdf_alumno(alumno_id):

@@ -1581,14 +1581,14 @@ def descargar_pdf_alumno(alumno_id):
 
     try:
         # 1. Obtener datos del estudiante y de la nómina asociada
-        # CORRECCIÓN CLAVE: Eliminamos el '*' y listamos todas las columnas necesarias.
+        # CORRECCIÓN CLAVE: Reducimos la lista de SELECT a campos esenciales y de evaluación.
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            f"&select=id,nombre,rut,fecha_nacimiento,edad,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,doctora_evaluadora_id,nominas_medicas(form_type,nombre_nomina)"
+            f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,doctora_evaluadora_id,fecha_relleno,fecha_evaluacion,fecha_reevaluacion,estado_general,diagnostico,derivaciones,nominas_medicas(form_type,nombre_nomina)"
         )
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
-        res_student.raise_for_status()
+        res_student.raise_for_status() # Lanza HTTPError si el SELECT falla (400)
         student_data = res_student.json()
 
         if not student_data or not student_data[0].get('fecha_relleno'):
@@ -1645,6 +1645,16 @@ def descargar_pdf_alumno(alumno_id):
         nombre = est.get('nombre', '')
         rut = format_rut_python(est.get('rut', ''))
         
+        # --- Cálculo de campos no almacenados ---
+        # Edad (Asumiendo que calculate_age está disponible)
+        edad = 'N/A'
+        if est.get('fecha_nacimiento'):
+            try:
+                birth_date = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
+                edad = calculate_age(birth_date)
+            except: pass
+        # ----------------------------------------
+        
         # Formato de fechas
         fecha_nac_formato = ''
         if est.get('fecha_nacimiento'):
@@ -1671,7 +1681,7 @@ def descargar_pdf_alumno(alumno_id):
                 "rut": rut, 
                 "fecha_nacimiento": fecha_nac_formato, 
                 "nacionalidad": est.get('nacionalidad', ''),
-                "edad": est.get('edad', ''),
+                "edad": edad, # Usamos el campo calculado
                 "diagnostico_1": est.get('diagnostico', ''),
                 "diagnostico_2": est.get('diagnostico', ''), 
                 "estado_general": est.get('estado_general', ''),
@@ -1687,7 +1697,7 @@ def descargar_pdf_alumno(alumno_id):
                  "nombre": nombre,
                  "rut": rut,
                  "fecha_nacimiento": fecha_nac_formato,
-                 "edad": est.get('edad', ''),
+                 "edad": edad, # Usamos el campo calculado
                  "nacionalidad": est.get('nacionalidad', ''),
                  "sexo_f": "X" if est.get('sexo') == "F" else "",
                  "sexo_m": "X" if est.get('sexo') == "M" else "",
@@ -1721,7 +1731,8 @@ def descargar_pdf_alumno(alumno_id):
 
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener datos de Supabase para PDF: {e}")
-        flash('Error al generar PDF: Fallo de conexión o datos.', 'error')
+        # El error 400 indica que la consulta SELECT es inválida. Mostramos el detalle.
+        flash(f"❌ Error al generar PDF: Fallo de conexión/consulta. Detalles: {e}", 'error')
         return redirect(url_for('dashboard'))
     except FileNotFoundError as e:
         print(f"❌ Error File Not Found: {e}")

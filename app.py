@@ -1581,15 +1581,14 @@ def descargar_pdf_alumno(alumno_id):
 
     try:
         # 1. Obtener datos del estudiante y de la nómina asociada
-        # CORRECCIÓN FINAL: SELECT MINIMALISTA (solo IDs, nombre y fechas de control)
-        # ESTA LISTA DEBE FUNCIONAR O EL ESQUEMA DE TU TABLA ES TOTALMENTE DIFERENTE.
+        # SELECT CORREGIDO: Solo se piden las columnas que existen en el esquema que enviaste.
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            f"&select=id,nombre,rut,fecha_nacimiento,sexo,nacionalidad,fecha_evaluacion,fecha_reevaluacion,estado_general,diagnostico,derivaciones,doctora_evaluadora_id,fecha_relleno,nominas_medicas(form_type,nombre_nomina)"
+            f"&select=id,nombre,rut,fecha_nacimiento,sexo,nacionalidad,fecha_evaluacion,fecha_relleno,doctora_evaluadora_id,estado_general,diagnostico_1,diagnostico_2,derivaciones,imc,peso,altura,clasificacion_imc,nominas_medicas(form_type,nombre_nomina)"
         )
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
-        res_student.raise_for_status() 
+        res_student.raise_for_status()
         student_data = res_student.json()
 
         if not student_data or not student_data[0].get('fecha_relleno'):
@@ -1609,7 +1608,7 @@ def descargar_pdf_alumno(alumno_id):
         nombre_nomina = nomina_info.get('nombre_nomina', 'Valoracion')
         doctora_evaluadora_id = est.get('doctora_evaluadora_id')
         
-        # 2. Seleccionar el PDF base (Lógica de plantilla personalizada)
+        # 2. Seleccionar el PDF base (Lógica de plantilla personalizada - sin cambios)
         pdf_base_path = ''
         base_dir = os.path.dirname(os.path.abspath(__file__))
         
@@ -1663,11 +1662,12 @@ def descargar_pdf_alumno(alumno_id):
                 fecha_evaluacion_formatted = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
             except ValueError: pass
 
+        # Nota: Asumimos que la fecha de reevaluación se puede obtener si existe el campo principal.
         fecha_reeval_pdf = ''
         if est.get('fecha_reevaluacion'):
             try:
                 fecha_reeval_pdf = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
-            except ValueError: pass
+            except (ValueError, TypeError): pass # Captura si el campo no existe o está vacío
 
         campos = {}
         if form_type == 'neurologia':
@@ -1677,8 +1677,9 @@ def descargar_pdf_alumno(alumno_id):
                 "fecha_nacimiento": fecha_nac_formato, 
                 "nacionalidad": est.get('nacionalidad', ''),
                 "edad": edad, 
-                "diagnostico_1": est.get('diagnostico', ''),
-                "diagnostico_2": est.get('diagnostico', ''), 
+                # Mapeo usando los campos de diagnóstico que existen en la DB (diagnostico_1, etc.)
+                "diagnostico_1": est.get('diagnostico_1', ''),
+                "diagnostico_2": est.get('diagnostico_2', ''), 
                 "estado_general": est.get('estado_general', ''),
                 "fecha_evaluacion": fecha_evaluacion_formatted, 
                 "fecha_reevaluacion": fecha_reeval_pdf,
@@ -1695,7 +1696,7 @@ def descargar_pdf_alumno(alumno_id):
                  "nacionalidad": est.get('nacionalidad', ''),
                  "sexo_f": "X" if est.get('sexo') == "F" else "",
                  "sexo_m": "X" if est.get('sexo') == "M" else "",
-                 "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
+                 "diagnostico_1": est.get('diagnostico_1', ''), # Mapeo directo de diagnóstico_1
                  "derivaciones": est.get('derivaciones', ''),
                  "fecha_evaluacion": fecha_evaluacion_formatted,
                  "fecha_reevaluacion": fecha_reeval_pdf,
@@ -1726,7 +1727,6 @@ def descargar_pdf_alumno(alumno_id):
     except requests.exceptions.RequestException as e:
         # Aquí capturamos el error 400 y lo mostramos al usuario
         print(f"❌ Error al obtener datos de Supabase para PDF: {e}")
-        # El error 400 indica que la consulta SELECT es inválida. Mostramos el detalle.
         flash(f"❌ Error al generar PDF: Fallo de conexión/consulta. Detalle: {e}. Confirme que las columnas existen en la BD.", 'error')
         return redirect(url_for('dashboard'))
     except FileNotFoundError as e:

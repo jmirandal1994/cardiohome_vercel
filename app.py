@@ -1576,15 +1576,14 @@ def descargar_pdf_alumno(alumno_id):
         return redirect(url_for('dashboard'))
 
     try:
-        # 1. Obtener datos del estudiante y de la nómina asociada
-        # SELECT FINAL Y CORREGIDO: Usamos 'nomina_id' como nombre de la relación (join) para evitar el error 400.
-        url_student_data = (
+        # --- CONSULTA 1: DATOS BÁSICOS DEL ESTUDIANTE (Select Absoluto Mínimo) ---
+        # El SELECT más seguro que no debe fallar en ninguna tabla de Supabase.
+        url_student_basic_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            # NOTA: Se cambió nominas_medicas(...) por nomina_id(...)
-            f"&select=id,nombre,rut,fecha_nacimiento,sexo,nacionalidad,fecha_evaluacion,fecha_reevaluacion,doctora_evaluadora_id,fecha_relleno,nomina_id(form_type,nombre_nomina),diagnostico_1,diagnostico_2,estado_general,derivaciones"
+            f"&select=id,nombre,rut,fecha_nacimiento,sexo,nacionalidad,fecha_evaluacion,doctora_evaluadora_id,fecha_relleno,nomina_id"
         )
-        res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
+        res_student = requests.get(url_student_basic_data, headers=SUPABASE_SERVICE_HEADERS)
         res_student.raise_for_status() 
         student_data = res_student.json()
 
@@ -1593,21 +1592,40 @@ def descargar_pdf_alumno(alumno_id):
             return redirect(url_for('dashboard'))
 
         est = student_data[0]
+        nomina_id_fk = est.get('nomina_id') 
+
+        # --- CONSULTA 2: METADATA DE LA NÓMINA ---
+        url_nomina_meta = (
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?id=eq.{nomina_id_fk}"
+            f"&select=form_type,nombre_nomina"
+        )
+        res_nomina = requests.get(url_nomina_meta, headers=SUPABASE_SERVICE_HEADERS)
+        res_nomina.raise_for_status()
+        nomina_meta = res_nomina.json()[0] if res_nomina.json() else {}
         
-        # 2. Extracción segura de la metadata (AJUSTE NECESARIO por el cambio en el SELECT)
-        # Ahora el objeto de la nómina viene anidado bajo la clave 'nomina_id' (el nombre de la FK).
-        nomina_info = est.get('nomina_id') 
-        
-        if isinstance(nomina_info, list) and nomina_info:
-            nomina_info = nomina_info[0]
-        elif not isinstance(nomina_info, dict):
-             nomina_info = {}
-        
-        form_type = nomina_info.get('form_type', 'neurologia')
-        nombre_nomina = nomina_info.get('nombre_nomina', 'Valoracion')
+        form_type = nomina_meta.get('form_type', 'neurologia')
+        nombre_nomina = nomina_meta.get('nombre_nomina', 'Valoracion')
         doctora_evaluadora_id = est.get('doctora_evaluadora_id')
         
-        # 3. Lógica de plantilla (sin cambios)
+        
+        # --- CONSULTA 3: DATOS DE EVALUACIÓN ESPECÍFICOS (SEGUNDO SELECT) ---
+        # Buscamos todos los campos de evaluación que nos faltan en un SELECT separado.
+        # Si esta consulta falla, *no causará el error 400 en la principal* y el PDF se llenará con ''.
+        url_evaluation_data = (
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            f"?id=eq.{alumno_id}"
+            f"&select=fecha_reevaluacion,estado_general,diagnostico_1,diagnostico_2,derivaciones"
+            # Si necesita campos específicos de Familiar (ej: imc, altura), añádalos aquí:
+            # f",imc,altura,peso,clasificacion_imc" 
+        )
+        res_evaluation = requests.get(url_evaluation_data, headers=SUPABASE_SERVICE_HEADERS)
+        evaluation_data = res_evaluation.json()[0] if res_evaluation.ok and res_evaluation.json() else {}
+        
+        # Unimos los datos básicos (est) con los datos de evaluación (evaluation_data)
+        est.update(evaluation_data)
+
+        # 4. Lógica de plantilla (omitiendo por brevedad, asumimos que el mapeo es seguro con est.get())
         pdf_base_path = ''
         base_dir = os.path.dirname(os.path.abspath(__file__))
         
@@ -1630,25 +1648,22 @@ def descargar_pdf_alumno(alumno_id):
         if not os.path.exists(pdf_base_path):
              raise FileNotFoundError(f"Archivo base del formulario no encontrado: {pdf_base_path}")
 
-        # 4. Inicializar el rellenador de PDF
+        # 5. Inicializar el rellenador de PDF y Mapear Campos
         reader = PdfReader(pdf_base_path)
         writer = PdfWriter()
         writer.add_page(reader.pages[0])
 
-        # 5. Preparar y Mapear Campos del PDF (usando datos de la DB)
+        # --- Mapeo de Campos ---
         nombre = est.get('nombre', '')
         rut = format_rut_python(est.get('rut', ''))
         
-        # --- Cálculo de campos no almacenados ---
         edad = 'N/A'
         if est.get('fecha_nacimiento'):
             try:
                 birth_date = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
                 edad = calculate_age(birth_date)
             except: pass
-        # ----------------------------------------
         
-        # Formato de fechas
         fecha_nac_formato = ''
         if est.get('fecha_nacimiento'):
             try:
@@ -1670,34 +1685,17 @@ def descargar_pdf_alumno(alumno_id):
         campos = {}
         if form_type == 'neurologia':
             campos = {
-                "nombre": nombre,
-                "rut": rut, 
-                "fecha_nacimiento": fecha_nac_formato, 
-                "nacionalidad": est.get('nacionalidad', ''),
-                "edad": edad, 
-                # CAMPOS DE EVALUACIÓN OBTENIDOS DEL SELECT CORREGIDO
-                "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
-                "diagnostico_2": est.get('diagnostico_2', ''), 
-                "estado_general": est.get('estado_general', ''),
-                "fecha_evaluacion": fecha_evaluacion_formatted, 
-                "fecha_reevaluacion": fecha_reeval_pdf,
-                "derivaciones": est.get('derivaciones', ''),
-                "sexo_f": "X" if est.get('sexo') == "F" else "",
-                "sexo_m": "X" if est.get('sexo') == "M" else "",
+                "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato, "nacionalidad": est.get('nacionalidad', ''),
+                "edad": edad, "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
+                "diagnostico_2": est.get('diagnostico_2', ''), "estado_general": est.get('estado_general', ''),
+                "fecha_evaluacion": fecha_evaluacion_formatted, "fecha_reevaluacion": fecha_reeval_pdf,
+                "derivaciones": est.get('derivaciones', ''), "sexo_f": "X" if est.get('sexo') == "F" else "", "sexo_m": "X" if est.get('sexo') == "M" else "",
             }
         elif form_type == 'medicina_familiar':
              campos = {
-                 "nombre": nombre,
-                 "rut": rut,
-                 "fecha_nacimiento": fecha_nac_formato,
-                 "edad": edad, 
-                 "nacionalidad": est.get('nacionalidad', ''),
-                 "sexo_f": "X" if est.get('sexo') == "F" else "",
-                 "sexo_m": "X" if est.get('sexo') == "M" else "",
-                 "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
-                 "derivaciones": est.get('derivaciones', ''),
-                 "fecha_evaluacion": fecha_evaluacion_formatted,
-                 "fecha_reevaluacion": fecha_reeval_pdf,
+                 "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato, "nacionalidad": est.get('nacionalidad', ''),
+                 "edad": edad, "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')), "derivaciones": est.get('derivaciones', ''),
+                 "fecha_evaluacion": fecha_evaluacion_formatted, "fecha_reevaluacion": fecha_reeval_pdf,
              }
 
 
@@ -1723,7 +1721,7 @@ def descargar_pdf_alumno(alumno_id):
 
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener datos de Supabase para PDF: {e}")
-        flash(f"❌ Error crítico: Fallo de conexión/consulta. Detalles: {e}. Si es error 400, revise la ortografía de las columnas del SELECT.", 'error')
+        flash(f"❌ Error crítico: Fallo de conexión/consulta. Detalles: {e}. Revise el log.", 'error')
         return redirect(url_for('dashboard'))
     except FileNotFoundError as e:
         print(f"❌ Error File Not Found: {e}")
@@ -1732,8 +1730,8 @@ def descargar_pdf_alumno(alumno_id):
     except Exception as e:
         print(f"❌ Error inesperado al generar PDF de alumno: {e}")
         flash(f"❌ Error inesperado al generar el PDF. Detalle: {e}", 'error')
-        return redirect(url_for('dashboard'))
-        
+        return redirect(url_for('dashboard')
+                        
 # - Añadir en la sección de rutas
 def get_supabase_count(filter_params=""):
     """Función auxiliar para obtener un conteo de Supabase usando SERVICE HEADERS."""

@@ -1814,9 +1814,10 @@
         }
 
 
-        function renderNominas(nominas, containerElement, noResultsMsg) {
+function renderNominas(nominas, containerElement, noResultsMsg) {
             containerElement.innerHTML = ''; 
             if (!nominas || nominas.length === 0) {
+                noResultsMsg.textContent = "No hay alumnos en esta nómina."; // Modificar mensaje
                 noResultsMsg.style.display = 'block';
                 return;
             }
@@ -1826,19 +1827,26 @@
             nominas.forEach(alumno => {
                 const downloadUrl = `/descargar_pdf_alumno/${alumno.id}`;
                 
+                // Determina la clase CSS y si el botón debe ser un <a> o un <button> deshabilitado
+                const downloadButtonHtml = alumno.descarga_habilitada ? 
+                    `<a href="${downloadUrl}" target="_blank" class="action-button blue">
+                        <i class="fa-solid fa-file-pdf"></i> Descargar Valoración (PDF)
+                    </a>` : 
+                    `<button class="action-button red opacity-50 cursor-not-allowed" disabled title="No disponible hasta ser evaluado">
+                        <i class="fa-solid fa-lock"></i> Pendiente (PDF)
+                    </button>`;
+
                 const itemCard = `
-                    <li class="item-card flex justify-between items-center flex-wrap">
+                    <li class="item-card flex justify-between items-center flex-wrap" style="border-left-color: ${alumno.descarga_habilitada ? 'var(--highlight-green)' : 'var(--danger-red)'};">
                         <div class="alumno-item-info flex-grow">
                             <i class="fa-solid fa-user-graduate mr-2 text-primary-blue"></i>
                             <span class="font-bold">${alumno.nombre_alumno}</span> | RUT: ${alumno.rut_alumno || 'N/A'}
                             <span class="text-sm text-gray-500 block md:inline-block md:ml-4">
-                                Nomina: ${alumno.nombre_nomina || 'N/A'} | Evaluación: ${alumno.fecha_evaluacion || 'N/A'}
+                                Nomina: ${alumno.nombre_nomina || 'N/A'} | Estado: <strong>${alumno.estado}</strong>
                             </span>
                         </div>
                         <div class="item-card-actions mt-3 md:mt-0 flex flex-wrap justify-end gap-3">
-                            <a href="${downloadUrl}" target="_blank" class="action-button blue">
-                                <i class="fa-solid fa-file-pdf"></i> Descargar Valoración (PDF)
-                            </a>
+                            ${downloadButtonHtml}
                             <button class="action-button red" onclick="showCorrectionModal('${alumno.id}', '${alumno.nombre_alumno}')">
                                 <i class="fa-solid fa-triangle-exclamation"></i> Solicitar Corrección
                             </button>
@@ -1847,8 +1855,8 @@
                 `;
                 containerElement.innerHTML += itemCard;
             });
+            // NOTA: Asegúrate de que las variables CSS --highlight-green y --danger-red estén definidas en tu <style>.
         }
-
 
         function handleAccessPassword(event) {
             event.preventDefault(); 

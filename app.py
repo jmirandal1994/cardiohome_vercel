@@ -1473,6 +1473,7 @@ def evaluados(establecimiento):
 
 # --- NUEVA RUTA: RUTA DE DESBLOQUEO DEL COORDINADOR DE ESCUELA ---
 # app-30.py (Reemplaza la función /api/nomina/desbloquear completa)
+# app-30.py (Reemplaza la función /api/nomina/desbloquear completa)
 @app.route('/api/nomina/desbloquear', methods=['POST'])
 def desbloquear_nomina():
     # 1. Verificación Inicial de Seguridad
@@ -1516,28 +1517,35 @@ def desbloquear_nomina():
             url_students = (
                 f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
                 f"?nomina_id=in.({nomina_ids_str})"
-                f"&select=id,nombre,rut,fecha_evaluacion,nominas_medicas(nombre_nomina)" # Aquí se genera el dato anidado
+                f"&select=id,nombre,rut,fecha_evaluacion,nominas_medicas(nombre_nomina)" 
                 f"&fecha_relleno.not.is.null"
                 f"&order=nombre.asc"
             )
 
             nominas_raw = requests.get(url_students, headers=SUPABASE_SERVICE_HEADERS).json()
             
-            # 5. Procesamiento de datos (CORRECCIÓN APLICADA AQUÍ)
+            # 5. Procesamiento de datos (CORRECCIÓN DEFINITIVA APLICADA AQUÍ)
             nominas_procesadas = []
             for alumno in nominas_raw:
                 nombre_nomina_raw = alumno.get('nominas_medicas')
                 nombre_nomina = 'N/A'
                 
                 if isinstance(nombre_nomina_raw, list) and nombre_nomina_raw:
-                     # Caso 1: Es una lista de resultados (toma el primer nombre)
-                     nombre_nomina = nombre_nomina_raw[0].get('nombre_nomina', 'N/A')
+                    # Caso 1: Supabase devuelve una lista (lista de dicts o lista de strings)
+                    first_element = nombre_nomina_raw[0]
+                    
+                    if isinstance(first_element, dict):
+                        # CASO ESPERADO: Es un diccionario, extraemos el nombre
+                        nombre_nomina = first_element.get('nombre_nomina', 'N/A')
+                    else:
+                        # CORRECCIÓN: Si no es un diccionario, probablemente es una cadena. Lo usamos como nombre.
+                        nombre_nomina = str(first_element) if first_element is not None else 'N/A'
+
                 elif isinstance(nombre_nomina_raw, dict):
-                    # Caso 2: Es un diccionario (toma el nombre directamente)
+                    # Caso 2: Supabase devuelve un diccionario
                     nombre_nomina = nombre_nomina_raw.get('nombre_nomina', 'N/A')
-                elif nombre_nomina_raw is not None:
-                    # Caso 3: Es otra cosa (como una cadena simple si Supabase cambia el formato)
-                    nombre_nomina = str(nombre_nomina_raw)
+                
+                # NO necesitamos el 'elif nombre_nomina_raw is not None' porque ya se cubren todos los casos.
 
                 
                 nominas_procesadas.append({

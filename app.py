@@ -1581,7 +1581,6 @@ def descargar_pdf_alumno(alumno_id):
 
     try:
         # 1. Obtener datos del estudiante y de la nómina asociada
-        # CRÍTICO: Traemos el ID de la doctora evaluadora y la metadata de la nómina
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
@@ -1592,7 +1591,6 @@ def descargar_pdf_alumno(alumno_id):
         student_data = res_student.json()
 
         if not student_data or not student_data[0].get('fecha_relleno'):
-            # Si no está evaluado, muestra un error y redirige (comportamiento correcto)
             flash(f"❌ Alumno ID {alumno_id} no encontrado o no evaluado.", 'error')
             return redirect(url_for('dashboard'))
 
@@ -1607,7 +1605,6 @@ def descargar_pdf_alumno(alumno_id):
         
         form_type = nomina_info.get('form_type', 'neurologia')
         nombre_nomina = nomina_info.get('nombre_nomina', 'Valoracion')
-        # ID de la Doctora que puso la firma
         doctora_evaluadora_id = est.get('doctora_evaluadora_id')
         
         # 2. Seleccionar el PDF base (Lógica de plantilla personalizada)
@@ -1615,7 +1612,6 @@ def descargar_pdf_alumno(alumno_id):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         
         if form_type == 'neurologia':
-            # 2.1. Intenta usar el PDF específico de la Doctora EVALUADORA
             specific_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{doctora_evaluadora_id}.pdf"
             full_pdf_bases_dir_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR)
             specific_pdf_path = os.path.join(full_pdf_bases_dir_path, specific_pdf_filename)
@@ -1623,14 +1619,12 @@ def descargar_pdf_alumno(alumno_id):
             if doctora_evaluadora_id and os.path.exists(specific_pdf_path):
                 pdf_base_path = specific_pdf_path
             else:
-                # 2.2. Fallback al PDF por defecto
                 pdf_base_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
                 
         elif form_type == 'medicina_familiar':
             pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
         
         else:
-             # Si el tipo de formulario es desconocido (Ej: 'dental'), lanza error de archivo no encontrado
              raise FileNotFoundError(f"Tipo de formulario no reconocido: {form_type}")
         
         if not os.path.exists(pdf_base_path):
@@ -1682,7 +1676,6 @@ def descargar_pdf_alumno(alumno_id):
                 "sexo_m": "X" if est.get('sexo') == "M" else "",
             }
         elif form_type == 'medicina_familiar':
-             # Debe incluir el mapeo de todos los campos de medicina_familiar
              campos = {
                  "nombre": nombre,
                  "rut": rut,
@@ -1693,7 +1686,7 @@ def descargar_pdf_alumno(alumno_id):
                  "sexo_m": "X" if est.get('sexo') == "M" else "",
                  "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
                  "derivaciones": est.get('derivaciones', ''),
-                 "fecha_evaluacion": fecha_evaluacion_formatted, 
+                 "fecha_evaluacion": fecha_evaluacion_formatted,
                  "fecha_reevaluacion": fecha_reeval_pdf,
                  # ... (Otros campos de Medicina Familiar que persistan en la DB) ...
              }
@@ -1716,7 +1709,6 @@ def descargar_pdf_alumno(alumno_id):
         # Nombre del archivo para la descarga
         nombre_archivo_descarga = f"Valoracion_{nombre.replace(' ', '_')}_{rut}_{nombre_nomina.replace(' ', '_')}.pdf"
         
-        # CRÍTICO: Usamos send_file con as_attachment=True para forzar la descarga
         return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
 
     except requests.exceptions.RequestException as e:

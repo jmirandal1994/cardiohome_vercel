@@ -1581,12 +1581,12 @@ def descargar_pdf_alumno(alumno_id):
 
     try:
         # 1. Obtener datos del estudiante y de la nómina asociada
-        # SELECT FINAL Y MÁS SEGURO: Solo los campos básicos de identificación y fechas de control.
-        # Esto elimina los campos que causaban el error 400.
+        # SELECT MÍNIMO MÁS SEGURO: Sólo IDs, nombre, RUT, fecha de nacimiento, fecha de control, y el Join.
+        # Eliminamos: sexo, nacionalidad, fecha_reevaluacion, estado_general, diagnostico, derivaciones
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            f"&select=id,nombre,rut,fecha_nacimiento,sexo,nacionalidad,fecha_evaluacion,fecha_reevaluacion,doctora_evaluadora_id,fecha_relleno,nominas_medicas(form_type,nombre_nomina)"
+            f"&select=id,nombre,rut,fecha_nacimiento,fecha_evaluacion,doctora_evaluadora_id,fecha_relleno,nominas_medicas(form_type,nombre_nomina)"
         )
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
         res_student.raise_for_status() 
@@ -1663,11 +1663,8 @@ def descargar_pdf_alumno(alumno_id):
                 fecha_evaluacion_formatted = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
             except ValueError: pass
 
-        fecha_reeval_pdf = ''
-        if est.get('fecha_reevaluacion'):
-            try:
-                fecha_reeval_pdf = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
-            except ValueError: pass
+        # Nota: Los campos de evaluación problemáticos (estado_general, diagnostico, fecha_reevaluacion)
+        # ahora usarán est.get('campo', '') para que se llenen como cadenas vacías en el PDF si no se devolvieron en el SELECT.
 
         campos = {}
         if form_type == 'neurologia':
@@ -1675,13 +1672,13 @@ def descargar_pdf_alumno(alumno_id):
                 "nombre": nombre,
                 "rut": rut, 
                 "fecha_nacimiento": fecha_nac_formato, 
-                "nacionalidad": est.get('nacionalidad', ''),
+                "nacionalidad": est.get('nacionalidad', ''), # Devolverá '' si no estaba en el SELECT
                 "edad": edad, 
-                "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')), # Intentamos obtener el mejor diagnostico
-                "diagnostico_2": est.get('diagnostico_2', ''), 
-                "estado_general": est.get('estado_general', ''),
+                "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')), 
+                "diagnostico_2": est.get('diagnostico_2', ''),
+                "estado_general": est.get('estado_general', ''), 
                 "fecha_evaluacion": fecha_evaluacion_formatted, 
-                "fecha_reevaluacion": fecha_reeval_pdf,
+                "fecha_reevaluacion": est.get('fecha_reevaluacion', ''),
                 "derivaciones": est.get('derivaciones', ''),
                 "sexo_f": "X" if est.get('sexo') == "F" else "",
                 "sexo_m": "X" if est.get('sexo') == "M" else "",
@@ -1698,7 +1695,7 @@ def descargar_pdf_alumno(alumno_id):
                  "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
                  "derivaciones": est.get('derivaciones', ''),
                  "fecha_evaluacion": fecha_evaluacion_formatted,
-                 "fecha_reevaluacion": fecha_reeval_pdf,
+                 "fecha_reevaluacion": est.get('fecha_reevaluacion', ''),
                  # ... (Otros campos de Medicina Familiar que persistan en la DB) ...
              }
 
@@ -1724,9 +1721,8 @@ def descargar_pdf_alumno(alumno_id):
         return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
 
     except requests.exceptions.RequestException as e:
-        # CAPTURA EL ERROR CRÍTICO Y LO MUESTRA COMO FLASH MESSAGE
         print(f"❌ Error al obtener datos de Supabase para PDF: {e}")
-        flash(f"❌ Error crítico: Fallo de conexión/consulta. Detalles: {e}. Revise el log para las columnas.", 'error')
+        flash(f"❌ Error crítico: Fallo de conexión/consulta. Detalles: {e}. Confirme que las columnas existen en la BD.", 'error')
         return redirect(url_for('dashboard'))
     except FileNotFoundError as e:
         print(f"❌ Error File Not Found: {e}")
@@ -1734,8 +1730,8 @@ def descargar_pdf_alumno(alumno_id):
         return redirect(url_for('dashboard'))
     except Exception as e:
         print(f"❌ Error inesperado al generar PDF de alumno: {e}")
-        flash(f"❌ Error inesperado al generar PDF. Detalle: {e}", 'error')
-        return redirect(url_for('dashboard'))        
+        flash(f"❌ Error inesperado al generar el PDF. Detalle: {e}", 'error')
+        return redirect(url_for('dashboard'))
         
 # - Añadir en la sección de rutas
 def get_supabase_count(filter_params=""):

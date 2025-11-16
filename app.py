@@ -1581,10 +1581,11 @@ def descargar_pdf_alumno(alumno_id):
 
     try:
         # 1. Obtener datos del estudiante y de la nómina asociada
+        # CORRECCIÓN CLAVE: Eliminamos el '*' y listamos todas las columnas necesarias.
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            f"&select=*,nominas_medicas(form_type,nombre_nomina),doctora_evaluadora_id"
+            f"&select=id,nombre,rut,fecha_nacimiento,edad,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,doctora_evaluadora_id,nominas_medicas(form_type,nombre_nomina)"
         )
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
         res_student.raise_for_status()
@@ -1596,6 +1597,11 @@ def descargar_pdf_alumno(alumno_id):
 
         est = student_data[0]
         
+        # Validación de descarga (mantenida por seguridad)
+        if not est.get('fecha_relleno'):
+            flash("❌ El formulario aún está pendiente de evaluación.", 'error')
+            return redirect(url_for('dashboard'))
+
         # Extracción segura de la metadata
         nomina_info = est.get('nominas_medicas')
         if isinstance(nomina_info, list) and nomina_info:
@@ -1676,6 +1682,7 @@ def descargar_pdf_alumno(alumno_id):
                 "sexo_m": "X" if est.get('sexo') == "M" else "",
             }
         elif form_type == 'medicina_familiar':
+             # Debe incluir el mapeo de todos los campos de medicina_familiar
              campos = {
                  "nombre": nombre,
                  "rut": rut,
@@ -1709,6 +1716,7 @@ def descargar_pdf_alumno(alumno_id):
         # Nombre del archivo para la descarga
         nombre_archivo_descarga = f"Valoracion_{nombre.replace(' ', '_')}_{rut}_{nombre_nomina.replace(' ', '_')}.pdf"
         
+        # Usamos send_file con as_attachment=True para forzar la descarga
         return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
 
     except requests.exceptions.RequestException as e:

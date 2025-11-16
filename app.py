@@ -1527,31 +1527,36 @@ def desbloquear_nomina():
             # 5. Procesamiento de datos (CORRECCIÓN DEFINITIVA APLICADA AQUÍ)
             nominas_procesadas = []
             for alumno in nominas_raw:
+                
+                # --- VERIFICACIÓN FINAL CRÍTICA ---
+                # Si el elemento no es un diccionario, es un error de dato de Supabase. Lo saltamos.
+                if not isinstance(alumno, dict):
+                    print(f"ADVERTENCIA: Elemento de alumno no es un diccionario y fue saltado: {alumno}")
+                    continue 
+                # -----------------------------------
+                
                 nombre_nomina_raw = alumno.get('nominas_medicas')
                 nombre_nomina = 'N/A'
                 
                 if isinstance(nombre_nomina_raw, list) and nombre_nomina_raw:
-                    # Caso 1: Supabase devuelve una lista (lista de dicts o lista de strings)
+                    # Caso 1: Supabase devuelve una lista
                     first_element = nombre_nomina_raw[0]
                     
                     if isinstance(first_element, dict):
-                        # CASO ESPERADO: Es un diccionario, extraemos el nombre
                         nombre_nomina = first_element.get('nombre_nomina', 'N/A')
                     else:
-                        # CORRECCIÓN: Si no es un diccionario, probablemente es una cadena. Lo usamos como nombre.
+                        # Si es un string/otro, lo usamos como nombre para evitar el error .get()
                         nombre_nomina = str(first_element) if first_element is not None else 'N/A'
 
                 elif isinstance(nombre_nomina_raw, dict):
                     # Caso 2: Supabase devuelve un diccionario
                     nombre_nomina = nombre_nomina_raw.get('nombre_nomina', 'N/A')
                 
-                # NO necesitamos el 'elif nombre_nomina_raw is not None' porque ya se cubren todos los casos.
-
                 
                 nominas_procesadas.append({
                     'id': alumno['id'],
-                    'nombre_alumno': alumno['nombre'],
-                    'rut_alumno': format_rut_python(alumno['rut']), 
+                    'nombre_alumno': alumno.get('nombre'), 
+                    'rut_alumno': format_rut_python(alumno.get('rut')), 
                     'fecha_evaluacion': alumno.get('fecha_evaluacion') or 'N/A',
                     'nombre_nomina': nombre_nomina
                 })

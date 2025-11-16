@@ -1576,7 +1576,7 @@ def descargar_pdf_alumno(alumno_id):
         return redirect(url_for('dashboard'))
 
     try:
-        # 1. CONSULTA 1: DATOS MÍNIMOS 
+        # 1. CONSULTA 1: DATOS BÁSICOS DEL ESTUDIANTE (Select Mínimo Seguro)
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
@@ -1607,10 +1607,10 @@ def descargar_pdf_alumno(alumno_id):
         nombre_nomina = nomina_meta.get('nombre_nomina', 'Valoracion')
         doctora_evaluadora_id = est.get('doctora_evaluadora_id')
         
-        # 3. CONSULTA 3: DATOS DE EVALUACIÓN FALTANTES (Incluyendo 'diagnostico' original)
+        # 3. CONSULTA 3: DATOS DE EVALUACIÓN FALTANTES (Incluyendo 'diagnostico' original y otros campos)
+        # Se requiere esta consulta para los campos que no están en el SELECT mínimo
         url_evaluation_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-            # Incluimos el campo 'diagnostico' que contiene el valor original para usarlo como respaldo.
             f"?id=eq.{alumno_id}"
             f"&select=estado_general,diagnostico,diagnostico_1,diagnostico_2,derivaciones" 
         )
@@ -1618,48 +1618,21 @@ def descargar_pdf_alumno(alumno_id):
         
         if res_evaluation.ok and res_evaluation.json():
             evaluation_data = res_evaluation.json()[0] 
-            est.update(evaluation_data) 
+            est.update(evaluation_data) # Fusionamos los datos faltantes
         
         
-        # 4. Lógica de plantilla (Selección del PDF)
-        pdf_base_path = ''
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        
-        if form_type == 'neurologia':
-            specific_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{doctora_evaluadora_id}.pdf"
-            full_pdf_bases_dir_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR)
-            specific_pdf_path = os.path.join(full_pdf_bases_dir_path, specific_pdf_filename)
-
-            if doctora_evaluadora_id and os.path.exists(specific_pdf_path):
-                pdf_base_path = specific_pdf_path
-            else:
-                pdf_base_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
-                
-        elif form_type == 'medicina_familiar':
-            pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
-        
-        else:
-             raise FileNotFoundError(f"Tipo de formulario no reconocido: {form_type}")
-        
-        if not os.path.exists(pdf_base_path):
-             raise FileNotFoundError(f"Archivo base del formulario no encontrado: {pdf_base_path}")
-
-        # 5. Inicializar el rellenador de PDF
-        reader = PdfReader(pdf_base_path)
-        writer = PdfWriter()
-        writer.add_page(reader.pages[0])
-
-        # 6. Preparar y Mapear Campos del PDF 
+        # 4. Preparación de Variables y Mapeo de Campos
         nombre = est.get('nombre', '')
         rut = format_rut_python(est.get('rut', ''))
         
-        # --- Cálculo de campos ---
+        # --- Cálculo de campos no almacenados ---
         edad = 'N/A'
         if est.get('fecha_nacimiento'):
             try:
                 birth_date = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
                 edad = calculate_age(birth_date)
             except: pass
+        # ----------------------------------------
         
         # Formato de fechas
         fecha_nac_formato = ''
@@ -1681,14 +1654,17 @@ def descargar_pdf_alumno(alumno_id):
             except ValueError: pass
 
         
-        # LÓGICA DE FALLBACK PARA DIAGNÓSTICO
-        diagnostico_1_valor = est.get('diagnostico_1')
-        diagnostico_2_valor = est.get('diagnostico_2')
+        # --- LÓGICA DE FALLBACK PARA DIAGNÓSTICO (CORREGIDA) ---
+        diagnostico_principal_db = est.get('diagnostico', '')
         
-        # Si diagnostico_1 está vacío, usamos el valor del campo 'diagnostico' original como respaldo.
-        if not diagnostico_1_valor and est.get('diagnostico'):
-            diagnostico_1_valor = est.get('diagnostico')
-
+        diagnostico_1_valor = est.get('diagnostico_1')
+        if not diagnostico_1_valor:
+            diagnostico_1_valor = diagnostico_principal_db
+        
+        diagnostico_2_valor = est.get('diagnostico_2')
+        if not diagnostico_2_valor:
+            diagnostico_2_valor = diagnostico_principal_db
+        # --------------------------------------------------------
 
         campos = {}
         if form_type == 'neurologia':
@@ -1723,6 +1699,7 @@ def descargar_pdf_alumno(alumno_id):
                  
                  # APLICAMOS LA LÓGICA DE FALLBACK
                  "diagnostico_1": diagnostico_1_valor if diagnostico_1_valor else '',
+                 "diagnostico_2": diagnostico_2_valor if diagnostico_2_valor else '', # Añadir este campo aquí
                  
                  "derivaciones": est.get('derivaciones', ''),
                  
@@ -1732,6 +1709,11 @@ def descargar_pdf_alumno(alumno_id):
 
 
         # 7. Llenado final del PDF y configuración
+        pdf_base_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), PDF_BASE_NEUROLOGIA)
+        reader = PdfReader(pdf_base_path)
+        writer = PdfWriter()
+        writer.add_page(reader.pages[0])
+        
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({
                 NameObject("/AcroForm"): DictionaryObject()
@@ -1753,7 +1735,7 @@ def descargar_pdf_alumno(alumno_id):
 
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener datos de Supabase para PDF: {e}")
-        flash(f"❌ Error al generar PDF: Fallo de conexión/consulta. Detalles: {e}.", 'error')
+        flash(f"❌ Error al generar PDF: Fallo de conexión/consulta. Detalles: {e}. Revise el log para las columnas.", 'error')
         return redirect(url_for('dashboard'))
     except FileNotFoundError as e:
         print(f"❌ Error File Not Found: {e}")

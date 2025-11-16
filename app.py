@@ -1581,40 +1581,56 @@ def descargar_pdf_alumno(alumno_id):
 
     try:
         # 1. Obtener datos del estudiante y de la nómina asociada
+        # CRÍTICO: Traemos el ID de la doctora evaluadora y la metadata de la nómina
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            f"&select=*,nominas_medicas(form_type,doctora_id_para_formulario,nombre_nomina)" # Obtener metadata
+            f"&select=*,nominas_medicas(form_type,nombre_nomina),doctora_evaluadora_id"
         )
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
         res_student.raise_for_status()
         student_data = res_student.json()
 
         if not student_data or not student_data[0].get('fecha_relleno'):
+            # Si no está evaluado, muestra un error y redirige (comportamiento correcto)
             flash(f"❌ Alumno ID {alumno_id} no encontrado o no evaluado.", 'error')
             return redirect(url_for('dashboard'))
 
         est = student_data[0]
         
-        # Extracción segura de la metadata de la nómina
-        nomina_info = est.get('nominas_medicas', {})
-        if isinstance(nomina_info, list):
-            nomina_info = nomina_info[0] if nomina_info else {}
+        # Extracción segura de la metadata
+        nomina_info = est.get('nominas_medicas')
+        if isinstance(nomina_info, list) and nomina_info:
+            nomina_info = nomina_info[0]
         elif not isinstance(nomina_info, dict):
              nomina_info = {}
         
         form_type = nomina_info.get('form_type', 'neurologia')
-        doctora_id_para_formulario = nomina_info.get('doctora_id_para_formulario')
         nombre_nomina = nomina_info.get('nombre_nomina', 'Valoracion')
+        # ID de la Doctora que puso la firma
+        doctora_evaluadora_id = est.get('doctora_evaluadora_id')
         
-        # 2. Seleccionar el PDF base (Lógica replicada de generar_pdf)
+        # 2. Seleccionar el PDF base (Lógica de plantilla personalizada)
         pdf_base_path = ''
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        
         if form_type == 'neurologia':
-            pdf_base_path = get_doctor_specific_neurologia_pdf(doctora_id_para_formulario)
+            # 2.1. Intenta usar el PDF específico de la Doctora EVALUADORA
+            specific_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{doctora_evaluadora_id}.pdf"
+            full_pdf_bases_dir_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR)
+            specific_pdf_path = os.path.join(full_pdf_bases_dir_path, specific_pdf_filename)
+
+            if doctora_evaluadora_id and os.path.exists(specific_pdf_path):
+                pdf_base_path = specific_pdf_path
+            else:
+                # 2.2. Fallback al PDF por defecto
+                pdf_base_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
+                
         elif form_type == 'medicina_familiar':
-            base_dir = os.path.dirname(os.path.abspath(__file__))
             pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
+        
         else:
+             # Si el tipo de formulario es desconocido (Ej: 'dental'), lanza error de archivo no encontrado
              raise FileNotFoundError(f"Tipo de formulario no reconocido: {form_type}")
         
         if not os.path.exists(pdf_base_path):
@@ -1666,23 +1682,24 @@ def descargar_pdf_alumno(alumno_id):
                 "sexo_m": "X" if est.get('sexo') == "M" else "",
             }
         elif form_type == 'medicina_familiar':
+             # Debe incluir el mapeo de todos los campos de medicina_familiar
              campos = {
-                "nombre": nombre,
-                "rut": rut,
-                "fecha_nacimiento": fecha_nac_formato,
-                "edad": est.get('edad', ''),
-                "nacionalidad": est.get('nacionalidad', ''),
-                "sexo_f": "X" if est.get('sexo') == "F" else "",
-                "sexo_m": "X" if est.get('sexo') == "M" else "",
-                "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
-                "derivaciones": est.get('derivaciones', ''),
-                "fecha_evaluacion": fecha_evaluacion_formatted, 
-                "fecha_reevaluacion": fecha_reeval_pdf,
-                # NOTA: Debes asegurar que todos los campos del PDF de Medicina Familiar
-                # tengan un mapeo a la columna correspondiente en estudiantes_nomina (est.get('columna_db'))
-            }
+                 "nombre": nombre,
+                 "rut": rut,
+                 "fecha_nacimiento": fecha_nac_formato,
+                 "edad": est.get('edad', ''),
+                 "nacionalidad": est.get('nacionalidad', ''),
+                 "sexo_f": "X" if est.get('sexo') == "F" else "",
+                 "sexo_m": "X" if est.get('sexo') == "M" else "",
+                 "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
+                 "derivaciones": est.get('derivaciones', ''),
+                 "fecha_evaluacion": fecha_evaluacion_formatted, 
+                 "fecha_reevaluacion": fecha_reeval_pdf,
+                 # ... (Otros campos de Medicina Familiar que persistan en la DB) ...
+             }
 
-        # Llenado final del PDF y configuración
+
+        # 5. Llenado y Descarga
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({
                 NameObject("/AcroForm"): DictionaryObject()
@@ -1699,22 +1716,22 @@ def descargar_pdf_alumno(alumno_id):
         # Nombre del archivo para la descarga
         nombre_archivo_descarga = f"Valoracion_{nombre.replace(' ', '_')}_{rut}_{nombre_nomina.replace(' ', '_')}.pdf"
         
+        # CRÍTICO: Usamos send_file con as_attachment=True para forzar la descarga
         return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
 
     except requests.exceptions.RequestException as e:
-        print(f"❌ Error al obtener datos de Supabase para PDF: {e} - {res_student.text if 'res_student' in locals() else ''}")
+        print(f"❌ Error al obtener datos de Supabase para PDF: {e}")
         flash('Error al generar PDF: Fallo de conexión o datos.', 'error')
         return redirect(url_for('dashboard'))
     except FileNotFoundError as e:
         print(f"❌ Error File Not Found: {e}")
-        flash(f"❌ Error al generar el PDF: {e}", 'error')
+        flash(f"❌ Error al generar el PDF: Archivo base no encontrado.", 'error')
         return redirect(url_for('dashboard'))
     except Exception as e:
         print(f"❌ Error inesperado al generar PDF de alumno: {e}")
-        flash(f"❌ Error al generar el PDF: {e}", 'error')
+        flash(f"❌ Error al generar el PDF. Detalle: {e}", 'error')
         return redirect(url_for('dashboard'))
-
-
+        
 # - Añadir en la sección de rutas
 def get_supabase_count(filter_params=""):
     """Función auxiliar para obtener un conteo de Supabase usando SERVICE HEADERS."""

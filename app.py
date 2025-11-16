@@ -1571,17 +1571,18 @@ def desbloquear_nomina():
 # --- NUEVA RUTA: DESCARGA DE PDF POR ALUMNO ID ---@app.route('/descargar_pdf_alumno/<alumno_id>', methods=['GET'])
 @app.route('/descargar_pdf_alumno/<alumno_id>', methods=['GET'])
 def descargar_pdf_alumno(alumno_id):
+    
     if session.get('usuario') != 'coordinador_escuela':
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
 
     try:
-        # 1. Obtener datos del estudiante y de la nómina asociada
-        # SELECT FINAL: Solo los campos vitales, eliminando sexo, nacionalidad y fecha_reevaluacion.
+        # --- CONSULTA 1 (DATOS ESENCIALES DEL ALUMNO Y FK) ---
+        # SELECT MÍNIMO MÁS SEGURO: Sólo IDs, nombre, RUT, Fechas de control y nomina_id.
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            f"&select=id,nombre,rut,fecha_nacimiento,fecha_evaluacion,doctora_evaluadora_id,fecha_relleno,nomina_id,nominas_medicas(form_type,nombre_nomina)"
+            f"&select=id,nombre,rut,fecha_nacimiento,fecha_evaluacion,doctora_evaluadora_id,fecha_relleno,nomina_id,sexo,nacionalidad,fecha_reevaluacion"
         )
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
         res_student.raise_for_status() 
@@ -1592,19 +1593,36 @@ def descargar_pdf_alumno(alumno_id):
             return redirect(url_for('dashboard'))
 
         est = student_data[0]
+        nomina_id_fk = est.get('nomina_id') 
         
-        # Extracción segura de la metadata
-        nomina_info = est.get('nominas_medicas')
-        if isinstance(nomina_info, list) and nomina_info:
-            nomina_info = nomina_info[0]
-        elif not isinstance(nomina_info, dict):
-             nomina_info = {}
-        
-        form_type = nomina_info.get('form_type', 'neurologia')
-        nombre_nomina = nomina_info.get('nombre_nomina', 'Valoracion')
+        # --- CONSULTA 2 (METADATA DE LA NÓMINA - SIN JOIN) ---
+        url_nomina_meta = (
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?id=eq.{nomina_id_fk}"
+            f"&select=form_type,nombre_nomina"
+        )
+        res_nomina_meta = requests.get(url_nomina_meta, headers=SUPABASE_SERVICE_HEADERS)
+        res_nomina_meta.raise_for_status()
+        nomina_meta = res_nomina_meta.json()[0] if res_nomina_meta.json() else {}
+
+        # 3. Mapeo de Variables y Lógica de Plantilla
+        form_type = nomina_meta.get('form_type', 'neurologia')
+        nombre_nomina = nomina_meta.get('nombre_nomina', 'Valoracion')
         doctora_evaluadora_id = est.get('doctora_evaluadora_id')
         
-        # 2. Lógica de plantilla (sin cambios)
+        # --- Cálculo de campos y Formato de Fechas (sin cambios) ---
+        edad = 'N/A'
+        if est.get('fecha_nacimiento'):
+            try:
+                birth_date = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
+                edad = calculate_age(birth_date)
+            except: pass
+        
+        fecha_nac_formato = est.get('fecha_nacimiento')
+        fecha_evaluacion_formatted = est.get('fecha_evaluacion')
+        fecha_reeval_pdf = est.get('fecha_reevaluacion')
+
+        # 4. Lógica de plantilla (sin cambios)
         pdf_base_path = ''
         base_dir = os.path.dirname(os.path.abspath(__file__))
         
@@ -1627,38 +1645,14 @@ def descargar_pdf_alumno(alumno_id):
         if not os.path.exists(pdf_base_path):
              raise FileNotFoundError(f"Archivo base del formulario no encontrado: {pdf_base_path}")
 
-        # 3. Inicializar el rellenador de PDF
+        # 5. Inicializar el rellenador de PDF y Mapear Campos
         reader = PdfReader(pdf_base_path)
         writer = PdfWriter()
         writer.add_page(reader.pages[0])
 
-        # 4. Preparar y Mapear Campos del PDF (usando est.get() para los campos omitidos)
+        # --- Mapeo de Campos (Usando est.get() para seguridad máxima) ---
         nombre = est.get('nombre', '')
         rut = format_rut_python(est.get('rut', ''))
-        
-        # --- Cálculo de campos no almacenados ---
-        edad = 'N/A'
-        if est.get('fecha_nacimiento'):
-            try:
-                birth_date = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
-                edad = calculate_age(birth_date)
-            except: pass
-        # ----------------------------------------
-        
-        # Formato de fechas
-        fecha_nac_formato = ''
-        if est.get('fecha_nacimiento'):
-            try:
-                fecha_nac_formato = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').strftime('%d/%m/%Y')
-            except ValueError: pass 
-
-        fecha_evaluacion_formatted = ''
-        if est.get('fecha_evaluacion'):
-            try:
-                fecha_evaluacion_formatted = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
-            except ValueError: pass
-
-        # Nota: Usamos est.get('campo_antiguo', '') para llenar campos de evaluación que ya no están en el SELECT.
         
         campos = {}
         if form_type == 'neurologia':
@@ -1666,16 +1660,16 @@ def descargar_pdf_alumno(alumno_id):
                 "nombre": nombre,
                 "rut": rut, 
                 "fecha_nacimiento": fecha_nac_formato, 
-                "nacionalidad": est.get('nacionalidad', ''), # Devolverá ''
+                "nacionalidad": est.get('nacionalidad', ''),
                 "edad": edad, 
                 "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
-                "diagnostico_2": est.get('diagnostico_2', ''), 
-                "estado_general": est.get('estado_general', ''), 
+                "estado_general": est.get('estado_general', ''),
                 "fecha_evaluacion": fecha_evaluacion_formatted, 
-                "fecha_reevaluacion": est.get('fecha_reevaluacion', ''),
+                "fecha_reevaluacion": fecha_reeval_pdf,
                 "derivaciones": est.get('derivaciones', ''),
                 "sexo_f": "X" if est.get('sexo') == "F" else "",
                 "sexo_m": "X" if est.get('sexo') == "M" else "",
+                # Nota: Los campos que no se pidieron en el SELECT (como estado_general) se llenarán como ''
             }
         elif form_type == 'medicina_familiar':
              campos = {
@@ -1689,11 +1683,10 @@ def descargar_pdf_alumno(alumno_id):
                  "diagnostico_1": est.get('diagnostico_1', est.get('diagnostico', '')),
                  "derivaciones": est.get('derivaciones', ''),
                  "fecha_evaluacion": fecha_evaluacion_formatted,
-                 "fecha_reevaluacion": est.get('fecha_reevaluacion', ''),
+                 "fecha_reevaluacion": fecha_reeval_pdf,
              }
 
-
-        # 5. Llenado y Descarga
+        # 6. Llenado y Descarga (sin cambios)
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({
                 NameObject("/AcroForm"): DictionaryObject()
@@ -1715,7 +1708,7 @@ def descargar_pdf_alumno(alumno_id):
 
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener datos de Supabase para PDF: {e}")
-        flash(f"❌ Error al generar PDF: Fallo de conexión/consulta. Detalles: {e}. Revise el log para las columnas.", 'error')
+        flash(f"❌ Error crítico: Fallo de conexión/consulta. Detalles: {e}. Revise el log.", 'error')
         return redirect(url_for('dashboard'))
     except FileNotFoundError as e:
         print(f"❌ Error File Not Found: {e}")

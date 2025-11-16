@@ -1581,14 +1581,17 @@ def descargar_pdf_alumno(alumno_id):
 
     try:
         # 1. Obtener datos del estudiante y de la nómina asociada
-        # CORRECCIÓN CLAVE: Reducimos la lista de SELECT a campos esenciales y de evaluación.
+        # CORRECCIÓN CLAVE: SELECT MINIMALISTA
+        # Solo seleccionamos: IDs, Identificación, y Fechas principales.
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
             f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,doctora_evaluadora_id,fecha_relleno,fecha_evaluacion,fecha_reevaluacion,estado_general,diagnostico,derivaciones,nominas_medicas(form_type,nombre_nomina)"
         )
+        # NOTA: Si esta consulta vuelve a fallar, el problema es que el nombre de una de estas 13 columnas no existe.
+
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
-        res_student.raise_for_status() # Lanza HTTPError si el SELECT falla (400)
+        res_student.raise_for_status() 
         student_data = res_student.json()
 
         if not student_data or not student_data[0].get('fecha_relleno'):
@@ -1646,7 +1649,6 @@ def descargar_pdf_alumno(alumno_id):
         rut = format_rut_python(est.get('rut', ''))
         
         # --- Cálculo de campos no almacenados ---
-        # Edad (Asumiendo que calculate_age está disponible)
         edad = 'N/A'
         if est.get('fecha_nacimiento'):
             try:
@@ -1681,7 +1683,7 @@ def descargar_pdf_alumno(alumno_id):
                 "rut": rut, 
                 "fecha_nacimiento": fecha_nac_formato, 
                 "nacionalidad": est.get('nacionalidad', ''),
-                "edad": edad, # Usamos el campo calculado
+                "edad": edad, 
                 "diagnostico_1": est.get('diagnostico', ''),
                 "diagnostico_2": est.get('diagnostico', ''), 
                 "estado_general": est.get('estado_general', ''),
@@ -1692,12 +1694,11 @@ def descargar_pdf_alumno(alumno_id):
                 "sexo_m": "X" if est.get('sexo') == "M" else "",
             }
         elif form_type == 'medicina_familiar':
-             # Debe incluir el mapeo de todos los campos de medicina_familiar
              campos = {
                  "nombre": nombre,
                  "rut": rut,
                  "fecha_nacimiento": fecha_nac_formato,
-                 "edad": edad, # Usamos el campo calculado
+                 "edad": edad, 
                  "nacionalidad": est.get('nacionalidad', ''),
                  "sexo_f": "X" if est.get('sexo') == "F" else "",
                  "sexo_m": "X" if est.get('sexo') == "M" else "",

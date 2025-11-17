@@ -1849,10 +1849,11 @@ def descargar_pdf_alumno(alumno_id):
 # app-30.py (Reemplaza la función /api/dashboard_counts FINAL)
 # app-30.py (Reemplaza la función /api/dashboard_counts FINAL)
 # app-30.py (Reemplaza la función /api/dashboard_counts con la versión final basada en estado_general)
+# app-30.py (Reemplaza la función /api/dashboard_counts con la versión de CONTEO INVERSO)
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
     """Retorna el conteo total, pendiente y por especialidad de evaluaciones completadas
-       para la Coordinadora General, usando estado_general como indicador.
+       para la Coordinadora General, forzando el conteo inverso para Pendientes.
     """
     coord_id = session.get('usuario_id')
     
@@ -1860,8 +1861,8 @@ def dashboard_counts():
         return jsonify({"success": False, "message": "Acceso denegado o usuario no identificado."}), 200 
 
     try:
-        # Condición para un estudiante evaluado: estado_general NO es nulo
-        EVALUADO_FILTER = "estado_general.not.is.null" 
+        # 🟢 NUEVO FILTRO: Contar los estudiantes que son PENDIENTES (fecha_relleno IS NULL)
+        PENDIENTE_FILTER = "fecha_relleno.is.null" 
         
         # 1. Obtener TODOS los IDs de nómina asignados a este Coordinador General
         url_assigned_nominas = (
@@ -1880,7 +1881,6 @@ def dashboard_counts():
         all_assigned_ids = neuro_ids + familiar_ids
         all_assigned_ids_str = ",".join(all_assigned_ids)
         
-        # Si no hay nóminas asignadas, retornamos cero.
         if not all_assigned_ids_str:
              return jsonify({
                 "success": True, 
@@ -1890,35 +1890,36 @@ def dashboard_counts():
                 "evaluaciones_pendientes": 0
             })
         
-        # FILTRO BASE para todas las consultas: limitar a las nóminas de la coordinadora
         BASE_NOMINA_FILTER = f"nomina_id=in.({all_assigned_ids_str})"
         
         # 2. Conteo Total de ALUMNOS ASIGNADOS
         filter_total_alumnos = BASE_NOMINA_FILTER
         total_alumnos_en_nominas = get_supabase_count(filter_total_alumnos)
         
-        # 3. Conteo de ALUMNOS EVALUADOS (Contar solo filas con estado_general lleno)
-        filter_total_evaluados = f"{EVALUADO_FILTER}&{BASE_NOMINA_FILTER}"
-        total_evaluados = get_supabase_count(filter_total_evaluados)
+        # 3. Conteo de ALUMNOS PENDIENTES (Usando el filtro is.null)
+        filter_total_pendientes = f"{PENDIENTE_FILTER}&{BASE_NOMINA_FILTER}"
+        total_pendientes = get_supabase_count(filter_total_pendientes)
 
-        # 4. Cálculo de Pendientes (Debería ser 12 si evaluados es 0)
-        evaluaciones_pendientes = total_alumnos_en_nominas - total_evaluados
-        if evaluaciones_pendientes < 0: evaluaciones_pendientes = 0 
+        # 4. Cálculo de Evaluados (Total - Pendientes)
+        total_evaluados = total_alumnos_en_nominas - total_pendientes
+        if total_evaluados < 0: total_evaluados = 0 
 
-        # 5. Desglose por especialidad (Neuro y Familiar)
+        # 5. Desglose por especialidad (Para los COMPLETADOS)
+        # ⚠️ Aquí usamos el filtro INVERSO: NOT IS NULL
+        EVALUADO_FILTER_NORMAL = "fecha_relleno.not.is.null"
         
         neuro_count = 0 
         if neuro_ids:
             neuro_ids_str = ",".join(neuro_ids)
-            # Filtro: Evaluado (por estado_general) AND en nóminas de Neurología
-            filter_neuro_count = f"{EVALUADO_FILTER}&nomina_id=in.({neuro_ids_str})"
+            # Filtro: Evaluado (normal) AND en nóminas de Neurología
+            filter_neuro_count = f"{EVALUADO_FILTER_NORMAL}&nomina_id=in.({neuro_ids_str})"
             neuro_count = get_supabase_count(filter_neuro_count)
             
         familiar_count = 0
         if familiar_ids:
             familiar_ids_str = ",".join(familiar_ids)
-            # Filtro: Evaluado (por estado_general) AND en nóminas de Medicina Familiar
-            filter_familiar_count = f"{EVALUADO_FILTER}&nomina_id=in.({familiar_ids_str})"
+            # Filtro: Evaluado (normal) AND en nóminas de Medicina Familiar
+            filter_familiar_count = f"{EVALUADO_FILTER_NORMAL}&nomina_id=in.({familiar_ids_str})"
             familiar_count = get_supabase_count(filter_familiar_count)
         
         # 6. Enviamos el resultado
@@ -1927,7 +1928,7 @@ def dashboard_counts():
             "total_evaluados": total_evaluados,
             "neurologia_count": neuro_count,
             "familiar_count": familiar_count,
-            "evaluaciones_pendientes": evaluaciones_pendientes
+            "evaluaciones_pendientes": total_pendientes # Enviamos el valor ya calculado
         })
 
     except requests.exceptions.RequestException as e:

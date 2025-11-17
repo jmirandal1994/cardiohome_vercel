@@ -84,19 +84,27 @@ def format_rut_python(rut):
 
     return f"{formatted_body}-{dv}"
 
-# app-30.py (VERSIÓN DE DIAGNÓSTICO: IGNORA EL FILTRO)
+# app-30.py (VERSIÓN FINAL CON PREFER HEADER)
 def get_supabase_count(filter_params=""):
     """Función auxiliar para obtener un conteo de Supabase usando SERVICE HEADERS.
-        VERSIÓN DE DIAGNÓSTICO: Cuenta todas las filas, ignora filter_params.
+        USA 'Prefer: count=exact' y 'select=id' para forzar la respuesta del conteo.
     """
     
-    # URL de conteo simple, sin incluir el filtro para diagnosticar el problema base.
-    url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count"
+    # 1. Limpiar y construir la URL
+    if filter_params and filter_params.startswith('?'):
+        filter_params = filter_params[1:]
         
-    params = {'limit': 1} # Se mantiene el límite por buena práctica
+    # CAMBIO CLAVE: Usamos 'select=id' o 'select=*' en lugar de 'select=count'
+    if filter_params:
+        url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=id&{filter_params}"
+    else:
+        url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=id"
+        
+    params = {'limit': 1} # Pide solo 1 fila (porque solo necesitamos el header Content-Range)
     
     try:
-        print(f"DEBUG: Ejecutando conteo base con URL: {url_count}") # Diagnóstico
+        print(f"DEBUG: Ejecutando conteo con Prefer/select=id. URL: {url_count}")
+        # SUPABASE_SERVICE_HEADERS ya incluye "Prefer": "count=exact"
         response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS, params=params)
         response.raise_for_status()
 
@@ -105,20 +113,13 @@ def get_supabase_count(filter_params=""):
         if content_range:
             count_str = content_range.split('/')[-1]
             
-            # Manejo del error de conversión a int
             try:
-                # Si el conteo base funciona, obtendrás un número.
-                print(f"DEBUG: Conteo base OK: {count_str}")
+                # Si esto funciona, obtendrás el número real de filas.
                 return int(count_str)
             except ValueError:
-                # Esto capturará el error "invalid literal for int(): '*'"
-                print(f"ERROR: El valor del conteo base '{count_str}' no es un entero válido. El problema es el conteo general.")
-                # Si el cuerpo de la respuesta es un array vacío, el conteo real es 0.
-                if response.json() == []:
-                    return 0
+                print(f"ERROR: El valor del conteo '{count_str}' no es un entero válido. El problema es el conteo general.")
                 return 0 # Fallback si hay error de formato inesperado
             
-        # Si no hay Content-Range (lo que debería ser raro con select=count)
         return 0
         
     except requests.exceptions.HTTPError as e:

@@ -84,48 +84,59 @@ def format_rut_python(rut):
 
     return f"{formatted_body}-{dv}"
 
-# app-30.py (VERSIÓN FINAL CON PREFER HEADER)
+# app-30.py (VERSIÓN FINAL CON PREFER HEADER Y MANEJO DE FILTROS)
+
 def get_supabase_count(filter_params=""):
     """Función auxiliar para obtener un conteo de Supabase usando SERVICE HEADERS.
-        USA 'Prefer: count=exact' y 'select=id' para forzar la respuesta del conteo.
+        Utiliza 'Prefer: count=exact' y 'select=id' para forzar la respuesta del conteo
+        con los filtros de nómina_id que le sean pasados.
     """
+    
+    # Asegúrate de que las variables SUPABASE_URL, SUPABASE_SERVICE_HEADERS y requests estén accesibles.
     
     # 1. Limpiar y construir la URL
     if filter_params and filter_params.startswith('?'):
         filter_params = filter_params[1:]
         
-    # CAMBIO CLAVE: Usamos 'select=id' o 'select=*' en lugar de 'select=count'
+    # CAMBIO CLAVE: Usamos 'select=id' en lugar de 'select=count'
     if filter_params:
+        # Ejemplo de URL construida: .../estudiantes_nomina?select=id&fecha_relleno.not.is.null&nomina_id=in.(...)
         url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=id&{filter_params}"
     else:
+        # Conteo sin filtros (cubre toda la tabla)
         url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=id"
         
-    params = {'limit': 1} # Pide solo 1 fila (porque solo necesitamos el header Content-Range)
+    # Pedimos solo 1 fila (para ser eficiente, ya que el conteo viene en el header)
+    params = {'limit': 1} 
     
     try:
         print(f"DEBUG: Ejecutando conteo con Prefer/select=id. URL: {url_count}")
-        # SUPABASE_SERVICE_HEADERS ya incluye "Prefer": "count=exact"
+        # SUPABASE_SERVICE_HEADERS debe incluir: "Prefer": "count=exact"
         response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS, params=params)
-        response.raise_for_status()
+        response.raise_for_status() # Lanza error si el status es 4xx/5xx
 
         content_range = response.headers.get('Content-Range')
         
         if content_range:
+            # El Content-Range viene como '0-0/45', donde 45 es el total
             count_str = content_range.split('/')[-1]
             
             try:
-                # Si esto funciona, obtendrás el número real de filas.
+                # Intenta convertir el total a entero (maneja el error '*').
                 return int(count_str)
             except ValueError:
-                print(f"ERROR: El valor del conteo '{count_str}' no es un entero válido. El problema es el conteo general.")
-                return 0 # Fallback si hay error de formato inesperado
+                print(f"ERROR: El valor del conteo '{count_str}' no es un entero válido. Fallback a 0.")
+                return 0
             
+        # Si el header Content-Range no se encuentra (caso raro)
         return 0
         
     except requests.exceptions.HTTPError as e:
+        # Error HTTP (e.g., permisos, tabla no existe)
         print(f"ERROR HTTP en get_supabase_count. Status: {response.status_code}. Respuesta: {response.text}. Error: {e}")
         return 0
     except Exception as e:
+        # Error de conexión o inesperado
         print(f"ERROR Inesperado en get_supabase_count. Error: {e}")
         return 0
         

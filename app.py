@@ -1878,6 +1878,10 @@ def dashboard_counts():
         return jsonify({"success": False, "message": "Acceso denegado o usuario no identificado."}), 403
 
     try:
+        # 0. Definir el filtro base para todas las evaluaciones completadas (CORRECCIÓN CLAVE)
+        # Debe ser un string que filtre por fecha_relleno no nula
+        base_filter_students = "fecha_relleno.not.is.null"
+        
         # 1. PASO CLAVE: Obtener TODOS los IDs de nómina asignados a este Coordinador General
         url_assigned_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
@@ -1894,13 +1898,10 @@ def dashboard_counts():
         
         all_assigned_ids_str = ",".join(neuro_ids + familiar_ids)
         
-        # Filtro base para las consultas de estudiantes (solo evaluados)
-        base_filter_students = "fecha_relleno.not.is.null"
-        
-        # 2. Conteo Total Asignado (Contamos todos los estudiantes que pertenezcan a estos IDs)
-        if not all_assigned_ids_str:
-            total_evaluados = 0
-        else:
+        # 2. Conteo Total Asignado (Solo evaluados de las nóminas asignadas)
+        total_evaluados = 0
+        if all_assigned_ids_str:
+            # Filtro: Contar estudiantes evaluados Y cuya nomina_id esté en la lista asignada.
             filter_total_assigned = f"{base_filter_students}&nomina_id=in.({all_assigned_ids_str})"
             total_evaluados = get_supabase_count(filter_total_assigned)
 
@@ -1908,6 +1909,7 @@ def dashboard_counts():
         neuro_count = 0
         if neuro_ids:
             neuro_ids_str = ",".join(neuro_ids)
+            # Filtro: Contar estudiantes evaluados Y cuya nomina_id sea de Neuro.
             filter_neuro_students = f"{base_filter_students}&nomina_id=in.({neuro_ids_str})"
             neuro_count = get_supabase_count(filter_neuro_students)
         
@@ -1915,15 +1917,32 @@ def dashboard_counts():
         familiar_count = 0
         if familiar_ids:
             familiar_ids_str = ",".join(familiar_ids)
+            # Filtro: Contar estudiantes evaluados Y cuya nomina_id sea de Familiar.
             filter_familiar_students = f"{base_filter_students}&nomina_id=in.({familiar_ids_str})"
             familiar_count = get_supabase_count(filter_familiar_students)
         
         
+        # 5. Cálculo de Evaluaciones Pendientes
+        
+        # Primero, obtendremos el conteo TOTAL de estudiantes en TODAS las nóminas asignadas
+        total_alumnos_en_nominas = 0
+        if all_assigned_ids_str:
+            filter_total_alumnos = f"nomina_id=in.({all_assigned_ids_str})" # No lleva filtro de fecha de relleno
+            total_alumnos_en_nominas = get_supabase_count(filter_total_alumnos)
+
+        # Pendientes = Total de alumnos en nóminas - Total de alumnos evaluados
+        evaluaciones_pendientes = total_alumnos_en_nominas - total_evaluados
+        
+        if evaluaciones_pendientes < 0:
+            evaluaciones_pendientes = 0 
+
+        # 6. Enviamos el resultado
         return jsonify({
             "success": True, 
             "total_evaluados": total_evaluados,
             "neurologia_count": neuro_count,
-            "familiar_count": familiar_count
+            "familiar_count": familiar_count,
+            "evaluaciones_pendientes": evaluaciones_pendientes # Nuevo campo
         })
 
     except requests.exceptions.RequestException as e:

@@ -1856,27 +1856,28 @@ def descargar_pdf_alumno(alumno_id):
         
 # app-30.py (Define esta ruta después de las funciones auxiliares)
 
+# app-30.py (Define esta ruta después de las funciones auxiliares)
+
 @app.route('/api/dashboard_counts', methods=['GET'])
-# Se asume que esta ruta requiere que el usuario esté logueado (sesión iniciada)
 def dashboard_counts():
     try:
-        # 1. Obtener la información del usuario logueado de la sesión
+        # 1. Obtener la información del usuario logueado
         user_id = session.get('usuario_id')
         user_role = session.get('usuario')
         
-        print(f"DEBUG: Rol del usuario logueado: '{user_role}'")
+        print(f"DEBUG: Rol del usuario logueado: '{user_role}'") # Mantenemos el debug
         
         if not user_id:
-             # Manejo de error si el usuario no está logueado
             return jsonify({"error": "Usuario no autenticado."}), 401
 
         # Cláusula de filtro que se construirá (vacía por defecto)
         nomina_filter_clause = ""
         
         # 2. Lógica de Filtrado por Rol
-        # SI el usuario es un coordinador o administrador, filtra por sus establecimientos asignados.
-        if user_role in ['administrador', 'coordinador']: 
+        # CORRECCIÓN: Incluimos el rol 'coordinadora' en la condición
+        if user_role in ['administrador', 'coordinador', 'coordinadora']: 
             
+            # Obtiene los IDs de las nóminas asignadas (asumiendo que get_assigned_nomina_ids está definida)
             assigned_ids = get_assigned_nomina_ids(user_id) 
             
             if assigned_ids:
@@ -1888,7 +1889,7 @@ def dashboard_counts():
                 nomina_filter_clause = f"&nomina_id=eq.none"
 
         # -------------------------------------------------------------------
-        # CONTEO 1: Formularios Completados (Fecha de Relleno NO es nula)
+        # CONTEO 1: Formularios Completados (fecha_relleno.not.is.null)
         # -------------------------------------------------------------------
         base_filter_completados = "fecha_relleno.not.is.null"
         final_filter_completados = f"{base_filter_completados}{nomina_filter_clause}"
@@ -1898,13 +1899,11 @@ def dashboard_counts():
         print(f"DEBUG: Conteo final para completados: {total_completados_asignados}")
         
         # -------------------------------------------------------------------
-        # CONTEO 2: Total de Estudiantes (Sin filtros de fecha de relleno)
+        # CONTEO 2: Total de Estudiantes (Filtro de nómina, sin filtro de completado)
         # -------------------------------------------------------------------
-        # Solo necesitamos el filtro de asignación, no el de fecha_relleno
-        base_filter_total = "" # No se necesita filtro de contenido
+        base_filter_total = "" 
         final_filter_total = f"{base_filter_total}{nomina_filter_clause}" 
         
-        # Nota: Si el filtro es un string vacío, get_supabase_count lo manejará
         total_estudiantes_asignados = get_supabase_count(final_filter_total)
 
         print(f"DEBUG: Conteo final de estudiantes: {total_estudiantes_asignados}")

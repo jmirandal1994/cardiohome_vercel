@@ -1846,6 +1846,7 @@ def descargar_pdf_alumno(alumno_id):
 # app-30.py (Define esta ruta después de las funciones auxiliares)
 
 # app-30.py (Reemplaza la función /api/dashboard_counts completa)
+# app-30.py (Reemplaza la función /api/dashboard_counts completa y final)
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
     """Retorna el conteo total y por especialidad de evaluaciones completadas
@@ -1854,14 +1855,14 @@ def dashboard_counts():
     coord_id = session.get('usuario_id')
     
     if session.get('usuario') != 'coordinadora' or not coord_id:
-        # Nota: Usamos 200 OK con mensaje para no romper el frontend que hace polling
+        # Retornamos 200 OK con mensaje de fallo para no romper el polling del frontend
         return jsonify({"success": False, "message": "Acceso denegado o usuario no identificado."}), 200 
 
     try:
-        base_filter_students = "fecha_relleno.not.is.null" # Condición para 'EVALUADO'
+        # Condición para un estudiante evaluado: fecha_relleno no es nula
+        base_filter_students = "fecha_relleno.not.is.null" 
         
         # 1. Obtener TODOS los IDs de nómina asignados a este Coordinador General
-        # FILTRO: Solo nóminas con form_type definido (y asignadas a este coord_general_id)
         url_assigned_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?coord_general_id=eq.{coord_id}"
@@ -1878,7 +1879,7 @@ def dashboard_counts():
         all_assigned_ids = neuro_ids + familiar_ids
         all_assigned_ids_str = ",".join(all_assigned_ids)
         
-        # Si no hay nóminas asignadas, retornamos cero inmediatamente
+        # Si no hay nóminas asignadas, retornamos cero.
         if not all_assigned_ids_str:
              return jsonify({
                 "success": True, 
@@ -1889,7 +1890,6 @@ def dashboard_counts():
             })
         
         # 2. Conteo Total de ALUMNOS ASIGNADOS (Total de filas en estudiantes_nomina para esos IDs)
-        # Usamos la función get_supabase_count que ya maneja el Content-Range
         filter_total_alumnos = f"nomina_id=in.({all_assigned_ids_str})"
         total_alumnos_en_nominas = get_supabase_count(filter_total_alumnos)
         
@@ -1901,7 +1901,7 @@ def dashboard_counts():
         evaluaciones_pendientes = total_alumnos_en_nominas - total_evaluados
         if evaluaciones_pendientes < 0: evaluaciones_pendientes = 0 
 
-        # 5. Desglose por especialidad (Neuro y Familiar) - Contar solo filas evaluadas (fecha_relleno.not.is.null)
+        # 5. Desglose por especialidad (CORRECCIÓN CRÍTICA: Contar solo los evaluados de cada tipo)
         
         neuro_count = 0 
         if neuro_ids:

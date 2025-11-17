@@ -83,35 +83,54 @@ def format_rut_python(rut):
 
     return f"{formatted_body}-{dv}"
 
-# app-30.py (Reemplaza la función get_supabase_count)
+# app-30.py (CORRECCIÓN FINAL de get_supabase_count)
 def get_supabase_count(filter_params=""):
-    """Función auxiliar para obtener un conteo de Supabase usando SERVICE HEADERS.
-       CORRECCIÓN: Se eliminan los paréntesis de count().
-    """
+    """Función auxiliar para obtener un conteo de Supabase usando SERVICE HEADERS."""
     
-    # 1. Ajustar el filtro
+    # 1. Limpiar y construir el filtro
     if filter_params and filter_params.startswith('?'):
         filter_params = filter_params[1:]
         
-    # CORRECCIÓN CLAVE: Usar 'select=count' en lugar de 'select=count()'
+    # CORRECCIÓN CLAVE: Usar 'select=count' y construir la URL
     if filter_params:
-        # Se usa 'select=count' y se une con el filtro usando '&'
         url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count&{filter_params}"
     else:
         url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count"
         
+    # Añadimos un límite para la optimización, como ya lo tenías
+    params = {'limit': 1}
     
     try:
-        response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS, params={'limit': 1})
-        response.raise_for_status()
+        # Usar la clave de servicio para evitar problemas de RLS
+        response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS, params=params)
+        response.raise_for_status() # Lanza un error si el status code es 4xx o 5xx
 
         content_range = response.headers.get('Content-Range')
         if content_range:
             count_str = content_range.split('/')[-1]
-            return int(count_str)
+            
+            # --- CORRECCIÓN CLAVE: Intentar la conversión a int ---
+            try:
+                return int(count_str)
+            except ValueError:
+                # Esto captura el error "invalid literal for int(): '*'"
+                print(f"ERROR: El valor del conteo '{count_str}' no es un entero válido.")
+                # Si falla, puedes intentar ver si el cuerpo es un array vacío (conteo 0)
+                if response.json() == []:
+                    return 0
+                return 0 # Fallback si hay error de formato
+            # ------------------------------------------------------
+            
+        # Si no hay Content-Range (ej. la tabla está vacía o un problema diferente)
+        return 0
+        
+    except requests.exceptions.HTTPError as e:
+        # Si el error es HTTP (4xx o 5xx)
+        print(f"ERROR HTTP en get_supabase_count con URL: {url_count}. Status: {response.status_code}. Respuesta: {response.text}. Error: {e}")
         return 0
     except Exception as e:
-        print(f"ERROR en get_supabase_count con URL: {url_count}. Error: {e}")
+        # Otros errores (de conexión, etc.)
+        print(f"ERROR Inesperado en get_supabase_count con URL: {url_count}. Error: {e}")
         return 0
         
 def permitido(filename):

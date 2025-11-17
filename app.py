@@ -86,33 +86,32 @@ def format_rut_python(rut):
 
 # app-30.py (VERSIÓN FINAL CON PREFER HEADER Y MANEJO DE FILTROS)
 
+# (Asegúrate de que esta sea tu versión de get_supabase_count en app.py)
 def get_supabase_count(filter_params=""):
     """Función auxiliar para obtener un conteo de Supabase usando SERVICE HEADERS.
-       CORRECCIÓN: Aseguramos que el filtro se una con '&' y usamos 'select=count' sin paréntesis.
+       Asegura que 'count=exact' se use para el Content-Range.
     """
     
-    # 1. Ajustar el filtro: Si no está vacío, lo prefijamos con '&' para unirlo al resto de la URL.
-    if filter_params and filter_params.startswith('?'):
-        filter_params = filter_params[1:]
+    # Aseguramos que el filtro se una con '&' o se use solo.
+    if filter_params and not filter_params.startswith('&'):
+        filter_params = '&' + filter_params
         
-    # 2. Construir la URL: Usar 'select=count' y unir el filtro.
-    if filter_params:
-        # Se usa 'select=count' y se une el filtro con '&'
-        url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count&{filter_params}"
-    else:
-        # Si no hay filtro, solo pedimos el conteo total.
-        url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count"
-        
+    # Construir la URL: Usar 'select=count' y unir el filtro.
+    # Nota clave: Supabase usa el encabezado 'Prefer: count=exact' y 'select=id' o 'select=*' para forzar el Content-Range.
+    # Sin embargo, ya que solo queremos el conteo, usaremos la forma más segura.
+    url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count{filter_params}"
     
     try:
         # Nota: Usamos params={'limit': 1} solo para optimizar la petición.
-        response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS, params={'limit': 1})
+        response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS)
         response.raise_for_status()
 
+        # El conteo se devuelve en el encabezado Content-Range
         content_range = response.headers.get('Content-Range')
         if content_range:
             count_str = content_range.split('/')[-1]
             return int(count_str)
+        # Si no hay Content-Range, asumimos 0 (o error)
         return 0
     except Exception as e:
         print(f"ERROR en get_supabase_count con URL: {url_count}. Error: {e}")
@@ -1847,20 +1846,20 @@ def descargar_pdf_alumno(alumno_id):
 
 # app-30.py (Reemplaza la función /api/dashboard_counts completa)
 # app-30.py (Reemplaza la función /api/dashboard_counts completa y final)
+# app-30.py (Reemplaza la función /api/dashboard_counts FINAL)
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
-    """Retorna el conteo total y por especialidad de evaluaciones completadas
+    """Retorna el conteo total, pendiente y por especialidad de evaluaciones completadas
        para la Coordinadora General.
     """
     coord_id = session.get('usuario_id')
     
     if session.get('usuario') != 'coordinadora' or not coord_id:
-        # Retornamos 200 OK con mensaje de fallo para no romper el polling del frontend
         return jsonify({"success": False, "message": "Acceso denegado o usuario no identificado."}), 200 
 
     try:
         # Condición para un estudiante evaluado: fecha_relleno no es nula
-        base_filter_students = "fecha_relleno.not.is.null" 
+        EVALUADO_FILTER = "fecha_relleno.not.is.null" 
         
         # 1. Obtener TODOS los IDs de nómina asignados a este Coordinador General
         url_assigned_nominas = (
@@ -1889,32 +1888,37 @@ def dashboard_counts():
                 "evaluaciones_pendientes": 0
             })
         
-        # 2. Conteo Total de ALUMNOS ASIGNADOS (Total de filas en estudiantes_nomina para esos IDs)
-        filter_total_alumnos = f"nomina_id=in.({all_assigned_ids_str})"
+        # FILTRO BASE para todas las consultas: limitar a las nóminas de la coordinadora
+        BASE_NOMINA_FILTER = f"nomina_id=in.({all_assigned_ids_str})"
+        
+        # 2. Conteo Total de ALUMNOS ASIGNADOS
+        # Solo usamos el filtro de la nómina para obtener el total de estudiantes, evaluados o no.
+        filter_total_alumnos = BASE_NOMINA_FILTER
         total_alumnos_en_nominas = get_supabase_count(filter_total_alumnos)
         
         # 3. Conteo de ALUMNOS EVALUADOS (Contar solo filas con fecha_relleno)
-        filter_total_evaluados = f"{base_filter_students}&nomina_id=in.({all_assigned_ids_str})"
+        # Filtro: Base de nómina Y fecha_relleno.not.is.null
+        filter_total_evaluados = f"{EVALUADO_FILTER}&{BASE_NOMINA_FILTER}"
         total_evaluados = get_supabase_count(filter_total_evaluados)
 
-        # 4. Cálculo de Pendientes
+        # 4. Cálculo de Pendientes (Ahora sí debería ser exacto)
         evaluaciones_pendientes = total_alumnos_en_nominas - total_evaluados
         if evaluaciones_pendientes < 0: evaluaciones_pendientes = 0 
 
-        # 5. Desglose por especialidad (CORRECCIÓN CRÍTICA: Contar solo los evaluados de cada tipo)
+        # 5. Desglose por especialidad (Neuro y Familiar) - Contar solo los evaluados de cada tipo
         
         neuro_count = 0 
         if neuro_ids:
             neuro_ids_str = ",".join(neuro_ids)
-            # Filtro: Evaluado AND en nóminas de Neurología
-            filter_neuro_count = f"{base_filter_students}&nomina_id=in.({neuro_ids_str})"
+            # Filtro: Evaluado AND en nóminas de Neurología (específicas)
+            filter_neuro_count = f"{EVALUADO_FILTER}&nomina_id=in.({neuro_ids_str})"
             neuro_count = get_supabase_count(filter_neuro_count)
             
         familiar_count = 0
         if familiar_ids:
             familiar_ids_str = ",".join(familiar_ids)
-            # Filtro: Evaluado AND en nóminas de Medicina Familiar
-            filter_familiar_count = f"{base_filter_students}&nomina_id=in.({familiar_ids_str})"
+            # Filtro: Evaluado AND en nóminas de Medicina Familiar (específicas)
+            filter_familiar_count = f"{EVALUADO_FILTER}&nomina_id=in.({familiar_ids_str})"
             familiar_count = get_supabase_count(filter_familiar_count)
         
         # 6. Enviamos el resultado

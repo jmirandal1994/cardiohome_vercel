@@ -84,12 +84,24 @@ def format_rut_python(rut):
     return f"{formatted_body}-{dv}"
 
 def get_supabase_count(filter_params=""):
-    """Función auxiliar para obtener un conteo de Supabase usando SERVICE HEADERS."""
-    # El conteo se pide usando el filtro 'select=count()' y se obtiene del encabezado 'Content-Range'.
-    url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count(){filter_params}"
+    """Función auxiliar para obtener un conteo de Supabase usando SERVICE HEADERS.
+       CORRECCIÓN: Aseguramos que el filtro se una con &.
+    """
+    
+    # 1. Ajustar el filtro: Si no está vacío, lo prefijamos con '&' para unirlo al resto de la URL.
+    # Además, quitamos el '?' inicial del filtro si existiera.
+    if filter_params and filter_params.startswith('?'):
+        filter_params = filter_params[1:]
+        
+    if filter_params:
+        # Usamos el & para unir 'select=count()' y el filtro.
+        url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count()&{filter_params}"
+    else:
+        # Si no hay filtro, solo pedimos el conteo total.
+        url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count()"
+        
     
     try:
-        # Nota: Usamos params={'limit': 1} solo para optimizar la petición.
         response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS, params={'limit': 1})
         response.raise_for_status()
 
@@ -99,8 +111,9 @@ def get_supabase_count(filter_params=""):
             return int(count_str)
         return 0
     except Exception as e:
-        print(f"ERROR en get_supabase_count con filtro {filter_params}: {e}")
+        print(f"ERROR en get_supabase_count con URL: {url_count}. Error: {e}")
         return 0
+
 
 def permitido(filename):
     """Verifica si la extensión del archivo está permitida."""

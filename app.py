@@ -83,6 +83,24 @@ def format_rut_python(rut):
 
     return f"{formatted_body}-{dv}"
 
+def get_supabase_count(filter_params=""):
+    """Función auxiliar para obtener un conteo de Supabase usando SERVICE HEADERS."""
+    # El conteo se pide usando el filtro 'select=count()' y se obtiene del encabezado 'Content-Range'.
+    url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count(){filter_params}"
+    
+    try:
+        # Nota: Usamos params={'limit': 1} solo para optimizar la petición.
+        response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS, params={'limit': 1})
+        response.raise_for_status()
+
+        content_range = response.headers.get('Content-Range')
+        if content_range:
+            count_str = content_range.split('/')[-1]
+            return int(count_str)
+        return 0
+    except Exception as e:
+        print(f"ERROR en get_supabase_count con filtro {filter_params}: {e}")
+        return 0
 
 def permitido(filename):
     """Verifica si la extensión del archivo está permitida."""
@@ -1772,26 +1790,6 @@ def descargar_pdf_alumno(alumno_id):
         flash(f"❌ Error inesperado al generar el PDF. Detalle: {e}", 'error')
         return redirect(url_for('dashboard'))
         
-# - Añadir en la sección de rutas
-def get_supabase_count(filter_params=""):
-    """Función auxiliar para obtener un conteo de Supabase usando SERVICE HEADERS."""
-    # El conteo se pide usando el filtro 'select=count()' y se obtiene del encabezado 'Content-Range'.
-    url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count(){filter_params}"
-    
-    try:
-        response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS, params={'limit': 1})
-        response.raise_for_status()
-
-        content_range = response.headers.get('Content-Range')
-        if content_range:
-            count_str = content_range.split('/')[-1]
-            return int(count_str)
-        return 0
-    except Exception as e:
-        print(f"ERROR en get_supabase_count con filtro {filter_params}: {e}")
-        return 0
-
-
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
     """Retorna el conteo total y por especialidad de evaluaciones completadas."""
@@ -1804,21 +1802,18 @@ def dashboard_counts():
         # Filtro base para evaluaciones completadas: fecha_relleno no es nulo.
         base_filter = "&fecha_relleno.not.is.null"
         
-        # 1. Conteo Total
+        # 1. Conteo Total (TODOS los estudiantes evaluados)
         total_evaluados = get_supabase_count(base_filter)
         
-        # 2. Conteo por Neurología (Usando un proxy de diagnóstico o asumiendo el campo 'form_type' si existe)
-        filter_neurologia = f"{base_filter}&diagnostico=in.('Trastorno Del Espectro Autista','TDAH','Trastorno Motor Moderado','Hipoacusia')" 
+        # 2. Conteo por Neurología (Filtra por form_type en nominas_medicas a través del JOIN)
+        # Sintaxis: &nomina_id.nominas_medicas.form_type=eq.neurologia
+        filter_neurologia = f"{base_filter}&nomina_id.nominas_medicas.form_type=eq.neurologia" 
         neurologia_count = get_supabase_count(filter_neurologia)
         
-        # 3. Conteo por Familiar (Proxy: el resto)
-        familiar_count = total_evaluados - neurologia_count
+        # 3. Conteo por Medicina Familiar
+        filter_familiar = f"{base_filter}&nomina_id.nominas_medicas.form_type=eq.medicina_familiar"
+        familiar_count = get_supabase_count(filter_familiar)
         
-        # Si la columna form_type existe en estudiantes_nomina, el filtrado ideal sería:
-        # filter_neurologia = f"{base_filter}&form_type=eq.neurologia"
-        # filter_familiar = f"{base_filter}&form_type=eq.medicina_familiar"
-
-
         return jsonify({
             "success": True, 
             "total_evaluados": total_evaluados,
@@ -1829,7 +1824,7 @@ def dashboard_counts():
     except Exception as e:
         print(f"❌ Error interno en dashboard_counts: {e}")
         return jsonify({"success": False, "message": f"Error interno del servidor al obtener conteos: {e}"}), 500
-
+        
 # --- NUEVA RUTA: SOLICITUD DE CORRECCIÓN ---
 @app.route('/api/correccion/solicitar', methods=['POST'])
 def solicitar_correccion():

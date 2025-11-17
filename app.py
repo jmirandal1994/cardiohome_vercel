@@ -83,54 +83,48 @@ def format_rut_python(rut):
 
     return f"{formatted_body}-{dv}"
 
-# app-30.py (CORRECCIÓN FINAL de get_supabase_count)
+# app-30.py (VERSIÓN DE DIAGNÓSTICO: IGNORA EL FILTRO)
 def get_supabase_count(filter_params=""):
-    """Función auxiliar para obtener un conteo de Supabase usando SERVICE HEADERS."""
+    """Función auxiliar para obtener un conteo de Supabase usando SERVICE HEADERS.
+        VERSIÓN DE DIAGNÓSTICO: Cuenta todas las filas, ignora filter_params.
+    """
     
-    # 1. Limpiar y construir el filtro
-    if filter_params and filter_params.startswith('?'):
-        filter_params = filter_params[1:]
+    # URL de conteo simple, sin incluir el filtro para diagnosticar el problema base.
+    url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count"
         
-    # CORRECCIÓN CLAVE: Usar 'select=count' y construir la URL
-    if filter_params:
-        url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count&{filter_params}"
-    else:
-        url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count"
-        
-    # Añadimos un límite para la optimización, como ya lo tenías
-    params = {'limit': 1}
+    params = {'limit': 1} # Se mantiene el límite por buena práctica
     
     try:
-        # Usar la clave de servicio para evitar problemas de RLS
+        print(f"DEBUG: Ejecutando conteo base con URL: {url_count}") # Diagnóstico
         response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS, params=params)
-        response.raise_for_status() # Lanza un error si el status code es 4xx o 5xx
+        response.raise_for_status()
 
         content_range = response.headers.get('Content-Range')
+        
         if content_range:
             count_str = content_range.split('/')[-1]
             
-            # --- CORRECCIÓN CLAVE: Intentar la conversión a int ---
+            # Manejo del error de conversión a int
             try:
+                # Si el conteo base funciona, obtendrás un número.
+                print(f"DEBUG: Conteo base OK: {count_str}")
                 return int(count_str)
             except ValueError:
-                # Esto captura el error "invalid literal for int(): '*'"
-                print(f"ERROR: El valor del conteo '{count_str}' no es un entero válido.")
-                # Si falla, puedes intentar ver si el cuerpo es un array vacío (conteo 0)
+                # Esto capturará el error "invalid literal for int(): '*'"
+                print(f"ERROR: El valor del conteo base '{count_str}' no es un entero válido. El problema es el conteo general.")
+                # Si el cuerpo de la respuesta es un array vacío, el conteo real es 0.
                 if response.json() == []:
                     return 0
-                return 0 # Fallback si hay error de formato
-            # ------------------------------------------------------
+                return 0 # Fallback si hay error de formato inesperado
             
-        # Si no hay Content-Range (ej. la tabla está vacía o un problema diferente)
+        # Si no hay Content-Range (lo que debería ser raro con select=count)
         return 0
         
     except requests.exceptions.HTTPError as e:
-        # Si el error es HTTP (4xx o 5xx)
-        print(f"ERROR HTTP en get_supabase_count con URL: {url_count}. Status: {response.status_code}. Respuesta: {response.text}. Error: {e}")
+        print(f"ERROR HTTP en get_supabase_count. Status: {response.status_code}. Respuesta: {response.text}. Error: {e}")
         return 0
     except Exception as e:
-        # Otros errores (de conexión, etc.)
-        print(f"ERROR Inesperado en get_supabase_count con URL: {url_count}. Error: {e}")
+        print(f"ERROR Inesperado en get_supabase_count. Error: {e}")
         return 0
         
 def permitido(filename):

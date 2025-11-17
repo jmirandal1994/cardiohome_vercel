@@ -115,25 +115,6 @@ def guess_gender(name):
         return 'F'
     
     return None # Retorna None si no puede adivinar con certeza
-
-def get_supabase_count(filter_params=""):
-    """Función auxiliar para obtener un conteo de Supabase usando SERVICE HEADERS."""
-    # El conteo se pide usando el filtro 'select=count()' y se obtiene del encabezado 'Content-Range'.
-    url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count(){filter_params}"
-    
-    try:
-        # Nota: Usamos params={'limit': 1} solo para optimizar la petición.
-        response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS, params={'limit': 1})
-        response.raise_for_status()
-
-        content_range = response.headers.get('Content-Range')
-        if content_range:
-            count_str = content_range.split('/')[-1]
-            return int(count_str)
-        return 0
-    except Exception as e:
-        print(f"ERROR en get_supabase_count con filtro {filter_params}: {e}")
-        return 0
         
 def normalizar(texto):
     """Normaliza texto: quita espacios, minúsculas, tildes y reemplaza espacios por guiones bajos."""

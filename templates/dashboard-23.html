@@ -810,7 +810,7 @@
                                 <span>EVALUACIONES<br>PENDIENTES</span>
                                 <i class="fa-solid fa-clipboard-list"></i>
                             </div>
-                            <p class="count">430</p>
+                            <p class="count" id="welcome-pendientes-count">430</p>
                         </div>
                         <div class="summary-card-v2" style="background: linear-gradient(145deg, #2ECC71, #27A661);">
                             <div class="summary-card-header">
@@ -1230,13 +1230,23 @@
                         <h3><i class="fa-solid fa-gauge-high"></i> Rendimiento de Evaluaciones en Vivo</h3>
                         <p class="text-gray-600 mb-6">Métricas en tiempo real de la actividad de evaluaciones.</p>
                         <div class="summary grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+                            
                             <div class="summary-card-v2" style="background: linear-gradient(145deg, #0A3D62, #1C67A3);">
                                 <div class="summary-card-header">
-                                    <span>TOTAL ESTUDIANTES<br>EVALUADOS</span>
-                                    <i class="fa-solid fa-user-check"></i>
+                                    <span>TOTAL ESTUDIANTES<br>**ASIGNADOS**</span>
+                                    <i class="fa-solid fa-users"></i>
                                 </div>
-                                <p class="count" id="coord-total-evaluados-count">0</p> 
+                                <p class="count" id="coord-total-asignados-count">0</p> 
                             </div>
+
+                            <div class="summary-card-v2" style="background: linear-gradient(145deg, #E74C3C, #C2382B);">
+                                <div class="summary-card-header">
+                                    <span>EVALUACIONES<br>**PENDIENTES**</span>
+                                    <i class="fa-solid fa-clipboard-list"></i>
+                                </div>
+                                <p class="count" id="coord-pendientes-count">0</p> 
+                            </div>
+
                             <div class="summary-card-v2" style="background: linear-gradient(145deg, #2ECC71, #27A661);">
                                 <div class="summary-card-header">
                                     <span>NEUROLOGÍA<br>COMPLETADOS</span>
@@ -1244,6 +1254,7 @@
                                 </div>
                                 <p class="count" id="coord-neurologia-count">0</p> 
                             </div>
+                            
                             <div class="summary-card-v2" style="background: linear-gradient(145deg, #F39C12, #D68910);">
                                 <div class="summary-card-header">
                                     <span>MED. FAMILIAR<br>COMPLETADOS</span>
@@ -1251,15 +1262,8 @@
                                 </div>
                                 <p class="count" id="coord-familiar-count">0</p> 
                             </div>
-                            <div class="summary-card-v2" style="background: linear-gradient(145deg, #E74C3C, #C2382B);">
-                                <div class="summary-card-header">
-                                    <span>ESTABLECIMIENTOS<br>COMPLETADOS</span>
-                                    <i class="fa-solid fa-school"></i>
-                                </div>
-                                <p class="count">12</p>
+                            
                             </div>
-                        </div>
-                        
                         <div class="card mt-8">
                             <h3><i class="fa-solid fa-chart-line"></i> Recuento Total de Evaluaciones</h3>
                             <div class="flex flex-col md:flex-row gap-4 mb-6">
@@ -1738,7 +1742,7 @@
 
         });
         
-        // --- FUNCIÓN DE SINCRONIZACIÓN DE LA COORDINADORA GENERAL (FASE 1) ---
+        // --- FUNCIÓN DE SINCRONIZACIÓN DE LA COORDINADORA GENERAL (ACTUALIZADA) ---
         async function syncCoordinatorCounts() {
             // Nota: Esta función asume que /api/dashboard_counts existe en el backend.
             const userRole = '{{ usuario }}'; 
@@ -1749,39 +1753,48 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    // Actualizar contadores totales y por especialidad
-                    const total = document.getElementById('coord-total-evaluados-count');
-                    if (total) total.textContent = data.total_evaluados; 
                     
-                    const neuro = document.getElementById('coord-neurologia-count');
-                    if (neuro) neuro.textContent = data.neurologia_count;
+                    // 1. Calcular el total de asignados (Evaluados + Pendientes)
+                    // Nota: El backend en Python ya calcula el total de alumnos en nóminas asignadas: total_evaluados + evaluaciones_pendientes
+                    const totalAsignados = data.total_evaluados + data.evaluaciones_pendientes;
                     
-                    const familiar = document.getElementById('coord-familiar-count');
-                    if (familiar) familiar.textContent = data.familiar_count;
+                    // 2. Actualizar Rendimiento en Vivo (coord-performance)
+                    
+                    // Tarjeta 1: Total Asignados (Evaluados + Pendientes)
+                    const totalAsignadosElement = document.getElementById('coord-total-asignados-count');
+                    if (totalAsignadosElement) totalAsignadosElement.textContent = totalAsignados;
 
-                    // Actualizar Evaluaciones Pendientes (CORRECCIÓN CLAVE)
-                    const pendientesCountElement = document.getElementById('evaluaciones-pendientes-count');
-                    if (pendientesCountElement) {
-                        // El valor correcto es el calculado por el backend (12 en su caso)
-                        pendientesCountElement.textContent = data.evaluaciones_pendientes; 
-                    }
-
-                    // Actualizar contadores en la sección de Bienvenida/Resumen
+                    // Tarjeta 2: Evaluaciones Pendientes
+                    const pendientesElement = document.getElementById('coord-pendientes-count');
+                    if (pendientesElement) pendientesElement.textContent = data.evaluaciones_pendientes;
+                    
+                    // Tarjeta 3: Neurología Completados
+                    const neuroElement = document.getElementById('coord-neurologia-count');
+                    if (neuroElement) neuroElement.textContent = data.neurologia_count;
+                    
+                    // Tarjeta 4: Medicina Familiar Completados
+                    const familiarElement = document.getElementById('coord-familiar-count');
+                    if (familiarElement) familiarElement.textContent = data.familiar_count;
+                    
+                    
+                    // 3. Actualizar Resumen del Proyecto (welcome-section)
+                    // Las tarjetas del welcome-section usan los mismos IDs que el segundo bloque (welcome-pendientes-count, welcome-evaluados-count)
+                    
                     const welcomeEvaluadosCount = document.getElementById('welcome-evaluados-count');
-                    const coordTopCount = document.getElementById('coord-evaluados-count-top');
-                    
                     if (welcomeEvaluadosCount) {
                          welcomeEvaluadosCount.textContent = data.total_evaluados;
                     }
-                    if (coordTopCount) {
-                         coordTopCount.textContent = data.total_evaluados;
-                    }
                     
-                    // Aseguramos que la tarjeta de bienvenida de pendientes se actualice
                     const welcomePendientesCount = document.getElementById('welcome-pendientes-count');
                     if (welcomePendientesCount) {
                          welcomePendientesCount.textContent = data.evaluaciones_pendientes;
                     }
+                    
+                    // Si tienes una tarjeta para TOTAL EVALUADO (solo evaluados), podrías usar:
+                    /*
+                    const totalEvaluadosCompletedElement = document.getElementById('coord-evaluados-completed-count');
+                    if (totalEvaluadosCompletedElement) totalEvaluadosCompletedElement.textContent = data.total_evaluados;
+                    */
 
 
                 } else {

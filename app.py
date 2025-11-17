@@ -1807,17 +1807,18 @@ def descargar_pdf_alumno(alumno_id):
 def dashboard_counts():
     """Retorna el conteo total y por especialidad de evaluaciones completadas."""
     
+    # Asumimos que la Coordinadora General tiene el rol 'coordinadora'
     if session.get('usuario') != 'coordinadora':
         return jsonify({"success": False, "message": "Acceso denegado."}), 403
 
     try:
         # 0. Definir el filtro base para todas las evaluaciones completadas
-        base_filter = "?fecha_relleno.not.is.null"
+        # El filtro debe ser la cadena pura, sin el '?' inicial.
+        base_filter = "fecha_relleno.not.is.null" 
         
         # 1. Conteo Total (TODOS los estudiantes evaluados)
         total_evaluados = get_supabase_count(base_filter)
         
-        # ----------------------------------------------------------------------
         # 2. Conteo por NEUROLOGÍA (Estrategia de Doble Consulta)
         # Paso a): Obtener todos los IDs de nómina que son de tipo 'neurologia'
         url_neuro_ids = f"{SUPABASE_URL}/rest/v1/nominas_medicas?form_type=eq.neurologia&select=id"
@@ -1829,13 +1830,11 @@ def dashboard_counts():
         if neuro_ids:
             # Paso b): Contar estudiantes que pertenezcan a esos IDs de nómina Y estén evaluados
             neuro_ids_str = ",".join(neuro_ids)
-            # Filtro: estudiantes_nomina?nomina_id=in.(id1,id2)&fecha_relleno.not.is.null
+            # Filtro: nomina_id=in.(id1,id2) + fecha_relleno.not.is.null (que ya está en base_filter)
             filter_neuro_students = f"{base_filter}&nomina_id=in.({neuro_ids_str})"
             neuro_count = get_supabase_count(filter_neuro_students)
         
-        # ----------------------------------------------------------------------
         # 3. Conteo por MEDICINA FAMILIAR (Estrategia de Doble Consulta)
-        # Paso a): Obtener todos los IDs de nómina que son de tipo 'medicina_familiar'
         url_familiar_ids = f"{SUPABASE_URL}/rest/v1/nominas_medicas?form_type=eq.medicina_familiar&select=id"
         res_familiar = requests.get(url_familiar_ids, headers=SUPABASE_SERVICE_HEADERS)
         res_familiar.raise_for_status()
@@ -1843,13 +1842,10 @@ def dashboard_counts():
         
         familiar_count = 0
         if familiar_ids:
-            # Paso b): Contar estudiantes que pertenezcan a esos IDs de nómina Y estén evaluados
             familiar_ids_str = ",".join(familiar_ids)
             filter_familiar_students = f"{base_filter}&nomina_id=in.({familiar_ids_str})"
             familiar_count = get_supabase_count(filter_familiar_students)
         
-        # ----------------------------------------------------------------------
-
         return jsonify({
             "success": True, 
             "total_evaluados": total_evaluados,

@@ -1865,6 +1865,8 @@ def descargar_pdf_alumno(alumno_id):
 
 # app-30.py (Define esta ruta después de las funciones auxiliares)
 
+# app-30.py (Define esta ruta después de las funciones auxiliares)
+
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
     try:
@@ -1872,7 +1874,7 @@ def dashboard_counts():
         user_id = session.get('usuario_id')
         user_role = session.get('usuario')
         
-        print(f"DEBUG: Rol del usuario logueado: '{user_role}'") # Mantenemos el debug
+        print(f"DEBUG: Rol del usuario logueado: '{user_role}'")
         
         if not user_id:
             return jsonify({"error": "Usuario no autenticado."}), 401
@@ -1881,19 +1883,21 @@ def dashboard_counts():
         nomina_filter_clause = ""
         
         # 2. Lógica de Filtrado por Rol
-        # CORRECCIÓN: Incluimos el rol 'coordinadora' en la condición
+        # CORRECCIÓN: Incluimos el rol 'coordinadora'
         if user_role in ['administrador', 'coordinador', 'coordinadora']: 
             
-            # Obtiene los IDs de las nóminas asignadas (asumiendo que get_assigned_nomina_ids está definida)
+            # Obtiene los IDs de las nóminas asignadas
             assigned_ids = get_assigned_nomina_ids(user_id) 
             
             if assigned_ids:
-                # Construir el filtro IN con la lista de IDs asignados
+                # Caso OK: Construir el filtro IN con la lista de IDs asignados
                 nomina_ids_str = ",".join(assigned_ids)
                 nomina_filter_clause = f"&nomina_id=in.({nomina_ids_str})"
             else:
-                # Si el rol es de filtro pero no tiene asignaciones, forzamos 0
-                nomina_filter_clause = f"&nomina_id=eq.none"
+                # CORRECCIÓN DE ERROR 400: Si no hay asignaciones, usamos un UUID nulo/imposible.
+                # Esto es sintácticamente válido y garantiza un conteo de 0 en el servidor.
+                print("DEBUG: Sin nóminas asignadas. Usando filtro de cero resultados.")
+                nomina_filter_clause = f"&nomina_id=eq.00000000-0000-0000-0000-000000000000"
 
         # -------------------------------------------------------------------
         # CONTEO 1: Formularios Completados (fecha_relleno.not.is.null)

@@ -1845,19 +1845,23 @@ def descargar_pdf_alumno(alumno_id):
 
 # app-30.py (Define esta ruta después de las funciones auxiliares)
 
+# app-30.py (Reemplaza la función /api/dashboard_counts completa)
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
-    """Retorna el conteo total y por especialidad de evaluaciones completadas."""
+    """Retorna el conteo total y por especialidad de evaluaciones completadas
+       para la Coordinadora General.
+    """
     coord_id = session.get('usuario_id')
     
     if session.get('usuario') != 'coordinadora' or not coord_id:
-        return jsonify({"success": False, "message": "Acceso denegado o usuario no identificado."}), 403
+        # Nota: Usamos 200 OK con mensaje para no romper el frontend que hace polling
+        return jsonify({"success": False, "message": "Acceso denegado o usuario no identificado."}), 200 
 
     try:
-        base_filter_students = "fecha_relleno.not.is.null"
+        base_filter_students = "fecha_relleno.not.is.null" # Condición para 'EVALUADO'
         
         # 1. Obtener TODOS los IDs de nómina asignados a este Coordinador General
-        # FILTRO: Solo nóminas con form_type definido (para excluir la maqueta más básica)
+        # FILTRO: Solo nóminas con form_type definido (y asignadas a este coord_general_id)
         url_assigned_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?coord_general_id=eq.{coord_id}"
@@ -1868,40 +1872,52 @@ def dashboard_counts():
         res_assigned.raise_for_status()
         assigned_nominas = res_assigned.json()
 
-        # Separar IDs y crear la lista total de IDs
+        # Separar IDs por tipo de formulario
         neuro_ids = [nom['id'] for nom in assigned_nominas if nom.get('form_type') == 'neurologia']
         familiar_ids = [nom['id'] for nom in assigned_nominas if nom.get('form_type') == 'medicina_familiar']
         all_assigned_ids = neuro_ids + familiar_ids
         all_assigned_ids_str = ",".join(all_assigned_ids)
         
-        # ----------------------------------------------------------------------------------
-        # !!! DEBUG CRÍTICO !!!
-        print(f"*** DEBUG CRÍTICO: IDs de Nómina Contados: {all_assigned_ids}")
-        # ----------------------------------------------------------------------------------
-
-        # 2. Conteo Total Asignado (Total de alumnos en todas las nóminas activas)
-        total_alumnos_en_nominas = 0
-        if all_assigned_ids_str:
-            filter_total_alumnos = f"nomina_id=in.({all_assigned_ids_str})"
-            total_alumnos_en_nominas = get_supabase_count(filter_total_alumnos)
+        # Si no hay nóminas asignadas, retornamos cero inmediatamente
+        if not all_assigned_ids_str:
+             return jsonify({
+                "success": True, 
+                "total_evaluados": 0,
+                "neurologia_count": 0,
+                "familiar_count": 0,
+                "evaluaciones_pendientes": 0
+            })
         
-        # 3. Conteo de Evaluados (usando el mismo filtro de IDs)
-        total_evaluados = 0
-        if all_assigned_ids_str:
-            filter_total_assigned = f"{base_filter_students}&nomina_id=in.({all_assigned_ids_str})"
-            total_evaluados = get_supabase_count(filter_total_assigned)
+        # 2. Conteo Total de ALUMNOS ASIGNADOS (Total de filas en estudiantes_nomina para esos IDs)
+        # Usamos la función get_supabase_count que ya maneja el Content-Range
+        filter_total_alumnos = f"nomina_id=in.({all_assigned_ids_str})"
+        total_alumnos_en_nominas = get_supabase_count(filter_total_alumnos)
+        
+        # 3. Conteo de ALUMNOS EVALUADOS (Contar solo filas con fecha_relleno)
+        filter_total_evaluados = f"{base_filter_students}&nomina_id=in.({all_assigned_ids_str})"
+        total_evaluados = get_supabase_count(filter_total_evaluados)
 
         # 4. Cálculo de Pendientes
         evaluaciones_pendientes = total_alumnos_en_nominas - total_evaluados
         if evaluaciones_pendientes < 0: evaluaciones_pendientes = 0 
 
-        # ... (Lógica de desglose de Neuro/Familiar omitida por brevedad) ...
+        # 5. Desglose por especialidad (Neuro y Familiar) - Contar solo filas evaluadas (fecha_relleno.not.is.null)
         
         neuro_count = 0 
+        if neuro_ids:
+            neuro_ids_str = ",".join(neuro_ids)
+            # Filtro: Evaluado AND en nóminas de Neurología
+            filter_neuro_count = f"{base_filter_students}&nomina_id=in.({neuro_ids_str})"
+            neuro_count = get_supabase_count(filter_neuro_count)
+            
         familiar_count = 0
-        # (Aquí iría la lógica completa de neuro/familiar)
-
-        # 5. Enviamos el resultado
+        if familiar_ids:
+            familiar_ids_str = ",".join(familiar_ids)
+            # Filtro: Evaluado AND en nóminas de Medicina Familiar
+            filter_familiar_count = f"{base_filter_students}&nomina_id=in.({familiar_ids_str})"
+            familiar_count = get_supabase_count(filter_familiar_count)
+        
+        # 6. Enviamos el resultado
         return jsonify({
             "success": True, 
             "total_evaluados": total_evaluados,

@@ -1762,15 +1762,20 @@
                     // Actualizar Evaluaciones Pendientes (CORRECCIÓN CLAVE)
                     const pendientesCountElement = document.getElementById('evaluaciones-pendientes-count');
                     if (pendientesCountElement) {
-                        pendientesCountElement.textContent = data.evaluaciones_pendientes;
+                        // El valor correcto es el calculado por el backend (12 en su caso)
+                        pendientesCountElement.textContent = data.evaluaciones_pendientes; 
                     }
 
                     // Actualizar contadores en la sección de Bienvenida/Resumen
-                    const welcomeCount = document.getElementById('welcome-evaluados-count');
-                    if (welcomeCount) welcomeCount.textContent = data.total_evaluados;
-                    
+                    const welcomeEvaluadosCount = document.getElementById('welcome-evaluados-count');
                     const coordTopCount = document.getElementById('coord-evaluados-count-top');
-                    if (coordTopCount) coordTopCount.textContent = data.total_evaluados;
+                    
+                    if (welcomeEvaluadosCount) {
+                         welcomeEvaluadosCount.textContent = data.total_evaluados;
+                    }
+                    if (coordTopCount) {
+                         coordTopCount.textContent = data.total_evaluados;
+                    }
 
                 } else {
                     console.error("❌ Error al obtener los conteos de evaluaciones:", data.message);

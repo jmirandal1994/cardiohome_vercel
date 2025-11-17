@@ -1847,6 +1847,7 @@ def descargar_pdf_alumno(alumno_id):
 # app-30.py (Reemplaza la función /api/dashboard_counts completa)
 # app-30.py (Reemplaza la función /api/dashboard_counts completa y final)
 # app-30.py (Reemplaza la función /api/dashboard_counts FINAL)
+# app-30.py (Reemplaza la función /api/dashboard_counts FINAL)
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
     """Retorna el conteo total, pendiente y por especialidad de evaluaciones completadas
@@ -1858,8 +1859,11 @@ def dashboard_counts():
         return jsonify({"success": False, "message": "Acceso denegado o usuario no identificado."}), 200 
 
     try:
-        # Condición para un estudiante evaluado: fecha_relleno no es nula
-        EVALUADO_FILTER = "fecha_relleno.not.is.null" 
+        # Condición para un estudiante evaluado: 
+        # 1. fecha_relleno NO es nula (el campo de la captura)
+        # 2. doctora_evaluadora_id NO es nula (el campo que guarda la ID de la doctora)
+        # Usamos 'not.is.null' y NO 'neq.null' que puede causar errores en filtros combinados
+        EVALUADO_FILTER = "fecha_relleno.not.is.null&doctora_evaluadora_id.not.is.null" 
         
         # 1. Obtener TODOS los IDs de nómina asignados a este Coordinador General
         url_assigned_nominas = (
@@ -1892,25 +1896,26 @@ def dashboard_counts():
         BASE_NOMINA_FILTER = f"nomina_id=in.({all_assigned_ids_str})"
         
         # 2. Conteo Total de ALUMNOS ASIGNADOS
-        # Solo usamos el filtro de la nómina para obtener el total de estudiantes, evaluados o no.
+        # (Evaluados + Pendientes). Solo usamos el filtro de la nómina.
         filter_total_alumnos = BASE_NOMINA_FILTER
         total_alumnos_en_nominas = get_supabase_count(filter_total_alumnos)
         
-        # 3. Conteo de ALUMNOS EVALUADOS (Contar solo filas con fecha_relleno)
-        # Filtro: Base de nómina Y fecha_relleno.not.is.null
+        # 3. Conteo de ALUMNOS EVALUADOS (Contar solo filas con los dos campos llenos)
+        # Esta es la consulta crítica que debe devolver 0 si todos son NULL
         filter_total_evaluados = f"{EVALUADO_FILTER}&{BASE_NOMINA_FILTER}"
         total_evaluados = get_supabase_count(filter_total_evaluados)
 
-        # 4. Cálculo de Pendientes (Ahora sí debería ser exacto)
+        # 4. Cálculo de Pendientes 
         evaluaciones_pendientes = total_alumnos_en_nominas - total_evaluados
         if evaluaciones_pendientes < 0: evaluaciones_pendientes = 0 
 
-        # 5. Desglose por especialidad (Neuro y Familiar) - Contar solo los evaluados de cada tipo
+        # 5. Desglose por especialidad (Neuro y Familiar)
         
         neuro_count = 0 
         if neuro_ids:
             neuro_ids_str = ",".join(neuro_ids)
             # Filtro: Evaluado AND en nóminas de Neurología (específicas)
+            # Usamos el filtro de nulos estricto: EVALUADO_FILTER
             filter_neuro_count = f"{EVALUADO_FILTER}&nomina_id=in.({neuro_ids_str})"
             neuro_count = get_supabase_count(filter_neuro_count)
             
@@ -1918,6 +1923,7 @@ def dashboard_counts():
         if familiar_ids:
             familiar_ids_str = ",".join(familiar_ids)
             # Filtro: Evaluado AND en nóminas de Medicina Familiar (específicas)
+            # Usamos el filtro de nulos estricto: EVALUADO_FILTER
             filter_familiar_count = f"{EVALUADO_FILTER}&nomina_id=in.({familiar_ids_str})"
             familiar_count = get_supabase_count(filter_familiar_count)
         

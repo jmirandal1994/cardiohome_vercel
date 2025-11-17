@@ -1869,44 +1869,55 @@ def descargar_pdf_alumno(alumno_id):
 
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
-    """Retorna el conteo total y por especialidad de evaluaciones completadas."""
+    """Retorna el conteo total y por especialidad de evaluaciones completadas,
+       filtrando solo por las nóminas asignadas al Coordinador General logueado.
+    """
+    coord_id = session.get('usuario_id')
     
-    if session.get('usuario') != 'coordinadora':
-        return jsonify({"success": False, "message": "Acceso denegado."}), 403
+    if session.get('usuario') != 'coordinadora' or not coord_id:
+        return jsonify({"success": False, "message": "Acceso denegado o usuario no identificado."}), 403
 
     try:
-        # 0. Definir el filtro base para todas las evaluaciones completadas
-        base_filter = "fecha_relleno.not.is.null" 
+        # 1. PASO CLAVE: Obtener TODOS los IDs de nómina asignados a este Coordinador General
+        url_assigned_nominas = (
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?coord_general_id=eq.{coord_id}" # <--- FILTRO DE ASIGNACIÓN
+            f"&select=id,form_type" 
+        )
+        res_assigned = requests.get(url_assigned_nominas, headers=SUPABASE_SERVICE_HEADERS)
+        res_assigned.raise_for_status()
+        assigned_nominas = res_assigned.json()
+
+        # Separar IDs por tipo de formulario y crear la lista total de IDs
+        neuro_ids = [nom['id'] for nom in assigned_nominas if nom.get('form_type') == 'neurologia']
+        familiar_ids = [nom['id'] for nom in assigned_nominas if nom.get('form_type') == 'medicina_familiar']
         
-        # 1. Conteo Total (TODOS los estudiantes evaluados)
-        total_evaluados = get_supabase_count(base_filter)
+        all_assigned_ids_str = ",".join(neuro_ids + familiar_ids)
         
-        # 2. Conteo por NEUROLOGÍA (Estrategia de Doble Consulta)
-        # Paso a): Obtener todos los IDs de nómina que son de tipo 'neurologia'
-        url_neuro_ids = f"{SUPABASE_URL}/rest/v1/nominas_medicas?form_type=eq.neurologia&select=id"
-        res_neuro = requests.get(url_neuro_ids, headers=SUPABASE_SERVICE_HEADERS)
-        res_neuro.raise_for_status()
-        neuro_ids = [nom['id'] for nom in res_neuro.json()]
+        # Filtro base para las consultas de estudiantes (solo evaluados)
+        base_filter_students = "fecha_relleno.not.is.null"
         
+        # 2. Conteo Total Asignado (Contamos todos los estudiantes que pertenezcan a estos IDs)
+        if not all_assigned_ids_str:
+            total_evaluados = 0
+        else:
+            filter_total_assigned = f"{base_filter_students}&nomina_id=in.({all_assigned_ids_str})"
+            total_evaluados = get_supabase_count(filter_total_assigned)
+
+        # 3. Conteo por NEUROLOGÍA
         neuro_count = 0
         if neuro_ids:
-            # Paso b): Contar estudiantes que pertenezcan a esos IDs de nómina Y estén evaluados
             neuro_ids_str = ",".join(neuro_ids)
-            # Filtro: estudiantes_nomina?fecha_relleno.not.is.null&nomina_id=in.(...)
-            filter_neuro_students = f"{base_filter}&nomina_id=in.({neuro_ids_str})"
+            filter_neuro_students = f"{base_filter_students}&nomina_id=in.({neuro_ids_str})"
             neuro_count = get_supabase_count(filter_neuro_students)
         
-        # 3. Conteo por MEDICINA FAMILIAR (Estrategia de Doble Consulta)
-        url_familiar_ids = f"{SUPABASE_URL}/rest/v1/nominas_medicas?form_type=eq.medicina_familiar&select=id"
-        res_familiar = requests.get(url_familiar_ids, headers=SUPABASE_SERVICE_HEADERS)
-        res_familiar.raise_for_status()
-        familiar_ids = [nom['id'] for nom in res_familiar.json()]
-        
+        # 4. Conteo por MEDICINA FAMILIAR
         familiar_count = 0
         if familiar_ids:
             familiar_ids_str = ",".join(familiar_ids)
-            filter_familiar_students = f"{base_filter}&nomina_id=in.({familiar_ids_str})"
+            filter_familiar_students = f"{base_filter_students}&nomina_id=in.({familiar_ids_str})"
             familiar_count = get_supabase_count(filter_familiar_students)
+        
         
         return jsonify({
             "success": True, 
@@ -1921,7 +1932,7 @@ def dashboard_counts():
     except Exception as e:
         print(f"❌ ERROR INESPERADO AL CALCULAR CONTEOS: {e}")
         return jsonify({"success": False, "message": f"Error interno: {str(e)}"}), 500
-
+        
 # --- FIN MODIFICACIONES CLAVE PARA COORDINADOR DE ESCUELA ---
 
 @app.route('/doctor_performance/<doctor_id>')

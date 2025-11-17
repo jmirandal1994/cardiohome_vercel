@@ -140,22 +140,32 @@ def get_supabase_count(filter_params=""):
         print(f"ERROR Inesperado en get_supabase_count. Error: {e}")
         return 0
         
-# Función para obtener los IDs de las nóminas asignadas
+# app-30.py (Define esta función en la sección de utilidades, antes de las rutas)
+
 def get_assigned_nomina_ids(user_id):
+    """Obtiene la lista de IDs de nóminas asignadas directamente al user_id."""
+    
+    # IMPORTANTE: Reemplaza 'doctora_id' si la columna de asignación es diferente 
+    # (ej. 'coordinador_id', 'admin_id') en tu tabla 'nominas_medicas'.
     url_asignaciones = (
         f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-        f"?doctora_id=eq.{user_id}" # <--- Asume que la columna es 'doctora_id' o 'coordinador_id'
+        f"?doctora_id=eq.{user_id}" 
         f"&select=id"
     )
-    # **IMPORTANTE**: Usa SERVICE HEADERS para asegurar permisos
-    res = requests.get(url_asignaciones, headers=SUPABASE_SERVICE_HEADERS)
     
-    if res.ok:
-        # Extrae solo los valores de ID
+    try:
+        # Usa SERVICE HEADERS para asegurar el acceso a la tabla de nóminas
+        res = requests.get(url_asignaciones, headers=SUPABASE_SERVICE_HEADERS)
+        res.raise_for_status()
+        
         nomina_ids = [item['id'] for item in res.json()]
+        print(f"DEBUG: Nóminas asignadas a {user_id}: {len(nomina_ids)} nóminas encontradas.")
         return nomina_ids
-    return []
-    
+        
+    except requests.exceptions.RequestException as e:
+        print(f"❌ ERROR al obtener nóminas asignadas para {user_id}: {e}")
+        return []
+        
 def permitido(filename):
     """Verifica si la extensión del archivo está permitida."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS

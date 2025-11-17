@@ -1854,62 +1854,69 @@ def descargar_pdf_alumno(alumno_id):
         flash(f"❌ Error inesperado al generar el PDF. Detalle: {e}", 'error')
         return redirect(url_for('dashboard'))
         
+# app-30.py (Define esta ruta después de las funciones auxiliares)
+
 @app.route('/api/dashboard_counts', methods=['GET'])
+# Se asume que esta ruta requiere que el usuario esté logueado (sesión iniciada)
 def dashboard_counts():
-    """Retorna el conteo total y por especialidad de evaluaciones completadas."""
-    
-    # Asumimos que la Coordinadora General tiene el rol 'coordinadora'
-    if session.get('usuario') != 'coordinadora':
-        return jsonify({"success": False, "message": "Acceso denegado."}), 403
-
     try:
-        # 0. Definir el filtro base para todas las evaluaciones completadas
-        # El filtro debe ser la cadena pura, sin el '?' inicial.
-        base_filter = "fecha_relleno.not.is.null" 
+        # 1. Obtener la información del usuario logueado de la sesión
+        user_id = session.get('usuario_id')
+        user_role = session.get('usuario')
         
-        # 1. Conteo Total (TODOS los estudiantes evaluados)
-        total_evaluados = get_supabase_count(base_filter)
-        
-        # 2. Conteo por NEUROLOGÍA (Estrategia de Doble Consulta)
-        # Paso a): Obtener todos los IDs de nómina que son de tipo 'neurologia'
-        url_neuro_ids = f"{SUPABASE_URL}/rest/v1/nominas_medicas?form_type=eq.neurologia&select=id"
-        res_neuro = requests.get(url_neuro_ids, headers=SUPABASE_SERVICE_HEADERS)
-        res_neuro.raise_for_status()
-        neuro_ids = [nom['id'] for nom in res_neuro.json()]
-        
-        neuro_count = 0
-        if neuro_ids:
-            # Paso b): Contar estudiantes que pertenezcan a esos IDs de nómina Y estén evaluados
-            neuro_ids_str = ",".join(neuro_ids)
-            # Filtro: nomina_id=in.(id1,id2) + fecha_relleno.not.is.null (que ya está en base_filter)
-            filter_neuro_students = f"{base_filter}&nomina_id=in.({neuro_ids_str})"
-            neuro_count = get_supabase_count(filter_neuro_students)
-        
-        # 3. Conteo por MEDICINA FAMILIAR (Estrategia de Doble Consulta)
-        url_familiar_ids = f"{SUPABASE_URL}/rest/v1/nominas_medicas?form_type=eq.medicina_familiar&select=id"
-        res_familiar = requests.get(url_familiar_ids, headers=SUPABASE_SERVICE_HEADERS)
-        res_familiar.raise_for_status()
-        familiar_ids = [nom['id'] for nom in res_familiar.json()]
-        
-        familiar_count = 0
-        if familiar_ids:
-            familiar_ids_str = ",".join(familiar_ids)
-            filter_familiar_students = f"{base_filter}&nomina_id=in.({familiar_ids_str})"
-            familiar_count = get_supabase_count(filter_familiar_students)
-        
-        return jsonify({
-            "success": True, 
-            "total_evaluados": total_evaluados,
-            "neurologia_count": neuro_count,
-            "familiar_count": familiar_count
-        })
+        if not user_id:
+             # Manejo de error si el usuario no está logueado
+            return jsonify({"error": "Usuario no autenticado."}), 401
 
-    except requests.exceptions.RequestException as e:
-        print(f"❌ ERROR DE CONEXIÓN CON SUPABASE EN DASHBOARD_COUNTS: {e}")
-        return jsonify({"success": False, "message": f"Error de conexión con la BD: {str(e)}"}), 500
+        # Cláusula de filtro que se construirá (vacía por defecto)
+        nomina_filter_clause = ""
+        
+        # 2. Lógica de Filtrado por Rol
+        # SI el usuario es un coordinador o administrador, filtra por sus establecimientos asignados.
+        if user_role in ['administrador', 'coordinador']: 
+            
+            assigned_ids = get_assigned_nomina_ids(user_id) 
+            
+            if assigned_ids:
+                # Construir el filtro IN con la lista de IDs asignados
+                nomina_ids_str = ",".join(assigned_ids)
+                nomina_filter_clause = f"&nomina_id=in.({nomina_ids_str})"
+            else:
+                # Si el rol es de filtro pero no tiene asignaciones, forzamos 0
+                nomina_filter_clause = f"&nomina_id=eq.none"
+
+        # -------------------------------------------------------------------
+        # CONTEO 1: Formularios Completados (Fecha de Relleno NO es nula)
+        # -------------------------------------------------------------------
+        base_filter_completados = "fecha_relleno.not.is.null"
+        final_filter_completados = f"{base_filter_completados}{nomina_filter_clause}"
+        
+        total_completados_asignados = get_supabase_count(final_filter_completados)
+        
+        print(f"DEBUG: Conteo final para completados: {total_completados_asignados}")
+        
+        # -------------------------------------------------------------------
+        # CONTEO 2: Total de Estudiantes (Sin filtros de fecha de relleno)
+        # -------------------------------------------------------------------
+        # Solo necesitamos el filtro de asignación, no el de fecha_relleno
+        base_filter_total = "" # No se necesita filtro de contenido
+        final_filter_total = f"{base_filter_total}{nomina_filter_clause}" 
+        
+        # Nota: Si el filtro es un string vacío, get_supabase_count lo manejará
+        total_estudiantes_asignados = get_supabase_count(final_filter_total)
+
+        print(f"DEBUG: Conteo final de estudiantes: {total_estudiantes_asignados}")
+        
+        # 3. Retornar los datos
+        return jsonify({
+            "total_completados": total_completados_asignados,
+            "total_estudiantes": total_estudiantes_asignados,
+            "porcentaje_completados": (total_completados_asignados / total_estudiantes_asignados * 100) if total_estudiantes_asignados else 0
+        }), 200
+
     except Exception as e:
         print(f"❌ ERROR INESPERADO AL CALCULAR CONTEOS: {e}")
-        return jsonify({"success": False, "message": f"Error interno: {str(e)}"}), 500
+        return jsonify({"error": f"Error al calcular contadores: {e}"}), 500
         
 # --- FIN MODIFICACIONES CLAVE PARA COORDINADOR DE ESCUELA ---
 

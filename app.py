@@ -1856,14 +1856,16 @@ def dashboard_counts():
         return jsonify({"success": False, "message": "Acceso denegado o usuario no identificado."}), 403
 
     try:
-        # 0. Definir el filtro base para todas las evaluaciones completadas (CORRECCIÓN CLAVE)
-        # Debe ser un string que filtre por fecha_relleno no nula
+        # 0. Definir el filtro base de estado
         base_filter_students = "fecha_relleno.not.is.null"
         
         # 1. PASO CLAVE: Obtener TODOS los IDs de nómina asignados a este Coordinador General
+        # FILTRO CRÍTICO: SOLO obtenemos nóminas que tengan el form_type definido, 
+        # asumiendo que las nóminas de maqueta no lo tienen o están incompletas.
         url_assigned_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?coord_general_id=eq.{coord_id}" # <--- FILTRO DE ASIGNACIÓN
+            f"?coord_general_id=eq.{coord_id}"
+            f"&form_type.not.is.null" # <-- FILTRO AÑADIDO PARA EXCLUIR MAQUETA
             f"&select=id,form_type" 
         )
         res_assigned = requests.get(url_assigned_nominas, headers=SUPABASE_SERVICE_HEADERS)
@@ -1879,48 +1881,47 @@ def dashboard_counts():
         # 2. Conteo Total Asignado (Solo evaluados de las nóminas asignadas)
         total_evaluados = 0
         if all_assigned_ids_str:
-            # Filtro: Contar estudiantes evaluados Y cuya nomina_id esté en la lista asignada.
             filter_total_assigned = f"{base_filter_students}&nomina_id=in.({all_assigned_ids_str})"
             total_evaluados = get_supabase_count(filter_total_assigned)
 
-        # 3. Conteo por NEUROLOGÍA
+        # 3. Conteo por NEUROLOGÍA y MEDICINA FAMILIAR (Lógica de desglose)
         neuro_count = 0
         if neuro_ids:
             neuro_ids_str = ",".join(neuro_ids)
-            # Filtro: Contar estudiantes evaluados Y cuya nomina_id sea de Neuro.
             filter_neuro_students = f"{base_filter_students}&nomina_id=in.({neuro_ids_str})"
             neuro_count = get_supabase_count(filter_neuro_students)
         
-        # 4. Conteo por MEDICINA FAMILIAR
         familiar_count = 0
         if familiar_ids:
             familiar_ids_str = ",".join(familiar_ids)
-            # Filtro: Contar estudiantes evaluados Y cuya nomina_id sea de Familiar.
             filter_familiar_students = f"{base_filter_students}&nomina_id=in.({familiar_ids_str})"
             familiar_count = get_supabase_count(filter_familiar_students)
         
         
-        # 5. Cálculo de Evaluaciones Pendientes
+        # 4. Cálculo de Evaluaciones Pendientes
         
-        # Primero, obtendremos el conteo TOTAL de estudiantes en TODAS las nóminas asignadas
+        # Obtenemos el conteo TOTAL de estudiantes en TODAS las nóminas VÁLIDAS asignadas
         total_alumnos_en_nominas = 0
         if all_assigned_ids_str:
             filter_total_alumnos = f"nomina_id=in.({all_assigned_ids_str})" # No lleva filtro de fecha de relleno
             total_alumnos_en_nominas = get_supabase_count(filter_total_alumnos)
 
-        # Pendientes = Total de alumnos en nóminas - Total de alumnos evaluados
+        # Pendientes = Total de alumnos en nóminas VÁLIDAS - Total de alumnos evaluados
         evaluaciones_pendientes = total_alumnos_en_nominas - total_evaluados
         
         if evaluaciones_pendientes < 0:
             evaluaciones_pendientes = 0 
+        
+        # Si el total es 12 y evaluados es 0, pendientes será 12.
+        # Si el total es 12 y evaluados es 12, pendientes será 0.
 
-        # 6. Enviamos el resultado
+        # 5. Enviamos el resultado
         return jsonify({
             "success": True, 
             "total_evaluados": total_evaluados,
             "neurologia_count": neuro_count,
             "familiar_count": familiar_count,
-            "evaluaciones_pendientes": evaluaciones_pendientes # Nuevo campo
+            "evaluaciones_pendientes": evaluaciones_pendientes
         })
 
     except requests.exceptions.RequestException as e:
@@ -1929,7 +1930,8 @@ def dashboard_counts():
     except Exception as e:
         print(f"❌ ERROR INESPERADO AL CALCULAR CONTEOS: {e}")
         return jsonify({"success": False, "message": f"Error interno: {str(e)}"}), 500
-        
+
+
 # --- FIN MODIFICACIONES CLAVE PARA COORDINADOR DE ESCUELA ---
 
 @app.route('/doctor_performance/<doctor_id>')

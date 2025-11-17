@@ -84,6 +84,51 @@ def format_rut_python(rut):
 
     return f"{formatted_body}-{dv}"
 
+# app-30.py (VERSIÓN FINAL CON PREFER HEADER)
+def get_supabase_count(filter_params=""):
+    """Función auxiliar para obtener un conteo de Supabase usando SERVICE HEADERS.
+        USA 'Prefer: count=exact' y 'select=id' para forzar la respuesta del conteo.
+    """
+    
+    # 1. Limpiar y construir la URL
+    if filter_params and filter_params.startswith('?'):
+        filter_params = filter_params[1:]
+        
+    # CAMBIO CLAVE: Usamos 'select=id' o 'select=*' en lugar de 'select=count'
+    if filter_params:
+        url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=id&{filter_params}"
+    else:
+        url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=id"
+        
+    params = {'limit': 1} # Pide solo 1 fila (porque solo necesitamos el header Content-Range)
+    
+    try:
+        print(f"DEBUG: Ejecutando conteo con Prefer/select=id. URL: {url_count}")
+        # SUPABASE_SERVICE_HEADERS ya incluye "Prefer": "count=exact"
+        response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS, params=params)
+        response.raise_for_status()
+
+        content_range = response.headers.get('Content-Range')
+        
+        if content_range:
+            count_str = content_range.split('/')[-1]
+            
+            try:
+                # Si esto funciona, obtendrás el número real de filas.
+                return int(count_str)
+            except ValueError:
+                print(f"ERROR: El valor del conteo '{count_str}' no es un entero válido. El problema es el conteo general.")
+                return 0 # Fallback si hay error de formato inesperado
+            
+        return 0
+        
+    except requests.exceptions.HTTPError as e:
+        print(f"ERROR HTTP en get_supabase_count. Status: {response.status_code}. Respuesta: {response.text}. Error: {e}")
+        return 0
+    except Exception as e:
+        print(f"ERROR Inesperado en get_supabase_count. Error: {e}")
+        return 0
+        
 # Función para obtener los IDs de las nóminas asignadas
 def get_assigned_nomina_ids(user_id):
     url_asignaciones = (

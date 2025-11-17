@@ -963,7 +963,7 @@
                             <label for="excel_nomina">Archivo Excel/CSV de la Nómina:</label>
                             <input type="file" id="excel_nomina" name="excel" accept=".xls,.xlsx,.csv" required class="form-input" />
                             
-                            <button type="submit" class="form-button"><i class="fa-solid fa-upload"></i> Cargar Nómina</button>
+                            <button type="submit" class="form-button">Cargar Nómina</button>
                         </form>
                     </div>
                 </div>
@@ -1128,7 +1128,7 @@
                             <label for="descripcion_proyecto">Descripción (opcional):</label>
                             <textarea id="descripcion_proyecto" name="descripcion_proyecto" rows="4" placeholder="Breve descripción del proyecto..." class="form-input"></textarea>
                             
-                            <button type="submit" class="form-button"><i class="fas fa-plus-circle"></i> Crear Proyecto</button>
+                            <button type="submit" class="form-button">Crear Proyecto</button>
                         </form>
                     </div>
                 </div>
@@ -1200,14 +1200,14 @@
                                     <span>EVALUACIONES<br>PENDIENTES</span>
                                     <i class="fa-solid fa-clipboard-list"></i>
                                 </div>
-                                <p class="count">430</p>
+                                <p class="count" id="evaluaciones-pendientes-count">430</p>
                             </div>
                             <div class="summary-card-v2" style="background: linear-gradient(145deg, #2ECC71, #27A661);">
                                 <div class="summary-card-header">
                                     <span>ESTUDIANTES<br>EVALUADOS</span>
                                     <i class="fa-solid fa-user-check"></i>
                                 </div>
-                                <p class="count" id="coord-evaluados-count-top">587</p>
+                                <p class="count" id="total-evaluados-count">587</p>
                             </div>
                             <div class="summary-card-v2" style="background: linear-gradient(145deg, #F1C40F, #D4A80F);">
                                 <div class="summary-card-header">
@@ -1407,7 +1407,7 @@
                                     <i class="fa-solid fa-triangle-exclamation text-danger-red mr-2"></i> **Token de Acceso Requerido**
                                 </p>
                                 <form id="access-password-form" onsubmit="return handleAccessPassword(event)">
-                                    <input type="hidden" id="current-school-id" value=""> 
+                                    <input type="hidden" id="current-school-id" value=""> 
 
                                     <label for="school_password" class="font-bold block mb-2">Token Secreto:</label>
                                     <input type="password" id="school_password" name="school_password" required class="form-input" placeholder="Ingrese el token secreto de acceso..." />
@@ -1440,7 +1440,7 @@
                             <label for="contact-message">Mensaje (Describa su problema):</label>
                             <textarea id="contact-message" name="message" rows="5" required class="form-input" placeholder="Describa específicamente su solicitud..."></textarea>
                             
-                            <button type="submit" class="form-button"><i class="fa-solid fa-paper-plane"></i> Enviar Solicitud de Soporte</button>
+                            <button type="submit" class="form-button">Enviar Solicitud de Soporte</button>
                         </form>
                     </div>
                 </div>
@@ -1570,7 +1570,7 @@
                                             <div class="item-card-header">
                                                 <span>{{ form_subido.nombre_archivo }}</span>
                                                 <span class="text-sm text-gray-600">Fecha: {{ form_subido.fecha_subida.strftime('%d-%m-%Y') if form_subido.fecha_subida else 'N/A' }}</span>
-                                        </div>
+                                            </div>
                                             <div class="item-card-details">
                                                 <span class="text-sm text-gray-600">Establecimiento: 
                                                     {% set est = (eventos | selectattr('id', 'equalto', form_subido.establecimientos_id) | first) %}
@@ -1625,7 +1625,7 @@
                 <textarea id="correction_details" name="detalles" rows="4" placeholder="Ej: Error en el diagnóstico, la fecha de reevaluación debe ser 15/10/2025." required class="form-input w-full"></textarea>
                 <div class="flex justify-end gap-3 mt-4">
                     <button type="button" class="action-button red" onclick="document.getElementById('correction-modal').style.display='none'">Cancelar</button>
-                    <button type="submit" class="action-button green"><i class="fa-solid fa-paper-plane"></i> Enviar Solicitud</button>
+                    <button type="submit" class="action-button green"> Enviar Solicitud</button>
                 </div>
             </form>
         </div>
@@ -1759,6 +1759,12 @@
                     const familiar = document.getElementById('coord-familiar-count');
                     if (familiar) familiar.textContent = data.familiar_count;
 
+                    // Actualizar Evaluaciones Pendientes (CORRECCIÓN CLAVE)
+                    const pendientesCountElement = document.getElementById('evaluaciones-pendientes-count');
+                    if (pendientesCountElement) {
+                        pendientesCountElement.textContent = data.evaluaciones_pendientes;
+                    }
+
                     // Actualizar contadores en la sección de Bienvenida/Resumen
                     const welcomeCount = document.getElementById('welcome-evaluados-count');
                     if (welcomeCount) welcomeCount.textContent = data.total_evaluados;
@@ -1814,7 +1820,7 @@
         }
 
 
-function renderNominas(nominas, containerElement, noResultsMsg) {
+        function renderNominas(nominas, containerElement, noResultsMsg) {
             containerElement.innerHTML = ''; 
             if (!nominas || nominas.length === 0) {
                 noResultsMsg.textContent = "No hay alumnos en esta nómina."; // Modificar mensaje
@@ -1855,8 +1861,8 @@ function renderNominas(nominas, containerElement, noResultsMsg) {
                 `;
                 containerElement.innerHTML += itemCard;
             });
-            // NOTA: Asegúrate de que las variables CSS --highlight-green y --danger-red estén definidas en tu <style>.
         }
+
 
         function handleAccessPassword(event) {
             event.preventDefault(); 

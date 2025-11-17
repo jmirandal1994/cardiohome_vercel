@@ -46,7 +46,8 @@ SUPABASE_SERVICE_HEADERS = {
     "apikey": SUPABASE_SERVICE_KEY,
     "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
     "Content-Type": "application/json",
-    "Accept": "application/json" 
+    "Accept": "application/json"
+    "Prefer": "count=exact"
 }
 
 # Configuración de SendGrid

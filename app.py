@@ -1864,6 +1864,8 @@ def dashboard_counts():
         user_id = session.get('usuario_id')
         user_role = session.get('usuario')
         
+        print(f"DEBUG: Rol del usuario logueado: '{user_role}'")
+        
         if not user_id:
              # Manejo de error si el usuario no está logueado
             return jsonify({"error": "Usuario no autenticado."}), 401

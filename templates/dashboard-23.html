@@ -775,7 +775,7 @@
                         <li><a href="#" class="nav-link" data-section="admin-nominas-list"><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Cargadas</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-uploaded-forms-all"><i class="fa-solid fa-folder-open"></i> Formularios Subidos</a></li>
                         <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fa-solid fa-folder-plus"></i> Crear Proyecto</a></li>
-                        <li><a href="#" class="nav-link" data-section="gestionar_proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
+                        <li><a href="#" class="nav-link" data-section="gestionar-proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
 
                     {% elif usuario == 'coordinadora' %}
                         <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical"></i> Bienvenida</a></li>
@@ -1200,14 +1200,14 @@
                                     <span>EVALUACIONES<br>PENDIENTES</span>
                                     <i class="fa-solid fa-clipboard-list"></i>
                                 </div>
-                                <p class="count" id="evaluaciones-pendientes-count">430</p>
+                                <p class="count" id="welcome-pendientes-count">430</p>
                             </div>
                             <div class="summary-card-v2" style="background: linear-gradient(145deg, #2ECC71, #27A661);">
                                 <div class="summary-card-header">
                                     <span>ESTUDIANTES<br>EVALUADOS</span>
                                     <i class="fa-solid fa-user-check"></i>
                                 </div>
-                                <p class="count" id="total-evaluados-count">587</p>
+                                <p class="count" id="welcome-evaluados-count">587</p>
                             </div>
                             <div class="summary-card-v2" style="background: linear-gradient(145deg, #F1C40F, #D4A80F);">
                                 <div class="summary-card-header">
@@ -1287,7 +1287,7 @@
                                         <div class="bg-blue-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
                                             <div class="flex justify-between items-center mb-4">
                                                 <span class="text-lg font-bold">Línea 1 (280 evaluaciones)</span>
-                                                <i class="fa-solid fa-location-dot text-2xl opacity-0.75"></i>
+                                                <i class="fa-solid fa-location-dot text-2xl opacity:0.75"></i>
                                             </div>
                                             <p class="text-sm">Comunas: Maipú, Cerrillos</p>
                                         </div>
@@ -1776,6 +1776,13 @@
                     if (coordTopCount) {
                          coordTopCount.textContent = data.total_evaluados;
                     }
+                    
+                    // Aseguramos que la tarjeta de bienvenida de pendientes se actualice
+                    const welcomePendientesCount = document.getElementById('welcome-pendientes-count');
+                    if (welcomePendientesCount) {
+                         welcomePendientesCount.textContent = data.evaluaciones_pendientes;
+                    }
+
 
                 } else {
                     console.error("❌ Error al obtener los conteos de evaluaciones:", data.message);

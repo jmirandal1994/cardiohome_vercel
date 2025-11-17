@@ -144,12 +144,13 @@ def get_supabase_count(filter_params=""):
 
 # app-30.py (Función get_assigned_nomina_ids)
 
+# app-30.py (Función get_assigned_nomina_ids - CORREGIDA)
+
 def get_assigned_nomina_ids(user_id):
     """Obtiene la lista de IDs de nóminas asignadas directamente al user_id."""
     
-    # ⚠️ REVISA ESTO: Reemplaza 'doctora_id' con el nombre de la columna real 
-    # en la tabla 'nominas_medicas' que guarda el ID del coordinador.
-    columna_asignacion = "doctora_id" 
+    # 🟢 CORRECCIÓN CLAVE: Usamos el nombre de columna real 'coord_general_id'
+    columna_asignacion = "coord_general_id" 
     
     url_asignaciones = (
         f"{SUPABASE_URL}/rest/v1/nominas_medicas"
@@ -158,7 +159,7 @@ def get_assigned_nomina_ids(user_id):
     )
     
     try:
-        print(f"DEBUG: Consultando nóminas asignadas: {url_asignaciones}") # Muestra la URL completa
+        print(f"DEBUG: Consultando nóminas asignadas: {url_asignaciones}") 
         
         # Usa SERVICE HEADERS para asegurar el acceso a la tabla de nóminas
         res = requests.get(url_asignaciones, headers=SUPABASE_SERVICE_HEADERS)
@@ -169,7 +170,6 @@ def get_assigned_nomina_ids(user_id):
         return nomina_ids
         
     except requests.exceptions.RequestException as e:
-        # Esto capturará errores HTTP (como 404 o 400 si el filtro es incorrecto)
         print(f"❌ ERROR al obtener nóminas asignadas para {user_id}: {e}")
         return []
         

@@ -1794,73 +1794,63 @@ def descargar_pdf_alumno(alumno_id):
 def dashboard_counts():
     """Retorna el conteo total y por especialidad de evaluaciones completadas."""
     
-    # Asumimos que la Coordinadora General tiene el rol 'coordinadora'
     if session.get('usuario') != 'coordinadora':
         return jsonify({"success": False, "message": "Acceso denegado."}), 403
 
     try:
-        # Filtro base para evaluaciones completadas: fecha_relleno no es nulo.
-        base_filter = "&fecha_relleno.not.is.null"
+        # 0. Definir el filtro base para todas las evaluaciones completadas
+        base_filter = "?fecha_relleno.not.is.null"
         
         # 1. Conteo Total (TODOS los estudiantes evaluados)
         total_evaluados = get_supabase_count(base_filter)
         
-        # 2. Conteo por Neurología (Filtra por form_type en nominas_medicas a través del JOIN)
-        # Sintaxis: &nomina_id.nominas_medicas.form_type=eq.neurologia
-        filter_neurologia = f"{base_filter}&nomina_id.nominas_medicas.form_type=eq.neurologia" 
-        neurologia_count = get_supabase_count(filter_neurologia)
+        # ----------------------------------------------------------------------
+        # 2. Conteo por NEUROLOGÍA (Estrategia de Doble Consulta)
+        # Paso a): Obtener todos los IDs de nómina que son de tipo 'neurologia'
+        url_neuro_ids = f"{SUPABASE_URL}/rest/v1/nominas_medicas?form_type=eq.neurologia&select=id"
+        res_neuro = requests.get(url_neuro_ids, headers=SUPABASE_SERVICE_HEADERS)
+        res_neuro.raise_for_status()
+        neuro_ids = [nom['id'] for nom in res_neuro.json()]
         
-        # 3. Conteo por Medicina Familiar
-        filter_familiar = f"{base_filter}&nomina_id.nominas_medicas.form_type=eq.medicina_familiar"
-        familiar_count = get_supabase_count(filter_familiar)
+        neuro_count = 0
+        if neuro_ids:
+            # Paso b): Contar estudiantes que pertenezcan a esos IDs de nómina Y estén evaluados
+            neuro_ids_str = ",".join(neuro_ids)
+            # Filtro: estudiantes_nomina?nomina_id=in.(id1,id2)&fecha_relleno.not.is.null
+            filter_neuro_students = f"{base_filter}&nomina_id=in.({neuro_ids_str})"
+            neuro_count = get_supabase_count(filter_neuro_students)
         
+        # ----------------------------------------------------------------------
+        # 3. Conteo por MEDICINA FAMILIAR (Estrategia de Doble Consulta)
+        # Paso a): Obtener todos los IDs de nómina que son de tipo 'medicina_familiar'
+        url_familiar_ids = f"{SUPABASE_URL}/rest/v1/nominas_medicas?form_type=eq.medicina_familiar&select=id"
+        res_familiar = requests.get(url_familiar_ids, headers=SUPABASE_SERVICE_HEADERS)
+        res_familiar.raise_for_status()
+        familiar_ids = [nom['id'] for nom in res_familiar.json()]
+        
+        familiar_count = 0
+        if familiar_ids:
+            # Paso b): Contar estudiantes que pertenezcan a esos IDs de nómina Y estén evaluados
+            familiar_ids_str = ",".join(familiar_ids)
+            filter_familiar_students = f"{base_filter}&nomina_id=in.({familiar_ids_str})"
+            familiar_count = get_supabase_count(filter_familiar_students)
+        
+        # ----------------------------------------------------------------------
+
         return jsonify({
             "success": True, 
             "total_evaluados": total_evaluados,
-            "neurologia_count": neurologia_count,
+            "neurologia_count": neuro_count,
             "familiar_count": familiar_count
         })
 
-    except Exception as e:
-        print(f"❌ Error interno en dashboard_counts: {e}")
-        return jsonify({"success": False, "message": f"Error interno del servidor al obtener conteos: {e}"}), 500
-        
-# --- NUEVA RUTA: SOLICITUD DE CORRECCIÓN ---
-@app.route('/api/correccion/solicitar', methods=['POST'])
-def solicitar_correccion():
-    if session.get('usuario') != 'coordinador_escuela':
-        return jsonify({"success": False, "message": "Acceso denegado."}), 403
-    
-    data = request.get_json()
-    alumno_id = data.get('alumno_id')
-    detalles = data.get('detalles')
-    coordinador_id = session.get('usuario_id')
-    
-    if not all([alumno_id, detalles]):
-        return jsonify({"success": False, "message": "Faltan datos de la solicitud (ID de alumno o detalles)."}), 400
-    
-    payload = {
-        "alumno_id": alumno_id,
-        "detalles": detalles,
-        "coordinador_id": coordinador_id, 
-        "fecha_solicitud": datetime.now().isoformat()
-    }
-    
-    try:
-        # Insertar la solicitud en la tabla 'solicitudes_correccion'
-        res = requests.post(
-            f"{SUPABASE_URL}/rest/v1/solicitudes_correccion",
-            headers=SUPABASE_SERVICE_HEADERS, 
-            json=payload
-        )
-        res.raise_for_status()
-        
-        return jsonify({"success": True, "message": "✅ Solicitud de corrección registrada exitosamente. El equipo de soporte lo revisará pronto."})
-        
     except requests.exceptions.RequestException as e:
-        print(f"❌ ERROR AL INSERTAR SOLICITUD DE CORRECCIÓN: {e} - {res.text if 'res' in locals() else ''}")
-        return jsonify({"success": False, "message": "❌ Error al guardar la solicitud en la base de datos."}), 500
-
+        print(f"❌ ERROR DE CONEXIÓN CON SUPABASE EN DASHBOARD_COUNTS: {e}")
+        return jsonify({"success": False, "message": f"Error de conexión con la BD: {str(e)}"}), 500
+    except Exception as e:
+        print(f"❌ ERROR INESPERADO AL CALCULAR CONTEOS: {e}")
+        return jsonify({"success": False, "message": f"Error interno: {str(e)}"}), 500
+        
 # --- FIN MODIFICACIONES CLAVE PARA COORDINADOR DE ESCUELA ---
 
 @app.route('/doctor_performance/<doctor_id>')

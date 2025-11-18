@@ -1852,10 +1852,11 @@ def descargar_pdf_alumno(alumno_id):
 # app-30.py (Reemplaza la función /api/dashboard_counts con la versión de CONTEO INVERSO)
 # app-30.py (Reemplaza la función /api/dashboard_counts con la versión de RESTA POR ESPECIALIDAD)
 # app-30.py (Reemplaza la función /api/dashboard_counts con la versión HÍBRIDA FINAL)
+# app-30.py (Reemplaza la función /api/dashboard_counts con la versión FINAL BASADA EN CONTEO DIRECTO)
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
     """Retorna el conteo total, pendiente y por especialidad de evaluaciones completadas.
-       Usa filtros estrictos de NOT IS NULL en el campo estado_general para los completados.
+       Usa conteo directo en estado_general.not.is.null para los completados.
     """
     coord_id = session.get('usuario_id')
     
@@ -1863,11 +1864,8 @@ def dashboard_counts():
         return jsonify({"success": False, "message": "Acceso denegado o usuario no identificado."}), 200 
 
     try:
-        # Filtro para identificar estudiantes PENDIENTES (Este filtro 'is.null' FUNCIONA para totales)
-        PENDIENTE_FILTER = "fecha_relleno.is.null" 
-        
-        # Filtro para identificar estudiantes EVALUADOS/COMPLETADOS (Usamos estado_general que tiene valor)
-        EVALUADO_COMPLETADO_FILTER = "estado_general.not.is.null" 
+        # Filtro para identificar estudiantes COMPLETADOS (Usamos estado_general que tiene valor)
+        COMPLETADO_FILTER = "estado_general.not.is.null" 
         
         # 1. Obtener IDs de nómina
         url_assigned_nominas = (
@@ -1899,27 +1897,28 @@ def dashboard_counts():
         # 2. Conteo Total de ALUMNOS ASIGNADOS
         total_alumnos_en_nominas = get_supabase_count(BASE_NOMINA_FILTER)
         
-        # 3. Conteo de ALUMNOS PENDIENTES (General) - USANDO EL FILTRO QUE SÍ FUNCIONA
-        total_pendientes = get_supabase_count(f"{PENDIENTE_FILTER}&{BASE_NOMINA_FILTER}")
+        # 3. Conteo de ALUMNOS EVALUADOS (Contar filas que tienen estado_general con datos)
+        filter_total_evaluados = f"{COMPLETADO_FILTER}&{BASE_NOMINA_FILTER}"
+        total_evaluados = get_supabase_count(filter_total_evaluados) # ESTO DEBE DEVOLVER 2
 
-        # 4. Cálculo de Evaluados (General)
-        total_evaluados = total_alumnos_en_nominas - total_pendientes
-        if total_evaluados < 0: total_evaluados = 0 
+        # 4. Cálculo de Pendientes (La resta que siempre es coherente)
+        total_pendientes = total_alumnos_en_nominas - total_evaluados
+        if total_pendientes < 0: total_pendientes = 0 
 
-        # 5. Desglose por especialidad (CONTEO DIRECTO DE COMPLETADOS USANDO ESTADO_GENERAL)
+        # 5. Desglose por especialidad (CONTEO DIRECTO DE COMPLETADOS)
         
         neuro_count = 0 
         if neuro_ids:
             neuro_ids_str = ",".join(neuro_ids)
             # Filtro: Completado (estado_general NOT NULL) AND en nóminas de Neurología
-            filter_neuro_count = f"{EVALUADO_COMPLETADO_FILTER}&nomina_id=in.({neuro_ids_str})"
-            neuro_count = get_supabase_count(filter_neuro_count) # ESTO DEBE DEVOLVER 2
+            filter_neuro_count = f"{COMPLETADO_FILTER}&nomina_id=in.({neuro_ids_str})"
+            neuro_count = get_supabase_count(filter_neuro_count) 
             
         familiar_count = 0
         if familiar_ids:
             familiar_ids_str = ",".join(familiar_ids)
             # Filtro: Completado (estado_general NOT NULL) AND en nóminas de Medicina Familiar
-            filter_familiar_count = f"{EVALUADO_COMPLETADO_FILTER}&nomina_id=in.({familiar_ids_str})"
+            filter_familiar_count = f"{COMPLETADO_FILTER}&nomina_id=in.({familiar_ids_str})"
             familiar_count = get_supabase_count(filter_familiar_count)
         
         # 6. Enviamos el resultado

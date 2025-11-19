@@ -596,6 +596,7 @@ def relleno_formulario(nomina_id):
         flash('Error interno del servidor. Detalle: ' + str(e), 'error')
         return redirect(url_for('dashboard'))
         
+# app.py (REEMPLAZO FINAL Y CORREGIDO DE generar_pdf - INTEGRIDAD DEL PDF)
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
     if 'usuario' not in session:
@@ -642,7 +643,6 @@ def generar_pdf():
         sexo_f_pdf = "X" if sexo_form_value == "F" else ""
         sexo_m_pdf = "X" if sexo_form_value == "M" else ""
     elif form_type == 'medicina_familiar':
-        # Mapeo de género de Medicina Familiar (F/M como campos internos)
         sexo_f_pdf = "/Yes" if get_form_field_value('genero_f', request.form) else ""
         sexo_m_pdf = "/Yes" if get_form_field_value('genero_m', request.form) else ""
 
@@ -655,7 +655,6 @@ def generar_pdf():
         except ValueError:
             pass
 
-    # Usamos el campo oculto "fecha_reevaluacion_pdf" que viene con formato DD/MM/YYYY desde JS
     fecha_reeval_pdf = get_form_field_value('fecha_reevaluacion_pdf', request.form)
 
 
@@ -786,12 +785,14 @@ def generar_pdf():
         print(f"DEBUG: Campos finales para el PDF ({form_type}): {campos}")
         
         # 4. Generación final del PDF
+        # *** APLICANDO LA CORRECCIÓN DE INTEGRIDAD DE PDF ***
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({
                 NameObject("/AcroForm"): DictionaryObject()
             })
         writer.update_page_form_field_values(writer.pages[0], campos)
 
+        # Aplicando NeedAppearances para forzar a Adobe a renderizar correctamente los campos (CRÍTICO)
         writer._root_object["/AcroForm"].update({
             NameObject("/NeedAppearances"): BooleanObject(True)
         })

@@ -1866,10 +1866,16 @@ def descargar_pdf_alumno(alumno_id):
 # app-30.py (Reemplaza la función /api/dashboard_counts con la versión HÍBRIDA FINAL)
 # app-30.py (Reemplaza la función /api/dashboard_counts con la versión FINAL BASADA EN CONTEO DIRECTO)
 # app-30.py (Versión de CONTINGENCIA FINAL)
+# Asegúrate de que las importaciones de requests, uuid, y el resto estén al inicio de app.py
+# from datetime import datetime, date  <-- CRÍTICO
+# import requests
+# import uuid
+# ...
+
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
-    """SOLUCIÓN DE CONTINGENCIA EXTREMA: Solo confía en el filtro 'evaluado_flag.eq.false'
-       para contar a los PENDIENTES, y calcula todos los completados por RESTA.
+    """Calcula los contadores usando la lógica de contingencia más el rompedor de caché
+       y la corrección para eliminar el Error 400 en el filtro de IDs.
     """
     coord_id = session.get('usuario_id')
     
@@ -1877,9 +1883,9 @@ def dashboard_counts():
         return jsonify({"success": True, "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0}), 200 
 
     try:
-        # 🟢 FILTRO ROBUSTO PARA PENDIENTES
-        # Este filtro DEBE devolver el número correcto de estudiantes que tienen evaluado_flag=FALSE (22)
-        PENDIENTE_FLAG_FILTER = "evaluado_flag.eq.false" 
+        # Filtro para identificar estudiantes COMPLETADOS 
+        COMPLETADO_FILTER = "doctora_evaluadora_id.not.is.null&estado_general.gt." 
+        PENDIENTE_FLAG_FILTER = "evaluado_flag.eq.false" # Filtro booleano para Pendientes
         
         # 1. Obtener IDs de nómina
         url_assigned_nominas = (
@@ -1894,50 +1900,43 @@ def dashboard_counts():
 
         neuro_ids = [nom['id'] for nom in assigned_nominas if nom.get('form_type') == 'neurologia']
         familiar_ids = [nom['id'] for nom in assigned_nominas if nom.get('form_type') == 'medicina_familiar']
+        
+        # 🟢 CORRECCIÓN CLAVE DEL ERROR 400: Limpiar espacios y unir solo con comas
         all_assigned_ids = neuro_ids + familiar_ids
-        all_assigned_ids_str = ",".join(all_assigned_ids)
+        clean_assigned_ids = [id_str.strip() for id_str in all_assigned_ids if id_str]
+        all_assigned_ids_str = ",".join(clean_assigned_ids)
         
         if not all_assigned_ids_str:
              return jsonify({"success": True, "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0})
         
         BASE_NOMINA_FILTER = f"nomina_id=in.({all_assigned_ids_str})"
         
-        # 2. Conteo Total de ALUMNOS ASIGNADOS (24)
+        # 2. Conteo Total de ALUMNOS ASIGNADOS
         total_alumnos_en_nominas = get_supabase_count(BASE_NOMINA_FILTER)
         
-        # 3. Conteo de ALUMNOS PENDIENTES (General) - USANDO EL FILTRO BOLEANO
-        filter_total_pendientes = f"{PENDIENTE_FLAG_FILTER}&{BASE_NOMINA_FILTER}"
-        total_pendientes = get_supabase_count(filter_total_pendientes) # DEBE DEVOLVER 22
+        # 3. Conteo de ALUMNOS EVALUADOS (Contar COMPLETADOS con filtro directo)
+        filter_total_evaluados = f"{COMPLETADO_FILTER}&{BASE_NOMINA_FILTER}"
+        total_evaluados = get_supabase_count(filter_total_evaluados)
         
-        # 4. Cálculo de EVALUADOS (General) - POR RESTA
-        total_evaluados = total_alumnos_en_nominas - total_pendientes
-        if total_evaluados < 0: total_evaluados = 0 
+        # 4. Cálculo de Pendientes (Por conteo booleano)
+        filter_total_pendientes = f"{PENDIENTE_FLAG_FILTER}&{BASE_NOMINA_FILTER}"
+        total_pendientes = get_supabase_count(filter_total_pendientes)
 
-        # 5. Desglose por especialidad (CALCULADO POR RESTA, BASADO EN PENDIENTES POR ESPECIALIDAD)
+        # 5. Desglose por especialidad (CONTEO DIRECTO)
         
         neuro_count = 0 
         if neuro_ids:
             neuro_ids_str = ",".join(neuro_ids)
-            # 5a. Total Neuro Asignados (Asumimos 24)
-            neuro_total_asignados = get_supabase_count(f"nomina_id=in.({neuro_ids_str})")
-            # 5b. Neuro Pendientes (Filtro eq.false)
-            neuro_pendientes = get_supabase_count(f"{PENDIENTE_FLAG_FILTER}&nomina_id=in.({neuro_ids_str})") 
-            # 5c. Completados = Total Asignado - Pendientes
-            neuro_count = neuro_total_asignados - neuro_pendientes
-            if neuro_count < 0: neuro_count = 0
+            filter_neuro_count = f"{COMPLETADO_FILTER}&nomina_id=in.({neuro_ids_str})"
+            neuro_count = get_supabase_count(filter_neuro_count) 
             
         familiar_count = 0
         if familiar_ids:
             familiar_ids_str = ",".join(familiar_ids)
-            # 5d. Total Familiar Asignados
-            familiar_total_asignados = get_supabase_count(f"nomina_id=in.({familiar_ids_str})")
-            # 5e. Familiar Pendientes (Filtro eq.false)
-            familiar_pendientes = get_supabase_count(f"{PENDIENTE_FLAG_FILTER}&nomina_id=in.({familiar_ids_str})")
-            # 5f. Completados = Total Asignado - Pendientes
-            familiar_count = familiar_total_asignados - familiar_pendientes
-            if familiar_count < 0: familiar_count = 0
+            filter_familiar_count = f"{COMPLETADO_FILTER}&nomina_id=in.({familiar_ids_str})"
+            familiar_count = get_supabase_count(filter_familiar_count)
             
-        # 6. Enviamos el resultado
+        # 6. Enviamos el resultado (Los totales serán consistentes: Asignados = Evaluados + Pendientes)
         return jsonify({
             "success": True, 
             "total_evaluados": total_evaluados,
@@ -1948,11 +1947,13 @@ def dashboard_counts():
 
     except requests.exceptions.RequestException as e:
         print(f"❌ ERROR DE CONEXIÓN CON SUPABASE EN DASHBOARD_COUNTS: {e}")
+        # Retornamos el error 500 para el cliente cuando hay un fallo de conexión/API
         return jsonify({"success": False, "message": f"Error de conexión con la BD: {str(e)}"}), 500
     except Exception as e:
         print(f"❌ ERROR INESPERADO AL CALCULAR CONTEOS: {e}")
         return jsonify({"success": False, "message": f"Error interno: {str(e)}"}), 500
-        
+
+
 
 # --- FIN MODIFICACIONES CLAVE PARA COORDINADOR DE ESCUELA ---
 

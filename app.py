@@ -101,42 +101,61 @@ def format_rut_python(rut):
 # app-31.py (Reemplazo de la función get_supabase_count)
 # app.py (Reemplazo de la función get_supabase_count)
 
+# app.py (Reemplazo de la función get_supabase_count)
+# Asegúrate de tener: 
+# import urllib.parse 
+# from datetime import datetime 
+# import requests 
+# ...
+
 def get_supabase_count(filter_params=""):
     """
-    Función auxiliar que obtiene un conteo de Supabase usando SERVICE HEADERS.
-    Utiliza URL encoding para asegurar la validez de los filtros y evitar errores 400.
+    Función auxiliar para conteo. Utiliza la codificación manual para evitar errores 400.
     """
     
-    # 1. Limpiar y Preparar Filtros
+    # 1. Limpiar Filtros
     if filter_params.startswith('&'):
         filter_params = filter_params[1:]
 
-    # 2. Construir la URL base
-    url_base = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count"
-    
-    url_count = url_base
+    # 2. Codificación Manual de Filtros: Reemplazamos los espacios por '+' y codificamos solo los valores.
+    # CRÍTICO: Para Supabase, codificar el ID ya limpio es suficiente.
     if filter_params:
-        # 🟢 MODIFICACIÓN CLAVE: Codificamos el filtro para manejar caracteres especiales.
-        encoded_filter = urllib.parse.quote_plus(filter_params, safe='=&')
-        url_count = f"{url_base}&{encoded_filter}"
+        # Buscamos el ID que sigue al 'eq.' (UUID de 36 caracteres)
+        match = re.search(r'eq\.([\w-]+)', filter_params)
+        if match:
+            # Reemplazamos el ID con el valor codificado (el UUID)
+            raw_uuid = match.group(1)
+            encoded_uuid = urllib.parse.quote(raw_uuid)
+            filter_params = filter_params.replace(raw_uuid, encoded_uuid)
+            
+        # Para filtros más complejos como 'not.is.null', el filtro ya debería ser seguro si no tiene espacios.
+    
+    # 3. Construir la URL final (sin usar quote_plus en toda la cadena)
+    url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count"
+    
+    if filter_params:
+        # Concatenamos el filtro de forma simple.
+        url_count = f"{url_count}&{filter_params}"
 
-    # 3. Añadir Rompecaché
+    # 4. Añadir Rompecaché
     current_time_ms = int(datetime.now().timestamp() * 1000)
     cache_buster = f"&t={current_time_ms}" 
     url_count = f"{url_count}{cache_buster}"
     
+    # Imprimir URL para verificación (Paso Final de Seguridad)
+    print(f"DEBUG: URL de Conteo Final (Verificación 400): {url_count}")
+
     try:
         response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS)
-        response.raise_for_status()
+        response.raise_for_status() # Lanza error si el status es 4xx o 5xx.
 
-        # El conteo se devuelve en el encabezado Content-Range
+        # ... (Resto del código de conteo es el mismo) ...
         content_range = response.headers.get('Content-Range')
         if content_range:
             count_str = content_range.split('/')[-1]
             return int(count_str)
         return 0
     except Exception as e:
-        # Imprime el error y la URL de la consulta para depuración
         print(f"❌ ERROR en get_supabase_count con URL: {url_count}. Error: {e}")
         return 0
         

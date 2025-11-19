@@ -117,17 +117,20 @@ def format_rut_python(rut):
 
 # app.py (Reemplazo de la función get_supabase_count)
 
+# app.py (Reemplazo de la función get_supabase_count)
+# Asegúrate de tener import requests y from datetime import datetime
+
 def get_supabase_count(filter_params=""):
     """
-    Función auxiliar que obtiene un conteo de Supabase. Vuelve a recibir el filtro
-    como una cadena (string) para evitar el error de atributo 'items'.
+    Función auxiliar que obtiene un conteo de Supabase. Acepta el filtro como una cadena
+    de texto (string) y construye la URL de forma segura para evitar conflictos de diccionario.
     """
     
     # Asegurar que el filtro no empiece con '&'
     if isinstance(filter_params, str) and filter_params.startswith('&'):
         filter_params = filter_params[1:]
 
-    # Parámetros base: select=count y el rompecaché
+    # Parámetros base: select=count y el rompecaché (usamos params para esto)
     params = {
         'select': 'count',
         't': int(datetime.now().timestamp() * 1000) 
@@ -135,14 +138,13 @@ def get_supabase_count(filter_params=""):
     
     url_base = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
 
-    # Si hay filtros, los añadimos a los parámetros de la URL
+    # CRÍTICO: Si hay filtros en la cadena, los incluimos en la URL base.
     if filter_params:
-        # 🟢 CORRECCIÓN CLAVE: Pasamos el filtro completo como un solo elemento de la consulta
-        # Esto imita la construcción manual de URL, dejando que requests la termine.
+        # Nota: requests.get() unirá params y la URL de forma segura.
         url_base = f"{url_base}?{filter_params}"
 
     try:
-        # Enviamos la solicitud con la URL base modificada y los parámetros base (select, t)
+        # Enviamos la solicitud. Requests manejará la unión del resto de los parámetros (select, t).
         response = requests.get(url_base, headers=SUPABASE_SERVICE_HEADERS, params=params)
         response.raise_for_status()
 
@@ -153,6 +155,7 @@ def get_supabase_count(filter_params=""):
             return int(count_str)
         return 0
     except Exception as e:
+        # Usamos response.request.url para obtener la URL final que falló.
         print(f"❌ ERROR en get_supabase_count con URL: {response.request.url if 'response' in locals() else 'URL no disponible'}. Error: {e}")
         return 0
         
@@ -1923,11 +1926,12 @@ def descargar_pdf_alumno(alumno_id):
 
 # app.py (Reemplazo de la función dashboard_counts completa)
 
+# app.py (Reemplazo de la función dashboard_counts completa)
+
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
-    """Calcula los contadores para la Coordinadora General. Envía filtros como cadenas
-       de texto (string) para evitar el error de atributo 'items' y aplica codificación
-       explícita para evitar el error 400 en Supabase."""
+    """Calcula los contadores para la Coordinadora General. Aplica comillas simples al
+       UUID y codificación explícita para evitar errores 400 y 500."""
     
     coord_general_id_session = session.get('usuario_id')
     
@@ -1958,27 +1962,29 @@ def dashboard_counts():
         for nomina in assigned_nominas:
             
             raw_id_string = nomina['id']
-            # Limpieza: quitamos espacios y caracteres no imprimibles.
+            # Limpieza de espacios y caracteres no imprimibles.
             nomina_id_uncleaned = str(raw_id_string).strip() 
             nomina_id_clean = ''.join(c for c in nomina_id_uncleaned if c.isprintable())
             
-            # Codificación de URL EXPLICITA en el UUID.
-            nomina_id_encoded = urllib.parse.quote_plus(nomina_id_clean)
-
-            form_type = nomina['form_type'].strip()
-            
-            # Validar longitud
+            # 2. Validación de longitud
             if len(nomina_id_clean) != 36: 
                 print(f"ADVERTENCIA: ID de nómina tiene longitud inusual ({len(nomina_id_clean)}). Valor: [{nomina_id_clean}] Saltando.")
                 continue
 
+            # 🟢 SOLUCIÓN FINAL: Encerrar el UUID en comillas simples y codificar.
+            # Esto corrige el problema del error 400 en UUIDs tipo 'uuid' en Supabase.
+            nomina_id_quoted = f"'{nomina_id_clean}'" 
+            nomina_id_encoded = urllib.parse.quote_plus(nomina_id_quoted)
+
+            form_type = nomina['form_type'].strip()
+            
             # --- 1. Total Asignados para esta nómina ---
-            # Filtro total como una cadena de texto.
+            # El filtro usa el ID codificado y citado.
             filter_total = f"nomina_id=eq.{nomina_id_encoded}" 
             count_total = get_supabase_count(filter_total)
             
             # --- 2. Conteo de EVALUADOS (Contando directamente por fecha_relleno) ---
-            # Filtro de evaluados como una cadena de texto.
+            # El filtro usa la sintaxis EVALUADO_FILTER_BASE y el ID codificado/citado.
             filter_evaluados = f"{EVALUADO_FILTER_BASE}&nomina_id=eq.{nomina_id_encoded}"
             count_evaluados = get_supabase_count(filter_evaluados)
             total_evaluados += count_evaluados

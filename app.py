@@ -608,6 +608,7 @@ def generar_pdf():
 
     estudiante_id = request.form.get('estudiante_id')
     nomina_id = request.form.get('nomina_id')
+    
     form_type = session.get('current_form_type', 'neurologia') 
     current_doctora_id = session.get('usuario_id')
     
@@ -622,6 +623,7 @@ def generar_pdf():
     # Campos base necesarios para el PDF (rut formateado, fechas formateadas)
     nombre = get_form_field_value('nombre', request.form)
     rut = format_rut_python(get_form_field_value('rut', request.form))
+    
     fecha_nac_formato = ''
     fecha_nac_original_str = get_form_field_value('fecha_nacimiento_original', request.form)
     if fecha_nac_original_str:
@@ -633,10 +635,8 @@ def generar_pdf():
     edad = get_form_field_value('edad', request.form)
     nacionalidad = get_form_field_value('nacionalidad', request.form)
 
-    # --- FUNCIÓN AUXILIAR PARA OBTENER VALOR DE CHECKBOX ---
     def map_check_value(field_name):
         return get_form_field_value(field_name, request.form) or ""
-    # --------------------------------------------------------
 
     sexo_f_pdf = ""
     sexo_m_pdf = ""
@@ -657,11 +657,9 @@ def generar_pdf():
         except ValueError:
             pass
 
-    # USANDO EL CAMPO OCULTO QUE CONTIENE LA FECHA DD/MM/YYYY
     fecha_reeval_pdf = get_form_field_value('fecha_reevaluacion_pdf', request.form)
 
-
-    # 2. LÓGICA DE SELECCIÓN DE PLANTILLA
+    # 3. LÓGICA DE SELECCIÓN DE PLANTILLA Y VALIDACIÓN DE ARCHIVO
     base_dir = os.path.dirname(os.path.abspath(__file__))
     pdf_base_path = ''
     
@@ -694,7 +692,7 @@ def generar_pdf():
             return redirect(url_for('relleno_formulario', nomina_id=session['current_nomina_id']))
         return redirect(url_for('dashboard'))
 
-    # 3. Lógica de Relleno y Generación
+    # 4. Lógica de Relleno y Generación
     try:
         reader = PdfReader(pdf_base_path)
         writer = PdfWriter()
@@ -714,7 +712,7 @@ def generar_pdf():
                 "diagnostico_2": get_form_field_value('diagnostico', request.form), 
                 "estado_general": get_form_field_value('estado', request.form), 
                 "fecha_evaluacion": fecha_evaluacion_formatted, 
-                "fecha_reevaluacion": fecha_reeval_pdf, # USANDO LA CLAVE CORRECTA
+                "fecha_reevaluacion": fecha_reeval_pdf, 
                 "derivaciones": get_form_field_value('derivaciones', request.form),
                 "sexo_f": sexo_f_pdf,
                 "sexo_m": sexo_m_pdf,
@@ -724,6 +722,8 @@ def generar_pdf():
             
             # --- OBTENER VALOR UNIFICADO DEL DIAGNÓSTICO ---
             diagnostico_unificado_valor = get_form_field_value('diagnostico_unificado', request.form)
+            # --- OBTENER VALOR DE INDICACIONES EXTRA ---
+            indicaciones_extra_valor = get_form_field_value('indicaciones_extra', request.form)
 
             # CAMPOS DE MEDICINA FAMILIAR (USANDO NOMBRES INTERNOS CORTOS DE LAS CAPTURAS)
             campos = {
@@ -741,9 +741,15 @@ def generar_pdf():
                 "diagnostico_2": diagnostico_unificado_valor, 
                 "diagnostico_complementario": get_form_field_value('diagnostico_complementario', request.form),
                 "clasificacion": get_form_field_value('clasificacion_imc', request.form),
-                "derivaciones": get_form_field_value('derivaciones', request.form),
+                
+                # DERIVACIONES: Ahora se usa el campo 'derivaciones' para las indicaciones simples
+                "derivaciones": get_form_field_value('derivaciones', request.form), 
+                
+                # NUEVO CAMPO: Se asume que el campo interno del PDF para las indicaciones detalladas es 'indicaciones'
+                "indicaciones": indicaciones_extra_valor, 
+                
                 "fecha_evaluacion": fecha_evaluacion_formatted,
-                "fecha_reevaluacion": fecha_reeval_pdf, # USANDO LA CLAVE CORRECTA
+                "fecha_reevaluacion": fecha_reeval_pdf,
                 
                 # Examen Físico / Medidas
                 "altura": get_form_field_value('altura', request.form),
@@ -860,7 +866,7 @@ def marcar_evaluado():
 
     # --- 2. LÓGICA PARA CAMPOS ESPECÍFICOS ---
     if form_type == 'neurologia':
-        # Mantenemos la lógica de Neurología
+        # Campos específicos de Neurología se añaden a update_data
         update_data.update({
             'estado_general': get_form_field_value('estado', request.form),
             'diagnostico': get_form_field_value('diagnostico', request.form), 
@@ -880,12 +886,15 @@ def marcar_evaluado():
 
         # Campos específicos de Medicina Familiar
         update_data.update({
-            # CORRECCIÓN: diagnostico_1 y diagnostico_2 ahora usan el valor UNIFICADO
+            # Diagnósticos y Derivaciones
             'diagnostico_1': diagnostico_unificado_valor,
             'diagnostico_2': diagnostico_unificado_valor,
             'diagnostico_complementario': get_form_field_value('diagnostico_complementario', request.form),
             'clasificacion': get_form_field_value('clasificacion_imc', request.form),
             'derivaciones': get_form_field_value('derivaciones', request.form),
+            
+            # NUEVO CAMPO: Guardado en la base de datos
+            'indicaciones_extra': get_form_field_value('indicaciones_extra', request.form), 
             
             # Observaciones
             'observacion_1': get_form_field_value('observacion_1', request.form),

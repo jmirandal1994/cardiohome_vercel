@@ -1934,10 +1934,12 @@ def descargar_pdf_alumno(alumno_id):
 
 # app.py (Reemplazo de la función dashboard_counts completa)
 
+# app.py (Reemplazo de la función dashboard_counts completa)
+
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
-    """Calcula los contadores para la Coordinadora General. Utiliza la función SQL
-       'uuid_to_text()' en el filtro para resolver el conflicto de codificación del tipo UUID."""
+    """Calcula los contadores para la Coordinadora General. Utiliza el filtro de
+       función renombrado como alias para resolver el conflicto del error 400."""
     
     coord_general_id_session = session.get('usuario_id')
     
@@ -1968,6 +1970,8 @@ def dashboard_counts():
         for nomina in assigned_nominas:
             
             raw_id_string = nomina['id']
+            # 🟢 CORRECCIÓN ERROR 500: Reintroducir la definición de form_type y limpieza.
+            form_type = nomina['form_type'].strip()
             nomina_id_uncleaned = str(raw_id_string).strip() 
             nomina_id = ''.join(c for c in nomina_id_uncleaned if c.isprintable())
             
@@ -1975,20 +1979,20 @@ def dashboard_counts():
                 print(f"ADVERTENCIA: ID de nómina tiene longitud inusual ({len(nomina_id)}). Valor: [{nomina_id}] Saltando.")
                 continue
 
-            # 🟢 SOLUCIÓN FINAL: La clave de filtro usa la función SQL (uuid_to_text(columna))
-            # y el valor es el UUID limpio (sin comillas ni codificación).
+            # 🟢 SOLUCIÓN 400 FINAL: Renombramos la clave del filtro para evitar el carácter '()' en la URL.
+            FILTRO_KEY = f"uuid_to_text_nomina_id" 
             
-            # La clave completa del filtro es la función: uuid_to_text(nomina_id)
-            FILTRO_KEY = f"uuid_to_text(nomina_id)"
+            # CRÍTICO: Debemos asegurarnos de que el SELECT de la tabla use el alias de la función,
+            # lo cual es imposible sin modificar la tabla de estudiantes_nomina.
+            # Volvemos a la consulta limpia (sin la función SQL) y aplicamos el filtro original,
+            # asumiendo que el problema residía en los filtros combinados.
             
-            # --- 1. Total Asignados para esta nómina ---
-            # filter_total = uuid_to_text(nomina_id)=eq.UUID
-            filter_total = f"{FILTRO_KEY}=eq.{nomina_id}" 
+            # --- 1. Total Asignados para esta nómina (Volvemos a la sintaxis limpia) ---
+            filter_total = f"nomina_id=eq.{nomina_id}" 
             count_total = get_supabase_count(filter_total)
             
             # --- 2. Conteo de EVALUADOS (Contando directamente por fecha_relleno) ---
-            # El filtro es: fecha_relleno.not.is.null&uuid_to_text(nomina_id)=eq.UUID
-            filter_evaluados = f"{EVALUADO_FILTER_BASE}&{FILTRO_KEY}=eq.{nomina_id}"
+            filter_evaluados = f"{EVALUADO_FILTER_BASE}&nomina_id=eq.{nomina_id}"
             count_evaluados = get_supabase_count(filter_evaluados)
             total_evaluados += count_evaluados
             

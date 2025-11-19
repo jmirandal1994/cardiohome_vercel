@@ -120,30 +120,43 @@ def format_rut_python(rut):
 # app.py (Reemplazo de la función get_supabase_count)
 # Asegúrate de tener import requests y from datetime import datetime
 
+# --- UTILIDAD ROBUSTA DE CONTEO: get_supabase_count ---
 def get_supabase_count(filter_params=""):
-    if filter_params and not filter_params.startswith("&"):
-        filter_params = "&" + filter_params
+    """
+    Retorna un entero con el conteo de filas coincidentes en estudiantes_nomina.
+    Usa select=id y lee Content-Range. filter_params debe ser algo como:
+      "nomina_id=eq.<uuid>&evaluado_flag=eq.true"
+    """
+    # Normalizar filtro (no empezar con &)
+    if filter_params and filter_params.startswith('&'):
+        filter_params = filter_params[1:]
 
-    url_count = (
-        f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-        f"?select=id{filter_params}"
-    )
+    url = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=id"
+    if filter_params:
+        url = f"{url}&{filter_params}"
 
     try:
-        response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS)
-        response.raise_for_status()
+        # Usamos SERVICE headers (tienes Prefer: count=exact ahí)
+        res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS)
+        res.raise_for_status()
 
-        content_range = response.headers.get("Content-Range")
-        if content_range:
-            return int(content_range.split("/")[-1])
+        # Content-Range ejemplo: "0-9/24" → total = 24
+        content_range = res.headers.get("Content-Range")
+        if content_range and '/' in content_range:
+            total_str = content_range.split('/')[-1]
+            try:
+                return int(total_str)
+            except ValueError:
+                pass
 
-        return 0
+        # Si no hay Content-Range, fallback a len(json)
+        data = res.json()
+        return len(data) if isinstance(data, list) else 0
 
     except Exception as e:
-        print(f"❌ ERROR en get_supabase_count con URL: {url_count}. Error: {e}")
+        print(f"❌ ERROR en get_supabase_count. URL: {url}. Error: {e}")
         return 0
 
-# app-30.py (Define esta función en la sección de utilidades, antes de las rutas)
 
 # app-30.py (Función get_assigned_nomina_ids)
 
@@ -1919,102 +1932,90 @@ def descargar_pdf_alumno(alumno_id):
 # app.py (Reemplazo de la función dashboard_counts completa)
 
 # app.py (Reemplazo de la función dashboard_counts completa)
+
+# --- RUTA /api/dashboard_counts REVISADA Y FIABLE ---
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
     print("🔍 Iniciando cálculo de dashboard_counts...")
 
-    # ---------------------------
-    # VALIDACIÓN DE SESIÓN
-    # ---------------------------
-    user_role = session.get('usuario')
+    user_role = session.get('usuario')            # tal como lo tienes en login
     user_id = session.get('usuario_id')
 
     if not user_role or not user_id:
         print("❌ Usuario no autenticado")
         return jsonify({"error": "Usuario no autenticado", "success": False}), 401
 
-    # Solo coordinadora general y admin tienen acceso
-    if user_role not in ['coordinadora', 'coordinadora_general', 'admin']:
+    # Solo coordinadora / admin pueden ver estos contadores
+    if user_role not in ['coordinadora', 'coordinadora_general', 'admin', 'coordinador_general']:
         print("❌ Usuario sin permisos")
         return jsonify({"error": "Permisos insuficientes", "success": False}), 403
 
-    coord_general_id = user_id
-
-    # ---------------------------
-    # OBTENER NÓMINAS ASIGNADAS
-    # ---------------------------
+    # Filtrar nóminas asignadas al coordinador (admin verá todas)
     try:
-        url_assigned_nominas = (
-            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?coord_general_id=eq.{coord_general_id}"
-            f"&form_type.not.is.null"
-            f"&select=id,form_type"
-        )
+        if user_role == 'admin':
+            url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,form_type,especialidad"
+        else:
+            # coord_general_id en la tabla nominas_medicas
+            url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?coord_general_id=eq.{user_id}&select=id,form_type,especialidad"
 
-        print(f"URL NOMINAS: {url_assigned_nominas}")
-
-        res_assigned = requests.get(url_assigned_nominas, headers=SUPABASE_SERVICE_HEADERS)
-        res_assigned.raise_for_status()
-        assigned_nominas = res_assigned.json()
+        print(f"DEBUG: URL nominas -> {url_nominas}")
+        res_n = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
+        res_n.raise_for_status()
+        nominas = res_n.json()
+        print(f"DEBUG: nominas recibidas: {nominas}")
 
     except Exception as e:
-        print("❌ Error al obtener nóminas asignadas:", e)
+        print(f"❌ Error al obtener nóminas: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-    # Si no tiene nóminas asignadas
-    if not assigned_nominas:
-        return jsonify({
-            "success": True,
-            "total_evaluados": 0,
-            "neurologia_count": 0,
-            "familiar_count": 0,
-            "evaluaciones_pendientes": 0
-        })
+    # Desduplicar por id (por si acaso)
+    unique_nominas = {}
+    for item in nominas:
+        nid = (item.get('id') or "").strip()
+        if nid:
+            unique_nominas[nid] = item
+    nominas = list(unique_nominas.values())
+    print(f"DEBUG: nominas desduplicadas: {len(nominas)}")
 
-    # ---------------------------
-    # CONTADORES
-    # ---------------------------
+    # Totales
+    total_neuro = 0
+    total_familiar = 0
     total_evaluados = 0
     total_pendientes = 0
-    neuro_count = 0
-    familiar_count = 0
 
-    for nom in assigned_nominas:
-
-        nomina_id = nom.get("id", "").strip()
-        form_type = nom.get("form_type", "").strip()
+    # Iterar por cada nómina y sumar EVALUADOS (no totales) por especialidad
+    for nom in nominas:
+        nomina_id = nom.get('id', '').strip()
+        especialidad = (nom.get('especialidad') or nom.get('form_type') or '').lower().strip()
 
         if not nomina_id:
             continue
 
-        # Contar evaluados
-        count_evaluados = get_supabase_count(
-            f"nomina_id=eq.{nomina_id}&evaluado_flag.eq.true"
-        )
+        # Conteos: usamos eq.true / eq.false
+        evaluados = get_supabase_count(f"nomina_id=eq.{nomina_id}&evaluado_flag=eq.true")
+        pendientes = get_supabase_count(f"nomina_id=eq.{nomina_id}&evaluado_flag=eq.false")
+        total = evaluados + pendientes  # opcional, si quieres validar
 
-        # Contar pendientes
-        count_pendientes = get_supabase_count(
-            f"nomina_id=eq.{nomina_id}&evaluado_flag.eq.false"
-        )
+        print(f"DEBUG: nomina {nomina_id} - total:{total} evaluados:{evaluados} pendientes:{pendientes} especialidad:{especialidad}")
 
-        total_evaluados += count_evaluados
-        total_pendientes += count_pendientes
+        # Sumar por especialidad SOLO los evaluados (te interesa "realizados")
+        if "neurolog" in especialidad:  # matchea 'neurologia' o 'neurología'
+            total_neuro += evaluados
+        elif "familiar" in especialidad:
+            total_familiar += evaluados
 
-        if form_type == "neurologia":
-            neuro_count += count_evaluados
-        elif form_type == "medicina_familiar":
-            familiar_count += count_evaluados
+        total_evaluados += evaluados
+        total_pendientes += pendientes
 
-    # ---------------------------
-    # RESPUESTA FINAL
-    # ---------------------------
+    # Respuesta final
     return jsonify({
-        "success": True,
+        "neurologia_count": total_neuro,
+        "familiar_count": total_familiar,
         "total_evaluados": total_evaluados,
-        "neurologia_count": neuro_count,
-        "familiar_count": familiar_count,
-        "evaluaciones_pendientes": total_pendientes
+        "evaluaciones_pendientes": total_pendientes,
+        "success": True
     })
+
 
 # --- FIN MODIFICACIONES CLAVE PARA COORDINADOR DE ESCUELA ---
 

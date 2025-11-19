@@ -1884,16 +1884,17 @@ def descargar_pdf_alumno(alumno_id):
 
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
-    """SOLUCIÓN DEFINITIVA: Ejecuta consultas individuales por cada ID de nómina
-       para evitar el Error 400 en el filtro 'nomina_id=in.(...)'.
+    """SOLUCIÓN DEFINITIVA: Ejecuta consultas individuales por cada ID de nómina,
+       aplicando una limpieza de caracteres de control para evitar el Error 400.
     """
+    # Asegúrate de que import re esté al inicio del archivo
+    import re 
     coord_id = session.get('usuario_id')
     
     if session.get('usuario') != 'coordinadora' or not coord_id:
         return jsonify({"success": True, "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0}), 200 
 
     try:
-        # Filtros robustos para el conteo de estado
         COMPLETADO_FILTER = "doctora_evaluadora_id.not.is.null&estado_general.gt." 
         PENDIENTE_FLAG_FILTER = "evaluado_flag.eq.false"
 
@@ -1917,10 +1918,18 @@ def dashboard_counts():
         
         # Iterar sobre cada nómina para obtener sus conteos individuales
         for nomina in assigned_nominas:
-            # 🟢 LIMPIEZA EXTREMA DEL ID (CRÍTICO para evitar el Error 400)
-            nomina_id = nomina['id'].strip()
-            form_type = nomina['form_type'].strip() 
             
+            # 🟢 LIMPIEZA EXTREMA DEL ID (CRÍTICO para evitar el Error 400)
+            # 1. Obtener el ID crudo
+            raw_id_string = nomina['id']
+            # 2. Eliminar cualquier espacio, tabulación o salto de línea invisible
+            nomina_id = re.sub(r'\s+', '', raw_id_string).strip() 
+            form_type = nomina['form_type'].strip()
+            
+            # Si después de la limpieza el ID es inválido, saltamos la nómina (prevención de errores)
+            if not nomina_id:
+                continue
+
             # --- 1. Total Asignados para esta nómina ---
             filter_total = f"nomina_id=eq.{nomina_id}"
             count_total = get_supabase_count(filter_total)
@@ -1933,7 +1942,7 @@ def dashboard_counts():
             count_pendientes = get_supabase_count(filter_pendientes)
             total_pendientes += count_pendientes
             
-            # Conteo de EVALUADOS (Contingencia: Resta, ya que el filtro eq.true falla)
+            # Conteo de EVALUADOS (Resta)
             count_evaluados = count_total - count_pendientes
             if count_evaluados < 0: count_evaluados = 0
             total_evaluados += count_evaluados
@@ -1955,7 +1964,7 @@ def dashboard_counts():
         })
 
     except requests.exceptions.RequestException as e:
-        # Esto captura el error 400 Bad Request
+        # Captura el error 400 Bad Request
         print(f"❌ ERROR DE CONEXIÓN CON SUPABASE EN DASHBOARD_COUNTS: {e}")
         return jsonify({"success": False, "message": f"Error de conexión con la BD: {str(e)}"}), 500
     except Exception as e:

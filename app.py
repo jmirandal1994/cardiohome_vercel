@@ -638,24 +638,21 @@ def generar_pdf():
     edad = get_form_field_value('edad', request.form)
     nacionalidad = get_form_field_value('nacionalidad', request.form)
 
-    # --- FUNCIÓN AUXILIAR PARA OBTENER VALOR DE CHECKBOX ---
+    # --- FUNCIÓN AUXILIAR PARA OBTENER VALOR DE CHECKBOX (retorna el valor si existe, o "") ---
     def map_check_value(field_name):
-        # Si tiene CUALQUIER valor de texto (ej. "CESAREA", "SI_ALERGIAS"), lo devuelve, si no, ""
         return get_form_field_value(field_name, request.form) or ""
-    # --------------------------------------------------------
+    # ------------------------------------------------------------------------------------------
 
     sexo_f_pdf = ""
     sexo_m_pdf = ""
-
     if form_type == 'neurologia':
-        # Lógica original de Neurología (asumiendo que PDF espera 'X' o 'x')
         sexo_form_value = get_form_field_value('sexo', request.form)
         sexo_f_pdf = "X" if sexo_form_value == "F" else "" 
         sexo_m_pdf = "X" if sexo_form_value == "M" else ""
     elif form_type == 'medicina_familiar':
-        # Lógica para Medicina Familiar (Checkbox, debe usar "Yes")
-        sexo_f_pdf = "Yes" if get_form_field_value('genero_f', request.form) else ""
-        sexo_m_pdf = "Yes" if get_form_field_value('genero_m', request.form) else ""
+        # Mapeo de género de Medicina Familiar (F/M como campos internos)
+        sexo_f_pdf = "X" if get_form_field_value('genero_f', request.form) else ""
+        sexo_m_pdf = "X" if get_form_field_value('genero_m', request.form) else ""
 
 
     fecha_evaluacion_form_value = get_form_field_value('fecha_evaluacion', request.form)
@@ -740,7 +737,6 @@ def generar_pdf():
                 "fecha_nacimiento": fecha_nac_formato,
                 "edad": edad,
                 "nacionalidad": nacionalidad,
-                # Campos de Género (Checkbox, usando la variable preparada con "Yes")
                 "sexo_f": sexo_f_pdf, 
                 "sexo_m": sexo_m_pdf,
                 
@@ -767,31 +763,31 @@ def generar_pdf():
                 "observacion_6": get_form_field_value('observacion_6', request.form),
                 "observacion_7": get_form_field_value('observacion_7', request.form),
                 
-                # Checkboxes - Mapeo a 'Yes' si están marcados o "" si no.
-                "check_cesarea": "Yes" if map_check_value('check_cesarea') else "",
-                "check_atermino": "Yes" if map_check_value('check_atermino') else "",
-                "check_vaginal": "Yes" if map_check_value('check_vaginal') else "",
-                "check_prematuro": "Yes" if map_check_value('check_prematuro') else "",
-                "check_acorde": "Yes" if map_check_value('check_acorde') else "",
-                "check_retraso": "Yes" if map_check_value('check_retraso') else "",
-                "check_retrasogeneralizado": "Yes" if map_check_value('check_retrasogeneralizado') else "",
-                "check_esquemac": "Yes" if map_check_value('check_esquemac') else "",
-                "check_esquemai": "Yes" if map_check_value('check_esquemai') else "",
-                "check_alergiano": "Yes" if map_check_value('check_alergiano') else "",
-                "check_alergiasi": "Yes" if map_check_value('check_alergiasi') else "",
-                "check_cirugiano": "Yes" if map_check_value('check_cirugiano') else "",
-                "check_cirugiasi": "Yes" if map_check_value('check_cirugiasi') else "", 
-                "check_visionsinalteracion": "Yes" if map_check_value('check_visionsinalteracion') else "",
-                "check_visionrefraccion": "Yes" if map_check_value('check_visionrefraccion') else "",
-                "check_audicionnormal": "Yes" if map_check_value('check_audicionnormal') else "",
-                "check_hipoacusia": "Yes" if map_check_value('check_hipoacusia') else "",
-                "check_tapondecerumen": "Yes" if map_check_value('check_tapondecerumen') else "",
-                "check_sinhallazgos": "Yes" if map_check_value('check_sinhallazgos') else "",
-                "check_caries": "Yes" if map_check_value('check_caries') else "",
-                "check_apinamientodental": "Yes" if map_check_value('check_apinamientodental') else "",
-                "check_retenciondental": "Yes" if map_check_value('check_retenciondental') else "",
-                "check_frenillolingual": "Yes" if map_check_value('check_frenillolingual') else "",
-                "check_hipertrofia": "Yes" if map_check_value('check_hipertrofia') else "",
+                # Checkboxes - Mapeo a 'X' si están marcados
+                "check_cesarea": "X" if map_check_value('check_cesarea') else "",
+                "check_atermino": "X" if map_check_value('check_atermino') else "",
+                "check_vaginal": "X" if map_check_value('check_vaginal') else "",
+                "check_prematuro": "X" if map_check_value('check_prematuro') else "",
+                "check_acorde": "X" if map_check_value('check_acorde') else "",
+                "check_retraso": "X" if map_check_value('check_retraso') else "",
+                "check_retrasogeneralizado": "X" if map_check_value('check_retrasogeneralizado') else "",
+                "check_esquemac": "X" if map_check_value('check_esquemac') else "",
+                "check_esquemai": "X" if map_check_value('check_esquemai') else "",
+                "check_alergiano": "X" if map_check_value('check_alergiano') else "",
+                "check_alergiasi": "X" if map_check_value('check_alergiasi') else "",
+                "check_cirugiano": "X" if map_check_value('check_cirugiano') else "",
+                "check_cirugiasi": "X" if map_check_value('check_cirugiasi') else "", 
+                "check_visionsinalteracion": "X" if map_check_value('check_visionsinalteracion') else "",
+                "check_visionrefraccion": "X" if map_check_value('check_visionrefraccion') else "",
+                "check_audicionnormal": "X" if map_check_value('check_audicionnormal') else "",
+                "check_hipoacusia": "X" if map_check_value('check_hipoacusia') else "",
+                "check_tapondecerumen": "X" if map_check_value('check_tapondecerumen') else "",
+                "check_sinhallazgos": "X" if map_check_value('check_sinhallazgos') else "",
+                "check_caries": "X" if map_check_value('check_caries') else "",
+                "check_apinamientodental": "X" if map_check_value('check_apinamientodental') else "",
+                "check_retenciondental": "X" if map_check_value('check_retenciondental') else "",
+                "check_frenillolingual": "X" if map_check_value('check_frenillolingual') else "",
+                "check_hipertrofia": "X" if map_check_value('check_hipertrofia') else "",
             }
 
 

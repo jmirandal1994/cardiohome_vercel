@@ -864,7 +864,7 @@ def marcar_evaluado():
             'diagnostico': get_form_field_value('diagnostico', request.form), 
             'derivaciones': get_form_field_value('derivaciones', request.form),
         })
-   elif form_type == 'medicina_familiar':
+    elif form_type == 'medicina_familiar':
         # Campos específicos de Medicina Familiar se añaden a update_data
         update_data.update({
             # Diagnósticos y Derivaciones (permiten cadena vacía si no es booleano)
@@ -889,7 +889,7 @@ def marcar_evaluado():
             'check_vaginal': get_form_field_value('check_vaginal', request.form, return_none_if_empty=True),
             'check_prematuro': get_form_field_value('check_prematuro', request.form, return_none_if_empty=True),
             'check_acorde': get_form_field_value('check_acorde', request.form, return_none_if_empty=True),
-            'check_retraso': get_form_field_value('check_retraso', request.form, return_none_if_empty=True), # Campo agregado de la foto
+            'check_retraso': get_form_field_value('check_retraso', request.form, return_none_if_empty=True),
             'check_retrasogeneralizado': get_form_field_value('check_retrasogeneralizado', request.form, return_none_if_empty=True),
             'check_esquemac': get_form_field_value('check_esquemac', request.form, return_none_if_empty=True),
             'check_esquemai': get_form_field_value('check_esquemai', request.form, return_none_if_empty=True),

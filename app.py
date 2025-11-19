@@ -865,10 +865,10 @@ def marcar_evaluado():
             'diagnostico': get_form_field_value('diagnostico', request.form), 
             'derivaciones': get_form_field_value('derivaciones', request.form),
         })
-    elif form_type == 'medicina_familiar':
+   elif form_type == 'medicina_familiar':
         # Campos específicos de Medicina Familiar se añaden a update_data
         update_data.update({
-            # Diagnósticos
+            # Diagnósticos y Derivaciones (permiten cadena vacía si no es booleano)
             'diagnostico_1': get_form_field_value('diagnostico_1', request.form),
             'diagnostico_2': get_form_field_value('diagnostico_2', request.form),
             'diagnostico_complementario': get_form_field_value('diagnostico_complementario', request.form),
@@ -884,37 +884,37 @@ def marcar_evaluado():
             'observacion_6': get_form_field_value('observacion_6', request.form),
             'observacion_7': get_form_field_value('observacion_7', request.form),
 
-            # Checkboxes (Guardar el valor del formulario si está presente)
-            'check_cesarea': get_form_field_value('check_cesarea', request.form),
-            'check_atermino': get_form_field_value('check_atermino', request.form),
-            'check_vaginal': get_form_field_value('check_vaginal', request.form),
-            'check_prematuro': get_form_field_value('check_prematuro', request.form),
-            'check_acorde': get_form_field_value('check_acorde', request.form),
-            'check_retrasogeneralizado': get_form_field_value('check_retrasogeneralizado', request.form),
-            'check_esquemac': get_form_field_value('check_esquemac', request.form),
-            'check_esquemai': get_form_field_value('check_esquemai', request.form),
-            'check_alergiano': get_form_field_value('check_alergiano', request.form),
-            'check_alergiasi': get_form_field_value('check_alergiasi', request.form),
-            'check_cirugiano': get_form_field_value('check_cirugiano', request.form),
-            'si_2': get_form_field_value('si_2', request.form),
-            'check_visionsinalteracion': get_form_field_value('check_visionsinalteracion', request.form),
-            'check_visionrefraccion': get_form_field_value('check_visionrefraccion', request.form),
-            'check_audicionnormal': get_form_field_value('check_audicionnormal', request.form),
-            'check_hipoacusia': get_form_field_value('check_hipoacusia', request.form),
-            'check_tapondecerumen': get_form_field_value('check_tapondecerumen', request.form),
-            'check_sinhallazgos': get_form_field_value('check_sinhallazgos', request.form),
-            'caries': get_form_field_value('caries', request.form),
-            'check_apinamientodental': get_form_field_value('check_apinamientodental', request.form),
-            'check_retenciondental': get_form_field_value('check_retenciondental', request.form),
-            'check_frenillolingual': get_form_field_value('check_frenillolingual', request.form),
-            'check_hipertrofia': get_form_field_value('check_hipertrofia', request.form),
-            
-            # Medidas (Usando return_none_if_empty=True para numéricos)
+            # Checkboxes y Numéricos - CRÍTICO: USAR return_none_if_empty=True para evitar el error 400
+            'check_cesarea': get_form_field_value('check_cesarea', request.form, return_none_if_empty=True),
+            'check_atermino': get_form_field_value('check_atermino', request.form, return_none_if_empty=True),
+            'check_vaginal': get_form_field_value('check_vaginal', request.form, return_none_if_empty=True),
+            'check_prematuro': get_form_field_value('check_prematuro', request.form, return_none_if_empty=True),
+            'check_acorde': get_form_field_value('check_acorde', request.form, return_none_if_empty=True),
+            'check_retraso': get_form_field_value('check_retraso', request.form, return_none_if_empty=True), # Campo agregado de la foto
+            'check_retrasogeneralizado': get_form_field_value('check_retrasogeneralizado', request.form, return_none_if_empty=True),
+            'check_esquemac': get_form_field_value('check_esquemac', request.form, return_none_if_empty=True),
+            'check_esquemai': get_form_field_value('check_esquemai', request.form, return_none_if_empty=True),
+            'check_alergiano': get_form_field_value('check_alergiano', request.form, return_none_if_empty=True),
+            'check_alergiasi': get_form_field_value('check_alergiasi', request.form, return_none_if_empty=True),
+            'check_cirugiano': get_form_field_value('check_cirugiano', request.form, return_none_if_empty=True),
+            'check_cirugiasi': get_form_field_value('check_cirugiasi', request.form, return_none_if_empty=True), 
+            'check_visionsinalteracion': get_form_field_value('check_visionsinalteracion', request.form, return_none_if_empty=True),
+            'check_visionrefraccion': get_form_field_value('check_visionrefraccion', request.form, return_none_if_empty=True),
+            'check_audicionnormal': get_form_field_value('check_audicionnormal', request.form, return_none_if_empty=True),
+            'check_hipoacusia': get_form_field_value('check_hipoacusia', request.form, return_none_if_empty=True),
+            'check_tapondecerumen': get_form_field_value('check_tapondecerumen', request.form, return_none_if_empty=True),
+            'check_sinhallazgos': get_form_field_value('check_sinhallazgos', request.form, return_none_if_empty=True),
+            'check_caries': get_form_field_value('check_caries', request.form, return_none_if_empty=True),
+            'check_apinamientodental': get_form_field_value('check_apinamientodental', request.form, return_none_if_empty=True),
+            'check_retenciondental': get_form_field_value('check_retenciondental', request.form, return_none_if_empty=True),
+            'check_frenillolingual': get_form_field_value('check_frenillolingual', request.form, return_none_if_empty=True),
+            'check_hipertrofia': get_form_field_value('check_hipertrofia', request.form, return_none_if_empty=True),
             'altura': get_form_field_value('altura', request.form, return_none_if_empty=True),
             'peso': get_form_field_value('peso', request.form, return_none_if_empty=True),
             'imc': get_form_field_value('imc', request.form, return_none_if_empty=True),
+            'clasificacion_imc': get_form_field_value('clasificacion_imc', request.form, return_none_if_empty=True),
         })
-    
+
     print(f"DEBUG: Payload final para Supabase PATCH en /marcar_evaluado: {update_data}")
     
     try:

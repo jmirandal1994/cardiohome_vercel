@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rellenar Formulario de Medicina Familiar - CardioHome</title>
-    <!-- SweetAlert2 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Font Awesome para íconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* Variables CSS para una gestión de colores y espaciado más fácil */
@@ -723,7 +721,6 @@
     </header>
 
     <div class="main-content-wrapper">
-        <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <ul class="flash-messages">
@@ -734,14 +731,12 @@
             {% endif %}
         {% endwith %}
         
-        <!-- Contador de evaluaciones -->
         <div class="evaluation-counter">
             <i class="fas fa-clipboard-check"></i>
             <span>Evaluaciones completadas para esta nómina: <strong id="completed-forms-count">{{ total_forms_completed_for_nomina }}</strong></span>
             <button onclick="window.location.reload();">Actualizar Conteo</button>
         </div>
 
-        <!-- Nuevos botones de acción -->
         <div class="action-buttons">
             <button onclick="imprimirTodosLosFormularios()">
                 <i class="fas fa-print"></i> Imprimir Formularios Visibles (HTML)
@@ -757,7 +752,6 @@
 
         <input type="text" id="buscador" placeholder="Buscar estudiante por nombre..." oninput="aplicarFiltros()">
 
-        <!-- Nuevo filtro de estado de evaluación -->
         <div class="filter-group">
             <label>
                 <input type="radio" name="evaluation_filter" value="all" checked onchange="aplicarFiltros()"> Todos
@@ -782,55 +776,60 @@
                     <div class="formulario">
                         <span class="badge">Guardado</span>
                         <form id="form-estudiante-{{ est.id }}" onsubmit="event.preventDefault(); submitForm(this);">
-                            <!-- Campos ocultos para pasar el ID del estudiante y la nómina al backend -->
                             <input type="hidden" name="estudiante_id" value="{{ est.id }}">
                             <input type="hidden" name="nomina_id" value="{{ session['current_nomina_id'] }}">
                             
-                            <!-- IDENTIFICACIÓN DEL ESTUDIANTE -->
                             <h3 class="section-title">Identificación del Estudiante</h3>
-                            <label for="nombre_{{ est.id }}">Nombres y Apellidos:</label>
+                            
+                            {# NOMBRE DE CAMPO: Nombres y Apellidos (PDF) -> nombre (HTML) #}
+                            <label for="nombre_{{ est.id }}">Nombre Completo:</label>
                             <input type="text" name="nombre" id="nombre_{{ est.id }}" class="form-control" value="{{ est.nombre }}" required readonly>
-                            <input type="hidden" name="nombre_original" value="{{ est.nombre }}"> {# Campo oculto para compatibilidad #}
-
-
+                            <input type="hidden" name="nombre_original" value="{{ est.nombre }}">
+                            
+                            {# NOMBRE DE CAMPO: RUN (PDF) -> rut (HTML) #}
+                            <label for="rut_{{ est.id }}">RUN:</label>
+                            <input type="text" name="rut" id="rut_{{ est.id }}" value="{{ est.rut }}" required readonly>
+                            <input type="hidden" name="rut_original" value="{{ est.rut }}">
+                            
+                            {# NOMBRE DE CAMPO: Genero (PDF) -> genero_f/m (HTML) #}
                             <label>Género:</label>
                             <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.genero_f %}checked{% endif %}">
-                                    <input type="checkbox" name="genero_f" id="genero_f_{{ est.id }}" value="Femenino" {% if est.genero_f %}checked{% endif %} onchange="handleGenderChange(this)"> Femenino
+                                    <input type="checkbox" name="genero_f" id="genero_f_{{ est.id }}" value="Femenino" {% if est.genero_f %}checked{% endif %} onchange="handleGenderChange(this)"> Femenino (F)
                                 </label>
                                 <label class="checkbox-item {% if est.genero_m %}checked{% endif %}">
-                                    <input type="checkbox" name="genero_m" id="genero_m_{{ est.id }}" value="Masculino" {% if est.genero_m %}checked{% endif %} onchange="handleGenderChange(this)"> Masculino
+                                    <input type="checkbox" name="genero_m" id="genero_m_{{ est.id }}" value="Masculino" {% if est.genero_m %}checked{% endif %} onchange="handleGenderChange(this)"> Masculino (M)
                                 </label>
                             </div>
-
-                            <label for="rut_{{ est.id }}">RUN:</label>
-                            <input type="text" name="rut" id="rut_{{ est.id }}" value="{{ est.rut }}" required readonly>
-                            <input type="hidden" name="rut_original" value="{{ est.rut }}"> {# Campo oculto para compatibilidad #}
-
-
-                            <label for="fecha_nacimiento_{{ est.id }}">Fecha de Nacimiento (dd/mm/aaaa):</label>
+                            
+                            {# NOMBRE DE CAMPO: Fecha nacimiento (dd/mm/aaaa) (PDF) -> fecha_nacimiento (HTML) #}
+                            <label for="fecha_nacimiento_{{ est.id }}">Fecha de Nacimiento:</label>
                             <input type="date" name="fecha_nacimiento" id="fecha_nacimiento_{{ est.id }}" value="{{ est.fecha_nacimiento }}" required readonly>
-                            <input type="hidden" name="fecha_nacimiento_original" value="{{ est.fecha_nacimiento }}"> {# Campo oculto para compatibilidad #}
-
-                            <label for="edad_{{ est.id }}">Edad (en años y meses):</label>
+                            <input type="hidden" name="fecha_nacimiento_original" value="{{ est.fecha_nacimiento }}">
+                            
+                            {# NOMBRE DE CAMPO: Edad (en años y meses) (PDF) -> edad (HTML) #}
+                            <label for="edad_{{ est.id }}">Edad:</label>
                             <input type="text" name="edad" id="edad_{{ est.id }}" value="{{ est.edad }}" readonly>
-                            <input type="hidden" name="edad_original" value="{{ est.edad }}"> {# Campo oculto para compatibilidad #}
-
-
+                            <input type="hidden" name="edad_original" value="{{ est.edad }}">
+                            
+                            {# NOMBRE DE CAMPO: Nacionalidad (PDF) -> nacionalidad (HTML) #}
                             <label for="nacionalidad_{{ est.id }}">Nacionalidad:</label>
                             <input type="text" name="nacionalidad" id="nacionalidad_{{ est.id }}" value="{{ est.nacionalidad }}" readonly>
-                            <input type="hidden" name="nacionalidad_original" value="{{ est.nacionalidad }}"> {# Campo oculto para compatibilidad #}
-
-
+                            <input type="hidden" name="nacionalidad_original" value="{{ est.nacionalidad }}">
+                            
+                            {# NOMBRE DE CAMPO: Fecha evaluación (PDF) -> fecha_evaluacion (HTML) #}
                             <label for="fecha_evaluacion_{{ est.id }}">Fecha Evaluación:</label>
                             <input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}" value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}" required readonly>
                             
-                            <!-- EXAMEN DEL ESTADO DE SALUD GENERAL DEL ESTUDIANTE -->
-                            <h3 class="section-title">Examen del Estado de Salud General del Estudiante</h3>
-                            <label for="diagnostico_1_{{ est.id }}">Diagnóstico (Trastorno, Déficit o Discapacidad):</label>
+                            
+                            <h3 class="section-title">Examen General de Salud</h3>
+                            
+                            {# NOMBRE DE CAMPO: DIAGNOSTICO DE DISCAPACIDAD O DEFICIT, senale cual (PDF) -> diagnostico_1 (HTML) #}
+                            <label for="diagnostico_1_{{ est.id }}">Diagnóstico (Discapacidad/Déficit):</label>
                             <input type="text" name="diagnostico_1" id="diagnostico_1_{{ est.id }}" value="{{ est.diagnostico_1 if est.diagnostico_1 is not none else '' }}" placeholder="Ej: Trastorno del Espectro Autista">
-
-                            <label for="diagnostico_2_{{ est.id }}">Diagnóstico Específico:</label>
+                            
+                            {# NOMBRE DE CAMPO: DIAGNOSTICO (PDF) -> diagnostico_2 (HTML) #}
+                            <label for="diagnostico_2_{{ est.id }}">Diagnóstico Específico (PIE):</label>
                             <select name="diagnostico_2" id="diagnostico_2_{{ est.id }}">
                                 <option value="">Seleccione un diagnóstico</option>
                                 <option value="TDA" {% if est.diagnostico_2 == 'TDA' %}selected{% endif %}>TDA</option>
@@ -838,14 +837,17 @@
                                 <option value="FIL" {% if est.diagnostico_2 == 'FIL' %}selected{% endif %}>FIL</option>
                                 <option value="DIL" {% if est.diagnostico_2 == 'DIL' %}selected{% endif %}>DIL</option>
                             </select>
-
+                            
+                            {# NOMBRE DE CAMPO: DIAGNÓSTICO COMPLEMENTARIO (PDF) -> diagnostico_complementario (HTML) #}
                             <label for="diagnostico_complementario_{{ est.id }}">Diagnóstico Complementario:</label>
                             <textarea name="diagnostico_complementario" id="diagnostico_complementario_{{ est.id }}" rows="3" placeholder="Notas adicionales sobre el diagnóstico complementario.">{{ est.diagnostico_complementario if est.diagnostico_complementario is not none else '' }}</textarea>
 
-                            <label for="derivaciones_{{ est.id }}">Derivaciones:</label>
-                            <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="2" placeholder="Indique las derivaciones necesarias (ej: a especialista, terapia).">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
+                            {# NOMBRE DE CAMPO: INDICACIONES (PDF) -> derivaciones (HTML) #}
+                            <label for="derivaciones_{{ est.id }}">Indicaciones/Derivaciones:</label>
+                            <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="2" placeholder="Detalles de derivaciones.">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
 
-                            <label for="fecha_reevaluacion_select_{{ est.id }}">Fecha Reevaluación (años):</label>
+                            {# Plazo de reevaluación (Solo ayuda a calcular la fecha) #}
+                            <label for="fecha_reevaluacion_select_{{ est.id }}">Plazo de Reevaluación (años):</label>
                             <select name="fecha_reevaluacion_select" id="fecha_reevaluacion_select_{{ est.id }}" onchange="setFechaReevaluacion(this)">
                                 <option value="">Seleccione años</option>
                                 <option value="1" {% if est.fecha_reevaluacion_select == '1' %}selected{% endif %}>1 año</option>
@@ -854,13 +856,15 @@
                                 <option value="4" {% if est.fecha_reevaluacion_select == '4' %}selected{% endif %}>4 años</option>
                                 <option value="5" {% if est.fecha_reevaluacion_select == '5' %}selected{% endif %}>5 años</option>
                             </select>
+                            
+                            {# NOMBRE DE CAMPO: Fecha reevaluación (PDF) -> fecha_reevaluacion_input (HTML) #}
                             <label for="fecha_reevaluacion_input_{{ est.id }}">Fecha de reevaluación (calculada):</label>
                             <input type="date" name="fecha_reevaluacion" id="fecha_reevaluacion_input_{{ est.id }}" value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}" readonly>
                             <input type="hidden" name="fecha_reevaluacion_pdf" id="fecha_reevaluacion_pdf_{{ est.id }}" value=""> {# Hidden field for PDF format #}
 
-                            <label for="observaciones_completas_{{ est.id }}">Observaciones (se autocompletan en campos separados en el PDF):</label>
-                            <textarea name="observaciones_completas" id="observaciones_completas_{{ est.id }}" rows="7" placeholder="Escriba aquí todas las observaciones. El texto se dividirá automáticamente en OBS1 a OBS7 para el PDF." oninput="splitObservations(this)">{{ est.observacion_1 if est.observacion_1 is not none else '' }}{{ est.observacion_2 if est.observacion_2 is not none else '' }}{{ est.observacion_3 if est.observacion_3 is not none else '' }}{{ est.observacion_4 if est.observacion_4 is not none else '' }}{{ est.observacion_5 if est.observacion_5 is not none else '' }}{{ est.observacion_6 if est.observacion_6 is not none else '' }}{{ est.observacion_7 if est.observacion_7 is not none else '' }}</textarea>
-                            <!-- Campos ocultos para las observaciones divididas (para el backend) -->
+                            {# Observaciones (Texto completo dividido en 7 campos ocultos para el PDF) #}
+                            <label for="observaciones_completas_{{ est.id }}">Observaciones (Se dividirá en 7 campos OBS1-OBS7 en PDF):</label>
+                            <textarea name="observaciones_completas" id="observaciones_completas_{{ est.id }}" rows="7" placeholder="Escriba aquí todas las observaciones." oninput="splitObservations(this)">{{ est.observacion_1 if est.observacion_1 is not none else '' }}{{ est.observacion_2 if est.observacion_2 is not none else '' }}{{ est.observacion_3 if est.observacion_3 is not none else '' }}{{ est.observacion_4 if est.observacion_4 is not none else '' }}{{ est.observacion_5 if est.observacion_5 is not none else '' }}{{ est.observacion_6 if est.observacion_6 is not none else '' }}{{ est.observacion_7 if est.observacion_7 is not none else '' }}</textarea>
                             <input type="hidden" name="observacion_1" id="observacion_1_{{ est.id }}" value="{{ est.observacion_1 if est.observacion_1 is not none else '' }}">
                             <input type="hidden" name="observacion_2" id="observacion_2_{{ est.id }}" value="{{ est.observacion_2 if est.observacion_2 is not none else '' }}">
                             <input type="hidden" name="observacion_3" id="observacion_3_{{ est.id }}" value="{{ est.observacion_3 if est.observacion_3 is not none else '' }}">
@@ -869,31 +873,39 @@
                             <input type="hidden" name="observacion_6" id="observacion_6_{{ est.id }}" value="{{ est.observacion_6 if est.observacion_6 is not none else '' }}">
                             <input type="hidden" name="observacion_7" id="observacion_7_{{ est.id }}" value="{{ est.observacion_7 if est.observacion_7 is not none else '' }}">
 
-                            <!-- EXAMEN FÍSICO -->
-                            <h3 class="section-title">Examen Físico</h3>
+
+                            <h3 class="section-title">Examen Físico y Clasificación</h3>
+                            
+                            {# NOMBRE DE CAMPO: Altura: (PDF) -> altura (HTML) #}
                             <label for="altura_{{ est.id }}">Altura (cm):</label>
                             <input type="number" name="altura" id="altura_{{ est.id }}" step="0.1" min="0" value="{{ est.altura if est.altura is not none else '' }}" placeholder="Ej: 165.5" oninput="calculateIMC(this.form)">
+                            
+                            {# NOMBRE DE CAMPO: Peso (PDF) -> peso (HTML) #}
                             <label for="peso_{{ est.id }}">Peso (kg):</label>
                             <input type="number" name="peso" id="peso_{{ est.id }}" step="0.1" min="0" value="{{ est.peso if est.peso is not none else '' }}" placeholder="Ej: 60.2" oninput="calculateIMC(this.form)">
+                            
+                            {# NOMBRE DE CAMPO: I.M.C (PDF) -> imc (HTML) #}
                             <label for="imc_{{ est.id }}">I.M.C:</label>
                             <input type="text" name="imc" id="imc_{{ est.id }}" value="{{ est.imc if est.imc is not none else '' }}" readonly>
-                            <label for="clasificacion_imc_{{ est.id }}">Clasificación:</label>
+                            
+                            {# NOMBRE DE CAMPO: Clasificación (PDF) -> clasificacion_imc (HTML) #}
+                            <label for="clasificacion_imc_{{ est.id }}">Clasificación (IMC):</label>
                             <input type="text" name="clasificacion_imc" id="clasificacion_imc_{{ est.id }}" value="{{ est.clasificacion_imc if est.clasificacion_imc is not none else '' }}" readonly>
 
-                            <!-- ANTECEDENTES PERINATALES -->
+
                             <h3 class="section-title">Antecedentes Perinatales</h3>
                             <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.check_cesarea %}checked{% endif %}">
-                                    <input type="checkbox" name="check_cesarea" id="check_cesarea_{{ est.id }}" value="CESAREA" {% if est.check_cesarea %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Cesárea
+                                    <input type="checkbox" name="check_cesarea" id="check_cesarea_{{ est.id }}" value="CESAREA" {% if est.check_cesarea %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Cesárea (CESAREA)
                                 </label>
                                 <label class="checkbox-item {% if est.check_atermino %}checked{% endif %}">
-                                    <input type="checkbox" name="check_atermino" id="check_atermino_{{ est.id }}" value="A_TERMINO" {% if est.check_atermino %}checked{% endif %} onchange="updateCheckboxStyle(this)"> A Término
+                                    <input type="checkbox" name="check_atermino" id="check_atermino_{{ est.id }}" value="A_TERMINO" {% if est.check_atermino %}checked{% endif %} onchange="updateCheckboxStyle(this)"> A Término (A TÉRMINO)
                                 </label>
                                 <label class="checkbox-item {% if est.check_vaginal %}checked{% endif %}">
-                                    <input type="checkbox" name="check_vaginal" id="check_vaginal_{{ est.id }}" value="VAGINAL" {% if est.check_vaginal %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Vaginal
+                                    <input type="checkbox" name="check_vaginal" id="check_vaginal_{{ est.id }}" value="VAGINAL" {% if est.check_vaginal %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Vaginal (VAGINAL)
                                 </label>
                                 <label class="checkbox-item {% if est.check_prematuro %}checked{% endif %}">
-                                    <input type="checkbox" name="check_prematuro" id="check_prematuro_{{ est.id }}" value="PREMATURO" {% if est.check_prematuro %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Prematuro
+                                    <input type="checkbox" name="check_prematuro" id="check_prematuro_{{ est.id }}" value="PREMATURO" {% if est.check_prematuro %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Prematuro (PREMATURO)
                                 </label>
                                 <label class="checkbox-item {% if est.check_acorde %}checked{% endif %}">
                                     <input type="checkbox" name="check_acorde" id="check_acorde_{{ est.id }}" value="LOGRADO_ACORDE_A_LA_EDAD" {% if est.check_acorde %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Logrado Acorde a la Edad (DSM)
@@ -903,37 +915,35 @@
                                 </label>
                             </div>
 
-                            <!-- ANTECEDENTES PERSONALES (VACUNAS, ALERGIAS, HOSPITALIZACIONES/CIRUGIAS) -->
                             <h3 class="section-title">Antecedentes Personales</h3>
-                            <label>Vacunas:</label>
+                            <label>Vacunas (Esquema):</label>
                             <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.check_esquemac %}checked{% endif %}">
-                                    <input type="checkbox" name="check_esquemac" id="check_esquemac_{{ est.id }}" value="ESQUEMA_COMPLETO" {% if est.check_esquemac %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Esquema Completo
+                                    <input type="checkbox" name="check_esquemac" id="check_esquemac_{{ est.id }}" value="ESQUEMA_COMPLETO" {% if est.check_esquemac %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Completo (ESQUEMA COMPLETO)
                                 </label>
                                 <label class="checkbox-item {% if est.check_esquemai %}checked{% endif %}">
-                                    <input type="checkbox" name="check_esquemai" id="check_esquemai_{{ est.id }}" value="ESQUEMA_INCOMPLETO" {% if est.check_esquemai %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Esquema Incompleto
+                                    <input type="checkbox" name="check_esquemai" id="check_esquemai_{{ est.id }}" value="ESQUEMA_INCOMPLETO" {% if est.check_esquemai %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Incompleto (ESQUEMA INCOMPLETO)
                                 </label>
                             </div>
                             <label>Alergias:</label>
                             <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.check_alergiano %}checked{% endif %}">
-                                    <input type="checkbox" name="check_alergiano" id="check_alergiano_{{ est.id }}" value="NO_ALERGIAS" {% if est.check_alergiano %}checked{% endif %} onchange="updateCheckboxStyle(this)"> No
+                                    <input type="checkbox" name="check_alergiano" id="check_alergiano_{{ est.id }}" value="NO_ALERGIAS" {% if est.check_alergiano %}checked{% endif %} onchange="updateCheckboxStyle(this)"> No (NO)
                                 </label>
                                 <label class="checkbox-item {% if est.check_alergiasi %}checked{% endif %}">
-                                    <input type="checkbox" name="check_alergiasi" id="check_alergiasi_{{ est.id }}" value="SI_ALERGIAS" {% if est.check_alergiasi %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Sí
+                                    <input type="checkbox" name="check_alergiasi" id="check_alergiasi_{{ est.id }}" value="SI_ALERGIAS" {% if est.check_alergiasi %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Sí (SI)
                                 </label>
                             </div>
                             <label>Hospitalizaciones/Cirugías:</label>
                             <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.check_cirugiano %}checked{% endif %}">
-                                    <input type="checkbox" name="check_cirugiano" id="check_cirugiano_{{ est.id }}" value="NO_CIRUGIAS" {% if est.check_cirugiano %}checked{% endif %} onchange="updateCheckboxStyle(this)"> No
+                                    <input type="checkbox" name="check_cirugiano" id="check_cirugiano_{{ est.id }}" value="NO_CIRUGIAS" {% if est.check_cirugiano %}checked{% endif %} onchange="updateCheckboxStyle(this)"> No (NO_2)
                                 </label>
                                 <label class="checkbox-item {% if est.check_cirugiasi %}checked{% endif %}">
-                                    <input type="checkbox" name="check_cirugiasi" id="check_cirugiasi_{{ est.id }}" value="SI_CIRUGIAS" {% if est.check_cirugiasi %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Sí
+                                    <input type="checkbox" name="check_cirugiasi" id="check_cirugiasi_{{ est.id }}" value="SI_CIRUGIAS" {% if est.check_cirugiasi %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Sí (SI_2)
                                 </label>
                             </div>
 
-                            <!-- VISIÓN Y AUDICIÓN -->
                             <h3 class="section-title">Visión y Audición</h3>
                             <label>Visión:</label>
                             <div class="checkbox-group">
@@ -957,7 +967,6 @@
                                 </label>
                             </div>
 
-                            <!-- SALUD BUCODENTAL -->
                             <h3 class="section-title">Salud Bucodental</h3>
                             <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.check_sinhallazgos %}checked{% endif %}">
@@ -1027,7 +1036,6 @@
                         <p><strong>Clasificación:</strong> <span class="prev-clasificacion">{{ est.clasificacion_imc if est.clasificacion_imc is not none else '-' }}</span></p>
                         <p><strong>Observaciones:</strong> <span class="prev-observaciones">{{ est.observacion_1 if est.observacion_1 is not none else '' }}{{ est.observacion_2 if est.observacion_2 is not none else '' }}{{ est.observacion_3 if est.observacion_3 is not none else '' }}{{ est.observacion_4 if est.observacion_4 is not none else '' }}{{ est.observacion_5 if est.observacion_5 is not none else '' }}{{ est.observacion_6 if est.observacion_6 is not none else '' }}{{ est.observacion_7 if est.observacion_7 is not none else '' }}</span></p>
                         
-                        <!-- Checkbox Previews -->
                         <div class="checkbox-preview-group">
                             <strong>Antecedentes Perinatales:</strong>
                             <p>Cesárea: <span class="prev-check-cesarea">{{ 'Sí' if est.check_cesarea else 'No' }}</span></p>

@@ -90,29 +90,42 @@ def format_rut_python(rut):
 
 # Reemplaza la función get_supabase_count en app.py por esta versión:
 
+# --- Asegúrate de que esta línea esté al inicio de app.py:
+# from datetime import datetime, date
+# import requests 
+# import uuid
+# ---
+
 def get_supabase_count(filter_params=""):
-    """Función de contingencia final que usa el timestamp actual para romper el caché."""
+    """
+    Función auxiliar que obtiene un conteo de Supabase usando SERVICE HEADERS.
+    Añade el tiempo actual en milisegundos para romper la caché de la API en cada llamada.
+    """
     
     if filter_params and not filter_params.startswith('&'):
         filter_params = '&' + filter_params
         
-    # 🟢 CAMBIO FINAL: Usar el tiempo actual en milisegundos para asegurar una URL única.
-    cache_buster = f"&t={int(datetime.datetime.now().timestamp() * 1000)}" 
+    # 🟢 MODIFICACIÓN CLAVE: Usamos datetime.now() (gracias a la importación) para generar el rompecaché.
+    # Esto asegura que la URL de consulta sea única en cada petición.
+    current_time_ms = int(datetime.now().timestamp() * 1000)
+    cache_buster = f"&t={current_time_ms}" 
     
-    # Construir la URL con el filtro y el rompecaché
+    # Construir la URL: usa 'select=count' y el filtro.
     url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count{filter_params}{cache_buster}"
     
     try:
         response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS)
         response.raise_for_status()
 
+        # El conteo se devuelve en el encabezado Content-Range
         content_range = response.headers.get('Content-Range')
         if content_range:
             count_str = content_range.split('/')[-1]
             return int(count_str)
         return 0
     except Exception as e:
-        print(f"ERROR en get_supabase_count con URL: {url_count}. Error: {e}")
+        # Imprime el error y la URL de la consulta para depuración
+        print(f"❌ ERROR en get_supabase_count con URL: {url_count}. Error: {e}")
         return 0
         
 # app-30.py (Define esta función en la sección de utilidades, antes de las rutas)

@@ -88,16 +88,16 @@ def format_rut_python(rut):
 
 # Asegúrate de que 'import uuid' esté al inicio de app.py
 
+# Reemplaza la función get_supabase_count en app.py por esta versión:
+
 def get_supabase_count(filter_params=""):
-    """Función auxiliar para obtener un conteo de Supabase usando SERVICE HEADERS.
-       AÑADE UN UUID ALEATORIO PARA ROMPER LA CACHÉ DE LA API EN CADA LLAMADA (CRÍTICO).
-    """
+    """Función de contingencia final que usa el timestamp actual para romper el caché."""
     
     if filter_params and not filter_params.startswith('&'):
         filter_params = '&' + filter_params
         
-    # 🟢 CAMBIO CLAVE: Añadir un parámetro de consulta UUID único para romper la caché de la API.
-    cache_buster = f"&cache_buster={uuid.uuid4()}" 
+    # 🟢 CAMBIO FINAL: Usar el tiempo actual en milisegundos para asegurar una URL única.
+    cache_buster = f"&t={int(datetime.datetime.now().timestamp() * 1000)}" 
     
     # Construir la URL con el filtro y el rompecaché
     url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count{filter_params}{cache_buster}"

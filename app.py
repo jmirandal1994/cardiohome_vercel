@@ -15,6 +15,7 @@ import pandas as pd
 import unicodedata
 import secrets
 import re
+import urllib.parse
 # Las importaciones específicas para Google Drive API han sido eliminadas.
 
 
@@ -102,24 +103,28 @@ def get_supabase_count(filter_params=""):
     """
     Función auxiliar que obtiene un conteo de Supabase usando SERVICE HEADERS.
     Añade el tiempo actual en milisegundos para romper la caché de la API en cada llamada.
+    Utiliza URL encoding para asegurar la validez de los filtros.
     """
     
+    # 1. Limpiar y Preparar Filtros
     # Aseguramos que los parámetros de filtro NO comiencen con '&' al entrar
     if filter_params.startswith('&'):
         filter_params = filter_params[1:]
 
-    # 🟢 MODIFICACIÓN CLAVE: Si hay filtros, los añadimos con '&'. Si no, solo queda el 'select=count'.
+    # 2. Construir la URL base
     url_base = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count"
     
+    url_count = url_base
     if filter_params:
-        url_count = f"{url_base}&{filter_params}"
-    else:
-        url_count = url_base
+        # 🟢 MODIFICACIÓN CLAVE: Codificamos el filtro. 'safe' permite mantener '=' y '&'
+        # sin codificar, lo cual es necesario para los operadores de Supabase.
+        encoded_filter = urllib.parse.quote_plus(filter_params, safe='=&')
+        url_count = f"{url_base}&{encoded_filter}"
 
+    # 3. Añadir Rompecaché
     current_time_ms = int(datetime.now().timestamp() * 1000)
     cache_buster = f"&t={current_time_ms}" 
-    
-    url_count = f"{url_count}{cache_buster}" # Añadimos el rompecaché al final
+    url_count = f"{url_count}{cache_buster}"
     
     try:
         response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS)
@@ -135,7 +140,6 @@ def get_supabase_count(filter_params=""):
         # Imprime el error y la URL de la consulta para depuración
         print(f"❌ ERROR en get_supabase_count con URL: {url_count}. Error: {e}")
         return 0
-
 
 # app-30.py (Define esta función en la sección de utilidades, antes de las rutas)
 
@@ -1894,6 +1898,8 @@ def descargar_pdf_alumno(alumno_id):
 # Asegúrate de que las importaciones de requests, uuid, y datetime estén al inicio de app.py
 # y que la función get_supabase_count esté definida.
 
+# app.py (Reemplazo de la función dashboard_counts)
+
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
     """Calcula los contadores para la Coordinadora General basándose en las nóminas asignadas.
@@ -1906,14 +1912,13 @@ def dashboard_counts():
         return jsonify({"success": True, "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0}), 200 
 
     try:
-        # Filtros seguros basados en la columna fecha_relleno
-        PENDIENTE_FILTER = "fecha_relleno.is.null"
+        # 🟢 MODIFICACIÓN: Filtros seguros basados en la columna fiable (fecha_relleno)
         EVALUADO_FILTER = "fecha_relleno.not.is.null"
         
         # 1. Obtener IDs de nómina asignadas a la Coordinadora General
         url_assigned_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?coord_general_id=eq.{coord_general_id_session}"  # Filtro clave
+            f"?coord_general_id=eq.{coord_general_id_session}"
             f"&form_type.not.is.null" 
             f"&select=id,form_type" 
         )
@@ -1931,16 +1936,15 @@ def dashboard_counts():
             
             # Limpieza del ID
             raw_id_string = nomina['id']
-            # Usamos re.sub para eliminar cualquier espacio en blanco (incluyendo saltos de línea)
+            # Quitamos espacios y saltos de línea para asegurar un ID limpio antes de usarlo en el filtro
             nomina_id = re.sub(r'\s+', '', raw_id_string).strip() 
             form_type = nomina['form_type'].strip()
             
             if not nomina_id:
                 continue
 
-            # --- 1. Total Asignados para esta nómina (usando el filtro más simple) ---
+            # --- 1. Total Asignados para esta nómina ---
             filter_total = f"nomina_id=eq.{nomina_id}" 
-            # *CRÍTICO: Asegurarse de que get_supabase_count está usando la versión corregida*
             count_total = get_supabase_count(filter_total)
             
             # --- 2. Conteo de EVALUADOS (Contando directamente por fecha_relleno) ---

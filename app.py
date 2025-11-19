@@ -1924,93 +1924,101 @@ def descargar_pdf_alumno(alumno_id):
 def dashboard_counts():
     print("🔍 Iniciando cálculo de dashboard_counts...")
 
-    # 1) Obtener el perfil del usuario desde la sesión
+    # Obtener datos de sesión
     rol_usuario = session.get('perfil')
-    usuario_id_session = session.get('user_id')
-    coord_general_id_session = session.get('coord_general_id')
+    usuario_id = session.get('user_id')
 
-    if not rol_usuario or not usuario_id_session:
+    if not rol_usuario or not usuario_id:
+        print("❌ Usuario no autenticado")
         return jsonify({"success": False, "error": "Usuario no autenticado"}), 401
 
-    # 2) Construir filtros según el rol del usuario
-    base_filters = ""
+    print(f"🧠 Usuario autenticado | Rol: {rol_usuario}, ID: {usuario_id}")
 
-    if rol_usuario == 'coordinador_general':
-        base_filters += f"&coord_general_id=eq.{coord_general_id_session}"
-        print(f"🧠 Filtro por coordinador_general (coord_general_id): {coord_general_id_session}")
+    # Construcción de filtros para cargar nóminas
+    filtros = ""
 
-    elif rol_usuario == 'coordinador_especialidad':
-        base_filters += f"&coordinador_id=eq.{usuario_id_session}"
-        print(f"🧠 Filtro por coordinador_especialidad (coordinador_id): {usuario_id_session}")
+    if rol_usuario == "coordinador_general":
+        # ✔️ El coordinador general solo ve las nóminas donde él es el responsable
+        filtros = f"coord_general_id=eq.{usuario_id}"
+
+    elif rol_usuario == "coordinador_especialidad":
+        # ✔️ Coordinador de especialidad ve sus nóminas
+        filtros = f"coordinador_id=eq.{usuario_id}"
+
+    elif rol_usuario == "administrador":
+        # ✔️ Admin ve todos
+        filtros = ""
 
     else:
-        print(f"⚠️ Rol de usuario no reconocido: {rol_usuario}")
-        return jsonify({"success": False, "error": "Rol de usuario no reconocido"}), 403
+        return jsonify({"success": False, "error": "Rol no válido"}), 403
 
-    # 3) Obtener NÓMINAS según el rol del usuario
-    url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=*&{base_filters.lstrip('&')}"
-    print(f"📡 Consultando nóminas desde: {url_nominas}")
+    # Construcción URL
+    if filtros:
+        url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=*&{filtros}"
+    else:
+        url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=*"
 
+    print("📡 Consultando nóminas:", url_nominas)
+
+    # Obtener nóminas
     try:
-        response_nominas = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
-        response_nominas.raise_for_status()
-        nominas = response_nominas.json()
-        print(f"📄 Total de nóminas encontradas: {len(nominas)}")
+        res = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
+        res.raise_for_status()
+        nominas = res.json()
+        print(f"📄 Nóminas encontradas: {len(nominas)}")
 
     except Exception as e:
-        print(f"❌ ERROR obteniendo nóminas: {e}")
-        return jsonify({"success": False, "error": "Error obteniendo nóminas"}), 500
+        print("❌ Error obteniendo nóminas:", e)
+        return jsonify({"success": False, "error": "Error cargando nóminas"}), 500
 
-    # Valores acumulados para totales finales
-    total_neurologia = 0
+    # Totales finales
+    total_neuro = 0
     total_familiar = 0
     total_evaluados = 0
     total_pendientes = 0
 
-    # 4) Recorrer cada nómina para sumar los conteos
-    for nomina in nominas:
-        nomina_id = nomina['id']
-        print(f"\n📝 Procesando nómina ID: {nomina_id}")
+    # Procesar cada nómina
+    for n in nominas:
+        nomina_id = n['id']
+        especialidad = n['especialidad'].lower()
 
-        # TOTAL alumnos de la nómina
+        print(f"\n📝 Procesando nómina {nomina_id} ({especialidad})")
+
+        # Total alumnos
         total = get_supabase_count(f"nomina_id=eq.{nomina_id}")
-        print(f"   ➤ Total alumnos: {total}")
+        print("   ➤ Total:", total)
 
-        # EVALUADOS (según boolean evaluado_flag)
+        # Evaluados
         evaluados = get_supabase_count(f"evaluado_flag=is.true&nomina_id=eq.{nomina_id}")
-        print(f"   ➤ Evaluados: {evaluados}")
+        print("   ➤ Evaluados:", evaluados)
 
-        # PENDIENTES
+        # Pendientes
         pendientes = total - evaluados
-        print(f"   ➤ Pendientes: {pendientes}")
+        print("   ➤ Pendientes:", pendientes)
 
-        # Sumar por especialidad
-        if nomina['especialidad'].lower() == "neurologia":
-            total_neurologia += total
-            print(f"   ➤ Suma neurología (acumulado): {total_neurologia}")
-
-        elif nomina['especialidad'].lower() == "medicina familiar":
+        # Sumar según especialidad
+        if especialidad == "neurologia":
+            total_neuro += total
+        elif especialidad == "medicina familiar":
             total_familiar += total
-            print(f"   ➤ Suma medicina familiar (acumulado): {total_familiar}")
 
         total_evaluados += evaluados
         total_pendientes += pendientes
 
-    print("\n✨ RESULTADOS FINALES ✨")
-    print(f"🧠 Neurología total: {total_neurologia}")
-    print(f"🏥 Medicina familiar total: {total_familiar}")
-    print(f"✔️ Evaluados total: {total_evaluados}")
-    print(f"⏳ Pendientes total: {total_pendientes}")
+    # Enviar resultado final
+    print("\n✨ RESULTADO FINAL ✨")
+    print(f"Neurología: {total_neuro}")
+    print(f"Familiar: {total_familiar}")
+    print(f"Evaluados: {total_evaluados}")
+    print(f"Pendientes: {total_pendientes}")
 
-    # 5) Devolver respuesta JSON final al dashboard
     return jsonify({
-        "neurologia_count": total_neurologia,
+        "neurologia_count": total_neuro,
         "familiar_count": total_familiar,
         "total_evaluados": total_evaluados,
         "evaluaciones_pendientes": total_pendientes,
         "success": True
     })
-        
 
 # --- FIN MODIFICACIONES CLAVE PARA COORDINADOR DE ESCUELA ---
 

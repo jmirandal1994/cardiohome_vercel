@@ -601,18 +601,18 @@ def generar_pdf():
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
+    # Usamos los datos del formulario directamente
     estudiante_id = request.form.get('estudiante_id')
     nomina_id = request.form.get('nomina_id')
     
     # Obtener el form_type y doctora_id_para_formulario de la sesión
     form_type = session.get('current_form_type', 'neurologia') 
     
-    # 1. OBTENER EL ID DE LA DOCTORA LOGUEADA PARA BUSCAR EL FORMULARIO
-    # Si la doctora está en la sesión, este es el ID que usaremos para la plantilla
+    # 1. PREPARACIÓN DE DATOS BASE
     current_doctora_id = session.get('usuario_id')
     
-    print(f"DEBUG: generar_pdf - Solicitud para generar PDF para estudiante_id={estudiante_id}, nomina_id={nomina_id}, form_type={form_type}, doctora_id_para_formulario={current_doctora_id}")
-
+    # --> LÍNEA DE DEBUG SOLICITADA <--
+    print(f"DEBUG: generar_pdf - Solicitud para generar PDF para estudiante_id={estudiante_id}, nomina_id={nomina_id}, form_type={form_type}, doctora_id={current_doctora_id}")
 
     if not all([estudiante_id, nomina_id]):
         flash("❌ Faltan datos esenciales del formulario para generar PDF.", 'danger')
@@ -620,7 +620,7 @@ def generar_pdf():
             return redirect(url_for('relleno_formulario', nomina_id=session['current_nomina_id']))
         return redirect(url_for('dashboard'))
 
-    # Usar los datos del request.form directamente para rellenar el PDF.
+    # Campos base necesarios para el PDF (rut formateado, fechas formateadas)
     nombre = get_form_field_value('nombre', request.form)
     rut = format_rut_python(get_form_field_value('rut', request.form))
     
@@ -634,18 +634,17 @@ def generar_pdf():
 
     edad = get_form_field_value('edad', request.form)
     nacionalidad = get_form_field_value('nacionalidad', request.form)
-    
+
     sexo_f_pdf = ""
     sexo_m_pdf = ""
-    sexo_form_value = get_form_field_value('sexo', request.form)
-
     if form_type == 'neurologia':
+        sexo_form_value = get_form_field_value('sexo', request.form)
         sexo_f_pdf = "X" if sexo_form_value == "F" else ""
         sexo_m_pdf = "X" if sexo_form_value == "M" else ""
     elif form_type == 'medicina_familiar':
-        # En el formulario familiar, el género se maneja con checkboxes/radio buttons diferentes
-        sexo_f_pdf = "X" if get_form_field_value('genero_f', request.form) == 'Femenino' else ""
-        sexo_m_pdf = "X" if get_form_field_value('genero_m', request.form) == 'Masculino' else ""
+        # Mapeo de género de Medicina Familiar (F/M como campos internos)
+        sexo_f_pdf = "/Yes" if get_form_field_value('genero_f', request.form) else ""
+        sexo_m_pdf = "/Yes" if get_form_field_value('genero_m', request.form) else ""
 
 
     fecha_evaluacion_form_value = get_form_field_value('fecha_evaluacion', request.form)
@@ -656,20 +655,16 @@ def generar_pdf():
         except ValueError:
             pass
 
-    fecha_reevaluacion_form_value = get_form_field_value('fecha_reevaluacion', request.form)
-    fecha_reeval_pdf = ''
-    if fecha_reevaluacion_form_value:
-        try:
-            fecha_reeval_pdf = datetime.strptime(fecha_reevaluacion_form_value, '%Y-%m-%d').strftime('%d/%m/%Y')
-        except ValueError:
-            pass
+    # Usamos el campo oculto "fecha_reevaluacion_pdf" que viene con formato DD/MM/YYYY desde JS
+    fecha_reeval_pdf = get_form_field_value('fecha_reevaluacion_pdf', request.form)
 
-    # 2. LÓGICA DE SELECCIÓN DE PLANTILLA (CORREGIDA)
+
+    # 2. LÓGICA DE SELECCIÓN DE PLANTILLA (sin cambios)
     base_dir = os.path.dirname(os.path.abspath(__file__))
     pdf_base_path = ''
     
     if form_type == 'neurologia':
-        # Intenta usar el PDF específico de la Doctora LOGUEADA
+        # (Lógica para buscar PDF específico por doctora logueada o usar el genérico)
         specific_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{current_doctora_id}.pdf"
         full_pdf_bases_dir_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR)
         specific_pdf_path = os.path.join(full_pdf_bases_dir_path, specific_pdf_filename)
@@ -686,12 +681,14 @@ def generar_pdf():
         pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
     
     else:
+        print(f"ERROR: Tipo de formulario '{form_type}' no reconocido para generar PDF.")
         flash("❌ Tipo de formulario no reconocido para generar PDF.", 'error')
         if 'current_nomina_id' in session:
             return redirect(url_for('relleno_formulario', nomina_id=session['current_nomina_id']))
         return redirect(url_for('dashboard'))
 
     if not os.path.exists(pdf_base_path):
+        print(f"ERROR: Archivo '{pdf_base_path}' no encontrado.")
         flash(f"❌ Error: El archivo '{pdf_base_path}' no se encontró en la carpeta del servidor. Verifique la ruta y el nombre del archivo.", 'error')
         if 'current_nomina_id' in session:
             return redirect(url_for('relleno_formulario', nomina_id=session['current_nomina_id']))
@@ -705,7 +702,8 @@ def generar_pdf():
 
         campos = {}
         if form_type == 'neurologia':
-            # Campos estrictamente para neurología
+            print("DEBUG: Usando mapeo de Neurología (claves cortas).")
+            # CAMPOS DE NEUROLOGÍA (MANTENIDOS)
             campos = {
                 "nombre": nombre,
                 "rut": rut, 
@@ -720,9 +718,9 @@ def generar_pdf():
                 "derivaciones": get_form_field_value('derivaciones', request.form),
                 "sexo_f": sexo_f_pdf,
                 "sexo_m": sexo_m_pdf,
-         }
+            }
         elif form_type == 'medicina_familiar':
-            print("DEBUG: Usando mapeo de Medicina Familiar (nombres de campo internos cortos).")
+            print("DEBUG: Usando mapeo de Medicina Familiar (nombres de campo internos CORTOS confirmados).")
             # CAMPOS DE MEDICINA FAMILIAR (USANDO NOMBRES INTERNOS CORTOS DE LAS CAPTURAS)
             campos = {
                 # Identificación (nombre, rut, edad, nacionalidad, fecha_nacimiento)
@@ -811,7 +809,8 @@ def generar_pdf():
         flash(f"❌ Error al generar el PDF: {e}. Verifique el archivo base o los campos.", 'error')
         if 'current_nomina_id' in session:
             return redirect(url_for('relleno_formulario', nomina_id=session['current_nomina_id']))
-        return redirect(url_for('dashboard'))        
+        return redirect(url_for('dashboard'))
+        
 
 @app.route('/marcar_evaluado', methods=['POST'])
 def marcar_evaluado():

@@ -834,7 +834,6 @@
                                 <option value="DIL" {% if est.diagnostico_1 == 'DIL' or est.diagnostico_2 == 'DIL' %}selected{% endif %}>DIL</option>
                                 <option value="Trastorno especifico del lenguaje" {% if est.diagnostico_1 == 'Trastorno especifico del lenguaje' or est.diagnostico_2 == 'Trastorno especifico del lenguaje' %}selected{% endif %}>Trastorno especifico del lenguaje</option>
                                 <option value="Otro" {% if est.diagnostico_1 == 'Otro' or est.diagnostico_2 == 'Otro' %}selected{% endif %}>Otro</option>
-                                {# AÑADIR OTROS DIAGNOSTICOS RELEVANTES AQUÍ #}
                             </select>
                             
                             {# NOMBRE DE CAMPO: DIAGNÓSTICO COMPLEMENTARIO (PDF) -> diagnostico_complementario (HTML) #}
@@ -856,7 +855,7 @@
                                 <option value="5" {% if est.fecha_reevaluacion_select == '5' %}selected{% endif %}>5 años</option>
                             </select>
                             
-                            {# NOMBRE DE CAMPO: Fecha reevaluación (PDF) -> fecha_reevaluacion_input (HTML) #}
+                            {# NOMBRE DE CAMPO: Fecha reevaluación (PDF) -> fecha_reevaluacion (HTML) #}
                             <label for="fecha_reevaluacion_input_{{ est.id }}">Fecha de reevaluación (calculada):</label>
                             <input type="date" name="fecha_reevaluacion" id="fecha_reevaluacion_input_{{ est.id }}" value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}" readonly>
                             <input type="hidden" name="fecha_reevaluacion_pdf" id="fecha_reevaluacion_pdf_{{ est.id }}" value=""> {# Hidden field for PDF format #}
@@ -1125,10 +1124,7 @@
                 const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');
                 const selectPlazo = form.querySelector('select[name="fecha_reevaluacion_select"]');
                 
-                // Si el plazo tiene un valor guardado y la fecha de reevaluación está vacía (o viceversa), calcular.
-                // Se usa el valor de la base de datos para pre-seleccionar.
                 if (selectPlazo && (selectPlazo.value || fechaReevaluacionInput.value)) {
-                    // Recalcular la fecha de reevaluación al cargar (solo si hay un plazo seleccionado)
                     if (selectPlazo.value) {
                          setFechaReevaluacion(selectPlazo);
                     }
@@ -1186,8 +1182,7 @@
                 checkbox.closest('.checkbox-item').classList.remove('checked');
             }
         }
-        
-        // CORRECCIÓN JS: Añadir setHours(12) para evitar el error de un día de desfase por zona horaria.
+
         function setFechaReevaluacion(select) {
             const anos = parseInt(select.value);
             const form = select.closest('form');
@@ -1202,17 +1197,22 @@
                     text: 'Por favor, asegúrese de que la "Fecha Evaluación" esté presente para calcular la fecha de reevaluación.',
                     confirmButtonText: 'Entendido'
                 });
-                fechaReevaluacionInput.value = '';
+                if (fechaReevaluacionInput) fechaReevaluacionInput.value = '';
                 fechaReevaluacionPdfInput.value = '';
                 updatePreview(form);
                 return;
             }
 
             if (!isNaN(anos) && anos > 0) {
-                const evalDate = new Date(fechaEvaluacionInput.value);
-                
-                // CORRECCIÓN: Anclar al mediodía para evitar rollback por zona horaria
-                evalDate.setHours(12, 0, 0, 0);
+                // CORRECCIÓN CLAVE: Creamos la fecha AÑADIENDO 'T12:00:00' para anclarla a mediodía (GMT-safe)
+                let evalDate = new Date(fechaEvaluacionInput.value + 'T12:00:00');
+
+                // Fallback en caso de problemas de formato del navegador
+                if (isNaN(evalDate.getTime())) {
+                     evalDate = new Date(fechaEvaluacionInput.value);
+                     // Establecer hora a mediodía como alternativa
+                     evalDate.setHours(12, 0, 0, 0); 
+                }
 
                 const futureDate = new Date(evalDate.getFullYear() + anos, evalDate.getMonth(), evalDate.getDate()); 
 
@@ -1220,14 +1220,15 @@
                 const month = String(futureDate.getMonth() + 1).padStart(2, '0');
                 const day = String(futureDate.getDate()).padStart(2, '0');
 
+                // Formato YYYY-MM-DD para el input type="date" (si existe)
                 const newDateISO = `${year}-${month}-${day}`;
-                fechaReevaluacionInput.value = newDateISO; 
+                if (fechaReevaluacionInput) fechaReevaluacionInput.value = newDateISO; 
                 
-                // Actualiza el campo oculto con formato DD/MM/YYYY para el PDF
+                // Formato DD/MM/YYYY para el campo oculto que usa el PDF
                 fechaReevaluacionPdfInput.value = `${day}/${month}/${year}`; 
 
             } else {
-                fechaReevaluacionInput.value = ''; 
+                if (fechaReevaluacionInput) fechaReevaluacionInput.value = ''; 
                 fechaReevaluacionPdfInput.value = '';
             }
             updatePreview(form); 
@@ -1261,7 +1262,9 @@
         }
 
         function classifyIMC(imc, gender, clasificacionInput) {
-            // Clasificación de IMC simplificada
+            // Clasificación de IMC simplificada para adultos.
+            // Para pacientes pediátricos, se requiere una clasificación más compleja
+            // basada en percentiles de edad y sexo. Esta es una categorización general.
             let classification = '';
             if (imc < 18.5) {
                 classification = 'Bajo peso';
@@ -1340,17 +1343,17 @@
             previewSection.querySelector('.prev-clasificacion').textContent = form.clasificacion_imc ? form.clasificacion_imc.value : '-'; // Corrected name
 
             // Observaciones
-            const obsText = (form.querySelector(`input[name="observacion_${1}"]`).value || '') + // Usando iteración simplificada
-                            (form.querySelector(`input[name="observacion_${2}"]`).value || '') +
-                            (form.querySelector(`input[name="observacion_${3}"]`).value || '') +
-                            (form.querySelector(`input[name="observacion_${4}"]`).value || '') +
-                            (form.querySelector(`input[name="observacion_${5}"]`).value || '') +
-                            (form.querySelector(`input[name="observacion_${6}"]`).value || '') +
-                            (form.querySelector(`input[name="observacion_${7}"]`).value || '');
+            const obsText = (form.querySelector(`input[name="observacion_1"]`).value || '') +
+                            (form.querySelector(`input[name="observacion_2"]`).value || '') +
+                            (form.querySelector(`input[name="observacion_3"]`).value || '') +
+                            (form.querySelector(`input[name="observacion_4"]`).value || '') +
+                            (form.querySelector(`input[name="observacion_5"]`).value || '') +
+                            (form.querySelector(`input[name="observacion_6"]`).value || '') +
+                            (form.querySelector(`input[name="observacion_7"]`).value || '');
             previewSection.querySelector('.prev-observaciones').textContent = obsText || '-';
 
 
-            // Checkbox Previews (el resto del mapeo de la vista previa)
+            // Checkbox Previews (using the actual checkbox state)
             previewSection.querySelector('.prev-check-cesarea').textContent = form.querySelector(`#check_cesarea_${estudianteId}`).checked ? 'Sí' : 'No';
             previewSection.querySelector('.prev-check-atermino').textContent = form.querySelector(`#check_atermino_${estudianteId}`).checked ? 'Sí' : 'No';
             previewSection.querySelector('.prev-check-vaginal').textContent = form.querySelector(`#check_vaginal_${estudianteId}`).checked ? 'Sí' : 'No';

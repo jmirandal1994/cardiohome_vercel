@@ -109,39 +109,45 @@ def format_rut_python(rut):
 # ...
 
 # app.py (Reemplazo de la función get_supabase_count)
-def get_supabase_count(filter_params=""):
-    """
-    Función auxiliar de conteo. Asume que filter_params ya está codificado si es necesario.
-    """
-    
-    if filter_params.startswith('&'):
-        filter_params = filter_params[1:]
+# app.py (Reemplazo de la función get_supabase_count)
+# Necesita: from datetime import datetime, import requests
 
-    # Construimos la URL con el filtro.
-    url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count"
+def get_supabase_count(filter_dict):
+    """
+    Función auxiliar para conteo. Envía los filtros como diccionario (params) para
+    que la librería requests maneje la codificación URL de forma segura.
+    """
     
-    if filter_params:
-        url_count = f"{url_count}&{filter_params}"
+    # Parámetros base: select=count y el rompecaché
+    params = {
+        'select': 'count',
+        # El rompecaché se añade para evitar problemas de caché del servidor
+        't': int(datetime.now().timestamp() * 1000) 
+    }
+    
+    # Agregamos los filtros específicos (que contienen 'nomina_id=eq.UUID')
+    params.update(filter_dict)
 
-    # Añadir Rompecaché
-    current_time_ms = int(datetime.now().timestamp() * 1000)
-    cache_buster = f"&t={current_time_ms}" 
-    url_count = f"{url_count}{cache_buster}"
+    url_base = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
     
-    # Imprimir URL para verificación
-    print(f"DEBUG: URL de Conteo Final (Verificación 400): {url_count}")
+    # Imprimir la URL para verificación ANTES de que requests la codifique
+    # Esto es solo para depuración; requests la codificará correctamente.
+    print(f"DEBUG: Filtros enviados a requests.get: {params}")
 
     try:
-        response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS)
+        # 🟢 SOLUCIÓN CLAVE: Usamos 'params' en lugar de construir manualmente la URL.
+        response = requests.get(url_base, headers=SUPABASE_SERVICE_HEADERS, params=params)
         response.raise_for_status()
 
+        # El conteo se devuelve en el encabezado Content-Range
         content_range = response.headers.get('Content-Range')
         if content_range:
             count_str = content_range.split('/')[-1]
             return int(count_str)
         return 0
     except Exception as e:
-        print(f"❌ ERROR en get_supabase_count con URL: {url_count}. Error: {e}")
+        # Imprimir la URL final generada por requests, que es la que falló
+        print(f"❌ ERROR en get_supabase_count con URL: {response.request.url if 'response' in locals() else 'URL no disponible'}. Error: {e}")
         return 0
         
 # app-30.py (Define esta función en la sección de utilidades, antes de las rutas)
@@ -1907,10 +1913,12 @@ def descargar_pdf_alumno(alumno_id):
 
 # app.py (Reemplazo de la función dashboard_counts)
 
+# app.py (Reemplazo de la función dashboard_counts)
+
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
-    """Calcula los contadores para la Coordinadora General basándose en las nóminas asignadas.
-       Aplica codificación de URL directamente al UUID para eliminar el error 400."""
+    """Calcula los contadores para la Coordinadora General. Adaptado para usar el
+       método params del requests, eliminando errores 400."""
     
     coord_general_id_session = session.get('usuario_id')
     
@@ -1919,7 +1927,8 @@ def dashboard_counts():
 
     try:
         # Filtro de Evaluados basado en la columna fiable (fecha_relleno)
-        EVALUADO_FILTER = "fecha_relleno.not.is.null"
+        # CRÍTICO: El filtro ahora es una clave, no una cadena.
+        EVALUADO_FILTER_KEY = "fecha_relleno.not.is.null"
         
         # 1. Obtener IDs de nómina asignadas a la Coordinadora General
         url_assigned_nominas = (
@@ -1945,25 +1954,29 @@ def dashboard_counts():
             nomina_id_uncleaned = str(raw_id_string).strip() 
             nomina_id_clean = ''.join(c for c in nomina_id_uncleaned if c.isprintable())
             
-            # 🟢 MODIFICACIÓN CLAVE: Codificación de URL. Solo codificamos el valor del UUID,
-            # manteniendo el filtro base de Supabase limpio.
-            nomina_id = urllib.parse.quote_plus(nomina_id_clean)
-
+            # 🟢 CRÍTICO: Aquí NO APLICAMOS MÁS CODIFICACIÓN. requests lo hará.
+            nomina_id = nomina_id_clean 
+            
             form_type = nomina['form_type'].strip()
             
-            # Asumimos que un UUID limpio tiene exactamente 36 caracteres antes de codificar
-            if len(nomina_id_clean) != 36: 
-                print(f"ADVERTENCIA: ID de nómina tiene longitud inusual ({len(nomina_id_clean)}). Valor: [{nomina_id_clean}] Saltando.")
+            if len(nomina_id) != 36: 
+                print(f"ADVERTENCIA: ID de nómina tiene longitud inusual ({len(nomina_id)}). Valor: [{nomina_id}] Saltando.")
                 continue
 
             # --- 1. Total Asignados para esta nómina ---
-            # El filtro usa el ID codificado.
-            filter_total = f"nomina_id=eq.{nomina_id}" 
-            count_total = get_supabase_count(filter_total)
+            # Filtro total: {columna}{operador}={valor}
+            filter_total_dict = {
+                'nomina_id': f'eq.{nomina_id}' 
+            }
+            count_total = get_supabase_count(filter_total_dict)
             
-            # --- 2. Conteo de EVALUADOS (Contando directamente por fecha_relleno) ---
-            filter_evaluados = f"{EVALUADO_FILTER}&nomina_id=eq.{nomina_id}"
-            count_evaluados = get_supabase_count(filter_evaluados)
+            # --- 2. Conteo de EVALUADOS ---
+            # Filtro de evaluados: {columna1}={operador1}&{columna2}={operador2}
+            filter_evaluados_dict = {
+                EVALUADO_FILTER_KEY: '', # Clave sin valor (Supabase lo ignora si no está el valor)
+                'nomina_id': f'eq.{nomina_id}'
+            }
+            count_evaluados = get_supabase_count(filter_evaluados_dict)
             total_evaluados += count_evaluados
             
             # --- 3. Conteo de PENDIENTES (Resta) ---
@@ -1971,7 +1984,7 @@ def dashboard_counts():
             if count_pendientes < 0: count_pendientes = 0 
             total_pendientes += count_pendientes
 
-            # --- 4. Desglose por tipo (solo si se ha evaluado) ---
+            # --- 4. Desglose por tipo ---
             if form_type == 'neurologia':
                 neuro_count += count_evaluados
             elif form_type == 'medicina_familiar':

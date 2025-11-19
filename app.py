@@ -1928,10 +1928,12 @@ def descargar_pdf_alumno(alumno_id):
 
 # app.py (Reemplazo de la función dashboard_counts completa)
 
+# app.py (Reemplazo de la función dashboard_counts completa)
+
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
-    """Calcula los contadores para la Coordinadora General. Aplica comillas simples al
-       UUID y codificación explícita para evitar errores 400 y 500."""
+    """Calcula los contadores para la Coordinadora General. Envía filtros SIN comillas
+       ni codificación URL en el UUID para coincidir con el tipo de dato 'uuid' de Supabase."""
     
     coord_general_id_session = session.get('usuario_id')
     
@@ -1939,10 +1941,10 @@ def dashboard_counts():
         return jsonify({"success": True, "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0}), 200 
 
     try:
-        # Filtro de Evaluados basado en la columna fiable (fecha_relleno)
+        # Filtro de Evaluados
         EVALUADO_FILTER_BASE = "fecha_relleno.not.is.null"
         
-        # 1. Obtener IDs de nómina asignadas a la Coordinadora General
+        # 1. Obtener IDs de nómina asignadas
         url_assigned_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?coord_general_id=eq.{coord_general_id_session}"
@@ -1958,34 +1960,31 @@ def dashboard_counts():
         neuro_count = 0
         familiar_count = 0
         
-        # Iterar sobre cada nómina para obtener sus conteos individuales
         for nomina in assigned_nominas:
             
             raw_id_string = nomina['id']
-            # Limpieza de espacios y caracteres no imprimibles.
-            nomina_id_uncleaned = str(raw_id_string).strip() 
-            nomina_id_clean = ''.join(c for c in nomina_id_uncleaned if c.isprintable())
-            
-            # 2. Validación de longitud
-            if len(nomina_id_clean) != 36: 
-                print(f"ADVERTENCIA: ID de nómina tiene longitud inusual ({len(nomina_id_clean)}). Valor: [{nomina_id_clean}] Saltando.")
-                continue
+            # Limpieza: quitamos espacios, caracteres no imprimibles.
+            nomina_id_clean = str(raw_id_string).strip() 
+            nomina_id = ''.join(c for c in nomina_id_clean if c.isprintable()) # UUID limpio y sin comillas
 
-            # 🟢 SOLUCIÓN FINAL: Encerrar el UUID en comillas simples y codificar.
-            # Esto corrige el problema del error 400 en UUIDs tipo 'uuid' en Supabase.
-            nomina_id_quoted = f"'{nomina_id_clean}'" 
-            nomina_id_encoded = urllib.parse.quote_plus(nomina_id_quoted)
+            # 🟢 SOLUCIÓN FINAL: Usamos el ID limpio (NO ENCODED y SIN COMILLAS)
+            # para que Supabase lo reconozca como un UUID nativo.
+            nomina_id_final = nomina_id 
 
             form_type = nomina['form_type'].strip()
             
+            if len(nomina_id) != 36: 
+                print(f"ADVERTENCIA: ID de nómina tiene longitud inusual ({len(nomina_id)}). Valor: [{nomina_id}] Saltando.")
+                continue
+
             # --- 1. Total Asignados para esta nómina ---
-            # El filtro usa el ID codificado y citado.
-            filter_total = f"nomina_id=eq.{nomina_id_encoded}" 
+            # Enviamos el ID limpio.
+            filter_total = f"nomina_id=eq.{nomina_id_final}" 
             count_total = get_supabase_count(filter_total)
             
-            # --- 2. Conteo de EVALUADOS (Contando directamente por fecha_relleno) ---
-            # El filtro usa la sintaxis EVALUADO_FILTER_BASE y el ID codificado/citado.
-            filter_evaluados = f"{EVALUADO_FILTER_BASE}&nomina_id=eq.{nomina_id_encoded}"
+            # --- 2. Conteo de EVALUADOS ---
+            # Enviamos el ID limpio.
+            filter_evaluados = f"{EVALUADO_FILTER_BASE}&nomina_id=eq.{nomina_id_final}"
             count_evaluados = get_supabase_count(filter_evaluados)
             total_evaluados += count_evaluados
             

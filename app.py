@@ -97,22 +97,29 @@ def format_rut_python(rut):
 # import uuid
 # ---
 
+# app-31.py (Reemplazo de la función get_supabase_count)
 def get_supabase_count(filter_params=""):
     """
     Función auxiliar que obtiene un conteo de Supabase usando SERVICE HEADERS.
     Añade el tiempo actual en milisegundos para romper la caché de la API en cada llamada.
     """
     
-    if filter_params and not filter_params.startswith('&'):
-        filter_params = '&' + filter_params
-        
-    # 🟢 MODIFICACIÓN CLAVE: Usamos datetime.now() (gracias a la importación) para generar el rompecaché.
-    # Esto asegura que la URL de consulta sea única en cada petición.
+    # Aseguramos que los parámetros de filtro NO comiencen con '&' al entrar
+    if filter_params.startswith('&'):
+        filter_params = filter_params[1:]
+
+    # 🟢 MODIFICACIÓN CLAVE: Si hay filtros, los añadimos con '&'. Si no, solo queda el 'select=count'.
+    url_base = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count"
+    
+    if filter_params:
+        url_count = f"{url_base}&{filter_params}"
+    else:
+        url_count = url_base
+
     current_time_ms = int(datetime.now().timestamp() * 1000)
     cache_buster = f"&t={current_time_ms}" 
     
-    # Construir la URL: usa 'select=count' y el filtro.
-    url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count{filter_params}{cache_buster}"
+    url_count = f"{url_count}{cache_buster}" # Añadimos el rompecaché al final
     
     try:
         response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS)
@@ -128,7 +135,8 @@ def get_supabase_count(filter_params=""):
         # Imprime el error y la URL de la consulta para depuración
         print(f"❌ ERROR en get_supabase_count con URL: {url_count}. Error: {e}")
         return 0
-        
+
+
 # app-30.py (Define esta función en la sección de utilidades, antes de las rutas)
 
 # app-30.py (Función get_assigned_nomina_ids)
@@ -1888,27 +1896,24 @@ def descargar_pdf_alumno(alumno_id):
 
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
-    """Calcula los contadores, utilizando la columna correcta coord_general_id para filtrar las nóminas."""
+    """Calcula los contadores para la Coordinadora General basándose en las nóminas asignadas.
+       Usa 'fecha_relleno' para determinar Evaluados/Pendientes para mayor fiabilidad."""
     
-    # 🟢 CORRECCIÓN CLAVE 1: Usar la clave de sesión correcta para obtener el ID de la coordinadora.
-    # Asumimos que el ID de la coordinadora general está en session['usuario_id'] al loguearse.
     coord_general_id_session = session.get('usuario_id')
     
-    # ⚠️ Nota: Si tu clave de sesión para la ID de la coordinadora es 'coord_id', 
-    # usa session.get('coord_id'). Basado en tu tabla, asumimos que es session['usuario_id'].
-    
     if session.get('usuario') != 'coordinadora' or not coord_general_id_session:
+        # Retorna cero si no es coordinadora o falta el ID.
         return jsonify({"success": True, "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0}), 200 
 
     try:
-        COMPLETADO_FILTER = "doctora_evaluadora_id.not.is.null&estado_general.gt." 
-        PENDIENTE_FLAG_FILTER = "evaluado_flag.eq.false"
-
-        # 1. Obtener IDs de nómina asignadas
-        # 🟢 CORRECCIÓN CLAVE 2: Usar el nombre de columna de la base de datos: coord_general_id
+        # Filtros seguros basados en la columna fecha_relleno
+        PENDIENTE_FILTER = "fecha_relleno.is.null"
+        EVALUADO_FILTER = "fecha_relleno.not.is.null"
+        
+        # 1. Obtener IDs de nómina asignadas a la Coordinadora General
         url_assigned_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?coord_general_id=eq.{coord_general_id_session}"  # ¡Corregido!
+            f"?coord_general_id=eq.{coord_general_id_session}"  # Filtro clave
             f"&form_type.not.is.null" 
             f"&select=id,form_type" 
         )
@@ -1916,58 +1921,46 @@ def dashboard_counts():
         res_assigned.raise_for_status()
         assigned_nominas = res_assigned.json()
 
-        neuro_ids = [nom['id'] for nom in assigned_nominas if nom.get('form_type') == 'neurologia']
-        familiar_ids = [nom['id'] for nom in assigned_nominas if nom.get('form_type') == 'medicina_familiar']
-        
-        # 🟢 Inicialización y limpieza (Mantiene la solución para el error 400)
-        total_alumnos_en_nominas = 0
         total_evaluados = 0
         total_pendientes = 0
         neuro_count = 0
         familiar_count = 0
-        
-        all_assigned_ids = neuro_ids + familiar_ids
-        clean_assigned_ids = [id_str.strip() for id_str in all_assigned_ids if id_str]
-        
-        if not clean_assigned_ids:
-             return jsonify({"success": True, "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0})
         
         # Iterar sobre cada nómina para obtener sus conteos individuales
         for nomina in assigned_nominas:
             
             # Limpieza del ID
             raw_id_string = nomina['id']
+            # Usamos re.sub para eliminar cualquier espacio en blanco (incluyendo saltos de línea)
             nomina_id = re.sub(r'\s+', '', raw_id_string).strip() 
             form_type = nomina['form_type'].strip()
             
             if not nomina_id:
                 continue
 
-            # --- 1. Total Asignados para esta nómina ---
-            filter_total = f"nomina_id=eq.{nomina_id}"
+            # --- 1. Total Asignados para esta nómina (usando el filtro más simple) ---
+            filter_total = f"nomina_id=eq.{nomina_id}" 
+            # *CRÍTICO: Asegurarse de que get_supabase_count está usando la versión corregida*
             count_total = get_supabase_count(filter_total)
-            total_alumnos_en_nominas += count_total
             
-            # --- 2. Conteo de PENDIENTES y EVALUADOS para esta nómina ---
-            
-            # Conteo de PENDIENTES (eq.false)
-            filter_pendientes = f"{PENDIENTE_FLAG_FILTER}&nomina_id=eq.{nomina_id}"
-            count_pendientes = get_supabase_count(filter_pendientes)
-            total_pendientes += count_pendientes
-            
-            # Conteo de EVALUADOS (Resta)
-            count_evaluados = count_total - count_pendientes
-            if count_evaluados < 0: count_evaluados = 0
+            # --- 2. Conteo de EVALUADOS (Contando directamente por fecha_relleno) ---
+            filter_evaluados = f"{EVALUADO_FILTER}&nomina_id=eq.{nomina_id}"
+            count_evaluados = get_supabase_count(filter_evaluados)
             total_evaluados += count_evaluados
+            
+            # --- 3. Conteo de PENDIENTES (Resta) ---
+            count_pendientes = count_total - count_evaluados
+            if count_pendientes < 0: count_pendientes = 0 
+            total_pendientes += count_pendientes
 
-            # --- 3. Desglose por tipo ---
+            # --- 4. Desglose por tipo (solo si se ha evaluado) ---
             if form_type == 'neurologia':
                 neuro_count += count_evaluados
             elif form_type == 'medicina_familiar':
                 familiar_count += count_evaluados
 
 
-        # 6. Enviamos el resultado
+        # 5. Enviamos el resultado
         return jsonify({
             "success": True, 
             "total_evaluados": total_evaluados,

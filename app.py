@@ -1876,6 +1876,12 @@ def descargar_pdf_alumno(alumno_id):
 
 # Reemplaza la función dashboard_counts en app.py con esta versión:
 
+# Asegúrate de que las importaciones de requests, uuid, y datetime estén al inicio de app.py
+# from datetime import datetime, date  <-- CRÍTICO
+# import requests 
+# import uuid
+# ...
+
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
     """SOLUCIÓN DEFINITIVA: Ejecuta consultas individuales por cada ID de nómina
@@ -1887,10 +1893,11 @@ def dashboard_counts():
         return jsonify({"success": True, "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0}), 200 
 
     try:
+        # Filtros robustos para el conteo de estado
         COMPLETADO_FILTER = "doctora_evaluadora_id.not.is.null&estado_general.gt." 
         PENDIENTE_FLAG_FILTER = "evaluado_flag.eq.false"
 
-        # 1. Obtener IDs de nómina
+        # 1. Obtener IDs de nómina asignadas
         url_assigned_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?coord_general_id=eq.{coord_id}"
@@ -1901,7 +1908,7 @@ def dashboard_counts():
         res_assigned.raise_for_status()
         assigned_nominas = res_assigned.json()
 
-        # 🟢 NUEVO PROCESAMIENTO: Contadores acumulados
+        # 🟢 Inicialización de contadores acumulados
         total_alumnos_en_nominas = 0
         total_evaluados = 0
         total_pendientes = 0
@@ -1910,26 +1917,25 @@ def dashboard_counts():
         
         # Iterar sobre cada nómina para obtener sus conteos individuales
         for nomina in assigned_nominas:
+            # 🟢 LIMPIEZA EXTREMA DEL ID (CRÍTICO para evitar el Error 400)
             nomina_id = nomina['id'].strip()
-            form_type = nomina['form_type']
+            form_type = nomina['form_type'].strip() 
             
             # --- 1. Total Asignados para esta nómina ---
             filter_total = f"nomina_id=eq.{nomina_id}"
             count_total = get_supabase_count(filter_total)
             total_alumnos_en_nominas += count_total
             
-            # --- 2. Pendientes y Evaluados para esta nómina ---
+            # --- 2. Conteo de PENDIENTES y EVALUADOS para esta nómina ---
             
             # Conteo de PENDIENTES (eq.false)
             filter_pendientes = f"{PENDIENTE_FLAG_FILTER}&nomina_id=eq.{nomina_id}"
             count_pendientes = get_supabase_count(filter_pendientes)
             total_pendientes += count_pendientes
             
-            # Conteo de EVALUADOS (Contingencia: Resta)
-            # Aunque la lógica de Supabase falle, usamos la diferencia del total para la coherencia
+            # Conteo de EVALUADOS (Contingencia: Resta, ya que el filtro eq.true falla)
             count_evaluados = count_total - count_pendientes
             if count_evaluados < 0: count_evaluados = 0
-
             total_evaluados += count_evaluados
 
             # --- 3. Desglose por tipo ---
@@ -1939,7 +1945,7 @@ def dashboard_counts():
                 familiar_count += count_evaluados
 
 
-        # 6. Enviamos el resultado (Ya no necesitamos la lógica de 'total_pendientes = total_alumnos - total_evaluados' final)
+        # 6. Enviamos el resultado
         return jsonify({
             "success": True, 
             "total_evaluados": total_evaluados,
@@ -1949,6 +1955,7 @@ def dashboard_counts():
         })
 
     except requests.exceptions.RequestException as e:
+        # Esto captura el error 400 Bad Request
         print(f"❌ ERROR DE CONEXIÓN CON SUPABASE EN DASHBOARD_COUNTS: {e}")
         return jsonify({"success": False, "message": f"Error de conexión con la BD: {str(e)}"}), 500
     except Exception as e:

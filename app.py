@@ -1920,93 +1920,96 @@ def descargar_pdf_alumno(alumno_id):
 
 # app.py (Reemplazo de la función dashboard_counts completa)
 
-@app.route('/api/dashboard_counts', methods=['GET'])
+@app.route('/api/dashboard_counts')
 def dashboard_counts():
-    """Calcula los contadores para la Coordinadora General. Utiliza el filtro de
-       función renombrado como alias para resolver el conflicto del error 400."""
-    
-    coord_general_id_session = session.get('usuario_id')
-    
-    if session.get('usuario') != 'coordinadora' or not coord_general_id_session:
-        return jsonify({"success": True, "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0}), 200 
+    print("🔍 Iniciando cálculo de dashboard_counts...")
+
+    # 1) Obtener el perfil del usuario desde la sesión
+    rol_usuario = session.get('perfil')
+    usuario_id_session = session.get('user_id')
+    coord_general_id_session = session.get('coord_general_id')
+
+    if not rol_usuario or not usuario_id_session:
+        return jsonify({"success": False, "error": "Usuario no autenticado"}), 401
+
+    # 2) Construir filtros según el rol del usuario
+    base_filters = ""
+
+    if rol_usuario == 'coordinador_general':
+        base_filters += f"&coord_general_id=eq.{coord_general_id_session}"
+        print(f"🧠 Filtro por coordinador_general (coord_general_id): {coord_general_id_session}")
+
+    elif rol_usuario == 'coordinador_especialidad':
+        base_filters += f"&coordinador_id=eq.{usuario_id_session}"
+        print(f"🧠 Filtro por coordinador_especialidad (coordinador_id): {usuario_id_session}")
+
+    else:
+        print(f"⚠️ Rol de usuario no reconocido: {rol_usuario}")
+        return jsonify({"success": False, "error": "Rol de usuario no reconocido"}), 403
+
+    # 3) Obtener NÓMINAS según el rol del usuario
+    url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=*&{base_filters.lstrip('&')}"
+    print(f"📡 Consultando nóminas desde: {url_nominas}")
 
     try:
-        # Filtro de Evaluados
-        EVALUADO_FILTER_BASE = "fecha_relleno.not.is.null"
-        
-        # 1. Obtener IDs de nómina asignadas
-        url_assigned_nominas = (
-            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?coord_general_id=eq.{coord_general_id_session}"
-            f"&form_type.not.is.null" 
-            f"&select=id,form_type" 
-        )
-        res_assigned = requests.get(url_assigned_nominas, headers=SUPABASE_SERVICE_HEADERS)
-        res_assigned.raise_for_status()
-        assigned_nominas = res_assigned.json()
+        response_nominas = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
+        response_nominas.raise_for_status()
+        nominas = response_nominas.json()
+        print(f"📄 Total de nóminas encontradas: {len(nominas)}")
 
-        total_evaluados = 0
-        total_pendientes = 0
-        neuro_count = 0
-        familiar_count = 0
-        
-        # Iterar sobre cada nómina para obtener sus conteos individuales
-        for nomina in assigned_nominas:
-            
-            raw_id_string = nomina['id']
-            # 🟢 CORRECCIÓN ERROR 500: Reintroducir la definición de form_type y limpieza.
-            form_type = nomina['form_type'].strip()
-            nomina_id_uncleaned = str(raw_id_string).strip() 
-            nomina_id = ''.join(c for c in nomina_id_uncleaned if c.isprintable())
-            
-            if len(nomina_id) != 36: 
-                print(f"ADVERTENCIA: ID de nómina tiene longitud inusual ({len(nomina_id)}). Valor: [{nomina_id}] Saltando.")
-                continue
-
-            # 🟢 SOLUCIÓN 400 FINAL: Renombramos la clave del filtro para evitar el carácter '()' en la URL.
-            FILTRO_KEY = f"uuid_to_text_nomina_id" 
-            
-            # CRÍTICO: Debemos asegurarnos de que el SELECT de la tabla use el alias de la función,
-            # lo cual es imposible sin modificar la tabla de estudiantes_nomina.
-            # Volvemos a la consulta limpia (sin la función SQL) y aplicamos el filtro original,
-            # asumiendo que el problema residía en los filtros combinados.
-            
-            # --- 1. Total Asignados para esta nómina (Volvemos a la sintaxis limpia) ---
-            filter_total = f"nomina_id=eq.{nomina_id}" 
-            count_total = get_supabase_count(filter_total)
-            
-            # --- 2. Conteo de EVALUADOS (Contando directamente por fecha_relleno) ---
-            filter_evaluados = f"{EVALUADO_FILTER_BASE}&nomina_id=eq.{nomina_id}"
-            count_evaluados = get_supabase_count(filter_evaluados)
-            total_evaluados += count_evaluados
-            
-            # --- 3. Conteo de PENDIENTES (Resta) ---
-            count_pendientes = count_total - count_evaluados
-            if count_pendientes < 0: count_pendientes = 0 
-            total_pendientes += count_pendientes
-
-            # --- 4. Desglose por tipo ---
-            if form_type == 'neurologia':
-                neuro_count += count_evaluados
-            elif form_type == 'medicina_familiar':
-                familiar_count += count_evaluados
-
-
-        # 5. Enviamos el resultado
-        return jsonify({
-            "success": True, 
-            "total_evaluados": total_evaluados,
-            "neurologia_count": neuro_count,
-            "familiar_count": familiar_count,
-            "evaluaciones_pendientes": total_pendientes 
-        })
-
-    except requests.exceptions.RequestException as e:
-        print(f"❌ ERROR DE CONEXIÓN CON SUPABASE EN DASHBOARD_COUNTS: {e}")
-        return jsonify({"success": False, "message": f"Error de conexión con la BD: {str(e)}"}), 500
     except Exception as e:
-        print(f"❌ ERROR INESPERADO AL CALCULAR CONTEOS: {e}")
-        return jsonify({"success": False, "message": f"Error interno: {str(e)}"}), 500
+        print(f"❌ ERROR obteniendo nóminas: {e}")
+        return jsonify({"success": False, "error": "Error obteniendo nóminas"}), 500
+
+    # Valores acumulados para totales finales
+    total_neurologia = 0
+    total_familiar = 0
+    total_evaluados = 0
+    total_pendientes = 0
+
+    # 4) Recorrer cada nómina para sumar los conteos
+    for nomina in nominas:
+        nomina_id = nomina['id']
+        print(f"\n📝 Procesando nómina ID: {nomina_id}")
+
+        # TOTAL alumnos de la nómina
+        total = get_supabase_count(f"nomina_id=eq.{nomina_id}")
+        print(f"   ➤ Total alumnos: {total}")
+
+        # EVALUADOS (según boolean evaluado_flag)
+        evaluados = get_supabase_count(f"evaluado_flag=is.true&nomina_id=eq.{nomina_id}")
+        print(f"   ➤ Evaluados: {evaluados}")
+
+        # PENDIENTES
+        pendientes = total - evaluados
+        print(f"   ➤ Pendientes: {pendientes}")
+
+        # Sumar por especialidad
+        if nomina['especialidad'].lower() == "neurologia":
+            total_neurologia += total
+            print(f"   ➤ Suma neurología (acumulado): {total_neurologia}")
+
+        elif nomina['especialidad'].lower() == "medicina familiar":
+            total_familiar += total
+            print(f"   ➤ Suma medicina familiar (acumulado): {total_familiar}")
+
+        total_evaluados += evaluados
+        total_pendientes += pendientes
+
+    print("\n✨ RESULTADOS FINALES ✨")
+    print(f"🧠 Neurología total: {total_neurologia}")
+    print(f"🏥 Medicina familiar total: {total_familiar}")
+    print(f"✔️ Evaluados total: {total_evaluados}")
+    print(f"⏳ Pendientes total: {total_pendientes}")
+
+    # 5) Devolver respuesta JSON final al dashboard
+    return jsonify({
+        "neurologia_count": total_neurologia,
+        "familiar_count": total_familiar,
+        "total_evaluados": total_evaluados,
+        "evaluaciones_pendientes": total_pendientes,
+        "success": True
+    })
         
 
 # --- FIN MODIFICACIONES CLAVE PARA COORDINADOR DE ESCUELA ---

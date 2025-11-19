@@ -720,24 +720,35 @@ def generar_pdf():
                 "derivaciones": get_form_field_value('derivaciones', request.form),
                 "sexo_f": sexo_f_pdf,
                 "sexo_m": sexo_m_pdf,
-            }
+         }
         elif form_type == 'medicina_familiar':
-            # Campos para medicina familiar (usa los campos del request.form directamente)
+            print("DEBUG: Usando mapeo de Medicina Familiar (nombres de campo internos cortos).")
+            # CAMPOS DE MEDICINA FAMILIAR (USANDO NOMBRES INTERNOS CORTOS DE LAS CAPTURAS)
             campos = {
+                # Identificación (nombre, rut, edad, nacionalidad, fecha_nacimiento)
                 "nombre": nombre,
-                "rut": rut, 
+                "rut": rut,
                 "fecha_nacimiento": fecha_nac_formato,
                 "edad": edad,
                 "nacionalidad": nacionalidad,
-                "sexo_f": sexo_f_pdf,
+                "sexo_f": sexo_f_pdf, 
                 "sexo_m": sexo_m_pdf,
+                
+                # Diagnósticos, Clasificación, Fechas
                 "diagnostico_1": get_form_field_value('diagnostico_1', request.form),
                 "diagnostico_2": get_form_field_value('diagnostico_2', request.form),
                 "diagnostico_complementario": get_form_field_value('diagnostico_complementario', request.form),
-                "clasificación": get_form_field_value('clasificacion_imc', request.form),
+                "clasificacion": get_form_field_value('clasificacion_imc', request.form),
                 "derivaciones": get_form_field_value('derivaciones', request.form),
                 "fecha_evaluacion": fecha_evaluacion_formatted,
                 "fecha_reevaluacion": fecha_reeval_pdf,
+                
+                # Examen Físico / Medidas
+                "altura": get_form_field_value('altura', request.form),
+                "peso": get_form_field_value('peso', request.form),
+                "imc": get_form_field_value('imc', request.form),
+
+                # Observaciones (OBS1-OBS7)
                 "observacion_1": get_form_field_value('observacion_1', request.form),
                 "observacion_2": get_form_field_value('observacion_2', request.form),
                 "observacion_3": get_form_field_value('observacion_3', request.form),
@@ -745,48 +756,48 @@ def generar_pdf():
                 "observacion_5": get_form_field_value('observacion_5', request.form),
                 "observacion_6": get_form_field_value('observacion_6', request.form),
                 "observacion_7": get_form_field_value('observacion_7', request.form),
-                "check_cesarea": "/Yes" if get_form_field_value('check_cesarea', request.form) == 'CESAREA' else "",
-                "check_atermino": "/Yes" if get_form_field_value('check_atermino', request.form) == 'A_TERMINO' else "",
-                "check_vaginal": "/Yes" if get_form_field_value('check_vaginal', request.form) == 'VAGINAL' else "",
-                "check_prematuro": "/Yes" if get_form_field_value('check_prematuro', request.form) == 'PREMATURO' else "",
-                "LOGRADO ACORDE A LA EDAD": "/Yes" if get_form_field_value('check_acorde', request.form) == 'LOGRADO_ACORDE_A_LA_EDAD' else "",
-                "RETRASO GENERALIZADO DEL DESARROLLO": "/Yes" if get_form_field_value('check_retrasogeneralizado', request.form) == 'RETRASO_GENERALIZADO_DEL_DESARROLLO' else "",
-                "ESQUEMA COMPLETO": "/Yes" if get_form_field_value('check_esquemac', request.form) == 'ESQUEMA_COMPLETO' else "",
-                "ESQUEMA INCOMPLETO": "/Yes" if get_form_field_value('check_esquemai', request.form) == 'ESQUEMA_INCOMPLETO' else "",
-                "NO": "/Yes" if get_form_field_value('check_alergiano', request.form) == 'NO_ALERGIAS' else "",
-                "SI": "/Yes" if get_form_field_value('check_alergiasi', request.form) == 'SI_ALERGIAS' else "",
-                "NO_2": "/Yes" if get_form_field_value('check_cirugiano', request.form) == 'NO_CIRUGIAS' else "",
-                "SI_2": "/Yes" if get_form_field_value('si_2', request.form) == 'SI_2' else "",
-                "SIN ALTERACIÓN": "/Yes" if get_form_field_value('check_visionsinalteracion', request.form) == 'SIN_ALTERACION_VISION' else "",
-                "VICIOS DE REFRACCION": "/Yes" if get_form_field_value('check_visionrefraccion', request.form) == 'VICIOS_DE_REFRACCION' else "",
-                "NORMAL": "/Yes" if get_form_field_value('check_audicionnormal', request.form) == 'NORMAL_AUDICION' else "",
-                "HIPOACUSIA": "/Yes" if get_form_field_value('check_hipoacusia', request.form) == 'HIPOACUSIA' else "",
-                "TAPÓN DE CERUMEN": "/Yes" if get_form_field_value('check_tapondecerumen', request.form) == 'TAPON_DE_CERUMEN' else "",
-                "SIN HALLAZGOS": "/Yes" if get_form_field_value('check_sinhallazgos', request.form) == 'SIN_HALLAZGOS' else "",
-                "CARIES": "/Yes" if get_form_field_value('caries', request.form) == 'CARIES' else "",
-                "APIÑAMIENTO DENTAL": "/Yes" if get_form_field_value('check_apinamientodental', request.form) == 'APINAMIENTO_DENTAL' else "",
-                "RETENCIÓN DENTAL": "/Yes" if get_form_field_value('check_retenciondental', request.form) == 'RETENCION_DENTAL' else "",
-                "FRENILLO LINGUAL": "/Yes" if get_form_field_value('check_frenillolingual', request.form) == 'FRENILLO_LINGUAL' else "",
-                "HIPERTROFIA AMIGDALINA": "/Yes" if get_form_field_value('check_hipertrofia', request.form) == 'HIPERTROFIA_AMIGDALINA' else "",
-                "Altura": get_form_field_value('altura', request.form),
-                "Peso": get_form_field_value('peso', request.form),
-                "I.M.C": get_form_field_value('imc', request.form),
-                "Clasificación_IMC": get_form_field_value('clasificacion_imc', request.form),
+                
+                # Checkboxes - Usamos los nombres internos de las capturas (check_...)
+                "check_cesarea": "/Yes" if get_form_field_value('check_cesarea', request.form) else "",
+                "check_atermino": "/Yes" if get_form_field_value('check_atermino', request.form) else "",
+                "check_vaginal": "/Yes" if get_form_field_value('check_vaginal', request.form) else "",
+                "check_prematuro": "/Yes" if get_form_field_value('check_prematuro', request.form) else "",
+                "check_acorde": "/Yes" if get_form_field_value('check_acorde', request.form) else "",
+                "check_retraso": "/Yes" if get_form_field_value('check_retraso', request.form) else "",
+                "check_retrasogeneralizado": "/Yes" if get_form_field_value('check_retrasogeneralizado', request.form) else "",
+                "check_esquemac": "/Yes" if get_form_field_value('check_esquemac', request.form) else "",
+                "check_esquemai": "/Yes" if get_form_field_value('check_esquemai', request.form) else "",
+                "check_alergiano": "/Yes" if get_form_field_value('check_alergiano', request.form) else "",
+                "check_alergiasi": "/Yes" if get_form_field_value('check_alergiasi', request.form) else "",
+                "check_cirugiano": "/Yes" if get_form_field_value('check_cirugiano', request.form) else "",
+                "check_cirugiasi": "/Yes" if get_form_field_value('check_cirugiasi', request.form) else "", 
+                "check_visionsinalteracion": "/Yes" if get_form_field_value('check_visionsinalteracion', request.form) else "",
+                "check_visionrefraccion": "/Yes" if get_form_field_value('check_visionrefraccion', request.form) else "",
+                "check_audicionnormal": "/Yes" if get_form_field_value('check_audicionnormal', request.form) else "",
+                "check_hipoacusia": "/Yes" if get_form_field_value('check_hipoacusia', request.form) else "",
+                "check_tapondecerumen": "/Yes" if get_form_field_value('check_tapondecerumen', request.form) else "",
+                "check_sinhallazgos": "/Yes" if get_form_field_value('check_sinhallazgos', request.form) else "",
+                "check_caries": "/Yes" if get_form_field_value('check_caries', request.form) else "",
+                "check_apinamientodental": "/Yes" if get_form_field_value('check_apinamientodental', request.form) else "",
+                "check_retenciondental": "/Yes" if get_form_field_value('check_retenciondental', request.form) else "",
+                "check_frenillolingual": "/Yes" if get_form_field_value('check_frenillolingual', request.form) else "",
+                "check_hipertrofia": "/Yes" if get_form_field_value('check_hipertrofia', request.form) else "",
             }
 
-        print(f"DEBUG: Fields to fill in PDF for {form_type} form: {campos}")
 
+        print(f"DEBUG: Campos finales para el PDF ({form_type}): {campos}")
+        
+        # 4. Generación final del PDF
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({
                 NameObject("/AcroForm"): DictionaryObject()
             })
-
         writer.update_page_form_field_values(writer.pages[0], campos)
 
         writer._root_object["/AcroForm"].update({
             NameObject("/NeedAppearances"): BooleanObject(True)
         })
-
+        
         output = io.BytesIO()
         writer.write(output)
         output.seek(0)
@@ -800,8 +811,7 @@ def generar_pdf():
         flash(f"❌ Error al generar el PDF: {e}. Verifique el archivo base o los campos.", 'error')
         if 'current_nomina_id' in session:
             return redirect(url_for('relleno_formulario', nomina_id=session['current_nomina_id']))
-        return redirect(url_for('dashboard'))
-        
+        return redirect(url_for('dashboard'))        
 
 @app.route('/marcar_evaluado', methods=['POST'])
 def marcar_evaluado():

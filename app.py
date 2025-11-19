@@ -99,15 +99,15 @@ def format_rut_python(rut):
 # ---
 
 # app-31.py (Reemplazo de la función get_supabase_count)
+# app.py (Reemplazo de la función get_supabase_count)
+
 def get_supabase_count(filter_params=""):
     """
     Función auxiliar que obtiene un conteo de Supabase usando SERVICE HEADERS.
-    Añade el tiempo actual en milisegundos para romper la caché de la API en cada llamada.
-    Utiliza URL encoding para asegurar la validez de los filtros.
+    Utiliza URL encoding para asegurar la validez de los filtros y evitar errores 400.
     """
     
     # 1. Limpiar y Preparar Filtros
-    # Aseguramos que los parámetros de filtro NO comiencen con '&' al entrar
     if filter_params.startswith('&'):
         filter_params = filter_params[1:]
 
@@ -116,8 +116,7 @@ def get_supabase_count(filter_params=""):
     
     url_count = url_base
     if filter_params:
-        # 🟢 MODIFICACIÓN CLAVE: Codificamos el filtro. 'safe' permite mantener '=' y '&'
-        # sin codificar, lo cual es necesario para los operadores de Supabase.
+        # 🟢 MODIFICACIÓN CLAVE: Codificamos el filtro para manejar caracteres especiales.
         encoded_filter = urllib.parse.quote_plus(filter_params, safe='=&')
         url_count = f"{url_base}&{encoded_filter}"
 
@@ -140,7 +139,7 @@ def get_supabase_count(filter_params=""):
         # Imprime el error y la URL de la consulta para depuración
         print(f"❌ ERROR en get_supabase_count con URL: {url_count}. Error: {e}")
         return 0
-
+        
 # app-30.py (Define esta función en la sección de utilidades, antes de las rutas)
 
 # app-30.py (Función get_assigned_nomina_ids)
@@ -1900,6 +1899,8 @@ def descargar_pdf_alumno(alumno_id):
 
 # app.py (Reemplazo de la función dashboard_counts)
 
+# app.py (Reemplazo de la función dashboard_counts)
+
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
     """Calcula los contadores para la Coordinadora General basándose en las nóminas asignadas.
@@ -1908,11 +1909,10 @@ def dashboard_counts():
     coord_general_id_session = session.get('usuario_id')
     
     if session.get('usuario') != 'coordinadora' or not coord_general_id_session:
-        # Retorna cero si no es coordinadora o falta el ID.
         return jsonify({"success": True, "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0}), 200 
 
     try:
-        # 🟢 MODIFICACIÓN: Filtros seguros basados en la columna fiable (fecha_relleno)
+        # Filtro de Evaluados basado en la columna fiable (fecha_relleno)
         EVALUADO_FILTER = "fecha_relleno.not.is.null"
         
         # 1. Obtener IDs de nómina asignadas a la Coordinadora General
@@ -1934,13 +1934,16 @@ def dashboard_counts():
         # Iterar sobre cada nómina para obtener sus conteos individuales
         for nomina in assigned_nominas:
             
-            # Limpieza del ID
             raw_id_string = nomina['id']
-            # Quitamos espacios y saltos de línea para asegurar un ID limpio antes de usarlo en el filtro
-            nomina_id = re.sub(r'\s+', '', raw_id_string).strip() 
+            # 🟢 CORRECCIÓN CLAVE: Limpieza agresiva de caracteres no imprimibles antes de usar el ID.
+            nomina_id = str(raw_id_string).strip() 
+            nomina_id = ''.join(c for c in nomina_id if c.isprintable())
+            
             form_type = nomina['form_type'].strip()
             
-            if not nomina_id:
+            # Asumimos que un UUID limpio tiene exactamente 36 caracteres
+            if len(nomina_id) != 36: 
+                print(f"ADVERTENCIA: ID de nómina tiene longitud inusual ({len(nomina_id)}). Valor: [{nomina_id}] Saltando.")
                 continue
 
             # --- 1. Total Asignados para esta nómina ---

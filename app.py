@@ -1919,105 +1919,101 @@ def descargar_pdf_alumno(alumno_id):
 # app.py (Reemplazo de la función dashboard_counts completa)
 
 # app.py (Reemplazo de la función dashboard_counts completa)
-
-@app.route('/api/dashboard_counts')
+@app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
     print("🔍 Iniciando cálculo de dashboard_counts...")
 
-    # Obtener datos de sesión
-    rol_usuario = session.get('perfil')
-    usuario_id = session.get('user_id')
+    # ---------------------------
+    # VALIDACIÓN DE SESIÓN
+    # ---------------------------
+    user_role = session.get('usuario')
+    user_id = session.get('usuario_id')
 
-    if not rol_usuario or not usuario_id:
+    if not user_role or not user_id:
         print("❌ Usuario no autenticado")
-        return jsonify({"success": False, "error": "Usuario no autenticado"}), 401
+        return jsonify({"error": "Usuario no autenticado", "success": False}), 401
 
-    print(f"🧠 Usuario autenticado | Rol: {rol_usuario}, ID: {usuario_id}")
+    # Solo coordinadora general y admin tienen acceso
+    if user_role not in ['coordinadora', 'coordinadora_general', 'admin']:
+        print("❌ Usuario sin permisos")
+        return jsonify({"error": "Permisos insuficientes", "success": False}), 403
 
-    # Construcción de filtros para cargar nóminas
-    filtros = ""
+    coord_general_id = user_id
 
-    if rol_usuario == "coordinador_general":
-        # ✔️ El coordinador general solo ve las nóminas donde él es el responsable
-        filtros = f"coord_general_id=eq.{usuario_id}"
-
-    elif rol_usuario == "coordinador_especialidad":
-        # ✔️ Coordinador de especialidad ve sus nóminas
-        filtros = f"coordinador_id=eq.{usuario_id}"
-
-    elif rol_usuario == "administrador":
-        # ✔️ Admin ve todos
-        filtros = ""
-
-    else:
-        return jsonify({"success": False, "error": "Rol no válido"}), 403
-
-    # Construcción URL
-    if filtros:
-        url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=*&{filtros}"
-    else:
-        url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=*"
-
-    print("📡 Consultando nóminas:", url_nominas)
-
-    # Obtener nóminas
+    # ---------------------------
+    # OBTENER NÓMINAS ASIGNADAS
+    # ---------------------------
     try:
-        res = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
-        res.raise_for_status()
-        nominas = res.json()
-        print(f"📄 Nóminas encontradas: {len(nominas)}")
+        url_assigned_nominas = (
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?coord_general_id=eq.{coord_general_id}"
+            f"&form_type.not.is.null"
+            f"&select=id,form_type"
+        )
+
+        print(f"URL NOMINAS: {url_assigned_nominas}")
+
+        res_assigned = requests.get(url_assigned_nominas, headers=SUPABASE_SERVICE_HEADERS)
+        res_assigned.raise_for_status()
+        assigned_nominas = res_assigned.json()
 
     except Exception as e:
-        print("❌ Error obteniendo nóminas:", e)
-        return jsonify({"success": False, "error": "Error cargando nóminas"}), 500
+        print("❌ Error al obtener nóminas asignadas:", e)
+        return jsonify({"success": False, "error": str(e)}), 500
 
-    # Totales finales
-    total_neuro = 0
-    total_familiar = 0
+    # Si no tiene nóminas asignadas
+    if not assigned_nominas:
+        return jsonify({
+            "success": True,
+            "total_evaluados": 0,
+            "neurologia_count": 0,
+            "familiar_count": 0,
+            "evaluaciones_pendientes": 0
+        })
+
+    # ---------------------------
+    # CONTADORES
+    # ---------------------------
     total_evaluados = 0
     total_pendientes = 0
+    neuro_count = 0
+    familiar_count = 0
 
-    # Procesar cada nómina
-    for n in nominas:
-        nomina_id = n['id']
-        especialidad = n['especialidad'].lower()
+    for nom in assigned_nominas:
 
-        print(f"\n📝 Procesando nómina {nomina_id} ({especialidad})")
+        nomina_id = nom.get("id", "").strip()
+        form_type = nom.get("form_type", "").strip()
 
-        # Total alumnos
-        total = get_supabase_count(f"nomina_id=eq.{nomina_id}")
-        print("   ➤ Total:", total)
+        if not nomina_id:
+            continue
 
-        # Evaluados
-        evaluados = get_supabase_count(f"evaluado_flag=is.true&nomina_id=eq.{nomina_id}")
-        print("   ➤ Evaluados:", evaluados)
+        # Contar evaluados
+        count_evaluados = get_supabase_count(
+            f"nomina_id=eq.{nomina_id}&evaluado_flag.eq.true"
+        )
 
-        # Pendientes
-        pendientes = total - evaluados
-        print("   ➤ Pendientes:", pendientes)
+        # Contar pendientes
+        count_pendientes = get_supabase_count(
+            f"nomina_id=eq.{nomina_id}&evaluado_flag.eq.false"
+        )
 
-        # Sumar según especialidad
-        if especialidad == "neurologia":
-            total_neuro += total
-        elif especialidad == "medicina familiar":
-            total_familiar += total
+        total_evaluados += count_evaluados
+        total_pendientes += count_pendientes
 
-        total_evaluados += evaluados
-        total_pendientes += pendientes
+        if form_type == "neurologia":
+            neuro_count += count_evaluados
+        elif form_type == "medicina_familiar":
+            familiar_count += count_evaluados
 
-    # Enviar resultado final
-    print("\n✨ RESULTADO FINAL ✨")
-    print(f"Neurología: {total_neuro}")
-    print(f"Familiar: {total_familiar}")
-    print(f"Evaluados: {total_evaluados}")
-    print(f"Pendientes: {total_pendientes}")
-
+    # ---------------------------
+    # RESPUESTA FINAL
+    # ---------------------------
     return jsonify({
-        "neurologia_count": total_neuro,
-        "familiar_count": total_familiar,
+        "success": True,
         "total_evaluados": total_evaluados,
-        "evaluaciones_pendientes": total_pendientes,
-        "success": True
+        "neurologia_count": neuro_count,
+        "familiar_count": familiar_count,
+        "evaluaciones_pendientes": total_pendientes
     })
 
 # --- FIN MODIFICACIONES CLAVE PARA COORDINADOR DE ESCUELA ---

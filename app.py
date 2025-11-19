@@ -122,41 +122,34 @@ def format_rut_python(rut):
 
 def get_supabase_count(filter_params=""):
     """
-    Función auxiliar que obtiene un conteo de Supabase. Acepta el filtro como una cadena
-    de texto (string) y construye la URL de forma segura para evitar conflictos de diccionario.
+    Función segura que obtiene un conteo real usando Content-Range.
     """
-    
-    # Asegurar que el filtro no empiece con '&'
-    if isinstance(filter_params, str) and filter_params.startswith('&'):
-        filter_params = filter_params[1:]
+    if filter_params and not filter_params.startswith('&'):
+        filter_params = '&' + filter_params
 
-    # Parámetros base: select=count y el rompecaché (usamos params para esto)
-    params = {
-        'select': 'count',
-        't': int(datetime.now().timestamp() * 1000) 
-    }
-    
-    url_base = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+    current_time_ms = int(datetime.now().timestamp() * 1000)
+    cache_buster = f"&t={current_time_ms}"
 
-    # CRÍTICO: Si hay filtros en la cadena, los incluimos en la URL base.
-    if filter_params:
-        # Nota: requests.get() unirá params y la URL de forma segura.
-        url_base = f"{url_base}?{filter_params}"
+    # ❗ CAMBIO CLAVE → ahora usamos select=id
+    url_count = (
+        f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+        f"?select=id{filter_params}{cache_buster}"
+    )
 
     try:
-        # Enviamos la solicitud. Requests manejará la unión del resto de los parámetros (select, t).
-        response = requests.get(url_base, headers=SUPABASE_SERVICE_HEADERS, params=params)
+        response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS)
         response.raise_for_status()
 
-        # El conteo se devuelve en el encabezado Content-Range
+        # Conteo seguro desde Content-Range
         content_range = response.headers.get('Content-Range')
         if content_range:
-            count_str = content_range.split('/')[-1]
-            return int(count_str)
+            return int(content_range.split('/')[-1])
+
+        # Si no hay Content-Range, entonces la tabla está vacía:
         return 0
+
     except Exception as e:
-        # Usamos response.request.url para obtener la URL final que falló.
-        print(f"❌ ERROR en get_supabase_count con URL: {response.request.url if 'response' in locals() else 'URL no disponible'}. Error: {e}")
+        print(f"❌ ERROR en get_supabase_count con URL: {url_count}. Error: {e}")
         return 0
         
 # app-30.py (Define esta función en la sección de utilidades, antes de las rutas)

@@ -1856,20 +1856,20 @@ def descargar_pdf_alumno(alumno_id):
 # app-30.py (Versión de CONTINGENCIA FINAL)
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
-    """SOLUCIÓN DE CONTINGENCIA: Fuerza los contadores basados en la resta del total asignado
-       y el conteo de PENDIENTES, ya que el filtro NOT IS NULL está fallando en el entorno.
+    """Retorna el conteo total, pendiente y por especialidad de evaluaciones completadas.
+       USA EL FILTRO AGRESIVO DE CONTINGENCIA para obligar a Supabase a contar correctamente.
     """
     coord_id = session.get('usuario_id')
     
     if session.get('usuario') != 'coordinadora' or not coord_id:
+        # Devuelve 0s si el usuario no es coordinadora
         return jsonify({"success": True, "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0}), 200 
 
     try:
-        # 🟢 FILTROS QUE FUNCIONAN: 
-        # 1. Contar el total de asignados (sin filtro de estado)
-        # 2. Contar los PENDIENTES (usando IS NULL)
-        PENDIENTE_FILTER = "fecha_relleno.is.null" 
-        COMPLETADO_FILTER = "doctora_evaluadora_id.not.is.null" # Usaremos este para conteo directo, aunque fallen los totales.
+        # FILTRO DE CONTINGENCIA CRÍTICO: Combina dos filtros NOT NULL de diferentes tipos de datos
+        # para forzar al motor de la API a ejecutar la consulta sin ignorar el filtro.
+        # doctora_evaluadora_id.not.is.null (UUID) AND estado_general.gt. (Texto mayor que vacío)
+        COMPLETADO_FILTER = "doctora_evaluadora_id.not.is.null&estado_general.gt." 
         
         # 1. Obtener IDs de nómina
         url_assigned_nominas = (
@@ -1884,7 +1884,8 @@ def dashboard_counts():
 
         neuro_ids = [nom['id'] for nom in assigned_nominas if nom.get('form_type') == 'neurologia']
         familiar_ids = [nom['id'] for nom in assigned_nominas if nom.get('form_type') == 'medicina_familiar']
-        all_assigned_ids_str = ",".join(neuro_ids + familiar_ids)
+        all_assigned_ids = neuro_ids + familiar_ids
+        all_assigned_ids_str = ",".join(all_assigned_ids)
         
         if not all_assigned_ids_str:
              return jsonify({
@@ -1894,26 +1895,26 @@ def dashboard_counts():
         
         BASE_NOMINA_FILTER = f"nomina_id=in.({all_assigned_ids_str})"
         
-        # 2. Conteo Total de ALUMNOS ASIGNADOS (24)
+        # 2. Conteo Total de ALUMNOS ASIGNADOS
         total_alumnos_en_nominas = get_supabase_count(BASE_NOMINA_FILTER)
         
-        # 3. Conteo de ALUMNOS EVALUADOS REALES (Contar filas que SÍ cumplen)
+        # 3. Conteo de ALUMNOS EVALUADOS (Contar COMPLETADOS con filtro directo)
         filter_total_evaluados = f"{COMPLETADO_FILTER}&{BASE_NOMINA_FILTER}"
-        # Este valor DEBERÍA devolver 2 (los que tú hiciste), pero fallaba antes devolviendo 12/24.
-        # Ahora, lo forzamos con el filtro, asumiendo que al menos para los totales por filtro simple funciona:
-        total_evaluados = get_supabase_count(filter_total_evaluados) 
-
+        total_evaluados = get_supabase_count(filter_total_evaluados)
+        
         # 4. Desglose por especialidad (CONTEO DIRECTO)
         
         neuro_count = 0 
         if neuro_ids:
             neuro_ids_str = ",".join(neuro_ids)
+            # Filtro: Completado (AGRESIVO) AND en nóminas de Neurología
             filter_neuro_count = f"{COMPLETADO_FILTER}&nomina_id=in.({neuro_ids_str})"
             neuro_count = get_supabase_count(filter_neuro_count) 
             
         familiar_count = 0
         if familiar_ids:
             familiar_ids_str = ",".join(familiar_ids)
+            # Filtro: Completado (AGRESIVO) AND en nóminas de Medicina Familiar
             filter_familiar_count = f"{COMPLETADO_FILTER}&nomina_id=in.({familiar_ids_str})"
             familiar_count = get_supabase_count(filter_familiar_count)
             

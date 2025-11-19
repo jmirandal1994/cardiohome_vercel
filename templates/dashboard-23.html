@@ -778,14 +778,14 @@
                         <li><a href="#" class="nav-link" data-section="gestionar-proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
 
                     {% elif usuario == 'coordinadora' %}
-                        {# MODIFICACIÓN 1: Eliminado el enlace a welcome-section y activa por defecto: coord-performance #}
+                        {# MODIFICACIÓN PARA COORDINADORA: Eliminado el enlace a welcome-section y activa por defecto: coord-performance #}
                         <li><a href="#" class="nav-link active" data-section="coord-performance"><i class="fa-solid fa-gauge-high"></i> Rendimiento en Vivo</a></li>
                         <li><a href="#" class="nav-link" data-section="coord-evaluaciones"><i class="fa-solid fa-folder-tree"></i> Evaluaciones por Establecimiento</a></li>
                         <li><a href="#" class="nav-link" data-section="coord-contact"><i class="fa-solid fa-envelope"></i> Solicitudes</a></li>
                     
                     {% elif usuario == 'coordinador_escuela' %}
-                        <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical"></i> Bienvenida</a></li>
-                        <li><a href="#" class="nav-link" data-section="school-dashboard"><i class="fa-solid fa-school"></i> Mis Establecimientos</a></li>
+                        {# MODIFICACIÓN PARA COORDINADOR ESCUELA: Eliminado el enlace a welcome-section y activa por defecto: school-dashboard #}
+                        <li><a href="#" class="nav-link active" data-section="school-dashboard"><i class="fa-solid fa-school"></i> Mis Establecimientos</a></li>
                         <li><a href="#" class="nav-link" data-section="school-contact"><i class="fa-solid fa-envelope"></i> Contacto / Soporte</a></li>
 
                     {% else %}
@@ -801,8 +801,8 @@
         </aside>
 
         <main class="flex-1 overflow-y-auto p-10 bg-gray-50 main-content">
-            {# MODIFICACIÓN 3: El welcome-section se muestra solo si el usuario NO es 'coordinadora' #}
-            {% if usuario != 'coordinadora' %}
+            {# MODIFICACIÓN PRINCIPAL: Ocultar welcome-section si el usuario es 'coordinadora' O 'coordinador_escuela' #}
+            {% if usuario != 'coordinadora' and usuario != 'coordinador_escuela' %}
             <div id="welcome-section" class="content-section active">
                 <div class="summary-panel">
                     <h2>Resumen del Proyecto</h2>
@@ -1193,7 +1193,7 @@
                 </div>
 
             {% elif usuario == 'coordinadora' %}
-            {# MODIFICACIÓN 3: Al inicio, esta es la sección activa por defecto #}
+            {# MODIFICACIÓN: Esta es la sección activa por defecto para 'coordinadora' #}
             <div id="coord-performance" class="content-section active">
                     <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento en Vivo</h2>
                     <div class="summary-panel">
@@ -1373,7 +1373,8 @@
                 </div>
 
             {% elif usuario == 'coordinador_escuela' %}
-                <div id="school-dashboard" class="content-section">
+                {# MODIFICACIÓN: Esta es la sección activa por defecto para 'coordinador_escuela' #}
+                <div id="school-dashboard" class="content-section active">
                     <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">
                         <i class="fa-solid fa-school text-secondary-blue mr-2"></i> Establecimientos Asignados
                     </h2>

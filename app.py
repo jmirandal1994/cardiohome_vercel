@@ -600,19 +600,15 @@ def relleno_formulario(nomina_id):
 # Asegúrate de que todas las demás importaciones necesarias (flask, get_form_field_value, format_rut_python, etc.) 
 # estén definidas al inicio de tu app.py
 
+# REEMPLAZA COMPLETAMENTE ESTA FUNCIÓN EN TU app.py
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
-    # Usamos los datos del formulario directamente
     estudiante_id = request.form.get('estudiante_id')
     nomina_id = request.form.get('nomina_id')
-    
-    # Obtener el form_type y doctora_id_para_formulario de la sesión
     form_type = session.get('current_form_type', 'neurologia') 
-    
-    # 1. PREPARACIÓN DE DATOS BASE
     current_doctora_id = session.get('usuario_id')
     
     print(f"DEBUG: generar_pdf - Solicitud para generar PDF para estudiante_id={estudiante_id}, nomina_id={nomina_id}, form_type={form_type}, doctora_id={current_doctora_id}")
@@ -626,7 +622,6 @@ def generar_pdf():
     # Campos base necesarios para el PDF (rut formateado, fechas formateadas)
     nombre = get_form_field_value('nombre', request.form)
     rut = format_rut_python(get_form_field_value('rut', request.form))
-    
     fecha_nac_formato = ''
     fecha_nac_original_str = get_form_field_value('fecha_nacimiento_original', request.form)
     if fecha_nac_original_str:
@@ -638,10 +633,10 @@ def generar_pdf():
     edad = get_form_field_value('edad', request.form)
     nacionalidad = get_form_field_value('nacionalidad', request.form)
 
-    # --- FUNCIÓN AUXILIAR PARA OBTENER VALOR DE CHECKBOX (retorna el valor si existe, o "") ---
+    # --- FUNCIÓN AUXILIAR PARA OBTENER VALOR DE CHECKBOX ---
     def map_check_value(field_name):
         return get_form_field_value(field_name, request.form) or ""
-    # ------------------------------------------------------------------------------------------
+    # --------------------------------------------------------
 
     sexo_f_pdf = ""
     sexo_m_pdf = ""
@@ -662,14 +657,15 @@ def generar_pdf():
         except ValueError:
             pass
 
+    # USANDO EL CAMPO OCULTO QUE CONTIENE LA FECHA DD/MM/YYYY
     fecha_reeval_pdf = get_form_field_value('fecha_reevaluacion_pdf', request.form)
 
-    # 3. LÓGICA DE SELECCIÓN DE PLANTILLA Y VALIDACIÓN DE ARCHIVO
+
+    # 2. LÓGICA DE SELECCIÓN DE PLANTILLA
     base_dir = os.path.dirname(os.path.abspath(__file__))
     pdf_base_path = ''
     
     if form_type == 'neurologia':
-        # (Lógica para buscar PDF específico por doctora logueada o usar el genérico)
         specific_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{current_doctora_id}.pdf"
         full_pdf_bases_dir_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR)
         specific_pdf_path = os.path.join(full_pdf_bases_dir_path, specific_pdf_filename)
@@ -698,7 +694,7 @@ def generar_pdf():
             return redirect(url_for('relleno_formulario', nomina_id=session['current_nomina_id']))
         return redirect(url_for('dashboard'))
 
-    # 4. Lógica de Relleno y Generación
+    # 3. Lógica de Relleno y Generación
     try:
         reader = PdfReader(pdf_base_path)
         writer = PdfWriter()
@@ -718,7 +714,7 @@ def generar_pdf():
                 "diagnostico_2": get_form_field_value('diagnostico', request.form), 
                 "estado_general": get_form_field_value('estado', request.form), 
                 "fecha_evaluacion": fecha_evaluacion_formatted, 
-                "fecha_reevaluacion": fecha_reeval_pdf,
+                "fecha_reevaluacion": fecha_reeval_pdf, # USANDO LA CLAVE CORRECTA
                 "derivaciones": get_form_field_value('derivaciones', request.form),
                 "sexo_f": sexo_f_pdf,
                 "sexo_m": sexo_m_pdf,
@@ -741,14 +737,13 @@ def generar_pdf():
                 "sexo_m": sexo_m_pdf,
                 
                 # Diagnósticos, Clasificación, Fechas
-                # CORRECCIÓN CLAVE: Usamos el campo UNIFICADO para ambos diagnósticos
                 "diagnostico_1": diagnostico_unificado_valor,
                 "diagnostico_2": diagnostico_unificado_valor, 
                 "diagnostico_complementario": get_form_field_value('diagnostico_complementario', request.form),
                 "clasificacion": get_form_field_value('clasificacion_imc', request.form),
                 "derivaciones": get_form_field_value('derivaciones', request.form),
                 "fecha_evaluacion": fecha_evaluacion_formatted,
-                "fecha_reevaluacion": fecha_reeval_pdf,
+                "fecha_reevaluacion": fecha_reeval_pdf, # USANDO LA CLAVE CORRECTA
                 
                 # Examen Físico / Medidas
                 "altura": get_form_field_value('altura', request.form),

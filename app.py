@@ -123,14 +123,29 @@ def format_rut_python(rut):
 def get_supabase_count(filter_params=""):
     """
     Función segura que obtiene un conteo real usando Content-Range.
+    Corrige filtros y sintaxis Supabase.
     """
-    if filter_params and not filter_params.startswith('&'):
-        filter_params = '&' + filter_params
 
+    # --- NORMALIZAR FILTROS ---
+    # Reemplazar sintaxis inválida: fecha_relleno.not.is.null → fecha_relleno=not.is.null
+    if "fecha_relleno.not.is.null" in filter_params:
+        filter_params = filter_params.replace("fecha_relleno.not.is.null", "fecha_relleno=not.is.null")
+
+    if "fecha_relleno.not.is.null" in filter_params:
+        filter_params = filter_params.replace("fecha_relleno.not.is.null", "fecha_relleno=not.is.null")
+
+    # Reemplazar cualquier ".not." por "=not." si existiera
+    filter_params = filter_params.replace(".not.", "=not.")
+
+    # Asegurar que parta con "&"
+    if filter_params and not filter_params.startswith("&"):
+        filter_params = "&" + filter_params
+
+    # Cache buster
     current_time_ms = int(datetime.now().timestamp() * 1000)
     cache_buster = f"&t={current_time_ms}"
 
-    # ❗ CAMBIO CLAVE → ahora usamos select=id
+    # URL correcta
     url_count = (
         f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
         f"?select=id{filter_params}{cache_buster}"
@@ -140,12 +155,11 @@ def get_supabase_count(filter_params=""):
         response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS)
         response.raise_for_status()
 
-        # Conteo seguro desde Content-Range
-        content_range = response.headers.get('Content-Range')
+        content_range = response.headers.get("Content-Range")
         if content_range:
-            return int(content_range.split('/')[-1])
+            # Ejemplo: 0-9/10 → tomamos el total (10)
+            return int(content_range.split("/")[-1])
 
-        # Si no hay Content-Range, entonces la tabla está vacía:
         return 0
 
     except Exception as e:

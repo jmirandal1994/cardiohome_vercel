@@ -778,11 +778,13 @@
                         <li><a href="#" class="nav-link" data-section="gestionar-proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
 
                     {% elif usuario == 'coordinadora' %}
-                        <li><a href="#" class="nav-link" data-section="coord-performance"><i class="fa-solid fa-gauge-high"></i> Rendimiento en Vivo</a></li>
+                        {# MODIFICACIÓN 1: Eliminado el enlace a welcome-section y activa por defecto: coord-performance #}
+                        <li><a href="#" class="nav-link active" data-section="coord-performance"><i class="fa-solid fa-gauge-high"></i> Rendimiento en Vivo</a></li>
                         <li><a href="#" class="nav-link" data-section="coord-evaluaciones"><i class="fa-solid fa-folder-tree"></i> Evaluaciones por Establecimiento</a></li>
                         <li><a href="#" class="nav-link" data-section="coord-contact"><i class="fa-solid fa-envelope"></i> Solicitudes</a></li>
                     
                     {% elif usuario == 'coordinador_escuela' %}
+                        <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical"></i> Bienvenida</a></li>
                         <li><a href="#" class="nav-link" data-section="school-dashboard"><i class="fa-solid fa-school"></i> Mis Establecimientos</a></li>
                         <li><a href="#" class="nav-link" data-section="school-contact"><i class="fa-solid fa-envelope"></i> Contacto / Soporte</a></li>
 
@@ -799,6 +801,8 @@
         </aside>
 
         <main class="flex-1 overflow-y-auto p-10 bg-gray-50 main-content">
+            {# MODIFICACIÓN 3: El welcome-section se muestra solo si el usuario NO es 'coordinadora' #}
+            {% if usuario != 'coordinadora' %}
             <div id="welcome-section" class="content-section active">
                 <div class="summary-panel">
                     <h2>Resumen del Proyecto</h2>
@@ -834,6 +838,7 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
             
             {% if usuario == 'admin' %}
                 <div id="admin-performance" class="content-section">
@@ -1188,7 +1193,8 @@
                 </div>
 
             {% elif usuario == 'coordinadora' %}
-            <div id="coord-performance" class="content-section">
+            {# MODIFICACIÓN 3: Al inicio, esta es la sección activa por defecto #}
+            <div id="coord-performance" class="content-section active">
                     <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento en Vivo</h2>
                     <div class="summary-panel">
                         <h2>Resumen del Proyecto</h2>

@@ -86,32 +86,30 @@ def format_rut_python(rut):
 
 # app-30.py (VERSIÓN FINAL CON PREFER HEADER Y MANEJO DE FILTROS)
 
-# (Asegúrate de que esta sea tu versión de get_supabase_count en app.py)
+# Asegúrate de que 'import uuid' esté al inicio de app.py
+
 def get_supabase_count(filter_params=""):
     """Función auxiliar para obtener un conteo de Supabase usando SERVICE HEADERS.
-       Asegura que 'count=exact' se use para el Content-Range.
+       AÑADE UN UUID ALEATORIO PARA ROMPER LA CACHÉ DE LA API EN CADA LLAMADA (CRÍTICO).
     """
     
-    # Aseguramos que el filtro se una con '&' o se use solo.
     if filter_params and not filter_params.startswith('&'):
         filter_params = '&' + filter_params
         
-    # Construir la URL: Usar 'select=count' y unir el filtro.
-    # Nota clave: Supabase usa el encabezado 'Prefer: count=exact' y 'select=id' o 'select=*' para forzar el Content-Range.
-    # Sin embargo, ya que solo queremos el conteo, usaremos la forma más segura.
-    url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count{filter_params}"
+    # 🟢 CAMBIO CLAVE: Añadir un parámetro de consulta UUID único para romper la caché de la API.
+    cache_buster = f"&cache_buster={uuid.uuid4()}" 
+    
+    # Construir la URL con el filtro y el rompecaché
+    url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count{filter_params}{cache_buster}"
     
     try:
-        # Nota: Usamos params={'limit': 1} solo para optimizar la petición.
         response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS)
         response.raise_for_status()
 
-        # El conteo se devuelve en el encabezado Content-Range
         content_range = response.headers.get('Content-Range')
         if content_range:
             count_str = content_range.split('/')[-1]
             return int(count_str)
-        # Si no hay Content-Range, asumimos 0 (o error)
         return 0
     except Exception as e:
         print(f"ERROR en get_supabase_count con URL: {url_count}. Error: {e}")

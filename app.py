@@ -514,7 +514,7 @@ def relleno_formulario(nomina_id):
     url_estudiantes = (
         f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
         f"?nomina_id=eq.{nomina_id}"
-        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,si_2,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc"
+        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,si_2,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones" 
         f"&order=nombre.asc"
     )
 
@@ -550,6 +550,11 @@ def relleno_formulario(nomina_id):
             if 'familiar' in tipo_nomina_check or 'medicina familiar' in tipo_nomina_check:
                 if est.get('si_2'):
                     est['check_cirugiasi'] = est.get('si_2') 
+
+                # 💡 CORRECCIÓN 2: Mapeo de género (sexo) a los checkboxes para que aparezcan marcados
+                sexo_db = (est.get('sexo') or "").upper()
+                est['genero_f'] = (sexo_db == 'F')
+                est['genero_m'] = (sexo_db == 'M')
             
             estudiantes.append(est)
         
@@ -723,7 +728,6 @@ def generar_pdf():
             # --- OBTENER VALOR UNIFICADO DEL DIAGNÓSTICO ---
             diagnostico_unificado_valor = get_form_field_value('diagnostico_unificado', request.form)
             # --- OBTENER VALOR DE INDICACIONES ---
-            # CORRECCIÓN CLAVE: El nombre del campo HTML es 'indicaciones'
             indicaciones_valor = get_form_field_value('indicaciones', request.form) 
 
             # CAMPOS DE MEDICINA FAMILIAR (USANDO NOMBRES INTERNOS CORTOS DE LAS CAPTURAS)
@@ -884,6 +888,19 @@ def marcar_evaluado():
             if value and value.strip():
                 return True
             return get_form_field_value(field_name, request.form, return_none_if_empty=True)
+            
+        # 💡 CORRECCIÓN 1: Capturar y mapear el género (sexo) para guardar en el campo maestro 'sexo'
+        genero_f_check = get_form_field_value('genero_f', request.form)
+        genero_m_check = get_form_field_value('genero_m', request.form)
+        sexo_final = None
+        if genero_f_check:
+            sexo_final = 'F'
+        elif genero_m_check:
+            sexo_final = 'M'
+        # Sobreescribir el campo 'sexo' en el payload base con el valor final
+        update_data['sexo'] = sexo_final
+        # -----------------------------------------------------------------------------------------
+
 
         # Campos específicos de Medicina Familiar
         update_data.update({
@@ -894,7 +911,7 @@ def marcar_evaluado():
             'clasificacion': get_form_field_value('clasificacion_imc', request.form),
             'derivaciones': get_form_field_value('derivaciones', request.form),
             
-            # 💡 Mapeo Corregido: Guardado del campo 'indicaciones'
+            # Mapeo Corregido: Guardado del campo 'indicaciones'
             'indicaciones': get_form_field_value('indicaciones', request.form), 
             
             # Observaciones

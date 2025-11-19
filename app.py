@@ -1872,6 +1872,8 @@ def descargar_pdf_alumno(alumno_id):
 # import uuid
 # ...
 
+# Asegúrate de que las importaciones de requests, uuid, y datetime estén al inicio de app.py
+
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
     """Calcula los contadores usando la lógica de contingencia más el rompedor de caché
@@ -1879,14 +1881,14 @@ def dashboard_counts():
     """
     coord_id = session.get('usuario_id')
     
+    # Filtro de completado robusto (el que usaría la API si no fallara el filtro)
+    COMPLETADO_FILTER = "doctora_evaluadora_id.not.is.null&estado_general.gt." 
+    PENDIENTE_FLAG_FILTER = "evaluado_flag.eq.false"
+    
     if session.get('usuario') != 'coordinadora' or not coord_id:
         return jsonify({"success": True, "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0}), 200 
 
     try:
-        # Filtro para identificar estudiantes COMPLETADOS 
-        COMPLETADO_FILTER = "doctora_evaluadora_id.not.is.null&estado_general.gt." 
-        PENDIENTE_FLAG_FILTER = "evaluado_flag.eq.false" # Filtro booleano para Pendientes
-        
         # 1. Obtener IDs de nómina
         url_assigned_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
@@ -1901,9 +1903,13 @@ def dashboard_counts():
         neuro_ids = [nom['id'] for nom in assigned_nominas if nom.get('form_type') == 'neurologia']
         familiar_ids = [nom['id'] for nom in assigned_nominas if nom.get('form_type') == 'medicina_familiar']
         
-        # 🟢 CORRECCIÓN CLAVE DEL ERROR 400: Limpiar espacios y unir solo con comas
+        # 🟢 CORRECCIÓN CLAVE DEL ERROR 400: Limpiar y unir la lista de IDs
         all_assigned_ids = neuro_ids + familiar_ids
+        
+        # 1. Limpiar espacios, tabulaciones y nuevas líneas de cada ID
         clean_assigned_ids = [id_str.strip() for id_str in all_assigned_ids if id_str]
+        
+        # 2. Unir la lista con una coma, SIN ESPACIOS, para crear la cadena final del filtro IN
         all_assigned_ids_str = ",".join(clean_assigned_ids)
         
         if not all_assigned_ids_str:
@@ -1918,7 +1924,7 @@ def dashboard_counts():
         filter_total_evaluados = f"{COMPLETADO_FILTER}&{BASE_NOMINA_FILTER}"
         total_evaluados = get_supabase_count(filter_total_evaluados)
         
-        # 4. Cálculo de Pendientes (Por conteo booleano)
+        # 4. Cálculo de Pendientes (Contar PENDIENTES con filtro booleano)
         filter_total_pendientes = f"{PENDIENTE_FLAG_FILTER}&{BASE_NOMINA_FILTER}"
         total_pendientes = get_supabase_count(filter_total_pendientes)
 
@@ -1926,17 +1932,17 @@ def dashboard_counts():
         
         neuro_count = 0 
         if neuro_ids:
-            neuro_ids_str = ",".join(neuro_ids)
+            neuro_ids_str = ",".join([id_str.strip() for id_str in neuro_ids if id_str])
             filter_neuro_count = f"{COMPLETADO_FILTER}&nomina_id=in.({neuro_ids_str})"
             neuro_count = get_supabase_count(filter_neuro_count) 
             
         familiar_count = 0
         if familiar_ids:
-            familiar_ids_str = ",".join(familiar_ids)
+            familiar_ids_str = ",".join([id_str.strip() for id_str in familiar_ids if id_str])
             filter_familiar_count = f"{COMPLETADO_FILTER}&nomina_id=in.({familiar_ids_str})"
             familiar_count = get_supabase_count(filter_familiar_count)
             
-        # 6. Enviamos el resultado (Los totales serán consistentes: Asignados = Evaluados + Pendientes)
+        # 6. Enviamos el resultado
         return jsonify({
             "success": True, 
             "total_evaluados": total_evaluados,
@@ -1946,14 +1952,13 @@ def dashboard_counts():
         })
 
     except requests.exceptions.RequestException as e:
+        # Esto captura el error 400 Bad Request
         print(f"❌ ERROR DE CONEXIÓN CON SUPABASE EN DASHBOARD_COUNTS: {e}")
-        # Retornamos el error 500 para el cliente cuando hay un fallo de conexión/API
         return jsonify({"success": False, "message": f"Error de conexión con la BD: {str(e)}"}), 500
     except Exception as e:
         print(f"❌ ERROR INESPERADO AL CALCULAR CONTEOS: {e}")
         return jsonify({"success": False, "message": f"Error interno: {str(e)}"}), 500
-
-
+        
 
 # --- FIN MODIFICACIONES CLAVE PARA COORDINADOR DE ESCUELA ---
 

@@ -1933,89 +1933,86 @@ def descargar_pdf_alumno(alumno_id):
 
 # app.py (Reemplazo de la función dashboard_counts completa)
 
-# --- RUTA /api/dashboard_counts REVISADA Y FIABLE ---
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
     print("🔍 Iniciando cálculo de dashboard_counts...")
 
-    user_role = session.get('usuario')            # tal como lo tienes en login
+    user_role = session.get('usuario')
     user_id = session.get('usuario_id')
 
     if not user_role or not user_id:
         print("❌ Usuario no autenticado")
         return jsonify({"error": "Usuario no autenticado", "success": False}), 401
 
-    # Solo coordinadora / admin pueden ver estos contadores
-    if user_role not in ['coordinadora', 'coordinadora_general', 'admin', 'coordinador_general']:
+    if user_role not in ['coordinadora', 'coordinadora_general', 'coordinador_general', 'admin']:
         print("❌ Usuario sin permisos")
         return jsonify({"error": "Permisos insuficientes", "success": False}), 403
 
-    # Filtrar nóminas asignadas al coordinador (admin verá todas)
+    # --- CONSULTA DE NOMINAS MEDICAS ---
     try:
         if user_role == 'admin':
-            url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,form_type,especialidad"
+            url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,tipo_nomina"
         else:
-            # coord_general_id en la tabla nominas_medicas
-            url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?coord_general_id=eq.{user_id}&select=id,form_type,especialidad"
+            url_nominas = (
+                f"{SUPABASE_URL}/rest/v1/nominas_medicas?"
+                f"coord_general_id=eq.{user_id}&select=id,tipo_nomina"
+            )
 
-        print(f"DEBUG: URL nominas -> {url_nominas}")
+        print("DEBUG URL NOMINAS:", url_nominas)
+
         res_n = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
         res_n.raise_for_status()
         nominas = res_n.json()
-        print(f"DEBUG: nominas recibidas: {nominas}")
+
+        print("NOMINAS RECIBIDAS:", nominas)
 
     except Exception as e:
-        print(f"❌ Error al obtener nóminas: {e}")
+        print("❌ Error al obtener nóminas:", e)
         return jsonify({"success": False, "error": str(e)}), 500
 
     # Desduplicar por id (por si acaso)
-    unique_nominas = {}
-    for item in nominas:
-        nid = (item.get('id') or "").strip()
-        if nid:
-            unique_nominas[nid] = item
-    nominas = list(unique_nominas.values())
-    print(f"DEBUG: nominas desduplicadas: {len(nominas)}")
+    nominas_unicas = { n["id"]: n for n in nominas if n.get("id") }
+    nominas = list(nominas_unicas.values())
 
-    # Totales
-    total_neuro = 0
-    total_familiar = 0
+    # --- CONTADORES ---
     total_evaluados = 0
     total_pendientes = 0
+    neuro_count = 0
+    familiar_count = 0
 
-    # Iterar por cada nómina y sumar EVALUADOS (no totales) por especialidad
     for nom in nominas:
-        nomina_id = nom.get('id', '').strip()
-        especialidad = (nom.get('especialidad') or nom.get('form_type') or '').lower().strip()
 
-        if not nomina_id:
+        nom_id = nom.get("id")
+        tipo = (nom.get("tipo_nomina") or "").lower().strip()
+
+        if not nom_id:
             continue
 
-        # Conteos: usamos eq.true / eq.false
-        evaluados = get_supabase_count(f"nomina_id=eq.{nomina_id}&evaluado_flag=eq.true")
-        pendientes = get_supabase_count(f"nomina_id=eq.{nomina_id}&evaluado_flag=eq.false")
-        total = evaluados + pendientes  # opcional, si quieres validar
+        evaluados = get_supabase_count(
+            f"nomina_id=eq.{nom_id}&evaluado_flag=eq.true"
+        )
 
-        print(f"DEBUG: nomina {nomina_id} - total:{total} evaluados:{evaluados} pendientes:{pendientes} especialidad:{especialidad}")
+        pendientes = get_supabase_count(
+            f"nomina_id=eq.{nom_id}&evaluado_flag=eq.false"
+        )
 
-        # Sumar por especialidad SOLO los evaluados (te interesa "realizados")
-        if "neurolog" in especialidad:  # matchea 'neurologia' o 'neurología'
-            total_neuro += evaluados
-        elif "familiar" in especialidad:
-            total_familiar += evaluados
+        print(f"DEBUG NOMINA {nom_id} → {tipo} | Evaluados={evaluados}, Pendientes={pendientes}")
 
         total_evaluados += evaluados
         total_pendientes += pendientes
 
-    # Respuesta final
+        if "neuro" in tipo:
+            neuro_count += evaluados
+        elif "familiar" in tipo or "medicina" in tipo:
+            familiar_count += evaluados
+
     return jsonify({
-        "neurologia_count": total_neuro,
-        "familiar_count": total_familiar,
+        "success": True,
         "total_evaluados": total_evaluados,
         "evaluaciones_pendientes": total_pendientes,
-        "success": True
+        "neurologia_count": neuro_count,
+        "familiar_count": familiar_count
     })
-
 
 # --- FIN MODIFICACIONES CLAVE PARA COORDINADOR DE ESCUELA ---
 

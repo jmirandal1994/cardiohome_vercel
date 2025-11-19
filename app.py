@@ -108,48 +108,33 @@ def format_rut_python(rut):
 # import requests 
 # ...
 
+# app.py (Reemplazo de la función get_supabase_count)
 def get_supabase_count(filter_params=""):
     """
-    Función auxiliar para conteo. Utiliza la codificación manual para evitar errores 400.
+    Función auxiliar de conteo. Asume que filter_params ya está codificado si es necesario.
     """
     
-    # 1. Limpiar Filtros
     if filter_params.startswith('&'):
         filter_params = filter_params[1:]
 
-    # 2. Codificación Manual de Filtros: Reemplazamos los espacios por '+' y codificamos solo los valores.
-    # CRÍTICO: Para Supabase, codificar el ID ya limpio es suficiente.
-    if filter_params:
-        # Buscamos el ID que sigue al 'eq.' (UUID de 36 caracteres)
-        match = re.search(r'eq\.([\w-]+)', filter_params)
-        if match:
-            # Reemplazamos el ID con el valor codificado (el UUID)
-            raw_uuid = match.group(1)
-            encoded_uuid = urllib.parse.quote(raw_uuid)
-            filter_params = filter_params.replace(raw_uuid, encoded_uuid)
-            
-        # Para filtros más complejos como 'not.is.null', el filtro ya debería ser seguro si no tiene espacios.
-    
-    # 3. Construir la URL final (sin usar quote_plus en toda la cadena)
+    # Construimos la URL con el filtro.
     url_count = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?select=count"
     
     if filter_params:
-        # Concatenamos el filtro de forma simple.
         url_count = f"{url_count}&{filter_params}"
 
-    # 4. Añadir Rompecaché
+    # Añadir Rompecaché
     current_time_ms = int(datetime.now().timestamp() * 1000)
     cache_buster = f"&t={current_time_ms}" 
     url_count = f"{url_count}{cache_buster}"
     
-    # Imprimir URL para verificación (Paso Final de Seguridad)
+    # Imprimir URL para verificación
     print(f"DEBUG: URL de Conteo Final (Verificación 400): {url_count}")
 
     try:
         response = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS)
-        response.raise_for_status() # Lanza error si el status es 4xx o 5xx.
+        response.raise_for_status()
 
-        # ... (Resto del código de conteo es el mismo) ...
         content_range = response.headers.get('Content-Range')
         if content_range:
             count_str = content_range.split('/')[-1]
@@ -1920,10 +1905,12 @@ def descargar_pdf_alumno(alumno_id):
 
 # app.py (Reemplazo de la función dashboard_counts)
 
+# app.py (Reemplazo de la función dashboard_counts)
+
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
     """Calcula los contadores para la Coordinadora General basándose en las nóminas asignadas.
-       Usa 'fecha_relleno' para determinar Evaluados/Pendientes para mayor fiabilidad."""
+       Aplica codificación de URL directamente al UUID para eliminar el error 400."""
     
     coord_general_id_session = session.get('usuario_id')
     
@@ -1954,18 +1941,23 @@ def dashboard_counts():
         for nomina in assigned_nominas:
             
             raw_id_string = nomina['id']
-            # 🟢 CORRECCIÓN CLAVE: Limpieza agresiva de caracteres no imprimibles antes de usar el ID.
-            nomina_id = str(raw_id_string).strip() 
-            nomina_id = ''.join(c for c in nomina_id if c.isprintable())
+            # Limpieza: quitamos espacios y caracteres no imprimibles.
+            nomina_id_uncleaned = str(raw_id_string).strip() 
+            nomina_id_clean = ''.join(c for c in nomina_id_uncleaned if c.isprintable())
             
+            # 🟢 MODIFICACIÓN CLAVE: Codificación de URL. Solo codificamos el valor del UUID,
+            # manteniendo el filtro base de Supabase limpio.
+            nomina_id = urllib.parse.quote_plus(nomina_id_clean)
+
             form_type = nomina['form_type'].strip()
             
-            # Asumimos que un UUID limpio tiene exactamente 36 caracteres
-            if len(nomina_id) != 36: 
-                print(f"ADVERTENCIA: ID de nómina tiene longitud inusual ({len(nomina_id)}). Valor: [{nomina_id}] Saltando.")
+            # Asumimos que un UUID limpio tiene exactamente 36 caracteres antes de codificar
+            if len(nomina_id_clean) != 36: 
+                print(f"ADVERTENCIA: ID de nómina tiene longitud inusual ({len(nomina_id_clean)}). Valor: [{nomina_id_clean}] Saltando.")
                 continue
 
             # --- 1. Total Asignados para esta nómina ---
+            # El filtro usa el ID codificado.
             filter_total = f"nomina_id=eq.{nomina_id}" 
             count_total = get_supabase_count(filter_total)
             

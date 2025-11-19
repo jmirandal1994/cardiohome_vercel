@@ -650,7 +650,6 @@ def generar_pdf():
         sexo_f_pdf = "X" if sexo_form_value == "F" else "" 
         sexo_m_pdf = "X" if sexo_form_value == "M" else ""
     elif form_type == 'medicina_familiar':
-        # Mapeo de género de Medicina Familiar (F/M como campos internos)
         sexo_f_pdf = "X" if get_form_field_value('genero_f', request.form) else ""
         sexo_m_pdf = "X" if get_form_field_value('genero_m', request.form) else ""
 
@@ -665,8 +664,7 @@ def generar_pdf():
 
     fecha_reeval_pdf = get_form_field_value('fecha_reevaluacion_pdf', request.form)
 
-
-    # 2. LÓGICA DE SELECCIÓN DE PLANTILLA
+    # 3. LÓGICA DE SELECCIÓN DE PLANTILLA Y VALIDACIÓN DE ARCHIVO
     base_dir = os.path.dirname(os.path.abspath(__file__))
     pdf_base_path = ''
     
@@ -680,7 +678,6 @@ def generar_pdf():
             pdf_base_path = specific_pdf_path
             print(f"DEBUG: Usando PDF específico de Doctora LOGUEADA: {pdf_base_path}")
         else:
-            # Fallback al PDF por defecto
             pdf_base_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
             print(f"ADVERTENCIA: No se encontró PDF específico. Usando PDF por defecto: {pdf_base_path}")
             
@@ -701,7 +698,7 @@ def generar_pdf():
             return redirect(url_for('relleno_formulario', nomina_id=session['current_nomina_id']))
         return redirect(url_for('dashboard'))
 
-    # 3. Lógica de Relleno y Generación
+    # 4. Lógica de Relleno y Generación
     try:
         reader = PdfReader(pdf_base_path)
         writer = PdfWriter()
@@ -729,6 +726,9 @@ def generar_pdf():
         elif form_type == 'medicina_familiar':
             print("DEBUG: Usando mapeo de Medicina Familiar (nombres de campo internos CORTOS confirmados).")
             
+            # --- OBTENER VALOR UNIFICADO DEL DIAGNÓSTICO ---
+            diagnostico_unificado_valor = get_form_field_value('diagnostico_unificado', request.form)
+
             # CAMPOS DE MEDICINA FAMILIAR (USANDO NOMBRES INTERNOS CORTOS DE LAS CAPTURAS)
             campos = {
                 # Identificación (nombre, rut, edad, nacionalidad, fecha_nacimiento)
@@ -741,8 +741,9 @@ def generar_pdf():
                 "sexo_m": sexo_m_pdf,
                 
                 # Diagnósticos, Clasificación, Fechas
-                "diagnostico_1": get_form_field_value('diagnostico_1', request.form),
-                "diagnostico_2": get_form_field_value('diagnostico_2', request.form),
+                # CORRECCIÓN CLAVE: Usamos el campo UNIFICADO para ambos diagnósticos
+                "diagnostico_1": diagnostico_unificado_valor,
+                "diagnostico_2": diagnostico_unificado_valor, 
                 "diagnostico_complementario": get_form_field_value('diagnostico_complementario', request.form),
                 "clasificacion": get_form_field_value('clasificacion_imc', request.form),
                 "derivaciones": get_form_field_value('derivaciones', request.form),
@@ -793,15 +794,13 @@ def generar_pdf():
 
         print(f"DEBUG: Campos finales para el PDF ({form_type}): {campos}")
         
-        # 4. Generación final del PDF
-        # *** APLICANDO LA CORRECCIÓN DE INTEGRIDAD DE PDF ***
+        # 5. Generación final del PDF
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({
                 NameObject("/AcroForm"): DictionaryObject()
             })
         writer.update_page_form_field_values(writer.pages[0], campos)
 
-        # Aplicando NeedAppearances para forzar a Adobe a renderizar correctamente los campos (CRÍTICO)
         writer._root_object["/AcroForm"].update({
             NameObject("/NeedAppearances"): BooleanObject(True)
         })
@@ -844,31 +843,29 @@ def marcar_evaluado():
     print(f"DEBUG: Recibida solicitud para marcar como evaluado: estudiante_id={estudiante_id}, nomina_id={nomina_id}, doctora_id={doctora_id}, form_type={form_type}")
     print(f"DEBUG: Contenido completo de request.form: {request.form.to_dict()}")
 
-    # Validación básica de datos obligatorios (ahora nomina_id ya no debería ser vacío)
+    # Validación básica de datos obligatorios
     if not all([estudiante_id, nomina_id, doctora_id]):
         print(f"ERROR: Datos faltantes en /marcar_evaluado. Estudiante ID: {estudiante_id}, Nomina ID: {nomina_id}, Doctora ID: {doctora_id}. Campos del formulario: {request.form.to_dict()}")
         return jsonify({"success": False, "message": "Faltan datos obligatorios para marcar y guardar la evaluación."}), 400
 
     # --- 1. DATOS BASE (Comunes a todos los formularios) ---
     update_data = {
-        'fecha_relleno': str(date.today()), # Fecha actual de rellenado
+        'fecha_relleno': str(date.today()),
         'doctora_evaluadora_id': doctora_id, 
         'nombre': nombre,
         'rut': rut, 
-        # Para fechas, queremos None si están vacías para que se mapeen a NULL en la DB
         'fecha_nacimiento': get_form_field_value('fecha_nacimiento_original', request.form, return_none_if_empty=True), 
         'fecha_evaluacion': get_form_field_value('fecha_evaluacion', request.form, return_none_if_empty=True),
         'fecha_reevaluacion': get_form_field_value('fecha_reevaluacion', request.form, return_none_if_empty=True),
         'edad': get_form_field_value('edad', request.form), 
         'nacionalidad': get_form_field_value('nacionalidad', request.form), 
-        # Sexo (general) siempre se guarda
         'sexo': get_form_field_value('sexo', request.form),
         'evaluado_flag': True,
     }
 
     # --- 2. LÓGICA PARA CAMPOS ESPECÍFICOS ---
     if form_type == 'neurologia':
-        # Campos específicos de Neurología se añaden a update_data
+        # Mantenemos la lógica de Neurología
         update_data.update({
             'estado_general': get_form_field_value('estado', request.form),
             'diagnostico': get_form_field_value('diagnostico', request.form), 
@@ -876,20 +873,21 @@ def marcar_evaluado():
         })
     elif form_type == 'medicina_familiar':
         
-        # --- FUNCIÓN AUXILIAR PARA MAPEO BOOLEANO ---
+        # OBTENEMOS EL VALOR UNIFICADO DEL CAMPO DIAGNOSTICO
+        diagnostico_unificado_valor = get_form_field_value('diagnostico_unificado', request.form)
+
+        # FUNCIÓN AUXILIAR PARA MAPEO BOOLEANO (True o None)
         def map_to_boolean(field_name):
-            # Si el campo tiene CUALQUIER valor (está marcado), devuelve True.
-            # Si está vacío, get_form_field_value con return_none_if_empty=True devolverá None, lo cual es correcto.
             value = get_form_field_value(field_name, request.form)
             if value and value.strip():
                 return True
-            return get_form_field_value(field_name, request.form, return_none_if_empty=True) # Devuelve None si está vacío
+            return get_form_field_value(field_name, request.form, return_none_if_empty=True)
 
-        # Campos específicos de Medicina Familiar se añaden a update_data
+        # Campos específicos de Medicina Familiar
         update_data.update({
-            # Diagnósticos y Derivaciones (NO booleanos, no usar map_to_boolean)
-            'diagnostico_1': get_form_field_value('diagnostico_1', request.form),
-            'diagnostico_2': get_form_field_value('diagnostico_2', request.form),
+            # CORRECCIÓN: diagnostico_1 y diagnostico_2 ahora usan el valor UNIFICADO
+            'diagnostico_1': diagnostico_unificado_valor,
+            'diagnostico_2': diagnostico_unificado_valor,
             'diagnostico_complementario': get_form_field_value('diagnostico_complementario', request.form),
             'clasificacion': get_form_field_value('clasificacion_imc', request.form),
             'derivaciones': get_form_field_value('derivaciones', request.form),
@@ -903,13 +901,13 @@ def marcar_evaluado():
             'observacion_6': get_form_field_value('observacion_6', request.form),
             'observacion_7': get_form_field_value('observacion_7', request.form),
 
-            # Checkboxes - CRÍTICO: Usar map_to_boolean() para enviar TRUE si está marcado, o NONE si está vacío
+            # Checkboxes y Numéricos - CRÍTICO: USAR map_to_boolean para booleanos
             'check_cesarea': map_to_boolean('check_cesarea'),
             'check_atermino': map_to_boolean('check_atermino'),
             'check_vaginal': map_to_boolean('check_vaginal'),
             'check_prematuro': map_to_boolean('check_prematuro'),
-            'check_acorde': map_to_boolean('check_acorde'), # <--- ESTE CAUSÓ EL ERROR
-            'check_retraso': map_to_boolean('check_retraso'),
+            'check_acorde': map_to_boolean('check_acorde'),
+            'check_retraso': map_to_boolean('check_retraso'), 
             'check_retrasogeneralizado': map_to_boolean('check_retrasogeneralizado'),
             'check_esquemac': map_to_boolean('check_esquemac'),
             'check_esquemai': map_to_boolean('check_esquemai'),
@@ -928,8 +926,6 @@ def marcar_evaluado():
             'check_retenciondental': map_to_boolean('check_retenciondental'),
             'check_frenillolingual': map_to_boolean('check_frenillolingual'),
             'check_hipertrofia': map_to_boolean('check_hipertrofia'),
-            
-            # Medidas (Numéricos - también necesitan return_none_if_empty=True)
             'altura': get_form_field_value('altura', request.form, return_none_if_empty=True),
             'peso': get_form_field_value('peso', request.form, return_none_if_empty=True),
             'imc': get_form_field_value('imc', request.form, return_none_if_empty=True),

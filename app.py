@@ -458,6 +458,7 @@ def get_doctor_specific_neurologia_pdf(doctora_id):
 # -------------------- Rutas de la Aplicación --------------------
 
 # app-30.py (Reemplaza la función relleno_formulario completa)
+# app-32.py (REEMPLAZO COMPLETO DE relleno_formulario - BASADO EN tipo_nomina)
 @app.route('/relleno_formulario/<string:nomina_id>', methods=['GET'])
 def relleno_formulario(nomina_id):
     if 'usuario' not in session:
@@ -466,16 +467,14 @@ def relleno_formulario(nomina_id):
     user_role = session.get('usuario')
     user_id = session.get('usuario_id')
     
-    # --- CORRECCIÓN CLAVE ---
-    # Guardamos el ID de la nómina en la sesión para que esté disponible en otras rutas (como /marcar_evaluado)
+    # Guardamos el ID de la nómina en la sesión para que esté disponible en otras rutas
     session['current_nomina_id'] = nomina_id 
-    # ------------------------
 
-    # 1. Obtener detalles de la nómina
+    # 1. Obtener detalles de la nómina (Obtenemos form_type y tipo_nomina)
     url_nomina = (
         f"{SUPABASE_URL}/rest/v1/nominas_medicas"
         f"?id=eq.{nomina_id}"
-        f"&select=form_type,doctora_id,nombre_nomina"
+        f"&select=form_type,tipo_nomina,doctora_id,nombre_nomina,doctora_id_para_formulario"
     )
     
     try:
@@ -488,9 +487,16 @@ def relleno_formulario(nomina_id):
             return redirect(url_for('dashboard'))
         
         nomina = nomina_data[0]
-        form_type = nomina['form_type']
         
-        # Validación de acceso: Solo el Admin o la Doctora Asignada pueden acceder
+        # Obtenemos AMBOS campos, pero usamos tipo_nomina para la condición
+        form_type = nomina['form_type']
+        tipo_nomina_check = (nomina['tipo_nomina'] or "").lower()
+        
+        # Guardar form_type y doctora_id_para_formulario en la sesión (CRÍTICO para otras rutas)
+        session['current_form_type'] = form_type
+        session['doctora_id_para_formulario'] = nomina.get('doctora_id_para_formulario')
+        
+        # Validación de acceso
         if user_role == 'doctora' and nomina['doctora_id'] != user_id:
             flash('Acceso no autorizado a esta nómina.', 'error')
             return redirect(url_for('dashboard'))
@@ -504,11 +510,11 @@ def relleno_formulario(nomina_id):
         flash('Error interno del servidor.', 'error')
         return redirect(url_for('dashboard'))
 
-    # 2. Obtener la lista de estudiantes
+    # 2. Obtener la lista de estudiantes con TODOS los campos de evaluación
     url_estudiantes = (
         f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
         f"?nomina_id=eq.{nomina_id}"
-        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno"
+        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,si_2,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc"
         f"&order=nombre.asc"
     )
 
@@ -517,66 +523,69 @@ def relleno_formulario(nomina_id):
         res_estudiantes.raise_for_status()
         estudiantes_raw = res_estudiantes.json()
         
-        print(f"DEBUG: Se encontraron {len(estudiantes_raw)} estudiantes para la nómina {nomina_id}.")
-        
         # 3. Preparar los datos de estudiantes para el template
         estudiantes = []
-        for est in estudiantes_raw:
-            # Asegurarse de que los campos existan o sean None/'' para evitar KeyErrors en el template/procesamiento
+        for est_raw in estudiantes_raw:
+            est = est_raw.copy()
+            
+            # Procesamiento de Fechas y Edad
             fecha_nacimiento_obj = None
             if est.get('fecha_nacimiento') and est['fecha_nacimiento'].strip():
                  try:
-                    # Asumiendo que datetime.strptime está disponible
                     fecha_nacimiento_obj = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
                  except:
                     pass
 
             edad_calculada = "N/A"
             if fecha_nacimiento_obj:
-                # Asumiendo que calculate_age está definida en tu app-30.py
                 edad_calculada = calculate_age(fecha_nacimiento_obj) 
 
-            estudiantes.append({
-                'id': est['id'],
-                'nombre': est.get('nombre', ''),
-                'rut': est.get('rut', ''),
-                'fecha_nacimiento': est.get('fecha_nacimiento', ''), # ISO YYYY-MM-DD
-                'fecha_nacimiento_formato': fecha_nacimiento_obj.strftime("%d/%m/%Y") if fecha_nacimiento_obj else 'N/A',
-                'edad': edad_calculada,
-                'nacionalidad': est.get('nacionalidad', ''),
-                'sexo': est.get('sexo', ''),
-
-                # Campos de evaluación que vienen de la DB
-                'estado_general': est.get('estado_general', ''),
-                'diagnostico': est.get('diagnostico', ''),
-                'derivaciones': est.get('derivaciones', ''),
-                'fecha_evaluacion': est.get('fecha_evaluacion', ''), # Campo de fecha_evaluacion (YYYY-MM-DD)
-                'fecha_reevaluacion': est.get('fecha_reevaluacion', ''),
-                'fecha_relleno': est.get('fecha_relleno'),
-            })
+            est['edad'] = edad_calculada
+            est['fecha_nacimiento_formato'] = fecha_nacimiento_obj.strftime("%d/%m/%Y") if fecha_nacimiento_obj else 'N/A'
+            est['fecha_nacimiento'] = est.get('fecha_nacimiento', '')
+            est['fecha_evaluacion'] = est.get('fecha_evaluacion', '')
+            est['fecha_reevaluacion'] = est.get('fecha_reevaluacion', '')
+            
+            # Mapeo de check_cirugiasi / si_2 para el front-end (Medicina Familiar)
+            if 'familiar' in tipo_nomina_check or 'medicina familiar' in tipo_nomina_check:
+                if est.get('si_2'):
+                    est['check_cirugiasi'] = est.get('si_2') 
+            
+            estudiantes.append(est)
         
-        # 4. Obtener la doctora asignada (para el nombre del archivo PDF)
+        # 4. Obtener la doctora asignada
         doctora_asignada_id = nomina['doctora_id']
         url_doctora = f"{SUPABASE_URL}/rest/v1/doctoras?id=eq.{doctora_asignada_id}&select=nombre"
         res_doctora = requests.get(url_doctora, headers=SUPABASE_SERVICE_HEADERS) 
         doctora_nombre = res_doctora.json()[0]['nombre'] if res_doctora.ok and res_doctora.json() else 'Doctora Asignada'
         
-        # Total de formularios completados (necesario para el contador del formulario_relleno.html)
-        total_forms_completed_for_nomina = sum(1 for est in estudiantes if est['fecha_relleno'] is not None)
+        # Total de formularios completados
+        total_forms_completed_for_nomina = sum(1 for est in estudiantes if est.get('fecha_relleno') is not None)
 
 
-        # 5. Renderizar
-        return render_template(
-            'formulario_relleno.html',
-            nomina_id=nomina_id,
-            establecimiento_nombre=nomina['nombre_nomina'], # Usamos nombre_nomina como nombre del establecimiento
-            form_type=form_type,
-            estudiantes=estudiantes,
-            total_forms_completed_for_nomina=total_forms_completed_for_nomina,
-            doctora_asignada_id=doctora_asignada_id,
-            doctora_nombre=doctora_nombre,
-            usuario=user_role
-        )
+        # 5. LÓGICA DE REDIRECCIÓN CLAVE (Basada en tipo_nomina_check)
+        base_render_params = {
+            'nomina_id': nomina_id,
+            'establecimiento_nombre': nomina['nombre_nomina'],
+            'form_type': form_type, # Se sigue pasando form_type para que el HTML lo use si es necesario
+            'estudiantes': estudiantes,
+            'total_forms_completed_for_nomina': total_forms_completed_for_nomina,
+            'doctora_asignada_id': doctora_asignada_id,
+            'doctora_nombre': doctora_nombre,
+            'usuario': user_role
+        }
+
+        if 'familiar' in tipo_nomina_check or 'medicina familiar' in tipo_nomina_check:
+            # Si es Medicina Familiar, usar el HTML de Medicina Familiar
+            return render_template('formulario_medicina_familiar.html', **base_render_params)
+        
+        elif 'neurologia' in tipo_nomina_check:
+            # Si es Neurología, usar el HTML de Neurología
+            return render_template('formulario_relleno.html', **base_render_params)
+        
+        else:
+            flash(f'❌ El tipo de nómina "{tipo_nomina_check.upper()}" no se pudo mapear a un formulario conocido (Neurología o Medicina Familiar).', 'error')
+            return redirect(url_for('dashboard'))
 
     except requests.exceptions.RequestException as e:
         print(f"❌ ERROR al obtener estudiantes para nómina {nomina_id}: {e}")

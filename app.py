@@ -1932,10 +1932,12 @@ def descargar_pdf_alumno(alumno_id):
 
 # app.py (Reemplazo de la función dashboard_counts completa)
 
+# app.py (Reemplazo de la función dashboard_counts completa)
+
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
-    """Calcula los contadores para la Coordinadora General. Utiliza el filtro 'in' para
-       el UUID, evitando la codificación problemática del guion y eliminando el error 400."""
+    """Calcula los contadores para la Coordinadora General. Utiliza la función SQL
+       'uuid_to_text()' en el filtro para resolver el conflicto de codificación del tipo UUID."""
     
     coord_general_id_session = session.get('usuario_id')
     
@@ -1943,10 +1945,10 @@ def dashboard_counts():
         return jsonify({"success": True, "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0}), 200 
 
     try:
-        # Filtro de Evaluados basado en la columna fiable (fecha_relleno)
+        # Filtro de Evaluados
         EVALUADO_FILTER_BASE = "fecha_relleno.not.is.null"
         
-        # 1. Obtener IDs de nómina asignadas a la Coordinadora General
+        # 1. Obtener IDs de nómina asignadas
         url_assigned_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?coord_general_id=eq.{coord_general_id_session}"
@@ -1967,30 +1969,26 @@ def dashboard_counts():
             
             raw_id_string = nomina['id']
             nomina_id_uncleaned = str(raw_id_string).strip() 
-            nomina_id_clean = ''.join(c for c in nomina_id_uncleaned if c.isprintable())
+            nomina_id = ''.join(c for c in nomina_id_uncleaned if c.isprintable())
             
-            if len(nomina_id_clean) != 36: 
-                print(f"ADVERTENCIA: ID de nómina tiene longitud inusual ({len(nomina_id_clean)}). Valor: [{nomina_id_clean}] Saltando.")
+            if len(nomina_id) != 36: 
+                print(f"ADVERTENCIA: ID de nómina tiene longitud inusual ({len(nomina_id)}). Valor: [{nomina_id}] Saltando.")
                 continue
 
-            # 🟢 SOLUCIÓN CLAVE: Usamos el filtro 'IN' (dentro de) con el UUID limpio.
-            # 1. Creamos la sintaxis: (UUID)
-            nomina_id_filtro_in = f"({nomina_id_clean})"
+            # 🟢 SOLUCIÓN FINAL: La clave de filtro usa la función SQL (uuid_to_text(columna))
+            # y el valor es el UUID limpio (sin comillas ni codificación).
             
-            # 2. Codificamos explícitamente solo la parte '(...)' para evitar que Requests
-            # codifique caracteres como el guion dentro del UUID.
-            nomina_id_encoded = urllib.parse.quote_plus(nomina_id_filtro_in)
-
-            form_type = nomina['form_type'].strip()
+            # La clave completa del filtro es la función: uuid_to_text(nomina_id)
+            FILTRO_KEY = f"uuid_to_text(nomina_id)"
             
             # --- 1. Total Asignados para esta nómina ---
-            # El filtro es: nomina_id=in.(UUID_ENCODED)
-            filter_total = f"nomina_id=in.{nomina_id_encoded}" 
+            # filter_total = uuid_to_text(nomina_id)=eq.UUID
+            filter_total = f"{FILTRO_KEY}=eq.{nomina_id}" 
             count_total = get_supabase_count(filter_total)
             
             # --- 2. Conteo de EVALUADOS (Contando directamente por fecha_relleno) ---
-            # El filtro es: fecha_relleno.not.is.null&nomina_id=in.(UUID_ENCODED)
-            filter_evaluados = f"{EVALUADO_FILTER_BASE}&nomina_id=in.{nomina_id_encoded}"
+            # El filtro es: fecha_relleno.not.is.null&uuid_to_text(nomina_id)=eq.UUID
+            filter_evaluados = f"{EVALUADO_FILTER_BASE}&{FILTRO_KEY}=eq.{nomina_id}"
             count_evaluados = get_supabase_count(filter_evaluados)
             total_evaluados += count_evaluados
             

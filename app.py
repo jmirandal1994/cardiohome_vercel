@@ -722,8 +722,9 @@ def generar_pdf():
             
             # --- OBTENER VALOR UNIFICADO DEL DIAGNÓSTICO ---
             diagnostico_unificado_valor = get_form_field_value('diagnostico_unificado', request.form)
-            # --- OBTENER VALOR DE INDICACIONES EXTRA ---
-            indicaciones_extra_valor = get_form_field_value('indicaciones_extra', request.form)
+            # --- OBTENER VALOR DE INDICACIONES ---
+            # CORRECCIÓN CLAVE: El nombre del campo HTML es 'indicaciones'
+            indicaciones_valor = get_form_field_value('indicaciones', request.form) 
 
             # CAMPOS DE MEDICINA FAMILIAR (USANDO NOMBRES INTERNOS CORTOS DE LAS CAPTURAS)
             campos = {
@@ -742,11 +743,11 @@ def generar_pdf():
                 "diagnostico_complementario": get_form_field_value('diagnostico_complementario', request.form),
                 "clasificacion": get_form_field_value('clasificacion_imc', request.form),
                 
-                # DERIVACIONES: Ahora se usa el campo 'derivaciones' para las indicaciones simples
-                "derivaciones": get_form_field_value('derivaciones', request.form), 
+                # 💡 Mapeo Corregido: Mapeado del campo HTML 'indicaciones' al campo de PDF 'indicaciones'
+                "indicaciones": indicaciones_valor, 
                 
-                # NUEVO CAMPO: Se asume que el campo interno del PDF para las indicaciones detalladas es 'indicaciones'
-                "indicaciones": indicaciones_extra_valor, 
+                # CAMPO DERIVACIONES: Mapeado del campo HTML 'derivaciones' al campo de PDF 'derivaciones'
+                "derivaciones": get_form_field_value('derivaciones', request.form), 
                 
                 "fecha_evaluacion": fecha_evaluacion_formatted,
                 "fecha_reevaluacion": fecha_reeval_pdf,
@@ -893,8 +894,8 @@ def marcar_evaluado():
             'clasificacion': get_form_field_value('clasificacion_imc', request.form),
             'derivaciones': get_form_field_value('derivaciones', request.form),
             
-            # NUEVO CAMPO: Guardado en la base de datos
-            'indicaciones_extra': get_form_field_value('indicaciones_extra', request.form), 
+            # 💡 Mapeo Corregido: Guardado del campo 'indicaciones'
+            'indicaciones': get_form_field_value('indicaciones', request.form), 
             
             # Observaciones
             'observacion_1': get_form_field_value('observacion_1', request.form),

@@ -14,6 +14,7 @@ import json
 import pandas as pd
 import unicodedata
 import secrets
+import re
 # Las importaciones específicas para Google Drive API han sido eliminadas.
 
 
@@ -1882,16 +1883,21 @@ def descargar_pdf_alumno(alumno_id):
 # import uuid
 # ...
 
+# Asegúrate de que las importaciones de requests, uuid, y datetime estén al inicio de app.py
+# y que la función get_supabase_count esté definida.
+
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
-    """SOLUCIÓN DEFINITIVA: Ejecuta consultas individuales por cada ID de nómina,
-       aplicando una limpieza de caracteres de control para evitar el Error 400.
-    """
-    # Asegúrate de que import re esté al inicio del archivo
-    import re 
-    coord_id = session.get('usuario_id')
+    """Calcula los contadores, utilizando la columna correcta coord_general_id para filtrar las nóminas."""
     
-    if session.get('usuario') != 'coordinadora' or not coord_id:
+    # 🟢 CORRECCIÓN CLAVE 1: Usar la clave de sesión correcta para obtener el ID de la coordinadora.
+    # Asumimos que el ID de la coordinadora general está en session['usuario_id'] al loguearse.
+    coord_general_id_session = session.get('usuario_id')
+    
+    # ⚠️ Nota: Si tu clave de sesión para la ID de la coordinadora es 'coord_id', 
+    # usa session.get('coord_id'). Basado en tu tabla, asumimos que es session['usuario_id'].
+    
+    if session.get('usuario') != 'coordinadora' or not coord_general_id_session:
         return jsonify({"success": True, "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0}), 200 
 
     try:
@@ -1899,9 +1905,10 @@ def dashboard_counts():
         PENDIENTE_FLAG_FILTER = "evaluado_flag.eq.false"
 
         # 1. Obtener IDs de nómina asignadas
+        # 🟢 CORRECCIÓN CLAVE 2: Usar el nombre de columna de la base de datos: coord_general_id
         url_assigned_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?coord_general_id=eq.{coord_id}"
+            f"?coord_general_id=eq.{coord_general_id_session}"  # ¡Corregido!
             f"&form_type.not.is.null" 
             f"&select=id,form_type" 
         )
@@ -1909,24 +1916,30 @@ def dashboard_counts():
         res_assigned.raise_for_status()
         assigned_nominas = res_assigned.json()
 
-        # 🟢 Inicialización de contadores acumulados
+        neuro_ids = [nom['id'] for nom in assigned_nominas if nom.get('form_type') == 'neurologia']
+        familiar_ids = [nom['id'] for nom in assigned_nominas if nom.get('form_type') == 'medicina_familiar']
+        
+        # 🟢 Inicialización y limpieza (Mantiene la solución para el error 400)
         total_alumnos_en_nominas = 0
         total_evaluados = 0
         total_pendientes = 0
         neuro_count = 0
         familiar_count = 0
         
+        all_assigned_ids = neuro_ids + familiar_ids
+        clean_assigned_ids = [id_str.strip() for id_str in all_assigned_ids if id_str]
+        
+        if not clean_assigned_ids:
+             return jsonify({"success": True, "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0})
+        
         # Iterar sobre cada nómina para obtener sus conteos individuales
         for nomina in assigned_nominas:
             
-            # 🟢 LIMPIEZA EXTREMA DEL ID (CRÍTICO para evitar el Error 400)
-            # 1. Obtener el ID crudo
+            # Limpieza del ID
             raw_id_string = nomina['id']
-            # 2. Eliminar cualquier espacio, tabulación o salto de línea invisible
             nomina_id = re.sub(r'\s+', '', raw_id_string).strip() 
             form_type = nomina['form_type'].strip()
             
-            # Si después de la limpieza el ID es inválido, saltamos la nómina (prevención de errores)
             if not nomina_id:
                 continue
 
@@ -1964,7 +1977,6 @@ def dashboard_counts():
         })
 
     except requests.exceptions.RequestException as e:
-        # Captura el error 400 Bad Request
         print(f"❌ ERROR DE CONEXIÓN CON SUPABASE EN DASHBOARD_COUNTS: {e}")
         return jsonify({"success": False, "message": f"Error de conexión con la BD: {str(e)}"}), 500
     except Exception as e:

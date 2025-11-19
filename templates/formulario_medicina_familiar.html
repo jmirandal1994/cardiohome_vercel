@@ -840,9 +840,18 @@
                             <label for="diagnostico_complementario_{{ est.id }}">Diagnóstico Complementario:</label>
                             <textarea name="diagnostico_complementario" id="diagnostico_complementario_{{ est.id }}" rows="3" placeholder="Notas adicionales sobre el diagnóstico complementario.">{{ est.diagnostico_complementario if est.diagnostico_complementario is not none else '' }}</textarea>
 
-                            {# NOMBRE DE CAMPO: INDICACIONES (PDF) -> derivaciones (HTML) #}
-                            <label for="derivaciones_{{ est.id }}">Indicaciones/Derivaciones:</label>
-                            <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="2" placeholder="Detalles de derivaciones.">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
+                            {# ** MODIFICACIÓN INICIO ** #}
+
+                            {# NUEVO CAMPO: Indicaciones (Nombre HTML: indicaciones) #}
+                            <label for="indicaciones_{{ est.id }}">Indicaciones:</label>
+                            <textarea name="indicaciones" id="indicaciones_{{ est.id }}" rows="2" placeholder="Detalles de indicaciones.">{{ est.indicaciones if est.indicaciones is not none else '' }}</textarea>
+                            
+                            {# CAMPO ORIGINAL: Derivaciones (Nombre HTML: derivaciones) #}
+                            <label for="derivaciones_{{ est.id }}">Derivaciones:</label>
+                            <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="2" placeholder="Detalles de derivaciones a especialistas.">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
+
+                            {# ** MODIFICACIÓN FIN ** #}
+
 
                             {# Plazo de reevaluación (Solo ayuda a calcular la fecha) #}
                             <label for="fecha_reevaluacion_select_{{ est.id }}">Plazo de Reevaluación (años):</label>
@@ -1018,6 +1027,7 @@
                         <p><strong>Fecha Evaluación:</strong> <span class="prev-fecha-evaluacion">{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '-' }}</span></p>
                         <p><strong>Diagnóstico:</strong> <span class="prev-diagnostico-unificado">{{ est.diagnostico_1 if est.diagnostico_1 is not none else '-' }}</span></p>
                         <p><strong>Diagnóstico Comp.:</strong> <span class="prev-diagnostico-complementario">{{ est.diagnostico_complementario if est.diagnostico_complementario is not none else '-' }}</span></p>
+                        <p><strong>Indicaciones:</strong> <span class="prev-indicaciones">{{ est.indicaciones if est.indicaciones is not none else '-' }}</span></p>
                         <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">{{ est.derivaciones if est.derivaciones is not none else '-' }}</span></p>
                         <p><strong>Fecha Reevaluación:</strong> <span class="prev-fecha-reevaluacion">
                             {% if est.fecha_reevaluacion %}
@@ -1327,6 +1337,9 @@
             previewSection.querySelector('.prev-diagnostico-unificado').textContent = form.diagnostico_unificado ? form.diagnostico_unificado.value : '-';
             
             previewSection.querySelector('.prev-diagnostico-complementario').textContent = form.diagnostico_complementario ? form.diagnostico_complementario.value : '-';
+            
+            // ** MODIFICACIÓN: Actualización de Indicaciones y Derivaciones en Preview **
+            previewSection.querySelector('.prev-indicaciones').textContent = form.indicaciones ? form.indicaciones.value : '-';
             previewSection.querySelector('.prev-derivaciones').textContent = form.derivaciones ? form.derivaciones.value : '-';
             
             const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');

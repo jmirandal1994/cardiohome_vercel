@@ -1874,21 +1874,22 @@ def descargar_pdf_alumno(alumno_id):
 
 # Asegúrate de que las importaciones de requests, uuid, y datetime estén al inicio de app.py
 
+# Reemplaza la función dashboard_counts en app.py con esta versión:
+
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
-    """Calcula los contadores usando la lógica de contingencia más el rompedor de caché
-       y la corrección para eliminar el Error 400 en el filtro de IDs.
+    """SOLUCIÓN DEFINITIVA: Ejecuta consultas individuales por cada ID de nómina
+       para evitar el Error 400 en el filtro 'nomina_id=in.(...)'.
     """
     coord_id = session.get('usuario_id')
-    
-    # Filtro de completado robusto (el que usaría la API si no fallara el filtro)
-    COMPLETADO_FILTER = "doctora_evaluadora_id.not.is.null&estado_general.gt." 
-    PENDIENTE_FLAG_FILTER = "evaluado_flag.eq.false"
     
     if session.get('usuario') != 'coordinadora' or not coord_id:
         return jsonify({"success": True, "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0}), 200 
 
     try:
+        COMPLETADO_FILTER = "doctora_evaluadora_id.not.is.null&estado_general.gt." 
+        PENDIENTE_FLAG_FILTER = "evaluado_flag.eq.false"
+
         # 1. Obtener IDs de nómina
         url_assigned_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
@@ -1900,49 +1901,45 @@ def dashboard_counts():
         res_assigned.raise_for_status()
         assigned_nominas = res_assigned.json()
 
-        neuro_ids = [nom['id'] for nom in assigned_nominas if nom.get('form_type') == 'neurologia']
-        familiar_ids = [nom['id'] for nom in assigned_nominas if nom.get('form_type') == 'medicina_familiar']
-        
-        # 🟢 CORRECCIÓN CLAVE DEL ERROR 400: Limpiar y unir la lista de IDs
-        all_assigned_ids = neuro_ids + familiar_ids
-        
-        # 1. Limpiar espacios, tabulaciones y nuevas líneas de cada ID
-        clean_assigned_ids = [id_str.strip() for id_str in all_assigned_ids if id_str]
-        
-        # 2. Unir la lista con una coma, SIN ESPACIOS, para crear la cadena final del filtro IN
-        all_assigned_ids_str = ",".join(clean_assigned_ids)
-        
-        if not all_assigned_ids_str:
-             return jsonify({"success": True, "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0})
-        
-        BASE_NOMINA_FILTER = f"nomina_id=in.({all_assigned_ids_str})"
-        
-        # 2. Conteo Total de ALUMNOS ASIGNADOS
-        total_alumnos_en_nominas = get_supabase_count(BASE_NOMINA_FILTER)
-        
-        # 3. Conteo de ALUMNOS EVALUADOS (Contar COMPLETADOS con filtro directo)
-        filter_total_evaluados = f"{COMPLETADO_FILTER}&{BASE_NOMINA_FILTER}"
-        total_evaluados = get_supabase_count(filter_total_evaluados)
-        
-        # 4. Cálculo de Pendientes (Contar PENDIENTES con filtro booleano)
-        filter_total_pendientes = f"{PENDIENTE_FLAG_FILTER}&{BASE_NOMINA_FILTER}"
-        total_pendientes = get_supabase_count(filter_total_pendientes)
-
-        # 5. Desglose por especialidad (CONTEO DIRECTO)
-        
-        neuro_count = 0 
-        if neuro_ids:
-            neuro_ids_str = ",".join([id_str.strip() for id_str in neuro_ids if id_str])
-            filter_neuro_count = f"{COMPLETADO_FILTER}&nomina_id=in.({neuro_ids_str})"
-            neuro_count = get_supabase_count(filter_neuro_count) 
-            
+        # 🟢 NUEVO PROCESAMIENTO: Contadores acumulados
+        total_alumnos_en_nominas = 0
+        total_evaluados = 0
+        total_pendientes = 0
+        neuro_count = 0
         familiar_count = 0
-        if familiar_ids:
-            familiar_ids_str = ",".join([id_str.strip() for id_str in familiar_ids if id_str])
-            filter_familiar_count = f"{COMPLETADO_FILTER}&nomina_id=in.({familiar_ids_str})"
-            familiar_count = get_supabase_count(filter_familiar_count)
+        
+        # Iterar sobre cada nómina para obtener sus conteos individuales
+        for nomina in assigned_nominas:
+            nomina_id = nomina['id'].strip()
+            form_type = nomina['form_type']
             
-        # 6. Enviamos el resultado
+            # --- 1. Total Asignados para esta nómina ---
+            filter_total = f"nomina_id=eq.{nomina_id}"
+            count_total = get_supabase_count(filter_total)
+            total_alumnos_en_nominas += count_total
+            
+            # --- 2. Pendientes y Evaluados para esta nómina ---
+            
+            # Conteo de PENDIENTES (eq.false)
+            filter_pendientes = f"{PENDIENTE_FLAG_FILTER}&nomina_id=eq.{nomina_id}"
+            count_pendientes = get_supabase_count(filter_pendientes)
+            total_pendientes += count_pendientes
+            
+            # Conteo de EVALUADOS (Contingencia: Resta)
+            # Aunque la lógica de Supabase falle, usamos la diferencia del total para la coherencia
+            count_evaluados = count_total - count_pendientes
+            if count_evaluados < 0: count_evaluados = 0
+
+            total_evaluados += count_evaluados
+
+            # --- 3. Desglose por tipo ---
+            if form_type == 'neurologia':
+                neuro_count += count_evaluados
+            elif form_type == 'medicina_familiar':
+                familiar_count += count_evaluados
+
+
+        # 6. Enviamos el resultado (Ya no necesitamos la lógica de 'total_pendientes = total_alumnos - total_evaluados' final)
         return jsonify({
             "success": True, 
             "total_evaluados": total_evaluados,
@@ -1952,7 +1949,6 @@ def dashboard_counts():
         })
 
     except requests.exceptions.RequestException as e:
-        # Esto captura el error 400 Bad Request
         print(f"❌ ERROR DE CONEXIÓN CON SUPABASE EN DASHBOARD_COUNTS: {e}")
         return jsonify({"success": False, "message": f"Error de conexión con la BD: {str(e)}"}), 500
     except Exception as e:

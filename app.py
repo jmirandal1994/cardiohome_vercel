@@ -796,6 +796,7 @@ def marcar_evaluado():
         'nacionalidad': get_form_field_value('nacionalidad', request.form), 
         # Sexo (general) siempre se guarda
         'sexo': get_form_field_value('sexo', request.form),
+        'evaluado_flag': True,
     }
 
     # --- 2. LÓGICA PARA CAMPOS ESPECÍFICOS ---
@@ -1856,28 +1857,26 @@ def descargar_pdf_alumno(alumno_id):
 # app-30.py (Versión de CONTINGENCIA FINAL)
 @app.route('/api/dashboard_counts', methods=['GET'])
 def dashboard_counts():
-    """Retorna el conteo total, pendiente y por especialidad de evaluaciones completadas.
-       USA EL FILTRO AGRESIVO DE CONTINGENCIA para obligar a Supabase a contar correctamente.
-    """
+    """Calcula los contadores usando la columna booleana 'evaluado_flag' para total coherencia."""
     coord_id = session.get('usuario_id')
     
     if session.get('usuario') != 'coordinadora' or not coord_id:
-        # Devuelve 0s si el usuario no es coordinadora
         return jsonify({"success": True, "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0}), 200 
 
     try:
-        # FILTRO DE CONTINGENCIA CRÍTICO: Combina dos filtros NOT NULL de diferentes tipos de datos
-        # para forzar al motor de la API a ejecutar la consulta sin ignorar el filtro.
-        # doctora_evaluadora_id.not.is.null (UUID) AND estado_general.gt. (Texto mayor que vacío)
-        COMPLETADO_FILTER = "doctora_evaluadora_id.not.is.null&estado_general.gt." 
+        # 🟢 FILTRO ROBUSTO: Un booleano es el filtro más estable en Supabase.
+        COMPLETADO_FILTER = "evaluado_flag.eq.true" 
         
-        # 1. Obtener IDs de nómina
+        # 1. Obtener IDs de nómina (La lógica de asignación es correcta)
         url_assigned_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?coord_general_id=eq.{coord_id}"
             f"&form_type.not.is.null" 
             f"&select=id,form_type" 
         )
+        # ... (rest of getting assigned_nominas, neuro_ids, familiar_ids, all_assigned_ids_str)
+        # --- (El código de inicialización es el mismo) ---
+        
         res_assigned = requests.get(url_assigned_nominas, headers=SUPABASE_SERVICE_HEADERS)
         res_assigned.raise_for_status()
         assigned_nominas = res_assigned.json()
@@ -1888,37 +1887,31 @@ def dashboard_counts():
         all_assigned_ids_str = ",".join(all_assigned_ids)
         
         if not all_assigned_ids_str:
-             return jsonify({
-                "success": True, 
-                "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0
-            })
+             return jsonify({"success": True, "total_evaluados": 0, "neurologia_count": 0, "familiar_count": 0, "evaluaciones_pendientes": 0})
         
         BASE_NOMINA_FILTER = f"nomina_id=in.({all_assigned_ids_str})"
         
         # 2. Conteo Total de ALUMNOS ASIGNADOS
         total_alumnos_en_nominas = get_supabase_count(BASE_NOMINA_FILTER)
         
-        # 3. Conteo de ALUMNOS EVALUADOS (Contar COMPLETADOS con filtro directo)
+        # 3. Conteo de ALUMNOS EVALUADOS (Filtro booleano)
         filter_total_evaluados = f"{COMPLETADO_FILTER}&{BASE_NOMINA_FILTER}"
         total_evaluados = get_supabase_count(filter_total_evaluados)
         
         # 4. Desglose por especialidad (CONTEO DIRECTO)
-        
         neuro_count = 0 
         if neuro_ids:
             neuro_ids_str = ",".join(neuro_ids)
-            # Filtro: Completado (AGRESIVO) AND en nóminas de Neurología
             filter_neuro_count = f"{COMPLETADO_FILTER}&nomina_id=in.({neuro_ids_str})"
             neuro_count = get_supabase_count(filter_neuro_count) 
             
         familiar_count = 0
         if familiar_ids:
             familiar_ids_str = ",".join(familiar_ids)
-            # Filtro: Completado (AGRESIVO) AND en nóminas de Medicina Familiar
             filter_familiar_count = f"{COMPLETADO_FILTER}&nomina_id=in.({familiar_ids_str})"
             familiar_count = get_supabase_count(filter_familiar_count)
             
-        # 5. Cálculo de Pendientes (La única forma coherente: Total Asignado - Completados)
+        # 5. Cálculo de Pendientes (La resta que siempre es coherente: 24 - 2 = 22)
         total_pendientes = total_alumnos_en_nominas - total_evaluados
         if total_pendientes < 0: total_pendientes = 0 
         

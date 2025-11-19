@@ -597,6 +597,9 @@ def relleno_formulario(nomina_id):
         return redirect(url_for('dashboard'))
         
 # app.py (REEMPLAZO FINAL Y CORREGIDO DE generar_pdf - INTEGRIDAD DEL PDF)
+# Asegúrate de que todas las demás importaciones necesarias (flask, get_form_field_value, format_rut_python, etc.) 
+# estén definidas al inicio de tu app.py
+
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
     if 'usuario' not in session:
@@ -612,7 +615,6 @@ def generar_pdf():
     # 1. PREPARACIÓN DE DATOS BASE
     current_doctora_id = session.get('usuario_id')
     
-    # --> LÍNEA DE DEBUG SOLICITADA <--
     print(f"DEBUG: generar_pdf - Solicitud para generar PDF para estudiante_id={estudiante_id}, nomina_id={nomina_id}, form_type={form_type}, doctora_id={current_doctora_id}")
 
     if not all([estudiante_id, nomina_id]):
@@ -636,15 +638,24 @@ def generar_pdf():
     edad = get_form_field_value('edad', request.form)
     nacionalidad = get_form_field_value('nacionalidad', request.form)
 
+    # --- FUNCIÓN AUXILIAR PARA OBTENER VALOR DE CHECKBOX ---
+    def map_check_value(field_name):
+        # Si tiene CUALQUIER valor de texto (ej. "CESAREA", "SI_ALERGIAS"), lo devuelve, si no, ""
+        return get_form_field_value(field_name, request.form) or ""
+    # --------------------------------------------------------
+
     sexo_f_pdf = ""
     sexo_m_pdf = ""
+
     if form_type == 'neurologia':
+        # Lógica original de Neurología (asumiendo que PDF espera 'X' o 'x')
         sexo_form_value = get_form_field_value('sexo', request.form)
-        sexo_f_pdf = "X" if sexo_form_value == "F" else ""
+        sexo_f_pdf = "X" if sexo_form_value == "F" else "" 
         sexo_m_pdf = "X" if sexo_form_value == "M" else ""
     elif form_type == 'medicina_familiar':
-        sexo_f_pdf = "/Yes" if get_form_field_value('genero_f', request.form) else ""
-        sexo_m_pdf = "/Yes" if get_form_field_value('genero_m', request.form) else ""
+        # Lógica para Medicina Familiar (Checkbox, debe usar "Yes")
+        sexo_f_pdf = "Yes" if get_form_field_value('genero_f', request.form) else ""
+        sexo_m_pdf = "Yes" if get_form_field_value('genero_m', request.form) else ""
 
 
     fecha_evaluacion_form_value = get_form_field_value('fecha_evaluacion', request.form)
@@ -658,7 +669,7 @@ def generar_pdf():
     fecha_reeval_pdf = get_form_field_value('fecha_reevaluacion_pdf', request.form)
 
 
-    # 2. LÓGICA DE SELECCIÓN DE PLANTILLA (sin cambios)
+    # 2. LÓGICA DE SELECCIÓN DE PLANTILLA
     base_dir = os.path.dirname(os.path.abspath(__file__))
     pdf_base_path = ''
     
@@ -720,6 +731,7 @@ def generar_pdf():
             }
         elif form_type == 'medicina_familiar':
             print("DEBUG: Usando mapeo de Medicina Familiar (nombres de campo internos CORTOS confirmados).")
+            
             # CAMPOS DE MEDICINA FAMILIAR (USANDO NOMBRES INTERNOS CORTOS DE LAS CAPTURAS)
             campos = {
                 # Identificación (nombre, rut, edad, nacionalidad, fecha_nacimiento)
@@ -728,6 +740,7 @@ def generar_pdf():
                 "fecha_nacimiento": fecha_nac_formato,
                 "edad": edad,
                 "nacionalidad": nacionalidad,
+                # Campos de Género (Checkbox, usando la variable preparada con "Yes")
                 "sexo_f": sexo_f_pdf, 
                 "sexo_m": sexo_m_pdf,
                 
@@ -754,31 +767,31 @@ def generar_pdf():
                 "observacion_6": get_form_field_value('observacion_6', request.form),
                 "observacion_7": get_form_field_value('observacion_7', request.form),
                 
-                # Checkboxes - Usamos los nombres internos de las capturas (check_...)
-                "check_cesarea": "/Yes" if get_form_field_value('check_cesarea', request.form) else "",
-                "check_atermino": "/Yes" if get_form_field_value('check_atermino', request.form) else "",
-                "check_vaginal": "/Yes" if get_form_field_value('check_vaginal', request.form) else "",
-                "check_prematuro": "/Yes" if get_form_field_value('check_prematuro', request.form) else "",
-                "check_acorde": "/Yes" if get_form_field_value('check_acorde', request.form) else "",
-                "check_retraso": "/Yes" if get_form_field_value('check_retraso', request.form) else "",
-                "check_retrasogeneralizado": "/Yes" if get_form_field_value('check_retrasogeneralizado', request.form) else "",
-                "check_esquemac": "/Yes" if get_form_field_value('check_esquemac', request.form) else "",
-                "check_esquemai": "/Yes" if get_form_field_value('check_esquemai', request.form) else "",
-                "check_alergiano": "/Yes" if get_form_field_value('check_alergiano', request.form) else "",
-                "check_alergiasi": "/Yes" if get_form_field_value('check_alergiasi', request.form) else "",
-                "check_cirugiano": "/Yes" if get_form_field_value('check_cirugiano', request.form) else "",
-                "check_cirugiasi": "/Yes" if get_form_field_value('check_cirugiasi', request.form) else "", 
-                "check_visionsinalteracion": "/Yes" if get_form_field_value('check_visionsinalteracion', request.form) else "",
-                "check_visionrefraccion": "/Yes" if get_form_field_value('check_visionrefraccion', request.form) else "",
-                "check_audicionnormal": "/Yes" if get_form_field_value('check_audicionnormal', request.form) else "",
-                "check_hipoacusia": "/Yes" if get_form_field_value('check_hipoacusia', request.form) else "",
-                "check_tapondecerumen": "/Yes" if get_form_field_value('check_tapondecerumen', request.form) else "",
-                "check_sinhallazgos": "/Yes" if get_form_field_value('check_sinhallazgos', request.form) else "",
-                "check_caries": "/Yes" if get_form_field_value('check_caries', request.form) else "",
-                "check_apinamientodental": "/Yes" if get_form_field_value('check_apinamientodental', request.form) else "",
-                "check_retenciondental": "/Yes" if get_form_field_value('check_retenciondental', request.form) else "",
-                "check_frenillolingual": "/Yes" if get_form_field_value('check_frenillolingual', request.form) else "",
-                "check_hipertrofia": "/Yes" if get_form_field_value('check_hipertrofia', request.form) else "",
+                # Checkboxes - Mapeo a 'Yes' si están marcados o "" si no.
+                "check_cesarea": "Yes" if map_check_value('check_cesarea') else "",
+                "check_atermino": "Yes" if map_check_value('check_atermino') else "",
+                "check_vaginal": "Yes" if map_check_value('check_vaginal') else "",
+                "check_prematuro": "Yes" if map_check_value('check_prematuro') else "",
+                "check_acorde": "Yes" if map_check_value('check_acorde') else "",
+                "check_retraso": "Yes" if map_check_value('check_retraso') else "",
+                "check_retrasogeneralizado": "Yes" if map_check_value('check_retrasogeneralizado') else "",
+                "check_esquemac": "Yes" if map_check_value('check_esquemac') else "",
+                "check_esquemai": "Yes" if map_check_value('check_esquemai') else "",
+                "check_alergiano": "Yes" if map_check_value('check_alergiano') else "",
+                "check_alergiasi": "Yes" if map_check_value('check_alergiasi') else "",
+                "check_cirugiano": "Yes" if map_check_value('check_cirugiano') else "",
+                "check_cirugiasi": "Yes" if map_check_value('check_cirugiasi') else "", 
+                "check_visionsinalteracion": "Yes" if map_check_value('check_visionsinalteracion') else "",
+                "check_visionrefraccion": "Yes" if map_check_value('check_visionrefraccion') else "",
+                "check_audicionnormal": "Yes" if map_check_value('check_audicionnormal') else "",
+                "check_hipoacusia": "Yes" if map_check_value('check_hipoacusia') else "",
+                "check_tapondecerumen": "Yes" if map_check_value('check_tapondecerumen') else "",
+                "check_sinhallazgos": "Yes" if map_check_value('check_sinhallazgos') else "",
+                "check_caries": "Yes" if map_check_value('check_caries') else "",
+                "check_apinamientodental": "Yes" if map_check_value('check_apinamientodental') else "",
+                "check_retenciondental": "Yes" if map_check_value('check_retenciondental') else "",
+                "check_frenillolingual": "Yes" if map_check_value('check_frenillolingual') else "",
+                "check_hipertrofia": "Yes" if map_check_value('check_hipertrofia') else "",
             }
 
 
@@ -807,7 +820,7 @@ def generar_pdf():
 
     except Exception as e:
         print(f"❌ Error al generar PDF: {e}")
-        flash(f"❌ Error al generar el PDF: {e}. Verifique el archivo base o los campos.", 'error')
+        flash(f"❌ Error al generar el PDF: {e}. El archivo base o los nombres de campo pueden ser incorrectos. Intente de nuevo.", 'error')
         if 'current_nomina_id' in session:
             return redirect(url_for('relleno_formulario', nomina_id=session['current_nomina_id']))
         return redirect(url_for('dashboard'))

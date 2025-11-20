@@ -840,8 +840,6 @@
                             <label for="diagnostico_complementario_{{ est.id }}">Diagnóstico Complementario:</label>
                             <textarea name="diagnostico_complementario" id="diagnostico_complementario_{{ est.id }}" rows="3" placeholder="Notas adicionales sobre el diagnóstico complementario.">{{ est.diagnostico_complementario if est.diagnostico_complementario is not none else '' }}</textarea>
 
-                            {# ** MODIFICACIÓN INICIO ** #}
-
                             {# NUEVO CAMPO: Indicaciones (Nombre HTML: indicaciones) #}
                             <label for="indicaciones_{{ est.id }}">Indicaciones:</label>
                             <textarea name="indicaciones" id="indicaciones_{{ est.id }}" rows="2" placeholder="Detalles de indicaciones.">{{ est.indicaciones if est.indicaciones is not none else '' }}</textarea>
@@ -849,9 +847,6 @@
                             {# CAMPO ORIGINAL: Derivaciones (Nombre HTML: derivaciones) #}
                             <label for="derivaciones_{{ est.id }}">Derivaciones:</label>
                             <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="2" placeholder="Detalles de derivaciones a especialistas.">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
-
-                            {# ** MODIFICACIÓN FIN ** #}
-
 
                             {# Plazo de reevaluación (Solo ayuda a calcular la fecha) #}
                             <label for="fecha_reevaluacion_select_{{ est.id }}">Plazo de Reevaluación (años):</label>
@@ -914,8 +909,15 @@
                                 <label class="checkbox-item {% if est.check_prematuro %}checked{% endif %}">
                                     <input type="checkbox" name="check_prematuro" id="check_prematuro_{{ est.id }}" value="PREMATURO" {% if est.check_prematuro %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Prematuro (PREMATURO)
                                 </label>
+                            </div>
+                            
+                            <h3 class="section-title">DSM</h3>
+                            <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.check_acorde %}checked{% endif %}">
                                     <input type="checkbox" name="check_acorde" id="check_acorde_{{ est.id }}" value="LOGRADO_ACORDE_A_LA_EDAD" {% if est.check_acorde %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Logrado Acorde a la Edad (DSM)
+                                </label>
+                                <label class="checkbox-item {% if est.check_retrasolenguaje %}checked{% endif %}">
+                                    <input type="checkbox" name="check_retrasolenguaje" id="check_retrasolenguaje_{{ est.id }}" value="RETRASO_DEL_LENGUAJE" {% if est.check_retrasolenguaje %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Retraso del Lenguaje
                                 </label>
                                 <label class="checkbox-item {% if est.check_retrasogeneralizado %}checked{% endif %}">
                                     <input type="checkbox" name="check_retrasogeneralizado" id="check_retrasogeneralizado_{{ est.id }}" value="RETRASO_GENERALIZADO_DEL_DESARROLLO" {% if est.check_retrasogeneralizado %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Retraso Generalizado del Desarrollo
@@ -1049,7 +1051,10 @@
                             <p>A Término: <span class="prev-check-atermino">{{ 'Sí' if est.check_atermino else 'No' }}</span></p>
                             <p>Vaginal: <span class="prev-check-vaginal">{{ 'Sí' if est.check_vaginal else 'No' }}</span></p>
                             <p>Prematuro: <span class="prev-check-prematuro">{{ 'Sí' if est.check_prematuro else 'No' }}</span></p>
-                            <p>Acorde a Edad (DSM): <span class="prev-check-acorde">{{ 'Sí' if est.check_acorde else 'No' }}</span></p>
+                            
+                            <strong>DSM:</strong>
+                            <p>Logrado Acorde a Edad: <span class="prev-check-acorde">{{ 'Sí' if est.check_acorde else 'No' }}</span></p>
+                            <p>Retraso del Lenguaje: <span class="prev-check-retrasolenguaje">{{ 'Sí' if est.check_retrasolenguaje else 'No' }}</span></p>
                             <p>Retraso Generalizado del Desarrollo: <span class="prev-check-retrasogeneralizado">{{ 'Sí' if est.check_retrasogeneralizado else 'No' }}</span></p>
                             
                             <strong>Vacunas:</strong>
@@ -1371,8 +1376,18 @@
             previewSection.querySelector('.prev-check-atermino').textContent = form.querySelector(`#check_atermino_${estudianteId}`).checked ? 'Sí' : 'No';
             previewSection.querySelector('.prev-check-vaginal').textContent = form.querySelector(`#check_vaginal_${estudianteId}`).checked ? 'Sí' : 'No';
             previewSection.querySelector('.prev-check-prematuro').textContent = form.querySelector(`#check_prematuro_${estudianteId}`).checked ? 'Sí' : 'No';
+            
+            // ** ACTUALIZACIÓN DE ESTADOS DSM **
             previewSection.querySelector('.prev-check-acorde').textContent = form.querySelector(`#check_acorde_${estudianteId}`).checked ? 'Sí' : 'No';
+            
+            const retrasoLenguajeCheck = form.querySelector(`#check_retrasolenguaje_${estudianteId}`);
+            if (retrasoLenguajeCheck) {
+                previewSection.querySelector('.prev-check-retrasolenguaje').textContent = retrasoLenguajeCheck.checked ? 'Sí' : 'No';
+            }
+            
             previewSection.querySelector('.prev-check-retrasogeneralizado').textContent = form.querySelector(`#check_retrasogeneralizado_${estudianteId}`).checked ? 'Sí' : 'No';
+            // **********************************
+
             previewSection.querySelector('.prev-check-esquemac').textContent = form.querySelector(`#check_esquemac_${estudianteId}`).checked ? 'Sí' : 'No';
             previewSection.querySelector('.prev-check-esquemai').textContent = form.querySelector(`#check_esquemai_${estudianteId}`).checked ? 'Sí' : 'No';
             previewSection.querySelector('.prev-check-alergiano').textContent = form.querySelector(`#check_alergiano_${estudianteId}`).checked ? 'Sí' : 'No';

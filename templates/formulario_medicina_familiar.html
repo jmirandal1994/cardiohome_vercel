@@ -916,8 +916,8 @@
                                 <label class="checkbox-item {% if est.check_acorde %}checked{% endif %}">
                                     <input type="checkbox" name="check_acorde" id="check_acorde_{{ est.id }}" value="LOGRADO_ACORDE_A_LA_EDAD" {% if est.check_acorde %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Logrado Acorde a la Edad (DSM)
                                 </label>
-                                <label class="checkbox-item {% if est.check_retrasolenguaje %}checked{% endif %}">
-                                    <input type="checkbox" name="check_retrasolenguaje" id="check_retrasolenguaje_{{ est.id }}" value="RETRASO_DEL_LENGUAJE" {% if est.check_retrasolenguaje %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Retraso del Lenguaje
+                                <label class="checkbox-item {% if est.check_retraso %}checked{% endif %}">
+                                    <input type="checkbox" name="check_retraso" id="check_retraso_{{ est.id }}" value="RETRASO_DEL_LENGUAJE" {% if est.check_retraso %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Retraso del Lenguaje
                                 </label>
                                 <label class="checkbox-item {% if est.check_retrasogeneralizado %}checked{% endif %}">
                                     <input type="checkbox" name="check_retrasogeneralizado" id="check_retrasogeneralizado_{{ est.id }}" value="RETRASO_GENERALIZADO_DEL_DESARROLLO" {% if est.check_retrasogeneralizado %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Retraso Generalizado del Desarrollo
@@ -1054,9 +1054,9 @@
                             
                             <strong>DSM:</strong>
                             <p>Logrado Acorde a Edad: <span class="prev-check-acorde">{{ 'Sí' if est.check_acorde else 'No' }}</span></p>
-                            <p>Retraso del Lenguaje: <span class="prev-check-retrasolenguaje">{{ 'Sí' if est.check_retrasolenguaje else 'No' }}</span></p>
+                            <p>Retraso del Lenguaje: <span class="prev-check-retraso">{{ 'Sí' if est.check_retraso else 'No' }}</span></p>
                             <p>Retraso Generalizado del Desarrollo: <span class="prev-check-retrasogeneralizado">{{ 'Sí' if est.check_retrasogeneralizado else 'No' }}</span></p>
-                            
+
                             <strong>Vacunas:</strong>
                             <p>Esquema Completo: <span class="prev-check-esquemac">{{ 'Sí' if est.check_esquemac else 'No' }}</span></p>
                             <p>Esquema Incompleto: <span class="prev-check-esquemai">{{ 'Sí' if est.check_esquemai else 'No' }}</span></p>
@@ -1380,9 +1380,9 @@
             // ** ACTUALIZACIÓN DE ESTADOS DSM **
             previewSection.querySelector('.prev-check-acorde').textContent = form.querySelector(`#check_acorde_${estudianteId}`).checked ? 'Sí' : 'No';
             
-            const retrasoLenguajeCheck = form.querySelector(`#check_retrasolenguaje_${estudianteId}`);
+            const retrasoLenguajeCheck = form.querySelector(`#check_retraso_${estudianteId}`);
             if (retrasoLenguajeCheck) {
-                previewSection.querySelector('.prev-check-retrasolenguaje').textContent = retrasoLenguajeCheck.checked ? 'Sí' : 'No';
+                previewSection.querySelector('.prev-check-retraso').textContent = retrasoLenguajeCheck.checked ? 'Sí' : 'No';
             }
             
             previewSection.querySelector('.prev-check-retrasogeneralizado').textContent = form.querySelector(`#check_retrasogeneralizado_${estudianteId}`).checked ? 'Sí' : 'No';

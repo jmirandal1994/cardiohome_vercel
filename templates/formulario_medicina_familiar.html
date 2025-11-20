@@ -864,17 +864,6 @@
                             <input type="date" name="fecha_reevaluacion" id="fecha_reevaluacion_input_{{ est.id }}" value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}" readonly>
                             <input type="hidden" name="fecha_reevaluacion_pdf" id="fecha_reevaluacion_pdf_{{ est.id }}" value=""> {# Hidden field for PDF format #}
 
-                            {# Observaciones (Texto completo dividido en 7 campos ocultos para el PDF) #}
-                            <label for="observaciones_completas_{{ est.id }}">Observaciones (Se dividirá en 7 campos OBS1-OBS7 en PDF):</label>
-                            <textarea name="observaciones_completas" id="observaciones_completas_{{ est.id }}" rows="7" placeholder="Escriba aquí todas las observaciones." oninput="splitObservations(this)">{{ est.observacion_1 if est.observacion_1 is not none else '' }}{{ est.observacion_2 if est.observacion_2 is not none else '' }}{{ est.observacion_3 if est.observacion_3 is not none else '' }}{{ est.observacion_4 if est.observacion_4 is not none else '' }}{{ est.observacion_5 if est.observacion_5 is not none else '' }}{{ est.observacion_6 if est.observacion_6 is not none else '' }}{{ est.observacion_7 if est.observacion_7 is not none else '' }}</textarea>
-                            <input type="hidden" name="observacion_1" id="observacion_1_{{ est.id }}" value="{{ est.observacion_1 if est.observacion_1 is not none else '' }}">
-                            <input type="hidden" name="observacion_2" id="observacion_2_{{ est.id }}" value="{{ est.observacion_2 if est.observacion_2 is not none else '' }}">
-                            <input type="hidden" name="observacion_3" id="observacion_3_{{ est.id }}" value="{{ est.observacion_3 if est.observacion_3 is not none else '' }}">
-                            <input type="hidden" name="observacion_4" id="observacion_4_{{ est.id }}" value="{{ est.observacion_4 if est.observacion_4 is not none else '' }}">
-                            <input type="hidden" name="observacion_5" id="observacion_5_{{ est.id }}" value="{{ est.observacion_5 if est.observacion_5 is not none else '' }}">
-                            <input type="hidden" name="observacion_6" id="observacion_6_{{ est.id }}" value="{{ est.observacion_6 if est.observacion_6 is not none else '' }}">
-                            <input type="hidden" name="observacion_7" id="observacion_7_{{ est.id }}" value="{{ est.observacion_7 if est.observacion_7 is not none else '' }}">
-
 
                             <h3 class="section-title">Examen Físico y Clasificación</h3>
                             
@@ -910,7 +899,11 @@
                                     <input type="checkbox" name="check_prematuro" id="check_prematuro_{{ est.id }}" value="PREMATURO" {% if est.check_prematuro %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Prematuro (PREMATURO)
                                 </label>
                             </div>
-                            
+
+                            {# OBSERVACIÓN 1: Abajo de Antecedentes Perinatales (50 caracteres) #}
+                            <label for="observacion_1_{{ est.id }}">Observación 1 (Antecedentes Perinatales - Máx. 50):</label>
+                            <textarea name="observacion_1" id="observacion_1_{{ est.id }}" rows="2" maxlength="50" placeholder="Máx. 50 caracteres">{{ est.observacion_1 if est.observacion_1 is not none else '' }}</textarea>
+
                             <h3 class="section-title">DSM</h3>
                             <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.check_acorde %}checked{% endif %}">
@@ -923,6 +916,10 @@
                                     <input type="checkbox" name="check_retrasogeneralizado" id="check_retrasogeneralizado_{{ est.id }}" value="RETRASO_GENERALIZADO_DEL_DESARROLLO" {% if est.check_retrasogeneralizado %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Retraso Generalizado del Desarrollo
                                 </label>
                             </div>
+
+                            {# OBSERVACIÓN 2: Abajo de DSM (50 caracteres) #}
+                            <label for="observacion_2_{{ est.id }}">Observación 2 (DSM - Máx. 50):</label>
+                            <textarea name="observacion_2" id="observacion_2_{{ est.id }}" rows="2" maxlength="50" placeholder="Máx. 50 caracteres">{{ est.observacion_2 if est.observacion_2 is not none else '' }}</textarea>
 
                             <h3 class="section-title">Antecedentes Personales</h3>
                             <label>Vacunas (Esquema):</label>
@@ -943,6 +940,21 @@
                                     <input type="checkbox" name="check_alergiasi" id="check_alergiasi_{{ est.id }}" value="SI_ALERGIAS" {% if est.check_alergiasi %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Sí (SI)
                                 </label>
                             </div>
+
+                            {# OBSERVACIÓN 3: Abajo de Vacunas y Alergias (50 caracteres) #}
+                            <label for="observacion_3_{{ est.id }}">Observación 3 (Vacunas/Alergias - Máx. 50):</label>
+                            <textarea name="observacion_3" id="observacion_3_{{ est.id }}" rows="2" maxlength="50" placeholder="Máx. 50 caracteres">{{ est.observacion_3 if est.observacion_3 is not none else '' }}</textarea>
+
+
+                            {# OBSERVACIÓN 4: Antecedentes Personales General (100 caracteres) #}
+                            <label for="observacion_4_{{ est.id }}">Observación 4 (Antecedentes Personales General - Máx. 100):</label>
+                            <textarea name="observacion_4" id="observacion_4_{{ est.id }}" rows="3" maxlength="100" placeholder="Máx. 100 caracteres">{{ est.observacion_4 if est.observacion_4 is not none else '' }}</textarea>
+
+                            {# OBSERVACIÓN 5: Continuar detalle de Antecedentes Personales (100 caracteres) #}
+                            <label for="observacion_5_{{ est.id }}">Observación 5 (Continuación Antecedentes Personales - Máx. 100):</label>
+                            <textarea name="observacion_5" id="observacion_5_{{ est.id }}" rows="3" maxlength="100" placeholder="Máx. 100 caracteres">{{ est.observacion_5 if est.observacion_5 is not none else '' }}</textarea>
+
+                            
                             <label>Hospitalizaciones/Cirugías:</label>
                             <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.check_cirugiano %}checked{% endif %}">
@@ -963,6 +975,11 @@
                                     <input type="checkbox" name="check_visionrefraccion" id="check_visionrefraccion_{{ est.id }}" value="VICIOS_DE_REFRACCION" {% if est.check_visionrefraccion %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Vicios de Refracción
                                 </label>
                             </div>
+
+                            {# OBSERVACIÓN 6: Abajo de Hospitalizaciones y Visión (50 caracteres) #}
+                            <label for="observacion_6_{{ est.id }}">Observación 6 (Hospitalizaciones/Visión - Máx. 50):</label>
+                            <textarea name="observacion_6" id="observacion_6_{{ est.id }}" rows="2" maxlength="50" placeholder="Máx. 50 caracteres">{{ est.observacion_6 if est.observacion_6 is not none else '' }}</textarea>
+
                             <label>Audición:</label>
                             <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.check_audicionnormal %}checked{% endif %}">
@@ -997,6 +1014,11 @@
                                     <input type="checkbox" name="check_hipertrofia" id="check_hipertrofia_{{ est.id }}" value="HIPERTROFIA_AMIGDALINA" {% if est.check_hipertrofia %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Hipertrofia Amigdalina
                                 </label>
                             </div>
+                            
+                            {# OBSERVACIÓN 7: Abajo de Audición y Salud Bucodental (50 caracteres) #}
+                            <label for="observacion_7_{{ est.id }}">Observación 7 (Audición/Bucodental - Máx. 50):</label>
+                            <textarea name="observacion_7" id="observacion_7_{{ est.id }}" rows="2" maxlength="50" placeholder="Máx. 50 caracteres">{{ est.observacion_7 if est.observacion_7 is not none else '' }}</textarea>
+
 
                             <div class="button-group">
                                 <button type="submit">
@@ -1043,7 +1065,15 @@
                         <p><strong>Peso:</strong> <span class="prev-peso">{{ est.peso if est.peso is not none else '-' }}</span> kg</p>
                         <p><strong>IMC:</strong> <span class="prev-imc">{{ est.imc if est.imc is not none else '-' }}</span></p>
                         <p><strong>Clasificación:</strong> <span class="prev-clasificacion">{{ est.clasificacion_imc if est.clasificacion_imc is not none else '-' }}</span></p>
-                        <p><strong>Observaciones:</strong> <span class="prev-observaciones">{{ est.observacion_1 if est.observacion_1 is not none else '' }}{{ est.observacion_2 if est.observacion_2 is not none else '' }}{{ est.observacion_3 if est.observacion_3 is not none else '' }}{{ est.observacion_4 if est.observacion_4 is not none else '' }}{{ est.observacion_5 if est.observacion_5 is not none else '' }}{{ est.observacion_6 if est.observacion_6 is not none else '' }}{{ est.observacion_7 if est.observacion_7 is not none else '' }}</span></p>
+                        <p><strong>Observaciones:</strong> <span class="prev-observaciones">
+                            (Obs 1) {{ est.observacion_1 if est.observacion_1 is not none else '-' }} | 
+                            (Obs 2) {{ est.observacion_2 if est.observacion_2 is not none else '-' }} |
+                            (Obs 3) {{ est.observacion_3 if est.observacion_3 is not none else '-' }} |
+                            (Obs 4) {{ est.observacion_4 if est.observacion_4 is not none else '-' }} |
+                            (Obs 5) {{ est.observacion_5 if est.observacion_5 is not none else '-' }} |
+                            (Obs 6) {{ est.observacion_6 if est.observacion_6 is not none else '-' }} |
+                            (Obs 7) {{ est.observacion_7 if est.observacion_7 is not none else '-' }}
+                        </span></p>
                         
                         <div class="checkbox-preview-group">
                             <strong>Antecedentes Perinatales:</strong>
@@ -1120,19 +1150,8 @@
                     fechaEvaluacionInput.value = `${yyyy}-${mm}-${dd}`;
                 }
 
-                // Asegurarse de que el textarea de observaciones combinadas tenga el valor inicial
-                const obs1 = form.querySelector('input[name="observacion_1"]').value || '';
-                const obs2 = form.querySelector('input[name="observacion_2"]').value || '';
-                const obs3 = form.querySelector('input[name="observacion_3"]').value || '';
-                const obs4 = form.querySelector('input[name="observacion_4"]').value || '';
-                const obs5 = form.querySelector('input[name="observacion_5"]').value || '';
-                const obs6 = form.querySelector('input[name="observacion_6"]').value || '';
-                const obs7 = form.querySelector('input[name="observacion_7"]').value || '';
-                const observacionesCompletas = form.querySelector('textarea[name="observaciones_completas"]');
-                if (observacionesCompletas) {
-                    observacionesCompletas.value = obs1 + obs2 + obs3 + obs4 + obs5 + obs6 + obs7;
-                }
-
+                // NOTA: Se eliminó la lógica de combinación de observaciones (obs1-obs7) aquí ya que ahora son independientes.
+                
                 updatePreview(form); // Actualiza la vista previa con los valores iniciales
                 
                 // Si la fecha de reevaluación ya tiene un valor, no sobrescribir con el selector de años
@@ -1297,23 +1316,10 @@
             clasificacionInput.value = classification;
         }
 
-        // Función para dividir el texto de observaciones en campos ocultos para el PDF
+        // NOTA: Función splitObservations modificada para ya no hacer nada, 
+        // ya que los campos de observación ahora son independientes.
         function splitObservations(textarea) {
-            const fullText = textarea.value;
-            const maxCharsPerField = 200; // Ajusta este valor según el espacio en tu PDF
-            let currentText = fullText;
-
-            for (let i = 1; i <= 7; i++) {
-                const hiddenField = textarea.form.querySelector(`input[name="observacion_${i}"]`);
-                if (hiddenField) {
-                    if (currentText.length > 0) {
-                        hiddenField.value = currentText.substring(0, maxCharsPerField);
-                        currentText = currentText.substring(maxCharsPerField);
-                    } else {
-                        hiddenField.value = ''; // Limpiar campos subsiguientes si no hay más texto
-                    }
-                }
-            }
+            // La lógica de división no es necesaria, solo se actualiza la vista previa.
             updatePreview(textarea.form);
         }
 
@@ -1360,16 +1366,28 @@
             previewSection.querySelector('.prev-imc').textContent = form.imc ? form.imc.value : '-';
             previewSection.querySelector('.prev-clasificacion').textContent = form.clasificacion_imc ? form.clasificacion_imc.value : '-'; // Corrected name
 
-            // Observaciones
-            const obsText = (form.querySelector(`input[name="observacion_1"]`).value || '') +
-                            (form.querySelector(`input[name="observacion_2"]`).value || '') +
-                            (form.querySelector(`input[name="observacion_3"]`).value || '') +
-                            (form.querySelector(`input[name="observacion_4"]`).value || '') +
-                            (form.querySelector(`input[name="observacion_5"]`).value || '') +
-                            (form.querySelector(`input[name="observacion_6"]`).value || '') +
-                            (form.querySelector(`input[name="observacion_7"]`).value || '');
-            previewSection.querySelector('.prev-observaciones').textContent = obsText || '-';
-
+            // Observaciones (Ahora se muestran individualmente en la vista previa)
+            const obs1 = form.querySelector(`textarea[name="observacion_1"]`).value || '-';
+            const obs2 = form.querySelector(`textarea[name="observacion_2"]`).value || '-';
+            const obs3 = form.querySelector(`textarea[name="observacion_3"]`).value || '-';
+            const obs4 = form.querySelector(`textarea[name="observacion_4"]`).value || '-';
+            const obs5 = form.querySelector(`textarea[name="observacion_5"]`).value || '-';
+            const obs6 = form.querySelector(`textarea[name="observacion_6"]`).value || '-';
+            const obs7 = form.querySelector(`textarea[name="observacion_7"]`).value || '-';
+            
+            // Actualizar el span genérico de Observaciones para mostrar los valores
+            const prevObsSpan = previewSection.querySelector('.prev-observaciones');
+            if (prevObsSpan) {
+                prevObsSpan.innerHTML = `
+                    (Obs 1) ${obs1} | 
+                    (Obs 2) ${obs2} |
+                    (Obs 3) ${obs3} |
+                    (Obs 4) ${obs4} |
+                    (Obs 5) ${obs5} |
+                    (Obs 6) ${obs6} |
+                    (Obs 7) ${obs7}
+                `;
+            }
 
             // Checkbox Previews (using the actual checkbox state)
             previewSection.querySelector('.prev-check-cesarea').textContent = form.querySelector(`#check_cesarea_${estudianteId}`).checked ? 'Sí' : 'No';

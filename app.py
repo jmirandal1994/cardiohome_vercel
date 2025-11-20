@@ -514,7 +514,7 @@ def relleno_formulario(nomina_id):
     url_estudiantes = (
         f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
         f"?nomina_id=eq.{nomina_id}"
-        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,si_2,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones" 
+        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,si_2,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,fecha_reevaluacion_select" 
         f"&order=nombre.asc"
     )
 
@@ -551,7 +551,7 @@ def relleno_formulario(nomina_id):
                 if est.get('si_2'):
                     est['check_cirugiasi'] = est.get('si_2') 
 
-                # 💡 CORRECCIÓN 2: Mapeo de género (sexo) a los checkboxes para que aparezcan marcados
+                # Mapeo de género (sexo) a los checkboxes para que aparezcan marcados
                 sexo_db = (est.get('sexo') or "").upper()
                 est['genero_f'] = (sexo_db == 'F')
                 est['genero_m'] = (sexo_db == 'M')
@@ -913,6 +913,9 @@ def marcar_evaluado():
             
             # Mapeo Corregido: Guardado del campo 'indicaciones'
             'indicaciones': get_form_field_value('indicaciones', request.form), 
+            
+            # 💡 CORRECCIÓN 3: Guardado del valor del SELECT de años
+            'fecha_reevaluacion_select': get_form_field_value('fecha_reevaluacion_select', request.form, return_none_if_empty=True),
             
             # Observaciones
             'observacion_1': get_form_field_value('observacion_1', request.form),

@@ -1377,13 +1377,11 @@
             previewSection.querySelector('.prev-check-vaginal').textContent = form.querySelector(`#check_vaginal_${estudianteId}`).checked ? 'Sí' : 'No';
             previewSection.querySelector('.prev-check-prematuro').textContent = form.querySelector(`#check_prematuro_${estudianteId}`).checked ? 'Sí' : 'No';
             
-            // ** ACTUALIZACIÓN DE ESTADOS DSM **
+            // ** ACTUALIZACIÓN DE ESTADOS DSM CORREGIDA EN PREVIEW **
             previewSection.querySelector('.prev-check-acorde').textContent = form.querySelector(`#check_acorde_${estudianteId}`).checked ? 'Sí' : 'No';
             
-            const retrasoLenguajeCheck = form.querySelector(`#check_retraso_${estudianteId}`);
-            if (retrasoLenguajeCheck) {
-                previewSection.querySelector('.prev-check-retraso').textContent = retrasoLenguajeCheck.checked ? 'Sí' : 'No';
-            }
+            // Lógica corregida para check_retraso
+            previewSection.querySelector('.prev-check-retraso').textContent = form.querySelector(`#check_retraso_${estudianteId}`).checked ? 'Sí' : 'No';
             
             previewSection.querySelector('.prev-check-retrasogeneralizado').textContent = form.querySelector(`#check_retrasogeneralizado_${estudianteId}`).checked ? 'Sí' : 'No';
             // **********************************

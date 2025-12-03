@@ -264,19 +264,6 @@
             transform: translate(-50%, -50%);
         }
 
-        /* --- NUEVO CSS AGREGADO --- */
-        /* Color distintivo para alumnos agregados manualmente (púrpura) */
-        details.estudiante[data-agregado-manual="true"] {
-            border-left: 6px solid var(--signature-purple); /* Color púrpura para distinguirlo */
-            background-color: #f7f3ff; /* Fondo más claro */
-        }
-
-        details.estudiante[data-agregado-manual="true"] summary {
-            font-weight: 700;
-            color: #fff; /* El color del texto del summary debe seguir siendo blanco */
-            background: var(--signature-purple); /* Fondo púrpura para el summary */
-        }
-        /* --- FIN NUEVO CSS --- */
 
         details {
             margin-bottom: 25px; /* Más espacio entre estudiantes */
@@ -304,9 +291,6 @@
         }
         summary:hover {
             background: #155ab6;
-        }
-        details[data-agregado-manual="true"] summary:hover {
-            background: #6a3bcb; /* Púrpura más oscuro al pasar el mouse */
         }
         summary::marker { /* Ocultar el marcador predeterminado */
             display: none;
@@ -343,120 +327,68 @@
             background: #ffffff;
             border-left: 6px solid #1a73e8;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
             padding: 30px;
-            position: relative;
-        }
-
-        .badge {
-            position: absolute;
-            top: 20px;
-            right: 30px;
-            background: #34a853;
-            color: #fff;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            opacity: 0;
-            transform: translateY(-10px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-
-        .badge.show {
-            opacity: 1;
-            transform: translateY(0);
+            box-shadow: 0 4px 10px var(--shadow-subtle);
         }
 
         .preview {
-            flex: 1 1 350px;
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            flex: 1 1 350px; /* Base para el preview */
+            background-color: var(--primary-light);
             padding: 30px;
-            border-left: 6px solid #1a73e8;
-            position: relative;
-            overflow: hidden;
-            transition: box-shadow 0.3s ease, transform 0.2s ease;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px var(--shadow-subtle);
+            border: 1px solid var(--border-color);
         }
 
-        .preview:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-        }
-
-        .preview h3 {
-            margin-top: 0;
-            font-size: 1.4rem;
+        .formulario h3 {
             color: #1a73e8;
-            border-bottom: 2px solid #1a73e8;
+            border-bottom: 2px solid #e0e0e0;
             padding-bottom: 10px;
             margin-bottom: 20px;
-        }
-
-        .preview p {
-            margin: 12px 0;
-            font-size: 1rem;
-            color: #333;
-        }
-
-        .preview p strong {
-            display: inline-block;
-            width: 180px;
-            color: #1a73e8;
-        }
-
-        .preview span {
-            font-weight: 500;
-            color: #555;
-        }
-
-        .preview-img {
-            display: block;
-            width: 100%;
-            height: auto; /* Asegura que la imagen se adapte */
-            margin-top: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-size: 1.4rem;
+            font-weight: 600;
         }
 
         label {
             display: block;
             margin-top: 15px;
+            margin-bottom: 5px;
             font-weight: 600;
             color: #333;
         }
 
-        input, textarea, select {
+        input[type="text"], 
+        input[type="number"], 
+        input[type="date"], 
+        select, 
+        textarea {
             width: 100%;
-            padding: 10px 12px;
-            margin-top: 5px;
-            border: 1px solid #b0c2d4; /* Borde más suave */
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
             border-radius: 6px;
+            box-sizing: border-box;
             font-size: 1rem;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        input:focus, textarea:focus, select:focus {
+
+        input[type="text"]:focus, 
+        input[type="number"]:focus, 
+        input[type="date"]:focus, 
+        select:focus, 
+        textarea:focus {
             border-color: #1a73e8;
-            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.3);
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.2);
             outline: none;
         }
-        input[type="date"] {
-            -webkit-appearance: none; /* Quitar estilo nativo en Webkit */
-            -moz-appearance: none; /* Quitar estilo nativo en Mozilla */
-            appearance: none;
-            background-color: #fff;
-            padding-right: 30px; /* Espacio para el icono del calendario */
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="%231a73e8"><path d="M20 3h-1V1h-2v2H7V1H5v2H4c-1.11 0-1.99.89-1.99 2L2 21c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm0 18H4V8h16v13z"/></svg>');
-            background-repeat: no-repeat;
-            background-position: right 8px center;
-            background-size: 20px;
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
         }
 
         .button-group {
             display: flex;
-            flex-wrap: wrap;
             gap: 15px; /* Más espacio entre botones */
             margin-top: 25px; /* Más margen superior */
             justify-content: center; /* Centrar botones */
@@ -472,111 +404,205 @@
             cursor: pointer;
             font-weight: bold;
             font-size: 1.05rem; /* Un poco más grande */
-            transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background 0.3s ease, transform 0.2s ease;
         }
 
         button:hover {
             background: #155ab6;
             transform: translateY(-2px);
-            box-shadow: 0 5px 12px rgba(0,0,0,0.15);
         }
 
-        button.secondary {
-            background: #34a853; /* Verde para acciones secundarias */
+        button:disabled {
+            background: #a9c5ec;
+            cursor: not-allowed;
+            transform: none;
         }
 
-        button.secondary:hover {
-            background: #2c8c46;
+        .preview p {
+            margin: 8px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px dotted #ccc;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .preview p strong {
+            font-weight: 600;
+            color: var(--primary-dark);
+            flex-shrink: 0;
+            width: 180px; /* Ancho fijo para las etiquetas */
+        }
+        .preview p span {
+            text-align: right;
+            flex-grow: 1;
+        }
+
+        .badge {
+            display: none;
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: var(--accent-green);
+            color: var(--text-light);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            font-weight: 700;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .badge.show {
+            display: block;
+        }
+
+        .estudiante[data-evaluated-status="true"] summary {
+            background-color: var(--accent-green); /* Verde para evaluados */
+        }
+        .estudiante[data-evaluated-status="true"] summary:hover {
+            background-color: hsl(140, 65%, 35%);
+        }
+        .estudiante[data-evaluated-status="true"] .formulario {
+            border-left: 6px solid var(--accent-green);
+        }
+
+        /* Estilos para impresión */
+        @media print {
+            body {
+                background: white !important;
+                padding: 0;
+                margin: 0;
+                font-size: 10pt; /* Fuente más pequeña para ahorrar espacio */
+            }
+            header, .header-btn, .action-buttons, .evaluation-counter, #buscador, .filter-group, .badge, .button-group {
+                display: none !important; /* Ocultar elementos no deseados */
+            }
+            .main-content-wrapper {
+                margin: 0;
+                padding: 0;
+                width: 100%; /* Ocupar todo el ancho para impresión */
+                max-width: none;
+            }
+            details {
+                page-break-inside: avoid; /* Evitar que los formularios se corten al final de una página */
+                margin-bottom: 20px; /* Espacio entre formularios impresos */
+                border: 1px solid #ccc; /* Borde suave para cada formulario impreso */
+                padding: 15px;
+                box-shadow: none;
+            }
+            details[open] summary {
+                border-bottom: none !important;
+            }
+            .estudiante summary {
+                background: #e0e0e0 !important; /* Fondo más claro para impresión */
+                color: #333 !important;
+                border-bottom: 1px solid #ccc !important;
+            }
+            .estudiante details[open] .container {
+                display: flex !important; /* Asegurar que el contenido se muestre */
+                flex-direction: column !important;
+                gap: 15px !important;
+                padding: 15px !important;
+                border: none !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+            }
+            .estudiante .formulario, .estudiante .preview {
+                flex: none !important; /* Quitar flexibilidad para impresión */
+                width: 100% !important;
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+            .estudiante .preview p {
+                border-bottom: 1px solid #ddd;
+            }
         }
         
-        button.signature-button {
-            background: #8B5CF6; /* Púrpura para firma */
-        }
-        button.signature-button:hover {
-            background: #6a3bcb;
-        }
-
-        .status-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 10px;
-            background-color: var(--accent-red); /* No Evaluado (Default) */
-            transition: background-color 0.3s ease;
-        }
-
-        .status-indicator.evaluated-true {
-            background-color: var(--accent-green); /* Evaluado */
-        }
-
-        /* Estilos de checkboxes/radio personalizados */
+        /* Estilos para el checkbox-group */
         .checkbox-group {
             display: flex;
             flex-wrap: wrap;
             gap: 15px;
             margin-top: 10px;
+            margin-bottom: 20px;
         }
+
         .checkbox-item {
             display: flex;
             align-items: center;
-            padding: 8px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
+            gap: 8px;
             cursor: pointer;
-            transition: all 0.2s ease;
-            user-select: none;
-            flex-grow: 1; /* Permite que se extiendan */
-            max-width: 100%; /* Asegura que no se salgan del contenedor */
-        }
-        .checkbox-item:hover {
-            background-color: var(--primary-light);
-        }
-        .checkbox-item input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            margin: 0 10px 0 0;
-            appearance: none;
-            border: 2px solid #555;
-            border-radius: 4px;
-            cursor: pointer;
-            position: relative;
-            flex-shrink: 0;
-            transition: all 0.2s ease;
-        }
-        .checkbox-item input[type="checkbox"]:checked {
-            background-color: var(--accent-blue);
-            border-color: var(--accent-blue);
-        }
-        .checkbox-item input[type="checkbox"]:checked::after {
-            content: '\f00c'; /* Icono de check */
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            font-size: 12px;
-            color: white;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        /* Estilo para los que ya están chequeados */
-        .checkbox-item.checked {
-            border-color: var(--accent-green);
-            background-color: hsl(140, 65%, 90%);
-        }
-        
-        .section-title {
-            color: var(--primary-dark);
-            border-bottom: 2px solid var(--border-color);
-            padding-bottom: 8px;
-            margin-top: 25px;
-            margin-bottom: 15px;
-            font-size: 1.2rem;
+            font-weight: normal;
+            transition: color 0.2s;
+            position: relative; /* Importante para el estilo del checkmark */
         }
 
-        /* Media Queries para Responsividad */
+        .checkbox-item input[type="checkbox"] {
+            /* Ocultar el checkbox nativo y usar un estilo customizado */
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        .checkbox-item span {
+            /* Estilo para el texto */
+            padding-left: 25px; /* Espacio para el checkmark customizado */
+            position: relative;
+        }
+        
+        .checkbox-item span::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            border: 2px solid #555;
+            border-radius: 4px;
+            background-color: white;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-item.checked span::before {
+            background-color: #1a73e8;
+            border-color: #1a73e8;
+        }
+
+        .checkbox-item.checked span::after {
+            content: '\f00c'; /* Icono de check (Font Awesome) */
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            left: 3px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 10px;
+        }
+        
+        /* Estilos para campos de solo lectura */
+        input[readonly], select[readonly], textarea[readonly] {
+            background-color: #e9ecef;
+            cursor: default;
+        }
+        
+        /* Responsive Design */
         @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 1.5rem;
+            }
             .header-btn {
                 position: static;
                 margin-bottom: 10px; /* Espacio entre botones */
@@ -609,12 +635,9 @@
                 max-width: 100%;
             }
             .container {
-                flex-direction: column;
-                gap: 20px;
                 padding: 15px;
             }
             .formulario, .preview {
-                flex: 1 1 100%; /* Ocupar todo el ancho */
                 padding: 20px;
             }
             .button-group {
@@ -630,98 +653,18 @@
                 width: 120px; /* Reducir el ancho en móvil */
             }
         }
-
-        /* Estilos de impresión (no relevante para el usuario final pero importante mantener si ya existe) */
-        @media print {
-            /* Ocultar elementos no deseados */
-            header, .action-buttons, .evaluation-counter, #buscador, .filter-group, .logout-btn, .header-btn, .preview-img, .button-group button:not(.print-btn), .badge, .preview-img {
-                display: none !important;
-            }
-            body {
-                background: white;
-                padding: 0;
-            }
-            .main-content-wrapper {
-                margin: 0;
-                padding: 0;
-                width: 100%; /* Ocupar todo el ancho para impresión */
-                max-width: none;
-            }
-            .estudiante {
-                page-break-inside: avoid; /* Evitar que los formularios se corten al final de una página */
-                margin-bottom: 20px; /* Espacio entre formularios impresos */
-                border: 1px solid #ccc; /* Borde suave para cada formulario impreso */
-                padding: 15px;
-            }
-            .estudiante summary {
-                background: #e0e0e0 !important; /* Fondo más claro para impresión */
-                color: #333 !important;
-                border-bottom: 1px solid #ccc !important;
-            }
-            .estudiante details[open] summary .chevron-icon {
-                display: none !important; /* Ocultar el icono de flecha al imprimir */
-            }
-            .estudiante details[open] .container {
-                display: flex !important; /* Asegurar que el contenido se muestre */
-                flex-direction: column !important;
-                gap: 15px !important;
-                padding: 15px !important;
-                border: none !important;
-                border-radius: 0 !important;
-                box-shadow: none !important;
-            }
-            .estudiante .formulario, .estudiante .preview {
-                flex: none !important; /* Quitar flexibilidad para impresión */
-                width: 100% !important;
-                padding: 0 !important;
-                border: none !important;
-                box-shadow: none !important;
-            }
-            .estudiante .form-actions {
-                display: none !important; /* Ocultar botones de acción en impresión */
-            }
-            .estudiante .badge.show {
-                display: none !important; /* Ocultar badge de "Guardado" */
-            }
-            .estudiante .preview-img {
-                max-width: 200px;
-                display: block !important;
-            }
-
-            /* Convertir los elementos de formulario a texto para la impresión */
-            .formulario input, .formulario textarea, .formulario select {
-                border: none !important;
-                box-shadow: none !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                font-size: 1rem;
-                display: block;
-            }
-
-            .formulario .input-group > label, .formulario .input-group > input {
-                display: block;
-                margin: 5px 0;
-            }
-            
-            .formulario .checkbox-group {
-                display: block; /* Vuelve a formato de lista para impresión */
-            }
-            .formulario .checkbox-item {
-                border: none;
-                background-color: white;
-                padding: 0;
-                margin-bottom: 5px;
-                display: block;
-            }
-            .formulario .checkbox-item input[type="checkbox"] {
-                display: none;
-            }
-            .formulario .checkbox-item.checked::before {
-                content: "✅ ";
-                font-weight: bold;
-                color: var(--accent-green);
-            }
+        
+        /* NUEVO ESTILO PARA SWEETALERT */
+        .swal2-label-custom {
+            display: block;
+            text-align: left;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 0.95em;
         }
+        /* FIN NUEVO ESTILO */
     </style>
 </head>
 <body>
@@ -730,384 +673,381 @@
             <i class="fas fa-arrow-left"></i> Volver al Dashboard
         </a>
         <img src="{{ url_for('static', filename='logo.png') }}" alt="CardioHome Logo">
-        <h1>{{ establecimiento_nombre }} — Formulario Medicina Familiar</h1>
-        <button class="header-btn logout-btn" onclick="cerrarSesion()">
-            <i class="fas fa-sign-out-alt"></i> Cerrar sesión
-        </button>
+        <a href="{{ url_for('logout') }}" class="header-btn logout-btn">
+            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+        </a>
+        <h1>Formulario de Medicina Familiar</h1>
+        <h2>{{ establecimiento.nombre }} - Nómina: {{ nomina.nombre }}</h2>
     </header>
 
     <div class="main-content-wrapper">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="flash-messages">
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-
-        <div class="evaluation-counter">
-            <i class="fas fa-clipboard-list"></i>
-            Total de Alumnos: <strong>{{ total_formularios }}</strong>
-            / Alumnos Evaluados: <strong id="completed-forms-count">0</strong>
-        </div>
-
         <div class="action-buttons">
-            <button onclick="mostrarFormularioAgregarAlumno()" class="add-student-btn" style="background-color: var(--signature-purple);" title="Añadir un nuevo alumno manualmente a la nómina actual">
-                <i class="fas fa-user-plus"></i> Agregar Alumno Manual
-            </button>
-            <button onclick="generarEImprimirPDFsVisibles('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
+            <button type="button" onclick="generarEImprimirPDFsVisibles('{{ session['current_nomina_id'] }}', '{{ establecimiento.nombre_est|slugify }}')">
                 <i class="fas fa-print"></i> Imprimir Formularios Visibles
             </button>
-            <button onclick="descargarNominaExcel('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
-                <i class="fas fa-file-excel"></i> Descargar Excel Nómina
+            <button type="button" onclick="exportarExcel()">
+                <i class="fas fa-file-excel"></i> Exportar a Excel
             </button>
-            <button onclick="enviarADrive('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
-                <i class="fab fa-google-drive"></i> Enviar a Google Drive
+            <button type="button" onclick="agregarAlumnoManual()">
+                <i class="fas fa-user-plus"></i> Agregar Alumno Manual
             </button>
+            </div>
+
+        <div class="evaluation-counter">
+            <i class="fas fa-users"></i>
+            Total de Alumnos: <strong>{{ estudiantes|length }}</strong>
+            <i class="fas fa-check-circle" style="color: var(--accent-green);"></i>
+            Evaluados: <strong id="completed-forms-count">0</strong>
         </div>
 
-        <input type="text" id="buscador" placeholder="Buscar por Nombre o RUT del Alumno..." autocomplete="off">
-        
+        <input type="text" id="buscador" placeholder="Buscar por nombre o RUT...">
+
         <div class="filter-group">
             <label>
-                <input type="radio" name="evaluation_filter" value="all" checked> Todos
+                <input type="radio" name="evaluation_filter" value="all" checked onchange="aplicarFiltros()"> Todos
             </label>
             <label>
-                <input type="radio" name="evaluation_filter" value="evaluated"> Evaluados
+                <input type="radio" name="evaluation_filter" value="pending" onchange="aplicarFiltros()"> Pendientes
             </label>
             <label>
-                <input type="radio" name="evaluation_filter" value="not_evaluated"> Pendientes
+                <input type="radio" name="evaluation_filter" value="evaluated" onchange="aplicarFiltros()"> Evaluados
             </label>
         </div>
 
-        <div class="student-list">
-            {% for est in estudiantes_nomina %}
-            {% set is_evaluated = est.evaluado_flag or est.estado_general == 'Evaluado' %}
-            {% set is_manual = est.agregado_por_doctora if est.agregado_por_doctora is not none else false %}
-            <details class="estudiante" data-estudiante-id="{{ est.id }}" data-nombre="{{ est.nombre|lower }}" data-evaluated-status="{{ 'true' if is_evaluated else 'false' }}" data-agregado-manual="{{ 'true' if is_manual else 'false' }}">
-                <summary class="estudiante-header">
-                    <span class="status-indicator evaluated-{{ is_evaluated|lower }}"></span>
-                    <span class="estudiante-nombre">{{ est.nombre }} - RUT: {{ est.rut }}</span>
-                    <i class="fas fa-chevron-down chevron-icon"></i>
-                </summary>
-                <div class="container">
-                    <div class="formulario">
-                        <span class="badge {{ 'show' if is_evaluated else '' }}" style="background-color: {{ 'var(--accent-green)' if is_evaluated and not is_manual else 'var(--signature-purple)' if is_manual else 'var(--primary-medium)' }}">
-                            {{ 'Guardado' if is_evaluated and not is_manual else 'Guardado (Manual)' if is_manual else 'Pendiente' }}
-                        </span>
-                        <form id="form-estudiante-{{ est.id }}" onsubmit="event.preventDefault(); submitForm(this);">
-                            <input type="hidden" name="estudiante_id" value="{{ est.id }}">
-                            <input type="hidden" name="nomina_id" value="{{ session['current_nomina_id'] }}">
-                            <input type="hidden" name="form_type" value="familiar">
+        {% for est in estudiantes %}
+        <details class="estudiante" data-estudiante-id="{{ est.id }}" data-nombre="{{ est.nombre|lower }}" data-rut="{{ est.rut|lower }}" data-evaluated-status="{{ 'true' if est.evaluado else 'false' }}">
+            <summary>
+                {{ est.nombre }} - RUT: {{ est.rut }} - Edad: {{ est.edad }} años
+                <span class="status-indicator">
+                    {% if est.evaluado %}
+                        <i class="fas fa-check-circle"></i> Evaluado
+                    {% else %}
+                        <i class="fas fa-clock"></i> Pendiente
+                    {% endif %}
+                </span>
+                <i class="fas fa-chevron-right chevron-icon"></i>
+            </summary>
+            <div class="container">
+                <div class="formulario">
+                    <span class="badge {% if est.evaluado %}show{% endif %}">{% if est.evaluado %}Evaluado{% else %}Guardado{% endif %}</span>
+                    <form id="form-estudiante-{{ est.id }}" onsubmit="event.preventDefault(); submitForm(this);">
+                        {# Campos ocultos para enviar al backend #}
+                        <input type="hidden" name="estudiante_id" value="{{ est.id }}">
+                        <input type="hidden" name="nomina_id" value="{{ session['current_nomina_id'] }}">
 
-                            <h3 class="section-title">Identificación del Estudiante</h3>
-                            <label for="nombre_{{ est.id }}">Nombre Completo:</label>
-                            <input type="text" name="nombre" id="nombre_{{ est.id }}" value="{{ est.nombre }}" required readonly>
-                            <input type="hidden" name="nombre_original" value="{{ est.nombre }}">
+                        <h3 class="section-title">Identificación del Estudiante</h3>
+                        {# NOMBRE DE CAMPO: Nombres y Apellidos (PDF) -> nombre (HTML) #}
+                        <label for="nombre_{{ est.id }}">Nombre Completo:</label>
+                        <input type="text" name="nombre" id="nombre_{{ est.id }}" class="form-control" value="{{ est.nombre }}" required readonly>
+                        
+                        {# NOMBRE DE CAMPO: RUT (PDF) -> rut (HTML) #}
+                        <label for="rut_{{ est.id }}">RUT:</label>
+                        <input type="text" name="rut" id="rut_{{ est.id }}" class="form-control" value="{{ est.rut }}" required readonly>
+                        
+                        {# NOMBRE DE CAMPO: FECHA DE NACIMIENTO (PDF) -> fecha_nacimiento (HTML) #}
+                        <label for="fecha_nacimiento_{{ est.id }}">Fecha de Nacimiento:</label>
+                        <input type="date" name="fecha_nacimiento" id="fecha_nacimiento_{{ est.id }}" class="form-control" value="{{ est.fecha_nacimiento }}" required readonly>
+                        <input type="hidden" name="fecha_nacimiento_original" value="{{ est.fecha_nacimiento }}">
+                        
+                        {# CAMPO EDAD (Calculado/ReadOnly) #}
+                        <label for="edad_{{ est.id }}">Edad:</label>
+                        <input type="text" id="edad_{{ est.id }}" class="form-control" value="{{ est.edad }} años" readonly>
+                        
+                        {# CAMPO GÉNERO (M/F) #}
+                        <label>Género:</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item {% if est.genero == 'F' %}checked{% endif %}">
+                                <input type="checkbox" name="genero_f" id="genero_f_{{ est.id }}" value="F" {% if est.genero == 'F' %}checked{% endif %} onchange="handleGenderChange(this)" disabled>
+                                <span>Femenino (F)</span>
+                            </label>
+                            <label class="checkbox-item {% if est.genero == 'M' %}checked{% endif %}">
+                                <input type="checkbox" name="genero_m" id="genero_m_{{ est.id }}" value="M" {% if est.genero == 'M' %}checked{% endif %} onchange="handleGenderChange(this)" disabled>
+                                <span>Masculino (M)</span>
+                            </label>
+                            <input type="hidden" name="genero" value="{{ est.genero if est.genero is not none else '' }}">
+                        </div>
 
-                            <label for="rut_{{ est.id }}">RUN:</label>
-                            <input type="text" name="rut" id="rut_{{ est.id }}" value="{{ est.rut }}" required readonly>
+                        <h3 class="section-title">Antropometría</h3>
+                        {# NOMBRE DE CAMPO: Talla (PDF) -> altura (HTML) #}
+                        <label for="altura_{{ est.id }}">Talla (cm):</label>
+                        <input type="number" name="altura" id="altura_{{ est.id }}" value="{{ est.altura if est.altura is not none else '' }}" placeholder="Ej: 130.5" oninput="calculateIMC(this.form)">
+                        
+                        {# NOMBRE DE CAMPO: Peso (PDF) -> peso (HTML) #}
+                        <label for="peso_{{ est.id }}">Peso (kg):</label>
+                        <input type="number" name="peso" id="peso_{{ est.id }}" value="{{ est.peso if est.peso is not none else '' }}" placeholder="Ej: 60.2" oninput="calculateIMC(this.form)">
+                        
+                        {# NOMBRE DE CAMPO: I.M.C (PDF) -> imc (HTML) #}
+                        <label for="imc_{{ est.id }}">I.M.C:</label>
+                        <input type="text" name="imc" id="imc_{{ est.id }}" value="{{ est.imc if est.imc is not none else '' }}" readonly>
+                        
+                        {# NOMBRE DE CAMPO: Clasificación (PDF) -> clasificacion_imc (HTML) #}
+                        <label for="clasificacion_imc_{{ est.id }}">Clasificación (IMC):</label>
+                        <input type="text" name="clasificacion_imc" id="clasificacion_imc_{{ est.id }}" value="{{ est.clasificacion_imc if est.clasificacion_imc is not none else '' }}" readonly>
 
-                            <label for="fecha_nacimiento_{{ est.id }}">Fecha de Nacimiento:</label>
-                            <input type="date" name="fecha_nacimiento" id="fecha_nacimiento_{{ est.id }}" value="{{ est.fecha_nacimiento_formato if est.fecha_nacimiento_formato is not none else '' }}" required readonly>
-                            <input type="hidden" name="fecha_nacimiento_original" value="{{ est.fecha_nacimiento_formato if est.fecha_nacimiento_formato is not none else '' }}">
-                            
-                            <label for="edad_{{ est.id }}">Edad:</label>
-                            <input type="text" name="edad" id="edad_{{ est.id }}" value="{{ est.edad if est.edad is not none else '' }}" required readonly>
+                        <h3 class="section-title">Antecedentes Médicos</h3>
+                        
+                        {# NOMBRE DE CAMPO: ESQUEMA VACUNAL (PDF) -> check_esquemac/i (HTML) #}
+                        <label>Esquema Vacunal:</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item {% if est.check_esquemac %}checked{% endif %}">
+                                <input type="checkbox" name="check_esquemac" id="check_esquemac_{{ est.id }}" value="ESQUEMA_COMPLETO" {% if est.check_esquemac %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)">
+                                <span>Completo (ESQUEMA COMPLETO)</span>
+                            </label>
+                            <label class="checkbox-item {% if est.check_esquemai %}checked{% endif %}">
+                                <input type="checkbox" name="check_esquemai" id="check_esquemai_{{ est.id }}" value="ESQUEMA_INCOMPLETO" {% if est.check_esquemai %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)">
+                                <span>Incompleto (ESQUEMA INCOMPLETO)</span>
+                            </label>
+                        </div>
+                        
+                        {# NOMBRE DE CAMPO: ALERGIAS (PDF) -> check_alergiano/si, observacion_1 (HTML) #}
+                        <label>Alergias:</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item {% if est.check_alergiano %}checked{% endif %}">
+                                <input type="checkbox" name="check_alergiano" id="check_alergiano_{{ est.id }}" value="NO_ALERGIAS" {% if est.check_alergiano %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)">
+                                <span>No presenta</span>
+                            </label>
+                            <label class="checkbox-item {% if est.check_alergiasi %}checked{% endif %}">
+                                <input type="checkbox" name="check_alergiasi" id="check_alergiasi_{{ est.id }}" value="SI_ALERGIAS" {% if est.check_alergiasi %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)">
+                                <span>Sí presenta. Especifique en Observaciones.</span>
+                            </label>
+                        </div>
+                        <label for="observacion_1_{{ est.id }}">Observación (Alergias):</label>
+                        <textarea name="observacion_1" id="observacion_1_{{ est.id }}" oninput="updatePreview(this.form)">{{ est.observacion_1 if est.observacion_1 is not none else '' }}</textarea>
 
-                            <label for="nacionalidad_{{ est.id }}">Nacionalidad:</label>
-                            <input type="text" name="nacionalidad" id="nacionalidad_{{ est.id }}" value="{{ est.nacionalidad if est.nacionalidad is not none else 'Chilena' }}" readonly>
-                            
-                            <h3 class="section-title">Diagnóstico y Evaluación</h3>
+                        {# NOMBRE DE CAMPO: CIRUGÍAS (PDF) -> check_cirugiano/si, observacion_2 (HTML) #}
+                        <label>Hospitalizaciones/Cirugías:</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item {% if est.check_cirugiano %}checked{% endif %}">
+                                <input type="checkbox" name="check_cirugiano" id="check_cirugiano_{{ est.id }}" value="NO_CIRUGIAS" {% if est.check_cirugiano %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)">
+                                <span>No presenta</span>
+                            </label>
+                            <label class="checkbox-item {% if est.check_cirugiasi %}checked{% endif %}">
+                                <input type="checkbox" name="check_cirugiasi" id="check_cirugiasi_{{ est.id }}" value="SI_CIRUGIAS" {% if est.check_cirugiasi %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)">
+                                <span>Sí presenta. Especifique en Observaciones.</span>
+                            </label>
+                        </div>
+                        <label for="observacion_2_{{ est.id }}">Observación (Cirugías/Hospitalizaciones):</label>
+                        <textarea name="observacion_2" id="observacion_2_{{ est.id }}" oninput="updatePreview(this.form)">{{ est.observacion_2 if est.observacion_2 is not none else '' }}</textarea>
 
-                            <label for="derivaciones_{{ est.id }}">Derivaciones:</label>
-                            <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="3" placeholder="Indicar derivaciones o procedimientos pendientes (Ej: Oftalmología, Interconsulta, etc.).">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
+                        <h3 class="section-title">Evaluación Sensorial y de Lenguaje</h3>
 
-                            <label for="diagnostico_1_{{ est.id }}">Diagnóstico Principal:</label>
-                            <select name="diagnostico_1" id="diagnostico_1_{{ est.id }}">
-                                <option value="">Seleccionar</option>
-                                <option value="NORMAL" {% if est.diagnostico_1 == 'NORMAL' %}selected{% endif %}>NORMAL</option>
-                                <option value="TRASTORNO_ATENCION" {% if est.diagnostico_1 == 'TRASTORNO_ATENCION' %}selected{% endif %}>TRASTORNO ATENCIÓN</option>
-                                <option value="DISCAPACIDAD_INTELECTUAL" {% if est.diagnostico_1 == 'DISCAPACIDAD_INTELECTUAL' %}selected{% endif %}>DISCAPACIDAD INTELECTUAL</option>
-                                <option value="SINDROME_DOWN" {% if est.diagnostico_1 == 'SINDROME_DOWN' %}selected{% endif %}>SÍNDROME DE DOWN</option>
-                                <option value="OTROS" {% if est.diagnostico_1 == 'OTROS' %}selected{% endif %}>OTROS (Especificar en Complementario)</option>
-                                </select>
-                            
-                            <label for="diagnostico_2_{{ est.id }}">Diagnóstico Secundario:</label>
-                            <select name="diagnostico_2" id="diagnostico_2_{{ est.id }}">
-                                <option value="">Seleccionar</option>
-                                <option value="NORMAL" {% if est.diagnostico_2 == 'NORMAL' %}selected{% endif %}>NORMAL</option>
-                                <option value="TEA" {% if est.diagnostico_2 == 'TEA' %}selected{% endif %}>TRASTORNO ESPECTRO AUTISTA (TEA)</option>
-                                <option value="FIL" {% if est.diagnostico_2 == 'FIL' %}selected{% endif %}>FIL</option>
-                                <option value="DIL" {% if est.diagnostico_2 == 'DIL' %}selected{% endif %}>DIL</option>
-                                <option value="Trastorno especifico del lenguaje" {% if est.diagnostico_2 == 'Trastorno especifico del lenguaje' %}selected{% endif %}>Trastorno especifico del lenguaje</option>
-                                <option value="Otro" {% if est.diagnostico_2 == 'Otro' %}selected{% endif %}>Otro</option>
-                                </select>
+                        {# NOMBRE DE CAMPO: AUDICIÓN (PDF) -> check_audicionnormal/problemas, observacion_6 (HTML) #}
+                        <label>Audición:</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item {% if est.check_audicionnormal %}checked{% endif %}">
+                                <input type="checkbox" name="check_audicionnormal" id="check_audicionnormal_{{ est.id }}" value="NORMAL_AUDICION" {% if est.check_audicionnormal %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)">
+                                <span>Normal</span>
+                            </label>
+                            <label class="checkbox-item {% if est.check_audicionproblemas %}checked{% endif %}">
+                                <input type="checkbox" name="check_audicionproblemas" id="check_audicionproblemas_{{ est.id }}" value="PROBLEMAS_AUDICION" {% if est.check_audicionproblemas %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)">
+                                <span>Problemas. Especifique en Observaciones.</span>
+                            </label>
+                        </div>
+                        <label for="observacion_6_{{ est.id }}">Observación (Audición):</label>
+                        <textarea name="observacion_6" id="observacion_6_{{ est.id }}" oninput="updatePreview(this.form)">{{ est.observacion_6 if est.observacion_6 is not none else '' }}</textarea>
 
-                            <label for="diagnostico_complementario_{{ est.id }}">Diagnóstico Complementario (Notas):</label>
-                            <textarea name="diagnostico_complementario" id="diagnostico_complementario_{{ est.id }}" rows="3" placeholder="Notas adicionales sobre el diagnóstico complementario.">{{ est.diagnostico_complementario if est.diagnostico_complementario is not none else '' }}</textarea>
+                        {# NOMBRE DE CAMPO: VISIÓN (PDF) -> check_visionnormal/problemas, observacion_7 (HTML) #}
+                        <label>Visión:</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item {% if est.check_visionnormal %}checked{% endif %}">
+                                <input type="checkbox" name="check_visionnormal" id="check_visionnormal_{{ est.id }}" value="NORMAL_VISION" {% if est.check_visionnormal %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)">
+                                <span>Normal</span>
+                            </label>
+                            <label class="checkbox-item {% if est.check_visionproblemas %}checked{% endif %}">
+                                <input type="checkbox" name="check_visionproblemas" id="check_visionproblemas_{{ est.id }}" value="PROBLEMAS_VISION" {% if est.check_visionproblemas %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)">
+                                <span>Problemas. Especifique en Observaciones.</span>
+                            </label>
+                        </div>
+                        <label for="observacion_7_{{ est.id }}">Observación (Visión):</label>
+                        <textarea name="observacion_7" id="observacion_7_{{ est.id }}" oninput="updatePreview(this.form)">{{ est.observacion_7 if est.observacion_7 is not none else '' }}</textarea>
 
-                            <h3 class="section-title">Antropometría</h3>
-                            <label for="altura_{{ est.id }}">Altura (cm):</label>
-                            <input type="number" step="0.1" name="altura" id="altura_{{ est.id }}" value="{{ est.altura if est.altura is not none else '' }}" placeholder="Ej: 150.5" oninput="calculateIMC(this.form)">
-                            
-                            <label for="peso_{{ est.id }}">Peso (kg):</label>
-                            <input type="number" step="0.1" name="peso" id="peso_{{ est.id }}" value="{{ est.peso if est.peso is not none else '' }}" placeholder="Ej: 60.2" oninput="calculateIMC(this.form)">
+                        {# NOMBRE DE CAMPO: LENGUAJE (PDF) -> check_lenguajenormal/problemas, observacion_8 (HTML) #}
+                        <label>Lenguaje:</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item {% if est.check_lenguajenormal %}checked{% endif %}">
+                                <input type="checkbox" name="check_lenguajenormal" id="check_lenguajenormal_{{ est.id }}" value="NORMAL_LENGUAJE" {% if est.check_lenguajenormal %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)">
+                                <span>Normal</span>
+                            </label>
+                            <label class="checkbox-item {% if est.check_lenguajeproblemas %}checked{% endif %}">
+                                <input type="checkbox" name="check_lenguajeproblemas" id="check_lenguajeproblemas_{{ est.id }}" value="PROBLEMAS_LENGUAJE" {% if est.check_lenguajeproblemas %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)">
+                                <span>Problemas. Especifique en Observaciones.</span>
+                            </label>
+                        </div>
+                        <label for="observacion_8_{{ est.id }}">Observación (Lenguaje):</label>
+                        <textarea name="observacion_8" id="observacion_8_{{ est.id }}" oninput="updatePreview(this.form)">{{ est.observacion_8 if est.observacion_8 is not none else '' }}</textarea>
 
-                            <label for="imc_{{ est.id }}">I.M.C:</label>
-                            <input type="text" name="imc" id="imc_{{ est.id }}" value="{{ est.imc if est.imc is not none else '' }}" readonly>
+                        <h3 class="section-title">Diagnóstico y Seguimiento</h3>
 
-                            <label for="clasificacion_imc_{{ est.id }}">Clasificación (IMC):</label>
-                            <input type="text" name="clasificacion_imc" id="clasificacion_imc_{{ est.id }}" value="{{ est.clasificacion_imc if est.clasificacion_imc is not none else '' }}" readonly>
-
-                            <h3 class="section-title">Antecedentes Perinatales</h3>
-                            <div class="checkbox-group">
-                                <label class="checkbox-item {% if est.check_cesarea %}checked{% endif %}">
-                                    <input type="checkbox" name="check_cesarea" id="check_cesarea_{{ est.id }}" value="CESAREA" {% if est.check_cesarea %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Cesárea (CESAREA)
-                                </label>
-                                <label class="checkbox-item {% if est.check_parto_normal %}checked{% endif %}">
-                                    <input type="checkbox" name="check_parto_normal" id="check_parto_normal_{{ est.id }}" value="PARTO_NORMAL" {% if est.check_parto_normal %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Parto Normal (PARTO NORMAL)
-                                </label>
-                            </div>
-                            
-                            <h3 class="section-title">Vacunas</h3>
-                            <div class="checkbox-group">
-                                <label class="checkbox-item {% if est.check_esquemac %}checked{% endif %}">
-                                    <input type="checkbox" name="check_esquemac" id="check_esquemac_{{ est.id }}" value="ESQUEMA_COMPLETO" {% if est.check_esquemac %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Completo (ESQUEMA COMPLETO)
-                                </label>
-                                <label class="checkbox-item {% if est.check_esquemai %}checked{% endif %}">
-                                    <input type="checkbox" name="check_esquemai" id="check_esquemai_{{ est.id }}" value="ESQUEMA_INCOMPLETO" {% if est.check_esquemai %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Incompleto (ESQUEMA INCOMPLETO)
-                                </label>
-                            </div>
-
-                            <label>Alergias:</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-item {% if est.check_alergiano %}checked{% endif %}">
-                                    <input type="checkbox" name="check_alergiano" id="check_alergiano_{{ est.id }}" value="NO_ALERGIAS" {% if est.check_alergiano %}checked{% endif %} onchange="updateCheckboxStyle(this); handleCheckboxExclusive(this, 'check_alergiasi')"> No (NO)
-                                </label>
-                                <label class="checkbox-item {% if est.check_alergiasi %}checked{% endif %}">
-                                    <input type="checkbox" name="check_alergiasi" id="check_alergiasi_{{ est.id }}" value="SI_ALERGIAS" {% if est.check_alergiasi %}checked{% endif %} onchange="updateCheckboxStyle(this); handleCheckboxExclusive(this, 'check_alergiano')"> Sí (SI)
-                                </label>
-                            </div>
-                            <label for="observacion_1_{{ est.id }}">Observación Alergias:</label>
-                            <textarea name="observacion_1" id="observacion_1_{{ est.id }}" rows="3" placeholder="Detalle las alergias si marcó 'Sí'.">{{ est.observacion_1 if est.observacion_1 is not none else '' }}</textarea>
-
-                            <label>Hospitalizaciones/Cirugías:</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-item {% if est.check_cirugiano %}checked{% endif %}">
-                                    <input type="checkbox" name="check_cirugiano" id="check_cirugiano_{{ est.id }}" value="NO_CIRUGIAS" {% if est.check_cirugiano %}checked{% endif %} onchange="updateCheckboxStyle(this); handleCheckboxExclusive(this, 'check_cirugiasi')"> No (NO)
-                                </label>
-                                <label class="checkbox-item {% if est.check_cirugiasi %}checked{% endif %}">
-                                    <input type="checkbox" name="check_cirugiasi" id="check_cirugiasi_{{ est.id }}" value="SI_CIRUGIAS" {% if est.check_cirugiasi %}checked{% endif %} onchange="updateCheckboxStyle(this); handleCheckboxExclusive(this, 'check_cirugiano')"> Sí (SI)
-                                </label>
-                            </div>
-                            <label for="observacion_2_{{ est.id }}">Observación Cirugías:</label>
-                            <textarea name="observacion_2" id="observacion_2_{{ est.id }}" rows="3" placeholder="Detalle las cirugías/hospitalizaciones si marcó 'Sí'.">{{ est.observacion_2 if est.observacion_2 is not none else '' }}</textarea>
-
-                            <h3 class="section-title">Examen Físico Segmentario</h3>
-
-                            <label>Visión:</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-item {% if est.check_visionsinalteracion %}checked{% endif %}">
-                                    <input type="checkbox" name="check_visionsinalteracion" id="check_visionsinalteracion_{{ est.id }}" value="SIN_ALTERACION" {% if est.check_visionsinalteracion %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Sin Alteración (SIN ALTERACIÓN)
-                                </label>
-                                <label class="checkbox-item {% if est.check_visionrefraccion %}checked{% endif %}">
-                                    <input type="checkbox" name="check_visionrefraccion" id="check_visionrefraccion_{{ est.id }}" value="VICIOS_REFRACCION" {% if est.check_visionrefraccion %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Vicios de Refracción (VICIOS REFRACCIÓN)
-                                </label>
-                            </div>
-                            <label for="observacion_3_{{ est.id }}">Observación Visión:</label>
-                            <textarea name="observacion_3" id="observacion_3_{{ est.id }}" rows="3" placeholder="Notas de visión.">{{ est.observacion_3 if est.observacion_3 is not none else '' }}</textarea>
-                            
-                            <label>Audición:</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-item {% if est.check_audicionnormal %}checked{% endif %}">
-                                    <input type="checkbox" name="check_audicionnormal" id="check_audicionnormal_{{ est.id }}" value="NORMAL_AUDICION" {% if est.check_audicionnormal %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Normal
-                                </label>
-                                <label class="checkbox-item {% if est.check_hipoacusia %}checked{% endif %}">
-                                    <input type="checkbox" name="check_hipoacusia" id="check_hipoacusia_{{ est.id }}" value="HIPOACUSIA" {% if est.check_hipoacusia %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Hipoacusia
-                                </label>
-                            </div>
-                            <label for="observacion_4_{{ est.id }}">Observación Audición:</label>
-                            <textarea name="observacion_4" id="observacion_4_{{ est.id }}" rows="3" placeholder="Notas de audición.">{{ est.observacion_4 if est.observacion_4 is not none else '' }}</textarea>
-
-                            <label for="observacion_5_{{ est.id }}">Observación Examen Físico (General):</label>
-                            <textarea name="observacion_5" id="observacion_5_{{ est.id }}" rows="3" placeholder="Observaciones generales de examen físico.">{{ est.observacion_5 if est.observacion_5 is not none else '' }}</textarea>
-
-                            <label for="observacion_6_{{ est.id }}">Observación Final (Global):</label>
-                            <textarea name="observacion_6" id="observacion_6_{{ est.id }}" rows="3" placeholder="Observaciones finales de la evaluación.">{{ est.observacion_6 if est.observacion_6 is not none else '' }}</textarea>
-                            
-                            <h3 class="section-title">Cierre de Evaluación</h3>
-                            <label for="fecha_evaluacion_{{ est.id }}">Fecha Evaluación (*):</label>
-                            <input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}" value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}" required onchange="setFechaReevaluacion(this.form.querySelector('select[name=\'plazo\']'))">
-
-                            <label for="plazo_{{ est.id }}">Plazo de Reevaluación:</label>
-                            <select name="plazo" id="plazo_{{ est.id }}" onchange="setFechaReevaluacion(this)">
-                                <option value="">Seleccionar plazo</option>
-                                <option value="1" {% if est.plazo == '1' %}selected{% endif %}>1 Año</option>
-                                <option value="2" {% if est.plazo == '2' %}selected{% endif %}>2 Años</option>
-                                <option value="3" {% if est.plazo == '3' %}selected{% endif %}>3 Años</option>
-                                <option value="4" {% if est.plazo == '4' %}selected{% endif %}>4 Años</option>
-                                <option value="5" {% if est.plazo == '5' %}selected{% endif %}>5 Años</option>
-                                <option value="6" {% if est.plazo == '6' %}selected{% endif %}>6 Años</option>
-                            </select>
-
-                            <label for="fecha_reevaluacion_{{ est.id }}">Fecha Reevaluación (Calculada):</label>
-                            <input type="date" name="fecha_reevaluacion" id="fecha_reevaluacion_{{ est.id }}" value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}" readonly>
-                            <input type="hidden" name="fecha_reevaluacion_pdf" value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}">
+                        {# NOMBRE DE CAMPO: DIAGNÓSTICO (PDF) -> diagnostico_1/2 (HTML) #}
+                        <label for="diagnostico_1_{{ est.id }}">Diagnóstico Médico (Primario):</label>
+                        <select name="diagnostico_1" id="diagnostico_1_{{ est.id }}" onchange="updatePreview(this.form)">
+                            <option value="">Seleccionar</option>
+                            <option value="TEA" {% if est.diagnostico_1 == 'TEA' or est.diagnostico_2 == 'TEA' %}selected{% endif %}>TEA</option>
+                            <option value="TDA" {% if est.diagnostico_1 == 'TDA' or est.diagnostico_2 == 'TDA' %}selected{% endif %}>TDA</option>
+                            <option value="TEL" {% if est.diagnostico_1 == 'TEL' or est.diagnostico_2 == 'TEL' %}selected{% endif %}>TEL</option>
+                            <option value="DMT2" {% if est.diagnostico_1 == 'DMT2' or est.diagnostico_2 == 'DMT2' %}selected{% endif %}>DMT2</option>
+                            <option value="DM1" {% if est.diagnostico_1 == 'DM1' or est.diagnostico_2 == 'DM1' %}selected{% endif %}>DM1</option>
+                            <option value="DISCAPACIDAD FISICA" {% if est.diagnostico_1 == 'DISCAPACIDAD FISICA' or est.diagnostico_2 == 'DISCAPACIDAD FISICA' %}selected{% endif %}>DISCAPACIDAD FISICA</option>
+                            <option value="DISCAPACIDAD SENSORIAL" {% if est.diagnostico_1 == 'DISCAPACIDAD SENSORIAL' or est.diagnostico_2 == 'DISCAPACIDAD SENSORIAL' %}selected{% endif %}>DISCAPACIDAD SENSORIAL</option>
+                            <option value="PIE" {% if est.diagnostico_1 == 'PIE' or est.diagnostico_2 == 'PIE' %}selected{% endif %}>PIE</option>
+                            <option value="FIL" {% if est.diagnostico_1 == 'FIL' or est.diagnostico_2 == 'FIL' %}selected{% endif %}>FIL</option>
+                            <option value="DIL" {% if est.diagnostico_1 == 'DIL' or est.diagnostico_2 == 'DIL' %}selected{% endif %}>DIL</option>
+                            <option value="Trastorno especifico del lenguaje" {% if est.diagnostico_1 == 'Trastorno especifico del lenguaje' or est.diagnostico_2 == 'Trastorno especifico del lenguaje' %}selected{% endif %}>Trastorno especifico del lenguaje</option>
+                            <option value="Otro" {% if est.diagnostico_1 == 'Otro' or est.diagnostico_2 == 'Otro' %}selected{% endif %}>Otro</option>
+                        </select>
+                        
+                        {# NOMBRE DE CAMPO: DIAGNÓSTICO (PDF) -> diagnostico_2 (HTML) #}
+                        <label for="diagnostico_2_{{ est.id }}">Diagnóstico Médico (Secundario o Comorbilidad):</label>
+                        <select name="diagnostico_2" id="diagnostico_2_{{ est.id }}" onchange="updatePreview(this.form)">
+                             <option value="">Seleccionar</option>
+                            <option value="TEA" {% if est.diagnostico_2 == 'TEA' %}selected{% endif %}>TEA</option>
+                            <option value="TDA" {% if est.diagnostico_2 == 'TDA' %}selected{% endif %}>TDA</option>
+                            <option value="TEL" {% if est.diagnostico_2 == 'TEL' %}selected{% endif %}>TEL</option>
+                            <option value="DMT2" {% if est.diagnostico_2 == 'DMT2' %}selected{% endif %}>DMT2</option>
+                            <option value="DM1" {% if est.diagnostico_2 == 'DM1' %}selected{% endif %}>DM1</option>
+                            <option value="DISCAPACIDAD FISICA" {% if est.diagnostico_2 == 'DISCAPACIDAD FISICA' %}selected{% endif %}>DISCAPACIDAD FISICA</option>
+                            <option value="DISCAPACIDAD SENSORIAL" {% if est.diagnostico_2 == 'DISCAPACIDAD SENSORIAL' %}selected{% endif %}>DISCAPACIDAD SENSORIAL</option>
+                            <option value="PIE" {% if est.diagnostico_2 == 'PIE' %}selected{% endif %}>PIE</option>
+                            <option value="FIL" {% if est.diagnostico_2 == 'FIL' %}selected{% endif %}>FIL</option>
+                            <option value="DIL" {% if est.diagnostico_2 == 'DIL' %}selected{% endif %}>DIL</option>
+                            <option value="Trastorno especifico del lenguaje" {% if est.diagnostico_2 == 'Trastorno especifico del lenguaje' %}selected{% endif %}>Trastorno especifico del lenguaje</option>
+                            <option value="Otro" {% if est.diagnostico_2 == 'Otro' %}selected{% endif %}>Otro</option>
+                        </select>
+                        
+                        {# NOMBRE DE CAMPO: FECHA EVALUACIÓN (PDF) -> fecha_evaluacion (HTML) #}
+                        <label for="fecha_evaluacion_{{ est.id }}">Fecha Evaluación:</label>
+                        <input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}" value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}" onchange="calculateReevaluationDate(this.form)" required>
+                        
+                        {# NOMBRE DE CAMPO: PLAZO REEVALUACIÓN (PDF) -> plazo_reevaluacion (HTML) #}
+                        <label for="plazo_{{ est.id }}">Plazo Reevaluación (años):</label>
+                        <input type="number" name="plazo_reevaluacion" id="plazo_{{ est.id }}" min="0" max="5" value="{{ est.plazo_reevaluacion if est.plazo_reevaluacion is not none else '1' }}" oninput="calculateReevaluationDate(this.form)" required>
+                        
+                        {# CAMPO FECHA REEVALUACIÓN (Calculado/ReadOnly) #}
+                        <label for="fecha_reevaluacion_{{ est.id }}">Fecha Reevaluación (Calculada):</label>
+                        <input type="text" id="fecha_reevaluacion_{{ est.id }}" value="Calculando..." readonly>
+                        {# Campo oculto para guardar la fecha en formato YYYY-MM-DD para el backend #}
+                        <input type="hidden" name="fecha_reevaluacion_pdf" id="fecha_reevaluacion_pdf_{{ est.id }}" value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}">
 
 
-                            <div class="button-group">
-                                <button type="submit" class="save-btn"><i class="fas fa-save"></i> Guardar y Generar PDF</button>
-                                {% if not is_evaluated %}
-                                    <button type="button" class="mark-evaluated-btn secondary" data-estudiante-id="{{ est.id }}" onclick="marcarComoEvaluado(this)">
-                                        <i class="fas fa-check-circle"></i> Marcar como Evaluado
-                                    </button>
+                        {# NOMBRE DE CAMPO: DERIVACIONES (PDF) -> derivaciones (HTML) #}
+                        <label for="derivaciones_{{ est.id }}">Derivaciones (Ej: Neurólogo, Psicólogo):</label>
+                        <textarea name="derivaciones" id="derivaciones_{{ est.id }}" oninput="updatePreview(this.form)">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
+
+                        {# NOMBRE DE CAMPO: OBSERVACIONES CLÍNICAS (PDF) -> observaciones_clinicas (HTML) #}
+                        <label for="observaciones_clinicas_{{ est.id }}">Observaciones Clínicas:</label>
+                        <textarea name="observaciones_clinicas" id="observaciones_clinicas_{{ est.id }}" oninput="updatePreview(this.form)">{{ est.observaciones_clinicas if est.observaciones_clinicas is not none else '' }}</textarea>
+
+                        <div class="button-group">
+                            <button type="submit">
+                                <i class="fas fa-save"></i> Guardar y Generar PDF
+                            </button>
+                            <button type="button" onclick="enviarADrive(this.form)">
+                                <i class="fab fa-google-drive"></i> Enviar a Drive
+                            </button>
+                            <button type="button" onclick="marcarComoEvaluado(this)" data-estudiante-id="{{ est.id }}" class="mark-evaluated-btn" {% if est.evaluado %}disabled{% endif %}>
+                                {% if est.evaluado %}
+                                    <i class="fas fa-check-circle"></i> Evaluado
                                 {% else %}
-                                    <button type="button" class="mark-evaluated-btn secondary" disabled>
-                                        <i class="fas fa-check-circle"></i> Evaluado
-                                    </button>
+                                    <i class="fas fa-check"></i> Marcar como Evaluado
                                 {% endif %}
-                                <button type="button" onclick="insertarFirma()" class="signature-button"><i class="fas fa-signature"></i> Insertar Firma</button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div class="preview">
-                        <h3 class="section-title">Vista Previa (Datos Clave)</h3>
-                        <p><strong>Nombre:</strong> <span class="prev-nombre">{{ est.nombre }}</span></p>
-                        <p><strong>RUT:</strong> <span class="prev-rut">{{ est.rut }}</span></p>
-                        <p><strong>Edad:</strong> <span class="prev-edad">{{ est.edad if est.edad is not none else '-' }}</span></p>
-                        <p><strong>Diagnóstico Principal:</strong> <span class="prev-diagnostico-1">{{ est.diagnostico_1 if est.diagnostico_1 is not none else '-' }}</span></p>
-                        <p><strong>Diagnóstico Secundario:</strong> <span class="prev-diagnostico-2">{{ est.diagnostico_2 if est.diagnostico_2 is not none else '-' }}</span></p>
-                        <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">{{ est.derivaciones if est.derivaciones is not none else '-' }}</span></p>
-                        <p><strong>Fecha Evaluación:</strong> <span class="prev-fecha-evaluacion">{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '-' }}</span></p>
-                        <p><strong>Fecha Reevaluación:</strong> <span class="prev-fecha-reevaluacion">
-                            {% if est.fecha_reevaluacion %}
-                                {% set date_obj = est.fecha_reevaluacion.split('-') %}
-                                {{ date_obj[2] }}/{{ date_obj[1] }}/{{ date_obj[0] }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </span></p>
-                        <p><strong>Altura (cm):</strong> <span class="prev-altura">{{ est.altura if est.altura is not none else '-' }}</span></p>
-                        <p><strong>Peso (kg):</strong> <span class="prev-peso">{{ est.peso if est.peso is not none else '-' }}</span></p>
-                        <p><strong>IMC:</strong> <span class="prev-imc">{{ est.imc if est.imc is not none else '-' }}</span></p>
-                        <p><strong>Clasificación IMC:</strong> <span class="prev-clasificacion">{{ est.clasificacion_imc if est.clasificacion_imc is not none else '-' }}</span></p>
-                        <p style="font-size: 0.9em; margin-top: 15px; color: #555;">
-                            *Esta vista previa se actualiza al guardar o al cambiar datos clave como Altura y Peso.
-                        </p>
-                    </div>
+                            </button>
+                            <button type="button" onclick="insertarFirma()">
+                                <i class="fas fa-signature"></i> Insertar Firma
+                            </button>
+                        </div>
+                    </form>
                 </div>
-            </details>
-            {% endfor %}
-        </div>
 
+                <div class="preview">
+                    <h3>Vista Previa de Datos Guardados</h3>
+                    <p><strong>Talla (cm):</strong> <span class="prev-altura">{{ est.altura if est.altura is not none else '-' }}</span></p>
+                    <p><strong>Peso (kg):</strong> <span class="prev-peso">{{ est.peso if est.peso is not none else '-' }}</span></p>
+                    <p><strong>I.M.C:</strong> <span class="prev-imc">{{ est.imc if est.imc is not none else '-' }}</span></p>
+                    <p><strong>Clasificación:</strong> <span class="prev-clasificacion">{{ est.clasificacion_imc if est.clasificacion_imc is not none else '-' }}</span></p>
+                    
+                    <h4>Antecedentes Médicos</h4>
+                    <p><strong>Esquema Completo:</strong> <span class="prev-check-esquemac">{{ 'Sí' if est.check_esquemac else 'No' }}</span></p>
+                    <p><strong>Esquema Incompleto:</strong> <span class="prev-check-esquemai">{{ 'Sí' if est.check_esquemai else 'No' }}</span></p>
+                    <strong>Alergias:</strong>
+                    <p>No Alergias: <span class="prev-check-alergiano">{{ 'Sí' if est.check_alergiano else 'No' }}</span></p>
+                    <p>Sí Alergias: <span class="prev-check-alergiasi">{{ 'Sí' if est.check_alergiasi else 'No' }}</span></p>
+                    <p>Obs. Alergias: <span class="prev-observacion-1">{{ est.observacion_1 if est.observacion_1 is not none else '-' }}</span></p>
+                    <strong>Hospitalizaciones/Cirugías:</strong>
+                    <p>No Cirugías: <span class="prev-check-cirugiano">{{ 'Sí' if est.check_cirugiano else 'No' }}</span></p>
+                    <p>Sí Cirugías: <span class="prev-check-cirugiasi">{{ 'Sí' if est.check_cirugiasi else 'No' }}</span></p>
+                    <p>Obs. Cirugías: <span class="prev-observacion-2">{{ est.observacion_2 if est.observacion_2 is not none else '-' }}</span></p>
+
+                    <h4>Evaluación Sensorial y de Lenguaje</h4>
+                    <p><strong>Audición:</strong> <span class="prev-check-audicionnormal">{{ 'Normal' if est.check_audicionnormal else ('Problemas' if est.check_audicionproblemas else '-') }}</span></p>
+                    <p>Obs. Audición: <span class="prev-observacion-6">{{ est.observacion_6 if est.observacion_6 is not none else '-' }}</span></p>
+                    <p><strong>Visión:</strong> <span class="prev-check-visionnormal">{{ 'Normal' if est.check_visionnormal else ('Problemas' if est.check_visionproblemas else '-') }}</span></p>
+                    <p>Obs. Visión: <span class="prev-observacion-7">{{ est.observacion_7 if est.observacion_7 is not none else '-' }}</span></p>
+                    <p><strong>Lenguaje:</strong> <span class="prev-check-lenguajenormal">{{ 'Normal' if est.check_lenguajenormal else ('Problemas' if est.check_lenguajeproblemas else '-') }}</span></p>
+                    <p>Obs. Lenguaje: <span class="prev-observacion-8">{{ est.observacion_8 if est.observacion_8 is not none else '-' }}</span></p>
+                    
+                    <h4>Diagnóstico y Seguimiento</h4>
+                    <p><strong>Diag. Principal:</strong> <span class="prev-diagnostico-1">{{ est.diagnostico_1 if est.diagnostico_1 is not none else '-' }}</span></p>
+                    <p><strong>Diag. Secundario:</strong> <span class="prev-diagnostico-2">{{ est.diagnostico_2 if est.diagnostico_2 is not none else '-' }}</span></p>
+                    <p><strong>Fecha Evaluación:</strong> <span class="prev-fecha-evaluacion">{% if est.fecha_evaluacion %}{{ est.fecha_evaluacion.split('-')[2] }}/{{ est.fecha_evaluacion.split('-')[1] }}/{{ est.fecha_evaluacion.split('-')[0] }}{% else %}-{% endif %}</span></p>
+                    <p><strong>Plazo Reevaluación:</strong> <span class="prev-plazo">{{ est.plazo_reevaluacion if est.plazo_reevaluacion is not none else '1' }} años</span></p>
+                    <p><strong>Fecha Reevaluación:</strong> <span class="prev-fecha-reevaluacion">
+                        {% if est.fecha_reevaluacion %}
+                        {% set date_obj = est.fecha_reevaluacion.split('-') %}
+                        {{ date_obj[2] }}/{{ date_obj[1] }}/{{ date_obj[0] }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </span></p>
+                    <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">{{ est.derivaciones if est.derivaciones is not none else '-' }}</span></p>
+                    <p><strong>Observaciones Clínicas:</strong> <span class="prev-observaciones">{{ est.observaciones_clinicas if est.observaciones_clinicas is not none else '-' }}</span></p>
+
+                    {# Llamar a la función para inicializar el IMC y la fecha de reevaluación al cargar #}
+                    <script>
+                        document.addEventListener('DOMContentLoaded', () => {
+                            const form = document.getElementById('form-estudiante-{{ est.id }}');
+                            if (form) {
+                                calculateIMC(form);
+                                calculateReevaluationDate(form);
+                            }
+                        });
+                    </script>
+                </div>
+            </div>
+        </details>
+        {% endfor %}
     </div>
 
+    <footer>
+        {# Puede que desee agregar un pie de página aquí #}
+    </footer>
+
     <script>
-        // ... (Tu código JavaScript existente) ...
-
-        // Función para actualizar el estilo de los checkboxes
-        function updateCheckboxStyle(checkbox) {
-            const label = checkbox.closest('.checkbox-item');
-            if (label) {
-                if (checkbox.checked) {
-                    label.classList.add('checked');
-                } else {
-                    label.classList.remove('checked');
-                }
-            }
-        }
-
-        // Función para manejar checkboxes exclusivos
-        function handleCheckboxExclusive(changedCheckbox, exclusiveCheckboxName) {
-            const form = changedCheckbox.closest('form');
-            const exclusiveCheckbox = form.querySelector(`input[name="${exclusiveCheckboxName}"]`);
-            if (changedCheckbox.checked && exclusiveCheckbox) {
-                exclusiveCheckbox.checked = false;
-                updateCheckboxStyle(exclusiveCheckbox);
-            }
-        }
-        
-        // Llamar a updateCheckboxStyle para el estado inicial (al cargar el DOM)
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('details.estudiante').forEach(detail => {
-                const form = detail.querySelector('form');
-                if (form) {
-                    form.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(checkbox => {
-                        updateCheckboxStyle(checkbox);
-                    });
-                }
-            });
-            
-            // Event listener para el buscador
-            const buscador = document.getElementById('buscador');
-            if (buscador) {
-                buscador.addEventListener('input', aplicarFiltros);
-            }
-
-            // Event listener para los radio buttons de filtro
-            document.querySelectorAll('input[name="evaluation_filter"]').forEach(radio => {
-                radio.addEventListener('change', aplicarFiltros);
-            });
-        });
-
-
-        // Función para calcular la fecha de reevaluación
-        function setFechaReevaluacion(plazoSelect) {
-            const form = plazoSelect.closest('form');
-            const fechaEvaluacionInput = form.querySelector('input[name="fecha_evaluacion"]');
-            const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');
-            const fechaReevaluacionPdfInput = form.querySelector('input[name="fecha_reevaluacion_pdf"]');
-            const anos = parseInt(plazoSelect.value);
-
-            fechaReevaluacionInput.value = '';
-            fechaReevaluacionPdfInput.value = '';
-
-            if (!fechaEvaluacionInput.value) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Fecha de Evaluación Requerida',
-                    text: 'Por favor, asegúrese de que la "Fecha Evaluación" esté presente para calcular la fecha de reevaluación.',
-                    confirmButtonText: 'Entendido'
-                });
-                return;
-            }
-
-            if (!isNaN(anos) && anos > 0) {
-                const evalDate = new Date(fechaEvaluacionInput.value + 'T00:00:00');
-                // Clonar la fecha y añadir los años
-                const futureDate = new Date(evalDate.getFullYear() + anos, evalDate.getMonth(), evalDate.getDate());
-                
-                const year = futureDate.getFullYear();
-                // getMonth() es 0-index, por eso se le suma 1
-                const month = String(futureDate.getMonth() + 1).padStart(2, '0'); 
-                const day = String(futureDate.getDate()).padStart(2, '0');
-
-                const newDateStr = `${year}-${month}-${day}`;
-                fechaReevaluacionInput.value = newDateStr;
-                fechaReevaluacionPdfInput.value = newDateStr;
-            } 
-            
-            updatePreview(form);
+        // Función para clasificar el IMC (Ejemplo simple, use tablas de referencia médica para precisión)
+        function classifyIMC(imc, gender) {
+            if (imc < 18.5) return 'Bajo Peso';
+            if (imc >= 18.5 && imc < 24.9) return 'Normal';
+            if (imc >= 25 && imc < 29.9) return 'Sobrepeso';
+            if (imc >= 30) return 'Obesidad';
+            return '-'; // Por defecto
         }
 
         // Función para calcular el IMC y la clasificación
         function calculateIMC(form) {
-            const alturaCm = parseFloat(form.querySelector('input[name="altura"]').value);
-            const pesoKg = parseFloat(form.querySelector('input[name="peso"]').value);
+            const alturaInput = form.querySelector('input[name="altura"]');
+            const pesoInput = form.querySelector('input[name="peso"]');
             const imcInput = form.querySelector('input[name="imc"]');
-            const clasificacionInput = form.querySelector('input[name="clasificacion_imc"]');
-            
-            // Lógica para obtener el género si es necesario para clasificación pediátrica
-            // (Asumo que el género está pre-rellenado y no se puede cambiar en este formulario)
-            // const estudianteId = form.querySelector('input[name="estudiante_id"]').value;
-            // const generoF = form.querySelector(`#genero_f_${estudianteId}`).checked;
-            // const generoM = form.querySelector(`#genero_m_${estudianteId}`).checked;
-            // let gender = null;
-            // if (generoF) gender = 'F'; else if (generoM) gender = 'M';
+            const clasificacionInput = form.querySelector('input[name="clasificacion_imc"]'); // Corrected name
+
+            const estudianteId = form.querySelector('input[name="estudiante_id"]').value;
+            const generoF = form.querySelector(`#genero_f_${estudianteId}`).checked;
+            const generoM = form.querySelector(`#genero_m_${estudianteId}`).checked;
+
+            let gender = null;
+            if (generoF) gender = 'F';
+            else if (generoM) gender = 'M';
+
+            const alturaCm = parseFloat(alturaInput.value);
+            const pesoKg = parseFloat(pesoInput.value);
 
             if (isNaN(alturaCm) || isNaN(pesoKg) || alturaCm <= 0 || pesoKg <= 0) {
                 imcInput.value = '';
@@ -1118,112 +1058,177 @@
 
             const alturaM = alturaCm / 100; // Convertir cm a metros
             const imc = pesoKg / (alturaM * alturaM);
-            imcInput.value = imc.toFixed(2); // Mostrar con 2 decimales
 
-            // Clasificación de IMC simplificada (para adultos o categorización general)
-            let classification = '';
-            if (imc < 18.5) {
-                classification = 'Bajo peso';
-            } else if (imc >= 18.5 && imc < 25) {
-                classification = 'Normal';
-            } else if (imc >= 25 && imc < 30) {
-                classification = 'Sobrepeso';
-            } else {
-                classification = 'Obesidad';
-            }
-            clasificacionInput.value = classification;
+            imcInput.value = imc.toFixed(2); // Mostrar con 2 decimales
+            clasificacionInput.value = classifyIMC(imc, gender);
 
             updatePreview(form);
         }
 
-        // Función para actualizar la vista previa de un formulario
-        function updatePreview(form) {
-            const container = form.closest('.container');
-            if (!container) return;
-
-            const previewSection = container.querySelector('.preview');
-            const rutInput = form.querySelector('input[name="rut"]');
-            const nombreInput = form.querySelector('input[name="nombre"]');
-            const diagnostico1Select = form.querySelector('select[name="diagnostico_1"]');
-            const diagnostico2Select = form.querySelector('select[name="diagnostico_2"]');
-            const derivacionesInput = form.querySelector('textarea[name="derivaciones"]');
-            const alturaInput = form.querySelector('input[name="altura"]');
-            const pesoInput = form.querySelector('input[name="peso"]');
-            const imcInput = form.querySelector('input[name="imc"]');
-            const clasificacionInput = form.querySelector('input[name="clasificacion_imc"]');
+        // Función para calcular la fecha de reevaluación
+        function calculateReevaluationDate(form) {
             const fechaEvaluacionInput = form.querySelector('input[name="fecha_evaluacion"]');
-            const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');
-            const edadInput = form.querySelector('input[name="edad"]');
-
-
-            previewSection.querySelector('.prev-nombre').textContent = nombreInput ? nombreInput.value : '-';
-            previewSection.querySelector('.prev-rut').textContent = rutInput ? rutInput.value : '-';
-            previewSection.querySelector('.prev-edad').textContent = edadInput ? edadInput.value : '-';
-
-            // Diagnóstico
-            previewSection.querySelector('.prev-diagnostico-1').textContent = diagnostico1Select && diagnostico1Select.options[diagnostico1Select.selectedIndex].text || '-';
-            previewSection.querySelector('.prev-diagnostico-2').textContent = diagnostico2Select && diagnostico2Select.options[diagnostico2Select.selectedIndex].text || '-';
-
-            previewSection.querySelector('.prev-derivaciones').textContent = derivacionesInput ? derivacionesInput.value || '-' : '-';
-
-            // Fechas
-            previewSection.querySelector('.prev-fecha-evaluacion').textContent = fechaEvaluacionInput ? fechaEvaluacionInput.value : '-';
+            const plazoInput = form.querySelector('input[name="plazo_reevaluacion"]');
+            const fechaReevaluacionDisplay = form.querySelector(`#fecha_reevaluacion_${form.querySelector('input[name="estudiante_id"]').value}`);
+            const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion_pdf"]');
             
+            const anos = parseInt(plazoInput.value);
+
+            // Validar que la fecha de evaluación esté presente
+            if (!fechaEvaluacionInput.value) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Fecha de Evaluación Requerida',
+                    text: 'Por favor, asegúrese de que la "Fecha Evaluación" esté presente para calcular la fecha de reevaluación.',
+                    confirmButtonText: 'Entendido'
+                });
+                fechaReevaluacionDisplay.value = 'Falta Fecha Evaluación';
+                fechaReevaluacionInput.value = '';
+                updatePreview(form); 
+                return;
+            }
+
+            if (!isNaN(anos) && anos > 0) {
+                const evalDate = new Date(fechaEvaluacionInput.value + 'T00:00:00');
+                const futureDate = new Date(evalDate.getFullYear() + anos, evalDate.getMonth(), evalDate.getDate());
+
+                const year = futureDate.getFullYear();
+                const month = String(futureDate.getMonth() + 1).padStart(2, '0'); // Mese base 0
+                const day = String(futureDate.getDate()).padStart(2, '0');
+                
+                // Formato para mostrar (DD/MM/YYYY)
+                fechaReevaluacionDisplay.value = `${day}/${month}/${year}`;
+                // Formato para guardar en BD (YYYY-MM-DD)
+                fechaReevaluacionInput.value = `${year}-${month}-${day}`;
+
+            } else {
+                fechaReevaluacionDisplay.value = 'No Aplica / Plazo Inválido';
+                fechaReevaluacionInput.value = '';
+            }
+
+            updatePreview(form); // Actualizar la vista previa después del cálculo
+        }
+
+        // Función para actualizar el estilo visual de un checkbox customizado
+        function updateCheckboxStyle(checkbox) {
+            const item = checkbox.closest('.checkbox-item');
+            if (item) {
+                if (checkbox.checked) {
+                    item.classList.add('checked');
+                } else {
+                    item.classList.remove('checked');
+                }
+            }
+        }
+        
+        // Función para actualizar la vista previa de datos
+        function updatePreview(form) {
+            const previewSection = form.closest('.container').querySelector('.preview');
+            
+            // Antropometría
+            previewSection.querySelector('.prev-altura').textContent = form.altura ? form.altura.value : '-';
+            previewSection.querySelector('.prev-peso').textContent = form.peso ? form.peso.value : '-';
+            previewSection.querySelector('.prev-imc').textContent = form.imc ? form.imc.value : '-';
+            previewSection.querySelector('.prev-clasificacion').textContent = form.clasificacion_imc ? form.clasificacion_imc.value : '-';
+
+            // Antecedentes Médicos (Checkboxes y Observaciones 1 y 2)
+            previewSection.querySelector('.prev-check-esquemac').textContent = form.check_esquemac && form.check_esquemac.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-esquemai').textContent = form.check_esquemai && form.check_esquemai.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-alergiano').textContent = form.check_alergiano && form.check_alergiano.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-alergiasi').textContent = form.check_alergiasi && form.check_alergiasi.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-observacion-1').textContent = form.observacion_1 ? form.observacion_1.value : '-';
+            previewSection.querySelector('.prev-check-cirugiano').textContent = form.check_cirugiano && form.check_cirugiano.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-check-cirugiasi').textContent = form.check_cirugiasi && form.check_cirugiasi.checked ? 'Sí' : 'No';
+            previewSection.querySelector('.prev-observacion-2').textContent = form.observacion_2 ? form.observacion_2.value : '-';
+            
+            // Evaluación Sensorial y de Lenguaje
+            const audicionNormal = form.check_audicionnormal && form.check_audicionnormal.checked;
+            const audicionProblemas = form.check_audicionproblemas && form.check_audicionproblemas.checked;
+            previewSection.querySelector('.prev-check-audicionnormal').textContent = audicionNormal ? 'Normal' : (audicionProblemas ? 'Problemas' : '-');
+            previewSection.querySelector('.prev-observacion-6').textContent = form.observacion_6 ? form.observacion_6.value : '-';
+            
+            const visionNormal = form.check_visionnormal && form.check_visionnormal.checked;
+            const visionProblemas = form.check_visionproblemas && form.check_visionproblemas.checked;
+            previewSection.querySelector('.prev-check-visionnormal').textContent = visionNormal ? 'Normal' : (visionProblemas ? 'Problemas' : '-');
+            previewSection.querySelector('.prev-observacion-7').textContent = form.observacion_7 ? form.observacion_7.value : '-';
+            
+            const lenguajeNormal = form.check_lenguajenormal && form.check_lenguajenormal.checked;
+            const lenguajeProblemas = form.check_lenguajeproblemas && form.check_lenguajeproblemas.checked;
+            previewSection.querySelector('.prev-check-lenguajenormal').textContent = lenguajeNormal ? 'Normal' : (lenguajeProblemas ? 'Problemas' : '-');
+            previewSection.querySelector('.prev-observacion-8').textContent = form.observacion_8 ? form.observacion_8.value : '-';
+
+            // Diagnóstico y Seguimiento
+            previewSection.querySelector('.prev-diagnostico-1').textContent = form.diagnostico_1 ? form.diagnostico_1.value : '-';
+            previewSection.querySelector('.prev-diagnostico-2').textContent = form.diagnostico_2 ? form.diagnostico_2.value : '-';
+            
+            // Fecha Evaluación
+            const fechaEvalInput = form.querySelector('input[name="fecha_evaluacion"]');
+            if (fechaEvalInput && fechaEvalInput.value) {
+                 const [year, month, day] = fechaEvalInput.value.split('-');
+                 previewSection.querySelector('.prev-fecha-evaluacion').textContent = `${day}/${month}/${year}`;
+            } else {
+                 previewSection.querySelector('.prev-fecha-evaluacion').textContent = '-';
+            }
+            
+            // Plazo y Fecha Reevaluación
+            previewSection.querySelector('.prev-plazo').textContent = form.plazo_reevaluacion ? `${form.plazo_reevaluacion.value} años` : '1 año';
+            const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion_pdf"]');
             if (fechaReevaluacionInput && fechaReevaluacionInput.value) {
                 const [year, month, day] = fechaReevaluacionInput.value.split('-');
                 previewSection.querySelector('.prev-fecha-reevaluacion').textContent = `${day}/${month}/${year}`;
             } else {
                 previewSection.querySelector('.prev-fecha-reevaluacion').textContent = '-';
             }
+            
+            previewSection.querySelector('.prev-derivaciones').textContent = form.derivaciones ? form.derivaciones.value : '-';
+            previewSection.querySelector('.prev-observaciones').textContent = form.observaciones_clinicas ? form.observaciones_clinicas.value : '-';
 
-            // Antropometría
-            previewSection.querySelector('.prev-altura').textContent = alturaInput ? alturaInput.value : '-';
-            previewSection.querySelector('.prev-peso').textContent = pesoInput ? pesoInput.value : '-';
-            previewSection.querySelector('.prev-imc').textContent = imcInput ? imcInput.value : '-';
-            previewSection.querySelector('.prev-clasificacion').textContent = clasificacionInput ? clasificacionInput.value : '-';
-        
-            // Opcional: mostrar un badge de "Modificando..." temporal
+            // Mostrar estado "Modificando..."
             const badge = form.closest('.formulario').querySelector('.badge');
             if (badge) {
                 badge.classList.add('show');
                 badge.textContent = "Modificando...";
                 clearTimeout(badge.timeout);
                 badge.timeout = setTimeout(() => {
-                    badge.textContent = form.closest('details.estudiante').getAttribute('data-evaluated-status') === 'true' ? "Guardado" : "Pendiente";
-                    // Asegurar color del badge si es manual
-                    if (form.closest('details.estudiante').getAttribute('data-agregado-manual') === 'true') {
-                        badge.style.backgroundColor = 'var(--signature-purple)';
-                        badge.textContent = 'Guardado (Manual)';
-                    } else {
-                        badge.style.backgroundColor = 'var(--accent-green)';
-                    }
+                     // El badge se actualizará a "Guardado" en submitForm
                 }, 800);
             }
         }
-
-        // Función principal de envío de formulario (Guardar y Generar PDF)
+        
+        // Función principal para guardar el formulario
         async function submitForm(form) {
-            const formData = new FormData(form);
+            // Asegurar que se haya calculado la fecha de reevaluación y el IMC antes de guardar
+            calculateIMC(form);
+            calculateReevaluationDate(form);
 
-            // Asegurar que los checkboxes no chequeados se envíen como vacío
-            form.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                if (!checkbox.checked) {
-                    formData.set(checkbox.name, '');
+            const estudianteId = form.querySelector('input[name="estudiante_id"]').value;
+            const badge = form.closest('.formulario').querySelector('.badge');
+
+            // Marcar campos requeridos si están vacíos
+            const requiredInputs = form.querySelectorAll('input[required], select[required], textarea[required]');
+            let allFilled = true;
+            requiredInputs.forEach(input => {
+                if (!input.value.trim()) {
+                    allFilled = false;
+                    input.style.borderColor = 'var(--accent-red)';
+                } else {
+                    input.style.borderColor = ''; // Limpiar el borde
                 }
             });
-            
-            // Asegurar que fecha_reevaluacion_pdf se envíe desde el input oculto
-            const fechaReevaluacionPdfInput = form.querySelector('input[name="fecha_reevaluacion_pdf"]');
-            if (fechaReevaluacionPdfInput) {
-                formData.set('fecha_reevaluacion_pdf', fechaReevaluacionPdfInput.value);
+
+            if (!allFilled) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Campos Requeridos',
+                    text: 'Por favor, complete todos los campos obligatorios marcados.',
+                    confirmButtonText: 'Entendido'
+                });
+                return;
             }
             
-            // Obtener datos del estudiante para mostrar en el modal
-            const estudianteNombre = formData.get('nombre');
-
             Swal.fire({
-                title: `Guardando y generando PDF para ${estudianteNombre}...`,
-                html: 'Por favor espere. Esto puede tardar unos segundos. <br><br> <i class="fas fa-spinner fa-spin"></i>',
+                title: 'Guardando y Generando PDF...',
+                html: 'Por favor, espere. Esto puede tomar un momento.',
                 allowOutsideClick: false,
                 didOpen: () => {
                     Swal.showLoading();
@@ -1231,41 +1236,71 @@
             });
 
             try {
-                // 1. Guardar los datos
+                const formData = new FormData(form);
+                
+                // Manually set checkbox values if they are unchecked, as FormData doesn't include them
+                form.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    // Solo si el checkbox es para un campo booleano que DEBE ir como False si está desmarcado
+                    if (!checkbox.checked) {
+                         // Para este formulario, los checkboxes se manejan de manera que no necesitan anulación manual
+                         // si solo envían valor cuando están checked.
+                         // Esto es una precaución general:
+                         formData.set(checkbox.name, ''); 
+                    }
+                });
+                
+                // 1. Guardar los datos del formulario (esto actualiza la BD)
                 const saveResponse = await fetch('/guardar_formulario', {
                     method: 'POST',
-                    body: formData,
+                    body: formData, // FormData envía los datos del formulario, incluyendo campos ocultos y seleccionados
                 });
 
                 const saveData = await saveResponse.json();
 
                 if (saveData.success) {
-                    updateStudentUI(formData.get('estudiante_id'), true); // Actualizar UI a "Evaluado"
-                    updatePreview(form); // Actualizar vista previa (si hay cambios)
+                    // Actualizar el estado visual de guardado
+                    if (badge) {
+                        badge.textContent = "Guardado";
+                        badge.classList.add('show');
+                        clearTimeout(badge.timeout);
+                        badge.timeout = setTimeout(() => { badge.textContent = "Guardado"; }, 800);
+                    }
                     
-                    // 2. Generar el PDF individual
-                    const pdfResponse = await fetch('/generar_pdf_individual', {
-                        method: 'POST',
-                        body: formData, // Reutilizar el FormData para generar el PDF
-                    });
-
+                    // 2. Llamar a la generación de PDF individual (si la ruta existe)
+                    // Asumo que hay una ruta '/generar_pdf_individual_familiar/<int:estudiante_id>'
+                    const pdfResponse = await fetch(`/generar_pdf_individual_familiar/${estudianteId}`);
+                    
                     if (pdfResponse.ok) {
-                        const blob = await pdfResponse.blob();
-                        const url = window.URL.createObjectURL(blob);
-                        // Abrir el PDF en una nueva pestaña
-                        window.open(url, '_blank');
-
+                        const pdfBlob = await pdfResponse.blob();
+                        const url = window.URL.createObjectURL(pdfBlob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        // Obtener el nombre del estudiante para el nombre del archivo
+                        const studentName = form.querySelector('input[name="nombre"]').value.replace(/[^a-zA-Z0-9\s]/g, '_');
+                        const rut = form.querySelector('input[name="rut"]').value.replace(/[^a-zA-Z0-9\s-]/g, '');
+                        a.download = `Formulario_Medicina_Familiar_${studentName}_${rut}.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        
+                        // Finalizar con mensaje de éxito
                         Swal.fire({
                             icon: 'success',
-                            title: '¡Éxito!',
-                            text: `Datos de ${estudianteNombre} guardados y PDF generado.`,
+                            title: '¡Guardado y PDF Generado!',
+                            text: 'El formulario se ha guardado y el PDF se ha descargado correctamente.',
+                            showConfirmButton: false,
+                            timer: 2000
                         });
+
                     } else {
+                        // Si la generación de PDF falla, mostrar el error pero mantener el guardado
                         const pdfErrorText = await pdfResponse.text();
+                        console.error('Error al generar PDF:', pdfErrorText);
                         Swal.fire({
                             icon: 'warning',
                             title: 'Guardado, pero PDF Falló',
-                            text: `Los datos se guardaron, pero no se pudo generar el PDF. ${pdfErrorText}`,
+                            text: `Los datos se guardaron, pero hubo un error al generar el PDF: ${pdfErrorText}`,
                         });
                     }
                 } else {
@@ -1285,256 +1320,34 @@
             }
         }
 
-        // Función para Marcar como Evaluado sin generar PDF (solo guardar)
-        async function marcarComoEvaluado(buttonElement) {
-            const form = buttonElement.closest('form');
-            const estudianteId = buttonElement.getAttribute('data-estudiante-id');
-            const requiredInputs = form.querySelectorAll('input[required], select[required], textarea[required]');
-            let allFilled = true;
-            
-            // Verificación de campos obligatorios (solo los del HTML)
-            requiredInputs.forEach(input => {
-                // Si el input es un checkbox, se omite de esta verificación
-                if (input.type === 'checkbox') {
-                    return; 
-                }
-                if (!input.value.trim()) {
-                    allFilled = false;
-                    input.style.borderColor = 'var(--accent-red)';
-                } else {
-                    input.style.borderColor = 'var(--border-color)';
-                }
-            });
 
-            if (!allFilled) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Faltan datos',
-                    text: 'Faltan datos obligatorios para marcar y guardar la evaluación. Por favor, revise los campos resaltados.',
-                    confirmButtonText: 'Entendido'
-                });
-                return;
-            }
-
+        async function enviarADrive(form) {
             Swal.fire({
-                title: 'Confirmación',
-                text: "¿Está seguro de que desea guardar y marcar esta evaluación como completada?",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Sí, Guardar y Marcar',
-                cancelButtonText: 'Cancelar'
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    const formData = new FormData(form);
-
-                    // Asegurar que los checkboxes no chequeados se envíen como vacío
-                    form.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                        if (!checkbox.checked) {
-                            formData.set(checkbox.name, '');
-                        }
-                    });
-                    
-                    // Asegurar que fecha_reevaluacion_pdf se envíe desde el input oculto
-                    const fechaReevaluacionPdfInput = form.querySelector('input[name="fecha_reevaluacion_pdf"]');
-                    if (fechaReevaluacionPdfInput) {
-                        formData.set('fecha_reevaluacion_pdf', fechaReevaluacionPdfInput.value);
-                    }
-
-                    // Añadir flag para marcar como evaluado
-                    formData.append('mark_as_evaluated', 'true'); 
-
-                    Swal.fire({
-                        title: 'Guardando evaluación...',
-                        allowOutsideClick: false,
-                        didOpen: () => { Swal.showLoading(); }
-                    });
-
-                    try {
-                        const response = await fetch('/guardar_formulario', {
-                            method: 'POST',
-                            body: formData,
-                        });
-
-                        const data = await response.json();
-
-                        if (data.success) {
-                            updateStudentUI(estudianteId, true);
-                            updatePreview(form); // Actualizar vista previa
-                            Swal.fire({
-                                icon: 'success',
-                                title: '¡Evaluado!',
-                                text: 'El formulario ha sido guardado y marcado como Evaluado.',
-                                showConfirmButton: false,
-                                timer: 1500
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error al guardar',
-                                text: data.message,
-                            });
-                        }
-                    } catch (error) {
-                        console.error('Error al marcar como evaluado:', error);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error de Conexión',
-                            text: 'No se pudo conectar con el servidor para marcar la evaluación.'
-                        });
-                    }
-                }
-            });
-        }
-
-        // Función para actualizar la interfaz del estudiante (estado evaluado)
-        function updateStudentUI(estudianteId, isEvaluated) {
-            const detailElement = document.querySelector(`details.estudiante[data-estudiante-id="${estudianteId}"]`);
-            if (detailElement) {
-                detailElement.setAttribute('data-evaluated-status', isEvaluated ? 'true' : 'false');
-                
-                // Actualizar el summary y el indicador de estado
-                const statusIndicator = detailElement.querySelector('.status-indicator');
-                if (statusIndicator) {
-                    statusIndicator.classList.toggle('evaluated-true', isEvaluated);
-                    statusIndicator.classList.toggle('evaluated-false', !isEvaluated);
-                }
-
-                // Deshabilitar el botón si está evaluado
-                const markButton = detailElement.querySelector('.mark-evaluated-btn');
-                if (markButton) {
-                    if (isEvaluated) {
-                        markButton.disabled = true;
-                        markButton.innerHTML = '<i class="fas fa-check-circle"></i> Evaluado';
-                    } else {
-                        markButton.disabled = false;
-                        markButton.innerHTML = '<i class="fas fa-check-circle"></i> Marcar como Evaluado';
-                    }
-                }
-
-                // Mostrar badge de Guardado
-                const badge = detailElement.querySelector('.badge');
-                if (badge) {
-                    if (isEvaluated) {
-                        badge.classList.add('show');
-                        badge.textContent = detailElement.getAttribute('data-agregado-manual') === 'true' ? 'Guardado (Manual)' : 'Guardado';
-                        badge.style.backgroundColor = detailElement.getAttribute('data-agregado-manual') === 'true' ? 'var(--signature-purple)' : 'var(--accent-green)';
-                    } else {
-                        badge.classList.remove('show');
-                        badge.textContent = 'Pendiente';
-                        badge.style.backgroundColor = 'var(--primary-medium)';
-                    }
-                }
-            }
-            // Actualizar el contador global
-            updateCompletedCount();
-            // Reaplicar filtros para reordenar/ocultar si es necesario
-            aplicarFiltros(); 
-        }
-
-        function cerrarSesion() {
-            window.location.href = "/logout";
-        }
-
-        // Función para aplicar filtros de búsqueda y estado de evaluación
-        function aplicarFiltros() {
-            const estudiantes = document.querySelectorAll('details.estudiante');
-            const searchTerm = document.getElementById('buscador').value.toLowerCase().trim();
-            const evaluationFilter = document.querySelector('input[name="evaluation_filter"]:checked').value;
-
-            estudiantes.forEach(detail => {
-                const nombre = detail.getAttribute('data-nombre');
-                const isEvaluated = detail.getAttribute('data-evaluated-status') === 'true';
-                const matchesSearch = nombre.includes(searchTerm);
-                
-                let matchesFilter = false;
-                if (evaluationFilter === 'all') {
-                    matchesFilter = true;
-                } else if (evaluationFilter === 'evaluated') {
-                    matchesFilter = isEvaluated;
-                } else if (evaluationFilter === 'not_evaluated') {
-                    matchesFilter = !isEvaluated;
-                }
-
-                if (matchesSearch && matchesFilter) {
-                    detail.style.display = 'list-item';
-                } else {
-                    detail.style.display = 'none';
-                }
-            });
-        }
-
-        // Función para descargar Excel
-        function descargarNominaExcel(nominaId, establecimientoNombre) {
-            Swal.fire({
-                title: 'Generando Excel...',
-                html: 'Esto puede tardar un momento. <br><br> <i class="fas fa-spinner fa-spin"></i>',
-                allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading(); }
-            });
-
-            fetch(`/exportar_excel/${nominaId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        return response.json().then(errorData => {
-                            throw new Error(errorData.message || 'Error desconocido al generar Excel.');
-                        });
-                    }
-                    return response.blob();
-                })
-                .then(blob => {
-                    Swal.close();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    // Limpiar nombre del establecimiento para el nombre del archivo
-                    const safeName = establecimientoNombre.replace(/[^a-z0-9]/gi, '_').toLowerCase(); 
-                    a.download = `Nomina_${safeName}_MedicinaFamiliar_${new Date().toISOString().slice(0,10)}.xlsx`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Descarga completa',
-                        text: 'El archivo Excel se ha descargado correctamente.',
-                        showConfirmButton: false,
-                        timer: 2000
-                    });
-                })
-                .catch(error => {
-                    console.error('Error al descargar Excel:', error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error de descarga',
-                        text: error.message || 'No se pudo descargar el archivo Excel. Intente de nuevo más tarde.',
-                    });
-                });
-        }
-        
-        // Función para enviar a Google Drive
-        function enviarADrive(nominaId, establecimientoNombre) {
-             Swal.fire({
                 title: 'Enviando a Google Drive...',
-                html: 'Esto puede tardar un momento. <br><br> <i class="fab fa-google-drive fa-spin" style="font-size: 24px;"></i>',
+                html: 'El PDF se está generando y subiendo.',
                 allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading(); }
+                didOpen: () => {
+                    Swal.showLoading();
+                }
             });
 
-            fetch(`/upload_pdfs_to_drive/${nominaId}`, {
+            // Asumimos que existe una ruta en el backend '/enviar_a_drive_individual_familiar/<int:estudiante_id>'
+            const estudianteId = form.querySelector('input[name="estudiante_id"]').value;
+
+            fetch(`/enviar_a_drive_individual_familiar/${estudianteId}`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json' // Podría ser un POST simple o con JSON
                 },
-                body: JSON.stringify({ establecimiento_nombre: establecimientoNombre })
+                body: JSON.stringify({ student_id: estudianteId })
             })
             .then(response => response.json())
             .then(data => {
-                Swal.close();
                 if (data.success) {
                     Swal.fire({
                         icon: 'success',
                         title: '¡Enviado a Drive!',
-                        text: data.message,
+                        text: data.message || 'El PDF se ha subido correctamente a Google Drive.',
                         timer: 2000,
                         showConfirmButton: false
                     });
@@ -1563,41 +1376,200 @@
                 text: 'Se insertará la firma según la doctora que corresponda.'
             });
         }
+        
+        // Función para aplicar filtros de búsqueda y estado de evaluación
+        function aplicarFiltros() {
+            const estudiantes = document.querySelectorAll('details.estudiante');
+            const searchTerm = document.getElementById('buscador').value.toLowerCase().trim();
+            const evaluationFilter = document.querySelector('input[name="evaluation_filter"]:checked').value;
 
+            estudiantes.forEach(detail => {
+                const nombre = detail.getAttribute('data-nombre');
+                const rut = detail.getAttribute('data-rut');
+                const isEvaluated = detail.getAttribute('data-evaluated-status') === 'true';
+                
+                const matchesSearch = nombre.includes(searchTerm) || rut.includes(searchTerm);
+                
+                let matchesFilter = true;
+                if (evaluationFilter === 'pending') {
+                    matchesFilter = !isEvaluated;
+                } else if (evaluationFilter === 'evaluated') {
+                    matchesFilter = isEvaluated;
+                }
 
+                if (matchesSearch && matchesFilter) {
+                    detail.style.display = ''; // Mostrar
+                } else {
+                    detail.style.display = 'none'; // Ocultar
+                }
+            });
+        }
+        
+        // Función para marcar un formulario como evaluado manualmente
+        async function marcarComoEvaluado(buttonElement) {
+             const form = buttonElement.closest('form');
+             const estudianteId = buttonElement.getAttribute('data-estudiante-id');
+             
+             // 1. Validar que el formulario esté completamente lleno (requeridos)
+             const requiredInputs = form.querySelectorAll('input[required], select[required], textarea[required]');
+             let allFilled = true;
+             requiredInputs.forEach(input => {
+                 if (!input.value.trim()) {
+                     allFilled = false;
+                     input.style.borderColor = 'var(--accent-red)';
+                 } else {
+                     input.style.borderColor = '';
+                 }
+             });
+
+             if (!allFilled) {
+                 Swal.fire({
+                     icon: 'error',
+                     title: 'Campos Requeridos',
+                     text: 'Debe completar todos los campos obligatorios antes de marcar como evaluado.',
+                     confirmButtonText: 'Entendido'
+                 });
+                 return;
+             }
+
+             // 2. Confirmación del usuario
+             Swal.fire({
+                 title: '¿Marcar como Evaluado?',
+                 text: "Esta acción marcará al estudiante como completado en la nómina. ¿Desea continuar?",
+                 icon: 'warning',
+                 showCancelButton: true,
+                 confirmButtonColor: 'var(--accent-green)',
+                 cancelButtonColor: 'var(--accent-red)',
+                 confirmButtonText: 'Sí, Marcar!'
+             }).then(async (result) => {
+                 if (result.isConfirmed) {
+                     Swal.fire({
+                         title: 'Marcando...',
+                         allowOutsideClick: false,
+                         didOpen: () => {
+                             Swal.showLoading();
+                         }
+                     });
+
+                     try {
+                         // 3. Llamada al backend para marcar
+                         const response = await fetch('/marcar_como_evaluado', {
+                             method: 'POST',
+                             headers: {
+                                 'Content-Type': 'application/json',
+                             },
+                             body: JSON.stringify({ estudiante_id: estudianteId }),
+                         });
+
+                         const data = await response.json();
+
+                         if (data.success) {
+                             // 4. Actualizar la UI
+                             updateStudentUI(estudianteId, true);
+                             updateCompletedCount();
+                             aplicarFiltros(); // Reaplicar filtros
+                             
+                             Swal.fire({
+                                 icon: 'success',
+                                 title: '¡Evaluado!',
+                                 text: 'El estudiante ha sido marcado como evaluado.',
+                                 showConfirmButton: false,
+                                 timer: 1500
+                             });
+                         } else {
+                             Swal.fire({
+                                 icon: 'error',
+                                 title: 'Error',
+                                 text: data.message,
+                             });
+                         }
+                     } catch (error) {
+                         console.error('Error al marcar como evaluado:', error);
+                         Swal.fire({
+                             icon: 'error',
+                             title: 'Error de Conexión',
+                             text: 'No se pudo conectar con el servidor para marcar la evaluación.'
+                         });
+                     }
+                 }
+             });
+         }
+         
+        // Función para actualizar el estado visual de un estudiante
+        function updateStudentUI(estudianteId, isEvaluated) {
+            const detailElement = document.querySelector(`details.estudiante[data-estudiante-id="${estudianteId}"]`);
+            if (detailElement) {
+                detailElement.setAttribute('data-evaluated-status', isEvaluated ? 'true' : 'false');
+                const summary = detailElement.querySelector('summary');
+                const statusIndicator = summary.querySelector('.status-indicator');
+                
+                if (statusIndicator) {
+                    if (isEvaluated) {
+                        statusIndicator.innerHTML = '<i class="fas fa-check-circle"></i> Evaluado';
+                    } else {
+                        statusIndicator.innerHTML = '<i class="fas fa-clock"></i> Pendiente';
+                    }
+                }
+                
+                // Actualizar el botón de marcar como evaluado
+                const markButton = detailElement.querySelector('.mark-evaluated-btn');
+                if (markButton) {
+                    if (isEvaluated) {
+                        markButton.disabled = true;
+                        markButton.innerHTML = '<i class="fas fa-check-circle"></i> Evaluado';
+                    } else {
+                        markButton.disabled = false;
+                        markButton.innerHTML = '<i class="fas fa-check"></i> Marcar como Evaluado';
+                    }
+                }
+                
+                // Actualizar el badge
+                const badge = detailElement.querySelector('.badge');
+                if (badge) {
+                    if (isEvaluated) {
+                        badge.textContent = "Evaluado";
+                        badge.classList.add('show');
+                    } else {
+                        badge.textContent = "Guardado";
+                    }
+                }
+            }
+        }
+        
         // Función para generar y abrir múltiples PDFs en una nueva ventana para imprimir
         async function generarEImprimirPDFsVisibles(nominaId, establecimientoNombre) {
             const visibleStudentIds = [];
-            document.querySelectorAll('details.estudiante[data-evaluated-status="true"]:not([style*="display: none"])').forEach(detail => {
+            document.querySelectorAll('details.estudiante:not([style*="display: none"])').forEach(detail => {
                 visibleStudentIds.push(detail.getAttribute('data-estudiante-id'));
             });
 
             if (visibleStudentIds.length === 0) {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'No hay formularios Evaluados visibles',
-                    text: 'Ajusta los filtros para ver formularios evaluados y luego intenta imprimir.',
-                    confirmButtonText: 'Entendido'
+                Swal.fire({ 
+                    icon: 'info', 
+                    title: 'No hay formularios visibles', 
+                    text: 'Ajusta los filtros para ver formularios y luego intenta imprimir.', 
+                    confirmButtonText: 'Entendido' 
                 });
                 return;
             }
 
             Swal.fire({
                 title: 'Generando PDF combinado...',
-                html: `Se generarán ${visibleStudentIds.length} formularios. Esto puede tardar un momento. <br><br> <i class="fas fa-spinner fa-spin"></i>`,
+                html: 'Esto puede tardar un momento si hay muchos formularios.',
                 allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading(); }
+                didOpen: () => {
+                    Swal.showLoading();
+                }
             });
 
             try {
-                const response = await fetch('/generar_pdfs_visibles', {
+                // Asumimos que existe la ruta /generar_pdfs_visibles_familiar en app.py
+                const response = await fetch('/generar_pdfs_visibles_familiar', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', },
-                    body: JSON.stringify({ 
-                        nomina_id: nominaId, 
-                        student_ids: visibleStudentIds,
-                        form_type: 'familiar' 
-                    })
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ nomina_id: nominaId, student_ids: visibleStudentIds })
                 });
 
                 if (!response.ok) {
@@ -1605,36 +1577,78 @@
                     throw new Error(errorData.message || 'Error al generar el PDF combinado.');
                 }
 
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
+                const pdfBlob = await response.blob();
+                const url = window.URL.createObjectURL(pdfBlob);
+                
                 const printWindow = window.open(url, '_blank');
                 
-                printWindow.onload = () => {
-                     // Solo intentar imprimir si la ventana no fue bloqueada
-                    if (printWindow.document) {
-                        printWindow.print();
-                    }
-                    // No cerrar la ventana automáticamente para dar tiempo a la impresión
-                };
-
-                Swal.close();
-                Swal.fire({
-                    icon: 'success',
-                    title: 'PDFs listos para imprimir',
-                    text: `Se abrió una nueva ventana/pestaña para imprimir ${visibleStudentIds.length} formularios evaluados.`,
-                });
-
-
+                if (printWindow) {
+                    printWindow.onload = function() {
+                        Swal.close();
+                    };
+                } else {
+                    throw new Error('El navegador bloqueó la apertura de la ventana de impresión. Verifique la configuración de pop-ups.');
+                }
+                
             } catch (error) {
-                console.error('Error al generar PDF combinado:', error);
+                console.error('Error al generar e imprimir PDFs visibles:', error);
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error de impresión',
-                    text: error.message || 'No se pudo generar el PDF combinado. Intente de nuevo más tarde.',
+                    title: 'Error de Generación',
+                    text: error.message || 'No se pudo generar el PDF combinado para impresión.'
                 });
             }
         }
+        
+        // Función para exportar a Excel
+        function exportarExcel() {
+            Swal.fire({
+                title: 'Generando archivo Excel...',
+                html: 'Esto puede tardar un momento.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
 
+            fetch(`/exportar_excel/{{ session['current_nomina_id'] }}`)
+                .then(response => {
+                    if (!response.ok) {
+                         return response.json().then(errorData => {
+                            throw new Error(errorData.message || 'Error al generar el archivo Excel.');
+                        });
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    // Asumimos que el nombre del establecimiento está disponible y saneado
+                    const nombreEstablecimientoSlug = '{{ establecimiento.nombre_est|slugify }}';
+                    a.download = `Nomina_${nombreEstablecimientoSlug}_${new Date().toISOString().slice(0,10)}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Descarga completa',
+                        text: 'El archivo Excel se ha descargado correctamente.',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                })
+                .catch(error => {
+                    console.error('Error al descargar Excel:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error de descarga',
+                        text: error.message || 'No se pudo descargar el archivo Excel. Intente de nuevo más tarde.',
+                    });
+                });
+        }
+        
         // Función para actualizar el contador de formularios completados en la interfaz
         function updateCompletedCount() {
             const completedCount = document.querySelectorAll('details.estudiante[data-evaluated-status="true"]').length;
@@ -1643,339 +1657,179 @@
 
         // Llamar a updateCompletedCount cuando la página se carga para asegurar que el contador sea preciso
         document.addEventListener('DOMContentLoaded', updateCompletedCount);
-
-        // ===============================================
-        // --- NUEVO JAVASCRIPT SOLICITADO ---
-        // ===============================================
-
-        // Función de utilidad para calcular edad en JS
-        function calculateAgeJS(birthDateStr) {
-            if (!birthDateStr) return { years: 0, months: 0, ageString: '' };
-
-            const birthDate = new Date(birthDateStr + 'T00:00:00'); 
-            const today = new Date();
-
-            let years = today.getFullYear() - birthDate.getFullYear();
-            let months = today.getMonth() - birthDate.getMonth();
-
-            if (months < 0) {
-                years--;
-                months += 12;
-            }
-            
-            // Ajuste por día (si la fecha de cumpleaños aún no ha pasado este mes)
-            if (today.getDate() < birthDate.getDate()) {
-                months--;
-                if (months < 0) {
-                    months += 12;
-                    years--;
-                }
-            }
-
-            const ageString = `${years} años con ${months} meses`;
-            return { years, months, ageString };
+        
+        // Event listener para el buscador
+        const buscador = document.getElementById('buscador');
+        if (buscador) {
+            buscador.addEventListener('input', aplicarFiltros);
         }
 
-
-        // Función principal para mostrar el formulario modal y manejar la inserción
-        async function mostrarFormularioAgregarAlumno() {
-            const { value: formValues } = await Swal.fire({
-                title: 'Agregar Alumno Manualmente',
-                html:
-                    '<div class="swal2-content" style="text-align: left;">' +
-                    '<label for="swal-nombre">Nombre Completo (*):</label><input id="swal-nombre" class="swal2-input" placeholder="Nombre Apellido" required>' +
-                    '<label for="swal-rut">RUT (*, sin puntos, ej: 12345678-9):</label><input id="swal-rut" class="swal2-input" placeholder="Ej: 12345678-9" required>' +
-                    '<label for="swal-fecha-nacimiento">Fecha de Nacimiento (*):</label><input type="date" id="swal-fecha-nacimiento" class="swal2-input" required onchange="updateAgePreview()">' +
-                    '<div style="margin-top: 10px;"><strong>Edad Calculada:</strong> <span id="age-preview">--</span></div>' +
-                    '<label for="swal-genero">Género:</label><select id="swal-genero" class="swal2-input">' +
-                        '<option value="">Seleccionar</option>' +
-                        '<option value="F">Femenino</option>' +
-                        '<option value="M">Masculino</option>' +
-                    '</select>' +
-                    '<label for="swal-nacionalidad">Nacionalidad:</label><input id="swal-nacionalidad" class="swal2-input" value="Chilena" placeholder="Ej: Chilena">' +
-                    '</div>',
-                focusConfirm: false,
-                showCancelButton: true,
-                confirmButtonText: 'Agregar y Evaluar',
-                cancelButtonText: 'Cancelar',
-                didOpen: () => {
-                    // Función para actualizar la edad en el modal
-                    window.updateAgePreview = () => {
-                        const fechaNac = document.getElementById('swal-fecha-nacimiento').value;
-                        const { ageString } = calculateAgeJS(fechaNac);
-                        document.getElementById('age-preview').textContent = ageString || '--';
-                    };
-                },
-                preConfirm: () => {
-                    const nombre = document.getElementById('swal-nombre').value.trim();
-                    const rut = document.getElementById('swal-rut').value.trim();
-                    const fechaNac = document.getElementById('swal-fecha-nacimiento').value.trim();
-                    const genero = document.getElementById('swal-genero').value;
-                    const nacionalidad = document.getElementById('swal-nacionalidad').value.trim();
-
-                    if (!nombre || !rut || !fechaNac) {
-                        Swal.showValidationMessage('Por favor, rellene los campos obligatorios (*).');
-                        return false;
-                    }
-                    return { nombre, rut, fecha_nacimiento: fechaNac, genero, nacionalidad };
-                }
-            });
-
-            if (formValues) {
-                Swal.fire({
-                    title: 'Agregando alumno...',
-                    text: 'Por favor espere mientras se guarda en la base de datos.',
-                    allowOutsideClick: false,
-                    didOpen: () => { Swal.showLoading(); }
-                });
-
-                try {
-                    // La ruta /agregar_estudiante_manual debe estar implementada en app.py
-                    const response = await fetch('/agregar_estudiante_manual', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', },
-                        body: JSON.stringify(formValues)
-                    });
-
-                    const data = await response.json();
-
-                    if (data.success) {
-                        Swal.fire({ icon: 'success', title: '¡Éxito!', text: data.message });
-                        
-                        // 4. Actualizar la Interfaz con el Nuevo Estudiante
-                        agregarEstudianteAUINomina(data.estudiante);
-
-                    } else {
-                        Swal.fire({ icon: 'error', title: 'Error al agregar', text: data.message });
-                    }
-
-                } catch (error) {
-                    console.error('Error al agregar estudiante manual:', error);
-                    Swal.fire({ icon: 'error', title: 'Error de Conexión', text: 'No se pudo conectar con el servidor para agregar el alumno.' });
-                }
-            }
-        }
-
-        // Función para insertar el nuevo estudiante en la lista de la interfaz
-        function agregarEstudianteAUINomina(estudianteData) {
-            // Busca el contenedor principal de la lista de estudiantes
-            const listContainer = document.querySelector('.student-list'); 
-            
-            // Reutiliza la plantilla HTML/Jinja2 con los datos mínimos
-            const newDetailHTML = `
-            <details class="estudiante" data-estudiante-id="${estudianteData.id}" data-nombre="${estudianteData.nombre.toLowerCase()}" data-evaluated-status="true" data-agregado-manual="true" open style="display: list-item;">
-                <summary class="estudiante-header">
-                    <span class="status-indicator evaluated-true"></span>
-                    <span class="estudiante-nombre">${estudianteData.nombre} (Agregado Manualmente)</span>
-                    <i class="fas fa-chevron-down chevron-icon"></i>
-                </summary>
-                <div class="container">
-                    <div class="formulario">
-                        <span class="badge show" style="background-color: var(--signature-purple);">Guardado (Manual)</span>
-                        <form id="form-estudiante-${estudianteData.id}" onsubmit="event.preventDefault(); submitForm(this);">
-                            <input type="hidden" name="estudiante_id" value="${estudianteData.id}">
-                            <input type="hidden" name="nomina_id" value="{{ session['current_nomina_id'] }}">
-                            <input type="hidden" name="form_type" value="familiar">
-
-                            <h3 class="section-title">Identificación del Estudiante</h3>
-                            <label for="nombre_${estudianteData.id}">Nombre Completo:</label>
-                            <input type="text" name="nombre" id="nombre_${estudianteData.id}" value="${estudianteData.nombre}" required readonly>
-                            <input type="hidden" name="nombre_original" value="${estudianteData.nombre}">
-
-                            <label for="rut_${estudianteData.id}">RUN:</label>
-                            <input type="text" name="rut" id="rut_${estudianteData.id}" value="${estudianteData.rut}" required readonly>
-
-                            <label for="fecha_nacimiento_${estudianteData.id}">Fecha de Nacimiento:</label>
-                            <input type="date" name="fecha_nacimiento" id="fecha_nacimiento_${estudianteData.id}" value="${estudianteData.fecha_nacimiento_formato}" required readonly>
-                            <input type="hidden" name="fecha_nacimiento_original" value="${estudianteData.fecha_nacimiento_formato}">
-                            
-                            <label for="edad_${estudianteData.id}">Edad:</label>
-                            <input type="text" name="edad" id="edad_${estudianteData.id}" value="${estudianteData.edad}" required readonly>
-
-                            <label for="nacionalidad_${estudianteData.id}">Nacionalidad:</label>
-                            <input type="text" name="nacionalidad" id="nacionalidad_${estudianteData.id}" value="${estudianteData.nacionalidad || 'Chilena'}" readonly>
-                            
-                            <h3 class="section-title">Diagnóstico y Evaluación</h3>
-                            <label for="derivaciones_${estudianteData.id}">Derivaciones:</label>
-                            <textarea name="derivaciones" id="derivaciones_${estudianteData.id}" rows="3" placeholder="Indicar derivaciones o procedimientos pendientes (Ej: Oftalmología, Interconsulta, etc.)."></textarea>
-
-                            <label for="diagnostico_1_${estudianteData.id}">Diagnóstico Principal:</label>
-                            <select name="diagnostico_1" id="diagnostico_1_${estudianteData.id}">
-                                <option value="" selected>Seleccionar</option>
-                                <option value="NORMAL">NORMAL</option>
-                                <option value="TRASTORNO_ATENCION">TRASTORNO ATENCIÓN</option>
-                                <option value="DISCAPACIDAD_INTELECTUAL">DISCAPACIDAD INTELECTUAL</option>
-                                <option value="SINDROME_DOWN">SÍNDROME DE DOWN</option>
-                                <option value="OTROS">OTROS (Especificar en Complementario)</option>
-                            </select>
-                            
-                            <label for="diagnostico_2_${estudianteData.id}">Diagnóstico Secundario:</label>
-                            <select name="diagnostico_2" id="diagnostico_2_${estudianteData.id}">
-                                <option value="" selected>Seleccionar</option>
-                                <option value="NORMAL">NORMAL</option>
-                                <option value="TEA">TRASTORNO ESPECTRO AUTISTA (TEA)</option>
-                                <option value="FIL">FIL</option>
-                                <option value="DIL">DIL</option>
-                                <option value="Trastorno especifico del lenguaje">Trastorno especifico del lenguaje</option>
-                                <option value="Otro">Otro</option>
-                            </select>
-
-                            <label for="diagnostico_complementario_${estudianteData.id}">Diagnóstico Complementario (Notas):</label>
-                            <textarea name="diagnostico_complementario" id="diagnostico_complementario_${estudianteData.id}" rows="3" placeholder="Notas adicionales sobre el diagnóstico complementario."></textarea>
-
-                            <h3 class="section-title">Antropometría</h3>
-                            <label for="altura_${estudianteData.id}">Altura (cm):</label>
-                            <input type="number" step="0.1" name="altura" id="altura_${estudianteData.id}" placeholder="Ej: 150.5" oninput="calculateIMC(this.form)">
-                            
-                            <label for="peso_${estudianteData.id}">Peso (kg):</label>
-                            <input type="number" step="0.1" name="peso" id="peso_${estudianteData.id}" placeholder="Ej: 60.2" oninput="calculateIMC(this.form)">
-
-                            <label for="imc_${estudianteData.id}">I.M.C:</label>
-                            <input type="text" name="imc" id="imc_${estudianteData.id}" readonly>
-
-                            <label for="clasificacion_imc_${estudianteData.id}">Clasificación (IMC):</label>
-                            <input type="text" name="clasificacion_imc" id="clasificacion_imc_${estudianteData.id}" readonly>
-
-                            <h3 class="section-title">Antecedentes Perinatales</h3>
-                            <div class="checkbox-group">
-                                <label class="checkbox-item">
-                                    <input type="checkbox" name="check_cesarea" id="check_cesarea_${estudianteData.id}" value="CESAREA" onchange="updateCheckboxStyle(this)"> Cesárea (CESAREA)
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" name="check_parto_normal" id="check_parto_normal_${estudianteData.id}" value="PARTO_NORMAL" onchange="updateCheckboxStyle(this)"> Parto Normal (PARTO NORMAL)
-                                </label>
-                            </div>
-                            <h3 class="section-title">Vacunas</h3>
-                            <div class="checkbox-group">
-                                <label class="checkbox-item">
-                                    <input type="checkbox" name="check_esquemac" id="check_esquemac_${estudianteData.id}" value="ESQUEMA_COMPLETO" onchange="updateCheckboxStyle(this)"> Completo (ESQUEMA COMPLETO)
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" name="check_esquemai" id="check_esquemai_${estudianteData.id}" value="ESQUEMA_INCOMPLETO" onchange="updateCheckboxStyle(this)"> Incompleto (ESQUEMA INCOMPLETO)
-                                </label>
-                            </div>
-
-                            <label>Alergias:</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-item checked">
-                                    <input type="checkbox" name="check_alergiano" id="check_alergiano_${estudianteData.id}" value="NO_ALERGIAS" checked onchange="updateCheckboxStyle(this); handleCheckboxExclusive(this, 'check_alergiasi')"> No (NO)
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" name="check_alergiasi" id="check_alergiasi_${estudianteData.id}" value="SI_ALERGIAS" onchange="updateCheckboxStyle(this); handleCheckboxExclusive(this, 'check_alergiano')"> Sí (SI)
-                                </label>
-                            </div>
-                            <label for="observacion_1_${estudianteData.id}">Observación Alergias:</label>
-                            <textarea name="observacion_1" id="observacion_1_${estudianteData.id}" rows="3" placeholder="Detalle las alergias si marcó 'Sí'."></textarea>
-
-                            <label>Hospitalizaciones/Cirugías:</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-item checked">
-                                    <input type="checkbox" name="check_cirugiano" id="check_cirugiano_${estudianteData.id}" value="NO_CIRUGIAS" checked onchange="updateCheckboxStyle(this); handleCheckboxExclusive(this, 'check_cirugiasi')"> No (NO)
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" name="check_cirugiasi" id="check_cirugiasi_${estudianteData.id}" value="SI_CIRUGIAS" onchange="updateCheckboxStyle(this); handleCheckboxExclusive(this, 'check_cirugiano')"> Sí (SI)
-                                </label>
-                            </div>
-                            <label for="observacion_2_${estudianteData.id}">Observación Cirugías:</label>
-                            <textarea name="observacion_2" id="observacion_2_${estudianteData.id}" rows="3" placeholder="Detalle las cirugías/hospitalizaciones si marcó 'Sí'."></textarea>
-
-                            <h3 class="section-title">Examen Físico Segmentario</h3>
-
-                            <label>Visión:</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-item checked">
-                                    <input type="checkbox" name="check_visionsinalteracion" id="check_visionsinalteracion_${estudianteData.id}" value="SIN_ALTERACION" checked onchange="updateCheckboxStyle(this)"> Sin Alteración (SIN ALTERACIÓN)
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" name="check_visionrefraccion" id="check_visionrefraccion_${estudianteData.id}" value="VICIOS_REFRACCION" onchange="updateCheckboxStyle(this)"> Vicios de Refracción (VICIOS REFRACCIÓN)
-                                </label>
-                            </div>
-                            <label for="observacion_3_${estudianteData.id}">Observación Visión:</label>
-                            <textarea name="observacion_3" id="observacion_3_${estudianteData.id}" rows="3" placeholder="Notas de visión."></textarea>
-                            
-                            <label>Audición:</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-item checked">
-                                    <input type="checkbox" name="check_audicionnormal" id="check_audicionnormal_${estudianteData.id}" value="NORMAL_AUDICION" checked onchange="updateCheckboxStyle(this)"> Normal
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" name="check_hipoacusia" id="check_hipoacusia_${estudianteData.id}" value="HIPOACUSIA" onchange="updateCheckboxStyle(this)"> Hipoacusia
-                                </label>
-                            </div>
-                            <label for="observacion_4_${estudianteData.id}">Observación Audición:</label>
-                            <textarea name="observacion_4" id="observacion_4_${estudianteData.id}" rows="3" placeholder="Notas de audición."></textarea>
-
-                            <label for="observacion_5_${estudianteData.id}">Observación Examen Físico (General):</label>
-                            <textarea name="observacion_5" id="observacion_5_${estudianteData.id}" rows="3" placeholder="Observaciones generales de examen físico."></textarea>
-
-                            <label for="observacion_6_${estudianteData.id}">Observación Final (Global):</label>
-                            <textarea name="observacion_6" id="observacion_6_${estudianteData.id}" rows="3" placeholder="Observaciones finales de la evaluación."></textarea>
-
-
-                            <h3 class="section-title">Cierre de Evaluación</h3>
-                            <p style="color: red; font-weight: bold; padding: 10px 0;">
-                                ⚠️ Rellene los campos restantes del formulario para completar la evaluación. Este alumno ya está marcado como evaluado, pero requiere los detalles de la ficha.
-                            </p>
-                            <label for="fecha_evaluacion_${estudianteData.id}">Fecha Evaluación (*):</label>
-                            <input type="date" name="fecha_evaluacion" id="fecha_evaluacion_${estudianteData.id}" value="${new Date().toISOString().slice(0, 10)}" required onchange="setFechaReevaluacion(this.form.querySelector('select[name=\'plazo\']'))">
-
-                            <label for="plazo_${estudianteData.id}">Plazo de Reevaluación:</label>
-                            <select name="plazo" id="plazo_${estudianteData.id}" onchange="setFechaReevaluacion(this)">
-                                <option value="" selected>Seleccionar plazo</option>
-                                <option value="1">1 Año</option>
-                                <option value="2">2 Años</option>
-                                <option value="3">3 Años</option>
-                                <option value="4">4 Años</option>
-                                <option value="5">5 Años</option>
-                                <option value="6">6 Años</option>
-                            </select>
-
-                            <label for="fecha_reevaluacion_${estudianteData.id}">Fecha Reevaluación (Calculada):</label>
-                            <input type="date" name="fecha_reevaluacion" id="fecha_reevaluacion_${estudianteData.id}" readonly>
-                            <input type="hidden" name="fecha_reevaluacion_pdf">
-
-
-                            <div class="button-group">
-                                <button type="submit" class="save-btn"><i class="fas fa-save"></i> Guardar Modificaciones y Generar PDF</button>
-                                <button type="button" class="mark-evaluated-btn secondary" disabled>
-                                    <i class="fas fa-check-circle"></i> Evaluado
-                                </button>
-                                <button type="button" onclick="insertarFirma()" class="signature-button"><i class="fas fa-signature"></i> Insertar Firma</button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div class="preview">
-                        <h3 class="section-title">Vista Previa (Datos Mínimos)</h3>
-                        <p><strong>Nombre:</strong> <span class="prev-nombre">${estudianteData.nombre}</span></p>
-                        <p><strong>RUT:</strong> <span class="prev-rut">${estudianteData.rut}</span></p>
-                        <p><strong>Edad:</strong> <span class="prev-edad">${estudianteData.edad}</span></p>
-                        <p><strong>Estado:</strong> <span style="font-weight: bold; color: var(--signature-purple);">EVALUADO (Manual)</span></p>
-                        <p><strong>Fecha Evaluación:</strong> <span class="prev-fecha-evaluacion">${new Date().toISOString().slice(0, 10)}</span></p>
-                        <p><strong>Fecha Reevaluación:</strong> <span class="prev-fecha-reevaluacion">-</span></p>
-                        <p><strong>Diagnóstico Principal:</strong> <span class="prev-diagnostico-1">-</span></p>
-                        <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">-</span></p>
-                    </div>
-                </div>
-            </details>
-            `;
-
-            // 2. Insertar el nuevo elemento al inicio de la lista
-            listContainer.insertAdjacentHTML('afterbegin', newDetailHTML);
-            
-            // 3. Actualizar contadores y filtros de la interfaz
-            updateCompletedCount();
-            aplicarFiltros(); 
-
-            // 4. Inicializar estilos de checkbox para el nuevo formulario
-            const newDetailElement = listContainer.querySelector(`details.estudiante[data-estudiante-id="${estudianteData.id}"]`);
-            if (newDetailElement) {
-                 newDetailElement.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(checkbox => {
-                    updateCheckboxStyle(checkbox);
-                });
-            }
+        // Event listener para los radio buttons de filtro
+        document.querySelectorAll('input[name="evaluation_filter"]').forEach(radio => {
+            radio.addEventListener('change', aplicarFiltros);
+        });
+        
+        // Función para cerrar sesión (aunque ya está en el botón del header)
+        function cerrarSesion() {
+            window.location.href = "/logout";
         }
         
+        // Inicializar los estilos de los checkboxes al cargar la página
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('details.estudiante').forEach(detail => {
+                const form = detail.querySelector('form');
+                if (form) {
+                    form.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(checkbox => {
+                        updateCheckboxStyle(checkbox);
+                    });
+                }
+            });
+        });
+        
+        // Función para cambiar el estado visual de los checkboxes de género (mismo que en formulario_relleno)
+        function handleGenderChange(changedCheckbox) {
+            const form = changedCheckbox.closest('form');
+            const estudianteId = form.querySelector('input[name="estudiante_id"]').value;
+            const generoF = form.querySelector(`#genero_f_${estudianteId}`);
+            const generoM = form.querySelector(`#genero_m_${estudianteId}`);
+            const generoHidden = form.querySelector('input[name="genero"]');
+
+            // Desmarcar el otro
+            if (changedCheckbox === generoF && generoM.checked) {
+                generoM.checked = false;
+            } else if (changedCheckbox === generoM && generoF.checked) {
+                generoF.checked = false;
+            }
+            
+            // Actualizar el campo oculto de género
+            if (generoF.checked) {
+                generoHidden.value = 'F';
+            } else if (generoM.checked) {
+                generoHidden.value = 'M';
+            } else {
+                generoHidden.value = '';
+            }
+            
+            // Actualizar el estilo visual
+            updateCheckboxStyle(generoF);
+            updateCheckboxStyle(generoM);
+        }
+
+        // -------------------- NUEVAS FUNCIONES PARA AGREGAR ALUMNO MANUAL --------------------
+        
+        // Función de utilidad simple para validar el formato RUT (sin puntos, con guion)
+        function validarRutSimple(rut) {
+            // Este es un regex simple para el formato: d{7,8}-d/k/K
+            const rutRegex = /^\d{7,8}-[\dkK]$/;
+            return rutRegex.test(rut);
+        }
+
+        // Función para abrir el modal y agregar alumno manualmente
+        function agregarAlumnoManual() {
+            // Obtener la nomina_id del primer formulario (si no hay, la página está vacía)
+            const nominaIdInput = document.querySelector('input[name="nomina_id"]');
+            if (!nominaIdInput) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de Contexto',
+                    text: 'No se pudo obtener el ID de la nómina. Asegúrese de que hay al menos un formulario o recargue.',
+                    confirmButtonText: 'Entendido'
+                });
+                return;
+            }
+            const nominaId = nominaIdInput.value;
+
+            Swal.fire({
+                title: 'Agregar Alumno Manualmente',
+                html:
+                    // Es necesario agregar las etiquetas `<label>` para accesibilidad y estilo en el modal
+                    '<label for="swal-rut" class="swal2-label-custom">RUT (sin puntos, con guion):</label>' +
+                    '<input id="swal-rut" class="swal2-input" placeholder="Ej: 12345678-9" required>' +
+                    '<label for="swal-nombre" class="swal2-label-custom">Nombre Completo:</label>' +
+                    '<input id="swal-nombre" class="swal2-input" placeholder="Ej: Juan Pérez Soto" required>' +
+                    '<label for="swal-fecha" class="swal2-label-custom">Fecha Nacimiento:</label>' +
+                    '<input id="swal-fecha" class="swal2-input" type="date" required>' +
+                    '<label for="swal-genero" class="swal2-label-custom">Género:</label>' +
+                    '<select id="swal-genero" class="swal2-input">' +
+                        '<option value="">Seleccione</option>' +
+                        '<option value="F">Femenino</option>' +
+                        '<option value="M">Masculino</option>' +
+                    '</select>',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const rut = Swal.getPopup().querySelector('#swal-rut').value.trim();
+                    const nombre = Swal.getPopup().querySelector('#swal-nombre').value.trim();
+                    const fecha_nacimiento = Swal.getPopup().querySelector('#swal-fecha').value.trim();
+                    const genero = Swal.getPopup().querySelector('#swal-genero').value;
+
+                    if (!rut || !nombre || !fecha_nacimiento || !genero) {
+                        Swal.showValidationMessage('Por favor, complete todos los campos.');
+                        return false;
+                    }
+                    if (!validarRutSimple(rut)) {
+                         Swal.showValidationMessage('Formato de RUT inválido. Use el formato: 12345678-9');
+                        return false;
+                    }
+
+                    return { rut: rut, nombre: nombre, fecha_nacimiento: fecha_nacimiento, genero: genero, nomina_id: nominaId };
+                },
+                showCancelButton: true,
+                confirmButtonText: 'Agregar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const alumnoData = result.value;
+                    if (alumnoData) {
+                        Swal.fire({
+                            title: 'Agregando alumno...',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        // Llamada al backend
+                        fetch('/agregar_alumno_manual', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(alumnoData),
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Alumno Agregado',
+                                    text: 'El alumno ha sido agregado a la nómina. Recargando la página...',
+                                    showConfirmButton: false,
+                                    timer: 2000
+                                }).then(() => {
+                                    window.location.reload(); // Recargar para mostrar el nuevo alumno
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error al Agregar',
+                                    text: data.message,
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error de conexión:', error);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error de Conexión',
+                                text: 'No se pudo conectar con el servidor para agregar el alumno.',
+                            });
+                        });
+                    }
+                }
+            });
+        }
+        
+        // -------------------- FIN NUEVAS FUNCIONES --------------------
     </script>
 </body>
 </html>

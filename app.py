@@ -2192,7 +2192,96 @@ def crear_proyecto():
             flash(f"Error inesperado al crear el proyecto: {e}", 'danger')
 
     return redirect(url_for('dashboard', _external=True, _scheme='https'))
+
+# app.py (Nueva ruta)
+
+@app.route('/agregar_estudiante_manual', methods=['POST'])
+def agregar_estudiante_manual():
+    # 1. Verificar sesión de doctora y nómina actual
+    doctora_id = session.get('usuario_id')
+    # Asumimos que el ID de la nómina (colegio) actual está en la sesión
+    nomina_id = session.get('current_nomina_id') 
     
+    if not doctora_id or not nomina_id:
+        return jsonify({"success": False, "message": "Sesión inválida o nómina no seleccionada."}), 403
+
+    try:
+        data = request.get_json()
+        
+        # Datos requeridos del frontend
+        nombre = data.get('nombre', '').strip()
+        rut_raw = data.get('rut', '').strip()
+        fecha_nac_str = data.get('fecha_nacimiento', '').strip()
+        genero = data.get('genero', None) # 'M' o 'F'
+        nacionalidad = data.get('nacionalidad', 'Chilena').strip()
+        
+        if not nombre or not rut_raw or not fecha_nac_str:
+            return jsonify({"success": False, "message": "Faltan campos obligatorios: Nombre, RUT o Fecha de Nacimiento."}), 400
+
+        # 2. Formatear RUT y calcular edad (usando funciones existentes)
+        rut_formateado = format_rut_python(rut_raw)
+        
+        try:
+            fecha_nac = datetime.strptime(fecha_nac_str, '%Y-%m-%d').date()
+            edad_str = calculate_age(fecha_nac)
+        except ValueError:
+            return jsonify({"success": False, "message": "Formato de fecha de nacimiento inválido."}), 400
+
+        # 3. Preparar payload de inserción
+        nuevo_estudiante_id = str(uuid.uuid4())
+        fecha_actual = datetime.now().strftime('%Y-%m-%d')
+        
+        payload = {
+            "id": nuevo_estudiante_id,
+            "nomina_id": nomina_id,
+            "nombre": nombre,
+            "rut": rut_formateado,
+            "fecha_nacimiento_formato": fecha_nac_str,
+            "edad": edad_str, 
+            "nacionalidad": nacionalidad, 
+            "sexo": genero,
+            "sexo_f": True if genero == 'F' else False,
+            "sexo_m": True if genero == 'M' else False,
+            
+            # --- CAMPOS CLAVE ---
+            "agregado_por_doctora": True,           # ¡Nuevo! Bandera solicitada
+            "evaluado_flag": True,                  # Marcarlo como evaluado inmediatamente
+            "doctora_evaluadora_id": doctora_id,    # Asignar a la doctora actual
+            "fecha_evaluacion": fecha_actual,       # Fecha de hoy
+            "estado_general": "Evaluado manualmente (Pendiente detalles)", # Marcar estado inicial
+            # --------------------
+            
+            # Puedes añadir otros campos requeridos por tu esquema aquí, con valores por defecto o null
+        }
+
+        # 4. Insertar en Supabase
+        url_insert = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+        # Usamos SUPABASE_SERVICE_HEADERS para inserción/modificación segura
+        res_insert = requests.post(url_insert, headers=SUPABASE_SERVICE_HEADERS, json=payload)
+        res_insert.raise_for_status()
+
+        # 5. Retornar éxito y los datos del nuevo estudiante para el frontend
+        return jsonify({
+            "success": True, 
+            "message": "Estudiante agregado y marcado como evaluado.",
+            "estudiante": {
+                "id": nuevo_estudiante_id,
+                "nombre": nombre,
+                "rut": rut_formateado,
+                "fecha_nacimiento_formato": fecha_nac_str,
+                "edad": edad_str,
+                "agregado_por_doctora": True,
+                "evaluado_flag": True,
+            }
+        })
+
+    except requests.exceptions.RequestException as e:
+        error_message = f"Error al guardar en la base de datos: {e}"
+        return jsonify({"success": False, "message": error_message}), 500
+    except Exception as e:
+        error_message = f"Error interno del servidor: {e}"
+        return jsonify({"success": False, "message": error_message}), 500
+        
 @app.route('/descargar_excel_evaluados/<nomina_id>', methods=['GET'])
 def descargar_excel_evaluados(nomina_id):
     if 'usuario' not in session:

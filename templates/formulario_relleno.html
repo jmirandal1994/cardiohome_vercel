@@ -150,7 +150,7 @@
             transform: translateY(-2px);
             box-shadow: 0 5px 12px rgba(0,0,0,0.15);
         }
-
+        
         /* Contador de evaluaciones */
         .evaluation-counter {
             background-color: #e6f7ff; /* Azul claro */
@@ -266,7 +266,6 @@
             transform: translate(-50%, -50%);
         }
 
-
         details {
             margin-bottom: 25px; /* Más espacio entre estudiantes */
             border-radius: 12px;
@@ -328,82 +327,27 @@
             flex: 1 1 500px; /* Base más flexible */
             background: #ffffff;
             border-left: 6px solid #1a73e8;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            border-radius: 12px; /* Se ajusta solo en el contenedor, aquí es 0 0 12px 12px */
             padding: 30px;
-            position: relative;
-        }
-
-        .badge {
-            position: absolute;
-            top: 20px;
-            right: 30px;
-            background: #34a853;
-            color: #fff;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            opacity: 0;
-            transform: translateY(-10px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-
-        .badge.show {
-            opacity: 1;
-            transform: translateY(0);
+            box-shadow: 0 4px 10px var(--shadow-subtle);
         }
 
         .preview {
-            flex: 1 1 350px;
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            flex: 1 1 350px; /* Base para el preview */
+            background-color: var(--primary-light);
             padding: 30px;
-            border-left: 6px solid #1a73e8;
-            position: relative;
-            overflow: hidden;
-            transition: box-shadow 0.3s ease, transform 0.2s ease;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px var(--shadow-subtle);
+            border: 1px solid var(--border-color);
         }
 
-        .preview:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-        }
-
-        .preview h3 {
-            margin-top: 0;
-            font-size: 1.4rem;
+        .formulario h3 {
             color: #1a73e8;
-            border-bottom: 2px solid #1a73e8;
+            border-bottom: 2px solid #e0e0e0;
             padding-bottom: 10px;
             margin-bottom: 20px;
-        }
-
-        .preview p {
-            margin: 12px 0;
-            font-size: 1rem;
-            color: #333;
-        }
-
-        .preview p strong {
-            display: inline-block;
-            width: 180px;
-            color: #1a73e8;
-        }
-
-        .preview span {
-            font-weight: 500;
-            color: #555;
-        }
-
-        .preview-img {
-            display: block;
-            width: 100%;
-            height: auto; /* Asegura que la imagen se adapte */
-            margin-top: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-size: 1.4rem;
+            font-weight: 600;
         }
 
         label {
@@ -414,52 +358,45 @@
             color: #333;
         }
 
-        input[type="text"],
-        input[type="date"],
-        select,
+        input[type="text"], 
+        input[type="number"], 
+        input[type="date"], 
+        select, 
         textarea {
             width: 100%;
             padding: 12px;
             margin-bottom: 10px;
-            border: 1px solid var(--border-color);
+            border: 1px solid #ccc;
             border-radius: 6px;
             box-sizing: border-box;
             font-size: 1rem;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-            color: #333;
-            background-color: #f7f7f7;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
-        input[type="text"]:focus,
-        input[type="date"]:focus,
-        select:focus,
+        input[type="text"]:focus, 
+        input[type="number"]:focus, 
+        input[type="date"]:focus, 
+        select:focus, 
         textarea:focus {
             border-color: #1a73e8;
             box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.2);
             outline: none;
-            background-color: #fff;
-        }
-
-        input[readonly] {
-            background-color: #eee;
-            cursor: not-allowed;
-            color: #666;
         }
 
         textarea {
             resize: vertical;
+            min-height: 100px;
         }
 
-        .form-actions {
+        .button-group {
             display: flex;
             gap: 15px; /* Más espacio entre botones */
             margin-top: 25px; /* Más margen superior */
             justify-content: center; /* Centrar botones */
-            flex-wrap: wrap; /* Permitir que se envuelvan */
         }
 
-        .form-actions button {
-            flex: 1 1 200px; /* Base más grande para botones */
+        button {
+            flex: 1 1 auto; /* Permitir que los botones se adapten al contenido y se envuelvan */
             background: #1a73e8;
             color: #fff;
             border: none;
@@ -472,44 +409,75 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+            transition: background 0.3s ease, transform 0.2s ease;
         }
 
-        .form-actions button:hover:not(:disabled) {
+        button:hover {
+            background: #155ab6;
             transform: translateY(-2px);
-            box-shadow: 0 5px 12px rgba(0,0,0,0.15);
         }
-        
-        /* Estilos específicos para cada botón */
-        .save-btn { background-color: #34a853; } /* Verde para guardar */
-        .save-btn:hover:not(:disabled) { background-color: #2b8c45; }
-        
-        .mark-evaluated-btn { background-color: #fbbc05; color: #333; } /* Amarillo para marcar */
-        .mark-evaluated-btn:hover:not(:disabled) { background-color: #e5a700; }
-        .mark-evaluated-btn:disabled { 
-            background-color: #ccc; 
-            color: #666;
+
+        button:disabled {
+            background: #a9c5ec;
             cursor: not-allowed;
-            box-shadow: none;
+            transform: none;
         }
 
-        .send-to-drive-btn { background-color: var(--google-drive-blue); }
-        .send-to-drive-btn:hover:not(:disabled) { background-color: #357ae8; }
+        .preview p {
+            margin: 8px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px dotted #ccc;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .preview p strong {
+            font-weight: 600;
+            color: var(--primary-dark);
+            flex-shrink: 0;
+            width: 180px; /* Ancho fijo para las etiquetas */
+        }
+        .preview p span {
+            text-align: right;
+            flex-grow: 1;
+        }
 
-        .print-individual-btn { background-color: #6c757d; }
-        .print-individual-btn:hover:not(:disabled) { background-color: #5a6268; }
+        .badge {
+            display: none;
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: var(--accent-green);
+            color: var(--text-light);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            font-weight: 700;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .badge.show {
+            display: block;
+        }
 
-        .insert-signature-btn { background-color: var(--signature-purple); }
-        .insert-signature-btn:hover:not(:disabled) { background-color: #6f42c1; }
+        .estudiante[data-evaluated-status="true"] summary {
+            background-color: var(--accent-green); /* Verde para evaluados */
+        }
+        .estudiante[data-evaluated-status="true"] summary:hover {
+            background-color: hsl(140, 65%, 35%);
+        }
+        .estudiante[data-evaluated-status="true"] .formulario {
+            border-left: 6px solid var(--accent-green);
+        }
 
         /* Estilos para impresión */
         @media print {
             body {
-                background: none;
+                background: white !important;
                 padding: 0;
+                margin: 0;
+                font-size: 10pt; /* Fuente más pequeña para ahorrar espacio */
             }
-            .header-btn, .action-buttons, .evaluation-counter, #buscador, .filter-group, .preview-img, .badge {
+            header, .header-btn, .action-buttons, .evaluation-counter, #buscador, .filter-group, .badge, .button-group {
                 display: none !important; /* Ocultar elementos no deseados */
             }
             .main-content-wrapper {
@@ -518,19 +486,20 @@
                 width: 100%; /* Ocupar todo el ancho para impresión */
                 max-width: none;
             }
-            .estudiante {
+            details {
                 page-break-inside: avoid; /* Evitar que los formularios se corten al final de una página */
                 margin-bottom: 20px; /* Espacio entre formularios impresos */
                 border: 1px solid #ccc; /* Borde suave para cada formulario impreso */
                 padding: 15px;
+                box-shadow: none;
+            }
+            details[open] summary {
+                border-bottom: none !important;
             }
             .estudiante summary {
                 background: #e0e0e0 !important; /* Fondo más claro para impresión */
                 color: #333 !important;
                 border-bottom: 1px solid #ccc !important;
-            }
-            .estudiante details[open] summary .chevron-icon {
-                display: none !important;
             }
             .estudiante details[open] .container {
                 display: flex !important; /* Asegurar que el contenido se muestre */
@@ -548,23 +517,79 @@
                 border: none !important;
                 box-shadow: none !important;
             }
-            .estudiante .form-actions {
-                display: none !important; /* Ocultar botones de acción en impresión */
+            .estudiante .preview p {
+                border-bottom: 1px solid #ddd;
             }
-            .estudiante .badge {
-                display: none !important; /* Ocultar el badge en impresión */
-            }
-            
-            /* Ajustes para que la información se muestre como texto plano en impresión */
-            .preview {
-                display: block !important;
-            }
-            .preview p, .preview h3 {
-                display: block !important;
-            }
-            .formulario form, .preview-img {
-                display: none !important; /* Ocultar el formulario editable y la imagen de muestra */
-            }
+        }
+        
+        /* Estilos para el checkbox-group */
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-weight: normal;
+            transition: color 0.2s;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            /* Ocultar el checkbox nativo y usar un estilo customizado */
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        .checkbox-item span {
+            /* Estilo para el texto */
+            padding-left: 25px; /* Espacio para el checkmark customizado */
+            position: relative;
+        }
+        
+        .checkbox-item span::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            border: 2px solid #555;
+            border-radius: 4px;
+            background-color: white;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-item input[type="checkbox"]:checked + span::before {
+            background-color: #1a73e8;
+            border-color: #1a73e8;
+        }
+
+        .checkbox-item input[type="checkbox"]:checked + span::after {
+            content: '\f00c'; /* Icono de check (Font Awesome) */
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            left: 3px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 10px;
+        }
+        
+        /* Estilos para campos de solo lectura */
+        input[readonly], select[readonly], textarea[readonly] {
+            background-color: #e9ecef;
+            cursor: default;
         }
 
         /* Responsive Design */
@@ -572,12 +597,12 @@
             .container {
                 flex-direction: column;
             }
-            .preview p strong {
-                width: 150px; /* Ajustar el ancho de las etiquetas en preview */
-            }
         }
 
         @media (max-width: 600px) {
+            header h1 {
+                font-size: 1.5rem;
+            }
             .header-btn {
                 position: static;
                 margin-bottom: 10px; /* Espacio entre botones */
@@ -595,13 +620,27 @@
                 gap: 10px;
                 align-items: flex-start;
             }
-            .back-to-dashboard-btn { order: 1; }
-            .logout-btn { order: 2; }
-            header { display: flex; flex-direction: column; align-items: center; }
-            #buscador { max-width: 100%; }
-            .container { flex-direction: column; gap: 20px; padding: 15px; }
-            .formulario, .preview { flex: 1 1 100%; padding: 20px; }
-            .form-actions {
+            .back-to-dashboard-btn {
+                order: 1;
+            }
+            .logout-btn {
+                order: 2;
+            }
+            header {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            #buscador {
+                max-width: 100%;
+            }
+            .container {
+                padding: 15px;
+            }
+            .formulario, .preview {
+                padding: 20px;
+            }
+            .button-group {
                 flex-direction: column;
                 gap: 10px;
             }
@@ -614,6 +653,18 @@
                 width: 120px; /* Reducir el ancho en móvil */
             }
         }
+        
+        /* NUEVO ESTILO PARA SWEETALERT */
+        .swal2-label-custom {
+            display: block;
+            text-align: left;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 0.95em;
+        }
+        /* FIN NUEVO ESTILO */
     </style>
 </head>
 <body>
@@ -623,186 +674,245 @@
         </a>
         {# CORRECTED LOGO PATH AND EFFECT HERE #}
         <img src="{{ url_for('static', filename='logo.png') }}" alt="CardioHome Logo">
-        {# REPLACED DOCTOR'S NAME WITH ESTABLISHMENT NAME #}
-        <h1>{{ establecimiento_nombre }} — Relleno de Formularios</h1>
         <a href="{{ url_for('logout') }}" class="header-btn logout-btn">
             <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
         </a>
+        <h1>Formulario de Neurología Infantil</h1>
+        <h2>{{ establecimiento.nombre }} - Nómina: {{ nomina.nombre }}</h2>
     </header>
 
     <div class="main-content-wrapper">
-
         <div class="action-buttons">
-            <button onclick="descargarExcelVisible('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')"><i class="fas fa-file-excel"></i> Exportar Visibles a Excel</button>
-        </div>
+            <button type="button" onclick="generarEImprimirPDFsVisibles('{{ session['current_nomina_id'] }}', '{{ establecimiento.nombre_est|slugify }}')">
+                <i class="fas fa-print"></i> Imprimir Formularios Visibles
+            </button>
+            <button type="button" onclick="exportarExcel()">
+                <i class="fas fa-file-excel"></i> Exportar a Excel
+            </button>
+            <button type="button" onclick="agregarAlumnoManual()">
+                <i class="fas fa-user-plus"></i> Agregar Alumno Manual
+            </button>
+            </div>
 
         <div class="evaluation-counter">
-            <i class="fas fa-file-alt"></i> Total de Formularios: <strong>{{ estudiantes|length }}</strong>
-            | Evaluados: <strong id="completed-forms-count">0</strong>
-            <button onclick="generarEImprimirPDFsVisibles('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">Imprimir Visibles</button>
+            <i class="fas fa-users"></i>
+            Total de Alumnos: <strong>{{ estudiantes|length }}</strong>
+            <i class="fas fa-check-circle" style="color: var(--accent-green);"></i>
+            Evaluados: <strong id="completed-forms-count">0</strong>
         </div>
 
-        {# Barra de búsqueda #}
-        <input type="text" id="buscador" placeholder="Buscar por Nombre o RUT...">
+        <input type="text" id="buscador" placeholder="Buscar por nombre o RUT...">
 
-        {# Filtro de estado de evaluación #}
         <div class="filter-group">
             <label>
-                <input type="radio" name="evaluation_filter" value="all" checked> Todos
+                <input type="radio" name="evaluation_filter" value="all" checked onchange="aplicarFiltros()"> Todos
             </label>
             <label>
-                <input type="radio" name="evaluation_filter" value="pending"> Pendientes
+                <input type="radio" name="evaluation_filter" value="pending" onchange="aplicarFiltros()"> Pendientes
             </label>
             <label>
-                <input type="radio" name="evaluation_filter" value="completed"> Evaluados
+                <input type="radio" name="evaluation_filter" value="evaluated" onchange="aplicarFiltros()"> Evaluados
             </label>
         </div>
 
-        {# ***************************************************************** #}
-        {# CORRECCIÓN APLICADA: Bucle Jinja2 reinsertado para mostrar alumnos #}
-        {# ***************************************************************** #}
         {% for est in estudiantes %}
-        <details class="estudiante" data-estudiante-id="{{ est.id }}" data-nombre="{{ est.nombre|lower }}" data-evaluated-status="{{ 'true' if est.is_evaluated else 'false' }}" {% if not est.is_evaluated %}open{% endif %}>
+        {# Agrega el atributo data-estudiante-id, data-nombre, y data-evaluated-status #}
+        <details class="estudiante" data-estudiante-id="{{ est.id }}" data-nombre="{{ est.nombre|lower }}" data-rut="{{ est.rut|lower }}" data-evaluated-status="{{ 'true' if est.evaluado else 'false' }}">
             <summary>
-                <i class="fas fa-user-circle"></i>
-                <span>{{ est.nombre }} - RUT: {{ est.rut }}</span>
+                {{ est.nombre }} - RUT: {{ est.rut }} - Edad: {{ est.edad }} años
+                <span class="status-indicator">
+                    {% if est.evaluado %}
+                        <i class="fas fa-check-circle"></i> Evaluado
+                    {% else %}
+                        <i class="fas fa-clock"></i> Pendiente
+                    {% endif %}
+                </span>
                 <i class="fas fa-chevron-right chevron-icon"></i>
             </summary>
             <div class="container">
                 <div class="formulario">
-                    <span class="badge">Guardado</span>
+                    <span class="badge {% if est.evaluado %}show{% endif %}">{% if est.evaluado %}Evaluado{% else %}Guardado{% endif %}</span>
                     <form id="form-estudiante-{{ est.id }}" onsubmit="event.preventDefault(); submitForm(this);">
-                        {# Campos ocultos para enviar ID de estudiante y ID de nómina al backend #}
+                        {# Campos ocultos para enviar al backend #}
                         <input type="hidden" name="estudiante_id" value="{{ est.id }}">
                         <input type="hidden" name="nomina_id" value="{{ session['current_nomina_id'] }}">
+                        
+                        <h3 class="section-title">Identificación del Estudiante</h3>
                         <label for="nombre_{{ est.id }}">Nombre:</label>
                         <input type="text" name="nombre" id="nombre_{{ est.id }}" value="{{ est.nombre }}" required readonly>
+                        
                         <label for="rut_{{ est.id }}">RUT:</label>
                         <input type="text" name="rut" id="rut_{{ est.id }}" value="{{ est.rut }}" required readonly>
-                        <input type="hidden" name="fecha_nacimiento_original" value="{{ est.fecha_nacimiento if est.fecha_nacimiento is not none else '' }}"> {# Asegurarse de enviar el valor ISO YYYY-MM-DD #}
-                        <input type="hidden" name="fecha_reevaluacion_pdf" id="fecha_reevaluacion_pdf_{{ est.id }}" value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}">
+                        
+                        {# Campos ocultos que ya se pre-rellenan #}
+                        <input type="hidden" name="fecha_nacimiento_original" value="{{ est.fecha_nacimiento }}">
+                        <label for="fecha_nacimiento_{{ est.id }}">Fecha de Nacimiento:</label>
+                        <input type="date" name="fecha_nacimiento" id="fecha_nacimiento_{{ est.id }}" value="{{ est.fecha_nacimiento }}" required readonly>
+                        
+                        <label for="edad_{{ est.id }}">Edad:</label>
+                        <input type="text" id="edad_{{ est.id }}" value="{{ est.edad }} años" readonly>
+                        
+                        <label>Género:</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item {% if est.genero == 'F' %}checked{% endif %}">
+                                <input type="checkbox" name="genero_f" id="genero_f_{{ est.id }}" value="F" {% if est.genero == 'F' %}checked{% endif %} onchange="handleGenderChange(this)" disabled>
+                                <span>Femenino (F)</span>
+                            </label>
+                            <label class="checkbox-item {% if est.genero == 'M' %}checked{% endif %}">
+                                <input type="checkbox" name="genero_m" id="genero_m_{{ est.id }}" value="M" {% if est.genero == 'M' %}checked{% endif %} onchange="handleGenderChange(this)" disabled>
+                                <span>Masculino (M)</span>
+                            </label>
+                            <input type="hidden" name="genero" value="{{ est.genero if est.genero is not none else '' }}">
+                        </div>
+                        
+                        {# Campos del Formulario de Evaluación #}
+                        <h3 class="section-title">Datos de Evaluación</h3>
 
-                        {# NOMBRE DE CAMPO: Fecha Evaluación (PDF) -> fecha_evaluacion (HTML) #}
                         <label for="fecha_evaluacion_{{ est.id }}">Fecha Evaluación:</label>
-                        <input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}" value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}" oninput="setFechaReevaluacion(this.form.plazo.value, this.form)">
-
-                        {# NOMBRE DE CAMPO: Diagnóstico (PDF) -> diagnostico (HTML) #}
-                        <label for="diagnostico_{{ est.id }}">Diagnóstico:</label>
+                        <input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}" value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}" onchange="calculateReevaluationDate(this.form)" required>
+                        
+                        <label for="diagnostico_{{ est.id }}">Diagnóstico (actual de nómina):</label>
                         <select name="diagnostico" id="diagnostico_{{ est.id }}" required onchange="updatePreview(this.form)">
-                            <option value="">Seleccione...</option>
+                            <option value="">Seleccionar</option>
                             <option value="TEA" {% if est.diagnostico == 'TEA' %}selected{% endif %}>TEA</option>
-                            <option value="TDA/H" {% if est.diagnostico == 'TDA/H' %}selected{% endif %}>TDA/H</option>
+                            <option value="TDA" {% if est.diagnostico == 'TDA' %}selected{% endif %}>TDA</option>
                             <option value="TEL" {% if est.diagnostico == 'TEL' %}selected{% endif %}>TEL</option>
+                            <option value="DMT2" {% if est.diagnostico == 'DMT2' %}selected{% endif %}>DMT2</option>
+                            <option value="DM1" {% if est.diagnostico == 'DM1' %}selected{% endif %}>DM1</option>
+                            <option value="DISCAPACIDAD FISICA" {% if est.diagnostico == 'DISCAPACIDAD FISICA' %}selected{% endif %}>DISCAPACIDAD FISICA</option>
+                            <option value="DISCAPACIDAD SENSORIAL" {% if est.diagnostico == 'DISCAPACIDAD SENSORIAL' %}selected{% endif %}>DISCAPACIDAD SENSORIAL</option>
+                            <option value="PIE" {% if est.diagnostico == 'PIE' %}selected{% endif %}>PIE</option>
+                            <option value="FIL" {% if est.diagnostico == 'FIL' %}selected{% endif %}>FIL</option>
+                            <option value="DIL" {% if est.diagnostico == 'DIL' %}selected{% endif %}>DIL</option>
                             <option value="Discapacidad Intelectual" {% if est.diagnostico == 'Discapacidad Intelectual' %}selected{% endif %}>Discapacidad Intelectual</option>
                             <option value="Sindrome de Down" {% if est.diagnostico == 'Sindrome de Down' %}selected{% endif %}>Sindrome de Down</option>
-                            <option value="DIL" {% if est.diagnostico == 'DIL' %}selected{% endif %}>DIL</option>
-                            <option value="FIL" {% if est.diagnostico == 'FIL' %}selected{% endif %}>FIL</option>
-                            <option value="Otro" {% if est.diagnostico == 'Otro' %}selected{% endif %}>Otro</option>
                         </select>
+                        
+                        {# RESTAURADO: Plazo de reevaluación #}
+                        <label for="plazo_{{ est.id }}">Plazo Reevaluación (años):</label>
+                        <input type="number" name="plazo_reevaluacion" id="plazo_{{ est.id }}" min="0" max="5" value="{{ est.plazo_reevaluacion if est.plazo_reevaluacion is not none else '1' }}" onchange="calculateReevaluationDate(this.form)" required>
+                        
+                        <label for="fecha_reevaluacion_{{ est.id }}">Fecha Reevaluación (Calculada):</label>
+                        <input type="text" id="fecha_reevaluacion_{{ est.id }}" value="Calculando..." readonly>
+                        {# Campo oculto para guardar la fecha en formato YYYY-MM-DD para el backend #}
+                        <input type="hidden" name="fecha_reevaluacion_pdf" id="fecha_reevaluacion_pdf_{{ est.id }}" value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}">
 
-                        {# NOMBRE DE CAMPO: Plazo de Reevaluación (PDF) -> plazo (HTML) #}
-                        <label for="plazo_{{ est.id }}">Plazo de reevaluación:</label>
-                        <select name="plazo" id="plazo_{{ est.id }}" onchange="setFechaReevaluacion(this.value, this.form)" required>
-                            <option value="">Seleccione el plazo</option>
-                            <option value="1" {% if est.plazo and est.plazo|string == '1' %}selected{% endif %}>1 Año</option>
-                            <option value="2" {% if est.plazo and est.plazo|string == '2' %}selected{% endif %}>2 Años</option>
-                            <option value="3" {% if est.plazo and est.plazo|string == '3' %}selected{% endif %}>3 Años</option>
-                        </select>
+                        <label for="derivaciones_{{ est.id }}">Derivaciones (Ej: Neurólogo, Psicólogo):</label>
+                        <textarea name="derivaciones" id="derivaciones_{{ est.id }}" oninput="updatePreview(this.form)">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
 
-                        {# NOMBRE DE CAMPO: Fecha Reevaluación (PDF) -> fecha_reevaluacion (HTML) #}
-                        <label for="fecha_reevaluacion_{{ est.id }}">Fecha Reevaluación Calculada:</label>
-                        <input type="date" name="fecha_reevaluacion" id="fecha_reevaluacion_{{ est.id }}" value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}" readonly required>
+                        <label for="observaciones_clinicas_{{ est.id }}">Observaciones Clínicas:</label>
+                        <textarea name="observaciones_clinicas" id="observaciones_clinicas_{{ est.id }}" oninput="updatePreview(this.form)">{{ est.observaciones_clinicas if est.observaciones_clinicas is not none else '' }}</textarea>
 
-                        {# NOMBRE DE CAMPO: Observaciones (PDF) -> observaciones (HTML) #}
-                        <label for="observaciones_{{ est.id }}">Observaciones:</label>
-                        <textarea name="observaciones" id="observaciones_{{ est.id }}" rows="4" oninput="updatePreview(this.form)">{{ est.observaciones if est.observaciones is not none else '' }}</textarea>
-
-                        {# NOMBRE DE CAMPO: Derivaciones (PDF) -> derivaciones (HTML) #}
-                        <label for="derivaciones_{{ est.id }}">Derivaciones:</label>
-                        <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="4" oninput="updatePreview(this.form)">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
-
-                        <div class="form-actions button-group">
-                            <button type="submit" class="save-btn"><i class="fas fa-save"></i> Guardar y Generar PDF</button>
-                            <button type="button" class="mark-evaluated-btn" data-estudiante-id="{{ est.id }}" onclick="marcarComoEvaluado(this)" {{ 'disabled' if est.is_evaluated else '' }}>
-                                <i class="fas fa-check-circle"></i> {{ 'Evaluado' if est.is_evaluated else 'Marcar como Evaluado' }}
+                        <div class="button-group">
+                            <button type="submit">
+                                <i class="fas fa-save"></i> Guardar y Generar PDF
                             </button>
-                            <button type="button" class="send-to-drive-btn" data-estudiante-id="{{ est.id }}" onclick="enviarADrive(this)"><i class="fab fa-google-drive"></i> Enviar a Drive</button>
-                            <button type="button" class="print-individual-btn" onclick="imprimirFormulario(this)"><i class="fas fa-print"></i> Imprimir</button>
-                            <button type="button" class="insert-signature-btn" onclick="insertarFirma()"><i class="fas fa-signature"></i> Insertar Firma</button>
+                            <button type="button" onclick="enviarADrive(this.form)">
+                                <i class="fab fa-google-drive"></i> Enviar a Drive
+                            </button>
+                            <button type="button" onclick="marcarComoEvaluado(this)" data-estudiante-id="{{ est.id }}" class="mark-evaluated-btn" {% if est.evaluado %}disabled{% endif %}>
+                                {% if est.evaluado %}
+                                    <i class="fas fa-check-circle"></i> Evaluado
+                                {% else %}
+                                    <i class="fas fa-check"></i> Marcar como Evaluado
+                                {% endif %}
+                            </button>
+                            <button type="button" onclick="insertarFirma()">
+                                <i class="fas fa-signature"></i> Insertar Firma
+                            </button>
                         </div>
                     </form>
                 </div>
 
                 <div class="preview">
-                    <h3>Vista Previa del Formulario</h3>
-                    <p><strong>Fecha Evaluación:</strong> <span class="prev-fecha-evaluacion">{% if est.fecha_evaluacion %} {{ est.fecha_evaluacion.split('-')[2] }}/{{ est.fecha_evaluacion.split('-')[1] }}/{{ est.fecha_evaluacion.split('-')[0] }} {% else %} - {% endif %}</span></p>
+                    <h3>Vista Previa de Datos Guardados</h3>
+                    <p><strong>Fecha Evaluación:</strong> <span class="prev-fecha-evaluacion">{% if est.fecha_evaluacion %}{{ est.fecha_evaluacion.split('-')[2] }}/{{ est.fecha_evaluacion.split('-')[1] }}/{{ est.fecha_evaluacion.split('-')[0] }}{% else %}-{% endif %}</span></p>
                     <p><strong>Diagnóstico:</strong> <span class="prev-diagnostico">{{ est.diagnostico if est.diagnostico is not none else '-' }}</span></p>
                     {# Reformat date for display, handle initial empty value #}
-                    <p><strong>Fecha Reevaluación:</strong> <span class="prev-reevaluacion"> {% if est.fecha_reevaluacion %} {% set date_obj = est.fecha_reevaluacion.split('-') %} {{ date_obj[2] }}/{{ date_obj[1] }}/{{ date_obj[0] }} {% else %} - {% endif %} </span></p>
-                    <p><strong>Observaciones:</strong> <span class="prev-observaciones">{{ est.observaciones if est.observaciones is not none else '-' }}</span></p>
+                    <p><strong>Fecha Reevaluación:</strong> <span class="prev-reevaluacion">
+                        {% if est.fecha_reevaluacion %}
+                        {% set date_obj = est.fecha_reevaluacion.split('-') %}
+                        {{ date_obj[2] }}/{{ date_obj[1] }}/{{ date_obj[0] }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </span></p>
+                    <p><strong>Plazo Reevaluación:</strong> <span class="prev-plazo">{{ est.plazo_reevaluacion if est.plazo_reevaluacion is not none else '1' }} años</span></p>
                     <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">{{ est.derivaciones if est.derivaciones is not none else '-' }}</span></p>
-                    <img src="{{ url_for('static', filename='formulario_muestra.png') }}" alt="Ejemplo Formulario" class="preview-img" onerror="this.onerror=null;this.src='/static/formulario_muestra.png';">
+                    <p><strong>Observaciones:</strong> <span class="prev-observaciones">{{ est.observaciones_clinicas if est.observaciones_clinicas is not none else '-' }}</span></p>
+                    
+                    {# Llamar a la función para inicializar la edad calculada y la fecha de reevaluación al cargar #}
+                    <script>
+                        document.addEventListener('DOMContentLoaded', () => {
+                            const form = document.getElementById('form-estudiante-{{ est.id }}');
+                            if (form) {
+                                calculateReevaluationDate(form);
+                            }
+                        });
+                    </script>
                 </div>
             </div>
         </details>
         {% endfor %}
-        {# *************************************************************** #}
-        {# FIN DEL BUCLE #}
-        {# *************************************************************** #}
-
     </div>
 
+    <footer>
+        {# Puede que desee agregar un pie de página aquí #}
+    </footer>
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Inicializar estados de detalles y contadores
-            const estudiantes = document.querySelectorAll('details.estudiante');
-            estudiantes.forEach(detail => {
-                const isEvaluated = detail.getAttribute('data-evaluated-status') === 'true';
-                if (isEvaluated) {
-                    detail.removeAttribute('open');
-                }
+        // Función para cambiar el estado visual de los checkboxes de género
+        function handleGenderChange(changedCheckbox) {
+            const form = changedCheckbox.closest('form');
+            const estudianteId = form.querySelector('input[name="estudiante_id"]').value;
+            const generoF = form.querySelector(`#genero_f_${estudianteId}`);
+            const generoM = form.querySelector(`#genero_m_${estudianteId}`);
+            const generoHidden = form.querySelector('input[name="genero"]');
 
-                // Inicializar la vista previa al cargar la página
-                const form = detail.querySelector('form');
-                if (form) {
-                    updatePreview(form);
-                }
-            });
-
-            // Event listener para el buscador
-            const buscador = document.getElementById('buscador');
-            if (buscador) {
-                buscador.addEventListener('input', aplicarFiltros);
+            // Desmarcar el otro
+            if (changedCheckbox === generoF && generoM.checked) {
+                generoM.checked = false;
+            } else if (changedCheckbox === generoM && generoF.checked) {
+                generoF.checked = false;
             }
-
-            // Event listener para los radio buttons de filtro
-            document.querySelectorAll('input[name="evaluation_filter"]').forEach(radio => {
-                radio.addEventListener('change', aplicarFiltros);
-            });
-
-            // Llama a updateCompletedCount cuando la página se carga para asegurar que el contador sea preciso
-            updateCompletedCount();
-        });
-
-
-        function cerrarSesion() {
-            window.location.href = "/logout";
+            
+            // Actualizar el campo oculto de género
+            if (generoF.checked) {
+                generoHidden.value = 'F';
+            } else if (generoM.checked) {
+                generoHidden.value = 'M';
+            } else {
+                generoHidden.value = '';
+            }
+            
+            // Actualizar el estilo visual
+            updateCheckboxStyle(generoF);
+            updateCheckboxStyle(generoM);
+        }
+        
+        // Función para actualizar el estilo visual de un checkbox customizado
+        function updateCheckboxStyle(checkbox) {
+            const item = checkbox.closest('.checkbox-item');
+            if (item) {
+                if (checkbox.checked) {
+                    item.classList.add('checked');
+                } else {
+                    item.classList.remove('checked');
+                }
+            }
         }
 
-        function setFechaReevaluacion(plazo, form) {
+
+        // Función para calcular la fecha de reevaluación
+        function calculateReevaluationDate(form) {
             const fechaEvaluacionInput = form.querySelector('input[name="fecha_evaluacion"]');
-            const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');
-            const fechaReevaluacionPdfInput = form.querySelector('input[name="fecha_reevaluacion_pdf"]');
+            const plazoInput = form.querySelector('input[name="plazo_reevaluacion"]');
+            const fechaReevaluacionDisplay = form.querySelector(`#fecha_reevaluacion_${form.querySelector('input[name="estudiante_id"]').value}`);
+            const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion_pdf"]');
+            
+            const anos = parseInt(plazoInput.value);
 
-            const anos = parseInt(plazo);
-
-            if (!fechaEvaluacionInput || !fechaReevaluacionInput || !plazo) {
-                fechaReevaluacionInput.value = '';
-                fechaReevaluacionPdfInput.value = '';
-                updatePreview(form);
-                return;
-            }
-
+            // Validar que la fecha de evaluación esté presente
             if (!fechaEvaluacionInput.value) {
                 Swal.fire({
                     icon: 'warning',
@@ -810,96 +920,113 @@
                     text: 'Por favor, asegúrese de que la "Fecha Evaluación" esté presente para calcular la fecha de reevaluación.',
                     confirmButtonText: 'Entendido'
                 });
+                fechaReevaluacionDisplay.value = 'Falta Fecha Evaluación';
                 fechaReevaluacionInput.value = '';
-                fechaReevaluacionPdfInput.value = '';
-                updatePreview(form);
+                updatePreview(form); 
                 return;
             }
 
             if (!isNaN(anos) && anos > 0) {
+                // Asegurar que la fecha sea interpretada en UTC para evitar problemas de zona horaria
                 const evalDate = new Date(fechaEvaluacionInput.value + 'T00:00:00');
                 const futureDate = new Date(evalDate.getFullYear() + anos, evalDate.getMonth(), evalDate.getDate());
 
-                // Restar un día para obtener la fecha de vencimiento correcta (último día del período)
-                futureDate.setDate(futureDate.getDate() - 1);
-
                 const year = futureDate.getFullYear();
-                const month = String(futureDate.getMonth() + 1).padStart(2, '0');
+                const month = String(futureDate.getMonth() + 1).padStart(2, '0'); // Mese base 0
                 const day = String(futureDate.getDate()).padStart(2, '0');
-
+                
+                // Formato para mostrar (DD/MM/YYYY)
+                fechaReevaluacionDisplay.value = `${day}/${month}/${year}`;
+                // Formato para guardar en BD (YYYY-MM-DD)
                 fechaReevaluacionInput.value = `${year}-${month}-${day}`;
-                fechaReevaluacionPdfInput.value = `${year}-${month}-${day}`; // Asegurar que el campo oculto también se actualice
+
             } else {
+                fechaReevaluacionDisplay.value = 'No Aplica / Plazo Inválido';
                 fechaReevaluacionInput.value = '';
-                fechaReevaluacionPdfInput.value = '';
             }
 
-            updatePreview(form);
+            updatePreview(form); // Actualizar la vista previa después del cálculo
         }
 
+        // Función para actualizar la vista previa de datos
         function updatePreview(form) {
             const previewSection = form.closest('.container').querySelector('.preview');
-            if (!previewSection) return;
-
-            const fechaEvaluacionInput = form.querySelector('input[name="fecha_evaluacion"]');
-            if (fechaEvaluacionInput && fechaEvaluacionInput.value) {
-                const [year, month, day] = fechaEvaluacionInput.value.split('-');
-                previewSection.querySelector('.prev-fecha-evaluacion').textContent = `${day}/${month}/${year}`;
+            
+            // Actualizar Fecha Evaluación
+            const fechaEvalInput = form.querySelector('input[name="fecha_evaluacion"]');
+            if (fechaEvalInput && fechaEvalInput.value) {
+                 const [year, month, day] = fechaEvalInput.value.split('-');
+                 previewSection.querySelector('.prev-fecha-evaluacion').textContent = `${day}/${month}/${year}`;
             } else {
-                previewSection.querySelector('.prev-fecha-evaluacion').textContent = '-';
+                 previewSection.querySelector('.prev-fecha-evaluacion').textContent = '-';
             }
-
+            
+            // Actualizar Diagnóstico
             previewSection.querySelector('.prev-diagnostico').textContent = form.diagnostico ? form.diagnostico.value : '-';
             
-            const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');
+            // Actualizar Plazo Reevaluación
+            previewSection.querySelector('.prev-plazo').textContent = form.plazo_reevaluacion ? `${form.plazo_reevaluacion.value} años` : '1 año';
+
+            // Actualizar Fecha Reevaluación (usando el campo oculto YYYY-MM-DD)
+            const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion_pdf"]');
             if (fechaReevaluacionInput && fechaReevaluacionInput.value) {
                 const [year, month, day] = fechaReevaluacionInput.value.split('-');
                 previewSection.querySelector('.prev-reevaluacion').textContent = `${day}/${month}/${year}`;
             } else {
                 previewSection.querySelector('.prev-reevaluacion').textContent = '-';
             }
-
-            previewSection.querySelector('.prev-observaciones').textContent = form.observaciones ? form.observaciones.value : '-';
+            
+            // Actualizar Derivaciones
             previewSection.querySelector('.prev-derivaciones').textContent = form.derivaciones ? form.derivaciones.value : '-';
-
-            // Actualizar badge de guardado temporalmente al cambiar campos
+            
+            // Actualizar Observaciones Clínicas
+            previewSection.querySelector('.prev-observaciones').textContent = form.observaciones_clinicas ? form.observaciones_clinicas.value : '-';
+            
+            // Mostrar estado "Modificando..."
             const badge = form.closest('.formulario').querySelector('.badge');
             if (badge) {
                 badge.classList.add('show');
                 badge.textContent = "Modificando...";
                 clearTimeout(badge.timeout);
                 badge.timeout = setTimeout(() => {
-                    badge.textContent = "Guardado";
+                     // El badge se actualizará a "Guardado" en submitForm, o se quedará en "Modificando..." si no se guarda
                 }, 800);
             }
         }
-
+        
+        // Función principal para guardar el formulario
         async function submitForm(form) {
+            // Asegurar que se haya calculado la fecha de reevaluación antes de guardar
+            calculateReevaluationDate(form);
+
             const estudianteId = form.querySelector('input[name="estudiante_id"]').value;
+            const badge = form.closest('.formulario').querySelector('.badge');
+
+            // Marcar campos requeridos si están vacíos
             const requiredInputs = form.querySelectorAll('input[required], select[required], textarea[required]');
             let allFilled = true;
-
             requiredInputs.forEach(input => {
                 if (!input.value.trim()) {
                     allFilled = false;
                     input.style.borderColor = 'var(--accent-red)';
                 } else {
-                    input.style.borderColor = 'var(--border-color)';
+                    input.style.borderColor = ''; // Limpiar el borde
                 }
             });
 
             if (!allFilled) {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Campos Incompletos',
-                    text: 'Por favor, complete todos los campos obligatorios antes de guardar y generar el PDF.'
+                    title: 'Campos Requeridos',
+                    text: 'Por favor, complete todos los campos obligatorios marcados.',
+                    confirmButtonText: 'Entendido'
                 });
                 return;
             }
 
             Swal.fire({
                 title: 'Guardando y Generando PDF...',
-                html: 'Por favor, espere. <br><br> <i class="fas fa-spinner fa-spin"></i>',
+                html: 'Por favor, espere. Esto puede tomar un momento.',
                 allowOutsideClick: false,
                 didOpen: () => {
                     Swal.showLoading();
@@ -908,73 +1035,72 @@
 
             try {
                 const formData = new FormData(form);
-                const data = Object.fromEntries(formData.entries());
+                
+                // Manualmente establecer valores para checkboxes que no se envían si están unchecked
+                // Esto es necesario para asegurar que la base de datos se actualice correctamente
+                form.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    if (!checkbox.checked) {
+                        // Asumimos que los checkboxes no tienen un campo "value" en el formulario si son booleanos
+                        // Pero aquí, los checkboxes de género tienen valor, por lo que no hace falta anularlos.
+                        // Para este formulario, no hay checkboxes para guardar, solo inputs/selects y los de género que se manejan diferente.
+                        // Si se añadieran checkboxes booleanos, habría que añadirlos aquí.
+                    }
+                });
 
-                // 1. Guardar los datos en la base de datos
+                // 1. Guardar los datos del formulario (esto actualiza la BD)
                 const saveResponse = await fetch('/guardar_formulario', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data),
+                    body: formData, // FormData envía los datos del formulario, incluyendo campos ocultos y seleccionados
                 });
 
                 const saveData = await saveResponse.json();
 
-                if (saveResponse.ok && saveData.success) {
-                    // 2. Si el guardado fue exitoso, generar el PDF
-                    const pdfResponse = await fetch('/generar_pdf_individual', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(data), // Usar los mismos datos actualizados
-                    });
-
+                if (saveData.success) {
+                    // Actualizar el estado visual de guardado
+                    if (badge) {
+                        badge.textContent = "Guardado";
+                        badge.classList.add('show');
+                        clearTimeout(badge.timeout);
+                        badge.timeout = setTimeout(() => { badge.textContent = "Guardado"; }, 800);
+                    }
+                    
+                    // 2. Llamar a la generación de PDF individual (si la ruta existe)
+                    // Asumo que hay una ruta '/generar_pdf_individual/<int:estudiante_id>'
+                    const pdfResponse = await fetch(`/generar_pdf_individual/${estudianteId}`);
+                    
                     if (pdfResponse.ok) {
-                        const blob = await pdfResponse.blob();
-                        const contentDisposition = pdfResponse.headers.get('Content-Disposition');
-                        let filename = 'formulario_generado.pdf';
-
-                        if (contentDisposition) {
-                            const match = contentDisposition.match(/filename="(.+)"/);
-                            if (match && match[1]) {
-                                filename = match[1];
-                            }
-                        }
-
-                        // Crear URL del Blob y descargar
-                        const url = window.URL.createObjectURL(blob);
+                        const pdfBlob = await pdfResponse.blob();
+                        const url = window.URL.createObjectURL(pdfBlob);
                         const a = document.createElement('a');
                         a.style.display = 'none';
                         a.href = url;
-                        a.download = filename;
+                        // Obtener el nombre del estudiante para el nombre del archivo
+                        const studentName = form.querySelector('input[name="nombre"]').value.replace(/[^a-zA-Z0-9\s]/g, '_');
+                        const rut = form.querySelector('input[name="rut"]').value.replace(/[^a-zA-Z0-9\s-]/g, '');
+                        a.download = `Formulario_Neuro_Infantil_${studentName}_${rut}.pdf`;
                         document.body.appendChild(a);
                         a.click();
                         window.URL.revokeObjectURL(url);
-
+                        
+                        // Finalizar con mensaje de éxito
                         Swal.fire({
                             icon: 'success',
-                            title: 'Guardado y PDF Generado',
-                            text: 'Los datos se guardaron correctamente y el PDF se ha descargado.',
+                            title: '¡Guardado y PDF Generado!',
+                            text: 'El formulario se ha guardado y el PDF se ha descargado correctamente.',
                             showConfirmButton: false,
-                            timer: 2500
+                            timer: 2000
                         });
-                        
-                        // Opcional: Cerrar el detalle después de guardar exitosamente
-                        // form.closest('details').removeAttribute('open'); 
 
                     } else {
-                        const pdfErrorData = await pdfResponse.json();
-                        const pdfErrorText = pdfErrorData.message || 'Error desconocido al generar el PDF.';
-                        console.error('Error al generar PDF:', pdfErrorData);
+                        // Si la generación de PDF falla, mostrar el error pero mantener el guardado
+                        const pdfErrorText = await pdfResponse.text();
+                        console.error('Error al generar PDF:', pdfErrorText);
                         Swal.fire({
-                            icon: 'error',
-                            title: 'Error al generar PDF',
-                            text: `Los datos se guardaron, pero no se pudo generar el PDF. ${pdfErrorText}`,
+                            icon: 'warning',
+                            title: 'Guardado, pero PDF Falló',
+                            text: `Los datos se guardaron, pero hubo un error al generar el PDF: ${pdfErrorText}`,
                         });
                     }
-
                 } else {
                     Swal.fire({
                         icon: 'error',
@@ -992,292 +1118,34 @@
             }
         }
 
-        async function marcarComoEvaluado(buttonElement) {
-            const form = buttonElement.closest('form');
-            const estudianteId = buttonElement.getAttribute('data-estudiante-id');
-            const requiredInputs = form.querySelectorAll('input[required], select[required], textarea[required]');
-            let allFilled = true;
-            
-            requiredInputs.forEach(input => {
-                if (!input.value.trim()) {
-                    allFilled = false;
-                    input.style.borderColor = 'var(--accent-red)';
-                } else {
-                    input.style.borderColor = 'var(--border-color)';
-                }
-            });
 
-            if (!allFilled) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Campos Incompletos',
-                    text: 'Debe completar todos los campos obligatorios antes de marcar como evaluado.'
-                });
-                return;
-            }
-
-            // Confirmación antes de marcar
-            Swal.fire({
-                title: '¿Marcar como Evaluado?',
-                text: "Una vez marcado, el formulario se cerrará y se considerará completado.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Sí, marcar',
-                cancelButtonText: 'Cancelar'
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    Swal.fire({
-                        title: 'Actualizando...',
-                        html: 'Por favor, espere. <br><br> <i class="fas fa-spinner fa-spin"></i>',
-                        allowOutsideClick: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-
-                    try {
-                        const response = await fetch('/marcar_evaluado', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ estudiante_id: estudianteId, is_evaluated: true }),
-                        });
-
-                        const data = await response.json();
-
-                        if (response.ok && data.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: '¡Evaluado!',
-                                text: 'El formulario se ha marcado como evaluado.',
-                                showConfirmButton: false,
-                                timer: 1500
-                            });
-                            // Actualizar la interfaz del estudiante
-                            updateStudentUI(estudianteId, true);
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: data.message || 'Error al actualizar el estado de evaluación.'
-                            });
-                        }
-                    } catch (error) {
-                        console.error('Error al marcar como evaluado:', error);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error de Conexión',
-                            text: 'No se pudo conectar con el servidor para marcar la evaluación.'
-                        });
-                    }
-                }
-            });
-        }
-
-        function updateStudentUI(estudianteId, isEvaluated) {
-            const detailElement = document.querySelector(`details.estudiante[data-estudiante-id="${estudianteId}"]`);
-            if (detailElement) {
-                detailElement.setAttribute('data-evaluated-status', isEvaluated ? 'true' : 'false');
-                
-                const markButton = detailElement.querySelector('.mark-evaluated-btn');
-                if (markButton) {
-                    if (isEvaluated) {
-                        markButton.disabled = true;
-                        markButton.innerHTML = '<i class="fas fa-check-circle"></i> Evaluado';
-                    } else {
-                        markButton.disabled = false;
-                        markButton.innerHTML = '<i class="fas fa-check-circle"></i> Marcar como Evaluado';
-                    }
-                }
-                
-                // Si está evaluado, se cierra el detalle.
-                if (isEvaluated) {
-                    detailElement.removeAttribute('open');
-                } else {
-                    detailElement.setAttribute('open', '');
-                }
-
-                // Actualizar el contador global y los filtros
-                updateCompletedCount();
-                aplicarFiltros();
-            }
-        }
-
-        // Función para generar y abrir múltiples PDFs en una nueva ventana para imprimir
-        async function generarEImprimirPDFsVisibles(nominaId, establecimientoNombre) {
-            const visibleStudentIds = [];
-            document.querySelectorAll('details.estudiante:not([style*="display: none"])').forEach(detail => {
-                visibleStudentIds.push(detail.getAttribute('data-estudiante-id'));
-            });
-
-            if (visibleStudentIds.length === 0) {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'No hay formularios visibles',
-                    text: 'Ajusta los filtros para ver formularios y luego intenta imprimir.',
-                    confirmButtonText: 'Entendido'
-                });
-                return;
-            }
-
-            Swal.fire({
-                title: 'Generando PDF combinado...',
-                html: 'Esto puede tardar un momento si hay muchos formularios. <br><br> <i class="fas fa-spinner fa-spin"></i>',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-
-            try {
-                const response = await fetch('/generar_pdfs_visibles', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ nomina_id: nominaId, student_ids: visibleStudentIds })
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Error al generar el PDF combinado.');
-                }
-
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const filename = `Reporte_${establecimientoNombre.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0,10)}.zip`;
-                
-                // Descargar el ZIP
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Generación Completa',
-                    text: 'El archivo ZIP con los PDFs se ha descargado correctamente.',
-                    showConfirmButton: false,
-                    timer: 2000
-                });
-
-            } catch (error) {
-                console.error('Error al generar PDF combinado:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error de descarga',
-                    text: error.message || 'No se pudo descargar el archivo ZIP. Intente de nuevo más tarde.'
-                });
-            }
-        }
-
-        // Función para generar y descargar un Excel con los datos visibles
-        async function descargarExcelVisible(nominaId, establecimientoNombre) {
-            const visibleStudentIds = [];
-            document.querySelectorAll('details.estudiante:not([style*="display: none"])').forEach(detail => {
-                visibleStudentIds.push(detail.getAttribute('data-estudiante-id'));
-            });
-
-            if (visibleStudentIds.length === 0) {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'No hay formularios visibles',
-                    text: 'Ajusta los filtros para ver formularios y luego intenta exportar.',
-                    confirmButtonText: 'Entendido'
-                });
-                return;
-            }
-
-            Swal.fire({
-                title: 'Generando Excel...',
-                html: 'Esto puede tardar un momento si hay muchos formularios. <br><br> <i class="fas fa-spinner fa-spin"></i>',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-
-            try {
-                const response = await fetch('/generar_excel_visibles', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ nomina_id: nominaId, student_ids: visibleStudentIds, tipo_formulario: 'relleno' })
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Error al generar el archivo Excel.');
-                }
-
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                // Generar un nombre de archivo dinámico
-                a.download = `Reporte_Datos_${establecimientoNombre.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0,10)}.xlsx`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Descarga completa',
-                    text: 'El archivo Excel se ha descargado correctamente.',
-                    showConfirmButton: false,
-                    timer: 2000
-                });
-            } catch (error) {
-                console.error('Error al descargar Excel:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error de descarga',
-                    text: error.message || 'No se pudo descargar el archivo Excel. Intente de nuevo más tarde.',
-                });
-            }
-        }
-
-        async function enviarADrive(buttonElement) {
-            const estudianteId = buttonElement.getAttribute('data-estudiante-id');
-            const detailElement = document.querySelector(`details.estudiante[data-estudiante-id="${estudianteId}"]`);
-            const form = detailElement.querySelector('form');
-
+        async function enviarADrive(form) {
             Swal.fire({
                 title: 'Enviando a Google Drive...',
-                html: 'Esto puede tardar un momento. <br><br> <i class="fab fa-google-drive fa-spin fa-2x"></i>',
+                html: 'El PDF se está generando y subiendo.',
                 allowOutsideClick: false,
                 didOpen: () => {
                     Swal.showLoading();
                 }
             });
 
-            // Re-generar PDF y enviarlo a Drive
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
+            // Asumimos que existe una ruta en el backend '/enviar_a_drive_individual/<int:estudiante_id>'
+            const estudianteId = form.querySelector('input[name="estudiante_id"]').value;
 
-            fetch('/generar_y_enviar_drive', {
+            fetch(`/enviar_a_drive_individual/${estudianteId}`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json' // Podría ser un POST simple o con JSON
                 },
-                body: JSON.stringify(data),
+                body: JSON.stringify({ student_id: estudianteId })
             })
             .then(response => response.json())
             .then(data => {
-                Swal.close();
                 if (data.success) {
                     Swal.fire({
                         icon: 'success',
                         title: '¡Enviado a Drive!',
-                        text: data.message,
+                        text: data.message || 'El PDF se ha subido correctamente a Google Drive.',
                         timer: 2000,
                         showConfirmButton: false
                     });
@@ -1298,7 +1166,7 @@
                 });
             });
         }
-
+        
         function insertarFirma() {
             Swal.fire({
                 icon: 'info',
@@ -1306,84 +1174,7 @@
                 text: 'Se insertará la firma según la doctora que corresponda.'
             });
         }
-
-        // Función para actualizar el contador de formularios completados en la interfaz
-        function updateCompletedCount() {
-            const completedCount = document.querySelectorAll('details.estudiante[data-evaluated-status="true"]').length;
-            document.getElementById('completed-forms-count').textContent = completedCount;
-        }
-
-        // Función para generar un PDF para la impresión de un formulario individual
-        function imprimirFormulario(buttonElement) {
-            const form = buttonElement.closest('form');
-            const studentId = form.querySelector('input[name="estudiante_id"]').value;
-            const detail = document.querySelector(`details.estudiante[data-estudiante-id="${studentId}"]`);
-
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write('<html><head><title>Imprimir Formulario</title>');
-            // Copiar estilos
-            printWindow.document.write('<style>');
-            printWindow.document.write(document.querySelector('style').innerHTML);
-            printWindow.document.write('</style>');
-            printWindow.document.write('</head><body>');
-            
-            // Replicar el contenido del detalle para imprimir
-            printWindow.document.write('<div class="main-content-wrapper">');
-            printWindow.document.write('<div class="estudiante-print">');
-            
-            const summaryText = detail.querySelector('summary span').textContent;
-            printWindow.document.write(`<h1>Formulario de: ${summaryText}</h1>`);
-            
-            const previewContent = detail.querySelector('.preview').cloneNode(true);
-            
-            // Convertir los elementos de formulario a texto para la impresión
-            const formElements = previewContent.querySelectorAll('input, textarea, select');
-            formElements.forEach(el => {
-                const p = document.createElement('p');
-                const strong = document.createElement('strong');
-                // Intenta obtener el texto de la etiqueta asociada, o usa el nombre del campo
-                strong.textContent = el.labels && el.labels[0] ? el.labels[0].textContent + ':' : (el.name ? el.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + ':' : '');
-                const span = document.createElement('span');
-                
-                // Para select, obtener el texto de la opción seleccionada
-                if (el.tagName === 'SELECT') {
-                    span.textContent = el.options[el.selectedIndex] ? el.options[el.selectedIndex].text : '';
-                } else if (el.type === 'date') {
-                    // Formato DD/MM/YYYY para fechas
-                    if (el.value) {
-                        const [year, month, day] = el.value.split('-');
-                        span.textContent = `${day}/${month}/${year}`;
-                    } else {
-                        span.textContent = '-';
-                    }
-                } else if (el.type !== 'hidden') {
-                    span.textContent = el.value;
-                }
-                
-                if (el.type !== 'hidden') {
-                    p.appendChild(strong);
-                    p.appendChild(span);
-                    previewContent.insertBefore(p, el);
-                    el.style.display = 'none'; // Ocultar el input original
-                }
-            });
-
-            // Ocultar elementos de preview que no se quieren en la impresión
-            previewContent.querySelector('h3').style.display = 'none';
-            previewContent.querySelector('.preview-img').style.display = 'none';
-
-            printWindow.document.write(previewContent.innerHTML);
-
-            printWindow.document.write('</div></div>');
-            printWindow.document.write('</body></html>');
-            printWindow.document.close();
-
-            printWindow.onload = function() {
-                printWindow.focus();
-                printWindow.print();
-            };
-        }
-
+        
         // Función para aplicar filtros de búsqueda y estado de evaluación
         function aplicarFiltros() {
             const estudiantes = document.querySelectorAll('details.estudiante');
@@ -1392,26 +1183,423 @@
 
             estudiantes.forEach(detail => {
                 const nombre = detail.getAttribute('data-nombre');
+                const rut = detail.getAttribute('data-rut');
                 const isEvaluated = detail.getAttribute('data-evaluated-status') === 'true';
-
-                const matchesSearch = nombre.includes(searchTerm);
-                let matchesFilter = false;
-
-                if (evaluationFilter === 'all') {
-                    matchesFilter = true;
-                } else if (evaluationFilter === 'pending') {
+                
+                const matchesSearch = nombre.includes(searchTerm) || rut.includes(searchTerm);
+                
+                let matchesFilter = true;
+                if (evaluationFilter === 'pending') {
                     matchesFilter = !isEvaluated;
-                } else if (evaluationFilter === 'completed') {
+                } else if (evaluationFilter === 'evaluated') {
                     matchesFilter = isEvaluated;
                 }
 
                 if (matchesSearch && matchesFilter) {
-                    detail.style.display = 'block';
+                    detail.style.display = ''; // Mostrar
                 } else {
-                    detail.style.display = 'none';
+                    detail.style.display = 'none'; // Ocultar
                 }
             });
         }
+        
+        // Función para marcar un formulario como evaluado manualmente
+        async function marcarComoEvaluado(buttonElement) {
+             const form = buttonElement.closest('form');
+             const estudianteId = buttonElement.getAttribute('data-estudiante-id');
+             
+             // 1. Validar que el formulario esté completamente lleno (requeridos)
+             const requiredInputs = form.querySelectorAll('input[required], select[required], textarea[required]');
+             let allFilled = true;
+             requiredInputs.forEach(input => {
+                 if (!input.value.trim()) {
+                     allFilled = false;
+                     input.style.borderColor = 'var(--accent-red)';
+                 } else {
+                     input.style.borderColor = '';
+                 }
+             });
+
+             if (!allFilled) {
+                 Swal.fire({
+                     icon: 'error',
+                     title: 'Campos Requeridos',
+                     text: 'Debe completar todos los campos obligatorios antes de marcar como evaluado.',
+                     confirmButtonText: 'Entendido'
+                 });
+                 return;
+             }
+
+             // 2. Confirmación del usuario
+             Swal.fire({
+                 title: '¿Marcar como Evaluado?',
+                 text: "Esta acción marcará al estudiante como completado en la nómina. ¿Desea continuar?",
+                 icon: 'warning',
+                 showCancelButton: true,
+                 confirmButtonColor: 'var(--accent-green)',
+                 cancelButtonColor: 'var(--accent-red)',
+                 confirmButtonText: 'Sí, Marcar!'
+             }).then(async (result) => {
+                 if (result.isConfirmed) {
+                     Swal.fire({
+                         title: 'Marcando...',
+                         allowOutsideClick: false,
+                         didOpen: () => {
+                             Swal.showLoading();
+                         }
+                     });
+
+                     try {
+                         // 3. Llamada al backend para marcar
+                         const response = await fetch('/marcar_como_evaluado', {
+                             method: 'POST',
+                             headers: {
+                                 'Content-Type': 'application/json',
+                             },
+                             body: JSON.stringify({ estudiante_id: estudianteId }),
+                         });
+
+                         const data = await response.json();
+
+                         if (data.success) {
+                             // 4. Actualizar la UI
+                             updateStudentUI(estudianteId, true);
+                             updateCompletedCount();
+                             aplicarFiltros(); // Reaplicar filtros
+                             
+                             Swal.fire({
+                                 icon: 'success',
+                                 title: '¡Evaluado!',
+                                 text: 'El estudiante ha sido marcado como evaluado.',
+                                 showConfirmButton: false,
+                                 timer: 1500
+                             });
+                         } else {
+                             Swal.fire({
+                                 icon: 'error',
+                                 title: 'Error',
+                                 text: data.message,
+                             });
+                         }
+                     } catch (error) {
+                         console.error('Error al marcar como evaluado:', error);
+                         Swal.fire({
+                             icon: 'error',
+                             title: 'Error de Conexión',
+                             text: 'No se pudo conectar con el servidor para marcar la evaluación.'
+                         });
+                     }
+                 }
+             });
+         }
+         
+        // Función para actualizar el estado visual de un estudiante
+        function updateStudentUI(estudianteId, isEvaluated) {
+            const detailElement = document.querySelector(`details.estudiante[data-estudiante-id="${estudianteId}"]`);
+            if (detailElement) {
+                detailElement.setAttribute('data-evaluated-status', isEvaluated ? 'true' : 'false');
+                const summary = detailElement.querySelector('summary');
+                const statusIndicator = summary.querySelector('.status-indicator');
+                
+                if (statusIndicator) {
+                    if (isEvaluated) {
+                        statusIndicator.innerHTML = '<i class="fas fa-check-circle"></i> Evaluado';
+                    } else {
+                        statusIndicator.innerHTML = '<i class="fas fa-clock"></i> Pendiente';
+                    }
+                }
+                
+                // Actualizar el botón de marcar como evaluado
+                const markButton = detailElement.querySelector('.mark-evaluated-btn');
+                if (markButton) {
+                    if (isEvaluated) {
+                        markButton.disabled = true;
+                        markButton.innerHTML = '<i class="fas fa-check-circle"></i> Evaluado';
+                    } else {
+                        markButton.disabled = false;
+                        markButton.innerHTML = '<i class="fas fa-check"></i> Marcar como Evaluado';
+                    }
+                }
+                
+                // Actualizar el badge
+                const badge = detailElement.querySelector('.badge');
+                if (badge) {
+                    if (isEvaluated) {
+                        badge.textContent = "Evaluado";
+                        badge.classList.add('show');
+                    } else {
+                        // Si se desmarcara (no implementado), se podría poner a "Guardado"
+                        badge.textContent = "Guardado";
+                    }
+                }
+            }
+        }
+        
+        // Función para generar y abrir múltiples PDFs en una nueva ventana para imprimir
+        async function generarEImprimirPDFsVisibles(nominaId, establecimientoNombre) {
+            const visibleStudentIds = [];
+            document.querySelectorAll('details.estudiante:not([style*="display: none"])').forEach(detail => {
+                visibleStudentIds.push(detail.getAttribute('data-estudiante-id'));
+            });
+
+            if (visibleStudentIds.length === 0) {
+                Swal.fire({ 
+                    icon: 'info', 
+                    title: 'No hay formularios visibles', 
+                    text: 'Ajusta los filtros para ver formularios y luego intenta imprimir.', 
+                    confirmButtonText: 'Entendido' 
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Generando PDF combinado...',
+                html: 'Esto puede tardar un momento si hay muchos formularios.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            try {
+                // Asumimos que existe la ruta /generar_pdfs_visibles en app.py
+                const response = await fetch('/generar_pdfs_visibles', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ nomina_id: nominaId, student_ids: visibleStudentIds })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Error al generar el PDF combinado.');
+                }
+
+                const pdfBlob = await response.blob();
+                const url = window.URL.createObjectURL(pdfBlob);
+                
+                const printWindow = window.open(url, '_blank');
+                
+                if (printWindow) {
+                    printWindow.onload = function() {
+                        Swal.close();
+                    };
+                } else {
+                    throw new Error('El navegador bloqueó la apertura de la ventana de impresión. Verifique la configuración de pop-ups.');
+                }
+                
+            } catch (error) {
+                console.error('Error al generar e imprimir PDFs visibles:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de Generación',
+                    text: error.message || 'No se pudo generar el PDF combinado para impresión.'
+                });
+            }
+        }
+        
+        // Función para exportar a Excel
+        function exportarExcel() {
+            Swal.fire({
+                title: 'Generando archivo Excel...',
+                html: 'Esto puede tardar un momento.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            fetch(`/exportar_excel/{{ session['current_nomina_id'] }}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(errorData.message || 'Error al generar el archivo Excel.');
+                        });
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    // Asumimos que el nombre del establecimiento está disponible y saneado
+                    const nombreEstablecimientoSlug = '{{ establecimiento.nombre_est|slugify }}';
+                    a.download = `Nomina_${nombreEstablecimientoSlug}_${new Date().toISOString().slice(0,10)}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Descarga completa',
+                        text: 'El archivo Excel se ha descargado correctamente.',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                })
+                .catch(error => {
+                    console.error('Error al descargar Excel:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error de descarga',
+                        text: error.message || 'No se pudo descargar el archivo Excel. Intente de nuevo más tarde.',
+                    });
+                });
+        }
+        
+        // Función para actualizar el contador de formularios completados en la interfaz
+        function updateCompletedCount() {
+            const completedCount = document.querySelectorAll('details.estudiante[data-evaluated-status="true"]').length;
+            document.getElementById('completed-forms-count').textContent = completedCount;
+        }
+
+        // Llamar a updateCompletedCount cuando la página se carga para asegurar que el contador sea preciso
+        document.addEventListener('DOMContentLoaded', updateCompletedCount);
+        
+        // Event listener para el buscador
+        const buscador = document.getElementById('buscador');
+        if (buscador) {
+            buscador.addEventListener('input', aplicarFiltros);
+        }
+
+        // Event listener para los radio buttons de filtro
+        document.querySelectorAll('input[name="evaluation_filter"]').forEach(radio => {
+            radio.addEventListener('change', aplicarFiltros);
+        });
+        
+        // Función para cerrar sesión (aunque ya está en el botón del header)
+        function cerrarSesion() {
+            window.location.href = "/logout";
+        }
+        
+        // Inicializar los estilos de los checkboxes al cargar la página
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('details.estudiante').forEach(detail => {
+                const form = detail.querySelector('form');
+                if (form) {
+                    form.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(checkbox => {
+                        updateCheckboxStyle(checkbox);
+                    });
+                }
+            });
+        });
+
+        // -------------------- NUEVAS FUNCIONES PARA AGREGAR ALUMNO MANUAL --------------------
+        
+        // Función de utilidad simple para validar el formato RUT (sin puntos, con guion)
+        function validarRutSimple(rut) {
+            // Este es un regex simple para el formato: d{7,8}-d/k/K
+            const rutRegex = /^\d{7,8}-[\dkK]$/;
+            return rutRegex.test(rut);
+        }
+
+        // Función para abrir el modal y agregar alumno manualmente
+        function agregarAlumnoManual() {
+            // Obtener la nomina_id del primer formulario (si no hay, la página está vacía)
+            const nominaIdInput = document.querySelector('input[name="nomina_id"]');
+            if (!nominaIdInput) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de Contexto',
+                    text: 'No se pudo obtener el ID de la nómina. Asegúrese de que hay al menos un formulario o recargue.',
+                    confirmButtonText: 'Entendido'
+                });
+                return;
+            }
+            const nominaId = nominaIdInput.value;
+
+            Swal.fire({
+                title: 'Agregar Alumno Manualmente',
+                html:
+                    // Es necesario agregar las etiquetas `<label>` para accesibilidad y estilo en el modal
+                    '<label for="swal-rut" class="swal2-label-custom">RUT (sin puntos, con guion):</label>' +
+                    '<input id="swal-rut" class="swal2-input" placeholder="Ej: 12345678-9" required>' +
+                    '<label for="swal-nombre" class="swal2-label-custom">Nombre Completo:</label>' +
+                    '<input id="swal-nombre" class="swal2-input" placeholder="Ej: Juan Pérez Soto" required>' +
+                    '<label for="swal-fecha" class="swal2-label-custom">Fecha Nacimiento:</label>' +
+                    '<input id="swal-fecha" class="swal2-input" type="date" required>' +
+                    '<label for="swal-genero" class="swal2-label-custom">Género:</label>' +
+                    '<select id="swal-genero" class="swal2-input">' +
+                        '<option value="">Seleccione</option>' +
+                        '<option value="F">Femenino</option>' +
+                        '<option value="M">Masculino</option>' +
+                    '</select>',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const rut = Swal.getPopup().querySelector('#swal-rut').value.trim();
+                    const nombre = Swal.getPopup().querySelector('#swal-nombre').value.trim();
+                    const fecha_nacimiento = Swal.getPopup().querySelector('#swal-fecha').value.trim();
+                    const genero = Swal.getPopup().querySelector('#swal-genero').value;
+
+                    if (!rut || !nombre || !fecha_nacimiento || !genero) {
+                        Swal.showValidationMessage('Por favor, complete todos los campos.');
+                        return false;
+                    }
+                    if (!validarRutSimple(rut)) {
+                         Swal.showValidationMessage('Formato de RUT inválido. Use el formato: 12345678-9');
+                        return false;
+                    }
+
+                    return { rut: rut, nombre: nombre, fecha_nacimiento: fecha_nacimiento, genero: genero, nomina_id: nominaId };
+                },
+                showCancelButton: true,
+                confirmButtonText: 'Agregar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const alumnoData = result.value;
+                    if (alumnoData) {
+                        Swal.fire({
+                            title: 'Agregando alumno...',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        // Llamada al backend
+                        fetch('/agregar_alumno_manual', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(alumnoData),
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Alumno Agregado',
+                                    text: 'El alumno ha sido agregado a la nómina. Recargando la página...',
+                                    showConfirmButton: false,
+                                    timer: 2000
+                                }).then(() => {
+                                    window.location.reload(); // Recargar para mostrar el nuevo alumno
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error al Agregar',
+                                    text: data.message,
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error de conexión:', error);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error de Conexión',
+                                text: 'No se pudo conectar con el servidor para agregar el alumno.',
+                            });
+                        });
+                    }
+                }
+            });
+        }
+        
+        // -------------------- FIN NUEVAS FUNCIONES --------------------
     </script>
 </body>
 </html>

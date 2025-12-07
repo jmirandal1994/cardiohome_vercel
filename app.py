@@ -283,7 +283,7 @@ def enviar_correo_sendgrid(asunto, cuerpo, adjuntos=None):
 
 def generate_and_upload_pdf(estudiante_id, nomina_id, doctora_id, form_type, datos_actualizacion):
     """Genera el PDF rellenado y lo sube al almacenamiento de Supabase.
-       Incluye lógica para seleccionar plantilla específica por doctora.
+        Incluye lógica para seleccionar plantilla específica por doctora.
     """
     
     # ---------------------------------------------------------------------
@@ -292,7 +292,6 @@ def generate_and_upload_pdf(estudiante_id, nomina_id, doctora_id, form_type, dat
     pdf_template_path = None
     
     # Usamos el ID de la Doctora LOGUEADA como la clave para la plantilla.
-    # El ID de la sesión es la única fuente de verdad fiable en este punto.
     current_doctora_id = session.get('usuario_id')
     
     if form_type == 'neurologia' and current_doctora_id:
@@ -314,28 +313,24 @@ def generate_and_upload_pdf(estudiante_id, nomina_id, doctora_id, form_type, dat
     elif form_type == 'medicina_familiar':
         pdf_template_path = PDF_BASE_FAMILIAR
     
+    # --- INSERCIÓN 1: NUEVA LÓGICA PARA INFORME NEUROLÓGICO (SELECCIÓN DE PLANTILLA) ---
+    elif form_type == 'informe_neurologico' and current_doctora_id: 
+        doctora_pdf_filename = f"INFORME_NEUROLOGICO_{current_doctora_id}.pdf" # El nombre de tu plantilla específica
+        doctora_pdf_path = os.path.join(PDF_BASES_INFORME_NEUROLOGICO_DIR, doctora_pdf_filename)
+
+        if os.path.exists(doctora_pdf_path):
+            pdf_template_path = doctora_pdf_path
+            print(f"DEBUG: Usando PDF específico de Doctora LOGUEADA para Informe Neurológico: {pdf_template_path}")
+        else:
+            pdf_template_path = PDF_BASE_INFORME_NEUROLOGICO
+            print(f"DEBUG: Usando PDF genérico para Informe Neurológico.")
+    # ---------------------------------------------------------------------------------------
+
     if not pdf_template_path or not os.path.exists(pdf_template_path):
         message = f"ERROR: Plantilla PDF no encontrada para el tipo de formulario '{form_type}' en la ruta: {pdf_template_path}"
         print(message)
         return {"success": False, "message": message}
 
-    # app-37.py (Dentro de generate_and_upload_pdf)
-
-# ... (Lógica de selección para 'neurologia' y 'medicina_familiar' existente)
-
-# --- NUEVA LÓGICA PARA INFORME NEUROLÓGICO ---
-    elif form_type == 'informe_neurologico' and current_doctora_id: 
-    doctora_pdf_filename = f"INFORME_NEUROLOGICO_{current_doctora_id}.pdf" # El nombre de tu plantilla específica
-    doctora_pdf_path = os.path.join(PDF_BASES_INFORME_NEUROLOGICO_DIR, doctora_pdf_filename)
-
-    if os.path.exists(doctora_pdf_path):
-        pdf_template_path = doctora_pdf_path
-        print(f"DEBUG: Usando PDF específico de Doctora LOGUEADA para Informe Neurológico: {pdf_template_path}")
-    else:
-        pdf_template_path = PDF_BASE_INFORME_NEUROLOGICO
-        print(f"DEBUG: Usando PDF genérico para Informe Neurológico.")
-
-# ...
     # ---------------------------------------------------------------------
     # 2. CONTINUACIÓN DE LA GENERACIÓN Y RELLENO DEL PDF
     # ---------------------------------------------------------------------
@@ -362,16 +357,62 @@ def generate_and_upload_pdf(estudiante_id, nomina_id, doctora_id, form_type, dat
         campos_pdf['FECHA_EVALUACION'] = estudiante_data.get('fecha_evaluacion', '')
         campos_pdf['FECHA_REVALUACION'] = estudiante_data.get('fecha_reevaluacion', '')
         campos_pdf['DOCTORA_NOMBRE'] = doctora_nombre
+        
         # Si form_type es neurologia (solo un ejemplo)
         if form_type == 'neurologia':
             campos_pdf['ESTADO_GENERAL'] = estudiante_data.get('estado_general', '')
             campos_pdf['DIAGNOSTICO'] = estudiante_data.get('diagnostico', '')
             campos_pdf['DERIVACIONES'] = estudiante_data.get('derivaciones', '')
+            
         # Si form_type es medicina_familiar (solo un ejemplo)
         elif form_type == 'medicina_familiar':
             # Aquí iría el mapeo de todos los campos específicos de medicina familiar
             pass
-        # --------------------------------------------------------------
+            
+        # --- INSERCIÓN 2: MAPEO DE CAMPOS PARA INFORME NEUROLÓGICO ---
+        elif form_type == 'informe_neurologico':
+            
+            # --- Lógica de preparación de datos (Asume que 'datetime', 'format_rut_python' y 'calculate_age' están disponibles) ---
+            sexo_db = (estudiante_data.get('sexo') or "").upper()
+            fecha_nacimiento_str = estudiante_data.get('fecha_nacimiento')
+            edad_calculada = ''
+            if fecha_nacimiento_str:
+                try:
+                    fecha_nac_date = datetime.strptime(fecha_nacimiento_str, '%Y-%m-%d').date()
+                    edad_calculada = calculate_age(fecha_nac_date) 
+                except Exception as e:
+                    print(f"ERROR calculando edad: {e}")
+            
+            # --- Mapeo a campos del PDF ---
+            
+            # I. DATOS DE IDENTIFICACIÓN (Autocompletado)
+            campos_pdf['Nombre'] = estudiante_data.get('nombre', '') 
+            campos_pdf['RUT'] = format_rut_python(estudiante_data.get('rut', '')) # Asegura el formato del RUT
+            campos_pdf['Fecha de nacimiento'] = fecha_nacimiento_str or '' 
+            campos_pdf['Edad'] = edad_calculada
+            
+            # Género (Checkboxes: 'X' si coincide con el campo del PDF)
+            campos_pdf['Masculino'] = 'X' if sexo_db == 'M' else '' 
+            campos_pdf['Femenino'] = 'X' if sexo_db == 'F' else '' 
+            
+            # II. HISTORIA CLÍNICA (Llenado por la Doctora)
+            campos_pdf['Motivo de consulta'] = datos_actualizacion.get('motivo_consulta', '')
+            campos_pdf['Historia del cuadro actual'] = datos_actualizacion.get('historia_cuadro_actual', '')
+            
+            # III. EXAMEN FÍSICO GENERAL
+            campos_pdf['Observaciones_FisicoGeneral'] = datos_actualizacion.get('observaciones_fisico_general', '') 
+            
+            # IV. EXAMEN NEUROLÓGICO ESPECÍFICO
+            campos_pdf['Observaciones_Neurologico'] = datos_actualizacion.get('observaciones_neurologico', '') 
+            
+            # V. DIAGNÓSTICO
+            campos_pdf['Diagnóstico sospecha'] = datos_actualizacion.get('diagnostico_sospecha', '') 
+            campos_pdf['Diagnóstico definitivo'] = datos_actualizacion.get('diagnostico_definitivo', '') 
+            
+            # VI. PLAN Y RECOMENDACIONES
+            campos_pdf['Indicaciones'] = datos_actualizacion.get('indicaciones', '') 
+            campos_pdf['Derivaciones'] = datos_actualizacion.get('derivaciones', '') 
+        # --------------------------------------------------------------------
         
         # 2.3. Rellenar PDF
         # Nota: Asegúrate de que PdfReader y PdfWriter estén importados

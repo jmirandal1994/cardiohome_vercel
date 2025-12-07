@@ -1707,14 +1707,14 @@
             // 2. Lógica de Neurología en carga de nómina (Admin)
             if (formTypeNominaSelect && doctoraParaFormularioDiv) {
                 formTypeNominaSelect.addEventListener('change', function() {
-                    if (this.value === 'neurologia') {
+                    if (this.value === 'neurologia'|| selectedValue === 'informe_neurologico') {
                         doctoraParaFormularioDiv.style.display = 'block';
                     } else {
                         doctoraParaFormularioDiv.style.display = 'none';
                         document.getElementById('doctora_id_para_formulario').value = '';
                     }
                 });
-                if (formTypeNominaSelect.value === 'neurologia') {
+                if (formTypeNominaSelect.value === 'neurologia'|| selectedValue === 'informe_neurologico') {
                     doctoraParaFormularioDiv.style.display = 'block';
                 } else {
                     doctoraParaFormularioDiv.style.display = 'none';

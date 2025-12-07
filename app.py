@@ -717,7 +717,7 @@ def generar_pdf():
                 "diagnostico_2": get_form_field_value('diagnostico', request.form), 
                 "estado_general": get_form_field_value('estado', request.form), 
                 "fecha_evaluacion": fecha_evaluacion_formatted, 
-                "fecha_reevaluacion": fecha_reeval_pdf, 
+                "fecha_reevaluacion": fecha_reevaluacion, 
                 "derivaciones": get_form_field_value('derivaciones', request.form),
                 "sexo_f": sexo_f_pdf,
                 "sexo_m": sexo_m_pdf,

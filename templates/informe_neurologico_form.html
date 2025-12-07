@@ -3,232 +3,378 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rellenar Informe Neurológico</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <title>Informe Neurológico - Evaluación de Paciente</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
     <style>
-        /* Estilos personalizados para centrar y dar un aspecto similar al dashboard */
+        /* [ATENCIÓN: Aquí debería estar todo el contenido de la etiqueta <style> de tu archivo 'formulario_relleno-5.html' para asegurar la consistencia visual.] */
+        /* Incluiré los estilos esenciales para que funcione centrado y responsivo */
+        :root {
+            --primary-dark: hsl(210, 29%, 18%);
+            --accent-blue: hsl(200, 70%, 55%);
+            --accent-green: hsl(140, 65%, 45%);
+            --border-color: hsl(210, 10%, 82%);
+            --text-dark: hsl(210, 10%, 15%);
+        }
         body {
-            background-color: #f3f4f6; /* Un gris claro para el fondo */
-            font-family: 'Inter', sans-serif; /* Si usas Inter, o tu fuente principal */
-            display: flex;
-            justify-content: center;
-            align-items: flex-start; /* Alinea al inicio verticalmente */
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, hsl(200, 20%, 98%) 0%, hsl(210, 15%, 96%) 100%);
+            color: var(--text-dark);
             min-height: 100vh;
-            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            margin: 0;
         }
-        .form-container {
+        .main-content-wrapper {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+            flex-grow: 1;
+        }
+        .single-form-card {
             background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
             padding: 30px;
-            width: 100%;
-            max-width: 900px; /* Ancho máximo para el formulario */
-            margin-top: 50px; /* Margen superior para no estar pegado arriba */
+            border-left: 6px solid var(--accent-blue);
         }
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #374151; /* Color de texto más oscuro */
-        }
-        .form-group textarea, .form-group input[type="text"] {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #d1d5db; /* Borde gris claro */
-            border-radius: 6px;
-            font-size: 1rem;
-            line-height: 1.5;
-            color: #374151;
-            background-color: #f9fafb; /* Fondo ligeramente más oscuro para los inputs */
-            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-        }
-        .form-group textarea:focus, .form-group input[type="text"]:focus {
-            border-color: #3b82f6; /* Azul al enfocar */
-            outline: 0;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); /* Sombra azul al enfocar */
-        }
-        .form-group textarea {
-            min-height: 100px; /* Altura mínima para los textareas */
-            resize: vertical;
-        }
-        .header-section {
-            background-color: #edf2f7; /* Gris claro para el encabezado de datos del paciente */
-            padding: 15px;
-            border-radius: 6px;
+        .patient-data-header {
+            background-color: #f0f4f8;
+            padding: 20px;
+            border-radius: 8px;
             margin-bottom: 25px;
-            border: 1px solid #e2e8f0;
+            border-left: 4px solid var(--primary-dark);
         }
-        .header-section p {
-            font-size: 0.95rem;
-            color: #4a5568;
-            margin-bottom: 5px;
-        }
-        .header-section strong {
-            color: #2d3748;
-        }
-        .submit-button {
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            padding: 12px 25px;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            background-color: #10B981; /* Verde esmeralda */
-            color: #ffffff;
-            border: none;
-            transition: background-color 0.2s ease-in-out;
-            margin-top: 30px;
-        }
-        .submit-button:hover {
-            background-color: #059669; /* Verde más oscuro al pasar el ratón */
+        .patient-data-header p {
+            margin: 5px 0;
+            font-size: 1.05rem;
         }
         .section-title {
             font-size: 1.5rem;
             font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #e5e7eb;
-            padding-bottom: 10px;
-        }
-        .sub-section-title {
-            font-size: 1.15rem;
-            font-weight: 600;
-            color: #374151;
-            margin-top: 25px;
+            color: var(--primary-dark);
+            margin-top: 30px;
             margin-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 5px;
+        }
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: 600;
+            color: #333;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px 12px;
+            margin-top: 5px;
+            border: 1px solid #b0c2d4;
+            border-radius: 6px;
+            font-size: 1rem;
+            resize: vertical;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.3);
+            outline: none;
+        }
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            justify-content: flex-end; /* Alinear a la derecha */
+        }
+        .button-group button {
+            background: var(--accent-green);
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.0rem;
+            transition: background 0.3s ease;
+        }
+        .button-group button.secondary {
+            background: #6c757d;
+        }
+        .button-group button.signature-button {
+            background: #8B5CF6;
+        }
+
+        /* Responsividad básica */
+        @media (max-width: 768px) {
+            .main-content-wrapper {
+                padding: 0 10px;
+            }
+            .single-form-card {
+                padding: 20px;
+            }
+            .button-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .button-group button {
+                width: 100%;
+            }
         }
     </style>
+
 </head>
 <body>
-    <div class="form-container">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Informe Neurológico</h1>
+    <header>
+        <a href="{{ url_for('dashboard') }}" class="header-btn back-to-dashboard-btn">
+            <i class="fas fa-arrow-left"></i> Volver al Dashboard
+        </a>
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="CardioHome Logo">
+        <h1>{{ establecimiento_nombre }} — Informe Neurológico</h1>
+        <button class="header-btn logout-btn" onclick="cerrarSesion()">
+            <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+        </button>
+    </header>
 
-        <div class="header-section">
-            <h2 class="sub-section-title">Datos del Paciente</h2>
-            <p><strong>Nombre:</strong> <span id="paciente-nombre">Cargando...</span></p>
-            <p><strong>RUT:</strong> <span id="paciente-rut">Cargando...</span></p>
-            <p><strong>Fecha de Nacimiento:</strong> <span id="paciente-fecha-nacimiento">Cargando...</span></p>
-            <p><strong>Edad:</strong> <span id="paciente-edad">Cargando...</span></p>
-            <p><strong>Sexo:</strong> <span id="paciente-sexo">Cargando...</span></p>
+    <div class="main-content-wrapper">
+        <div class="single-form-card">
+            
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Evaluación de Informe Neurológico</h2>
+            
+            <div class="patient-data-header">
+                <h3 class="text-xl font-semibold mb-3 text-gray-700">I. Datos de Identificación del Paciente</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <p><strong>Nombre:</strong> <span id="paciente-nombre">Cargando...</span></p>
+                    <p><strong>RUT:</strong> <span id="paciente-rut">Cargando...</span></p>
+                    <p><strong>Fecha de Nacimiento:</strong> <span id="paciente-fecha-nacimiento">Cargando...</span></p>
+                    <p><strong>Edad:</strong> <span id="paciente-edad">Cargando...</span></p>
+                    <p><strong>Sexo:</strong> <span id="paciente-sexo">Cargando...</span></p>
+                </div>
+                <label for="antecedentes_relevantes" class="mt-4">Antecedentes relevantes (Opcional):</label>
+                <textarea id="antecedentes_relevantes" name="antecedentes_relevantes" rows="2"></textarea>
             </div>
 
-        <form id="informeNeurologicoForm" method="POST" action="/doctora/evaluar_informe_neurologico">
-            <input type="hidden" id="estudiante_id" name="estudiante_id" value="">
-            <input type="hidden" id="nomina_id" name="nomina_id" value="">
-            <input type="hidden" id="doctora_id" name="doctora_id" value="">
-
-            <h2 class="section-title">II. Historia Clínica</h2>
-            <div class="form-group mb-6">
+            <form id="informeNeurologicoForm" method="POST" action="/doctora/guardar_informe_neurologico">
+                
+                <input type="hidden" id="estudiante_id" name="estudiante_id" value="">
+                <input type="hidden" id="nomina_id" name="nomina_id" value="">
+                <input type="hidden" id="doctora_id" name="doctora_id" value="">
+                
+                <h3 class="section-title">II. Historia Clínica (Anamnesis)</h3>
                 <label for="motivo_consulta">Motivo de consulta:</label>
-                <textarea id="motivo_consulta" name="motivo_consulta" rows="4" class="form-control" required></textarea>
-            </div>
-            <div class="form-group mb-6">
+                <textarea id="motivo_consulta" name="motivo_consulta" rows="4" required></textarea>
+
                 <label for="historia_cuadro_actual">Historia del cuadro actual:</label>
-                <textarea id="historia_cuadro_actual" name="historia_cuadro_actual" rows="6" class="form-control" required></textarea>
-            </div>
+                <textarea id="historia_cuadro_actual" name="historia_cuadro_actual" rows="6" required></textarea>
 
-            <h2 class="section-title">III. Examen Físico General</h2>
-            <div class="form-group mb-6">
+                <h3 class="section-title">III. Examen Físico General</h3>
                 <label for="observaciones_fisico_general">Observaciones:</label>
-                <textarea id="observaciones_fisico_general" name="observaciones_fisico_general" rows="6" class="form-control" required></textarea>
-            </div>
+                <textarea id="observaciones_fisico_general" name="observaciones_fisico_general" rows="6" required></textarea>
 
-            <h2 class="section-title">IV. Examen Neurológico Específico</h2>
-            <div class="form-group mb-6">
+                <h3 class="section-title">IV. Examen Neurológico Específico</h3>
                 <label for="observaciones_neurologico">Observaciones:</label>
-                <textarea id="observaciones_neurologico" name="observaciones_neurologico" rows="6" class="form-control" required></textarea>
-            </div>
+                <textarea id="observaciones_neurologico" name="observaciones_neurologico" rows="6" required></textarea>
 
-            <h2 class="section-title">V. Diagnóstico</h2>
-            <div class="form-group mb-6">
+                <h3 class="section-title">V. Diagnóstico</h3>
                 <label for="diagnostico_sospecha">Diagnóstico de sospecha:</label>
-                <textarea id="diagnostico_sospecha" name="diagnostico_sospecha" rows="4" class="form-control"></textarea>
-            </div>
-            <div class="form-group mb-6">
+                <textarea id="diagnostico_sospecha" name="diagnostico_sospecha" rows="4"></textarea>
+                
                 <label for="diagnostico_definitivo">Diagnóstico definitivo:</label>
-                <textarea id="diagnostico_definitivo" name="diagnostico_definitivo" rows="4" class="form-control"></textarea>
-            </div>
+                <textarea id="diagnostico_definitivo" name="diagnostico_definitivo" rows="4"></textarea>
 
-            <h2 class="section-title">VI. Plan y Recomendaciones</h2>
-            <div class="form-group mb-6">
+                <h3 class="section-title">VI. Plan y Recomendaciones</h3>
                 <label for="indicaciones">Indicaciones:</label>
-                <textarea id="indicaciones" name="indicaciones" rows="6" class="form-control" required></textarea>
-            </div>
-            <div class="form-group mb-6">
+                <textarea id="indicaciones" name="indicaciones" rows="6" required></textarea>
+                
                 <label for="derivaciones">Derivaciones:</label>
-                <textarea id="derivaciones" name="derivaciones" rows="4" class="form-control"></textarea>
-            </div>
+                <textarea id="derivaciones" name="derivaciones" rows="4"></textarea>
 
-            <div class="text-center">
-                <button type="submit" class="submit-button">Guardar y Generar Informe</button>
-            </div>
-        </form>
+                <div class="button-group">
+                    <button type="button" class="signature-button" onclick="insertarFirma()">
+                        <i class="fas fa-signature"></i> Insertar Firma y Timbre
+                    </button>
+                    <button type="submit" class="mark-evaluated-btn">
+                        <i class="fas fa-save"></i> Guardar y Generar PDF
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
+    <footer>
+        © 2025 CardioHome · Todos los derechos reservados.
+    </footer>
+
     <script>
+        // Funciones de utilidad copiadas/adaptadas de formulario_relleno-5.html
+        
+        function cerrarSesion() {
+            // Lógica para cerrar sesión
+            window.location.href = "{{ url_for('logout') }}"; // Asumiendo que tienes un endpoint 'logout'
+        }
+
+        function insertarFirma() {
+            // Lógica de la firma
+            Swal.fire({
+                icon: 'info',
+                title: 'Próximamente',
+                text: 'Se insertará la firma según la doctora que corresponda.'
+            });
+        }
+        
+        function formatRut(rut) {
+            // Función de formato RUT, adaptada de tu JS anterior
+            if (!rut) return 'N/A';
+            rut = rut.toString().replace(/\./g, '').replace(/-/g, '');
+            let cuerpo = rut.slice(0, -1);
+            let dv = rut.slice(-1);
+            return `${cuerpo}-${dv}`;
+        }
+        
+        async function submitForm(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const estudianteId = formData.get('estudiante_id');
+            
+            // 1. Validación de campos obligatorios
+            let allFilled = true;
+            form.querySelectorAll('textarea[required]').forEach(input => {
+                if (!input.value.trim()) {
+                    allFilled = false;
+                    input.style.borderColor = 'hsl(0, 75%, 58%)'; // Rojo
+                } else {
+                    input.style.borderColor = 'var(--border-color)';
+                }
+            });
+            
+            if (!allFilled) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Faltan datos',
+                    text: 'Por favor, rellene todos los campos obligatorios del informe antes de guardar.',
+                    confirmButtonText: 'Entendido'
+                });
+                return;
+            }
+
+            // 2. Mostrar alerta de carga
+            Swal.fire({ 
+                title: 'Guardando y Generando PDF...', 
+                text: 'Por favor, espera. Esto puede tardar unos segundos.', 
+                didOpen: () => { Swal.showLoading(); }, 
+                allowOutsideClick: false, 
+                allowEscapeKey: false 
+            });
+
+            // 3. Envío de datos al backend
+            try {
+                // Reemplaza esta URL con el endpoint POST real de tu Flask para guardar el informe
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Informe Guardado y PDF Generado!',
+                        text: data.message,
+                        timer: 3000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        // Opcional: Redirigir de vuelta al dashboard después de guardar
+                        window.location.href = "{{ url_for('dashboard') }}";
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error al Guardar',
+                        text: data.message
+                    });
+                }
+            } catch (error) {
+                console.error('Error al guardar y generar PDF:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de Conexión',
+                    text: 'No se pudo conectar con el servidor para guardar el informe.'
+                });
+            }
+        }
+        
+        // Función para cargar los datos del estudiante (Similar a la vista previa)
+        async function cargarDatosEstudiante(estudianteId, nominaId) {
+            if (!estudianteId || !nominaId) return;
+
+            // Reemplaza '/api/informe-neurologico-data' con la ruta real de tu API de Flask
+            // que devuelve los datos del estudiante y el informe (si existe) por ID
+            try {
+                const response = await fetch(`/api/informe-neurologico-data?estudiante_id=${estudianteId}&nomina_id=${nominaId}`);
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                // 1. Rellenar los campos de datos del paciente (vista previa estática)
+                document.getElementById('paciente-nombre').textContent = data.nombre || 'N/A';
+                document.getElementById('paciente-rut').textContent = formatRut(data.rut);
+                document.getElementById('paciente-fecha-nacimiento').textContent = data.fecha_nacimiento_formato || 'N/A';
+                document.getElementById('paciente-edad').textContent = data.edad ? data.edad + ' años' : 'N/A';
+                document.getElementById('paciente-sexo').textContent = (data.sexo === 'M' ? 'Masculino' : data.sexo === 'F' ? 'Femenino' : 'N/A');
+                
+                // 2. Rellenar los campos del informe con datos existentes (si la doctora está editando)
+                document.getElementById('antecedentes_relevantes').value = data.antecedentes_relevantes || '';
+                document.getElementById('motivo_consulta').value = data.motivo_consulta || '';
+                document.getElementById('historia_cuadro_actual').value = data.historia_cuadro_actual || '';
+                document.getElementById('observaciones_fisico_general').value = data.observaciones_fisico_general || '';
+                document.getElementById('observaciones_neurologico').value = data.observaciones_neurologico || '';
+                document.getElementById('diagnostico_sospecha').value = data.diagnostico_sospecha || '';
+                document.getElementById('diagnostico_definitivo').value = data.diagnostico_definitivo || '';
+                document.getElementById('indicaciones').value = data.indicaciones || '';
+                document.getElementById('derivaciones').value = data.derivaciones || '';
+
+            } catch (error) {
+                console.error('Error al cargar datos del estudiante:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de Carga',
+                    text: 'No se pudieron cargar los datos del paciente y el informe.',
+                    confirmButtonText: 'Volver al Dashboard'
+                }).then(() => {
+                    window.location.href = "{{ url_for('dashboard') }}";
+                });
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
-            // Obtener los IDs de la URL
+            // 1. Obtener IDs de la URL
             const urlParams = new URLSearchParams(window.location.search);
             const estudianteId = urlParams.get('estudiante_id');
             const nominaId = urlParams.get('nomina_id');
-            const doctoraId = urlParams.get('doctora_id'); // Este será el ID de la Doctora LOGUEADA
+            const doctoraId = urlParams.get('doctora_id'); // Asumiendo que obtienes el ID de la doctora logueada
 
-            // Asignar los IDs a los campos ocultos del formulario
+            if (!estudianteId || !nominaId || !doctoraId) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de Acceso',
+                    text: 'Faltan parámetros de estudiante o nómina para cargar el informe.',
+                }).then(() => {
+                    window.location.href = "{{ url_for('dashboard') }}";
+                });
+                return;
+            }
+
+            // 2. Asignar IDs a los campos ocultos
             document.getElementById('estudiante_id').value = estudianteId;
             document.getElementById('nomina_id').value = nominaId;
             document.getElementById('doctora_id').value = doctoraId;
 
-            // Función para cargar los datos del estudiante desde el backend
-            async function cargarDatosEstudiante(id) {
-                try {
-                    // Reemplaza '/api/estudiante-data' con la ruta real de tu API de Flask
-                    // que devuelve los datos del estudiante por ID
-                    const response = await fetch(`/api/estudiante-data?estudiante_id=${id}`);
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    const data = await response.json();
-                    
-                    // Rellenar los campos de datos del paciente
-                    document.getElementById('paciente-nombre').textContent = data.nombre || 'N/A';
-                    document.getElementById('paciente-rut').textContent = data.rut ? formatRut(data.rut) : 'N/A';
-                    document.getElementById('paciente-fecha-nacimiento').textContent = data.fecha_nacimiento || 'N/A';
-                    document.getElementById('paciente-edad').textContent = data.edad ? data.edad + ' años' : 'N/A';
-                    document.getElementById('paciente-sexo').textContent = data.sexo || 'N/A';
+            // 3. Cargar los datos del estudiante
+            cargarDatosEstudiante(estudianteId, nominaId);
 
-                    // Si ya hay datos de un informe anterior (por ejemplo, al editar)
-                    // Puedes cargarlos aquí para rellenar los textareas
-                    document.getElementById('motivo_consulta').value = data.motivo_consulta || '';
-                    document.getElementById('historia_cuadro_actual').value = data.historia_cuadro_actual || '';
-                    document.getElementById('observaciones_fisico_general').value = data.observaciones_fisico_general || '';
-                    document.getElementById('observaciones_neurologico').value = data.observaciones_neurologico || '';
-                    document.getElementById('diagnostico_sospecha').value = data.diagnostico_sospecha || '';
-                    document.getElementById('diagnostico_definitivo').value = data.diagnostico_definitivo || '';
-                    document.getElementById('indicaciones').value = data.indicaciones || '';
-                    document.getElementById('derivaciones').value = data.derivaciones || '';
-
-
-                } catch (error) {
-                    console.error('Error al cargar datos del estudiante:', error);
-                    document.getElementById('paciente-nombre').textContent = 'Error al cargar';
-                    document.getElementById('paciente-rut').textContent = 'Error al cargar';
-                }
-            }
-
-            // Formatear RUT (ejemplo, puedes usar tu función Python si la tienes en JS)
-            function formatRut(rut) {
-                rut = rut.replace(/\./g, '').replace(/-/g, '');
-                let cuerpo = rut.slice(0, -1);
-                let dv = rut.slice(-1);
-                return `${cuerpo}-${dv}`;
-            }
-
-            // Cargar los datos al iniciar la página si hay un estudiante_id
-            if (estudianteId) {
-                cargarDatosEstudiante(estudianteId);
-            }
+            // 4. Asignar el listener al formulario
+            document.getElementById('informeNeurologicoForm').addEventListener('submit', submitForm);
         });
     </script>
 </body>

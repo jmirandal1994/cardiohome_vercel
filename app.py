@@ -608,6 +608,14 @@ def relleno_formulario(nomina_id):
 # REEMPLAZA COMPLETAMENTE ESTA FUNCIÓN EN TU app.py
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
+    # Asumo que las importaciones y constantes necesarias están definidas:
+    # from datetime import datetime
+    # import os, io
+    # from PyPDF2 import PdfReader, PdfWriter, NameObject, DictionaryObject, BooleanObject
+    # from flask import session, request, redirect, url_for, flash, send_file
+    # PDF_BASES_NEUROLOGIA_DIR, PDF_BASE_NEUROLOGIA, PDF_BASE_FAMILIAR
+    # get_form_field_value, format_rut_python
+
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
@@ -662,7 +670,22 @@ def generar_pdf():
         except ValueError:
             pass
 
-    fecha_reeval_pdf = get_form_field_value('fecha_reevaluacion_pdf', request.form)
+    # -----------------------------------------------------------------------------------------
+    # 💡 CORRECCIÓN PRINCIPAL AQUÍ:
+    # 1. Se cambió 'fecha_reevaluacion_pdf' a 'fecha_reevaluacion' para que coincida con el HTML.
+    # 2. Se incluyó la lógica de formateo para cambiar de YYYY-MM-DD a DD/MM/YYYY.
+    # -----------------------------------------------------------------------------------------
+    fecha_reevaluacion_form_value = get_form_field_value('fecha_reevaluacion', request.form)
+    fecha_reeval_pdf = ''
+    if fecha_reevaluacion_form_value:
+        try:
+            fecha_reeval_pdf = datetime.strptime(fecha_reevaluacion_form_value, '%Y-%m-%d').strftime('%d/%m/%Y')
+        except ValueError:
+            # Si hay error en el formato (ej. si se pasa un string vacío o incorrecto),
+            # se evita que se asigne 'None' y por defecto queda como cadena vacía.
+            pass
+    # -----------------------------------------------------------------------------------------
+
 
     # 3. LÓGICA DE SELECCIÓN DE PLANTILLA Y VALIDACIÓN DE ARCHIVO
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -717,7 +740,7 @@ def generar_pdf():
                 "diagnostico_2": get_form_field_value('diagnostico', request.form), 
                 "estado_general": get_form_field_value('estado', request.form), 
                 "fecha_evaluacion": fecha_evaluacion_formatted, 
-                "fecha_reevaluacion": fecha_reevaluacion, 
+                "fecha_reevaluacion": fecha_reeval_pdf, # <-- ¡USA LA VARIABLE CORREGIDA!
                 "derivaciones": get_form_field_value('derivaciones', request.form),
                 "sexo_f": sexo_f_pdf,
                 "sexo_m": sexo_m_pdf,
@@ -754,7 +777,7 @@ def generar_pdf():
                 "derivaciones": get_form_field_value('derivaciones', request.form), 
                 
                 "fecha_evaluacion": fecha_evaluacion_formatted,
-                "fecha_reevaluacion": fecha_reeval_pdf,
+                "fecha_reevaluacion": fecha_reeval_pdf, # <-- ¡USA LA VARIABLE CORREGIDA!
                 
                 # Examen Físico / Medidas
                 "altura": get_form_field_value('altura', request.form),
@@ -800,7 +823,7 @@ def generar_pdf():
 
         print(f"DEBUG: Campos finales para el PDF ({form_type}): {campos}")
         
-        # 5. Generación final del PDF
+        # 5. Generación final del PDF (el resto del código se mantiene)
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({
                 NameObject("/AcroForm"): DictionaryObject()

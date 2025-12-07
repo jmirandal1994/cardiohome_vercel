@@ -27,12 +27,11 @@ ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'xls', 'xlsx', 'csv'}
 # Asegúrate de que estos archivos PDF existan en la misma carpeta que app.py
 PDF_BASE_NEUROLOGIA = 'FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE.pdf'
 PDF_BASE_FAMILIAR = 'formulario_familiar.pdf' 
-PDF_BASE_INFORME_NEUROLOGICO = 'informe_neurologico.pdf'
 
 # Nuevo: Directorio para los PDFs de neurología específicos por doctora
 # Asegúrate de que esta carpeta exista en la misma ubicación que app.py
 PDF_BASES_NEUROLOGIA_DIR = 'pdf_bases_doctoras_neurologia'
-PDF_BASES_INFORME_NEUROLOGICO_DIR = 'pdf_bases_doctoras_informe_neurologico'
+
 
 # -------------------- Supabase Configuration --------------------
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://rbzxolreglwndvsrxhmg.supabase.co")
@@ -283,7 +282,7 @@ def enviar_correo_sendgrid(asunto, cuerpo, adjuntos=None):
 
 def generate_and_upload_pdf(estudiante_id, nomina_id, doctora_id, form_type, datos_actualizacion):
     """Genera el PDF rellenado y lo sube al almacenamiento de Supabase.
-        Incluye lógica para seleccionar plantilla específica por doctora.
+       Incluye lógica para seleccionar plantilla específica por doctora.
     """
     
     # ---------------------------------------------------------------------
@@ -292,6 +291,7 @@ def generate_and_upload_pdf(estudiante_id, nomina_id, doctora_id, form_type, dat
     pdf_template_path = None
     
     # Usamos el ID de la Doctora LOGUEADA como la clave para la plantilla.
+    # El ID de la sesión es la única fuente de verdad fiable en este punto.
     current_doctora_id = session.get('usuario_id')
     
     if form_type == 'neurologia' and current_doctora_id:
@@ -313,19 +313,6 @@ def generate_and_upload_pdf(estudiante_id, nomina_id, doctora_id, form_type, dat
     elif form_type == 'medicina_familiar':
         pdf_template_path = PDF_BASE_FAMILIAR
     
-    # --- INSERCIÓN 1: NUEVA LÓGICA PARA INFORME NEUROLÓGICO (SELECCIÓN DE PLANTILLA) ---
-    elif form_type == 'informe_neurologico' and current_doctora_id: 
-        doctora_pdf_filename = f"INFORME_NEUROLOGICO_{current_doctora_id}.pdf" # El nombre de tu plantilla específica
-        doctora_pdf_path = os.path.join(PDF_BASES_INFORME_NEUROLOGICO_DIR, doctora_pdf_filename)
-
-        if os.path.exists(doctora_pdf_path):
-            pdf_template_path = doctora_pdf_path
-            print(f"DEBUG: Usando PDF específico de Doctora LOGUEADA para Informe Neurológico: {pdf_template_path}")
-        else:
-            pdf_template_path = PDF_BASE_INFORME_NEUROLOGICO
-            print(f"DEBUG: Usando PDF genérico para Informe Neurológico.")
-    # ---------------------------------------------------------------------------------------
-
     if not pdf_template_path or not os.path.exists(pdf_template_path):
         message = f"ERROR: Plantilla PDF no encontrada para el tipo de formulario '{form_type}' en la ruta: {pdf_template_path}"
         print(message)
@@ -357,62 +344,16 @@ def generate_and_upload_pdf(estudiante_id, nomina_id, doctora_id, form_type, dat
         campos_pdf['FECHA_EVALUACION'] = estudiante_data.get('fecha_evaluacion', '')
         campos_pdf['FECHA_REVALUACION'] = estudiante_data.get('fecha_reevaluacion', '')
         campos_pdf['DOCTORA_NOMBRE'] = doctora_nombre
-        
         # Si form_type es neurologia (solo un ejemplo)
         if form_type == 'neurologia':
             campos_pdf['ESTADO_GENERAL'] = estudiante_data.get('estado_general', '')
             campos_pdf['DIAGNOSTICO'] = estudiante_data.get('diagnostico', '')
             campos_pdf['DERIVACIONES'] = estudiante_data.get('derivaciones', '')
-            
         # Si form_type es medicina_familiar (solo un ejemplo)
         elif form_type == 'medicina_familiar':
             # Aquí iría el mapeo de todos los campos específicos de medicina familiar
             pass
-            
-        # --- INSERCIÓN 2: MAPEO DE CAMPOS PARA INFORME NEUROLÓGICO ---
-        elif form_type == 'informe_neurologico':
-            
-            # --- Lógica de preparación de datos (Asume que 'datetime', 'format_rut_python' y 'calculate_age' están disponibles) ---
-            sexo_db = (estudiante_data.get('sexo') or "").upper()
-            fecha_nacimiento_str = estudiante_data.get('fecha_nacimiento')
-            edad_calculada = ''
-            if fecha_nacimiento_str:
-                try:
-                    fecha_nac_date = datetime.strptime(fecha_nacimiento_str, '%Y-%m-%d').date()
-                    edad_calculada = calculate_age(fecha_nac_date) 
-                except Exception as e:
-                    print(f"ERROR calculando edad: {e}")
-            
-            # --- Mapeo a campos del PDF ---
-            
-            # I. DATOS DE IDENTIFICACIÓN (Autocompletado)
-            campos_pdf['Nombre'] = estudiante_data.get('nombre', '') 
-            campos_pdf['RUT'] = format_rut_python(estudiante_data.get('rut', '')) # Asegura el formato del RUT
-            campos_pdf['Fecha de nacimiento'] = fecha_nacimiento_str or '' 
-            campos_pdf['Edad'] = edad_calculada
-            
-            # Género (Checkboxes: 'X' si coincide con el campo del PDF)
-            campos_pdf['Masculino'] = 'X' if sexo_db == 'M' else '' 
-            campos_pdf['Femenino'] = 'X' if sexo_db == 'F' else '' 
-            
-            # II. HISTORIA CLÍNICA (Llenado por la Doctora)
-            campos_pdf['Motivo de consulta'] = datos_actualizacion.get('motivo_consulta', '')
-            campos_pdf['Historia del cuadro actual'] = datos_actualizacion.get('historia_cuadro_actual', '')
-            
-            # III. EXAMEN FÍSICO GENERAL
-            campos_pdf['Observaciones_FisicoGeneral'] = datos_actualizacion.get('observaciones_fisico_general', '') 
-            
-            # IV. EXAMEN NEUROLÓGICO ESPECÍFICO
-            campos_pdf['Observaciones_Neurologico'] = datos_actualizacion.get('observaciones_neurologico', '') 
-            
-            # V. DIAGNÓSTICO
-            campos_pdf['Diagnóstico sospecha'] = datos_actualizacion.get('diagnostico_sospecha', '') 
-            campos_pdf['Diagnóstico definitivo'] = datos_actualizacion.get('diagnostico_definitivo', '') 
-            
-            # VI. PLAN Y RECOMENDACIONES
-            campos_pdf['Indicaciones'] = datos_actualizacion.get('indicaciones', '') 
-            campos_pdf['Derivaciones'] = datos_actualizacion.get('derivaciones', '') 
-        # --------------------------------------------------------------------
+        # --------------------------------------------------------------
         
         # 2.3. Rellenar PDF
         # Nota: Asegúrate de que PdfReader y PdfWriter estén importados
@@ -1328,7 +1269,7 @@ def admin_cargar_nomina():
     
     # 1. Obtener datos del formulario
     tipo_nomina_raw = request.form.get('tipo_nomina', '').strip()
-    nombre_colegio_o_establecimiento = request.form.get('nombre_especifico', '').strip()
+    nombre_colegio_o_establecimiento = request.form.get('nombre_especifico', '').strip() # ¡Usamos este campo como nombre del colegio!
     doctora_id_from_form = request.form.get('doctora', '').strip()
     excel_file = request.files.get('excel')
     doctora_id_para_formulario = request.form.get('doctora_id_para_formulario', '').strip()
@@ -1339,16 +1280,11 @@ def admin_cargar_nomina():
     
     tipo_nomina_normalized = tipo_nomina_raw.strip().lower() if tipo_nomina_raw else ''
     
-    # --- 1. Mapeo del form_type (MODIFICACIÓN) ---
     form_type = None
-    # Verificar primero el tipo más específico
-    if 'informe neurologico' in tipo_nomina_normalized: 
-        form_type = 'informe_neurologico' # <--- NUEVO
-    elif 'neurologia' in tipo_nomina_normalized: 
+    if 'neurologia' in tipo_nomina_normalized: 
         form_type = 'neurologia'
     elif 'familiar' in tipo_nomina_normalized or 'medicina familiar' in tipo_nomina_normalized: 
         form_type = 'medicina_familiar'
-    # ---------------------------------------------
 
     # Validaciones básicas
     if not all([tipo_nomina_raw, nombre_colegio_o_establecimiento, doctora_id_from_form, excel_file]):
@@ -1359,12 +1295,10 @@ def admin_cargar_nomina():
         flash(f'❌ El tipo de nómina "{tipo_nomina_raw}" no se pudo mapear a un tipo de formulario conocido.', 'error')
         return redirect(url_for('dashboard'))
 
-    # --- 2. Validación de doctora_id_para_formulario (MODIFICACIÓN) ---
-    tipos_con_doctora_informe = ['neurologia', 'informe_neurologico']
-    if form_type in tipos_con_doctora_informe and not doctora_id_para_formulario:
-        flash('❌ Para este tipo de nómina (Neurología o Informe Neurológico), debe seleccionar la Doctora para el informe.', 'error')
+    if form_type == 'neurologia' and not doctora_id_para_formulario:
+        flash('❌ Para nóminas de tipo "Neurología", debe seleccionar la Doctora para el formulario.', 'error')
         return redirect(url_for('dashboard'))
-    # --------------------------------------------------------------------
+
 
     if not permitido(excel_file.filename):
         flash('❌ Archivo Excel o CSV no válido. Extensiones permitidas: .xls, .xlsx, .csv', 'error')
@@ -1405,10 +1339,7 @@ def admin_cargar_nomina():
         "url_excel_original": url_excel_publica,
         "nombre_excel_original": excel_filename,
         "form_type": form_type, 
-        
-        # --- 3. Inserción en DB (MODIFICACIÓN) ---
-        "doctora_id_para_formulario": doctora_id_para_formulario if form_type in ['neurologia', 'informe_neurologico'] else None,
-        # -----------------------------------------
+        "doctora_id_para_formulario": doctora_id_para_formulario if form_type == 'neurologia' else None,
         
         # --- CAMPOS CLAVE 100% INTEGRADOS ---
         "nombre_colegio": nombre_colegio_o_establecimiento, # <-- COLUMNA DE TEXTO EN NOMINAS_MEDICAS
@@ -1483,7 +1414,7 @@ def admin_cargar_nomina():
         except Exception: pass
         return redirect(url_for('dashboard'))
         
-    establecimiento_id_db_para_estudiantes = None 
+    establecimiento_id_db_para_estudiantes = None # Siempre NULL para no causar error si la columna era INT8 y ya no apunta a nada
 
     for index, row in df.iterrows():
         try:
@@ -1525,7 +1456,7 @@ def admin_cargar_nomina():
                 "nacionalidad": nacionalidad_valor,
                 "sexo": sexo_adivinado,
                 "fecha_relleno": None,
-                # <-- Nulo
+                 # <-- Nulo
             }
             estudiantes_a_insertar.append(estudiante)
             
@@ -1558,7 +1489,7 @@ def admin_cargar_nomina():
         error_detail = res_insert_estudiantes.text if 'res_insert_estudiantes' in locals() else 'No response from Supabase.'
         flash(f"❌ Error al guardar los estudiantes en la base de datos. La nómina fue creada, pero no se agregaron los estudiantes. ({e}). Detalles: {error_detail}", 'error')
         return redirect(url_for('dashboard'))
-        
+
 
 # La ruta '/enviar_formulario_a_drive' ha sido eliminada por completo.
 

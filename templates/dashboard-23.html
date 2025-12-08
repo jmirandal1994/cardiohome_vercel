@@ -404,6 +404,31 @@
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             position: relative;
         }
+        /* CSS Básico para el badge de alerta */
+         .alert-badge {
+            position: absolute;
+            top: -5px;
+            right: -10px; /* Ajuste la posición relativa a su diseño */
+            background-color: var(--accent-red); /* Si tiene definida la variable */
+       /* Si no tiene la variable: background-color: #dc3545; (rojo estándar) */
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            display: inline-block;
+            min-width: 20px;
+            text-align: center;
+         }
+        .hidden {
+            display: none !important; /* Esencial para ocultarlo cuando el conteo es 0 */
+         }
+           /* Asegura que el enlace sea el contenedor de la posición absoluta del badge */
+         .nav-link.relative {
+            position: relative;
+          /* Relleno (padding) adicional para que el badge no se superponga al texto */
+            padding-right: 25px; 
+         }  
         .item-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 20px rgba(0,0,0,0.1);

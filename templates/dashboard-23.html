@@ -766,7 +766,7 @@
         <aside class="sidebar" id="sidebar">
             <nav class="p-4">
                 <ul class="space-y-2">
-                    {% if usuario == 'admin' %}
+                  {% if usuario == 'admin' %}
                         <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical"></i> Bienvenida</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-performance"><i class="fa-solid fa-chart-line"></i> Rendimiento</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-add-visit"><i class="fa-solid fa-calendar-plus"></i> Agregar Visita</a></li>
@@ -776,7 +776,14 @@
                         <li><a href="#" class="nav-link" data-section="admin-uploaded-forms-all"><i class="fa-solid fa-folder-open"></i> Formularios Subidos</a></li>
                         <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fa-solid fa-folder-plus"></i> Crear Proyecto</a></li>
                         <li><a href="#" class="nav-link" data-section="gestionar-proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
-
+    
+                        <li>
+                            <a href="#" class="nav-link relative" data-section="admin-correction-requests">
+                            <i class="fa-solid fa-bell"></i> Solicitudes de Corrección
+                            <span id="correction-alert-badge" class="alert-badge hidden">0</span>
+                         </a>
+                        </li>
+                      {% endif %}
                     {% elif usuario == 'coordinadora' %}
                         {# MODIFICACIÓN PARA COORDINADORA: Eliminado el enlace a welcome-section y activa por defecto: coord-performance #}
                         <li><a href="#" class="nav-link active" data-section="coord-performance"><i class="fa-solid fa-gauge-high"></i> Rendimiento en Vivo</a></li>

@@ -1271,9 +1271,12 @@ def get_correcciones_pendientes():
 # ==================================================================================
 # RUTA /api/correccion/solicitar (SOLUCIÓN DEFINITIVA Y FINAL)
 # ==================================================================================
+# ==================================================================================
+# RUTA /api/correccion/solicitar (SOLUCIÓN FINAL CON COLUMNAS SIMPLES)
+# ==================================================================================
 @app.route('/api/correccion/solicitar', methods=['POST'])
 def solicitar_correccion():
-    # 1. Verificar sesión con la clave 'usuario_id' (esta es correcta en tu login)
+    # 1. Verificar sesión con la clave 'usuario_id'
     usuario_solicitante_id = session.get('usuario_id')
     
     if not usuario_solicitante_id:
@@ -1292,12 +1295,13 @@ def solicitar_correccion():
         # 3. Preparar el cuerpo de la petición para Supabase
         payload = {
             "alumno_id": alumno_id,
-            
-            # 📢 ¡IMPORTANTE! Reemplaza 'detalles' y 'doctora_id' con los nombres REALES de tus columnas en Supabase
-            "detalles": detalles,           # <-- Columna para la descripción de la corrección
-            "doctora_id": usuario_solicitante_id, # <-- Columna para el ID de la doctora/usuario que solicita
-            
+            "detalles": detalles,          # <-- ¡ASUMO ESTE NOMBRE PARA LA DESCRIPCIÓN!
             "estado": "Pendiente", 
+            
+            # 🔴 ¡AQUÍ ESTÁ EL CAMBIO CRÍTICO!
+            "id": usuario_solicitante_id,  # <-- ¡USAMOS LA CLAVE 'id' COMO LO PEDISTE!
+            # Si esto falla con un error de clave primaria, debes usar otro nombre 
+            # para esta columna en la base de datos (ej. 'solicitante_id').
         }
         
         # 4. Enviar la petición POST al endpoint de Supabase

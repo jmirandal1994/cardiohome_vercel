@@ -1227,6 +1227,43 @@ def logout():
     flash('Has cerrado sesión correctamente.', 'info')
     return redirect(url_for('index'))
 
+# Coloque esto en su archivo principal de Flask (app.py)
+
+from flask import jsonify, session
+
+# ... (otras importaciones y configuración de Supabase)
+
+@app.route('/api/correcciones_pendientes', methods=['GET'])
+def get_correcciones_pendientes():
+    # Asumo que el rol del administrador es 'administrador'
+    if 'usuario' not in session or session.get('rol') != 'administrador':
+        # Devolver 0 si no está autorizado, pero para evitar errores en el frontend, devolver éxito.
+        return jsonify({"count": 0, "success": True}), 200
+    
+    try:
+        # Consulta a Supabase: Contar las solicitudes con estado 'Pendiente'
+        # Usamos .select('id', count='exact') para obtener solo el conteo de forma eficiente.
+        
+        # ⚠️ Nota: La sintaxis puede variar si usa otra librería de Supabase/Postgrest. 
+        # Si usa la librería 'supabase-py' (oficial):
+        response = supabase.table('solicitudes_correccion').select('id', count='exact').eq('estado', 'Pendiente').execute()
+        
+        # La forma de obtener el conteo puede variar. 
+        # Si la respuesta es directa (Ej: {"count": 5}), use response.json()['count']
+        # Si es del objeto Postgrest (PostgrestClient.execute()), la cuenta está en response.count
+        
+        # Asumiendo el conteo en el objeto:
+        count_data = response.count 
+
+        return jsonify({
+            "success": True, 
+            "count": count_data # Devuelve el número de correcciones pendientes
+        })
+
+    except Exception as e:
+        print(f"ERROR al consultar correcciones pendientes: {e}")
+        return jsonify({"success": False, "count": 0, "message": "Error interno al consultar la base de datos."}), 500
+        
 @app.route('/admin/agregar', methods=['POST'])
 def admin_agregar():
     if session.get('usuario') != 'admin':

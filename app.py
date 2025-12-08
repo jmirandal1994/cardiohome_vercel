@@ -1268,16 +1268,19 @@ def get_correcciones_pendientes():
 # RUTA /api/correccion/solicitar (ACTUALIZADA PARA USAR requests)
 # ==================================================================================
 
+# ==================================================================================
+# RUTA /api/correccion/solicitar (SOLUCIÓN DEFINITIVA Y FINAL)
+# ==================================================================================
 @app.route('/api/correccion/solicitar', methods=['POST'])
 def solicitar_correccion():
-    # 1. Verificar si el usuario está logueado usando la clave 'usuario_id' de tu login
+    # 1. Verificar sesión con la clave 'usuario_id' (esta es correcta en tu login)
     usuario_solicitante_id = session.get('usuario_id')
     
     if not usuario_solicitante_id:
         return jsonify({"success": False, "message": "Acceso no autorizado. Debe iniciar sesión para solicitar una corrección."}), 403
 
     try:
-        # 2. Obtener los datos enviados desde el formulario (JSON)
+        # 2. Obtener los datos enviados (JSON)
         data = request.get_json()
         
         alumno_id = data.get('alumno_id')
@@ -1289,37 +1292,31 @@ def solicitar_correccion():
         # 3. Preparar el cuerpo de la petición para Supabase
         payload = {
             "alumno_id": alumno_id,
-            "detalles_correccion": detalles,
+            
+            # 📢 ¡IMPORTANTE! Reemplaza 'detalles' y 'doctora_id' con los nombres REALES de tus columnas en Supabase
+            "detalles": detalles,           # <-- Columna para la descripción de la corrección
+            "doctora_id": usuario_solicitante_id, # <-- Columna para el ID de la doctora/usuario que solicita
+            
             "estado": "Pendiente", 
-            "solicitante_id": usuario_solicitante_id
-            # NOTA: Supabase debería manejar la fecha/timestamp de creación automáticamente 
-            # si la columna tiene ese valor por defecto. Si no, necesitarías la fecha en el payload.
         }
         
-        # 4. Enviar la petición POST al endpoint de Supabase (PostgREST)
-        # La URL debe apuntar directamente a la tabla 'solicitudes_correccion'
+        # 4. Enviar la petición POST al endpoint de Supabase
         url_supabase_insert = f"{SUPABASE_URL}/rest/v1/solicitudes_correccion"
-        
-        # Usamos SUPABASE_SERVICE_HEADERS para asegurarnos de que los permisos sean correctos
         res = requests.post(url_supabase_insert, headers=SUPABASE_SERVICE_HEADERS, json=payload)
         
-        # 5. Manejar la respuesta de Supabase
-        res.raise_for_status() # Lanza una excepción si el código de estado es 4xx o 5xx
+        # 5. Manejar la respuesta
+        res.raise_for_status() 
         
-        # Supabase devuelve 201 Created al insertar correctamente
         if res.status_code == 201:
             return jsonify({"success": True, "message": "Solicitud enviada correctamente."}), 201
         else:
-            # En caso de que la inserción no sea 201, pero tampoco lance excepción (raro)
             return jsonify({"success": False, "message": f"Error desconocido al insertar. Código: {res.status_code}"}), 500
 
     except requests.exceptions.HTTPError as http_err:
-        # Captura errores de Supabase como 400 (Bad Request), 401, 403, 500
         print(f"❌ Error HTTP de Supabase: {http_err}. Respuesta: {http_err.response.text}")
         return jsonify({"success": False, "message": f"Error de Base de Datos (Supabase). Detalles: {http_err.response.text}"}), 500
         
     except Exception as e:
-        # Captura otros errores de Python
         print(f"❌ ERROR al procesar solicitud de corrección: {e}")
         return jsonify({"success": False, "message": f"Error interno del servidor. Detalle: {str(e)}"}), 500
         

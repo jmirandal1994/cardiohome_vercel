@@ -1266,11 +1266,14 @@ def get_correcciones_pendientes():
 
 @app.route('/api/correccion/solicitar', methods=['POST'])
 def solicitar_correccion():
-    # 1. Verificar si el usuario está al menos logueado (solo revisamos si el ID está presente)
-    usuario_solicitante_id = session.get('id')
+    # 1. Verificar si el usuario está al menos logueado (AHORA BUSCAMOS 'usuario_id')
+    # Usamos la clave que tu función de login está guardando.
+    usuario_solicitante_id = session.get('usuario_id')
     
     # Si el ID no está en la sesión, la persona no ha iniciado sesión o expiró.
     if not usuario_solicitante_id:
+        # Imprimimos la sesión para diagnóstico si falla
+        print(f"DEBUG: Fallo de autorización. Sesión actual: {session}") 
         return jsonify({"success": False, "message": "Acceso no autorizado. Debe iniciar sesión para solicitar una corrección."}), 403
 
     try:
@@ -1290,7 +1293,7 @@ def solicitar_correccion():
             "detalles_correccion": detalles,
             "estado": "Pendiente", 
             "fecha_solicitud": 'now()', 
-            "solicitante_id": usuario_solicitante_id # Usamos el ID del usuario logueado
+            "solicitante_id": usuario_solicitante_id # Usamos el ID recuperado de la sesión
         }).execute()
         
         # 4. Respuesta de éxito
@@ -1298,7 +1301,6 @@ def solicitar_correccion():
 
     except Exception as e:
         print(f"ERROR al procesar solicitud de corrección: {e}")
-        # Retorna 500 si hay un problema en la DB o en el código.
         return jsonify({"success": False, "message": f"Error interno del servidor. Detalle: {str(e)}"}), 500
         
 @app.route('/admin/agregar', methods=['POST'])

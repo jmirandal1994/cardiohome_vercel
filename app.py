@@ -1266,9 +1266,10 @@ def get_correcciones_pendientes():
 
 @app.route('/api/correccion/solicitar', methods=['POST'])
 def solicitar_correccion():
-    # 1. Verificar Sesión y Rol (Opcional, pero recomendado para seguridad)
-    if 'usuario' not in session or session.get('rol') not in ['coordinador_escuela', 'coordinador_regional']:
-        return jsonify({"success": False, "message": "Acceso no autorizado."}), 403
+    # 1. Verificar Sesión y Rol
+    # ¡CORRECCIÓN AQUÍ! Sólo verificamos el rol 'coordinador_escuela'.
+    if 'usuario' not in session or session.get('rol') != 'coordinador_escuela':
+        return jsonify({"success": False, "message": "Acceso no autorizado. Su rol no coincide o no ha iniciado sesión."}), 403
 
     try:
         # 2. Obtener los datos enviados desde el formulario (JSON)
@@ -1285,27 +1286,20 @@ def solicitar_correccion():
         usuario_solicitante_id = session.get('id')
         
         # 3. Insertar el registro en la tabla 'solicitudes_correccion'
-        # Estado inicial debe ser 'Pendiente'
         response = supabase.table('solicitudes_correccion').insert({
             "alumno_id": alumno_id,
-            "detalles_correccion": detalles, # Usa el nombre de columna correcto en tu DB
+            "detalles_correccion": detalles,
             "estado": "Pendiente", 
-            "fecha_solicitud": 'now()', # O la forma correcta de insertar la fecha actual en Supabase
+            "fecha_solicitud": 'now()', 
             "solicitante_id": usuario_solicitante_id
         }).execute()
         
-        # Opcional: Verifica si la inserción fue exitosa
-        # if not response.data:
-        #     raise Exception("Supabase no devolvió datos en la inserción.")
-
         # 4. Respuesta de éxito
         return jsonify({"success": True, "message": "Solicitud enviada correctamente. El administrador será notificado."}), 201
 
     except Exception as e:
-        # Esto captura errores de Supabase, de JSON, o cualquier otro error de Python.
         print(f"ERROR al procesar solicitud de corrección: {e}")
-        # En caso de error interno, devolver un error 500 para el cliente
-        return jsonify({"success": False, "message": f"Error interno del servidor. Detalle: {str(e)}"}), 500
+        return jsonify({"success": False, "message": f"Error interno del servidor al intentar la inserción. Detalle: {str(e)}"}), 500
         
 @app.route('/admin/agregar', methods=['POST'])
 def admin_agregar():

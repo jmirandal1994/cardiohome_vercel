@@ -1239,37 +1239,91 @@ from flask import jsonify, session
 
 # ... (otras importaciones y configuración de Supabase)
 
+# app-38.py (Alrededor de la línea 1307)
+
+# app-38.py (Añadir esta ruta en cualquier parte, por ejemplo, cerca de /api/correcciones_pendientes)
+
+@app.route('/api/correcciones/pendientes_detalle', methods=['GET'])
+def get_correcciones_detalle():
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "Acceso denegado"}), 403
+    
+    try:
+        # CONSULTA: Obtener todas las solicitudes pendientes, incluyendo datos del alumno y solicitante
+        url_requests = (
+            f"{SUPABASE_URL}/rest/v1/solicitudes_correccion"
+            f"?select=*,estudiantes_nomina(nombre,rut),doctoras(usuario)" # Asume que 'solicitante_id' es la FK a 'doctoras'
+            f"&estado=eq.Pendiente"
+            f"&order=fecha_solicitud.desc"
+        )
+        
+        res = requests.get(url_requests, headers=SUPABASE_SERVICE_HEADERS)
+        res.raise_for_status()
+        solicitudes = res.json()
+        
+        # Procesamiento de datos para el frontend
+        processed_requests = []
+        for req in solicitudes:
+            
+            # Nota: Si usas una FK en solicitante_id a doctoras, Supabase lo une automáticamente.
+            solicitante_usuario = req.get('doctoras', {}).get('usuario') if req.get('doctoras') else 'N/A'
+            alumno_nombre = req.get('estudiantes_nomina', {}).get('nombre') if req.get('estudiantes_nomina') else 'Alumno Desconocido'
+            alumno_rut = format_rut_python(req.get('estudiantes_nomina', {}).get('rut')) if req.get('estudiantes_nomina') else 'N/A'
+            
+            processed_requests.append({
+                'id': req['id'],
+                'alumno_nombre': alumno_nombre,
+                'alumno_rut': alumno_rut,
+                'detalles': req['detalles'],
+                'solicitante': solicitante_usuario,
+                'fecha': req['fecha_solicitud'].split('T')[0] if req.get('fecha_solicitud') else 'N/A', # Formato YYYY-MM-DD
+                'estado': req['estado']
+            })
+            
+        return jsonify({"success": True, "data": processed_requests})
+        
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR al obtener detalle de solicitudes: {e}")
+        return jsonify({"success": False, "message": f"Error de conexión con BD: {str(e)}"}), 500
+        
 @app.route('/api/correcciones_pendientes', methods=['GET'])
 def get_correcciones_pendientes():
-    # Asumo que el rol del administrador es 'administrador'
-    if 'usuario' not in session or session.get('rol') != 'administrador':
-        # Devolver 0 si no está autorizado, pero para evitar errores en el frontend, devolver éxito.
+    # 1. Ajustar la verificación de rol
+    # Supabase guarda el rol como 'admin', no 'administrador'
+    if 'usuario' not in session or session.get('usuario') != 'admin': 
         return jsonify({"count": 0, "success": True}), 200
     
     try:
-        # Consulta a Supabase: Contar las solicitudes con estado 'Pendiente'
-        # Usamos .select('id', count='exact') para obtener solo el conteo de forma eficiente.
+        # 2. La consulta debe usar requests directamente si no tienes el objeto supabase-py
+        # Usaremos get_supabase_count o una consulta directa con Prefer: count=exact
+
+        url_count = (
+            f"{SUPABASE_URL}/rest/v1/solicitudes_correccion"
+            f"?select=id"
+            f"&estado=eq.Pendiente" # Filtro crucial por el estado
+        )
         
-        # ⚠️ Nota: La sintaxis puede variar si usa otra librería de Supabase/Postgrest. 
-        # Si usa la librería 'supabase-py' (oficial):
-        response = supabase.table('solicitudes_correccion').select('id', count='exact').eq('estado', 'Pendiente').execute()
+        # Usamos requests para obtener el conteo exacto (requiere el header Prefer: count=exact)
+        res = requests.get(url_count, headers=SUPABASE_SERVICE_HEADERS)
+        res.raise_for_status()
         
-        # La forma de obtener el conteo puede variar. 
-        # Si la respuesta es directa (Ej: {"count": 5}), use response.json()['count']
-        # Si es del objeto Postgrest (PostgrestClient.execute()), la cuenta está en response.count
-        
-        # Asumiendo el conteo en el objeto:
-        count_data = response.count 
+        # Leemos el conteo del Content-Range header
+        content_range = res.headers.get("Content-Range")
+        count_data = 0
+        if content_range and '/' in content_range:
+            count_data = int(content_range.split('/')[-1])
+            
+        print(f"DEBUG: Solicitudes Pendientes encontradas: {count_data}")
 
         return jsonify({
             "success": True, 
-            "count": count_data # Devuelve el número de correcciones pendientes
+            "count": count_data 
         })
 
     except Exception as e:
         print(f"ERROR al consultar correcciones pendientes: {e}")
         return jsonify({"success": False, "count": 0, "message": "Error interno al consultar la base de datos."}), 500
-
+        
 # ==================================================================================
 # RUTA /api/correccion/solicitar (ACTUALIZADA PARA USAR requests)
 # ==================================================================================

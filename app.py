@@ -454,6 +454,12 @@ def get_doctor_specific_neurologia_pdf(doctora_id):
         print(f"DEBUG: Usando PDF por defecto en la ruta absoluta: {default_pdf_path}")
         return default_pdf_path
 
+# Coloca esta función en la sección de utilidades de app-38.py:
+def map_db_value_to_x(db_value):
+    """Convierte el valor True/False o string de la base de datos a 'X' o ''."""
+    if db_value is True or (isinstance(db_value, str) and db_value.strip()):
+        return "X"
+    return ""
 
 # -------------------- Rutas de la Aplicación --------------------
 
@@ -1863,10 +1869,8 @@ def descargar_pdf_alumno(alumno_id):
         return redirect(url_for('dashboard'))
 
     try:
-        # --------------------------------------------------------------------------------------------------
         # 1. CONSULTA ÚNICA: DATOS COMPLETOS DEL ESTUDIANTE (Select ALL FIELDS)
         # Se ha ampliado el 'select' para incluir todos los campos de evaluación de Neurología y Medicina Familiar.
-        # --------------------------------------------------------------------------------------------------
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
@@ -1898,8 +1902,6 @@ def descargar_pdf_alumno(alumno_id):
         nombre_nomina = nomina_meta.get('nombre_nomina', 'Valoracion')
         doctora_evaluadora_id = est.get('doctora_evaluadora_id')
         
-        # Las Consultas 1 y 3 se han fusionado.
-
         # 4. LÓGICA DE PLANTILLA (Selección del PDF personalizado/genérico) (Mantenida)
         pdf_base_path = ''
         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -1961,9 +1963,12 @@ def descargar_pdf_alumno(alumno_id):
                 fecha_reeval_pdf = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
             except ValueError: pass
         
-        # --- FUNCIÓN AUXILIAR PARA MAPEO BOOLEANO A 'X' ---
-        def map_db_boolean_to_x(db_value):
-            return "X" if db_value is True else "" 
+        # --- FUNCIÓN AUXILIAR PARA MAPEO TEXTO A 'X' ---
+        # Ahora, solo se usa para mapear el valor de DB a 'X' si existe (es True)
+        def map_db_value_to_x(db_value):
+            if db_value is True or (isinstance(db_value, str) and db_value.strip()):
+                return "X"
+            return ""
         # ----------------------------------------------------
 
         campos = {}
@@ -2025,31 +2030,31 @@ def descargar_pdf_alumno(alumno_id):
                  "observacion_6": est.get('observacion_6', ''),
                  "observacion_7": est.get('observacion_7', ''),
                  
-                 # Checkboxes - Mapeo a 'X' si True en DB 
-                 "check_cesarea": map_db_boolean_to_x(est.get('check_cesarea')),
-                 "check_atermino": map_db_boolean_to_x(est.get('check_atermino')),
-                 "check_vaginal": map_db_boolean_to_x(est.get('check_vaginal')),
-                 "check_prematuro": map_db_boolean_to_x(est.get('check_prematuro')),
-                 "check_acorde": map_db_boolean_to_x(est.get('check_acorde')),
-                 "check_retraso": map_db_boolean_to_x(est.get('check_retraso')),
-                 "check_retrasogeneralizado": map_db_boolean_to_x(est.get('check_retrasogeneralizado')),
-                 "check_esquemac": map_db_boolean_to_x(est.get('check_esquemac')),
-                 "check_esquemai": map_db_boolean_to_x(est.get('check_esquemai')),
-                 "check_alergiano": map_db_boolean_to_x(est.get('check_alergiano')),
-                 "check_alergiasi": map_db_boolean_to_x(est.get('check_alergiasi')),
-                 "check_cirugiano": map_db_boolean_to_x(est.get('check_cirugiano')),
-                 "check_cirugiasi": map_db_boolean_to_x(est.get('check_cirugiasi')), 
-                 "check_visionsinalteracion": map_db_boolean_to_x(est.get('check_visionsinalteracion')),
-                 "check_visionrefraccion": map_db_boolean_to_x(est.get('check_visionrefraccion')),
-                 "check_audicionnormal": map_db_boolean_to_x(est.get('check_audicionnormal')),
-                 "check_hipoacusia": map_db_boolean_to_x(est.get('check_hipoacusia')),
-                 "check_tapondecerumen": map_db_boolean_to_x(est.get('check_tapondecerumen')),
-                 "check_sinhallazgos": map_db_boolean_to_x(est.get('check_sinhallazgos')),
-                 "check_caries": map_db_boolean_to_x(est.get('check_caries')), 
-                 "check_apinamientodental": map_db_boolean_to_x(est.get('check_apinamientodental')),
-                 "check_retenciondental": map_db_boolean_to_x(est.get('check_retenciondental')),
-                 "check_frenillolingual": map_db_boolean_to_x(est.get('check_frenillolingual')),
-                 "check_hipertrofia": map_db_boolean_to_x(est.get('check_hipertrofia')),
+                 # Checkboxes/Campos de texto mapeados a 'X' si el valor es True/No Vacío
+                 "check_cesarea": map_db_value_to_x(est.get('check_cesarea')),
+                 "check_atermino": map_db_value_to_x(est.get('check_atermino')),
+                 "check_vaginal": map_db_value_to_x(est.get('check_vaginal')),
+                 "check_prematuro": map_db_value_to_x(est.get('check_prematuro')),
+                 "check_acorde": map_db_value_to_x(est.get('check_acorde')),
+                 "check_retraso": map_db_value_to_x(est.get('check_retraso')),
+                 "check_retrasogeneralizado": map_db_value_to_x(est.get('check_retrasogeneralizado')),
+                 "check_esquemac": map_db_value_to_x(est.get('check_esquemac')),
+                 "check_esquemai": map_db_value_to_x(est.get('check_esquemai')),
+                 "check_alergiano": map_db_value_to_x(est.get('check_alergiano')),
+                 "check_alergiasi": map_db_value_to_x(est.get('check_alergiasi')),
+                 "check_cirugiano": map_db_value_to_x(est.get('check_cirugiano')),
+                 "check_cirugiasi": map_db_value_to_x(est.get('check_cirugiasi')), 
+                 "check_visionsinalteracion": map_db_value_to_x(est.get('check_visionsinalteracion')),
+                 "check_visionrefraccion": map_db_value_to_x(est.get('check_visionrefraccion')),
+                 "check_audicionnormal": map_db_value_to_x(est.get('check_audicionnormal')),
+                 "check_hipoacusia": map_db_value_to_x(est.get('check_hipoacusia')),
+                 "check_tapondecerumen": map_db_value_to_x(est.get('check_tapondecerumen')),
+                 "check_sinhallazgos": map_db_value_to_x(est.get('check_sinhallazgos')),
+                 "check_caries": map_db_value_to_x(est.get('check_caries')), 
+                 "check_apinamientodental": map_db_value_to_x(est.get('check_apinamientodental')),
+                 "check_retenciondental": map_db_value_to_x(est.get('check_retenciondental')),
+                 "check_frenillolingual": map_db_value_to_x(est.get('check_frenillolingual')),
+                 "check_hipertrofia": map_db_value_to_x(est.get('check_hipertrofia')),
              }
 
 

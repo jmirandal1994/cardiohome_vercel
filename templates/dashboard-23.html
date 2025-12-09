@@ -9,12 +9,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
 <style>
-        /* Variables y tipografía */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@400;700;800&display=swap');
+        /* Variables y tipografía (Mantenido) */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@400;700;800;900&display=swap');
         
         :root {
-            --primary-blue: #0A3D62;
-            --secondary-blue: #1C67A3;
+            --primary-blue: #0A3D62; /* Azul oscuro corporativo */
+            --secondary-blue: #1C67A3; /* Azul medio */
             --light-blue: #E8F0F7;
             --highlight-green: #2ECC71;
             --danger-red: #E74C3C;
@@ -48,7 +48,7 @@
             height: 100%;
         }
 
-        /* Header */
+        /* Header (Mantenido) */
         header {
             background: white;
             padding: 1rem 2rem;
@@ -113,7 +113,7 @@
         }
         .menu-toggle-btn { display: none; }
 
-        /* Dashboard Wrapper y Main Content */
+        /* Dashboard Wrapper y Main Content (Mantenido) */
         .dashboard-wrapper {
             display: flex;
             flex: 1;
@@ -124,22 +124,19 @@
             flex-grow: 1;
         }
 
-        /* --- Sidebar (Panel Lateral) --- */
+        /* --- Sidebar (AJUSTE DE ESTILOS PROFESIONALES) --- */
         .sidebar {
             width: 260px;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            color: #2C3E50;
-            padding: 2rem 1.2rem;
+            background: var(--primary-blue); /* Fondo azul oscuro */
+            color: var(--text-light);
+            padding: 1.5rem 1rem;
             border-radius: 20px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
             position: sticky;
             top: 1.5rem;
             height: calc(100vh - 3rem);
             overflow-y: auto;
             transition: all 0.35s ease-in-out;
-            border: 1px solid rgba(255,255,255,0.3);
         }
 
         .sidebar.collapsed {
@@ -150,14 +147,15 @@
         }
 
         .sidebar-header {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #1E3A8A;
-            margin-bottom: 1.8rem;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 900; /* Más audaz */
+            color: white; 
+            margin-bottom: 2rem;
             text-transform: uppercase;
             letter-spacing: 1px;
-            padding-left: 10px;
-            border-left: 4px solid #2563EB;
+            padding-left: 5px;
+            border-left: 5px solid var(--highlight-green); /* Línea destacada */
         }
 
        .sidebar-nav {
@@ -166,45 +164,82 @@
        margin: 0;
        display: flex;
        flex-direction: column;
-       gap: 8px;
+       gap: 6px; /* Espaciado más compacto */
        }
 
       .sidebar-nav a {
        display: flex;
        align-items: center;
-       gap: 14px;
-       padding: 14px 18px;
-       color: #374151;
+       gap: 12px;
+       padding: 12px 18px;
+       color: #DDEEFF; /* Azul muy claro para texto inactivo */
        text-decoration: none;
-       border-radius: 12px;
-       transition: all 0.25s ease;
+       border-radius: 10px;
+       transition: all 0.2s ease;
        font-weight: 500;
        position: relative;
        }
 
         .sidebar-nav a:hover {
-        background: linear-gradient(90deg, #EFF6FF, #DBEAFE);
-        color: #1D4ED8;
+        background: rgba(255, 255, 255, 0.1); /* Fondo claro sobre el azul */
+        color: white;
         transform: translateX(4px);
-        box-shadow: 0 4px 10px rgba(29,78,216,0.15);
         }
 
         .sidebar-nav a.active {
-        background: linear-gradient(90deg, #2563EB, #1D4ED8);
-        color: #fff;
+        background: var(--secondary-blue); /* Fondo azul medio para activo */
+        color: white;
         font-weight: 600;
-        box-shadow: 0 4px 14px rgba(29,78,216,0.25);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         transform: translateX(4px);
-        border-left: 4px solid #60A5FA;
+        border-left: 4px solid var(--highlight-green); /* Resaltado verde */
         }
 
         .sidebar-nav a i {
-        width: 22px;
+        width: 20px;
         text-align: center;
-        font-size: 1.25rem;
+        font-size: 1.1rem;
+        }
+        .alert-badge {
+             position: absolute;
+             right: 5px;
+             top: 50%;
+             transform: translateY(-50%);
+             background-color: var(--danger-red);
+             color: white;
+             border-radius: 50%;
+             padding: 2px 7px;
+             font-size: 0.7rem;
+             line-height: 1;
+             font-weight: 800;
+             box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        /* --- Fin de Estilos del Sidebar --- */
+        
+        /* Estilos específicos de la nueva bienvenida */
+        .mission-welcome-card {
+            background: linear-gradient(135deg, #f5f9ff 0%, #E8F0F7 100%);
+            padding: 3rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            border: 2px solid var(--secondary-blue);
+        }
+        .mission-welcome-card h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: var(--primary-blue);
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+        .mission-welcome-card p {
+            font-size: 1.15rem;
+            color: var(--text-dark);
+            margin-bottom: 1.5rem;
         }
 
-        /* Secciones de Contenido */
+
+        /* Secciones de Contenido (Mantenido) */
         .content-section {
             display: none;
             animation: fadeIn 0.6s ease-out forwards;
@@ -217,7 +252,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Cards y Componentes */
+        /* Cards y Componentes (Mantenido) */
         .card {
             background: white;
             padding: 2rem;
@@ -247,7 +282,7 @@
             color: var(--secondary-blue);
         }
 
-        /* Botones y Formularios */
+        /* Botones y Formularios (Mantenido) */
         form {
             display: flex;
             flex-direction: column;
@@ -293,7 +328,7 @@
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
         }
 
-        /* --- NUEVOS ESTILOS PARA LAS TARJETAS DE RESUMEN --- */
+        /* --- NUEVOS ESTILOS PARA LAS TARJETAS DE RESUMEN (Mantenido) --- */
         .summary-panel {
             background: white;
             padding: 2rem;
@@ -388,7 +423,7 @@
             text-shadow: 2px 2px 5px rgba(0,0,0,0.2);
         }
         
-        /* Estilos mejorados para las listas (visitas, nóminas, etc.) */
+        /* Estilos mejorados para las listas (visitas, nóminas, etc.) (Mantenido) */
         .lista-items {
             list-style: none;
             padding: 0;
@@ -489,7 +524,7 @@
             gap: 0.5rem;
         }
         
-        /* Barra de búsqueda y filtros mejorados */
+        /* Barra de búsqueda y filtros mejorados (Mantenido) */
         .filter-container {
             display: flex;
             flex-wrap: wrap;
@@ -518,7 +553,7 @@
             transition: all 0.2s ease;
         }
 
-        /* Responsive Design */
+        /* Responsive Design (Mantenido) */
         @media (max-width: 1024px) {
             .dashboard-wrapper {
                 flex-direction: column;
@@ -581,7 +616,7 @@
                 width: 100%;
             }
         }
-        /* Estilos para el listado de alumnos (nuevo) */
+        /* Estilos para el listado de alumnos (nuevo) (Mantenido) */
         .alumnos-list-container {
             margin-top: 1.5rem;
             background: #F4F7F9;
@@ -611,7 +646,7 @@
             color: var(--primary-blue);
         }
         
-        /* ESTILOS MEJORADOS PARA LA TARJETA DEL COLEGIO */
+        /* ESTILOS MEJORADOS PARA LA TARJETA DEL COLEGIO (Mantenido) */
         .colegio-card-v3 {
             position: relative;
             background: white;
@@ -678,7 +713,7 @@
             justify-content: center;
         }
 
-        /* Estilos específicos del listado de colegios (múltiples) */
+        /* Estilos específicos del listado de colegios (múltiples) (Mantenido) */
         .colegios-grid {
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         }
@@ -712,7 +747,7 @@
             color: var(--danger-red);
         }
 
-        /* Estilos específicos del modal de corrección */
+        /* Estilos específicos del modal de corrección (Mantenido) */
         .modal-content {
             background: white;
             margin: 10% auto;
@@ -743,7 +778,7 @@
             cursor: pointer;
         }
 
-        /* Estilos para Solicitud de Correcciones (Agregado) */
+        /* Estilos para Solicitud de Correcciones (Agregado) (Mantenido) */
         .correction-request-card {
             background: #FDFEFE;
             padding: 1.5rem;
@@ -790,7 +825,7 @@
             color: var(--danger-red);
         }
 
-        /* Badges de Estado */
+        /* Badges de Estado (Mantenido) */
         .status-badge {
             padding: 5px 12px;
             border-radius: 50px;
@@ -812,7 +847,7 @@
             color: white;
         }
 
-        /* Estilos para el formulario/modal de solicitud de corrección (detalles específicos) */
+        /* Estilos para el formulario/modal de solicitud de corrección (detalles específicos) (Mantenido) */
         .correction-modal-form h4 {
             font-family: 'Montserrat', sans-serif;
             font-size: 1.5rem;
@@ -855,36 +890,36 @@
 
     <div class="dashboard-wrapper">
         <aside class="sidebar" id="sidebar">
-            <nav class="p-4">
-                <ul class="space-y-2">
+            <div class="sidebar-header">MENÚ DE NAVEGACIÓN</div>
+            <nav class="p-0">
+                <ul class="sidebar-nav">
                     {% if usuario == 'admin' %}
-                        <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical"></i> Bienvenida</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-performance"><i class="fa-solid fa-chart-line"></i> Rendimiento</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-add-visit"><i class="fa-solid fa-calendar-plus"></i> Agregar Visita</a></li>
+                        <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-gauge-high"></i> Inicio</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-performance"><i class="fa-solid fa-chart-simple"></i> Rendimiento General</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-add-visit"><i class="fa-solid fa-calendar-days"></i> Programar Visita</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-upload-nomina"><i class="fa-solid fa-file-excel"></i> Cargar Nómina</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-visits-list"><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-nominas-list"><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Cargadas</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-uploaded-forms-all"><i class="fa-solid fa-folder-open"></i> Formularios Subidos</a></li>
-                        <li><a href="#" class="nav-link relative" data-section="admin-correction-requests"><i class="fa-solid fa-bell"></i> Solicitudes de Corrección<span id="correction-alert-badge" class="alert-badge hidden">0</span></a></li>                        <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fa-solid fa-folder-plus"></i> Crear Proyecto</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-nominas-list"><i class="fa-solid fa-file-invoice-dollar"></i> Gestión de Nóminas</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-uploaded-forms-all"><i class="fa-solid fa-box-archive"></i> Archivos Subidos</a></li>
+                        <li><a href="#" class="nav-link relative" data-section="admin-correction-requests"><i class="fa-solid fa-bell-concierge"></i> Solicitudes Corrección<span id="correction-alert-badge" class="alert-badge hidden">0</span></a></li>
+                        <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fa-solid fa-folder-plus"></i> Crear Proyecto</a></li>
                         <li><a href="#" class="nav-link" data-section="gestionar-proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-contact"><i class="fa-solid fa-envelope"></i> Contacto</a></li>
 
                     {% elif usuario == 'coordinadora' %}
-                        {# MODIFICACIÓN PARA COORDINADORA: Eliminado el enlace a welcome-section y activa por defecto: coord-performance #}
                         <li><a href="#" class="nav-link active" data-section="coord-performance"><i class="fa-solid fa-gauge-high"></i> Rendimiento en Vivo</a></li>
-                        <li><a href="#" class="nav-link" data-section="coord-evaluaciones"><i class="fa-solid fa-folder-tree"></i> Evaluaciones por Establecimiento</a></li>
+                        <li><a href="#" class="nav-link" data-section="coord-evaluaciones"><i class="fa-solid fa-sitemap"></i> Evaluaciones por Establecimiento</a></li>
                         <li><a href="#" class="nav-link" data-section="coord-contact"><i class="fa-solid fa-envelope"></i> Solicitudes</a></li>
                     
                     {% elif usuario == 'coordinador_escuela' %}
-                        {# MODIFICACIÓN PARA COORDINADOR ESCUELA: Eliminado el enlace a welcome-section y activa por defecto: school-dashboard #}
-                        <li><a href="#" class="nav-link active" data-section="school-dashboard"><i class="fa-solid fa-school"></i> Mis Establecimientos</a></li>
+                        <li><a href="#" class="nav-link active" data-section="school-dashboard"><i class="fa-solid fa-building-columns"></i> Mis Establecimientos</a></li>
                         <li><a href="#" class="nav-link" data-section="school-contact"><i class="fa-solid fa-envelope"></i> Contacto / Soporte</a></li>
 
                     {% else %}
-                        <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-house-chimney-medical"></i> Bienvenida</a></li>
-                        <li><a href="#" class="nav-link" data-section="doctor-performance"><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento</a></li>
-                        <li><a href="#" class="nav-link" data-section="doctor-visits"><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</a></li>
-                        <li><a href="#" class="nav-link" data-section="doctor-nominas"><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Asignadas</a></li>
-                        <li><a href="#" class="nav-link" data-section="doctor-uploaded-forms"><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</a></li>
+                        <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-gauge-high"></i> Inicio</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-performance"><i class="fa-solid fa-chart-simple"></i> Mi Rendimiento</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-visits"><i class="fa-solid fa-calendar-days"></i> Mis Próximas Visitas</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-nominas"><i class="fa-solid fa-file-invoice-dollar"></i> Mis Nóminas Asignadas</a></li>
+                        <li><a href="#" class="nav-link" data-section="doctor-uploaded-forms"><i class="fa-solid fa-file-arrow-up"></i> Mis Formularios Subidos</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-contact"><i class="fa-solid fa-envelope"></i> Contacto</a></li>
                     {% endif %}
                 </ul>
@@ -892,45 +927,29 @@
         </aside>
 
         <main class="flex-1 overflow-y-auto p-10 bg-gray-50 main-content">
-            {# MODIFICACIÓN PRINCIPAL: Ocultar welcome-section si el usuario es 'coordinadora' O 'coordinador_escuela' #}
+            
+            {# NUEVA SECCIÓN DE BIENVENIDA (Reemplaza el antiguo resumen del proyecto) #}
             {% if usuario != 'coordinadora' and usuario != 'coordinador_escuela' %}
             <div id="welcome-section" class="content-section active">
-                <div class="summary-panel">
-                    <h2>Resumen del Proyecto</h2>
-                    <div class="summary">
-                        <div class="summary-card-v2" style="background: linear-gradient(145deg, #3498DB, #2A79B3);">
-                            <div class="summary-card-header">
-                                <span>EVALUACIONES<br>PENDIENTES</span>
-                                <i class="fa-solid fa-clipboard-list"></i>
-                            </div>
-                            <p class="count" id="welcome-pendientes-count">430</p>
-                        </div>
-                        <div class="summary-card-v2" style="background: linear-gradient(145deg, #2ECC71, #27A661);">
-                            <div class="summary-card-header">
-                                <span>ESTUDIANTES<br>EVALUADOS</span>
-                                <i class="fa-solid fa-user-check"></i>
-                            </div>
-                            <p class="count" id="welcome-evaluados-count">587</p>
-                        </div>
-                        <div class="summary-card-v2" style="background: linear-gradient(145deg, #F1C40F, #D4A80F);">
-                            <div class="summary-card-header">
-                                <span>DERIVACIONES</span>
-                                <i class="fa-solid fa-arrow-right"></i>
-                            </div>
-                            <p class="count">3</p>
-                        </div>
-                        <div class="summary-card-v2" style="background: linear-gradient(145deg, #E74C3C, #C2382B);">
-                            <div class="summary-card-header">
-                                <span>CASOS DE<br>URGENCIA</span>
-                                <i class="fa-solid fa-triangle-exclamation"></i>
-                            </div>
-                            <p class="count">2</p>
-                        </div>
-                    </div>
+                <div class="mission-welcome-card">
+                    <h2 class="flex items-center gap-3">
+                        <i class="fa-solid fa-heart-pulse text-highlight-green"></i>
+                        Bienvenido a la Plataforma CardioHome
+                    </h2>
+                    <p class="font-bold text-lg mb-2">
+                        **Empresa Líder en Evaluaciones de Proyectos de Programa de Integración Escolar (PIE).**
+                    </p>
+                    <p>
+                        Esta plataforma es el centro de operaciones para la gestión eficiente y transparente de todas las valoraciones médicas. Nuestro objetivo es optimizar los flujos de trabajo, asegurar la precisión diagnóstica y garantizar el cumplimiento de los programas PIE para entregar el mejor soporte a la comunidad escolar.
+                    </p>
+                    <p class="text-sm italic text-gray-700 mt-4">
+                        Su rol es fundamental para la calidad y el éxito de nuestro servicio.
+                    </p>
                 </div>
             </div>
             {% endif %}
             
+            {# BLOQUE DE SECCIONES DE ADMIN (Manteniendo la estructura de control) #}
             {% if usuario == 'admin' %}
                 <div id="admin-performance" class="content-section">
                     <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento del Administrador</h2>
@@ -959,7 +978,7 @@
                     </div>
 
                     <div class="card mt-8">
-                        <h3><i class="fa-solid fa-chart-bar"></i> Rendimiento por Doctora (Formularios Completados)</h3>
+                        <h3><i class="fa-solid fa-chart-simple"></i> Rendimiento por Doctora (Formularios Completados)</h3>
                         {% if doctor_performance_data %}
                             <div class="chart-container">
                                 <canvas id="adminPerformanceChart"></canvas>
@@ -972,7 +991,7 @@
 
                 <div id="admin-add-visit" class="content-section">
                     <div class="card admin-form">
-                        <h3><i class="fa-solid fa-calendar-plus"></i> Agregar Visita Programada</h3>
+                        <h3><i class="fa-solid fa-calendar-days"></i> Agregar Visita Programada</h3>
                         <form action="{{ url_for('admin_agregar') }}" method="POST">
                             <label for="nombre_establecimiento">Nombre Establecimiento:</label>
                             <input type="text" id="nombre_establecimiento" name="nombre" placeholder="Ej: Liceo Bicentenario" required class="form-input" />
@@ -1184,7 +1203,7 @@
 
                 <div id="admin-uploaded-forms-all" class="content-section">
                     <div class="card">
-                        <h3><i class="fa-solid fa-folder-open"></i> Todos los Formularios Subidos</h3>
+                        <h3><i class="fa-solid fa-box-archive"></i> Todos los Formularios Subidos</h3>
                         <ul class="lista-items">
                             {% if formularios %}
                                 {% for form_subido in formularios %}
@@ -1215,7 +1234,7 @@
                 {# NUEVA SECCIÓN: SOLICITUDES DE CORRECCIÓN PARA EL ADMINISTRADOR #}
                 <div id="admin-correction-requests" class="content-section">
                     <div class="card admin-list">
-                        <h3><i class="fa-solid fa-bell"></i> Solicitudes de Corrección Pendientes <span class="status-badge pending" id="admin-pending-count-badge">0</span></h3>
+                        <h3><i class="fa-solid fa-bell-concierge"></i> Solicitudes de Corrección Pendientes <span class="status-badge pending" id="admin-pending-count-badge">0</span></h3>
                         <p class="text-gray-600 mb-6">Lista de solicitudes enviadas por Coordinadores de Escuela o Doctoras. La acción aquí es revisar y cambiar el estado.</p>
                         
                         <ul class="lista-items" id="correction-requests-list">
@@ -1230,7 +1249,7 @@
 
                 <div id="crear_proyecto" class="content-section">
                     <div class="card admin-form">
-                        <h3><i class="fas fa-folder-plus"></i> Crear Nuevo Proyecto</h3>
+                        <h3><i class="fa-solid fa-folder-plus"></i> Crear Nuevo Proyecto</h3>
                         <form action="{{ url_for('crear_proyecto') }}" method="POST">
                             <label for="nombre_proyecto">Nombre del Proyecto:</label>
                             <input type="text" id="nombre_proyecto" name="nombre_proyecto" placeholder="Ej: Proyecto Colegio Las Acacias" required class="form-input">
@@ -1245,7 +1264,7 @@
 
                 <div id="gestionar_proyectos" class="content-section">
                     <div class="card admin-list">
-                        <h3><i class="fas fa-list-check"></i> Gestionar Proyectos</h3>
+                        <h3><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</h3>
                         {% if proyectos %}
                         <div class="overflow-x-auto">
                             <table class="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
@@ -1264,9 +1283,9 @@
                                         <td class="px-6 py-4 whitespace-nowrap">{{ proyecto.descripcion or 'N/A' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">{{ proyecto.fecha_creacion | default('N/A') }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <a href="#" class="text-blue-600 hover:text-blue-900 mr-3" title="Editar"><i class="fas fa-edit"></i></a>
+                                            <a href="#" class="text-blue-600 hover:text-blue-900 mr-3" title="Editar"><i class="fa-solid fa-pen-to-square"></i></a>
                                             <button class="text-red-600 hover:text-red-900" title="Eliminar" onclick="confirmDelete('proyecto', '{{ proyecto.id }}', '{{ proyecto.nombre_proyecto }}')">
-                                                <i class="fas fa-trash-alt"></i>
+                                                <i class="fa-solid fa-trash-can"></i>
                                             </button>
                                         </td>
                                     </tr>
@@ -1282,7 +1301,7 @@
                 
                 <div id="admin-contact" class="content-section">
                     <div class="card">
-                        <h3><i class="fa-solid fa-envelope"></i> Contacto</h3>
+                        <h3><i class="fa-solid fa-envelope-open-text"></i> Contacto</h3>
                         <p class="text-gray-600 mb-6">Si tienes alguna duda o necesitas ayuda, por favor, rellena el siguiente formulario y nos pondremos en contacto contigo lo antes posible.</p>
                         <form id="contact-form" action="https://formspree.io/f/your-form-id" method="POST">
                             <label for="name">Tu Nombre:</label>
@@ -1392,11 +1411,11 @@
                 
                 <div id="coord-evaluaciones" class="content-section">
                     <div class="card">
-                        <h3><i class="fa-solid fa-folder-tree"></i> Evaluaciones por Establecimiento</h3>
+                        <h3><i class="fa-solid fa-sitemap"></i> Evaluaciones por Establecimiento</h3>
                         <p class="text-gray-600 mb-6">Selecciona un proyecto para ver y descargar los formularios completados.</p>
                         <div class="space-y-6">
                             <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-                                <h4 class="text-xl font-bold text-primary-blue mb-4 flex items-center gap-3"><i class="fas fa-folder-open text-lg"></i> Proyecto Santiago</h4>
+                                <h4 class="text-xl font-bold text-primary-blue mb-4 flex items-center gap-3"><i class="fa-solid fa-folder-open text-lg"></i> Proyecto Santiago</h4>
                                 <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                                     <a href="#" class="project-line-card" data-line="Linea 1 (280 evaluaciones)">
                                         <div class="bg-blue-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
@@ -1441,7 +1460,7 @@
                                 </div>
                             
                             <div id="alumnos-container" class="alumnos-list-container" style="display:none;">
-                                <h4 id="alumnos-header" class="text-xl font-bold text-primary-blue mb-4 flex items-center gap-3"><i class="fas fa-user-graduate text-lg"></i> Alumnos Evaluados en [Nombre Colegio]</h4>
+                                <h4 id="alumnos-header" class="text-xl font-bold text-primary-blue mb-4 flex items-center gap-3"><i class="fa-solid fa-user-graduate text-lg"></i> Alumnos Evaluados en [Nombre Colegio]</h4>
                                 <ul id="alumnos-list" class="lista-items !mt-0">
                                     </ul>
                             </div>
@@ -1452,7 +1471,7 @@
 
                 <div id="coord-nominas" class="content-section">
                     <div class="card">
-                        <h3><i class="fa-solid fa-file-invoice"></i> Nóminas de <span id="nombreEstablecimiento"></span></h3>
+                        <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas de <span id="nombreEstablecimiento"></span></h3>
                         <p class="text-gray-600 mb-6">Aquí puedes ver y descargar los formularios de la nómina.</p>
                         <ul class="lista-items" id="nominasCompletadasContainer">
                             <p class="text-center text-gray-500">Selecciona un establecimiento para ver sus nóminas.</p>
@@ -1462,7 +1481,7 @@
 
                 <div id="coord-contact" class="content-section">
                     <div class="card">
-                        <h3><i class="fa-solid fa-envelope"></i> Solicitudes</h3>
+                        <h3><i class="fa-solid fa-envelope-open-text"></i> Solicitudes</h3>
                         <p class="text-gray-600 mb-6">Si tienes alguna duda o necesitas ayuda, por favor, rellena el siguiente formulario y nos pondremos en contacto contigo lo antes posible.</p>
                         <form id="coordinadora-contact-form" action="https://formspree.io/f/your-form-id" method="POST">
                             <label for="coord-name">Tu Nombre:</label>
@@ -1483,7 +1502,7 @@
                 {# MODIFICACIÓN: Esta es la sección activa por defecto para 'coordinador_escuela' #}
                 <div id="school-dashboard" class="content-section active">
                     <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">
-                        <i class="fa-solid fa-school text-secondary-blue mr-2"></i> Establecimientos Asignados
+                        <i class="fa-solid fa-building-columns text-secondary-blue mr-2"></i> Establecimientos Asignados
                     </h2>
 
                     <div id="school-list-container" class="card">
@@ -1547,7 +1566,7 @@
 
                 <div id="school-contact" class="content-section">
                     <div class="card">
-                        <h3><i class="fa-solid fa-envelope"></i> Contacto de Soporte</h3>
+                        <h3><i class="fa-solid fa-envelope-open-text"></i> Contacto de Soporte</h3>
                         <p class="text-gray-600 mb-6">Si tiene problemas con su acceso o la nómina, utilice este formulario para crear una solicitud de soporte.</p>
                         <form id="school-contact-form" onsubmit="return submitContactForm(event)">
                             <label for="contact-subject">Asunto:</label>
@@ -1564,7 +1583,7 @@
             {% else %}
                 <div id="doctor-performance" class="content-section">
                     <div class="card">
-                        <h3><i class="fa-solid fa-chart-bar"></i> Mi Rendimiento (Formularios)</h3>
+                        <h3><i class="fa-solid fa-chart-simple"></i> Mi Rendimiento (Formularios)</h3>
                         {% if doctor_performance_data_single_doctor %}
                             <p class="text-center text-4xl font-extrabold text-secondary-blue my-4">
                                 {{ doctor_performance_data_single_doctor.completed }}
@@ -1584,7 +1603,7 @@
 
                 <div id="doctor-visits" class="content-section">
                     <div class="card">
-                        <h3><i class="fa-solid fa-calendar-check"></i> Mis Próximas Visitas</h3>
+                        <h3><i class="fa-solid fa-calendar-days"></i> Mis Próximas Visitas</h3>
                         <div class="filter-container">
                             <input type="text" id="doctorVisitSearch" placeholder="Buscar por nombre o descripción..." class="form-input" onkeyup="filterVisits('doctor')" />
                             <button onclick="clearVisitFilters('doctor')" class="action-button blue filter-button">
@@ -1637,7 +1656,7 @@
 
                 <div id="doctor-nominas" class="content-section">
                     <div class="card">
-                        <h3><i class="fa-solid fa-file-invoice"></i> Mis Nóminas Médicas Asignadas</h3>
+                        <h3><i class="fa-solid fa-file-invoice-dollar"></i> Mis Nóminas Médicas Asignadas</h3>
                         <div class="filter-container">
                             <input type="text" id="doctorNominaSearch" placeholder="Buscar por nombre o tipo de nómina..." class="form-input" onkeyup="filterNominas('doctor')" />
                             <button onclick="clearNominaFilters('doctor')" class="action-button blue filter-button">
@@ -1653,7 +1672,7 @@
                                             <span class="text-sm text-gray-600">Tipo: {{ nomina.tipo_nomina_display }}</span>
                                         </div>
                                         <div class="item-card-details">
-                                            {% if nomina.form_type == 'neurologia' and nomina.doctora_id_para_formulario %}
+                                            {% if nomina.form_type == 'neurologia' and nomina.doctora_id_para-formulario %}
                                                 {% set doctora_form_obj = doctoras | selectattr('id', 'equalto', nomina.doctora_id_para_formulario) | first %}
                                                 <span>Formulario base de: {{ doctora_form_obj.usuario if doctora_form_obj else 'Doctora no encontrada' }}</span>
                                             {% endif %}
@@ -1677,7 +1696,7 @@
 
                 <div id="doctor-uploaded-forms" class="content-section">
                     <div class="card">
-                        <h3><i class="fa-solid fa-file-upload"></i> Mis Formularios Subidos</h3>
+                        <h3><i class="fa-solid fa-file-arrow-up"></i> Mis Formularios Subidos</h3>
                         <ul class="lista-items">
                             {% if formularios %}
                                 {% for form_subido in formularios %}
@@ -1710,7 +1729,7 @@
 
                 <div id="doctor-contact" class="content-section">
                     <div class="card">
-                        <h3><i class="fa-solid fa-envelope"></i> Contacto</h3>
+                        <h3><i class="fa-solid fa-envelope-open-text"></i> Contacto</h3>
                         <p class="text-gray-600 mb-6">Si tienes alguna duda o necesitas ayuda, por favor, rellena el siguiente formulario y nos pondremos en contacto contigo lo antes posible.</p>
                         <form id="contact-form" action="https://formspree.io/f/your-form-id" method="POST">
                             <label for="name">Tu Nombre:</label>

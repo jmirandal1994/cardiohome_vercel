@@ -1211,6 +1211,22 @@
                         </ul>
                     </div>
                 </div>
+                
+                {# NUEVA SECCIÓN: SOLICITUDES DE CORRECCIÓN PARA EL ADMINISTRADOR #}
+                <div id="admin-correction-requests" class="content-section">
+                    <div class="card admin-list">
+                        <h3><i class="fa-solid fa-bell"></i> Solicitudes de Corrección Pendientes <span class="status-badge pending" id="admin-pending-count-badge">0</span></h3>
+                        <p class="text-gray-600 mb-6">Lista de solicitudes enviadas por Coordinadores de Escuela o Doctoras. La acción aquí es revisar y cambiar el estado.</p>
+                        
+                        <ul class="lista-items" id="correction-requests-list">
+                            <p class="text-center text-gray-500 my-8"><i class="fa-solid fa-spinner fa-spin fa-2x"></i> Cargando solicitudes...</p>
+                            {# El contenido real se cargará vía JavaScript #}
+                        </ul>
+                        
+                        <p id="no-corrections-message" class="text-center text-gray-500 mt-4 hidden">No hay solicitudes de corrección pendientes en este momento.</p>
+                        
+                    </div>
+                </div>
 
                 <div id="crear_proyecto" class="content-section">
                     <div class="card admin-form">
@@ -1773,6 +1789,10 @@
                     coordinatorPollingInterval = setInterval(syncCoordinatorCounts, 5000); 
                     // renderCoordinadoraPerformanceChart(); // Lógica de gráficos de Coordinadora
                 }
+                // 🚨 NUEVA LÓGICA DE CARGA PARA EL ADMIN
+                else if (sectionId === 'admin-correction-requests') {
+                    loadCorrectionRequests(); 
+                }
             }
             if (activeLink) {
                 activeLink.classList.add('active');
@@ -2065,6 +2085,11 @@
                 if (data.success) {
                     Swal.fire('¡Enviado!', data.message, 'success');
                     document.getElementById('correction-form').reset();
+                    // Opcional: Si el solicitante es admin, recargar la lista de solicitudes después de enviar
+                    if ('{{ usuario }}' === 'admin') {
+                        loadCorrectionRequests();
+                        fetchCorrectionAlert(); 
+                    }
                 } else {
                     Swal.fire('Error', data.message, 'error');
                 }
@@ -2201,46 +2226,150 @@
             periodoSelect.addEventListener('change', renderCoordinadoraPerformanceChart);
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-    const badge = document.getElementById('correction-alert-badge');
-    
-    function fetchCorrectionAlert() {
-        // Llama a la ruta de Flask/Vercel que cuenta las solicitudes 'Pendientes' en Supabase
-        fetch('/api/correcciones_pendientes')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                const count = data.count;
+        // --- FUNCIÓN PARA CARGAR Y RENDERIZAR SOLICITUDES EN LA SECCIÓN ADMIN (NUEVA) ---
+        async function loadCorrectionRequests() {
+            if ('{{ usuario }}' !== 'admin') return;
+            
+            const listContainer = document.getElementById('correction-requests-list');
+            const noResults = document.getElementById('no-corrections-message');
+            const pendingCountBadge = document.getElementById('admin-pending-count-badge');
+            
+            listContainer.innerHTML = '<p class="text-center text-gray-500 my-8"><i class="fa-solid fa-spinner fa-spin fa-2x"></i> Cargando solicitudes...</p>';
+            noResults.classList.add('hidden');
 
-                if (data.success && count > 0) {
-                    // Actualizar el número y mostrar la alerta
-                    badge.textContent = count;
-                    badge.classList.remove('hidden');
+            try {
+                const response = await fetch('/api/correcciones/pendientes_detalle');
+                const data = await response.json();
+
+                if (data.success && data.data.length > 0) {
+                    listContainer.innerHTML = '';
                     
+                    // Actualizar el badge de conteo en la sección (para que coincida con el menú)
+                    pendingCountBadge.textContent = data.data.length;
+
+                    data.data.forEach(req => {
+                        const card = `
+                            <li class="correction-request-card" data-request-id="${req.id}">
+                                <div class="correction-request-card-header">
+                                    <span>Solicitud de Corrección: ${req.alumno_nombre}</span>
+                                    <span class="status-badge pending">${req.estado}</span>
+                                </div>
+                                <div class="correction-request-card-meta">
+                                    <span><i class="fa-solid fa-user-graduate"></i> RUT Alumno: ${req.alumno_rut}</span>
+                                    <span><i class="fa-solid fa-user-tag"></i> Solicitante: ${req.solicitante}</span>
+                                    <span><i class="fa-solid fa-calendar-day"></i> Fecha: ${req.fecha}</span>
+                                </div>
+                                <div class="correction-request-card-body">
+                                    <strong>Detalle Solicitado:</strong> ${req.detalles}
+                                </div>
+                                <div class="item-card-actions justify-content-end">
+                                    <button class="action-button green" onclick="handleCorrectionAction('${req.id}', 'Aprobada')">
+                                        <i class="fa-solid fa-check"></i> Marcar como Resuelta
+                                    </button>
+                                    <button class="action-button red" onclick="handleCorrectionAction('${req.id}', 'Rechazada')">
+                                        <i class="fa-solid fa-xmark"></i> Rechazar
+                                    </button>
+                                </div>
+                            </li>
+                        `;
+                        listContainer.innerHTML += card;
+                    });
+                    
+                } else if (data.success) {
+                    listContainer.innerHTML = '';
+                    pendingCountBadge.textContent = '0';
+                    noResults.classList.remove('hidden');
                 } else {
-                    // Ocultar la alerta si el conteo es 0 o si hubo un error controlado
-                    badge.textContent = '0';
-                    badge.classList.add('hidden');
+                    listContainer.innerHTML = '<p class="text-center text-danger-red my-8">Error al cargar solicitudes: ' + (data.message || 'Error desconocido') + '</p>';
                 }
-            })
-            .catch(error => {
-                console.error("Error al obtener alerta de correcciones:", error);
-                // Asegurar que la alerta esté oculta si falla la conexión
-                badge.classList.add('hidden');
+
+            } catch (error) {
+                listContainer.innerHTML = '<p class="text-center text-danger-red my-8">Error de conexión con el servidor (API detalle).</p>';
+                console.error("Error al cargar solicitudes de corrección:", error);
+            }
+        }
+
+        // --- FUNCIÓN PARA MARCAR ACCIÓN (ASUME RUTA EN PYTHON) ---
+        function handleCorrectionAction(requestId, newStatus) {
+            Swal.fire({
+                title: `¿Marcar solicitud ${requestId} como ${newStatus}?`,
+                text: "Esta acción actualizará el estado en la base de datos.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#2ECC71',
+                cancelButtonColor: '#E74C3C',
+                confirmButtonText: 'Sí, continuar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('/api/correcciones/actualizar_estado', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ request_id: requestId, estado: newStatus })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('¡Actualizado!', `Solicitud marcada como ${newStatus}.`, 'success');
+                            // Recargar la lista y el conteo del menú
+                            loadCorrectionRequests();
+                            fetchCorrectionAlert(); 
+                        } else {
+                            Swal.fire('Error', data.message || 'Fallo al actualizar el estado.', 'error');
+                        }
+                    }).catch(error => {
+                        Swal.fire('Error de Conexión', 'No se pudo contactar al servidor.', 'error');
+                    });
+                }
             });
-    }
+        }
+        
+        // Asegurar que el polling se ejecuta al cargar la página (MANTENIDO)
+        document.addEventListener('DOMContentLoaded', function() {
+            const badge = document.getElementById('correction-alert-badge');
+            
+            function fetchCorrectionAlert() {
+                // Llama a la ruta de Flask/Vercel que cuenta las solicitudes 'Pendientes' en Supabase
+                fetch('/api/correcciones_pendientes')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        const count = data.count;
 
-    // Ejecutar la función inmediatamente al cargar la página
-    fetchCorrectionAlert(); 
+                        if (data.success && count > 0) {
+                            // Actualizar el número y mostrar la alerta
+                            badge.textContent = count;
+                            badge.classList.remove('hidden');
+                            // Si estamos en la vista de solicitudes, actualizar el badge del header de la sección
+                            const adminSectionBadge = document.getElementById('admin-pending-count-badge');
+                            if (adminSectionBadge) adminSectionBadge.textContent = count;
 
-    // Ejecutar la función cada 30 segundos (30000 milisegundos)
-    // Esto es lo que crea la alerta dinámica en tiempo real
-    setInterval(fetchCorrectionAlert, 30000); 
-});        
+                        } else {
+                            // Ocultar la alerta si el conteo es 0 o si hubo un error controlado
+                            badge.textContent = '0';
+                            badge.classList.add('hidden');
+                            const adminSectionBadge = document.getElementById('admin-pending-count-badge');
+                            if (adminSectionBadge) adminSectionBadge.textContent = '0';
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error al obtener alerta de correcciones:", error);
+                        // Asegurar que la alerta esté oculta si falla la conexión
+                        badge.classList.add('hidden');
+                    });
+            }
+
+            // Ejecutar la función inmediatamente al cargar la página
+            fetchCorrectionAlert(); 
+
+            // Ejecutar la función cada 30 segundos (30000 milisegundos)
+            // Esto es lo que crea la alarma dinámica en tiempo real
+            setInterval(fetchCorrectionAlert, 30000); 
+        });
+        
     </script>
 </body>
 </html>

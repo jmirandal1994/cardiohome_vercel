@@ -1169,6 +1169,7 @@
                                         <div class="item-card-details">
                                             <span><i class="fa-solid fa-file-excel"></i>Archivo Original: {{ nomina.nombre_excel_original }}</span>
                                             <span><i class="fa-solid fa-file-alt"></i>Formulario: {{ nomina.form_type | default('No especificado') | capitalize }}</span>
+                                            {# CORRECCIÓN DE ERROR JINJA2: Se cambia doctora_id_para-formulario a doctora_id_para_formulario #}
                                             {% if nomina.form_type == 'neurologia' and nomina.doctora_id_para_formulario %}
                                                 {% set doctora_form_obj = all_users_for_lookup | selectattr('id', 'equalto', nomina.doctora_id_para_formulario) | first %}
                                                 <span><i class="fa-solid fa-user-doctor"></i>Formulario base de: {{ doctora_form_obj.usuario if doctora_form_obj else 'Doctora no encontrada' }}</span>
@@ -1672,7 +1673,8 @@
                                             <span class="text-sm text-gray-600">Tipo: {{ nomina.tipo_nomina_display }}</span>
                                         </div>
                                         <div class="item-card-details">
-                                            {% if nomina.form_type == 'neurologia' and nomina.doctora_id_para-formulario %}
+                                            {# CORRECCIÓN DE ERROR JINJA2: Se cambia doctora_id_para-formulario a doctora_id_para_formulario #}
+                                            {% if nomina.form_type == 'neurologia' and nomina.doctora_id_para_formulario %}
                                                 {% set doctora_form_obj = doctoras | selectattr('id', 'equalto', nomina.doctora_id_para_formulario) | first %}
                                                 <span>Formulario base de: {{ doctora_form_obj.usuario if doctora_form_obj else 'Doctora no encontrada' }}</span>
                                             {% endif %}

@@ -1386,6 +1386,45 @@ def solicitar_correccion():
     except Exception as e:
         print(f"❌ ERROR al procesar solicitud de corrección: {e}")
         return jsonify({"success": False, "message": f"Error interno del servidor. Detalle: {str(e)}"}), 500
+
+# app-38.py (Añadir esta ruta)
+
+@app.route('/api/correcciones/actualizar_estado', methods=['POST'])
+def actualizar_estado_correccion():
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "Acceso denegado"}), 403
+    
+    try:
+        data = request.get_json()
+        request_id = data.get('request_id')
+        nuevo_estado = data.get('estado') # 'Aprobada' o 'Rechazada'
+
+        if not request_id or nuevo_estado not in ['Aprobada', 'Rechazada']:
+            return jsonify({"success": False, "message": "Datos de entrada inválidos"}), 400
+
+        # 1. Preparar el payload de actualización
+        update_data = {
+            "estado": nuevo_estado,
+            "fecha_resolucion": str(date.today()), 
+            # Opcional: Podrías añadir un campo 'admin_id'
+        }
+
+        # 2. Enviar la petición PATCH a Supabase
+        response = requests.patch(
+            f"{SUPABASE_URL}/rest/v1/solicitudes_correccion?id=eq.{request_id}",
+            headers=SUPABASE_SERVICE_HEADERS, 
+            json=update_data
+        )
+        response.raise_for_status()
+
+        return jsonify({"success": True, "message": "Estado actualizado"})
+
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR al actualizar estado de corrección: {e}")
+        return jsonify({"success": False, "message": f"Error de conexión con BD: {str(e)}"}), 500
+    except Exception as e:
+        print(f"ERROR inesperado al actualizar estado: {e}")
+        return jsonify({"success": False, "message": f"Error interno: {str(e)}"}), 500
         
 @app.route('/admin/agregar', methods=['POST'])
 def admin_agregar():

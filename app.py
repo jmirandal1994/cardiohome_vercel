@@ -1708,18 +1708,16 @@ def admin_agregar():
 
 @app.route('/admin/cargar_nomina', methods=['POST'])
 def admin_cargar_nomina():
-    # Asumo que la validación de usuario y las importaciones necesarias están presentes (uuid, secrets, pd, requests, io, etc.)
-
     if session.get('usuario') != 'admin':
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
     
     # 1. Obtener datos del formulario
     tipo_nomina_raw = request.form.get('tipo_nomina', '').strip()
-    nombre_colegio_o_establecimiento = request.form.get('nombre_especifico', '').strip()
+    nombre_colegio_o_establecimiento = request.form.get('nombre_especifico', '').strip() # ¡Usamos este campo como nombre del colegio!
     doctora_id_from_form = request.form.get('doctora', '').strip()
     excel_file = request.files.get('excel')
-    doctora_id_para_formulario = request.form.get('doctora_id_para_formulario', '').strip() # ID de la doctora para el PDF/Formulario
+    doctora_id_para_formulario = request.form.get('doctora_id_para_formulario', '').strip()
 
     # Obtener IDs de coordinación
     coord_general_id_from_form = request.form.get('coord_general_id', '').strip()
@@ -1728,16 +1726,17 @@ def admin_cargar_nomina():
     
     tipo_nomina_normalized = tipo_nomina_raw.strip().lower() if tipo_nomina_raw else ''
     
-    # Mapeo del tipo de formulario
     form_type = None
     if 'neurologia' in tipo_nomina_normalized: 
         form_type = 'neurologia'
     elif 'familiar' in tipo_nomina_normalized or 'medicina familiar' in tipo_nomina_normalized: 
         form_type = 'medicina_familiar'
+    # 🟢 CORRECCIÓN DE INDENTACIÓN (Asegurado que esté alineado con los 'elif' anteriores)
     elif 'informe' in tipo_nomina_normalized and 'neuro' in tipo_nomina_normalized:
         form_type = 'informe_neurologico'
-    
-    # Validaciones
+    # -----------------------------------------------------------------------------------
+        
+    # Validaciones básicas
     if not all([tipo_nomina_raw, nombre_colegio_o_establecimiento, doctora_id_from_form, excel_file]):
         flash('❌ Falta uno o más campos obligatorios.', 'error')
         return redirect(url_for('dashboard'))
@@ -1746,9 +1745,8 @@ def admin_cargar_nomina():
         flash(f'❌ El tipo de nómina "{tipo_nomina_raw}" no se pudo mapear a un tipo de formulario conocido.', 'error')
         return redirect(url_for('dashboard'))
 
-    # Validación CRÍTICA: Requerir doctora_id_para_formulario para Neurología Y Informe Neurológico
-    if form_type in ['neurologia', 'informe_neurologico'] and not doctora_id_para_formulario:
-        flash('❌ Para nóminas de tipo "Neurología" o "Informe Neurológico", debe seleccionar la Doctora para el formulario.', 'error')
+    if form_type == 'neurologia' and not doctora_id_para_formulario:
+        flash('❌ Para nóminas de tipo "Neurología", debe seleccionar la Doctora para el formulario.', 'error')
         return redirect(url_for('dashboard'))
 
 
@@ -1760,7 +1758,6 @@ def admin_cargar_nomina():
     excel_filename = secure_filename(excel_file.filename)
     excel_file_data = excel_file.read()
 
-    # --- Sube el archivo Excel/CSV a Supabase Storage ---
     try:
         upload_path = f"nominas-medicas/{nomina_id}/{excel_filename}" 
         upload_url = f"{SUPABASE_URL}/storage/v1/object/{upload_path}"
@@ -1774,17 +1771,14 @@ def admin_cargar_nomina():
         flash(f"❌ Error al subir el archivo de la nómina a Supabase Storage: {error_detail}", 'error')
         return redirect(url_for('dashboard'))
 
-    # Mapear cadenas vacías a None para la DB
+    # Mapear cadenas vacías a None para la DB (Crucial para NULL en UUID)
     coord_general_id_db = coord_general_id_from_form if coord_general_id_from_form else None
     coord_escuela_id_db = coord_escuela_id_from_form if coord_escuela_id_from_form else None
 
-    # GENERACIÓN DEL TOKEN DE ACCESO
+    # GENERACIÓN DEL TOKEN DE ACCESO (solo si hay coordinador de escuela asignado)
     token_generado = None
     if coord_escuela_id_db: 
         token_generado = secrets.token_hex(2) 
-
-    # AJUSTE DE ASIGNACIÓN: Guardar el ID de la doctora si es Neurología O Informe Neurológico
-    doctora_form_id_to_save = doctora_id_para_formulario if form_type in ['neurologia', 'informe_neurologico'] else None
 
     # 3. Payload de Inserción (NOMBRES DE COLUMNA EXACTOS)
     data_nomina = {
@@ -1795,17 +1789,19 @@ def admin_cargar_nomina():
         "url_excel_original": url_excel_publica,
         "nombre_excel_original": excel_filename,
         "form_type": form_type, 
-        "doctora_id_para_formulario": doctora_form_id_to_save, # <-- ASIGNACIÓN AJUSTADA
+        "doctora_id_para_formulario": doctora_id_para_formulario if form_type == 'neurologia' else None,
         
-        "nombre_colegio": nombre_colegio_o_establecimiento, 
+        # --- CAMPOS CLAVE 100% INTEGRADOS ---
+        "nombre_colegio": nombre_colegio_o_establecimiento, # <-- COLUMNA DE TEXTO EN NOMINAS_MEDICAS
         "coord_general_id": coord_general_id_db,
         "coord_escuela_id": coord_escuela_id_db,
         "token_acceso": token_generado,
         "establecimiento_id": None 
+        # -----------------------------------------------------------
     }
     
-    # --- Inserción en nominas_medicas ---
     try:
+        # Intento de inserción en nominas_medicas
         res_insert_nomina = requests.post(
             f"{SUPABASE_URL}/rest/v1/nominas_medicas",
             headers=SUPABASE_SERVICE_HEADERS, 
@@ -1817,20 +1813,19 @@ def admin_cargar_nomina():
         error_detail = res_insert_nomina.text if 'res_insert_nomina' in locals() else 'No response from Supabase.'
         print(f"❌ ERROR AL GUARDAR NÓMINA EN DB: {error_detail}")
         flash(f"❌ Error al guardar los datos de la nómina en la base de datos. {error_detail}", 'error')
-        # Rollback del archivo
+        # Rollback
         try:
             requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
         except Exception: pass
         return redirect(url_for('dashboard'))
 
-    # --- Procesamiento del Excel ---
     excel_data_stream = io.BytesIO(excel_file_data)
+    
     
     if excel_filename.endswith(('.xls', '.xlsx')):
         df = pd.read_excel(excel_data_stream)
     elif excel_filename.endswith('.csv'):
-        # Intentar leer CSV con codificación UTF-8
-        df = pd.read_csv(excel_data_stream, encoding='utf-8') 
+        df = pd.read_csv(excel_data_stream, encoding='utf-8')
     else:
         flash('❌ Formato de archivo no soportado para la nómina.', 'error')
         # Rollback
@@ -1868,7 +1863,7 @@ def admin_cargar_nomina():
         except Exception: pass
         return redirect(url_for('dashboard'))
         
-    establecimiento_id_db_para_estudiantes = None 
+    establecimiento_id_db_para_estudiantes = None # Siempre NULL para no causar error si la columna era INT8 y ya no apunta a nada
 
     for index, row in df.iterrows():
         try:
@@ -1899,7 +1894,7 @@ def admin_cargar_nomina():
             if fecha_nac_str is None:
                 continue
 
-            # Pre-cálculo de edad y sexo
+            # Pre-cálculo de edad y sexo (necesario para el nuevo Informe Neurológico)
             fecha_nac_obj = datetime.strptime(fecha_nac_str, '%Y-%m-%d').date()
             edad_calculada = calculate_age(fecha_nac_obj)
             sexo_adivinado = guess_gender(str(nombre_completo_raw))
@@ -1915,10 +1910,11 @@ def admin_cargar_nomina():
                 "sexo": sexo_adivinado,
                 "edad": edad_calculada, # Añadir edad calculada
                 "fecha_relleno": None,
-                "establecimiento_id": establecimiento_id_db_para_estudiantes,
             }
-            
-            # Nota: El campo "tipo_registro_individual" se omite ya que el tipo se define a nivel de nómina ('form_type').
+            # 🟢 Añadir flag específico si es el nuevo tipo de informe (para pre-relleno en DB)
+            if form_type == 'informe_neurologico':
+                 # Esto es redundante si form_type es 'informe_neurologico', pero asegura que si la tabla tiene un flag específico, se llene.
+                 estudiante["tipo_registro_individual"] = "INFORME_NEURO" 
             
             estudiantes_a_insertar.append(estudiante)
             
@@ -1936,7 +1932,6 @@ def admin_cargar_nomina():
         flash("⚠️ El archivo Excel/CSV no contiene datos válidos para estudiantes.", 'warning')
         return redirect(url_for('dashboard'))
 
-    # --- Inserción de estudiantes en Supabase ---
     try:
         res_insert_estudiantes = requests.post(
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina",
@@ -1952,7 +1947,8 @@ def admin_cargar_nomina():
         error_detail = res_insert_estudiantes.text if 'res_insert_estudiantes' in locals() else 'No response from Supabase.'
         flash(f"❌ Error al guardar los estudiantes en la base de datos. La nómina fue creada, pero no se agregaron los estudiantes. ({e}). Detalles: {error_detail}", 'error')
         return redirect(url_for('dashboard'))
-        
+
+
 # La ruta '/enviar_formulario_a_drive' ha sido eliminada por completo.
 
 @app.route('/subir/<establecimiento>', methods=['POST'])

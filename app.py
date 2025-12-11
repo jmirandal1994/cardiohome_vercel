@@ -517,10 +517,11 @@ def relleno_formulario(nomina_id):
         return redirect(url_for('dashboard'))
 
     # 2. Obtener la lista de estudiantes con TODOS los campos de evaluación
+    # 🟢 MODIFICACIÓN CLAVE: Añadir los nuevos campos del Informe Neurológico al SELECT
     url_estudiantes = (
         f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
         f"?nomina_id=eq.{nomina_id}"
-        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,si_2,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,fecha_reevaluacion_select" 
+        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,si_2,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,fecha_reevaluacion_select,motivo_consulta,observacion_neurologia" 
         f"&order=nombre.asc"
     )
 
@@ -574,7 +575,7 @@ def relleno_formulario(nomina_id):
         total_forms_completed_for_nomina = sum(1 for est in estudiantes if est.get('fecha_relleno') is not None)
 
 
-        # 5. LÓGICA DE REDIRECCIÓN CLAVE (Basada en tipo_nomina_check)
+        # 5. LÓGICA DE REDIRECCIÓN CLAVE (Basada en form_type o tipo_nomina_check)
         base_render_params = {
             'nomina_id': nomina_id,
             'establecimiento_nombre': nomina['nombre_nomina'],
@@ -585,17 +586,24 @@ def relleno_formulario(nomina_id):
             'doctora_nombre': doctora_nombre,
             'usuario': user_role
         }
+        
+        # 🟢 NUEVO: Manejo del Informe Neurológico Individual
+        if form_type == 'informe_neurologico':
+             # Renderiza la nueva plantilla HTML para el rellenado específico
+             return render_template('formulario_informe_neurologico.html', **base_render_params)
 
-        if 'familiar' in tipo_nomina_check or 'medicina familiar' in tipo_nomina_check:
+        # Manejo de Medicina Familiar
+        elif 'familiar' in tipo_nomina_check or 'medicina familiar' in tipo_nomina_check:
             # Si es Medicina Familiar, usar el HTML de Medicina Familiar
             return render_template('formulario_medicina_familiar.html', **base_render_params)
         
+        # Manejo de Neurología (Nómina Antigua)
         elif 'neurologia' in tipo_nomina_check:
             # Si es Neurología, usar el HTML de Neurología
             return render_template('formulario_relleno.html', **base_render_params)
         
         else:
-            flash(f'❌ El tipo de nómina "{tipo_nomina_check.upper()}" no se pudo mapear a un formulario conocido (Neurología o Medicina Familiar).', 'error')
+            flash(f'❌ El tipo de nómina "{tipo_nomina_check.upper()}" no se pudo mapear a un formulario conocido.', 'error')
             return redirect(url_for('dashboard'))
 
     except requests.exceptions.RequestException as e:
@@ -606,7 +614,8 @@ def relleno_formulario(nomina_id):
         print(f"❌ ERROR Inesperado en relleno_formulario: {e}")
         flash('Error interno del servidor. Detalle: ' + str(e), 'error')
         return redirect(url_for('dashboard'))
-        
+
+
 # app.py (REEMPLAZO FINAL Y CORREGIDO DE generar_pdf - INTEGRIDAD DEL PDF)
 # Asegúrate de que todas las demás importaciones necesarias (flask, get_form_field_value, format_rut_python, etc.) 
 # estén definidas al inicio de tu app.py
@@ -872,6 +881,7 @@ def marcar_evaluado():
     doctora_id = session.get('usuario_id')
     form_type = session.get('current_form_type', 'neurologia') 
     
+    # Nota: Debes tener get_form_field_value y date importados
     nombre = get_form_field_value('nombre', request.form)
     rut = get_form_field_value('rut', request.form)
 
@@ -900,12 +910,29 @@ def marcar_evaluado():
 
     # --- 2. LÓGICA PARA CAMPOS ESPECÍFICOS ---
     if form_type == 'neurologia':
-        # Campos específicos de Neurología se añaden a update_data
+        # Campos específicos de Neurología (Antiguo) se añaden a update_data
         update_data.update({
             'estado_general': get_form_field_value('estado', request.form),
             'diagnostico': get_form_field_value('diagnostico', request.form), 
             'derivaciones': get_form_field_value('derivaciones', request.form),
         })
+    
+    # 🟢 CORRECCIÓN: Lógica para guardar el Informe Neurológico Individual
+    elif form_type == 'informe_neurologico':
+         update_data.update({
+             # Campos de Evaluación Confirmados (5 campos)
+             'motivo_consulta': get_form_field_value('motivo_consulta', request.form),
+             'observaciones': get_form_field_value('observaciones', request.form),
+             'observacion_neurologia': get_form_field_value('observacion_neurologia', request.form),
+             'diagnostico': get_form_field_value('diagnostico', request.form), 
+             'indicaciones': get_form_field_value('indicaciones', request.form),
+             
+             # Nota: Los campos que no se usan en este formulario (como diagnostico_sospecha o historia_actual) se omiten o se dejan en NULL.
+             # Para evitar errores en otros procesos (como la generación del PDF), 
+             # rellenamos los campos relacionados si es necesario, pero solo con la data existente.
+             # Si el PDF necesita 'derivaciones', debemos agregarlo al formulario HTML, pero aquí solo guardamos lo que el HTML envía.
+         })
+         
     elif form_type == 'medicina_familiar':
         
         # OBTENEMOS EL VALOR UNIFICADO DEL CAMPO DIAGNOSTICO

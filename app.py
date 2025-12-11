@@ -1145,6 +1145,173 @@ def login():
         print(f"❌ Error en el login: {e} - {res.text if 'res' in locals() else ''}")
         flash('Error de conexión al intentar iniciar sesión o error de base de datos.', 'error')
         return redirect(url_for('index'))
+
+@app.route('/admin/cargar_informe_individual', methods=['POST'])
+def admin_cargar_informe_individual():
+    if session.get('usuario') != 'admin':
+        flash('Acceso denegado.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # 1. Obtener datos del formulario
+    nombre_establecimiento = request.form.get('nombre_establecimiento_informe', '').strip()
+    doctora_id_asignada = request.form.get('doctora_asignada_informe', '').strip()
+    excel_file = request.files.get('excel_informe_individual')
+
+    # Validaciones básicas
+    if not all([nombre_establecimiento, doctora_id_asignada, excel_file]):
+        flash('❌ Faltan campos obligatorios para cargar el informe.', 'error')
+        return redirect(url_for('dashboard'))
+
+    if not permitido(excel_file.filename):
+        flash('❌ Archivo Excel o CSV no válido. Extensiones permitidas: .xls, .xlsx, .csv', 'error')
+        return redirect(url_for('dashboard'))
+
+    # Generar un ID ÚNICO para esta carga (como si fuera una "mini-nomina")
+    nomina_id_individual = str(uuid.uuid4())
+    excel_filename = secure_filename(excel_file.filename)
+    excel_file_data = excel_file.read()
+
+    try:
+        # (Opcional) Subir el archivo a Supabase Storage (se mantiene el flujo de la nómina)
+        upload_path = f"informes-individuales/{nomina_id_individual}/{excel_filename}"
+        upload_url = f"{SUPABASE_URL}/storage/v1/object/{upload_path}"
+        
+        res_upload = requests.put(upload_url, headers=SUPABASE_SERVICE_HEADERS, data=excel_file_data)
+        res_upload.raise_for_status()
+        url_excel_publica = f"{SUPABASE_URL}/storage/v1/object/public/{upload_path}" 
+
+    except requests.exceptions.RequestException as e:
+        error_detail = res_upload.text if 'res_upload' in locals() else 'No response from Supabase Storage.'
+        flash(f"❌ Error al subir el archivo a Supabase Storage: {error_detail}", 'error')
+        return redirect(url_for('dashboard'))
+
+    # 2. Procesar Excel y mapear datos
+    excel_data_stream = io.BytesIO(excel_file_data)
+    
+    if excel_filename.endswith(('.xls', '.xlsx')):
+        df = pd.read_excel(excel_data_stream)
+    elif excel_filename.endswith('.csv'):
+        df = pd.read_csv(excel_data_stream, encoding='utf-8')
+    else:
+        flash('❌ Formato de archivo no soportado.', 'error')
+        return redirect(url_for('dashboard'))
+
+    # Normalizar columnas
+    df.columns = [normalizar(col) for col in df.columns]
+
+    # Mapeo estricto a las columnas requeridas (nombre, rut, fecha_nacimiento, nacionalidad)
+    required_cols = {'nombre', 'rut', 'fecha_nacimiento', 'nacionalidad'}
+    
+    if not all(col in df.columns for col in required_cols):
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        flash(f"❌ El archivo no contiene las columnas necesarias: {', '.join(missing_cols)}.", 'error')
+        return redirect(url_for('dashboard'))
+
+    # 3. Crear la "Mini-Nómina" de Informe Individual (en la tabla nominas_medicas)
+    data_nomina_individual = {
+        "id": nomina_id_individual,
+        "nombre_nomina": f"INF_{nombre_establecimiento}",
+        "tipo_nomina": "INFORME_INDIVIDUAL_NEURO", # Nuevo tipo de nómina para filtrado
+        "doctora_id": doctora_id_asignada, 
+        "url_excel_original": url_excel_publica,
+        "nombre_excel_original": excel_filename,
+        "form_type": "informe_neurologico", # Nuevo tipo de formulario específico para routing
+        "nombre_colegio": nombre_establecimiento,
+        "coord_general_id": None, 
+        "coord_escuela_id": None,
+        "token_acceso": None,
+        "establecimiento_id": None 
+    }
+    
+    try:
+        res_insert_nomina = requests.post(
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas",
+            headers=SUPABASE_SERVICE_HEADERS, 
+            json=data_nomina_individual
+        )
+        res_insert_nomina.raise_for_status()
+
+    except requests.exceptions.RequestException as e:
+        error_detail = res_insert_nomina.text if 'res_insert_nomina' in locals() else 'No response from Supabase.'
+        flash(f"❌ Error al guardar la nómina individual en DB: {error_detail}", 'error')
+        return redirect(url_for('dashboard'))
+
+    # 4. Insertar estudiantes
+    estudiantes_a_insertar = []
+    
+    for index, row in df.iterrows():
+        try:
+            nombre_completo_raw = row['nombre']
+            rut_raw = row['rut']
+            fecha_nacimiento_raw = row['fecha_nacimiento']
+            nacionalidad_raw = row['nacionalidad'] 
+
+            if pd.isna(nombre_completo_raw) or pd.isna(rut_raw) or pd.isna(fecha_nacimiento_raw):
+                continue
+            
+            rut_limpio = str(rut_raw).replace('.', '').replace('-', '').strip()
+            
+            fecha_nac_str = None
+            if isinstance(fecha_nacimiento_raw, (datetime, date)):
+                fecha_nac_str = fecha_nacimiento_raw.strftime('%Y-%m-%d')
+            else:
+                try:
+                    parsed_date = pd.to_datetime(fecha_nacimiento_raw, errors='coerce')
+                    if pd.notna(parsed_date):
+                        fecha_nac_str = parsed_date.strftime('%Y-%m-%d')
+                    else:
+                        raise ValueError("Formato de fecha no reconocido o inválido.")
+                except Exception:
+                    fecha_nac_str = None 
+
+            if fecha_nac_str is None:
+                continue
+
+            sexo_adivinado = guess_gender(str(nombre_completo_raw))
+            nacionalidad_valor = str(nacionalidad_raw).strip() if pd.notna(nacionalidad_raw) else 'Chilena'
+
+            # Calcular edad para pre-rellenar el campo
+            fecha_nac_obj = datetime.strptime(fecha_nac_str, '%Y-%m-%d').date()
+            edad_calculada = calculate_age(fecha_nac_obj)
+
+            estudiante = {
+                "nomina_id": nomina_id_individual,
+                "nombre": str(nombre_completo_raw).strip(),
+                "rut": rut_limpio,
+                "fecha_nacimiento": fecha_nac_str, 
+                "nacionalidad": nacionalidad_valor,
+                "sexo": sexo_adivinado,
+                "edad": edad_calculada, # Guardamos la edad calculada
+                "fecha_relleno": None,
+                "evaluado_flag": False,
+                "tipo_registro_individual": "INFORME_NEURO", # Flag para diferenciar
+            }
+            estudiantes_a_insertar.append(estudiante)
+            
+        except Exception as e:
+            print(f"❌ Error al procesar fila {index+2} para informe individual: {e}. Datos de la fila: {row.to_dict()}")
+            flash(f"Error al procesar la fila {index+2} del archivo. ({e})", 'error')
+            return redirect(url_for('dashboard'))
+
+    if not estudiantes_a_insertar:
+        flash("⚠️ El archivo Excel/CSV no contiene datos válidos para informes.", 'warning')
+        return redirect(url_for('dashboard'))
+
+    try:
+        res_insert_estudiantes = requests.post(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina",
+            headers=SUPABASE_SERVICE_HEADERS, 
+            json=estudiantes_a_insertar
+        )
+        res_insert_estudiantes.raise_for_status()
+
+        flash(f"✅ Informe(s) individual(es) cargado(s) con éxito. Se agregaron {len(estudiantes_a_insertar)} estudiantes.", 'success')
+        return redirect(url_for('dashboard'))
+
+    except requests.exceptions.RequestException as e:
+        error_detail = res_insert_estudiantes.text if 'res_insert_estudiantes' in locals() else 'No response from Supabase.'
+        flash(f"❌ Error al guardar los estudiantes en la base de datos. {error_detail}", 'error')
+        return redirect(url_for('dashboard'))
         
 # - Ruta /dashboard corregida y modificada para la Fase 3
 

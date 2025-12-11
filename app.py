@@ -466,6 +466,7 @@ def map_db_value_to_x(db_value):
 
 # app-30.py (Reemplaza la función relleno_formulario completa)
 # app-32.py (REEMPLAZO COMPLETO DE relleno_formulario - BASADO EN tipo_nomina)
+
 @app.route('/relleno_formulario/<string:nomina_id>', methods=['GET'])
 def relleno_formulario(nomina_id):
     if 'usuario' not in session:
@@ -509,8 +510,10 @@ def relleno_formulario(nomina_id):
             return redirect(url_for('dashboard'))
 
     except requests.exceptions.RequestException as e:
-        print(f"❌ ERROR al obtener detalles de la nómina {nomina_id}: {e}")
-        flash('Error al cargar la nómina.', 'error')
+        # Aquí es donde se atrapó el error 400
+        error_detail = e.response.text if e.response is not None else 'Conexión Fallida'
+        print(f"❌ ERROR al obtener detalles de la nómina {nomina_id}: {e}. Detalle: {error_detail}")
+        flash(f'Error al cargar la nómina. Detalle: {error_detail}', 'error')
         return redirect(url_for('dashboard'))
     except Exception as e:
         print(f"❌ ERROR Inesperado al procesar detalles de la nómina: {e}")
@@ -518,11 +521,11 @@ def relleno_formulario(nomina_id):
         return redirect(url_for('dashboard'))
 
     # 2. Obtener la lista de estudiantes con TODOS los campos de evaluación
-    # 🟢 MODIFICACIÓN CLAVE: Añadir los nuevos campos del Informe Neurológico al SELECT
+    # 🟢 CORRECCIÓN: Se inserta 'observaciones' para el Examen Físico y 'diagnostico_sospecha/definitivo'
     url_estudiantes = (
         f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
         f"?nomina_id=eq.{nomina_id}"
-        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,si_2,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,fecha_reevaluacion_select,motivo_consulta,observacion_neurologia" 
+        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,si_2,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,fecha_reevaluacion_select,motivo_consulta,observacion_neurologia,observaciones,diagnostico_sospecha,diagnostico_definitivo" 
         f"&order=nombre.asc"
     )
 
@@ -608,14 +611,15 @@ def relleno_formulario(nomina_id):
             return redirect(url_for('dashboard'))
 
     except requests.exceptions.RequestException as e:
-        print(f"❌ ERROR al obtener estudiantes para nómina {nomina_id}: {e}")
-        flash('Error al cargar la lista de estudiantes. Verifique su conexión y permisos en Supabase.', 'error')
+        error_detail = e.response.text if e.response is not None else 'Conexión Fallida'
+        print(f"❌ ERROR al obtener estudiantes para nómina {nomina_id}: {e}. Detalle: {error_detail}")
+        flash(f'Error al cargar la lista de estudiantes. Revise si todas las columnas del SELECT existen en su tabla estudiantes_nomina.', 'error')
         return redirect(url_for('dashboard'))
     except Exception as e:
         print(f"❌ ERROR Inesperado en relleno_formulario: {e}")
         flash('Error interno del servidor. Detalle: ' + str(e), 'error')
         return redirect(url_for('dashboard'))
-
+        
 
 # app.py (REEMPLAZO FINAL Y CORREGIDO DE generar_pdf - INTEGRIDAD DEL PDF)
 # Asegúrate de que todas las demás importaciones necesarias (flask, get_form_field_value, format_rut_python, etc.) 

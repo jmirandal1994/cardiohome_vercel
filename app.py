@@ -624,12 +624,12 @@ def relleno_formulario(nomina_id):
 # REEMPLAZA COMPLETAMENTE ESTA FUNCIÓN EN TU app.py
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
-    # Asumo que las importaciones y constantes necesarias están definidas
+    # Asumo que las importaciones y constantes necesarias están definidas globalmente en app.py:
     # from datetime import datetime, date, io, os
     # from PyPDF2 import PdfReader, PdfWriter, NameObject, DictionaryObject, BooleanObject
-    # PDF_BASES_NEUROLOGIA_DIR, PDF_BASE_NEUROLOGIA, PDF_BASE_FAMILIAR
-    # get_form_field_value, format_rut_python
-    # Nota: También se asume que map_check_value está definida globalmente en app.py
+    # PDF_BASE_NEUROLOGIA, PDF_BASE_FAMILIAR, PDF_BASES_NEUROLOGIA_DIR
+    # PDF_BASE_INFORME_NEURO (la nueva constante)
+    # get_form_field_value, format_rut_python, guess_gender, calculate_age, etc.
 
     if 'usuario' not in session:
         return redirect(url_for('index'))
@@ -657,6 +657,7 @@ def generar_pdf():
     fecha_nac_original_str = get_form_field_value('fecha_nacimiento_original', request.form)
     if fecha_nac_original_str:
         try:
+            # Asegura que la fecha esté en formato YYYY-MM-DD para el objeto datetime
             fecha_nac_formato = datetime.strptime(fecha_nac_original_str, '%Y-%m-%d').strftime('%d/%m/%Y')
         except ValueError:
             pass 
@@ -677,12 +678,14 @@ def generar_pdf():
     sexo_f_pdf = ""
     sexo_m_pdf = ""
     # Lógica de mapeo de género
+    # Para Neurología (Antigua) usamos el campo 'sexo' directo (M o F)
     if form_type == 'neurologia':
         sexo_form_value = get_form_field_value('sexo', request.form)
         sexo_f_pdf = "X" if sexo_form_value == "F" else "" 
         sexo_m_pdf = "X" if sexo_form_value == "M" else ""
+    # Para Medicina Familiar y el nuevo Informe, buscamos en los checkboxes
     elif form_type == 'medicina_familiar' or form_type == 'informe_neurologico':
-        # Asumiendo que el formulario envía 'genero_f'/'genero_m' para ambos, o usamos el campo 'sexo'
+        # Priorizar campos de checkbox si existen, si no, el campo 'sexo'
         sexo_f_pdf = "X" if get_form_field_value('genero_f', request.form) or get_form_field_value('sexo', request.form) == 'F' else ""
         sexo_m_pdf = "X" if get_form_field_value('genero_m', request.form) or get_form_field_value('sexo', request.form) == 'M' else ""
 
@@ -709,6 +712,7 @@ def generar_pdf():
     pdf_base_path = ''
     
     if form_type == 'neurologia':
+        # Flujo de Valoración de Salud (con PDF específico por doctora o genérico)
         specific_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{current_doctora_id}.pdf"
         full_pdf_bases_dir_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR)
         specific_pdf_path = os.path.join(full_pdf_bases_dir_path, specific_pdf_filename)
@@ -721,8 +725,9 @@ def generar_pdf():
     elif form_type == 'medicina_familiar':
         pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
         
+    # 🟢 CORRECCIÓN CLAVE: Usar la nueva constante para el Informe Neurológico
     elif form_type == 'informe_neurologico':
-        pdf_base_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA) # Asumo PDF_BASE_NEUROLOGIA para el informe
+        pdf_base_path = os.path.join(base_dir, PDF_BASE_INFORME_NEURO)
     
     else:
         print(f"ERROR: Tipo de formulario '{form_type}' no reconocido para generar PDF.")
@@ -733,7 +738,7 @@ def generar_pdf():
 
     if not os.path.exists(pdf_base_path):
         print(f"ERROR: Archivo '{pdf_base_path}' no encontrado.")
-        flash(f"❌ Error: El archivo '{pdf_base_path}' no se encontró en la carpeta del servidor. Verifique la ruta y el nombre del archivo.", 'error')
+        flash(f"❌ Error: El archivo '{os.path.basename(pdf_base_path)}' no se encontró en la carpeta del servidor. Verifique la ruta y el nombre del archivo.", 'error')
         if 'current_nomina_id' in session:
             return redirect(url_for('relleno_formulario', nomina_id=session['current_nomina_id']))
         return redirect(url_for('dashboard'))
@@ -746,7 +751,7 @@ def generar_pdf():
 
         campos = {}
         
-        # Mapeo de Neurología Antigua (mantener)
+        # Mapeo de Neurología Antigua (Valoración de Salud)
         if form_type == 'neurologia':
             print("DEBUG: Usando mapeo de Neurología (claves cortas).")
             campos = {
@@ -765,11 +770,11 @@ def generar_pdf():
                 "sexo_m": sexo_m_pdf,
             }
         
-        # 🟢 BLOQUE DEL INFORME NEUROLÓGICO (Corregido: Nombres de campos idénticos)
+        # 🟢 BLOQUE DEL INFORME NEUROLÓGICO (Mapeo de campos del nuevo informe)
         elif form_type == 'informe_neurologico':
             print("DEBUG: Usando mapeo de Informe Neurológico (Campos de PDF).")
             
-            # **Mapeo de los campos según la solicitud (nombre: nombre)**
+            # **Mapeo de los campos del formulario al PDF**
             campos = {
                 # Datos de Identificación
                 "nombre": nombre,
@@ -778,20 +783,29 @@ def generar_pdf():
                 "edad": edad,
                 "genero_m": sexo_m_pdf, 
                 "genero_f": sexo_f_pdf, 
+                "nacionalidad": nacionalidad, # Incluido por si el PDF tiene el campo
                 
                 # Campos de Evaluación (Rellenados por la doctora)
+                # El campo 'Antecedentes relevantes' del PDF debe mapearse a 'antecedentes_relevantes' del formulario
+                "antecedentes_relevantes": get_form_field_value('antecedentes_relevantes', request.form), 
                 "motivo_consulta": get_form_field_value('motivo_consulta', request.form),
+                # El campo 'Historia del cuadro actual' del PDF debe mapearse a 'historia_cuadro_actual' del formulario
+                "historia_cuadro_actual": get_form_field_value('historia_cuadro_actual', request.form),
+                
                 "observaciones": get_form_field_value('observaciones', request.form),     # III. Examen Físico
                 "observacion_neurologia": get_form_field_value('observacion_neurologia', request.form), # IV. Examen Neurológico
-                "diagnostico": get_form_field_value('diagnostico', request.form),         # V. Diagnóstico
-                "indicaciones": get_form_field_value('indicaciones', request.form),       # VI. Plan y Recomendaciones
                 
-                # Campos adicionales de Neurología
+                # V. Diagnóstico (sospecha y definitivo)
+                "diagnostico_sospecha": get_form_field_value('diagnostico_sospecha', request.form), 
+                "diagnostico_definitivo": get_form_field_value('diagnostico_definitivo', request.form),
+                
+                "indicaciones": get_form_field_value('indicaciones', request.form),       # VI. Plan y Recomendaciones
                 "derivaciones": get_form_field_value('derivaciones', request.form),
                 
                 # Fechas
                 "fecha_evaluacion": fecha_evaluacion_formatted,
             }
+            # Se han revisado los nombres de los campos del PDF basándonos en el snippet del archivo "informe_neurologico.pdf"
             
         # 🔵 BLOQUE DE MEDICINA FAMILIAR (Restaurado a la versión completa)
         elif form_type == 'medicina_familiar':
@@ -864,9 +878,7 @@ def generar_pdf():
                  "check_frenillolingual": map_db_boolean_to_x_pdf(map_check_value('check_frenillolingual')),
                  "check_hipertrofia": map_db_boolean_to_x_pdf(map_check_value('check_hipertrofia')),
              }
-
         
-
         print(f"DEBUG: Campos finales para el PDF ({form_type}): {campos}")
         
         # 5. Generación final del PDF (el resto del código se mantiene)

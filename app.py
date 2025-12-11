@@ -1500,6 +1500,7 @@ def admin_cargar_nomina():
     coord_general_id_from_form = request.form.get('coord_general_id', '').strip()
     coord_escuela_id_from_form = request.form.get('coord_escuela_id', '').strip()
     
+    
     tipo_nomina_normalized = tipo_nomina_raw.strip().lower() if tipo_nomina_raw else ''
     
     form_type = None
@@ -1507,7 +1508,9 @@ def admin_cargar_nomina():
         form_type = 'neurologia'
     elif 'familiar' in tipo_nomina_normalized or 'medicina familiar' in tipo_nomina_normalized: 
         form_type = 'medicina_familiar'
-
+     elif 'informe' in tipo_nomina_normalized and 'neuro' in tipo_nomina_normalized:
+         form_type = 'informe_neurologico'
+         
     # Validaciones básicas
     if not all([tipo_nomina_raw, nombre_colegio_o_establecimiento, doctora_id_from_form, excel_file]):
         flash('❌ Falta uno o más campos obligatorios.', 'error')

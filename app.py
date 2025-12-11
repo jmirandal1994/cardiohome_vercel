@@ -2202,11 +2202,11 @@ def descargar_pdf_alumno(alumno_id):
 
     try:
         # 1. CONSULTA ÚNICA: DATOS COMPLETOS DEL ESTUDIANTE (Select ALL FIELDS)
-        # Se ha ampliado el 'select' para incluir todos los campos de evaluación de Neurología y Medicina Familiar.
+        # La lista de campos DEBE ser EXACTA con la de Supabase para evitar errores 400.
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            # Campos personales y de evaluación:
+            # Campos necesarios para el PDF y metadatos:
             f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,check_cirugiasi,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,check_caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,doctora_evaluadora_id,nomina_id,clasificacion_imc" 
         )
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
@@ -2220,11 +2220,11 @@ def descargar_pdf_alumno(alumno_id):
         est = student_data[0]
         nomina_id_fk = est.get('nomina_id') 
         
-        # 2. CONSULTA 2: METADATA DE LA NÓMINA (Mantenida)
+        # 2. CONSULTA 2: METADATA DE LA NÓMINA
         url_nomina_meta = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?id=eq.{nomina_id_fk}"
-            f"&select=form_type,nombre_nomina"
+            f"&select=form_type,nombre_nomina,doctora_id_para_formulario"
         )
         res_nomina = requests.get(url_nomina_meta, headers=SUPABASE_SERVICE_HEADERS)
         res_nomina.raise_for_status()
@@ -2233,37 +2233,53 @@ def descargar_pdf_alumno(alumno_id):
         form_type = nomina_meta.get('form_type', 'neurologia')
         nombre_nomina = nomina_meta.get('nombre_nomina', 'Valoracion')
         doctora_evaluadora_id = est.get('doctora_evaluadora_id')
+        doctora_id_para_formulario = nomina_meta.get('doctora_id_para_formulario')
         
-        # 4. LÓGICA DE PLANTILLA (Selección del PDF personalizado/genérico) (Mantenida)
+        # 4. LÓGICA DE PLANTILLA (Selección del PDF personalizado/genérico)
         pdf_base_path = ''
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        
+        full_pdf_bases_dir_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR)
+
         if form_type == 'neurologia':
-            specific_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{doctora_evaluadora_id}.pdf"
-            full_pdf_bases_dir_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR)
+            doc_id_for_pdf = doctora_id_para_formulario or doctora_evaluadora_id
+            specific_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{doc_id_for_pdf}.pdf"
             specific_pdf_path = os.path.join(full_pdf_bases_dir_path, specific_pdf_filename)
 
-            if doctora_evaluadora_id and os.path.exists(specific_pdf_path):
+            if doc_id_for_pdf and os.path.exists(specific_pdf_path):
                 pdf_base_path = specific_pdf_path
             else:
                 pdf_base_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
+
+        elif form_type == 'informe_neurologico':
+            doc_id_for_pdf = doctora_id_para_formulario or doctora_evaluadora_id
+            specific_pdf_filename = f"INFORME_NEUROLOGICO_BASE_{doc_id_for_pdf}.pdf"
+            specific_pdf_path = os.path.join(full_pdf_bases_dir_path, specific_pdf_filename)
+
+            if doc_id_for_pdf and os.path.exists(specific_pdf_path):
+                pdf_base_path = specific_pdf_path
+            else:
+                pdf_base_path = os.path.join(base_dir, PDF_BASE_INFORME_NEURO)
                 
         elif form_type == 'medicina_familiar':
             pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
         
         else:
-             raise FileNotFoundError(f"Tipo de formulario no reconocido: {form_type}")
+            raise FileNotFoundError(f"Tipo de formulario no reconocido: {form_type}")
         
         if not os.path.exists(pdf_base_path):
-             raise FileNotFoundError(f"Archivo base del formulario no encontrado: {pdf_base_path}")
-             
+            raise FileNotFoundError(f"Archivo base del formulario no encontrado: {pdf_base_path}")
+            
         print(f"DEBUG: Usando PDF Base Path: {pdf_base_path}") 
 
 
-        # 5. INICIALIZAR EL RELLENADOR DE PDF (Mantenido)
+        # 5. INICIALIZAR EL RELLENADOR DE PDF (Si llegamos aquí, la plantilla existe)
+        # Nota: Asegúrate de que PdfReader y PdfWriter estén importados
         reader = PdfReader(pdf_base_path) 
         writer = PdfWriter()
-        writer.add_page(reader.pages[0])
+        
+        # Iterar sobre las páginas
+        for page in reader.pages:
+            writer.add_page(page)
 
         # 6. Preparar y Mapear Campos del PDF 
         nombre = est.get('nombre', '')
@@ -2296,10 +2312,11 @@ def descargar_pdf_alumno(alumno_id):
             except ValueError: pass
         
         # --- FUNCIÓN AUXILIAR PARA MAPEO TEXTO A 'X' ---
-        # Ahora, solo se usa para mapear el valor de DB a 'X' si existe (es True)
-        def map_db_value_to_x(db_value):
+        # Si la función map_db_value_to_x retorna "X", debes cambiar manualmente el mapeo de los checkboxes
+        # en Medicina Familiar para usar "/Yes", o modificar la función. Usaré '/Yes' directamente aquí.
+        def map_db_value_to_yes_pdf(db_value):
             if db_value is True or (isinstance(db_value, str) and db_value.strip()):
-                return "X"
+                return "/Yes" 
             return ""
         # ----------------------------------------------------
 
@@ -2307,95 +2324,84 @@ def descargar_pdf_alumno(alumno_id):
         if form_type == 'neurologia':
             # Mapeo COMPLETO de campos de Neurología
             campos = {
-                "nombre": nombre,
-                "rut": rut, 
-                "fecha_nacimiento": fecha_nac_formato, 
-                "nacionalidad": est.get('nacionalidad', ''),
-                "edad": edad, 
-                
-                # Campos de evaluación Neurología
-                "diagnostico_1": est.get('diagnostico', ''), 
-                "diagnostico_2": est.get('diagnostico', ''), 
-                "estado_general": est.get('estado_general', ''),
-                "derivaciones": est.get('derivaciones', ''),
-                
-                "fecha_evaluacion": fecha_evaluacion_formatted, 
-                "fecha_reevaluacion": fecha_reeval_pdf,
-                "sexo_f": "X" if est.get('sexo') == "F" else "",
-                "sexo_m": "X" if est.get('sexo') == "M" else "",
+                "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato, 
+                "nacionalidad": est.get('nacionalidad', ''), "edad": edad, 
+                "diagnostico_1": est.get('diagnostico', ''), "diagnostico_2": est.get('diagnostico', ''), 
+                "estado_general": est.get('estado_general', ''), "derivaciones": est.get('derivaciones', ''),
+                "fecha_evaluacion": fecha_evaluacion_formatted, "fecha_reevaluacion": fecha_reeval_pdf,
+                "sexo_f": "X" if est.get('sexo') == "F" else "", "sexo_m": "X" if est.get('sexo') == "M" else "",
+            }
+        elif form_type == 'informe_neurologico':
+            # Mapeo Informe Neurológico (Usando X)
+            campos = {
+                "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato, 
+                "edad": edad, "nacionalidad": est.get('nacionalidad', ''), 
+                "genero_m": "X" if est.get('sexo') == "M" else "", "genero_f": "X" if est.get('sexo') == "F" else "",
+                "motivo_consulta": est.get('motivo_consulta', ''),
+                "observaciones": est.get('observaciones', ''),      
+                "observacion_neurologia": est.get('observacion_neurologia', ''), 
+                "diagnostico": est.get('diagnostico', ''),
+                "indicaciones": est.get('indicaciones', ''),
+                "derivaciones": est.get('derivaciones', ''), 
+                "fecha_evaluacion": fecha_evaluacion_formatted,
+                "fecha_reevaluacion": fecha_reeval_pdf, 
             }
         elif form_type == 'medicina_familiar':
-             # Mapeo COMPLETO de Medicina Familiar
+            # 🟢 MAPEO COMPLETO DE MEDICINA FAMILIAR - RESTAURADO CON /Yes
              campos = {
-                 # Identificación
-                 "nombre": nombre,
-                 "rut": rut,
-                 "fecha_nacimiento": fecha_nac_formato,
-                 "edad": edad,
-                 "nacionalidad": est.get('nacionalidad', ''),
-                 "sexo_f": "X" if est.get('sexo') == "F" else "", 
-                 "sexo_m": "X" if est.get('sexo') == "M" else "",
-                 
-                 # Diagnósticos y Clasificación
-                 "diagnostico_1": est.get('diagnostico_1', ''),
-                 "diagnostico_2": est.get('diagnostico_2', ''), 
-                 "diagnostico_complementario": est.get('diagnostico_complementario', ''),
-                 "clasificacion": est.get('clasificacion_imc', ''), # Clasificación IMC
-                 
-                 "indicaciones": est.get('indicaciones', ''), # Campo de indicaciones
-                 "derivaciones": est.get('derivaciones', ''), 
-                 
-                 "fecha_evaluacion": fecha_evaluacion_formatted,
-                 "fecha_reevaluacion": fecha_reeval_pdf, 
-                 
-                 # Examen Físico / Medidas
-                 "altura": est.get('altura', ''),
-                 "peso": est.get('peso', ''),
-                 "imc": est.get('imc', ''),
- 
-                 # Observaciones (OBS1-OBS7)
-                 "observacion_1": est.get('observacion_1', ''),
-                 "observacion_2": est.get('observacion_2', ''),
-                 "observacion_3": est.get('observacion_3', ''),
-                 "observacion_4": est.get('observacion_4', ''),
-                 "observacion_5": est.get('observacion_5', ''),
-                 "observacion_6": est.get('observacion_6', ''),
-                 "observacion_7": est.get('observacion_7', ''),
-                 
-                 # Checkboxes/Campos de texto mapeados a 'X' si el valor es True/No Vacío
-                 "check_cesarea": map_db_value_to_x(est.get('check_cesarea')),
-                 "check_atermino": map_db_value_to_x(est.get('check_atermino')),
-                 "check_vaginal": map_db_value_to_x(est.get('check_vaginal')),
-                 "check_prematuro": map_db_value_to_x(est.get('check_prematuro')),
-                 "check_acorde": map_db_value_to_x(est.get('check_acorde')),
-                 "check_retraso": map_db_value_to_x(est.get('check_retraso')),
-                 "check_retrasogeneralizado": map_db_value_to_x(est.get('check_retrasogeneralizado')),
-                 "check_esquemac": map_db_value_to_x(est.get('check_esquemac')),
-                 "check_esquemai": map_db_value_to_x(est.get('check_esquemai')),
-                 "check_alergiano": map_db_value_to_x(est.get('check_alergiano')),
-                 "check_alergiasi": map_db_value_to_x(est.get('check_alergiasi')),
-                 "check_cirugiano": map_db_value_to_x(est.get('check_cirugiano')),
-                 "check_cirugiasi": map_db_value_to_x(est.get('check_cirugiasi')), 
-                 "check_visionsinalteracion": map_db_value_to_x(est.get('check_visionsinalteracion')),
-                 "check_visionrefraccion": map_db_value_to_x(est.get('check_visionrefraccion')),
-                 "check_audicionnormal": map_db_value_to_x(est.get('check_audicionnormal')),
-                 "check_hipoacusia": map_db_value_to_x(est.get('check_hipoacusia')),
-                 "check_tapondecerumen": map_db_value_to_x(est.get('check_tapondecerumen')),
-                 "check_sinhallazgos": map_db_value_to_x(est.get('check_sinhallazgos')),
-                 "check_caries": map_db_value_to_x(est.get('check_caries')), 
-                 "check_apinamientodental": map_db_value_to_x(est.get('check_apinamientodental')),
-                 "check_retenciondental": map_db_value_to_x(est.get('check_retenciondental')),
-                 "check_frenillolingual": map_db_value_to_x(est.get('check_frenillolingual')),
-                 "check_hipertrofia": map_db_value_to_x(est.get('check_hipertrofia')),
-             }
+                "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato, "edad": edad, "nacionalidad": est.get('nacionalidad', ''),
+                "sexo_f": "X" if est.get('sexo') == "F" else "", "sexo_m": "X" if est.get('sexo') == "M" else "",
+                
+                # Diagnósticos, Fechas, e Indicaciones
+                "diagnostico_1": est.get('diagnostico_1', ''), "diagnostico_2": est.get('diagnostico_2', ''),
+                "diagnostico_complementario": est.get('diagnostico_complementario', ''), "clasificacion": est.get('clasificacion_imc', ''),
+                "indicaciones": est.get('indicaciones', ''), "derivaciones": est.get('derivaciones', ''),
+                "fecha_evaluacion": fecha_evaluacion_formatted, "fecha_reevaluacion": fecha_reeval_pdf,
+                
+                # Medidas y Observaciones (Texto)
+                "altura": est.get('altura', ''), "peso": est.get('peso', ''), "I.M.C": est.get('imc', ''),
+                "observacion_1": est.get('observacion_1', ''), "observacion_2": est.get('observacion_2', ''),
+                "observacion_3": est.get('observacion_3', ''), "observacion_4": est.get('observacion_4', ''),
+                "observacion_5": est.get('observacion_5', ''), "observacion_6": est.get('observacion_6', ''),
+                "observacion_7": est.get('observacion_7', ''),
+                
+                # Checkboxes mapeados a /Yes
+                "check_cesarea": map_db_value_to_yes_pdf(est.get('check_cesarea')), 
+                "check_atermino": map_db_value_to_yes_pdf(est.get('check_atermino')),
+                "check_vaginal": map_db_value_to_yes_pdf(est.get('check_vaginal')), 
+                "check_prematuro": map_db_value_to_yes_pdf(est.get('check_prematuro')),
+                "check_acorde": map_db_value_to_yes_pdf(est.get('check_acorde')), 
+                "check_retraso": map_db_value_to_yes_pdf(est.get('check_retraso')),
+                "check_retrasogeneralizado": map_db_value_to_yes_pdf(est.get('check_retrasogeneralizado')), 
+                "check_esquemac": map_db_value_to_yes_pdf(est.get('check_esquemac')), 
+                "check_esquemai": map_db_value_to_yes_pdf(est.get('check_esquemai')), 
+                "check_alergiano": map_db_value_to_yes_pdf(est.get('check_alergiano')), 
+                "check_alergiasi": map_db_value_to_yes_pdf(est.get('check_alergiasi')), 
+                "check_cirugiano": map_db_value_to_yes_pdf(est.get('check_cirugiano')), 
+                "check_cirugiasi": map_db_value_to_yes_pdf(est.get('check_cirugiasi')), 
+                "check_visionsinalteracion": map_db_value_to_yes_pdf(est.get('check_visionsinalteracion')), 
+                "check_visionrefraccion": map_db_value_to_yes_pdf(est.get('check_visionrefraccion')),
+                "check_audicionnormal": map_db_value_to_yes_pdf(est.get('check_audicionnormal')), 
+                "check_hipoacusia": map_db_value_to_yes_pdf(est.get('check_hipoacusia')), 
+                "check_tapondecerumen": map_db_value_to_yes_pdf(est.get('check_tapondecerumen')), 
+                "check_sinhallazgos": map_db_value_to_yes_pdf(est.get('check_sinhallazgos')), 
+                "check_caries": map_db_value_to_yes_pdf(est.get('check_caries')), 
+                "check_apinamientodental": map_db_value_to_yes_pdf(est.get('check_apinamientodental')), 
+                "check_retenciondental": map_db_value_to_yes_pdf(est.get('check_retenciondental')), 
+                "check_frenillolingual": map_db_value_to_yes_pdf(est.get('check_frenillolingual')), 
+                "check_hipertrofia": map_db_value_to_yes_pdf(est.get('check_hipertrofia')),
+            }
 
 
-        # 7. Llenado final del PDF y send_file (Mantenido)
+        # 7. Llenado final del PDF y send_file
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({
                 NameObject("/AcroForm"): DictionaryObject()
             })
-        writer.update_page_form_field_values(writer.pages[0], campos)
+            
+        for page in writer.pages:
+            writer.update_page_form_field_values(page, campos)
+            
         writer._root_object["/AcroForm"].update({
             NameObject("/NeedAppearances"): BooleanObject(True)
         })
@@ -2407,7 +2413,6 @@ def descargar_pdf_alumno(alumno_id):
         # Nombre del archivo para la descarga
         nombre_archivo_descarga = f"Valoracion_{nombre.replace(' ', '_')}_{rut}_{nombre_nomina.replace(' ', '_')}.pdf"
         
-        # Usamos send_file con as_attachment=True para forzar la descarga
         return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
 
     except requests.exceptions.RequestException as e:
@@ -2415,6 +2420,7 @@ def descargar_pdf_alumno(alumno_id):
         flash(f"❌ Error al generar PDF: Fallo de conexión/consulta. Detalles: {e}. Revise el log para las columnas.", 'error')
         return redirect(url_for('dashboard'))
     except FileNotFoundError as e:
+        # Esto atrapará si el PDF_BASE_INFORME_NEURO no existe
         print(f"❌ Error File Not Found: {e}")
         flash(f"❌ Error al generar el PDF: Archivo base no encontrado. Detalle: {e}", 'error')
         return redirect(url_for('dashboard'))

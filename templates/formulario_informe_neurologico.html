@@ -797,29 +797,29 @@
                         <label for="motivo_consulta_{{ est.id }}">Motivo de consulta:</label>
                         <textarea name="motivo_consulta" id="motivo_consulta_{{ est.id }}" rows="4" 
                               placeholder="Observaciones del estado general..." required 
-                              oninput="updatePreview(this.form); updateCharCount(this, 500);">{% if est.motivo_consulta is not none %}{{ est.motivo_consulta }}{% endif %}</textarea>
-                        <p class="char-counter" id="motivo_consulta_{{ est.id }}_count">0 / 500</p>
+                              oninput="updatePreview(this.form); updateCharCount(this);">{% if est.motivo_consulta is not none %}{{ est.motivo_consulta }}{% endif %}</textarea>
+                        <p class="char-counter" id="motivo_consulta_{{ est.id }}_count">0 / Ilimitado</p>
                         
                         <h3>III. Examen Físico General (Observaciones)</h3>
                         <label for="observaciones_{{ est.id }}">Observaciones:</label>
                         <textarea name="observaciones" id="observaciones_{{ est.id }}" rows="4" 
                               required 
-                              oninput="updatePreview(this.form); updateCharCount(this, 500);">{% if est.observaciones is not none %}{{ est.observaciones }}{% endif %}</textarea>
-                        <p class="char-counter" id="observaciones_{{ est.id }}_count">0 / 500</p>
+                              oninput="updatePreview(this.form); updateCharCount(this);">{% if est.observaciones is not none %}{{ est.observaciones }}{% endif %}</textarea>
+                        <p class="char-counter" id="observaciones_{{ est.id }}_count">0 / Ilimitado</p>
 
                         <h3>IV. Examen Neurológico Específico (Observaciones)</h3>
                         <label for="observacion_neurologia_{{ est.id }}">Observaciones:</label>
                         <textarea name="observacion_neurologia" id="observacion_neurologia_{{ est.id }}" rows="4" 
                               required 
-                              oninput="updatePreview(this.form); updateCharCount(this, 500);">{% if est.observacion_neurologia is not none %}{{ est.observacion_neurologia }}{% endif %}</textarea>
-                        <p class="char-counter" id="observacion_neurologia_{{ est.id }}_count">0 / 500</p>
+                              oninput="updatePreview(this.form); updateCharCount(this);">{% if est.observacion_neurologia is not none %}{{ est.observacion_neurologia }}{% endif %}</textarea>
+                        <p class="char-counter" id="observacion_neurologia_{{ est.id }}_count">0 / Ilimitado</p>
 
                         <h3>V. Diagnóstico</h3>
                         <label for="diagnostico_text_{{ est.id }}">Diagnóstico Definitivo:</label>
                         <textarea name="diagnostico" id="diagnostico_text_{{ est.id }}" rows="3" 
                               placeholder="Escriba el diagnóstico..." required 
-                              oninput="updatePreview(this.form); updateCharCount(this, 300);">{% if est.diagnostico is not none %}{{ est.diagnostico }}{% endif %}</textarea>
-                        <p class="char-counter" id="diagnostico_text_{{ est.id }}_count">0 / 300</p>
+                              oninput="updatePreview(this.form); updateCharCount(this);">{% if est.diagnostico is not none %}{{ est.diagnostico }}{% endif %}</textarea>
+                        <p class="char-counter" id="diagnostico_text_{{ est.id }}_count">0 / Ilimitado</p>
 
                         <h3>VI. Plan y Recomendaciones (Indicaciones)</h3>
                         <label for="indicaciones_{{ est.id }}">Indicaciones (Plan de Acción):</label>
@@ -893,49 +893,39 @@
 
     <script>
         // --- NUEVA FUNCIÓN PARA CONTAR CARACTERES Y ALERTA DE DENSIDAD ---
-        function updateCharCount(textarea, maxLength) {
-            // Si el campo no tiene el atributo maxlength, no hacer nada.
-            if (!textarea.hasAttribute('maxlength')) return;
-
-            // Aseguramos que maxLength sea un número
-            maxLength = parseInt(textarea.getAttribute('maxlength'));
-            
+        function updateCharCount(textarea) {
+            // No usamos maxLength aquí, por lo que el límite es solo el impuesto por el navegador/OS.
             const value = textarea.value;
             const currentLength = value.length;
             const counterId = textarea.id + '_count';
             const counterElement = document.getElementById(counterId);
 
+            // Actualizar el contador para mostrar 'Ilimitado'
             if (counterElement) {
-                // Lógica de Límite Total
-                counterElement.textContent = `${currentLength} / ${maxLength}`;
-                if (maxLength - currentLength <= 50) {
-                    counterElement.classList.add('limit-close');
-                } else {
-                    counterElement.classList.remove('limit-close');
+                counterElement.textContent = `${currentLength} / Ilimitado`;
+            }
+
+            // Lógica de Alerta de Densidad de Línea (Nueva)
+            const lines = value.split('\n');
+            const lastLine = lines[lines.length - 1];
+            const LINE_LENGTH_LIMIT = 80; // Umbral de advertencia
+
+            const warningElementId = textarea.id + '_warning';
+            let warningElement = document.getElementById(warningElementId);
+
+            if (lastLine.length > LINE_LENGTH_LIMIT) {
+                if (!warningElement) {
+                    // Si el elemento de advertencia no existe, lo creamos
+                    warningElement = document.createElement('p');
+                    warningElement.id = warningElementId;
+                    warningElement.className = 'line-density-warning';
+                    textarea.parentNode.insertBefore(warningElement, textarea.nextSibling);
                 }
-
-                // Lógica de Alerta de Densidad de Línea (Nueva)
-                const lines = value.split('\n');
-                const lastLine = lines[lines.length - 1];
-                const LINE_LENGTH_LIMIT = 80; // Umbral de advertencia
-
-                const warningElementId = textarea.id + '_warning';
-                let warningElement = document.getElementById(warningElementId);
-
-                if (lastLine.length > LINE_LENGTH_LIMIT) {
-                    if (!warningElement) {
-                        // Si el elemento de advertencia no existe, lo creamos
-                        warningElement = document.createElement('p');
-                        warningElement.id = warningElementId;
-                        warningElement.className = 'line-density-warning';
-                        textarea.parentNode.insertBefore(warningElement, textarea.nextSibling);
-                    }
-                    warningElement.innerHTML = '<i class="fas fa-exclamation-triangle"></i> **¡Línea muy larga!** Presione **ENTER** para asegurar la visibilidad en el PDF.';
-                    warningElement.style.display = 'block';
-                } else if (warningElement) {
-                    // Ocultar si la línea vuelve a ser corta
-                    warningElement.style.display = 'none';
-                }
+                warningElement.innerHTML = '<i class="fas fa-exclamation-triangle"></i> **¡Línea muy larga!** Presione **ENTER** para asegurar la visibilidad en el PDF.';
+                warningElement.style.display = 'block';
+            } else if (warningElement) {
+                // Ocultar si la línea vuelve a ser corta
+                warningElement.style.display = 'none';
             }
         }
         // ------------------------------------------
@@ -961,16 +951,10 @@
             });
             
             // Inicializar contadores de caracteres para texto pre-cargado
-            // Corregido: Si no hay maxlength, usamos 500 como default para la advertencia
-            document.querySelectorAll('textarea').forEach(textarea => {
-                let maxLength = textarea.getAttribute('maxlength');
-                if (maxLength) {
-                    updateCharCount(textarea, parseInt(maxLength));
-                } else {
-                    // Si no tiene maxlength, usamos un valor alto para el contador (ej: 500)
-                    textarea.setAttribute('maxlength', 500); 
-                    updateCharCount(textarea, 500);
-                }
+            document.querySelectorAll('textarea[oninput*="updateCharCount"]').forEach(textarea => {
+                // Quitamos el atributo maxlength si estaba puesto accidentalmente por JS anterior
+                textarea.removeAttribute('maxlength'); 
+                updateCharCount(textarea);
             });
             
             // Event listener para el buscador

@@ -2202,11 +2202,10 @@ def descargar_pdf_alumno(alumno_id):
 
     try:
         # 1. CONSULTA ÚNICA: DATOS COMPLETOS DEL ESTUDIANTE (Select ALL FIELDS)
-        # La lista de campos es la más completa posible según tu código, asegurando la data.
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,check_cirugiasi,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,check_caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,doctora_evaluadora_id,nomina_id,clasificacion_imc" 
+            f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,check_cirugiasi,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,check_caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,doctora_evaluadora_id,nomina_id,clasificacion_imc,motivo_consulta,observaciones,observacion_neurologia" 
         )
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
         res_student.raise_for_status() 
@@ -2285,7 +2284,6 @@ def descargar_pdf_alumno(alumno_id):
         
         # --- FUNCIÓN AUXILIAR PARA MAPEO TEXTO A '/Yes' ---
         def map_db_value_to_yes_pdf(db_value):
-            # Asumiendo que para checkboxes se necesita "/Yes"
             if db_value is True or (isinstance(db_value, str) and db_value.strip()):
                 return "/Yes" 
             return ""
@@ -2311,13 +2309,13 @@ def descargar_pdf_alumno(alumno_id):
             }
         
         elif form_type == 'informe_neurologico':
-            # Mapeo Informe Neurológico (Usando nombres de columna EXACTOS)
+            # 🟢 Mapeo Informe Neurológico (USANDO NOMBRES EXACTOS DE LAS COLUMNAS DE TU DB)
             campos = {
                 "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato, 
                 "edad": edad, "nacionalidad": est.get('nacionalidad', ''), 
                 "genero_m": "X" if est.get('sexo') == "M" else "", "genero_f": "X" if est.get('sexo') == "F" else "",
                 
-                # CAMPOS CRÍTICOS DE TEXTO - Mapeo Directo (Si fallan, el problema es el nombre interno del PDF)
+                # CAMPOS CRÍTICOS DE TEXTO - Mapeo Directo 
                 "motivo_consulta": est.get('motivo_consulta', ''),
                 "observaciones": est.get('observaciones', ''),      
                 "observacion_neurologia": est.get('observacion_neurologia', ''), 
@@ -2346,18 +2344,31 @@ def descargar_pdf_alumno(alumno_id):
                 "observacion_5": est.get('observacion_5', ''), "observacion_6": est.get('observacion_6', ''),
                 "observacion_7": est.get('observacion_7', ''),
                 
-                "check_cesarea": map_db_value_to_yes_pdf(est.get('check_cesarea')), "check_atermino": map_db_value_to_yes_pdf(est.get('check_atermino')),
-                "check_vaginal": map_db_value_to_yes_pdf(est.get('check_vaginal')), "check_prematuro": map_db_value_to_yes_pdf(est.get('check_prematuro')),
-                "check_acorde": map_db_value_to_yes_pdf(est.get('check_acorde')), "check_retraso": map_db_value_to_yes_pdf(est.get('check_retraso')),
-                "check_retrasogeneralizado": map_db_value_to_yes_pdf(est.get('check_retrasogeneralizado')), "check_esquemac": map_db_value_to_yes_pdf(est.get('check_esquemac')),
-                "check_esquemai": map_db_value_to_yes_pdf(est.get('check_esquemai')), "check_alergiano": map_db_value_to_yes_pdf(est.get('check_alergiano')),
-                "check_alergiasi": map_db_value_to_yes_pdf(est.get('check_alergiasi')), "check_cirugiano": map_db_value_to_yes_pdf(est.get('check_cirugiano')),
-                "check_cirugiasi": map_db_value_to_yes_pdf(est.get('check_cirugiasi')), "check_visionsinalteracion": map_db_value_to_yes_pdf(est.get('check_visionsinalteracion')),
-                "check_visionrefraccion": map_db_value_to_yes_pdf(est.get('check_visionrefraccion')), "check_audicionnormal": map_db_value_to_yes_pdf(est.get('check_audicionnormal')),
-                "check_hipoacusia": map_db_value_to_yes_pdf(est.get('check_hipoacusia')), "check_tapondecerumen": map_db_value_to_yes_pdf(est.get('check_tapondecerumen')),
-                "check_sinhallazgos": map_db_value_to_yes_pdf(est.get('check_sinhallazgos')), "check_caries": map_db_value_to_yes_pdf(est.get('check_caries')), 
-                "check_apinamientodental": map_db_value_to_yes_pdf(est.get('check_apinamientodental')), "check_retenciondental": map_db_value_to_yes_pdf(est.get('check_retenciondental')),
-                "check_frenillolingual": map_db_value_to_yes_pdf(est.get('check_frenillolingual')), "check_hipertrofia": map_db_value_to_yes_pdf(est.get('check_hipertrofia')),
+                # Checkboxes mapeados a /Yes (Incluyendo todos los de tu SELECT)
+                "check_cesarea": map_db_value_to_yes_pdf(est.get('check_cesarea')), 
+                "check_atermino": map_db_value_to_yes_pdf(est.get('check_atermino')),
+                "check_vaginal": map_db_value_to_yes_pdf(est.get('check_vaginal')), 
+                "check_prematuro": map_db_value_to_yes_pdf(est.get('check_prematuro')),
+                "check_acorde": map_db_value_to_yes_pdf(est.get('check_acorde')), 
+                "check_retraso": map_db_value_to_yes_pdf(est.get('check_retraso')),
+                "check_retrasogeneralizado": map_db_value_to_yes_pdf(est.get('check_retrasogeneralizado')), 
+                "check_esquemac": map_db_value_to_yes_pdf(est.get('check_esquemac')), 
+                "check_esquemai": map_db_value_to_yes_pdf(est.get('check_esquemai')), 
+                "check_alergiano": map_db_value_to_yes_pdf(est.get('check_alergiano')), 
+                "check_alergiasi": map_db_value_to_yes_pdf(est.get('check_alergiasi')), 
+                "check_cirugiano": map_db_value_to_yes_pdf(est.get('check_cirugiano')), 
+                "check_cirugiasi": map_db_value_to_yes_pdf(est.get('check_cirugiasi')), 
+                "check_visionsinalteracion": map_db_value_to_yes_pdf(est.get('check_visionsinalteracion')), 
+                "check_visionrefraccion": map_db_value_to_yes_pdf(est.get('check_visionrefraccion')),
+                "check_audicionnormal": map_db_value_to_yes_pdf(est.get('check_audicionnormal')), 
+                "check_hipoacusia": map_db_value_to_yes_pdf(est.get('check_hipoacusia')), 
+                "check_tapondecerumen": map_db_value_to_yes_pdf(est.get('check_tapondecerumen')), 
+                "check_sinhallazgos": map_db_value_to_yes_pdf(est.get('check_sinhallazgos')), 
+                "check_caries": map_db_value_to_yes_pdf(est.get('check_caries')), 
+                "check_apinamientodental": map_db_value_to_yes_pdf(est.get('check_apinamientodental')), 
+                "check_retenciondental": map_db_value_to_yes_pdf(est.get('check_retenciondental')), 
+                "check_frenillolingual": map_db_value_to_yes_pdf(est.get('check_frenillolingual')), 
+                "check_hipertrofia": map_db_value_to_yes_pdf(est.get('check_hipertrofia')),
             }
 
 
@@ -2367,6 +2378,7 @@ def descargar_pdf_alumno(alumno_id):
                 NameObject("/AcroForm"): DictionaryObject()
             })
             
+        # 💡 Esta parte asegura que todos los campos de todas las páginas se actualicen
         for page in writer.pages:
             writer.update_page_form_field_values(page, campos)
             
@@ -2395,7 +2407,8 @@ def descargar_pdf_alumno(alumno_id):
     except Exception as e:
         print(f"❌ Error inesperado al generar PDF de alumno: {e}")
         flash(f"❌ Error inesperado al generar el PDF. Detalle: {e}", 'error')
-        return redirect(url_for('dashboard'))        
+        return redirect(url_for('dashboard'))
+        
 # app-30.py (Define esta ruta después de las funciones auxiliares)
 
 # app-30.py (Define esta ruta después de las funciones auxiliares)

@@ -27,7 +27,8 @@ ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'xls', 'xlsx', 'csv'}
 # Asegúrate de que estos archivos PDF existan en la misma carpeta que app.py
 PDF_BASE_NEUROLOGIA = 'FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE.pdf'
 PDF_BASE_FAMILIAR = 'formulario_familiar.pdf' 
-
+# 🟢 NUEVA CONSTANTE PARA EL INFORME NEUROLÓGICO
+PDF_BASE_INFORME_NEURO = 'INFORME_NEUROLOGICO_BASE.pdf'
 # Nuevo: Directorio para los PDFs de neurología específicos por doctora
 # Asegúrate de que esta carpeta exista en la misma ubicación que app.py
 PDF_BASES_NEUROLOGIA_DIR = 'pdf_bases_doctoras_neurologia'

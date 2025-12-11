@@ -1737,9 +1737,11 @@ def admin_cargar_nomina():
         form_type = 'neurologia'
     elif 'familiar' in tipo_nomina_normalized or 'medicina familiar' in tipo_nomina_normalized: 
         form_type = 'medicina_familiar'
-     elif 'informe' in tipo_nomina_normalized and 'neuro' in tipo_nomina_normalized:
-         form_type = 'informe_neurologico'
-         
+    # 🟢 CORRECCIÓN DE INDENTACIÓN (Asegurado que esté alineado con los 'elif' anteriores)
+    elif 'informe' in tipo_nomina_normalized and 'neuro' in tipo_nomina_normalized:
+        form_type = 'informe_neurologico'
+    # -----------------------------------------------------------------------------------
+        
     # Validaciones básicas
     if not all([tipo_nomina_raw, nombre_colegio_o_establecimiento, doctora_id_from_form, excel_file]):
         flash('❌ Falta uno o más campos obligatorios.', 'error')
@@ -1800,7 +1802,6 @@ def admin_cargar_nomina():
         "coord_general_id": coord_general_id_db,
         "coord_escuela_id": coord_escuela_id_db,
         "token_acceso": token_generado,
-        # Nota: Establecimiento_id se setea a None o debe ser eliminado/renombrado en tu DB.
         "establecimiento_id": None 
         # -----------------------------------------------------------
     }
@@ -1872,6 +1873,7 @@ def admin_cargar_nomina():
 
     for index, row in df.iterrows():
         try:
+            # Usar .get() en el DataFrame con el nombre de columna mapeado
             nombre_completo_raw = row.get(col_map.get('nombre_completo'))
             rut_raw = row.get(col_map.get('rut'))
             fecha_nacimiento_raw = row.get(col_map.get('fecha_nacimiento'))
@@ -1898,9 +1900,12 @@ def admin_cargar_nomina():
             if fecha_nac_str is None:
                 continue
 
+            # Pre-cálculo de edad y sexo (necesario para el nuevo Informe Neurológico)
+            fecha_nac_obj = datetime.strptime(fecha_nac_str, '%Y-%m-%d').date()
+            edad_calculada = calculate_age(fecha_nac_obj)
             sexo_adivinado = guess_gender(str(nombre_completo_raw))
+            
             nacionalidad_valor = str(nacionalidad_raw).strip() if pd.notna(nacionalidad_raw) else 'Chilena'
-
 
             estudiante = {
                 "nomina_id": nomina_id,
@@ -1909,9 +1914,14 @@ def admin_cargar_nomina():
                 "fecha_nacimiento": fecha_nac_str, 
                 "nacionalidad": nacionalidad_valor,
                 "sexo": sexo_adivinado,
+                "edad": edad_calculada, # Añadir edad calculada
                 "fecha_relleno": None,
-                 # <-- Nulo
             }
+            # 🟢 Añadir flag específico si es el nuevo tipo de informe (para pre-relleno en DB)
+            if form_type == 'informe_neurologico':
+                 # Esto es redundante si form_type es 'informe_neurologico', pero asegura que si la tabla tiene un flag específico, se llene.
+                 estudiante["tipo_registro_individual"] = "INFORME_NEURO" 
+            
             estudiantes_a_insertar.append(estudiante)
             
         except Exception as e:
@@ -1943,7 +1953,6 @@ def admin_cargar_nomina():
         error_detail = res_insert_estudiantes.text if 'res_insert_estudiantes' in locals() else 'No response from Supabase.'
         flash(f"❌ Error al guardar los estudiantes en la base de datos. La nómina fue creada, pero no se agregaron los estudiantes. ({e}). Detalles: {error_detail}", 'error')
         return redirect(url_for('dashboard'))
-
 
 # La ruta '/enviar_formulario_a_drive' ha sido eliminada por completo.
 

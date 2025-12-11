@@ -751,8 +751,9 @@ def generar_pdf():
     try:
         reader = PdfReader(pdf_base_path)
         writer = PdfWriter()
-        writer.add_page(reader.pages[0])
-
+        for page in reader.pages:
+            writer.add_page(page)
+            
         campos = {}
         
         # Mapeo de Neurología Antigua (Valoración de Salud)
@@ -787,7 +788,9 @@ def generar_pdf():
                 "edad": edad,
                 "genero_m": sexo_m_pdf, 
                 "genero_f": sexo_f_pdf, 
-                "nacionalidad": nacionalidad, # Incluido por si el PDF tiene el campo
+                "nacionalidad": nacionalidad,
+                "fecha_evaluacion": fecha_evaluacion_formatted,
+                Incluido por si el PDF tiene el campo
                 
                 # Campos de Evaluación (Rellenados por la doctora)
                 # El campo 'Antecedentes relevantes' del PDF debe mapearse a 'antecedentes_relevantes' del formulario

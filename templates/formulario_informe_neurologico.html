@@ -3,359 +3,239 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Informe Neurológico - {{ establecimiento_nombre }}</title>
+    <title>Informe Neurológico Clínico - {{ establecimiento_nombre }}</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* Variables CSS para una gestión de colores y espaciado más fácil */
         :root {
-            --primary-dark: hsl(210, 29%, 18%); /* Azul pizarra muy oscuro */
-            --primary-medium: hsl(210, 15%, 28%); /* Azul pizarra medio */
-            --primary-light: hsl(210, 16%, 92%); /* Gris azulado muy claro */
+            --primary-dark: hsl(210, 29%, 18%);
+            --primary-medium: hsl(210, 15%, 28%);
+            --accent-green: hsl(140, 65%, 45%);
+            --accent-red: hsl(0, 75%, 58%);
+            --accent-blue: hsl(200, 70%, 55%);
             --background-body: linear-gradient(135deg, hsl(200, 20%, 98%) 0%, hsl(210, 15%, 96%) 100%);
-            --accent-green: hsl(140, 65%, 45%); /* Verde vibrante */
-            --accent-red: hsl(0, 75%, 58%); /* Rojo intenso */
-            --accent-blue: hsl(200, 70%, 55%); /* Azul cielo brillante */
-            --google-drive-blue: #4285F4;
-            --signature-purple: #8B5CF6;
-            --text-dark: hsl(210, 10%, 15%);
-            --text-light: hsl(0, 0%, 99%);
-            --border-color: hsl(210, 10%, 82%);
-            --shadow-subtle: rgba(0, 0, 0, 0.08);
-            --shadow-medium: rgba(0, 0, 0, 0.15);
-            --shadow-strong: rgba(0, 0, 0, 0.25);
             --border-radius-base: 14px;
-            --padding-base: 28px;
-            --gap-base: 30px;
         }
 
         /* Estilos generales del cuerpo */
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: var(--background-body);
-            color: var(--text-dark);
-            line-height: 1.6;
-            min-height: 100vh;
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: var(--background-body); 
+            color: hsl(210, 10%, 15%); 
+            line-height: 1.6; 
+            min-height: 100vh; 
+            padding: 20px; 
+            margin: 0;
             display: flex;
             flex-direction: column;
-            overflow-x: hidden;
-            padding: 20px;
-            margin: 0;
+            align-items: center;
         }
 
         /* Contenedor principal para centrar el contenido */
         .main-content-wrapper {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 0 20px;
-            flex-grow: 1;
+            max-width: 900px;
+            width: 100%;
+            margin: 20px auto; 
+            flex-grow: 1; 
         }
 
-        /* Header Styles (Based on the reference code style) */
+        /* Estilos de encabezado y botones de navegación */
         header {
             background-color: #f0f4f8;
             padding: 20px 0;
             text-align: center;
             position: relative;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            width: 100%;
         }
-        header img { max-width: 150px; margin-bottom: 10px; transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out; }
-        header img:hover { transform: scale(1.05); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-        header h1 { font-size: 1.8rem; color: #333; margin-top: 5px; font-weight: 700; }
-
         .header-btn {
-            position: absolute;
-            top: 20px;
-            padding: 10px 18px;
-            border-radius: 25px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-        }
-        .back-to-dashboard-btn { left: 20px; background-color: #6c757d; color: #fff; }
-        .back-to-dashboard-btn:hover { background-color: #5a6268; transform: translateY(-2px); box-shadow: 0 5px 12px rgba(0,0,0,0.15); }
-        .logout-btn { right: 20px; background-color: #dc3545; color: #fff; }
-        .logout-btn:hover { background-color: #c82333; transform: translateY(-2px); box-shadow: 0 5px 12px rgba(0,0,0,0.15); }
-
-        /* Action Buttons */
-        .action-buttons { display: flex; justify-content: center; gap: 15px; margin-top: 20px; margin-bottom: 30px; flex-wrap: wrap; }
-        .action-buttons button {
-            background-color: var(--accent-blue);
-            color: white;
-            border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 0.95em; font-weight: 600;
+            position: absolute; top: 20px; padding: 10px 18px; border-radius: 25px; font-weight: 600; cursor: pointer; text-decoration: none;
             display: flex; align-items: center; gap: 8px; transition: all 0.3s ease; box-shadow: 0 3px 8px rgba(0,0,0,0.1);
         }
-        .action-buttons button:hover { background-color: hsl(200, 70%, 45%); transform: translateY(-2px); box-shadow: 0 5px 12px rgba(0,0,0,0.15); }
+        .back-to-dashboard-btn { left: 20px; background-color: #6c757d; color: #fff; }
+        .logout-btn { right: 20px; background-color: #dc3545; color: #fff; }
+        .back-to-dashboard-btn:hover { background-color: #5a6268; transform: translateY(-2px); }
+        .logout-btn:hover { background-color: #c82333; transform: translateY(-2px); }
         
-        /* Contador de evaluaciones */
-        .evaluation-counter {
-            background-color: #e6f7ff; border: 1px solid #99d6ff; border-radius: 10px; padding: 15px 25px; margin-bottom: 25px;
-            display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 1.1rem; font-weight: 600;
-            color: #1a73e8; box-shadow: 0 2px 8px rgba(0,0,0,0.08); flex-wrap: wrap;
-        }
-        .evaluation-counter strong { color: #34a853; font-size: 1.1em; }
-        .evaluation-counter i { color: #1a73e8; font-size: 1.3em; }
-
-        /* Buscador y Filtros */
-        #buscador {
-            width: 100%; max-width: 500px; display: block; margin: 0 auto 20px; padding: 12px 15px;
-            border: 1px solid #b0c2d4; border-radius: 8px; font-size: 1rem; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .filter-group {
-            display: flex; justify-content: center; gap: 25px; margin-bottom: 30px; background-color: #f9f9f9;
-            padding: 15px 25px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); flex-wrap: wrap;
+        h1 { font-size: 2rem; color: var(--primary-dark); margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        h3 { font-size: 1.3rem; color: var(--primary-medium); margin-top: 25px; margin-bottom: 10px; font-weight: 600; }
+        
+        .card-clinico {
+            background: #ffffff; padding: 30px; border-radius: var(--border-radius-base); box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border-top: 5px solid var(--accent-blue);
         }
 
-        /* Estilos de los detalles de estudiante (Acordeón) */
-        details { margin-bottom: 25px; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 15px rgba(0,0,0,0.08); transition: all 0.3s ease; }
-        summary {
-            background: #1a73e8; color: #fff; padding: 18px 25px; font-weight: bold; cursor: pointer; user-select: none;
-            display: flex; align-items: center; justify-content: space-between; font-size: 1.15rem; transition: background 0.3s ease;
+        /* Datos del alumno (Pre-cargados) */
+        .datos-alumno {
+            background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 25px; display: flex; flex-wrap: wrap; gap: 20px;
         }
-        summary:hover { background: #155ab6; }
-        summary .chevron-icon { transition: transform 0.3s ease; }
-        details[open] summary .chevron-icon { transform: rotate(90deg); }
-        summary::marker, summary::-webkit-details-marker { display: none; content: ""; }
-        
-        .container {
-            display: flex; gap: 30px; flex-wrap: wrap; padding: 25px; background-color: #ffffff; border-radius: 0 0 12px 12px;
-        }
-        .formulario {
-            flex: 1 1 500px; background: #ffffff; border-left: 6px solid #1a73e8; border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.06); padding: 30px; position: relative;
-        }
-        .preview {
-            flex: 1 1 350px; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            padding: 30px; border-left: 6px solid #1a73e8; position: relative; overflow: hidden; transition: all 0.3s ease;
-        }
+        .datos-alumno p { margin: 5px 0; flex: 1 1 200px; }
+        .datos-alumno strong { color: var(--primary-medium); }
 
-        /* Badge de estado (Guardado) */
-        .badge {
-            position: absolute; top: 20px; right: 30px; background: var(--accent-green); color: #fff;
-            padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; opacity: 0;
-            transform: translateY(-10px); transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        .badge.show { opacity: 1; transform: translateY(0); }
-        
         /* Estilos de formulario e Inputs */
         label { display: block; margin-top: 15px; font-weight: 600; color: #333; }
-        input, textarea, select {
+        textarea, select, input[type="date"] {
             width: 100%; padding: 10px 12px; margin-top: 5px; border: 1px solid #b0c2d4; border-radius: 6px;
-            font-size: 1rem; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); transition: all 0.3s ease;
+            font-size: 1rem; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); min-height: 80px; resize: vertical;
         }
-        input:focus, textarea:focus, select:focus { border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.3); outline: none; }
+        select { min-height: 40px; }
+        input[type="date"] { min-height: 40px; }
         
-        /* Botones de acción del formulario */
-        .button-group { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 25px; justify-content: center; }
+        /* Badge de estado */
+        .badge-estado { padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+        .badge-pendiente { background-color: #ffeb3b; color: #333; }
+        .badge-completado { background-color: var(--accent-green); color: white; }
+
+        /* Botones de Acción */
+        .button-group { display: flex; gap: 15px; margin-top: 30px; justify-content: flex-end; border-top: 1px solid #eee; padding-top: 20px; }
         .button-group button {
-            flex: 1 1 auto; background: #1a73e8; color: #fff; border: none; padding: 14px 20px; border-radius: 8px;
-            cursor: pointer; font-weight: bold; font-size: 1.05rem; transition: all 0.3s ease; box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+            padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s ease;
+            display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        button.secondary { background: #34a853; }
-        button.signature-button { background: #8B5CF6; }
-        button.mark-evaluated-btn { background: var(--accent-blue); }
+        .btn-guardar-pdf { background: var(--accent-blue); color: white; }
+        .btn-guardar-pdf:hover { background: hsl(200, 70%, 45%); }
+        .btn-marcar { background: var(--accent-green); color: white; }
+        .btn-marcar:hover { background: hsl(140, 65%, 35%); }
+        .btn-marcar:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
 
-        /* Estilos de Previsualización (Preview) */
-        .preview h3 { margin-top: 0; font-size: 1.4rem; color: #1a73e8; border-bottom: 2px solid #1a73e8; padding-bottom: 10px; margin-bottom: 20px; }
-        .preview p { margin: 12px 0; font-size: 1rem; color: #333; }
-        .preview p strong { display: inline-block; width: 180px; color: #1a73e8; }
-        
-        /* Responsive Overrides (Mantenido) */
+        /* Estilos responsivos (Ajuste para móviles) */
         @media (max-width: 768px) {
-            .container { flex-direction: column; gap: 20px; padding: 15px; }
-            .formulario, .preview { flex: 1 1 100%; padding: 20px; }
-            .preview p strong { width: 120px; }
-            .header-btn { position: static; margin-bottom: 10px; width: 100%; display: block; text-align: center; }
-            header { display: flex; flex-direction: column; align-items: center; }
+            .datos-alumno { flex-direction: column; }
+            .button-group { flex-direction: column; }
+            .button-group button { width: 100%; }
+            .header-btn { position: static; margin-bottom: 10px; width: 100%; text-align: center; }
+            header { padding: 10px 0; }
         }
-
     </style>
 </head>
 <body>
-    <header>
-        <a href="{{ url_for('dashboard') }}" class="header-btn back-to-dashboard-btn">
-            <i class="fas fa-arrow-left"></i> Volver al Dashboard
-        </a>
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="CardioHome Logo">
-        <h1>{{ establecimiento_nombre }} — Informe Neurológico</h1>
-        <button class="header-btn logout-btn" onclick="cerrarSesion()">
-            <i class="fas fa-sign-out-alt"></i> Cerrar sesión
-        </button>
-    </header>
-
     <div class="main-content-wrapper">
-        
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <ul class="flash-messages">
-                    {% for category, message in messages %}
-                        <li class="{{ category }}">{{ message }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        {% endwith %}
-        
-        {# Contador de evaluaciones #}
-        <div class="evaluation-counter">
-            <i class="fas fa-clipboard-check"></i>
-            <span>Evaluaciones completadas para esta nómina: <strong id="completed-forms-count">{{ total_forms_completed_for_nomina }}</strong></span>
-            <button onclick="updateCompletedCount()">Actualizar Conteo</button>
-        </div>
+        <div class="card-clinico">
+            <h1 class="flex items-center">
+                <i class="fa-solid fa-file-waveform mr-3 text-accent-blue"></i>
+                Informe Neurológico
+            </h1>
 
-        <div class="action-buttons">
-            <button onclick="descargarExcelCompletados('{{ nomina_id }}', '{{ establecimiento_nombre }}')">
-                <i class="fas fa-file-excel"></i> Descargar Excel de Evaluados
-            </button>
-            <button onclick="descargarPDFsVisiblesComoZip('{{ nomina_id }}', '{{ establecimiento_nombre }}')">
-                <i class="fas fa-file-archive"></i> Descargar PDFs Evaluados (ZIP)
-            </button>
-        </div>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="mb-4">
+                        {% for category, message in messages %}
+                            <div class="p-3 rounded text-white mb-2 {% if category == 'error' %}bg-accent-red{% else %}bg-accent-green{% endif %}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
 
-        <input type="text" id="buscador" placeholder="Buscar estudiante por nombre..." oninput="aplicarFiltros()">
+            {% if estudiantes %}
+                <div class="space-y-8">
+                {% for estudiante in estudiantes %}
+                    <div class="border p-6 rounded-lg shadow-inner" id="student-{{ estudiante.id }}">
+                        
+                        <h2 class="text-xl font-bold text-primary-dark mb-4 flex justify-between items-center">
+                            {{ estudiante.nombre }} (RUT: {{ estudiante.rut | default('N/A') }})
+                            <span class="badge-estado {% if estudiante.fecha_relleno %}badge-completado{% else %}badge-pendiente{% endif %}">
+                                {% if estudiante.fecha_relleno %}COMPLETADO{% else %}PENDIENTE{% endif %}
+                            </span>
+                        </h2>
 
-        <div class="filter-group">
-            <label>
-                <input type="radio" name="evaluation_filter" value="all" checked onchange="aplicarFiltros()"> Todos
-            </label>
-            <label>
-                <input type="radio" name="evaluation_filter" value="evaluated" onchange="aplicarFiltros()"> Evaluados
-            </label>
-            <label>
-                <input type="radio" name="evaluation_filter" value="not_evaluated" onchange="aplicarFiltros()"> No Evaluados
-            </label>
-        </div>
-
-        {% if estudiantes %}
-            {% for est in estudiantes %}
-            
-            {# CRÍTICO: data-evaluated-status usa 'true' si fecha_relleno existe #}
-            <details class="estudiante" data-nombre="{{ est.nombre | lower }}" data-estudiante-id="{{ est.id }}" data-nomina-id="{{ nomina_id }}" data-evaluated-status="{{ 'true' if est.fecha_relleno is not none else 'false' }}">
-                <summary>
-                    <span>{{ est.nombre }} (RUT: {{ est.rut }}) - Edad: {{ est.edad }}</span>
-                    <i class="fas fa-chevron-right chevron-icon"></i>
-                </summary>
-                <div class="container">
-                    
-                    <div class="formulario">
-                        <span class="badge">Guardado</span>
-                        <form id="form-estudiante-{{ est.id }}" onsubmit="event.preventDefault(); submitForm(this);">
+                        <div class="datos-alumno">
+                            <p><strong>RUT:</strong> {{ estudiante.rut | default('N/A') }}</p>
+                            <p><strong>Edad:</strong> {{ estudiante.edad | default('N/A') }}</p>
+                            <p><strong>F. Nacimiento:</strong> {{ estudiante.fecha_nacimiento_formato | default('N/A') }}</p>
+                            <p><strong>Nacionalidad:</strong> {{ estudiante.nacionalidad | default('N/A') }}</p>
                             
-                            <input type="hidden" name="estudiante_id" value="{{ est.id }}">
+                            <p style="flex: 1 1 100%;">
+                                <strong>Género (Guardado: {{ estudiante.sexo | default('N/A') }}):</strong>
+                                <select name="sexo_seleccionado" id="sexo_select_{{ estudiante.id }}" class="form-input" style="width: 200px; display: inline-block; margin-left: 10px;">
+                                    <option value="">Seleccionar Género</option>
+                                    <option value="M" {% if estudiante.sexo == 'M' %}selected{% endif %}>Masculino</option>
+                                    <option value="F" {% if estudiante.sexo == 'F' %}selected{% endif %}>Femenino</option>
+                                </select>
+                            </p>
+                        </div>
+
+                        <form id="form-estudiante-{{ estudiante.id }}" onsubmit="event.preventDefault(); submitForm(this);">
+                            <input type="hidden" name="estudiante_id" value="{{ estudiante.id }}">
                             <input type="hidden" name="nomina_id" value="{{ nomina_id }}">
-                            <input type="hidden" name="nombre" value="{{ est.nombre }}">
-                            <input type="hidden" name="rut" value="{{ est.rut }}">
-                            <input type="hidden" name="fecha_nacimiento_original" value="{{ est.fecha_nacimiento if est.fecha_nacimiento is not none else '' }}">
-                            <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
-                            <input type="hidden" name="edad" value="{{ est.edad }}">
+                            <input type="hidden" name="nombre" value="{{ estudiante.nombre }}">
+                            <input type="hidden" name="rut" value="{{ estudiante.rut }}">
+                            <input type="hidden" name="fecha_nacimiento_original" value="{{ estudiante.fecha_nacimiento | default('') }}">
+                            <input type="hidden" name="nacionalidad" value="{{ estudiante.nacionalidad | default('Chilena') }}">
+                            <input type="hidden" name="edad" value="{{ estudiante.edad | default('N/A') }}">
                             
-                            {# Asumimos que genero_f/m están precalculados o se infieren, los enviamos como inputs ocultos #}
-                            <input type="hidden" name="genero_m" value="{{ 'on' if est.sexo == 'M' }}">
-                            <input type="hidden" name="genero_f" value="{{ 'on' if est.sexo == 'F' }}">
+                            <input type="hidden" name="genero_m" value=""> 
+                            <input type="hidden" name="genero_f" value=""> 
+                            <input type="hidden" name="sexo" value="{{ estudiante.sexo | default('') }}"> <h3>II. Historia Clínica / Anamnesis</h3>
+                            <label for="motivo_consulta_{{ estudiante.id }}">Motivo de consulta:</label>
+                            <textarea name="motivo_consulta" id="motivo_consulta_{{ estudiante.id }}" rows="4" class="form-input">{{ estudiante.motivo_consulta | default('') }}</textarea>
                             
-                            <h4 style="color: var(--primary-dark); font-size: 1.1rem; margin-bottom: 15px;">I. Datos de Identificación (Pre-cargados)</h4>
-                            <p class="info"><strong>RUT:</strong> {{ est.rut }}</p>
-                            <p class="info"><strong>Fecha Nac.:</strong> {{ est.fecha_nacimiento_formato }}</p>
-                            <p class="info"><strong>Edad:</strong> {{ est.edad }}</p>
-                            <p class="info"><strong>Género:</strong> {{ 'Masculino' if est.sexo == 'M' else 'Femenino' if est.sexo == 'F' else 'N/A' }}</p>
+                            <h3>III. Examen Físico General (Observaciones)</h3>
+                            <label for="observaciones_{{ estudiante.id }}">Observaciones:</label>
+                            <textarea name="observaciones" id="observaciones_{{ estudiante.id }}" rows="4" class="form-input">{{ estudiante.observaciones | default('') }}</textarea>
+                            
+                            <h3>IV. Examen Neurológico Específico (Observaciones)</h3>
+                            <label for="observacion_neurologia_{{ estudiante.id }}">Observaciones:</label>
+                            <textarea name="observacion_neurologia" id="observacion_neurologia_{{ estudiante.id }}" rows="4" class="form-input">{{ estudiante.observacion_neurologia | default('') }}</textarea>
 
-                            <hr style="margin: 20px 0; border-top: 1px dashed #ddd;">
+                            <h3>V. Diagnóstico</h3>
+                            <label for="diagnostico_select_{{ estudiante.id }}">Diagnóstico (Selección Rápida):</label>
+                            <select name="diagnostico" id="diagnostico_select_{{ estudiante.id }}" class="form-input" required>
+                                <option value="">Seleccione el Diagnóstico Definitivo</option>
+                                <option value="Trastorno Del Espectro Autista" {% if estudiante.diagnostico == 'Trastorno Del Espectro Autista' %}selected{% endif %}>Trastorno Del Espectro Autista</option>
+                                <option value="Trastorno Por Deficit de Atención" {% if estudiante.diagnostico == 'Trastorno Por Deficit de Atención' %}selected{% endif %}>Trastorno por Deficit de Atención</option>
+                                <option value="Trastorno Por Deficit de Atención e Hiperactividad" {% if estudiante.diagnostico == 'Trastorno Por Deficit de Atención e Hiperactividad' %}selected{% endif %}>Trastorno por Deficit de Atención e Hiperactividad</option>
+                                <option value="Trastorno del Aprendizaje" {% if estudiante.diagnostico == 'Trastorno del Aprendizaje' %}selected{% endif %}>Trastorno del Aprendizaje</option>
+                                <option value="Otro / Diagnóstico No PIE" {% if estudiante.diagnostico == 'Otro / Diagnóstico No PIE' %}selected{% endif %}>Otro / Diagnóstico No PIE</option>
+                            </select>
 
-                            <label for="motivo_consulta_{{ est.id }}">II. Motivo de Consulta:</label>
-                            <textarea name="motivo_consulta" id="motivo_consulta_{{ est.id }}" rows="3" class="form-input" oninput="updatePreview(this.form)">{{ est.motivo_consulta | default(est.diagnostico_1) | default('') }}</textarea>
+                            <h3>VI. Plan y Recomendaciones</h3>
+                            <label for="indicaciones_{{ estudiante.id }}">Indicaciones (Plan de Acción):</label>
+                            <textarea name="indicaciones" id="indicaciones_{{ estudiante.id }}" rows="4" class="form-input">{{ estudiante.indicaciones | default('') }}</textarea>
                             
-                            <label for="observaciones_{{ est.id }}">III. Examen Físico General (Observaciones):</label>
-                            <textarea name="observaciones" id="observaciones_{{ est.id }}" rows="3" class="form-input" oninput="updatePreview(this.form)">{{ est.observaciones | default(est.estado_general) | default('') }}</textarea>
+                            <label for="derivaciones_{{ estudiante.id }}">Derivaciones (Opcional):</label>
+                            <textarea name="derivaciones" id="derivaciones_{{ estudiante.id }}" rows="4" class="form-input">{{ estudiante.derivaciones | default('') }}</textarea>
                             
-                            <label for="observacion_neurologia_{{ est.id }}">IV. Examen Neurológico Específico (Observaciones):</label>
-                            <textarea name="observacion_neurologia" id="observacion_neurologia_{{ est.id }}" rows="4" class="form-input" oninput="updatePreview(this.form)">{{ est.observacion_neurologia | default('') }}</textarea>
-
-                            <label for="diagnostico_{{ est.id }}">V. Diagnóstico Definitivo:</label>
-                            <textarea name="diagnostico" id="diagnostico_{{ est.id }}" rows="2" class="form-input" oninput="updatePreview(this.form)">{{ est.diagnostico | default(est.diagnostico_1) | default('') }}</textarea>
-
-                            <label for="indicaciones_{{ est.id }}">VI. Plan / Indicaciones:</label>
-                            <textarea name="indicaciones" id="indicaciones_{{ est.id }}" rows="3" class="form-input" oninput="updatePreview(this.form)">{{ est.indicaciones | default('') }}</textarea>
+                            <label for="fecha_evaluacion_{{ estudiante.id }}" style="margin-top: 20px;">Fecha Evaluación:</label>
+                            <input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ estudiante.id }}" value="{{ estudiante.fecha_evaluacion | default('') }}" required>
                             
-                            <label for="derivaciones_{{ est.id }}">VI. Derivaciones:</label>
-                            <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="3" class="form-input" oninput="updatePreview(this.form)">{{ est.derivaciones | default('') }}</textarea>
-                            
-                            <label for="fecha_evaluacion_{{ est.id }}" style="margin-top: 20px;">Fecha Evaluación:</label>
-                            <input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}" value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}" required onchange="updatePreview(this.form)">
-                            
-                            <label for="fecha_reevaluacion_{{ est.id }}">Fecha de Reevaluación (Opcional):</label>
-                            <input type="date" name="fecha_reevaluacion" id="fecha_reevaluacion_{{ est.id }}" value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}" onchange="updatePreview(this.form)">
+                            <label for="fecha_reevaluacion_{{ estudiante.id }}">Fecha de Reevaluación (Opcional):</label>
+                            <input type="date" name="fecha_reevaluacion" id="fecha_reevaluacion_{{ estudiante.id }}" value="{{ estudiante.fecha_reevaluacion | default('') }}">
 
 
                             <div class="button-group form-actions">
-                                <button type="button" class="mark-evaluated-btn"
-                                        data-estudiante-id="{{ est.id }}"
-                                        {% if est.fecha_relleno is not none %}disabled{% endif %}
+                                <button type="button" class="btn-marcar"
+                                        data-estudiante-id="{{ estudiante.id }}"
+                                        {% if estudiante.fecha_relleno is not none %}disabled{% endif %}
                                         onclick="marcarComoEvaluado(this)">
                                     <i class="fas fa-check-circle"></i>
-                                    {% if est.fecha_relleno is not none %}Evaluado{% else %}Marcar como Evaluado{% endif %}
+                                    {% if estudiante.fecha_relleno is not none %}Evaluado{% else %}Marcar como Evaluado{% endif %}
                                 </button>
                                 
-                                <button type="submit">
+                                <button type="submit" class="btn-guardar-pdf">
                                     <i class="fas fa-file-pdf"></i> Guardar y Generar PDF
                                 </button>
                                 
-                                <button type="button" class="secondary signature-button" onclick="insertarFirma()">
+                                <button type="button" class="secondary" onclick="insertarFirma()">
                                     <i class="fas fa-signature"></i> Insertar Firma
                                 </button>
                             </div>
                         </form>
                     </div>
-
-                    <div class="preview">
-                        <h3>Vista Previa del Informe</h3>
-                        <p><strong>RUT:</strong> <span class="prev-rut">{{ est.rut }}</span></p>
-                        <p><strong>Edad:</strong> <span class="prev-edad-info">{{ est.edad }}</span></p>
-                        <hr style="margin: 15px 0;">
-                        <p><strong>F. Evaluación:</strong> <span class="prev-fecha-evaluacion">{% if est.fecha_evaluacion %}{{ est.fecha_evaluacion.split('-')[2] }}/{{ est.fecha_evaluacion.split('-')[1] }}/{{ est.fecha_evaluacion.split('-')[0] }}{% else %}-{% endif %}</span></p>
-                        <hr style="margin: 15px 0;">
-                        
-                        <p style="font-weight: 700; color: #E74C3C;">Motivo Consulta:</p>
-                        <div style="font-size: 0.9em; margin-left: 10px; padding: 5px; border-left: 3px solid #E74C3C;">
-                            <span class="prev-motivo-consulta">{{ est.motivo_consulta | default(est.diagnostico_1) | default('-') }}</span>
-                        </div>
-                        
-                        <p style="font-weight: 700; color: #1a73e8; margin-top: 20px;">Diagnóstico:</p>
-                        <div style="font-size: 0.9em; margin-left: 10px; padding: 5px; border-left: 3px solid #1a73e8;">
-                            <span class="prev-diagnostico">{{ est.diagnostico | default(est.diagnostico_1) | default('-') }}</span>
-                        </div>
-                        
-                        <p style="font-weight: 700; color: var(--accent-green); margin-top: 20px;">Indicaciones:</p>
-                        <div style="font-size: 0.9em; margin-left: 10px; padding: 5px; border-left: 3px solid var(--accent-green);">
-                            <span class="prev-indicaciones">{{ est.indicaciones | default('-') }}</span>
-                        </div>
-                        
-                        <button onclick="window.print()" style="margin-top: 20px; width: 100%;">
-                            <i class="fas fa-print"></i> Imprimir Vista Previa
-                        </button>
-                    </div>
+                {% endfor %}
                 </div>
-            </details>
-            {% endfor %}
-        {% else %}
-            <p style="text-align: center; color: #888; font-size: 1.1rem; margin-top: 50px;">No hay estudiantes asignados en esta nómina.</p>
-        {% endif %}
+            {% else %}
+                <p style="text-align: center; color: #888; font-size: 1.1rem; margin-top: 50px;">No hay estudiantes asignados en esta nómina.</p>
+            {% endif %}
+        </div>
     </div>
-
-    <footer>
-        © 2025 CardioHome · Todos los derechos reservados.
-    </footer>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Inicializar filtros y previsualizaciones al cargar
-            aplicarFiltros(); // Aplica el filtro inicial (Todos)
+            // Lógica de autocompletado de fecha de evaluación con la fecha actual al cargar
             document.querySelectorAll('.formulario form').forEach(form => {
-                
-                // 1. Autocompletar Fecha Evaluación con la fecha de hoy si está vacía
                 const fechaEvaluacionInput = form.querySelector('input[name="fecha_evaluacion"]');
                 if (fechaEvaluacionInput && (fechaEvaluacionInput.value === null || fechaEvaluacionInput.value.trim() === '')) {
                     const today = new Date();
@@ -364,133 +244,67 @@
                     const dd = String(today.getDate()).padStart(2, '0');
                     fechaEvaluacionInput.value = `${yyyy}-${mm}-${dd}`;
                 }
-                updatePreview(form); // Actualiza la vista previa con los valores iniciales
             });
-
-            // Event listener para el buscador
-            const buscador = document.getElementById('buscador');
-            if (buscador) {
-                buscador.addEventListener('input', aplicarFiltros);
-            }
-
-            // Event listener para los radio buttons de filtro
-            document.querySelectorAll('input[name="evaluation_filter"]').forEach(radio => {
-                radio.addEventListener('change', aplicarFiltros);
-            });
-            
-            // Event Listeners para inputs de formulario para actualizar la vista previa en tiempo real
-            document.querySelectorAll('.formulario textarea, .formulario input[type="date"], .formulario select').forEach(input => {
-                input.addEventListener('input', (e) => {
-                    if (e.target.name !== 'fecha_reevaluacion') { // Evitar doble cálculo
-                        updatePreview(e.target.form);
-                    }
-                });
-            });
-
-             // Llamar a updateCompletedCount cuando la página se carga para asegurar que el contador sea preciso
+            // Inicializar el contador
             updateCompletedCount();
         });
-
-        function cerrarSesion() {
-            window.location.href = "/logout";
+        
+        function updateCompletedCount() {
+            const completedCount = document.querySelectorAll('div[data-evaluated-status="true"]').length; // Contando los divs que representan estudiantes evaluados
+            document.getElementById('completed-forms-count').textContent = completedCount;
         }
 
-        // Esta función ya no es necesaria en este formulario, pero se mantiene si se usa en otro lado
-        function setFechaReevaluacion(select) {
-             // Lógica del cálculo de reevaluación (Mantenida de tu otro código si es necesaria, pero no es crucial para el Informe Neuro)
-             const form = select.closest('form');
-             updatePreview(form); 
-        }
-
-        function updatePreview(form) {
-            const container = form.closest('.container');
-            if (!container) return;
+        function getSexFlags(form) {
+            const sexoSelect = document.getElementById(`sexo_select_${form.querySelector('input[name="estudiante_id"]').value}`);
+            const selectedSex = sexoSelect ? sexoSelect.value : '';
             
-            const badge = form.closest('.formulario').querySelector('.badge');
-
-            // Actualizar campos de texto largos
-            container.querySelector('.prev-motivo-consulta').textContent = form.motivo_consulta ? (form.motivo_consulta.value || '-') : '-';
-            container.querySelector('.prev-diagnostico').textContent = form.diagnostico ? (form.diagnostico.value || '-') : '-';
-            container.querySelector('.prev-indicaciones').textContent = form.indicaciones ? (form.indicaciones.value || '-') : '-';
-            
-            // Actualizar Fecha Evaluación en preview
-            const fechaEvaluacionInput = form.querySelector('input[name="fecha_evaluacion"]');
-            if (fechaEvaluacionInput && fechaEvaluacionInput.value) {
-                const [year, month, day] = fechaEvaluacionInput.value.split('-');
-                container.querySelector('.prev-fecha-evaluacion').textContent = `${day}/${month}/${year}`;
-            } else {
-                container.querySelector('.prev-fecha-evaluacion').textContent = '-';
-            }
-
-            if (badge) {
-                badge.classList.add('show');
-                badge.textContent = "Modificando..."; 
-                clearTimeout(badge.timeout);
-                badge.timeout = setTimeout(() => {
-                    badge.textContent = "Guardado";
-                }, 800);
-            }
+            return {
+                sexo: selectedSex,
+                genero_m: selectedSex === 'M' ? 'on' : '',
+                genero_f: selectedSex === 'F' ? 'on' : ''
+            };
         }
-
-        function updateStudentUI(estudianteId, isEvaluated) {
-            const detailElement = document.querySelector(`details.estudiante[data-estudiante-id="${estudianteId}"]`);
-            if (detailElement) {
-                detailElement.setAttribute('data-evaluated-status', isEvaluated ? 'true' : 'false');
-                
-                const markButton = detailElement.querySelector('.mark-evaluated-btn');
-                if (markButton) {
-                    if (isEvaluated) {
-                        markButton.disabled = true;
-                        markButton.innerHTML = '<i class="fas fa-check-circle"></i> Evaluado';
-                    } else {
-                        markButton.disabled = false;
-                        markButton.innerHTML = '<i class="fas fa-check-circle"></i> Marcar como Evaluado';
-                    }
-                }
-                // Actualizar el contador global
-                updateCompletedCount();
-                // Mostrar badge de "Guardado"
-                const badge = detailElement.querySelector('.badge');
-                if (badge) {
-                    badge.classList.add('show');
-                    badge.textContent = "Guardado";
-                    clearTimeout(badge.timeout); 
-                    badge.timeout = setTimeout(() => {
-                        badge.classList.remove('show');
-                    }, 3000); 
-                }
-            }
-        }
-
+        
         async function submitForm(form) {
             const formData = new FormData(form);
             
-            // CRÍTICO: Debemos usar application/x-www-form-urlencoded para FormData
+            // 💡 AJUSTE CLAVE: Insertar los flags de género del desplegable y el campo principal 'sexo' en el FormData antes de enviar
+            const sexFlags = getSexFlags(form);
+            
+            // Remover valores antiguos para evitar duplicados y errores
+            formData.delete('sexo');
+            formData.delete('genero_m');
+            formData.delete('genero_f');
+
+            // Añadir los valores actuales (DB y PDF flags)
+            formData.append('sexo', sexFlags.sexo);
+            if (sexFlags.genero_m) formData.append('genero_m', 'on'); // Flag para PDF
+            if (sexFlags.genero_f) formData.append('genero_f', 'on'); // Flag para PDF
+
             const params = new URLSearchParams(formData);
 
+            // 1. Validar campos obligatorios
+            const diagnosticoSelect = form.querySelector('select[name="diagnostico"]');
+            if (diagnosticoSelect.value === "") {
+                 Swal.fire({ icon: 'error', title: 'Faltan datos', text: 'Debe seleccionar un Diagnóstico Definitivo antes de guardar.', confirmButtonText: 'Entendido' });
+                 return;
+            }
+            
             Swal.fire({
-                title: 'Guardando y Generando PDF...',
-                text: 'Por favor, espera.',
-                didOpen: () => { Swal.showLoading(); },
-                allowOutsideClick: false, allowEscapeKey: false
+                title: 'Guardando y Generando PDF...', text: 'Esto puede tardar unos segundos.',
+                didOpen: () => { Swal.showLoading(); }, allowOutsideClick: false, allowEscapeKey: false
             });
 
             try {
                 // Paso 1: Guardar la evaluación (Esto también marca como evaluado)
-                const saveResponse = await fetch('/marcar_evaluado', {
-                    method: 'POST',
-                    body: params 
-                });
+                const saveResponse = await fetch('/marcar_evaluado', { method: 'POST', body: params });
                 const saveData = await saveResponse.json();
 
                 if (saveData.success) {
                     updateStudentUI(formData.get('estudiante_id'), true); 
 
                     // Paso 2: Generar el PDF
-                    const pdfResponse = await fetch('/generar_pdf', {
-                        method: 'POST',
-                        body: params
-                    });
+                    const pdfResponse = await fetch('/generar_pdf', { method: 'POST', body: params });
 
                     if (pdfResponse.ok) {
                         const blob = await pdfResponse.blob();
@@ -507,92 +321,58 @@
                         
                         const url = window.URL.createObjectURL(blob);
                         const a = document.createElement('a');
-                        a.href = url;
-                        a.download = filename;
-                        document.body.appendChild(a);
-                        a.click();
-                        a.remove();
+                        a.href = url; a.download = filename;
+                        document.body.appendChild(a); a.click(); a.remove();
                         window.URL.revokeObjectURL(url);
                         
-                        Swal.fire({
-                            icon: 'success',
-                            title: '¡Guardado y PDF Generado!',
-                            text: 'Los datos se han guardado y el PDF se ha descargado correctamente.',
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
+                        Swal.fire({ icon: 'success', title: '¡Guardado y PDF Generado!', text: 'Los datos se han guardado y el PDF se ha descargado correctamente.', timer: 2000, showConfirmButton: false });
 
                     } else {
                         const pdfErrorText = await pdfResponse.text();
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Error al generar PDF',
-                            text: `Los datos se guardaron, pero no se pudo generar el PDF. ${pdfErrorText}`,
-                        });
+                        Swal.fire({ icon: 'warning', title: 'Error al generar PDF', text: `Los datos se guardaron, pero no se pudo generar el PDF. ${pdfErrorText}`, });
                     }
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error al guardar',
-                        text: saveData.message,
-                    });
+                    Swal.fire({ icon: 'error', title: 'Error al guardar', text: saveData.message, });
                 }
             } catch (error) {
                 console.error('Error en el proceso de guardar y generar PDF:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error de Conexión',
-                    text: 'No se pudo conectar con el servidor para guardar y generar el PDF.'
-                });
+                Swal.fire({ icon: 'error', title: 'Error de Conexión', text: 'No se pudo conectar con el servidor para guardar y generar el PDF.' });
             }
         }
 
         async function marcarComoEvaluado(buttonElement) {
             const form = buttonElement.closest('form');
             const estudianteId = buttonElement.getAttribute('data-estudiante-id');
-            const formData = new FormData(form);
-            const params = new URLSearchParams(formData);
+            const diagnosticoSelect = form.querySelector('select[name="diagnostico"]');
+            
+            // 💡 AJUSTE CLAVE: Insertar los flags de género del desplegable en el FormData antes de enviar
+            const sexFlags = getSexFlags(form);
+            form.querySelector('input[name="sexo"]').value = sexFlags.sexo; // Campo principal de DB: M/F
+            // No necesitamos enviar los flags booleanos aquí, ya que marcar_evaluado lee 'sexo'
 
-            // Validación de campos obligatorios
-            const requiredInputs = form.querySelectorAll('textarea[required], input[required], select[required]');
-            let allFilled = true;
-            requiredInputs.forEach(input => {
-                if (!input.value.trim()) {
-                    allFilled = false;
-                    input.style.borderColor = 'var(--accent-red)';
-                } else {
-                    input.style.borderColor = 'var(--border-color)';
-                }
-            });
-
-            if (!allFilled) {
-                 Swal.fire({
-                    icon: 'error', title: 'Faltan datos', text: 'Debe rellenar los campos obligatorios para marcar como evaluado.', confirmButtonText: 'Entendido'
-                 });
+            if (diagnosticoSelect.value === "") {
+                 Swal.fire({ icon: 'error', title: 'Faltan datos', text: 'Debe seleccionar un Diagnóstico Definitivo antes de marcar como evaluado.', confirmButtonText: 'Entendido' });
                  return;
             }
 
             Swal.fire({
-                title: '¿Marcar como Evaluado?',
-                text: 'Esta acción registrará la evaluación del alumno y guardará todos los datos rellenados.',
+                title: '¿Marcar como Evaluado?', text: 'Esta acción registrará la evaluación del alumno y guardará todos los datos rellenados.',
                 icon: 'question', showCancelButton: true, confirmButtonColor: '#3085d6', cancelButtonColor: '#d33',
                 confirmButtonText: 'Sí, marcar', cancelButtonText: 'Cancelar'
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     try {
-                        const response = await fetch('/marcar_evaluado', {
-                            method: 'POST',
-                            body: params 
-                        });
+                        const formData = new FormData(form);
+                        const params = new URLSearchParams(formData);
+
+                        const response = await fetch('/marcar_evaluado', { method: 'POST', body: params });
                         const data = await response.json();
 
                         if (data.success) {
-                            Swal.fire({
-                                icon: 'success', title: '¡Evaluado y Guardado!', text: data.message, timer: 1500, showConfirmButton: false
-                            });
+                            Swal.fire({ icon: 'success', title: '¡Evaluado y Guardado!', text: data.message, timer: 1500, showConfirmButton: false });
                             updateStudentUI(estudianteId, true); 
                         } else {
-                            Swal.fire({ icon: 'error', title: 'Error al guardar', text: data.message });
+                            Swal.fire({ icon: 'error', title: 'Error', text: data.message });
                         }
                     } catch (error) {
                         Swal.fire({ icon: 'error', title: 'Error de Conexión', text: 'No se pudo conectar con el servidor.' });
@@ -601,13 +381,29 @@
             });
         }
         
-        // Función para actualizar el contador de formularios completados en la interfaz
-        function updateCompletedCount() {
-            const completedCount = document.querySelectorAll('details.estudiante[data-evaluated-status="true"]').length;
-            document.getElementById('completed-forms-count').textContent = completedCount;
-        }
+        function updateStudentUI(estudianteId, isEvaluated) {
+            const detailElement = document.getElementById(`student-${estudianteId}`); // Usa el ID del div
+            const detailContainer = detailElement.closest('details');
 
-        // Función para aplicar filtros de búsqueda y estado de evaluación
+            if (detailContainer) {
+                detailContainer.setAttribute('data-evaluated-status', isEvaluated ? 'true' : 'false');
+                
+                const markButton = detailElement.querySelector('.btn-marcar');
+                const badge = detailElement.querySelector('.badge-estado');
+
+                if (markButton) {
+                    markButton.disabled = isEvaluated;
+                    markButton.innerHTML = isEvaluated ? '<i class="fas fa-check-circle"></i> Evaluado' : '<i class="fas fa-check-circle"></i> Marcar como Evaluado';
+                }
+                if (badge) {
+                     badge.classList.remove('badge-pendiente', 'badge-completado');
+                     badge.classList.add(isEvaluated ? 'badge-completado' : 'badge-pendiente');
+                     badge.textContent = isEvaluated ? 'COMPLETADO' : 'PENDIENTE';
+                }
+                updateCompletedCount();
+            }
+        }
+        
         function aplicarFiltros() {
             const estudiantes = document.querySelectorAll('details.estudiante');
             const searchTerm = document.getElementById('buscador').value.toLowerCase().trim();
@@ -618,34 +414,20 @@
                 const isEvaluated = detail.getAttribute('data-evaluated-status') === 'true';
 
                 const matchesSearch = nombre.includes(searchTerm);
-                let matchesFilter = false;
+                let matchesFilter = (evaluationFilter === 'all') || 
+                                    (evaluationFilter === 'evaluated' && isEvaluated) || 
+                                    (evaluationFilter === 'not_evaluated' && !isEvaluated);
 
-                if (evaluationFilter === 'all') {
-                    matchesFilter = true;
-                } else if (evaluationFilter === 'evaluated') {
-                    matchesFilter = isEvaluated;
-                } else if (evaluationFilter === 'not_evaluated') {
-                    matchesFilter = !isEvaluated;
-                }
-
-                if (matchesSearch && matchesFilter) {
-                    detail.style.display = ''; // Mostrar
-                } else {
-                    detail.style.display = 'none'; // Ocultar
-                }
+                detail.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
             });
         }
         
         function insertarFirma() {
-            Swal.fire({
-                icon: 'info', title: 'Próximamente', text: 'Se insertará la firma según la doctora que corresponda.'
-            });
+            Swal.fire({ icon: 'info', title: 'Próximamente', text: 'Se insertará la firma según la doctora que corresponda.' });
         }
-        
         function descargarExcelCompletados(nominaId, establecimientoNombre) {
              Swal.fire({ title: 'Próximamente', text: 'Funcionalidad de descarga de Excel pendiente de implementación en el backend.', icon: 'info' });
         }
-        
         function descargarPDFsVisiblesComoZip(nominaId, establecimientoNombre) {
              Swal.fire({ title: 'Próximamente', text: 'Funcionalidad de descarga de PDFs en ZIP pendiente de implementación en el backend.', icon: 'info' });
         }

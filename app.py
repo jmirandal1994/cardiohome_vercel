@@ -469,6 +469,8 @@ def map_db_value_to_x(db_value):
 
 @app.route('/relleno_formulario/<string:nomina_id>', methods=['GET'])
 def relleno_formulario(nomina_id):
+    # Asumo que las importaciones (datetime, requests, etc.) y funciones (calculate_age, etc.) existen
+
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
@@ -478,7 +480,7 @@ def relleno_formulario(nomina_id):
     # Guardamos el ID de la nómina en la sesión para que esté disponible en otras rutas
     session['current_nomina_id'] = nomina_id 
 
-    # 1. Obtener detalles de la nómina (Obtenemos form_type y tipo_nomina)
+    # 1. Obtener detalles de la nómina
     url_nomina = (
         f"{SUPABASE_URL}/rest/v1/nominas_medicas"
         f"?id=eq.{nomina_id}"
@@ -496,9 +498,7 @@ def relleno_formulario(nomina_id):
         
         nomina = nomina_data[0]
         
-        # Obtenemos AMBOS campos, pero usamos tipo_nomina para la condición
         form_type = nomina['form_type']
-        tipo_nomina_check = (nomina['tipo_nomina'] or "").lower()
         
         # Guardar form_type y doctora_id_para_formulario en la sesión (CRÍTICO para otras rutas)
         session['current_form_type'] = form_type
@@ -510,7 +510,6 @@ def relleno_formulario(nomina_id):
             return redirect(url_for('dashboard'))
 
     except requests.exceptions.RequestException as e:
-        # Aquí es donde se atrapó el error 400
         error_detail = e.response.text if e.response is not None else 'Conexión Fallida'
         print(f"❌ ERROR al obtener detalles de la nómina {nomina_id}: {e}. Detalle: {error_detail}")
         flash(f'Error al cargar la nómina. Detalle: {error_detail}', 'error')
@@ -521,7 +520,6 @@ def relleno_formulario(nomina_id):
         return redirect(url_for('dashboard'))
 
     # 2. Obtener la lista de estudiantes con TODOS los campos de evaluación
-    # 🟢 CORRECCIÓN: Se inserta 'observaciones' para el Examen Físico y 'diagnostico_sospecha/definitivo'
     url_estudiantes = (
         f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
         f"?nomina_id=eq.{nomina_id}"
@@ -542,9 +540,9 @@ def relleno_formulario(nomina_id):
             # Procesamiento de Fechas y Edad
             fecha_nacimiento_obj = None
             if est.get('fecha_nacimiento') and est['fecha_nacimiento'].strip():
-                 try:
+                try:
                     fecha_nacimiento_obj = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()
-                 except:
+                except:
                     pass
 
             edad_calculada = "N/A"
@@ -552,20 +550,21 @@ def relleno_formulario(nomina_id):
                 edad_calculada = calculate_age(fecha_nacimiento_obj) 
 
             est['edad'] = edad_calculada
+            # 💡 Aseguramos que el formato de fecha de nacimiento siempre esté disponible:
             est['fecha_nacimiento_formato'] = fecha_nacimiento_obj.strftime("%d/%m/%Y") if fecha_nacimiento_obj else 'N/A'
             est['fecha_nacimiento'] = est.get('fecha_nacimiento', '')
             est['fecha_evaluacion'] = est.get('fecha_evaluacion', '')
             est['fecha_reevaluacion'] = est.get('fecha_reevaluacion', '')
             
-            # Mapeo de check_cirugiasi / si_2 para el front-end (Medicina Familiar)
-            if 'familiar' in tipo_nomina_check or 'medicina familiar' in tipo_nomina_check:
-                if est.get('si_2'):
-                    est['check_cirugiasi'] = est.get('si_2') 
-
-                # Mapeo de género (sexo) a los checkboxes para que aparezcan marcados
-                sexo_db = (est.get('sexo') or "").upper()
-                est['genero_f'] = (sexo_db == 'F')
-                est['genero_m'] = (sexo_db == 'M')
+            # 💡 Corrección del Mapeo de check_cirugiasi / si_2 (Medicina Familiar)
+            # Aunque ya no está en el formulario, es necesario para cargar datos antiguos de la DB.
+            if est.get('si_2'):
+                est['check_cirugiasi'] = est.get('si_2') 
+                
+            # Mapeo de género (sexo) a los checkboxes (Medicina Familiar)
+            sexo_db = (est.get('sexo') or "").upper()
+            est['genero_f'] = (sexo_db == 'F')
+            est['genero_m'] = (sexo_db == 'M')
             
             estudiantes.append(est)
         
@@ -579,11 +578,11 @@ def relleno_formulario(nomina_id):
         total_forms_completed_for_nomina = sum(1 for est in estudiantes if est.get('fecha_relleno') is not None)
 
 
-        # 5. LÓGICA DE REDIRECCIÓN CLAVE (Basada en form_type o tipo_nomina_check)
+        # 5. LÓGICA DE REDIRECCIÓN CLAVE (UNIFICADA POR form_type)
         base_render_params = {
             'nomina_id': nomina_id,
             'establecimiento_nombre': nomina['nombre_nomina'],
-            'form_type': form_type, # Se sigue pasando form_type para que el HTML lo use si es necesario
+            'form_type': form_type, 
             'estudiantes': estudiantes,
             'total_forms_completed_for_nomina': total_forms_completed_for_nomina,
             'doctora_asignada_id': doctora_asignada_id,
@@ -591,23 +590,21 @@ def relleno_formulario(nomina_id):
             'usuario': user_role
         }
         
-        # 🟢 NUEVO: Manejo del Informe Neurológico Individual
+        # Redirección basada en la columna 'form_type'
         if form_type == 'informe_neurologico':
-             # Renderiza la nueva plantilla HTML para el rellenado específico
-             return render_template('formulario_informe_neurologico.html', **base_render_params)
+            # Usa el HTML para el nuevo informe
+            return render_template('formulario_informe_neurologico.html', **base_render_params)
 
-        # Manejo de Medicina Familiar
-        elif 'familiar' in tipo_nomina_check or 'medicina familiar' in tipo_nomina_check:
-            # Si es Medicina Familiar, usar el HTML de Medicina Familiar
+        elif form_type == 'medicina_familiar':
+            # Usa el HTML de Medicina Familiar
             return render_template('formulario_medicina_familiar.html', **base_render_params)
         
-        # Manejo de Neurología (Nómina Antigua)
-        elif 'neurologia' in tipo_nomina_check:
-            # Si es Neurología, usar el HTML de Neurología
+        elif form_type == 'neurologia':
+            # Usa el HTML de Neurología
             return render_template('formulario_relleno.html', **base_render_params)
         
         else:
-            flash(f'❌ El tipo de nómina "{tipo_nomina_check.upper()}" no se pudo mapear a un formulario conocido.', 'error')
+            flash(f'❌ El tipo de formulario "{form_type.capitalize()}" no se pudo mapear a un formulario conocido.', 'error')
             return redirect(url_for('dashboard'))
 
     except requests.exceptions.RequestException as e:

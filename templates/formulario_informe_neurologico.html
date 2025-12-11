@@ -9,24 +9,15 @@
     <style>
         /* Variables CSS para una gestión de colores y espaciado más fácil (MANTENIDO) */
         :root {
-            --primary-dark: hsl(210, 29%, 18%); /* Azul pizarra muy oscuro */
-            --primary-medium: hsl(210, 15%, 28%); /* Azul pizarra medio */
-            --primary-light: hsl(210, 16%, 92%); /* Gris azulado muy claro */
+            --primary-dark: hsl(210, 29%, 18%); 
+            --primary-medium: hsl(210, 15%, 28%); 
+            --accent-green: hsl(140, 65%, 45%); 
+            --accent-red: hsl(0, 75%, 58%); 
+            --accent-blue: hsl(200, 70%, 55%); 
             --background-body: linear-gradient(135deg, hsl(200, 20%, 98%) 0%, hsl(210, 15%, 96%) 100%);
-            --accent-green: hsl(140, 65%, 45%); /* Verde vibrante */
-            --accent-red: hsl(0, 75%, 58%); /* Rojo intenso */
-            --accent-blue: hsl(200, 70%, 55%); /* Azul cielo brillante */
-            --google-drive-blue: #4285F4;
-            --signature-purple: #8B5CF6;
-            --text-dark: hsl(210, 10%, 15%);
-            --text-light: hsl(0, 0%, 99%);
             --border-color: hsl(210, 10%, 82%);
-            --shadow-subtle: rgba(0, 0, 0, 0.08);
-            --shadow-medium: rgba(0, 0, 0, 0.15);
-            --shadow-strong: rgba(0, 0, 0, 0.25);
-            --border-radius-base: 14px;
-            --padding-base: 28px;
-            --gap-base: 30px;
+            --radius-base: 12px;
+            --shadow-button: 0 4px 10px rgba(0,0,0,0.15);
         }
 
         /* Estilos generales del cuerpo (MANTENIDO) */
@@ -39,8 +30,6 @@
             display: flex;
             flex-direction: column;
             overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
             padding: 20px;
             margin: 0;
         }
@@ -57,49 +46,93 @@
         header {
             background-color: #f0f4f8; padding: 20px 0; text-align: center; position: relative; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
-        header img { max-width: 150px; margin-bottom: 10px; transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out; }
         header h1 { font-size: 1.8rem; color: #333; margin-top: 5px; font-weight: 700; }
         .header-btn {
             position: absolute; top: 20px; padding: 10px 18px; border-radius: 25px; font-weight: 600; cursor: pointer; text-decoration: none;
-            display: flex; align-items: center; gap: 8px; transition: all 0.3s ease; box-shadow: 0 3px 8px rgba(0,0,0,0.1);
         }
         .back-to-dashboard-btn { left: 20px; background-color: #6c757d; color: #fff; }
         .logout-btn { right: 20px; background-color: #dc3545; color: #fff; }
 
-        /* Action Buttons (MANTENIDO) */
+        /* Action Buttons (MANTENIDO EN ESTRUCTURA) */
         .action-buttons { display: flex; justify-content: center; gap: 15px; margin-top: 20px; margin-bottom: 30px; flex-wrap: wrap; }
-        .action-buttons button { background-color: var(--accent-blue); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; }
         .evaluation-counter { background-color: #e6f7ff; border: 1px solid #99d6ff; border-radius: 10px; padding: 15px 25px; margin-bottom: 25px; display: flex; justify-content: center; }
 
-        /* Buscador y Filtros (MANTENIDO) */
+        /* Filtros (MANTENIDO) */
         #buscador { width: 100%; max-width: 500px; display: block; margin: 0 auto 20px; padding: 12px 15px; border: 1px solid #b0c2d4; }
         .filter-group { display: flex; justify-content: center; gap: 25px; margin-bottom: 30px; background-color: #f9f9f9; padding: 15px 25px; border-radius: 10px; }
 
         /* Estilos de los detalles de estudiante (Acordeón) (MANTENIDO) */
         details { margin-bottom: 25px; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 15px rgba(0,0,0,0.08); }
         summary { background: #1a73e8; color: #fff; padding: 18px 25px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; font-size: 1.15rem; }
-        details[open] summary .chevron-icon { transform: rotate(90deg); }
+        
         .container { display: flex; gap: 30px; flex-wrap: wrap; padding: 25px; background-color: #ffffff; border-radius: 0 0 12px 12px; }
         .formulario { flex: 1 1 500px; background: #ffffff; border-left: 6px solid #1a73e8; padding: 30px; position: relative; }
         .preview { flex: 1 1 350px; background: #ffffff; padding: 30px; border-left: 6px solid #1a73e8; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
 
         /* Badge de estado (MANTENIDO) */
         .badge { position: absolute; top: 20px; right: 30px; background: var(--accent-green); color: #fff; padding: 5px 12px; border-radius: 20px; opacity: 0; }
-        .badge.show { opacity: 1; }
-        .badge-estado { padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
-        .badge-pendiente { background-color: #ffeb3b; color: #333; }
-        .badge-completado { background-color: var(--accent-green); color: white; }
-
+        
         /* Estilos de formulario e Inputs (MANTENIDO) */
         label { display: block; margin-top: 15px; font-weight: 600; color: #333; }
-        input, textarea, select {
+        textarea, select, input[type="date"] {
             width: 100%; padding: 10px 12px; margin-top: 5px; border: 1px solid #b0c2d4; border-radius: 6px;
             font-size: 1rem; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); transition: all 0.3s ease;
         }
         textarea { min-height: 80px; resize: vertical; }
-        .button-group { display: flex; gap: 15px; margin-top: 30px; justify-content: flex-end; border-top: 1px solid #eee; padding-top: 20px; }
-        .btn-guardar-pdf { background: var(--accent-blue); color: white; }
-        .btn-marcar { background: var(--accent-green); color: white; }
+
+        /* ------------------------------------------------ */
+        /* --- ESTILOS DE BOTONES SOFISTICADOS (NUEVOS) --- */
+        /* ------------------------------------------------ */
+        .button-group button {
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-button);
+            border: none;
+            padding: 14px 20px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+
+        .btn-guardar-pdf {
+            background: linear-gradient(145deg, var(--accent-blue), hsl(200, 80%, 40%));
+        }
+        .btn-guardar-pdf:hover {
+            background: linear-gradient(145deg, hsl(200, 80%, 40%), var(--accent-blue));
+            transform: scale(1.02) translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-marcar {
+            background: linear-gradient(145deg, var(--accent-green), hsl(140, 60%, 35%));
+            width: 100%; /* Asegura que ocupe el ancho completo para separarlo visualmente */
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+        .btn-marcar:hover {
+            background: linear-gradient(145deg, hsl(140, 60%, 35%), var(--accent-green));
+            transform: scale(1.02) translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+        }
+
+        .signature-button {
+             background: linear-gradient(145deg, var(--signature-purple), hsl(270, 75%, 45%));
+        }
+        .signature-button:hover {
+             background: linear-gradient(145deg, hsl(270, 75%, 45%), var(--signature-purple));
+             transform: scale(1.02) translateY(-2px);
+        }
+
+        .button-group-top {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: space-between;
+        }
+        .button-group-top button {
+            flex: 1 1 45%; 
+        }
 
         /* Estilos de Previsualización (Preview) */
         .preview h3 { border-bottom: 2px solid #1a73e8; padding-bottom: 10px; margin-bottom: 20px; }
@@ -113,9 +146,7 @@
         @media (max-width: 768px) {
             .container { flex-direction: column; gap: 20px; padding: 15px; }
             .formulario, .preview { flex: 1 1 100%; padding: 20px; }
-            .preview p strong { width: 120px; }
-            .header-btn { position: static; margin-bottom: 10px; width: 100%; display: block; text-align: center; }
-            header { display: flex; flex-direction: column; align-items: center; }
+            .button-group-top button { flex: 1 1 100%; }
         }
     </style>
 </head>
@@ -174,6 +205,7 @@
         </div>
 
         {% if estudiantes %}
+            <div class="space-y-8">
             {% for est in estudiantes %}
             
             <details class="estudiante" data-nombre="{{ est.nombre | lower }}" data-estudiante-id="{{ est.id }}" data-nomina-id="{{ nomina_id }}" data-evaluated-status="{{ 'true' if est.fecha_relleno is not none else 'false' }}">
@@ -252,7 +284,7 @@
 
 
                             <div class="button-group form-actions">
-                                <button type="button" class="mark-evaluated-btn"
+                                <button type="button" class="btn-marcar"
                                         data-estudiante-id="{{ est.id }}"
                                         {% if est.fecha_relleno is not none %}disabled{% endif %}
                                         onclick="marcarComoEvaluado(this)">
@@ -357,7 +389,7 @@
             // Mapeo de valores de entrada desde el formulario
             const motivo = form.motivo_consulta.value || '-';
             const diagnosticoSelect = form.querySelector('select[name="diagnostico"]');
-            // Usamos .value para la DB, pero .options[selectedIndex].text para la preview si quieres ver el texto completo
+            // Usamos .options[selectedIndex].text para la preview si quieres ver el texto completo
             const diagnostico = diagnosticoSelect.value ? diagnosticoSelect.options[diagnosticoSelect.selectedIndex].text : '-';
             const indicaciones = form.indicaciones.value || '-';
             const fechaEvaluacionInput = form.querySelector('input[name="fecha_evaluacion"]');

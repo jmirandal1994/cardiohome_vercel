@@ -1064,7 +1064,7 @@
                             </select>
 
                             <div id="doctora_para_formulario_div" class="mb-4" style="display: none;">
-                                <label for="doctora_id_para_formulario" class="block text-gray-700 text-sm font-bold mb-2">Doctora para el Formulario (solo Neurología):</label>
+                                <label for="doctora_id_para_formulario" class="block text-gray-700 text-sm font-bold mb-2">Doctora para el Formulario (solo Neurología o informe):</label>
                                 <select name="doctora_id_para_formulario" id="doctora_id_para_formulario" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                                     <option value="">Seleccione una doctora...</option>
                                     {% for doc in doctoras %}
@@ -1846,7 +1846,7 @@
                         document.getElementById('doctora_id_para_formulario').value = '';
                     }
                 });
-                if (formTypeNominaSelect.value === 'neurologia') {
+                if (formTypeNominaSelect.value === 'neurologia'|| selectedValue === 'informe_neurologico') {
                     doctoraParaFormularioDiv.style.display = 'block';
                 } else {
                     doctoraParaFormularioDiv.style.display = 'none';

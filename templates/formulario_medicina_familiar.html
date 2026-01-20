@@ -976,8 +976,8 @@
                                 </label>
                             </div>
 
-                            {# OBSERVACIÓN 6: Abajo de Hospitalizaciones y Visión (32 caracteres) #}
-                            <label for="observacion_6_{{ est.id }}">Observación 6 (Hospitalizaciones/Visión - Máx. 32):</label>
+                            {# OBSERVACIÓN 6: Hospitalizaciones (32 caracteres) #}
+                            <label for="observacion_6_{{ est.id }}">Observación 6 (Hospitalizaciones - Máx. 32):</label>
                             <textarea name="observacion_6" id="observacion_6_{{ est.id }}" rows="1" maxlength="32" placeholder="Máx. 32 caracteres">{{ est.observacion_6 if est.observacion_6 is not none else '' }}</textarea>
 
                             <label>Audición:</label>
@@ -1015,8 +1015,8 @@
                                 </label>
                             </div>
                             
-                            {# OBSERVACIÓN 7: Abajo de Audición y Salud Bucodental (32 caracteres) #}
-                            <label for="observacion_7_{{ est.id }}">Observación 7 (Audición/Bucodental - Máx. 32):</label>
+                            {# OBSERVACIÓN 7: Vision (32 caracteres) #}
+                            <label for="observacion_7_{{ est.id }}">Observación 7 (Vision - Máx. 32):</label>
                             <textarea name="observacion_7" id="observacion_7_{{ est.id }}" rows="1" maxlength="32" placeholder="Máx. 32 caracteres">{{ est.observacion_7 if est.observacion_7 is not none else '' }}</textarea>
 
 

@@ -965,6 +965,10 @@
                                 </label>
                             </div>
 
+                             {# OBSERVACIÓN 6: Hospitalizaciones (32 caracteres) #}
+                            <label for="observacion_6_{{ est.id }}">Observación 6 (Hospitalizaciones - Máx. 32):</label>
+                            <textarea name="observacion_6" id="observacion_6_{{ est.id }}" rows="1" maxlength="32" placeholder="Máx. 32 caracteres">{{ est.observacion_6 if est.observacion_6 is not none else '' }}</textarea>
+
                             <h3 class="section-title">Visión y Audición</h3>
                             <label>Visión:</label>
                             <div class="checkbox-group">
@@ -975,11 +979,10 @@
                                     <input type="checkbox" name="check_visionrefraccion" id="check_visionrefraccion_{{ est.id }}" value="VICIOS_DE_REFRACCION" {% if est.check_visionrefraccion %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Vicios de Refracción
                                 </label>
                             </div>
-
-                            {# OBSERVACIÓN 6: Hospitalizaciones (32 caracteres) #}
-                            <label for="observacion_6_{{ est.id }}">Observación 6 (Hospitalizaciones - Máx. 32):</label>
-                            <textarea name="observacion_6" id="observacion_6_{{ est.id }}" rows="1" maxlength="32" placeholder="Máx. 32 caracteres">{{ est.observacion_6 if est.observacion_6 is not none else '' }}</textarea>
-
+                             {# OBSERVACIÓN 7: Vision (32 caracteres) #}
+                            <label for="observacion_7_{{ est.id }}">Observación 7 (Vision - Máx. 32):</label>
+                            <textarea name="observacion_7" id="observacion_7_{{ est.id }}" rows="1" maxlength="32" placeholder="Máx. 32 caracteres">{{ est.observacion_7 if est.observacion_7 is not none else '' }}</textarea>
+                           
                             <label>Audición:</label>
                             <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.check_audicionnormal %}checked{% endif %}">
@@ -1015,11 +1018,6 @@
                                 </label>
                             </div>
                             
-                            {# OBSERVACIÓN 7: Vision (32 caracteres) #}
-                            <label for="observacion_7_{{ est.id }}">Observación 7 (Vision - Máx. 32):</label>
-                            <textarea name="observacion_7" id="observacion_7_{{ est.id }}" rows="1" maxlength="32" placeholder="Máx. 32 caracteres">{{ est.observacion_7 if est.observacion_7 is not none else '' }}</textarea>
-
-
                             <div class="button-group">
                                 <button type="submit">
                                     <i class="fas fa-file-pdf"></i> Guardar y Generar PDF

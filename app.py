@@ -630,22 +630,27 @@ def generar_pdf():
 
     estudiante_id = request.form.get('estudiante_id')
     nomina_id = request.form.get('nomina_id')
+    
     form_type = session.get('current_form_type', 'neurologia') 
     current_doctora_id = session.get('usuario_id')
     
+    print(f"DEBUG: generar_pdf - Solicitud para generar PDF para estudiante_id={estudiante_id}, nomina_id={nomina_id}, form_type={form_type}, doctora_id={current_doctora_id}")
+
     if not all([estudiante_id, nomina_id]):
-        flash("❌ Faltan datos esenciales para generar PDF.", 'danger')
+        flash("❌ Faltan datos esenciales del formulario para generar PDF.", 'danger')
+        if 'current_nomina_id' in session:
+            return redirect(url_for('relleno_formulario', nomina_id=session['current_nomina_id']))
         return redirect(url_for('dashboard'))
 
-    # --- 1. Obtener ID de la Doctora Firmante ---
-    doctora_id_para_pdf = current_doctora_id
+    # --- 1. Obtener datos de la nómina para el ID de la Doctora Firmante ---
+    doctora_id_para_pdf = current_doctora_id 
     try:
         nomina_data = obtener_nomina_por_id(nomina_id)
-        doctora_id_para_pdf = nomina_data.get('doctora_id_para_formulario') or current_doctora_id
+        doctora_id_para_pdf = nomina_data.get('doctora_id_para_formulario') if nomina_data.get('doctora_id_para_formulario') else current_doctora_id
     except Exception as e:
-        print(f"ADVERTENCIA: Usando ID de sesión. {e}")
+        print(f"ADVERTENCIA: No se pudo obtener el ID de la doctora firmante. Usando ID de sesión. {e}")
         
-    # --- 2. Procesamiento de Campos Comunes ---
+    # --- 2. Procesamiento de Campos Comunes y Fechas ---
     nombre = get_form_field_value('nombre', request.form)
     rut = format_rut_python(get_form_field_value('rut', request.form))
     
@@ -654,38 +659,43 @@ def generar_pdf():
     if fecha_nac_original_str:
         try:
             fecha_nac_formato = datetime.strptime(fecha_nac_original_str, '%Y-%m-%d').strftime('%d/%m/%Y')
-        except ValueError: pass 
+        except ValueError:
+            pass 
 
     edad = get_form_field_value('edad', request.form)
     nacionalidad = get_form_field_value('nacionalidad', request.form)
 
-    # Funciones auxiliares de mapeo
+    # Funciones auxiliares
     def map_check_value(field_name):
         return get_form_field_value(field_name, request.form) or ""
     
-    # Función específica para que Medicina Familiar NO use "X" sino el estado activo del PDF
-    def map_db_boolean_to_pdf_mark(value):
-        if value in [True, "True", "X", "on", "SI_ALERGIAS", "CESAREA", "VAGINAL"]:
-            return "/Yes"
+    # Función para escribir "X" en campos de texto que actúan como casillas
+    def map_check_as_text(field_name):
+        val = request.form.get(field_name)
+        if val and val.strip() != "":
+            return "X"
         return ""
 
-    # Mapeo de Género y Fechas
+    # Mapeos de Género (como texto "X")
     sexo_f_pdf = "X" if get_form_field_value('genero_f', request.form) or get_form_field_value('sexo', request.form) == 'F' else ""
     sexo_m_pdf = "X" if get_form_field_value('genero_m', request.form) or get_form_field_value('sexo', request.form) == 'M' else ""
 
+    # Formatos de Fecha
     fecha_evaluacion_form_value = get_form_field_value('fecha_evaluacion', request.form)
     fecha_evaluacion_formatted = ''
     if fecha_evaluacion_form_value:
         try:
             fecha_evaluacion_formatted = datetime.strptime(fecha_evaluacion_form_value, '%Y-%m-%d').strftime('%d/%m/%Y')
-        except ValueError: pass
+        except ValueError:
+            pass
 
     fecha_reevaluacion_form_value = get_form_field_value('fecha_reevaluacion', request.form)
     fecha_reeval_pdf = ''
     if fecha_reevaluacion_form_value:
         try:
             fecha_reeval_pdf = datetime.strptime(fecha_reevaluacion_form_value, '%Y-%m-%d').strftime('%d/%m/%Y')
-        except ValueError: pass
+        except ValueError:
+            pass
             
     derivaciones = get_form_field_value('derivaciones', request.form)
 
@@ -695,40 +705,48 @@ def generar_pdf():
     
     if form_type == 'neurologia':
         specific_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{doctora_id_para_pdf}.pdf"
-        specific_pdf_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR, specific_pdf_filename)
+        full_pdf_bases_dir_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR)
+        specific_pdf_path = os.path.join(full_pdf_bases_dir_path, specific_pdf_filename)
         pdf_base_path = specific_pdf_path if os.path.exists(specific_pdf_path) else os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
+            
     elif form_type == 'informe_neurologico':
         specific_pdf_filename = f"INFORME_NEUROLOGICO_BASE_{doctora_id_para_pdf}.pdf"
-        specific_pdf_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR, specific_pdf_filename)
+        pdf_bases_dir = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR)
+        specific_pdf_path = os.path.join(pdf_bases_dir, specific_pdf_filename)
         pdf_base_path = specific_pdf_path if os.path.exists(specific_pdf_path) else os.path.join(base_dir, PDF_BASE_INFORME_NEURO)
+    
     elif form_type == 'medicina_familiar':
         pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
-    
-    if not os.path.exists(pdf_base_path):
-        return f"Error: No se encontró el PDF base en {pdf_base_path}", 404
 
-    # --- 4. Lógica de Relleno ---
+    # --- 4. Lógica de Relleno y Generación ---
     try:
         reader = PdfReader(pdf_base_path)
         writer = PdfWriter()
-        
         for page in reader.pages:
             writer.add_page(page)
             
         campos = {}
         
+        # 🟢 NEUROLOGÍA: SE MANTIENE TU LÓGICA ORIGINAL COMPLETA
         if form_type == 'neurologia':
+            print("DEBUG: Usando mapeo original de Neurología.")
             campos = {
-                "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato,
-                "nacionalidad": nacionalidad, "edad": edad,
+                "nombre": nombre,
+                "rut": rut,
+                "fecha_nacimiento": fecha_nac_formato,
+                "nacionalidad": nacionalidad,
+                "edad": edad,
                 "diagnostico_1": get_form_field_value('diagnostico', request.form),
                 "diagnostico_2": get_form_field_value('diagnostico', request.form), 
                 "estado_general": get_form_field_value('estado', request.form), 
                 "fecha_evaluacion": fecha_evaluacion_formatted,
                 "fecha_reevaluacion": fecha_reeval_pdf,
-                "derivaciones": derivaciones, "sexo_f": sexo_f_pdf, "sexo_m": sexo_m_pdf,
+                "derivaciones": derivaciones,
+                "sexo_f": sexo_f_pdf,
+                "sexo_m": sexo_m_pdf,
             }
         
+        # 🟢 INFORME NEUROLÓGICO: SE MANTIENE TU LÓGICA ORIGINAL COMPLETA
         elif form_type == 'informe_neurologico':
             campos = {
                 "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato, 
@@ -738,73 +756,76 @@ def generar_pdf():
                 "observaciones": get_form_field_value('observaciones', request.form),      
                 "observacion_neurologia": get_form_field_value('observacion_neurologia', request.form), 
                 "diagnostico": get_form_field_value('diagnostico', request.form),
-                "indicaciones": get_form_field_value('indicaciones', request.form),         
-                "derivaciones": derivaciones, "fecha_evaluacion": fecha_evaluacion_formatted,
+                "indicaciones": get_form_field_value('indicaciones', request.form),        
+                "derivaciones": derivaciones, 
+                "fecha_evaluacion": fecha_evaluacion_formatted,
                 "fecha_reevaluacion": fecha_reeval_pdf,
             }
             
+        # 🟢 MEDICINA FAMILIAR: CORRECCIÓN DE LA "X" EN CAMPOS DE TEXTO
         elif form_type == 'medicina_familiar':
-            diagnostico_unificado = get_form_field_value('diagnostico_unificado', request.form)
+            diagnostico_unificado_valor = get_form_field_value('diagnostico_unificado', request.form)
             campos = {
                 "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato, "edad": edad, "nacionalidad": nacionalidad,
                 "sexo_f": sexo_f_pdf, "sexo_m": sexo_m_pdf,
-                "diagnostico_1": diagnostico_unificado, "diagnostico_2": diagnostico_unificado, 
+                "diagnostico_1": diagnostico_unificado_valor, "diagnostico_2": diagnostico_unificado_valor, 
                 "diagnostico_complementario": get_form_field_value('diagnostico_complementario', request.form),
                 "clasificacion": get_form_field_value('clasificacion_imc', request.form),
                 "indicaciones": get_form_field_value('indicaciones', request.form), "derivaciones": derivaciones, 
                 "fecha_evaluacion": fecha_evaluacion_formatted, "fecha_reevaluacion": fecha_reeval_pdf,
                 "altura": get_form_field_value('altura', request.form), "peso": get_form_field_value('peso', request.form), "imc": get_form_field_value('imc', request.form),
-                "observacion_1": map_check_value('observacion_1'), "observacion_2": map_check_value('observacion_2'),
-                "observacion_3": map_check_value('observacion_3'), "observacion_4": map_check_value('observacion_4'),
-                "observacion_5": map_check_value('observacion_5'), "observacion_6": map_check_value('observacion_6'),
-                "observacion_7": map_check_value('observacion_7'),
-                # Checks corregidos para Medicina Familiar
-                "check_cesarea": map_db_boolean_to_pdf_mark(map_check_value('check_cesarea')),
-                "check_atermino": map_db_boolean_to_pdf_mark(map_check_value('check_atermino')),
-                "check_vaginal": map_db_boolean_to_pdf_mark(map_check_value('check_vaginal')),
-                "check_prematuro": map_db_boolean_to_pdf_mark(map_check_value('check_prematuro')),
-                "check_acorde": map_db_boolean_to_pdf_mark(map_check_value('check_acorde')),
-                "check_retraso": map_db_boolean_to_pdf_mark(map_check_value('check_retraso')),
-                "check_retrasogeneralizado": map_db_boolean_to_pdf_mark(map_check_value('check_retrasogeneralizado')),
-                "check_esquemac": map_db_boolean_to_pdf_mark(map_check_value('check_esquemac')),
-                "check_esquemai": map_db_boolean_to_pdf_mark(map_check_value('check_esquemai')),
-                "check_alergiano": map_db_boolean_to_pdf_mark(map_check_value('check_alergiano')),
-                "check_alergiasi": map_db_boolean_to_pdf_mark(map_check_value('check_alergiasi')),
-                "check_cirugiano": map_db_boolean_to_pdf_mark(map_check_value('check_cirugiano')),
-                "check_cirugiasi": map_db_boolean_to_pdf_mark(map_check_value('check_cirugiasi')),
-                "check_visionsinalteracion": map_db_boolean_to_pdf_mark(map_check_value('check_visionsinalteracion')),
-                "check_visionrefraccion": map_db_boolean_to_pdf_mark(map_check_value('check_visionrefraccion')),
-                "check_audicionnormal": map_db_boolean_to_pdf_mark(map_check_value('check_audicionnormal')),
-                "check_hipoacusia": map_db_boolean_to_pdf_mark(map_check_value('check_hipoacusia')),
-                "check_tapondecerumen": map_db_boolean_to_pdf_mark(map_check_value('check_tapondecerumen')),
-                "check_sinhallazgos": map_db_boolean_to_pdf_mark(map_check_value('check_sinhallazgos')),
-                "check_caries": map_db_boolean_to_pdf_mark(map_check_value('check_caries')),
-                "check_apinamientodental": map_db_boolean_to_pdf_mark(map_check_value('check_apinamientodental')),
-                "check_retenciondental": map_db_boolean_to_pdf_mark(map_check_value('check_retenciondental')),
-                "check_frenillolingual": map_db_boolean_to_pdf_mark(map_check_value('check_frenillolingual')),
-                "check_hipertrofia": map_db_boolean_to_pdf_mark(map_check_value('check_hipertrofia')),
+                "observacion_1": get_form_field_value('observacion_1', request.form), "observacion_2": get_form_field_value('observacion_2', request.form),
+                "observacion_3": get_form_field_value('observacion_3', request.form), "observacion_4": get_form_field_value('observacion_4', request.form),
+                "observacion_5": get_form_field_value('observacion_5', request.form), "observacion_6": get_form_field_value('observacion_6', request.form),
+                "observacion_7": get_form_field_value('observacion_7', request.form),
+                
+                # Campos "check" que son de texto: escribimos "X" si están marcados
+                "check_cesarea": map_check_as_text('check_cesarea'),
+                "check_atermino": map_check_as_text('check_atermino'),
+                "check_vaginal": map_check_as_text('check_vaginal'),
+                "check_prematuro": map_check_as_text('check_prematuro'),
+                "check_acorde": map_check_as_text('check_acorde'),
+                "check_retraso": map_check_as_text('check_retraso'),
+                "check_retrasogeneralizado": map_check_as_text('check_retrasogeneralizado'),
+                "check_esquemac": map_check_as_text('check_esquemac'),
+                "check_esquemai": map_check_as_text('check_esquemai'),
+                "check_alergiano": map_check_as_text('check_alergiano'),
+                "check_alergiasi": map_check_as_text('check_alergiasi'),
+                "check_cirugiano": map_check_as_text('check_cirugiano'),
+                "check_cirugiasi": map_check_as_text('check_cirugiasi'),
+                "check_visionsinalteracion": map_check_as_text('check_visionsinalteracion'),
+                "check_visionrefraccion": map_check_as_text('check_visionrefraccion'),
+                "check_audicionnormal": map_check_as_text('check_audicionnormal'),
+                "check_hipoacusia": map_check_as_text('check_hipoacusia'),
+                "check_tapondecerumen": map_check_as_text('check_tapondecerumen'),
+                "check_sinhallazgos": map_check_as_text('check_sinhallazgos'),
+                "check_caries": map_check_as_text('check_caries'),
+                "check_apinamientodental": map_check_as_text('check_apinamientodental'),
+                "check_retenciondental": map_check_as_text('check_retenciondental'),
+                "check_frenillolingual": map_check_as_text('check_frenillolingual'),
+                "check_hipertrofia": map_check_as_text('check_hipertrofia'),
             }
 
-        # 5. Aplicar valores y evitar daños en el archivo
+        # Aplicar el relleno
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
             
         for page in writer.pages:
             writer.update_page_form_field_values(page, campos)
 
-        # Esta línea es crucial para que los cambios se vean y el PDF no sea corrupto
         writer._root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
         
         output = io.BytesIO()
         writer.write(output)
         output.seek(0)
 
-        filename = f"{nombre.replace(' ', '_')}_{rut}_{form_type}.pdf"
-        return send_file(output, as_attachment=True, download_name=filename, mimetype='application/pdf')
+        nombre_descarga = f"{nombre.replace(' ', '_')}_{rut}_formulario_{form_type}.pdf"
+        return send_file(output, as_attachment=True, download_name=nombre_descarga, mimetype='application/pdf')
 
     except Exception as e:
-        print(f"ERROR: {e}")
-        return f"Error al generar PDF: {str(e)}", 500
+        print(f"❌ Error al generar PDF: {e}")
+        flash(f"❌ Error al generar el PDF: {e}", 'error')
+        return redirect(url_for('dashboard'))
         
 
 @app.route('/marcar_evaluado', methods=['POST'])

@@ -625,41 +625,27 @@ def relleno_formulario(nomina_id):
 # REEMPLAZA COMPLETAMENTE ESTA FUNCIÓN EN TU app.py
 @app.route('/generar_pdf', methods=['POST'])
 def generar_pdf():
-    # Asumo que las importaciones y constantes necesarias están definidas globalmente en app.py:
-    # from datetime import datetime, date, io, os
-    # from PyPDF2 import PdfReader, PdfWriter, NameObject, DictionaryObject, BooleanObject
-    # PDF_BASE_NEUROLOGIA, PDF_BASE_FAMILIAR, PDF_BASES_NEUROLOGIA_DIR
-    # PDF_BASE_INFORME_NEURO (la nueva constante)
-    # get_form_field_value, format_rut_python, guess_gender, calculate_age, etc.
-
     if 'usuario' not in session:
         return redirect(url_for('index'))
 
     estudiante_id = request.form.get('estudiante_id')
     nomina_id = request.form.get('nomina_id')
-    
     form_type = session.get('current_form_type', 'neurologia') 
     current_doctora_id = session.get('usuario_id')
     
-    print(f"DEBUG: generar_pdf - Solicitud para generar PDF para estudiante_id={estudiante_id}, nomina_id={nomina_id}, form_type={form_type}, doctora_id={current_doctora_id}")
-
     if not all([estudiante_id, nomina_id]):
-        flash("❌ Faltan datos esenciales del formulario para generar PDF.", 'danger')
-        if 'current_nomina_id' in session:
-            return redirect(url_for('relleno_formulario', nomina_id=session['current_nomina_id']))
+        flash("❌ Faltan datos esenciales para generar PDF.", 'danger')
         return redirect(url_for('dashboard'))
 
-    # --- 1. Obtener datos de la nómina para el ID de la Doctora Firmante ---
-    doctora_id_para_pdf = current_doctora_id # Fallback
+    # --- 1. Obtener ID de la Doctora Firmante ---
+    doctora_id_para_pdf = current_doctora_id
     try:
-        # Se asume que 'obtener_nomina_por_id' es una función que consulta la DB
-        # NOTA: Debes asegurar que esta función existe en tu código.
         nomina_data = obtener_nomina_por_id(nomina_id)
-        doctora_id_para_pdf = nomina_data.get('doctora_id_para_formulario') if nomina_data.get('doctora_id_para_formulario') else current_doctora_id
+        doctora_id_para_pdf = nomina_data.get('doctora_id_para_formulario') or current_doctora_id
     except Exception as e:
-        print(f"ADVERTENCIA: No se pudo obtener el ID de la doctora firmante para la nómina {nomina_id}. Usando ID de sesión. {e}")
+        print(f"ADVERTENCIA: Usando ID de sesión. {e}")
         
-    # --- 2. Procesamiento de Campos Comunes y Fechas ---
+    # --- 2. Procesamiento de Campos Comunes ---
     nombre = get_form_field_value('nombre', request.form)
     rut = format_rut_python(get_form_field_value('rut', request.form))
     
@@ -668,92 +654,61 @@ def generar_pdf():
     if fecha_nac_original_str:
         try:
             fecha_nac_formato = datetime.strptime(fecha_nac_original_str, '%Y-%m-%d').strftime('%d/%m/%Y')
-        except ValueError:
-            pass 
+        except ValueError: pass 
 
     edad = get_form_field_value('edad', request.form)
     nacionalidad = get_form_field_value('nacionalidad', request.form)
 
-    # Funciones auxiliares
+    # Funciones auxiliares de mapeo
     def map_check_value(field_name):
         return get_form_field_value(field_name, request.form) or ""
     
-    def map_db_boolean_to_x_pdf(value):
-        return "X" if value in [True, "True", "X", "on"] else ""
+    # Función específica para que Medicina Familiar NO use "X" sino el estado activo del PDF
+    def map_db_boolean_to_pdf_mark(value):
+        if value in [True, "True", "X", "on", "SI_ALERGIAS", "CESAREA", "VAGINAL"]:
+            return "/Yes"
+        return ""
 
-    # Mapeo de Género
+    # Mapeo de Género y Fechas
     sexo_f_pdf = "X" if get_form_field_value('genero_f', request.form) or get_form_field_value('sexo', request.form) == 'F' else ""
     sexo_m_pdf = "X" if get_form_field_value('genero_m', request.form) or get_form_field_value('sexo', request.form) == 'M' else ""
 
-    # Formato de Fecha de Evaluación
     fecha_evaluacion_form_value = get_form_field_value('fecha_evaluacion', request.form)
     fecha_evaluacion_formatted = ''
     if fecha_evaluacion_form_value:
         try:
             fecha_evaluacion_formatted = datetime.strptime(fecha_evaluacion_form_value, '%Y-%m-%d').strftime('%d/%m/%Y')
-        except ValueError:
-            pass
+        except ValueError: pass
 
-    # Campos que pueden haber sido eliminados del formulario, pero se obtienen si están en el request
     fecha_reevaluacion_form_value = get_form_field_value('fecha_reevaluacion', request.form)
     fecha_reeval_pdf = ''
     if fecha_reevaluacion_form_value:
         try:
             fecha_reeval_pdf = datetime.strptime(fecha_reevaluacion_form_value, '%Y-%m-%d').strftime('%d/%m/%Y')
-        except ValueError:
-            pass
+        except ValueError: pass
             
     derivaciones = get_form_field_value('derivaciones', request.form)
 
-
-    # --- 3. LÓGICA DE SELECCIÓN DE PLANTILLA (Con filtro por Doctora ID) ---
+    # --- 3. Selección de Plantilla ---
     base_dir = os.path.dirname(os.path.abspath(__file__))
     pdf_base_path = ''
     
     if form_type == 'neurologia':
-        # Buscamos PDF específico de Neurología
         specific_pdf_filename = f"FORMULARIO TIPO NEUROLOGIA_{doctora_id_para_pdf}.pdf"
-        full_pdf_bases_dir_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR)
-        specific_pdf_path = os.path.join(full_pdf_bases_dir_path, specific_pdf_filename)
-
-        if doctora_id_para_pdf and os.path.exists(specific_pdf_path):
-            pdf_base_path = specific_pdf_path
-        else:
-            pdf_base_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
-            
+        specific_pdf_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR, specific_pdf_filename)
+        pdf_base_path = specific_pdf_path if os.path.exists(specific_pdf_path) else os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
     elif form_type == 'informe_neurologico':
-        # Buscamos PDF específico de Informe Neurológico
         specific_pdf_filename = f"INFORME_NEUROLOGICO_BASE_{doctora_id_para_pdf}.pdf"
-        pdf_bases_dir = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR)
-        specific_pdf_path = os.path.join(pdf_bases_dir, specific_pdf_filename)
-
-        if doctora_id_para_pdf and os.path.exists(specific_pdf_path):
-            print(f"DEBUG: Usando PDF específico de informe neuro: {specific_pdf_filename}")
-            pdf_base_path = specific_pdf_path
-        else:
-            print("DEBUG: Usando PDF genérico de informe neuro.")
-            pdf_base_path = os.path.join(base_dir, PDF_BASE_INFORME_NEURO)
-    
+        specific_pdf_path = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR, specific_pdf_filename)
+        pdf_base_path = specific_pdf_path if os.path.exists(specific_pdf_path) else os.path.join(base_dir, PDF_BASE_INFORME_NEURO)
     elif form_type == 'medicina_familiar':
         pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
     
-    else:
-        print(f"ERROR: Tipo de formulario '{form_type}' no reconocido para generar PDF.")
-        flash("❌ Tipo de formulario no reconocido para generar PDF.", 'error')
-        if 'current_nomina_id' in session:
-            return redirect(url_for('relleno_formulario', nomina_id=session['current_nomina_id']))
-        return redirect(url_for('dashboard'))
-
     if not os.path.exists(pdf_base_path):
-        print(f"ERROR: Archivo '{pdf_base_path}' no encontrado.")
-        flash(f"❌ Error: El archivo '{os.path.basename(pdf_base_path)}' no se encontró en la carpeta del servidor. Verifique la ruta y el nombre del archivo.", 'error')
-        if 'current_nomina_id' in session:
-            return redirect(url_for('relleno_formulario', nomina_id=session['current_nomina_id']))
-        return redirect(url_for('dashboard'))
+        return f"Error: No se encontró el PDF base en {pdf_base_path}", 404
 
-    # --- 4. Lógica de Relleno y Generación ---
+    # --- 4. Lógica de Relleno ---
     try:
-        # Se asume que PdfReader y PdfWriter son accesibles
         reader = PdfReader(pdf_base_path)
         writer = PdfWriter()
         
@@ -762,74 +717,48 @@ def generar_pdf():
             
         campos = {}
         
-        # 🟢 MAPEO DE NEUROLOGÍA (Valoración de Salud) - RESTAURADO
         if form_type == 'neurologia':
-            print("DEBUG: Usando mapeo de Neurología (claves cortas).")
             campos = {
-                "nombre": nombre,
-                "rut": rut,
-                "fecha_nacimiento": fecha_nac_formato,
-                "nacionalidad": nacionalidad,
-                "edad": edad,
+                "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato,
+                "nacionalidad": nacionalidad, "edad": edad,
                 "diagnostico_1": get_form_field_value('diagnostico', request.form),
                 "diagnostico_2": get_form_field_value('diagnostico', request.form), 
                 "estado_general": get_form_field_value('estado', request.form), 
                 "fecha_evaluacion": fecha_evaluacion_formatted,
                 "fecha_reevaluacion": fecha_reeval_pdf,
-                "derivaciones": derivaciones,
-                "sexo_f": sexo_f_pdf,
-                "sexo_m": sexo_m_pdf,
+                "derivaciones": derivaciones, "sexo_f": sexo_f_pdf, "sexo_m": sexo_m_pdf,
             }
         
-        # 🟢 MAPEO DE INFORME NEUROLÓGICO (Corregido y simplificado)
         elif form_type == 'informe_neurologico':
-            print("DEBUG: Usando mapeo de Informe Neurológico (Campo 'diagnostico' único).")
-            
             campos = {
                 "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato, 
                 "edad": edad, "genero_m": sexo_m_pdf, "genero_f": sexo_f_pdf, 
                 "nacionalidad": nacionalidad,
-                
                 "motivo_consulta": get_form_field_value('motivo_consulta', request.form),
                 "observaciones": get_form_field_value('observaciones', request.form),      
                 "observacion_neurologia": get_form_field_value('observacion_neurologia', request.form), 
-                
                 "diagnostico": get_form_field_value('diagnostico', request.form),
-                
-                "indicaciones": get_form_field_value('indicaciones', request.form),        
-                "derivaciones": derivaciones, 
-                
-                "fecha_evaluacion": fecha_evaluacion_formatted,
+                "indicaciones": get_form_field_value('indicaciones', request.form),         
+                "derivaciones": derivaciones, "fecha_evaluacion": fecha_evaluacion_formatted,
                 "fecha_reevaluacion": fecha_reeval_pdf,
             }
             
-        # 🟢 MAPEO DE MEDICINA FAMILIAR - RESTAURADO
         elif form_type == 'medicina_familiar':
-            print("DEBUG: Usando mapeo de Medicina Familiar (nombres de campo internos CORTOS confirmados).")
-            
-            diagnostico_unificado_valor = get_form_field_value('diagnostico_unificado', request.form)
-            
+            diagnostico_unificado = get_form_field_value('diagnostico_unificado', request.form)
             campos = {
                 "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato, "edad": edad, "nacionalidad": nacionalidad,
                 "sexo_f": sexo_f_pdf, "sexo_m": sexo_m_pdf,
-                
-                "diagnostico_1": diagnostico_unificado_valor, "diagnostico_2": diagnostico_unificado_valor, 
+                "diagnostico_1": diagnostico_unificado, "diagnostico_2": diagnostico_unificado, 
                 "diagnostico_complementario": get_form_field_value('diagnostico_complementario', request.form),
                 "clasificacion": get_form_field_value('clasificacion_imc', request.form),
-                
-                "indicaciones": get_form_field_value('indicaciones', request.form), 
-                "derivaciones": derivaciones, 
-                
+                "indicaciones": get_form_field_value('indicaciones', request.form), "derivaciones": derivaciones, 
                 "fecha_evaluacion": fecha_evaluacion_formatted, "fecha_reevaluacion": fecha_reeval_pdf,
-                
                 "altura": get_form_field_value('altura', request.form), "peso": get_form_field_value('peso', request.form), "imc": get_form_field_value('imc', request.form),
-
                 "observacion_1": map_check_value('observacion_1'), "observacion_2": map_check_value('observacion_2'),
                 "observacion_3": map_check_value('observacion_3'), "observacion_4": map_check_value('observacion_4'),
                 "observacion_5": map_check_value('observacion_5'), "observacion_6": map_check_value('observacion_6'),
                 "observacion_7": map_check_value('observacion_7'),
-                
-               # Checkboxes corregidos con /Yes
+                # Checks corregidos para Medicina Familiar
                 "check_cesarea": map_db_boolean_to_pdf_mark(map_check_value('check_cesarea')),
                 "check_atermino": map_db_boolean_to_pdf_mark(map_check_value('check_atermino')),
                 "check_vaginal": map_db_boolean_to_pdf_mark(map_check_value('check_vaginal')),
@@ -854,44 +783,28 @@ def generar_pdf():
                 "check_retenciondental": map_db_boolean_to_pdf_mark(map_check_value('check_retenciondental')),
                 "check_frenillolingual": map_db_boolean_to_pdf_mark(map_check_value('check_frenillolingual')),
                 "check_hipertrofia": map_db_boolean_to_pdf_mark(map_check_value('check_hipertrofia')),
-            }        
-        print(f"DEBUG: Campos finales para el PDF ({form_type}): {campos}")
-        
-        # 5. Generación final del PDF (Iterando sobre páginas para asegurar llenado)
-        if "/AcroForm" not in writer._root_object:
-            writer._root_object.update({
-                NameObject("/AcroForm"): DictionaryObject()
-            })
-            
-        for i, page in enumerate(writer.pages):
-            # Se asume que NameObject y DictionaryObject son accesibles
-            writer.update_page_form_field_values(page, campos)
-            print(f"DEBUG: Campos actualizados en la Página {i + 1}.")
+            }
 
-        writer._root_object["/AcroForm"].update({
-            NameObject("/NeedAppearances"): BooleanObject(True)
-        })
+        # 5. Aplicar valores y evitar daños en el archivo
+        if "/AcroForm" not in writer._root_object:
+            writer._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
+            
+        for page in writer.pages:
+            writer.update_page_form_field_values(page, campos)
+
+        # Esta línea es crucial para que los cambios se vean y el PDF no sea corrupto
+        writer._root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
         
         output = io.BytesIO()
         writer.write(output)
         output.seek(0)
 
-        # Nombre del archivo para la descarga
-        if form_type == 'informe_neurologico':
-            nombre_archivo_descarga = f"{nombre.replace(' ', '_')}_{rut}_informe_neuro.pdf"
-        else:
-            nombre_archivo_descarga = f"{nombre.replace(' ', '_')}_{rut}_formulario_{form_type}.pdf"
-            
-        print(f"DEBUG: PDF generado y listo para descarga: {nombre_archivo_descarga}")
-        # Se asume que send_file es accesible
-        return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
+        filename = f"{nombre.replace(' ', '_')}_{rut}_{form_type}.pdf"
+        return send_file(output, as_attachment=True, download_name=filename, mimetype='application/pdf')
 
     except Exception as e:
-        print(f"❌ Error al generar PDF: {e}")
-        flash(f"❌ Error al generar el PDF: {e}. El archivo base o los nombres de campo pueden ser incorrectos. Intente de nuevo.", 'error')
-        if 'current_nomina_id' in session:
-            return redirect(url_for('relleno_formulario', nomina_id=session['current_nomina_id']))
-        return redirect(url_for('dashboard'))
+        print(f"ERROR: {e}")
+        return f"Error al generar PDF: {str(e)}", 500
         
 
 @app.route('/marcar_evaluado', methods=['POST'])

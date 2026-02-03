@@ -976,18 +976,44 @@
                                 
                                 </div>                           
                             
-                            {# CORRECCIÓN UNIFICADA: diagnostico_1 y diagnostico_2 se unifican en 'diagnostico_unificado' #}
-                            <label for="diagnostico_unificado_{{ est.id }}">Diagnóstico (Déficit/PIE):</label>
-                            <select name="diagnostico_unificado" id="diagnostico_unificado_{{ est.id }}" onchange="updatePreview(this.form)">
+                                {# CORRECCIÓN UNIFICADA: Desplegable de Diagnósticos PIE #}
+                                <label for="diagnostico_unificado_{{ est.id }}">Diagnóstico (Déficit/PIE):</label>
+                                <select name="diagnostico_unificado" id="diagnostico_unificado_{{ est.id }}" onchange="updatePreview(this.form)">
                                 <option value="">Seleccione un diagnóstico</option>
-                                <option value="TDA" {% if est.diagnostico_1 == 'TDA' or est.diagnostico_2 == 'TDA' %}selected{% endif %}>TDA</option>
-                                <option value="TDAH" {% if est.diagnostico_1 == 'TDAH' or est.diagnostico_2 == 'TDAH' %}selected{% endif %}>TDAH</option>
-                                <option value="FIL" {% if est.diagnostico_1 == 'FIL' or est.diagnostico_2 == 'FIL' %}selected{% endif %}>FIL</option>
-                                <option value="DIL" {% if est.diagnostico_1 == 'DIL' or est.diagnostico_2 == 'DIL' %}selected{% endif %}>DIL</option>
-                                <option value="Trastorno especifico del lenguaje" {% if est.diagnostico_1 == 'Trastorno especifico del lenguaje' or est.diagnostico_2 == 'Trastorno especifico del lenguaje' %}selected{% endif %}>Trastorno especifico del lenguaje</option>
-                                <option value="Otro" {% if est.diagnostico_1 == 'Otro' or est.diagnostico_2 == 'Otro' %}selected{% endif %}>Otro</option>
-                            </select>
-                            
+    
+    {# --- Trastornos del Lenguaje --- #}
+    <option value="TRASTORNO DEL LENGUAJE" {% if est.diagnostico_1 == 'TRASTORNO DEL LENGUAJE' or est.diagnostico_2 == 'TRASTORNO DEL LENGUAJE' %}selected{% endif %}>TRASTORNO DEL LENGUAJE</option>
+    <option value="TRASTORNO ESPECIFICO DE LENGUAJE MIXTO" {% if est.diagnostico_1 == 'TRASTORNO ESPECIFICO DE LENGUAJE MIXTO' or est.diagnostico_2 == 'TRASTORNO ESPECIFICO DE LENGUAJE MIXTO' %}selected{% endif %}>TRASTORNO ESPECÍFICO DE LENGUAJE MIXTO</option>
+    <option value="TRASTORNO ESPECIFICO DE LENGUAJE EXPRESIVO" {% if est.diagnostico_1 == 'TRASTORNO ESPECIFICO DE LENGUAJE EXPRESIVO' or est.diagnostico_2 == 'TRASTORNO ESPECIFICO DE LENGUAJE EXPRESIVO' %}selected{% endif %}>TRASTORNO ESPECIFICO DE LENGUAJE EXPRESIVO</option>
+    <option value="DISFASIA" {% if est.diagnostico_1 == 'DISFASIA' or est.diagnostico_2 == 'DISFASIA' %}selected{% endif %}>DISFASIA</option>
+    <option value="DISFASIA SEVERA" {% if est.diagnostico_1 == 'DISFASIA SEVERA' or est.diagnostico_2 == 'DISFASIA SEVERA' %}selected{% endif %}>DISFASIA SEVERA</option>
+
+    {# --- Rendimiento / Intelectual --- #}
+    <option value="RENDIMIENTO INTELECTUAL LIMITROFE" {% if est.diagnostico_1 == 'RENDIMIENTO INTELECTUAL LIMITROFE' or est.diagnostico_2 == 'RENDIMIENTO INTELECTUAL LIMITROFE' %}selected{% endif %}>RENDIMIENTO INTELECTUAL LIMITROFE</option>
+    <option value="FUNCIONAMIENTO INTELECTUAL LIMITROFE" {% if est.diagnostico_1 == 'FUNCIONAMIENTO INTELECTUAL LIMITROFE' or est.diagnostico_2 == 'FUNCIONAMIENTO INTELECTUAL LIMITROFE' %}selected{% endif %}>FUNCIONAMIENTO INTELECTUAL LIMITROFE</option>
+    <option value="DISCAPACIDAD INTELECTUAL" {% if est.diagnostico_1 == 'DISCAPACIDAD INTELECTUAL' or est.diagnostico_2 == 'DISCAPACIDAD INTELECTUAL' %}selected{% endif %}>DISCAPACIDAD INTELECTUAL</option>
+    <option value="DISCAPACIDAD INTELECTUAL LEVE" {% if est.diagnostico_1 == 'DISCAPACIDAD INTELECTUAL LEVE' or est.diagnostico_2 == 'DISCAPACIDAD INTELECTUAL LEVE' %}selected{% endif %}>DISCAPACIDAD INTELECTUAL LEVE</option>
+    <option value="DISCAPACIDAD INTELECTUAL MODERADO" {% if est.diagnostico_1 == 'DISCAPACIDAD INTELECTUAL MODERADO' or est.diagnostico_2 == 'DISCAPACIDAD INTELECTUAL MODERADO' %}selected{% endif %}>DISCAPACIDAD INTELECTUAL MODERADO</option>
+    <option value="SINDROME DE DOWN" {% if est.diagnostico_1 == 'SINDROME DE DOWN' or est.diagnostico_2 == 'SINDROME DE DOWN' %}selected{% endif %}>SÍNDROME DE DOWN</option>
+    <option value="RETRASO GLOBAL DEL DESARROLLO" {% if est.diagnostico_1 == 'RETRASO GLOBAL DEL DESARROLLO' or est.diagnostico_2 == 'RETRASO GLOBAL DEL DESARROLLO' %}selected{% endif %}>RETRASO GLOBAL DEL DESARROLLO</option>
+
+    {# --- Neurodesarrollo y Aprendizaje --- #}
+    <option value="TRASTORNO DEL ESPECTRO AUTISTA" {% if est.diagnostico_1 == 'TRASTORNO DEL ESPECTRO AUTISTA' or est.diagnostico_2 == 'TRASTORNO DEL ESPECTRO AUTISTA' %}selected{% endif %}>TRASTORNO DEL ESPECTRO AUTISTA</option>
+    <option value="TRASTORNO DE DEFICIT ATENCIONAL" {% if est.diagnostico_1 == 'TRASTORNO DE DEFICIT ATENCIONAL' or est.diagnostico_2 == 'TRASTORNO DE DEFICIT ATENCIONAL' %}selected{% endif %}>TRASTORNO DE DÉFICIT ATENCIONAL</option>
+    <option value="TRASTORNO DE DEFICIT ATENCIONAL CON HIPERACTIVIDAD" {% if est.diagnostico_1 == 'TRASTORNO DE DEFICIT ATENCIONAL CON HIPERACTIVIDAD' or est.diagnostico_2 == 'TRASTORNO DE DEFICIT ATENCIONAL CON HIPERACTIVIDAD' %}selected{% endif %}>TRASTORNO DE DÉFICIT ATENCIONAL CON HIPERACTIVIDAD</option>
+    <option value="DIFICULTADES ESPECIFICAS DEL APRENDIZAJE" {% if est.diagnostico_1 == 'DIFICULTADES ESPECIFICAS DEL APRENDIZAJE' or est.diagnostico_2 == 'DIFICULTADES ESPECIFICAS DEL APRENDIZAJE' %}selected{% endif %}>DIFICULTADES ESPECÍFICAS DEL APRENDIZAJE</option>
+    <option value="GRAVES ALTERACIONES DE LA RELACION Y LA COMUNICACION" {% if est.diagnostico_1 == 'GRAVES ALTERACIONES DE LA RELACION Y LA COMUNICACION' or est.diagnostico_2 == 'GRAVES ALTERACIONES DE LA RELACION Y LA COMUNICACION' %}selected{% endif %}>GRAVES ALTERACIONES DE LA RELACIÓN Y LA COMUNICACIÓN</option>
+
+    {# --- Discapacidades Físicas y Sensoriales --- #}
+    <option value="DISCAPACIDAD MOTORA" {% if est.diagnostico_1 == 'DISCAPACIDAD MOTORA' or est.diagnostico_2 == 'DISCAPACIDAD MOTORA' %}selected{% endif %}>DISCAPACIDAD MOTORA</option>
+    <option value="DISCAPACIDAD MOTORA MODERADA" {% if est.diagnostico_1 == 'DISCAPACIDAD MOTORA MODERADA' or est.diagnostico_2 == 'DISCAPACIDAD MOTORA MODERADA' %}selected{% endif %}>DISCAPACIDAD MOTORA MODERADA</option>
+    <option value="DISCAPACIDAD MOTORA GRAVE" {% if est.diagnostico_1 == 'DISCAPACIDAD MOTORA GRAVE' or est.diagnostico_2 == 'DISCAPACIDAD MOTORA GRAVE' %}selected{% endif %}>DISCAPACIDAD MOTORA GRAVE</option>
+    <option value="DISCAPACIDAD AUDITIVA" {% if est.diagnostico_1 == 'DISCAPACIDAD AUDITIVA' or est.diagnostico_2 == 'DISCAPACIDAD AUDITIVA' %}selected{% endif %}>DISCAPACIDAD AUDITIVA</option>
+    <option value="DISCAPACIDAD VISUAL" {% if est.diagnostico_1 == 'DISCAPACIDAD VISUAL' or est.diagnostico_2 == 'DISCAPACIDAD VISUAL' %}selected{% endif %}>DISCAPACIDAD VISUAL</option>
+    <option value="DISCAPACIDAD MULTIPLE" {% if est.diagnostico_1 == 'DISCAPACIDAD MULTIPLE' or est.diagnostico_2 == 'DISCAPACIDAD MULTIPLE' %}selected{% endif %}>DISCAPACIDAD MÚLTIPLE</option>
+
+    <option value="Otro" {% if est.diagnostico_1 == 'Otro' or est.diagnostico_2 == 'Otro' %}selected{% endif %}>Otro</option>
+</select>                            
                             {# NOMBRE DE CAMPO: DIAGNÓSTICO COMPLEMENTARIO (PDF) -> diagnostico_complementario (HTML) #}
                             <label for="diagnostico_complementario_{{ est.id }}">Diagnóstico Complementario:</label>
                             <textarea name="diagnostico_complementario" id="diagnostico_complementario_{{ est.id }}" rows="3" placeholder="Notas adicionales sobre el diagnóstico complementario.">{{ est.diagnostico_complementario if est.diagnostico_complementario is not none else '' }}</textarea>

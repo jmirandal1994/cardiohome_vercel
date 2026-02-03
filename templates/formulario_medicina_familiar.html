@@ -6,249 +6,243 @@
     <title>Rellenar Formulario de Medicina Familiar - CardioHome</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
+<style>
+/* ===============================
+   DISEÑO CLÍNICO PROFESIONAL
+   Formularios de alta carga
+   =============================== */
+
 :root {
-    --metal-dark: #0f172a;
-    --metal-mid: #1e293b;
-    --metal-light: #334155;
-    --steel: linear-gradient(145deg,#f1f5f9,#cbd5e1);
-    --glass: rgba(255,255,255,0.85);
-    --primary: #2563eb;
-    --primary-soft: rgba(37,99,235,.15);
-    --success: #16a34a;
-    --danger: #dc2626;
-    --text-dark: #0f172a;
-    --radius-xl: 18px;
-    --radius-lg: 14px;
-    --radius-md: 10px;
-    --shadow-soft: 0 8px 30px rgba(0,0,0,.08);
-    --shadow-strong: 0 20px 60px rgba(0,0,0,.15);
+    --bg-main: #f4f6f8;
+    --bg-card: #ffffff;
+    --border-soft: #d8dee4;
+    --border-strong: #b6c0cc;
+
+    --text-main: #1f2933;
+    --text-muted: #6b7280;
+
+    --primary: #1a73e8;
+    --primary-soft: #e8f0fe;
+    --success: #188038;
+    --danger: #d93025;
+
+    --radius-lg: 12px;
+    --radius-md: 8px;
+    --radius-sm: 6px;
+
+    --shadow-card: 0 4px 14px rgba(0,0,0,.08);
 }
 
-* { box-sizing: border-box; }
+/* RESET CONTROLADO */
+* {
+    box-sizing: border-box;
+}
 
 body {
-    font-family: 'Inter','Segoe UI',sans-serif;
-    background:
-        radial-gradient(circle at top,#f8fafc,#e2e8f0);
-    color: var(--text-dark);
     margin: 0;
-    padding: 0;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg-main);
+    color: var(--text-main);
+    line-height: 1.5;
 }
 
-/* ===== HEADER ===== */
+/* ================= HEADER ================= */
 header {
-    background: linear-gradient(135deg,#0f172a,#1e293b);
-    color: white;
-    padding: 28px 20px;
+    background: #ffffff;
+    border-bottom: 1px solid var(--border-soft);
+    padding: 18px 24px;
     text-align: center;
-    position: relative;
-    box-shadow: var(--shadow-strong);
 }
 
 header h1 {
-    margin: 12px 0 0;
-    font-weight: 700;
-    letter-spacing: .3px;
+    margin: 10px 0 0;
+    font-size: 1.4rem;
+    font-weight: 600;
 }
 
 header img {
-    max-width: 150px;
-    filter: drop-shadow(0 8px 20px rgba(0,0,0,.4));
+    max-height: 60px;
 }
 
-/* Header buttons */
+/* Botones header */
 .header-btn {
     position: absolute;
-    top: 22px;
-    padding: 12px 20px;
-    border-radius: 999px;
+    top: 18px;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
     font-weight: 600;
-    text-decoration: none;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    transition: .3s;
-    backdrop-filter: blur(10px);
+    font-size: .9rem;
+    border: 1px solid var(--border-soft);
+    background: #fff;
+    color: var(--text-main);
 }
 
-.back-to-dashboard-btn {
-    left: 20px;
-    background: rgba(255,255,255,.15);
-    color: white;
-}
+.back-to-dashboard-btn { left: 20px; }
+.logout-btn { right: 20px; background:#fff; }
 
-.logout-btn {
-    right: 20px;
-    background: rgba(220,38,38,.9);
-    color: white;
-}
-
-.header-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-soft);
-}
-
-/* ===== MAIN WRAPPER ===== */
+/* ================= WRAPPER ================= */
 .main-content-wrapper {
-    max-width: 1250px;
-    margin: 40px auto;
-    padding: 0 20px;
+    max-width: 1200px;
+    margin: 28px auto;
+    padding: 0 16px;
 }
 
-/* ===== COUNTER ===== */
+/* ================= CONTADORES ================= */
 .evaluation-counter {
-    background: var(--steel);
+    background: #fff;
+    border: 1px solid var(--border-soft);
     border-radius: var(--radius-lg);
-    padding: 18px 28px;
+    padding: 14px 20px;
     display: flex;
-    gap: 15px;
-    justify-content: center;
+    gap: 12px;
     align-items: center;
-    font-weight: 600;
-    box-shadow: var(--shadow-soft);
+    justify-content: center;
+    box-shadow: var(--shadow-card);
 }
 
-/* ===== SEARCH ===== */
+/* ================= BUSCADOR ================= */
 #buscador {
     width: 100%;
-    max-width: 520px;
-    margin: 30px auto;
+    max-width: 420px;
+    margin: 24px auto;
     display: block;
-    padding: 14px 18px;
+    padding: 10px 14px;
     border-radius: var(--radius-md);
-    border: none;
-    box-shadow: inset 0 2px 6px rgba(0,0,0,.1);
-    font-size: 1rem;
+    border: 1px solid var(--border-soft);
 }
 
-/* ===== STUDENT CARD ===== */
+/* ================= TARJETA ESTUDIANTE ================= */
 details.estudiante {
-    margin-bottom: 28px;
-    border-radius: var(--radius-xl);
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    margin-bottom: 22px;
+    box-shadow: var(--shadow-card);
     overflow: hidden;
-    background: var(--glass);
-    box-shadow: var(--shadow-soft);
-    transition: .3s;
 }
 
-details.estudiante[open] {
-    box-shadow: var(--shadow-strong);
-}
-
-/* ===== SUMMARY ===== */
 summary {
-    background: linear-gradient(135deg,#2563eb,#1d4ed8);
-    color: white;
-    padding: 20px 26px;
+    background: var(--primary-soft);
+    padding: 14px 20px;
     font-weight: 600;
-    font-size: 1.1rem;
     cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-summary::-webkit-details-marker { display: none; }
+summary::-webkit-details-marker { display:none; }
 
-/* ===== CONTAINER ===== */
+/* ================= CONTENIDO ================= */
 .container {
     display: flex;
-    gap: 28px;
-    padding: 28px;
+    gap: 24px;
+    padding: 22px;
     flex-wrap: wrap;
 }
 
-/* ===== FORM & PREVIEW ===== */
-.formulario, .preview {
-    flex: 1 1 480px;
-    background: white;
+/* ================= FORMULARIO ================= */
+.formulario {
+    flex: 1 1 520px;
+    background: #fff;
+    border: 1px solid var(--border-soft);
     border-radius: var(--radius-lg);
-    padding: 28px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.6),
-                var(--shadow-soft);
+    padding: 22px;
 }
 
-/* ===== TITLES ===== */
+/* ================= PREVIEW ================= */
+.preview {
+    flex: 1 1 360px;
+    background: #fafafa;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+}
+
+/* ================= TÍTULOS ================= */
 .section-title {
+    font-size: 1.1rem;
     margin-top: 0;
-    font-size: 1.2rem;
-    color: var(--primary);
-    border-bottom: 2px solid var(--primary-soft);
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border-soft);
     padding-bottom: 6px;
 }
 
-/* ===== INPUTS ===== */
+/* ================= INPUTS ================= */
 label {
-    font-weight: 600;
-    margin-top: 14px;
     display: block;
+    margin-top: 12px;
+    font-weight: 600;
+    font-size: .9rem;
 }
 
 input, select, textarea {
     width: 100%;
-    padding: 12px 14px;
-    border-radius: var(--radius-md);
-    border: 1px solid #cbd5e1;
-    margin-top: 6px;
-    font-size: .95rem;
-    transition: .25s;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-soft);
+    margin-top: 4px;
+    font-size: .9rem;
 }
 
 input:focus, textarea:focus, select:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px var(--primary-soft);
+    background: #fff;
 }
 
-/* ===== CHECKBOX CARDS ===== */
-.checkbox-item {
-    background: #f8fafc;
-    border-radius: var(--radius-md);
-    padding: 10px 14px;
+/* ================= CHECKBOX ================= */
+.checkbox-group {
     display: flex;
-    gap: 8px;
-    align-items: center;
-    cursor: pointer;
-    border: 1px solid #e2e8f0;
-    transition: .25s;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.checkbox-item {
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-soft);
+    background: #fff;
+    font-size: .85rem;
 }
 
 .checkbox-item.checked {
+    background: var(--primary-soft);
+    border-color: var(--primary);
+}
+
+/* ================= BOTONES ================= */
+button {
+    padding: 10px 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-soft);
     background: var(--primary);
     color: white;
-}
-
-/* ===== BUTTONS ===== */
-button {
-    background: linear-gradient(135deg,#2563eb,#1d4ed8);
-    color: white;
-    border: none;
-    padding: 14px 22px;
-    border-radius: 999px;
     font-weight: 600;
     cursor: pointer;
-    transition: .25s;
 }
 
-button:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-soft);
+button.secondary {
+    background: #fff;
+    color: var(--text-main);
 }
 
-/* ===== MOBILE ===== */
+/* ================= MOBILE ================= */
 @media (max-width: 768px) {
-    header h1 { font-size: 1.4rem; }
+    .container {
+        flex-direction: column;
+        padding: 16px;
+    }
+
+    header h1 {
+        font-size: 1.2rem;
+    }
 
     .header-btn {
         position: static;
-        margin: 10px auto;
-        justify-content: center;
-    }
-
-    .container {
-        flex-direction: column;
-        padding: 18px;
+        margin: 8px auto;
+        display: block;
     }
 }
 </style>

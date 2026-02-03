@@ -821,49 +821,6 @@
                             <label for="fecha_evaluacion_{{ est.id }}">Fecha Evaluación:</label>
                             <input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}" value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}" required onchange="setFechaReevaluacion(this.form.querySelector('select[name=\'fecha_reevaluacion_select\']'))">
                             
-                            
-                            <h3 class="section-title">Examen General de Salud</h3>
-                            
-                            {# CORRECCIÓN UNIFICADA: diagnostico_1 y diagnostico_2 se unifican en 'diagnostico_unificado' #}
-                            <label for="diagnostico_unificado_{{ est.id }}">Diagnóstico (Déficit/PIE):</label>
-                            <select name="diagnostico_unificado" id="diagnostico_unificado_{{ est.id }}" onchange="updatePreview(this.form)">
-                                <option value="">Seleccione un diagnóstico</option>
-                                <option value="TDA" {% if est.diagnostico_1 == 'TDA' or est.diagnostico_2 == 'TDA' %}selected{% endif %}>TDA</option>
-                                <option value="TDAH" {% if est.diagnostico_1 == 'TDAH' or est.diagnostico_2 == 'TDAH' %}selected{% endif %}>TDAH</option>
-                                <option value="FIL" {% if est.diagnostico_1 == 'FIL' or est.diagnostico_2 == 'FIL' %}selected{% endif %}>FIL</option>
-                                <option value="DIL" {% if est.diagnostico_1 == 'DIL' or est.diagnostico_2 == 'DIL' %}selected{% endif %}>DIL</option>
-                                <option value="Trastorno especifico del lenguaje" {% if est.diagnostico_1 == 'Trastorno especifico del lenguaje' or est.diagnostico_2 == 'Trastorno especifico del lenguaje' %}selected{% endif %}>Trastorno especifico del lenguaje</option>
-                                <option value="Otro" {% if est.diagnostico_1 == 'Otro' or est.diagnostico_2 == 'Otro' %}selected{% endif %}>Otro</option>
-                            </select>
-                            
-                            {# NOMBRE DE CAMPO: DIAGNÓSTICO COMPLEMENTARIO (PDF) -> diagnostico_complementario (HTML) #}
-                            <label for="diagnostico_complementario_{{ est.id }}">Diagnóstico Complementario:</label>
-                            <textarea name="diagnostico_complementario" id="diagnostico_complementario_{{ est.id }}" rows="3" placeholder="Notas adicionales sobre el diagnóstico complementario.">{{ est.diagnostico_complementario if est.diagnostico_complementario is not none else '' }}</textarea>
-
-                            {# NUEVO CAMPO: Indicaciones (Nombre HTML: indicaciones) #}
-                            <label for="indicaciones_{{ est.id }}">Indicaciones:</label>
-                            <textarea name="indicaciones" id="indicaciones_{{ est.id }}" rows="2" placeholder="Detalles de indicaciones.">{{ est.indicaciones if est.indicaciones is not none else '' }}</textarea>
-                            
-                            {# CAMPO ORIGINAL: Derivaciones (Nombre HTML: derivaciones) #}
-                            <label for="derivaciones_{{ est.id }}">Derivaciones:</label>
-                            <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="2" placeholder="Detalles de derivaciones a especialistas.">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
-
-                            {# Plazo de reevaluación (Solo ayuda a calcular la fecha) #}
-                            <label for="fecha_reevaluacion_select_{{ est.id }}">Plazo de Reevaluación (años):</label>
-                            <select name="fecha_reevaluacion_select" id="fecha_reevaluacion_select_{{ est.id }}" onchange="setFechaReevaluacion(this)">
-                                <option value="">Seleccione años</option>
-                                <option value="1" {% if est.fecha_reevaluacion_select == '1' %}selected{% endif %}>1 año</option>
-                                <option value="2" {% if est.fecha_reevaluacion_select == '2' %}selected{% endif %}>2 años</option>
-                                <option value="3" {% if est.fecha_reevaluacion_select == '3' %}selected{% endif %}>3 años</option>
-                                <option value="4" {% if est.fecha_reevaluacion_select == '4' %}selected{% endif %}>4 años</option>
-                                <option value="5" {% if est.fecha_reevaluacion_select == '5' %}selected{% endif %}>5 años</option>
-                            </select>
-                            
-                            {# NOMBRE DE CAMPO: Fecha reevaluación (PDF) -> fecha_reevaluacion (HTML) #}
-                            <label for="fecha_reevaluacion_input_{{ est.id }}">Fecha de reevaluación (calculada):</label>
-                            <input type="date" name="fecha_reevaluacion" id="fecha_reevaluacion_input_{{ est.id }}" value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}" readonly>
-                            <input type="hidden" name="fecha_reevaluacion_pdf" id="fecha_reevaluacion_pdf_{{ est.id }}" value=""> {# Hidden field for PDF format #}
-
 
                             <h3 class="section-title">Examen Físico y Clasificación</h3>
                             
@@ -1113,6 +1070,51 @@
                             <p>Retención Dental: <span class="prev-check-retenciondental">{{ 'Sí' if est.check_retenciondental else 'No' }}</span></p>
                             <p>Frenillo Lingual: <span class="prev-check-frenillolingual">{{ 'Sí' if est.check_frenillolingual else 'No' }}</span></p>
                             <p>Hipertrofia Amigdalina: <span class="prev-check-hipertrofia">{{ 'Sí' if est.check_hipertrofia else 'No' }}</span></p>
+
+
+                            <h3 class="section-title">Examen General de Salud</h3>
+                            
+                            {# CORRECCIÓN UNIFICADA: diagnostico_1 y diagnostico_2 se unifican en 'diagnostico_unificado' #}
+                            <label for="diagnostico_unificado_{{ est.id }}">Diagnóstico (Déficit/PIE):</label>
+                            <select name="diagnostico_unificado" id="diagnostico_unificado_{{ est.id }}" onchange="updatePreview(this.form)">
+                                <option value="">Seleccione un diagnóstico</option>
+                                <option value="TDA" {% if est.diagnostico_1 == 'TDA' or est.diagnostico_2 == 'TDA' %}selected{% endif %}>TDA</option>
+                                <option value="TDAH" {% if est.diagnostico_1 == 'TDAH' or est.diagnostico_2 == 'TDAH' %}selected{% endif %}>TDAH</option>
+                                <option value="FIL" {% if est.diagnostico_1 == 'FIL' or est.diagnostico_2 == 'FIL' %}selected{% endif %}>FIL</option>
+                                <option value="DIL" {% if est.diagnostico_1 == 'DIL' or est.diagnostico_2 == 'DIL' %}selected{% endif %}>DIL</option>
+                                <option value="Trastorno especifico del lenguaje" {% if est.diagnostico_1 == 'Trastorno especifico del lenguaje' or est.diagnostico_2 == 'Trastorno especifico del lenguaje' %}selected{% endif %}>Trastorno especifico del lenguaje</option>
+                                <option value="Otro" {% if est.diagnostico_1 == 'Otro' or est.diagnostico_2 == 'Otro' %}selected{% endif %}>Otro</option>
+                            </select>
+
+                            {# Plazo de reevaluación (Solo ayuda a calcular la fecha) #}
+                            <label for="fecha_reevaluacion_select_{{ est.id }}">Plazo de Reevaluación (años):</label>
+                            <select name="fecha_reevaluacion_select" id="fecha_reevaluacion_select_{{ est.id }}" onchange="setFechaReevaluacion(this)">
+                                <option value="">Seleccione años</option>
+                                <option value="1" {% if est.fecha_reevaluacion_select == '1' %}selected{% endif %}>1 año</option>
+                                <option value="2" {% if est.fecha_reevaluacion_select == '2' %}selected{% endif %}>2 años</option>
+                                <option value="3" {% if est.fecha_reevaluacion_select == '3' %}selected{% endif %}>3 años</option>
+                                <option value="4" {% if est.fecha_reevaluacion_select == '4' %}selected{% endif %}>4 años</option>
+                                <option value="5" {% if est.fecha_reevaluacion_select == '5' %}selected{% endif %}>5 años</option>
+                            </select>
+                            
+                             {# NOMBRE DE CAMPO: Fecha reevaluación (PDF) -> fecha_reevaluacion (HTML) #}
+                            <label for="fecha_reevaluacion_input_{{ est.id }}">Fecha de reevaluación (calculada):</label>
+                            <input type="date" name="fecha_reevaluacion" id="fecha_reevaluacion_input_{{ est.id }}" value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}" readonly>
+                            <input type="hidden" name="fecha_reevaluacion_pdf" id="fecha_reevaluacion_pdf_{{ est.id }}" value=""> {# Hidden field for PDF format #}
+
+                            
+                            {# NOMBRE DE CAMPO: DIAGNÓSTICO COMPLEMENTARIO (PDF) -> diagnostico_complementario (HTML) #}
+                            <label for="diagnostico_complementario_{{ est.id }}">Diagnóstico Complementario:</label>
+                            <textarea name="diagnostico_complementario" id="diagnostico_complementario_{{ est.id }}" rows="3" placeholder="Notas adicionales sobre el diagnóstico complementario.">{{ est.diagnostico_complementario if est.diagnostico_complementario is not none else '' }}</textarea>
+
+                            {# NUEVO CAMPO: Indicaciones (Nombre HTML: indicaciones) #}
+                            <label for="indicaciones_{{ est.id }}">Indicaciones:</label>
+                            <textarea name="indicaciones" id="indicaciones_{{ est.id }}" rows="2" placeholder="Detalles de indicaciones.">{{ est.indicaciones if est.indicaciones is not none else '' }}</textarea>
+                            
+                            {# CAMPO ORIGINAL: Derivaciones (Nombre HTML: derivaciones) #}
+                            <label for="derivaciones_{{ est.id }}">Derivaciones:</label>
+                            <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="2" placeholder="Detalles de derivaciones a especialistas.">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
+
                         </div>
 
                         <img src="/static/formulario_muestra.png" alt="Ejemplo Formulario" class="preview-img" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=Imagen+No+Disponible';" />

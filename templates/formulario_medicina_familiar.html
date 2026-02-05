@@ -955,27 +955,43 @@
                                     <input type="checkbox" name="check_hipertrofia" id="check_hipertrofia_{{ est.id }}" value="HIPERTROFIA_AMIGDALINA" {% if est.check_hipertrofia %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Hipertrofia Amigdalina
                                 </label>
 
-                                  </div>
-                            
-                            <h3 class="section-title">Examen Físico y Clasificación</h3>
-                            
-                            {# NOMBRE DE CAMPO: Altura: (PDF) -> altura (HTML) #}
-                            <label for="altura_{{ est.id }}">Altura (cm):</label>
-                            <input type="number" name="altura" id="altura_{{ est.id }}" step="0.1" min="0" value="{{ est.altura if est.altura is not none else '' }}" placeholder="Ej: 165.5" oninput="calculateIMC(this.form)">
-                            
-                            {# NOMBRE DE CAMPO: Peso (PDF) -> peso (HTML) #}
-                            <label for="peso_{{ est.id }}">Peso (kg):</label>
-                            <input type="number" name="peso" id="peso_{{ est.id }}" step="0.1" min="0" value="{{ est.peso if est.peso is not none else '' }}" placeholder="Ej: 60.2" oninput="calculateIMC(this.form)">
-                            
-                            {# NOMBRE DE CAMPO: I.M.C (PDF) -> imc (HTML) #}
-                            <label for="imc_{{ est.id }}">I.M.C:</label>
-                            <input type="text" name="imc" id="imc_{{ est.id }}" value="{{ est.imc if est.imc is not none else '' }}" readonly>
-                            
-                            {# NOMBRE DE CAMPO: Clasificación (PDF) -> clasificacion_imc (HTML) #}
-                            <label for="clasificacion_imc_{{ est.id }}">Clasificación (IMC):</label>
-                            <input type="text" name="clasificacion_imc" id="clasificacion_imc_{{ est.id }}" value="{{ est.clasificacion_imc if est.clasificacion_imc is not none else '' }}" readonly>
-                                
-                                </div>                           
+<div style="margin-top: 25px;"> 
+    <h3 class="section-title">Examen Físico y Clasificación</h3>
+</div>
+
+<div class="form-container">
+    {# Campo Altura #}
+    <div class="form-group">
+        <label for="altura_{{ est.id }}">Altura (cm):</label>
+        <input type="number" name="altura" id="altura_{{ est.id }}" step="0.1" min="0" 
+               value="{{ est.altura if est.altura is not none else '' }}" 
+               placeholder="Ej: 165.5" oninput="calculateIMC(this.form)">
+    </div>
+
+    {# Campo Peso #}
+    <div class="form-group">
+        <label for="peso_{{ est.id }}">Peso (kg):</label>
+        <input type="number" name="peso" id="peso_{{ est.id }}" step="0.1" min="0" 
+               value="{{ est.peso if est.peso is not none else '' }}" 
+               placeholder="Ej: 60.2" oninput="calculateIMC(this.form)">
+    </div>
+
+    {# Campo I.M.C #}
+    <div class="form-group">
+        <label for="imc_{{ est.id }}">I.M.C:</label>
+        <input type="text" name="imc" id="imc_{{ est.id }}" 
+               value="{{ est.imc if est.imc is not none else '' }}" readonly 
+               style="background-color: #f9f9f9;">
+    </div>
+
+    {# Campo Clasificación #}
+    <div class="form-group">
+        <label for="clasificacion_imc_{{ est.id }}">Clasificación (IMC):</label>
+        <input type="text" name="clasificacion_imc" id="clasificacion_imc_{{ est.id }}" 
+               value="{{ est.clasificacion_imc if est.clasificacion_imc is not none else '' }}" 
+               readonly style="background-color: #f9f9f9;">
+    </div>
+</div>
                             
 {# CORRECCIÓN UNIFICADA: Desplegable de Diagnósticos PIE (Formato amigable) #}
 <label for="diagnostico_unificado_{{ est.id }}">Diagnóstico (Déficit/PIE):</label>

@@ -779,66 +779,47 @@
                             <input type="hidden" name="estudiante_id" value="{{ est.id }}">
                             <input type="hidden" name="nomina_id" value="{{ session['current_nomina_id'] }}">
                             
-                            <h3 class="section-title">Identificación del Estudiante</h3>
-                            
-                            {# NOMBRE DE CAMPO: Nombres y Apellidos (PDF) -> nombre (HTML) #}
-                            <label for="nombre_{{ est.id }}">Nombre Completo:</label>
-                            <input type="text" name="nombre" id="nombre_{{ est.id }}" class="form-control" value="{{ est.nombre }}" required readonly>
-                            <input type="hidden" name="nombre_original" value="{{ est.nombre }}">
-                            
-                            {# NOMBRE DE CAMPO: RUN (PDF) -> rut (HTML) #}
-                            <label for="rut_{{ est.id }}">RUN:</label>
-                            <input type="text" name="rut" id="rut_{{ est.id }}" value="{{ est.rut }}" required readonly>
-                            <input type="hidden" name="rut_original" value="{{ est.rut }}">
-                            
-                            {# NOMBRE DE CAMPO: Genero (PDF) -> genero_f/m (HTML) #}
-                            <label>Género:</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-item {% if est.genero_f %}checked{% endif %}">
-                                    <input type="checkbox" name="genero_f" id="genero_f_{{ est.id }}" value="Femenino" {% if est.genero_f %}checked{% endif %} onchange="handleGenderChange(this)"> Femenino (F)
-                                </label>
-                                <label class="checkbox-item {% if est.genero_m %}checked{% endif %}">
-                                    <input type="checkbox" name="genero_m" id="genero_m_{{ est.id }}" value="Masculino" {% if est.genero_m %}checked{% endif %} onchange="handleGenderChange(this)"> Masculino (M)
-                                </label>
-                            </div>
-                            
-                            {# NOMBRE DE CAMPO: Fecha nacimiento (dd/mm/aaaa) (PDF) -> fecha_nacimiento (HTML) #}
-                            <label for="fecha_nacimiento_{{ est.id }}">Fecha de Nacimiento:</label>
-                            <input type="date" name="fecha_nacimiento" id="fecha_nacimiento_{{ est.id }}" value="{{ est.fecha_nacimiento }}" required readonly>
-                            <input type="hidden" name="fecha_nacimiento_original" value="{{ est.fecha_nacimiento }}">
-                            
-                            {# NOMBRE DE CAMPO: Edad (en años y meses) (PDF) -> edad (HTML) #}
-                            <label for="edad_{{ est.id }}">Edad:</label>
-                            <input type="text" name="edad" id="edad_{{ est.id }}" value="{{ est.edad }}" readonly>
-                            <input type="hidden" name="edad_original" value="{{ est.edad }}">
-                            
-                            {# NOMBRE DE CAMPO: Nacionalidad (PDF) -> nacionalidad (HTML) #}
-                            <label for="nacionalidad_{{ est.id }}">Nacionalidad:</label>
-                            <input type="text" name="nacionalidad" id="nacionalidad_{{ est.id }}" value="{{ est.nacionalidad }}" readonly>
-                            <input type="hidden" name="nacionalidad_original" value="{{ est.nacionalidad }}">
-                            
-                            {# NOMBRE DE CAMPO: Fecha evaluación (PDF) -> fecha_evaluacion (HTML) #}
-                            <label for="fecha_evaluacion_{{ est.id }}">Fecha Evaluación:</label>
-                            <input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}" value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}" required onchange="setFechaReevaluacion(this.form.querySelector('select[name=\'fecha_reevaluacion_select\']'))">
-                            
+<h3 class="section-title">Identificación del Estudiante</h3>
 
-                            <h3 class="section-title">Examen Físico y Clasificación</h3>
-                            
-                            {# NOMBRE DE CAMPO: Altura: (PDF) -> altura (HTML) #}
-                            <label for="altura_{{ est.id }}">Altura (cm):</label>
-                            <input type="number" name="altura" id="altura_{{ est.id }}" step="0.1" min="0" value="{{ est.altura if est.altura is not none else '' }}" placeholder="Ej: 165.5" oninput="calculateIMC(this.form)">
-                            
-                            {# NOMBRE DE CAMPO: Peso (PDF) -> peso (HTML) #}
-                            <label for="peso_{{ est.id }}">Peso (kg):</label>
-                            <input type="number" name="peso" id="peso_{{ est.id }}" step="0.1" min="0" value="{{ est.peso if est.peso is not none else '' }}" placeholder="Ej: 60.2" oninput="calculateIMC(this.form)">
-                            
-                            {# NOMBRE DE CAMPO: I.M.C (PDF) -> imc (HTML) #}
-                            <label for="imc_{{ est.id }}">I.M.C:</label>
-                            <input type="text" name="imc" id="imc_{{ est.id }}" value="{{ est.imc if est.imc is not none else '' }}" readonly>
-                            
-                            {# NOMBRE DE CAMPO: Clasificación (PDF) -> clasificacion_imc (HTML) #}
-                            <label for="clasificacion_imc_{{ est.id }}">Clasificación (IMC):</label>
-                            <input type="text" name="clasificacion_imc" id="clasificacion_imc_{{ est.id }}" value="{{ est.clasificacion_imc if est.clasificacion_imc is not none else '' }}" readonly>
+{# NOMBRE DE CAMPO: Nombres y Apellidos (PDF) -> nombre (HTML) #}
+<label for="nombre_{{ est.id }}">Nombre Completo:</label>
+<input type="text" name="nombre" id="nombre_{{ est.id }}" class="form-control" value="{{ est.nombre }}" required oninput="updatePreview(this.form)">
+<input type="hidden" name="nombre_original" value="{{ est.nombre }}">
+
+{# NOMBRE DE CAMPO: RUN (PDF) -> rut (HTML) #}
+<label for="rut_{{ est.id }}">RUN:</label>
+<input type="text" name="rut" id="rut_{{ est.id }}" value="{{ est.rut }}" required oninput="updatePreview(this.form)">
+<input type="hidden" name="rut_original" value="{{ est.rut }}">
+
+{# NOMBRE DE CAMPO: Genero (PDF) -> genero_f/m (HTML) #}
+<label>Género:</label>
+<div class="checkbox-group">
+    <label class="checkbox-item {% if est.genero_f %}checked{% endif %}">
+        <input type="checkbox" name="genero_f" id="genero_f_{{ est.id }}" value="Femenino" {% if est.genero_f %}checked{% endif %} onchange="handleGenderChange(this)"> Femenino (F)
+    </label>
+    <label class="checkbox-item {% if est.genero_m %}checked{% endif %}">
+        <input type="checkbox" name="genero_m" id="genero_m_{{ est.id }}" value="Masculino" {% if est.genero_m %}checked{% endif %} onchange="handleGenderChange(this)"> Masculino (M)
+    </label>
+</div>
+
+{# NOMBRE DE CAMPO: Fecha nacimiento (dd/mm/aaaa) (PDF) -> fecha_nacimiento (HTML) #}
+<label for="fecha_nacimiento_{{ est.id }}">Fecha de Nacimiento:</label>
+<input type="date" name="fecha_nacimiento" id="fecha_nacimiento_{{ est.id }}" value="{{ est.fecha_nacimiento }}" required oninput="updatePreview(this.form)">
+<input type="hidden" name="fecha_nacimiento_original" value="{{ est.fecha_nacimiento }}">
+
+{# NOMBRE DE CAMPO: Edad (en años y meses) (PDF) -> edad (HTML) #}
+<label for="edad_{{ est.id }}">Edad:</label>
+<input type="text" name="edad" id="edad_{{ est.id }}" value="{{ est.edad }}" oninput="updatePreview(this.form)">
+<input type="hidden" name="edad_original" value="{{ est.edad }}">
+
+{# NOMBRE DE CAMPO: Nacionalidad (PDF) -> nacionalidad (HTML) #}
+<label for="nacionalidad_{{ est.id }}">Nacionalidad:</label>
+<input type="text" name="nacionalidad" id="nacionalidad_{{ est.id }}" value="{{ est.nacionalidad }}" oninput="updatePreview(this.form)">
+<input type="hidden" name="nacionalidad_original" value="{{ est.nacionalidad }}">
+
+{# NOMBRE DE CAMPO: Fecha evaluación (PDF) -> fecha_evaluacion (HTML) #}
+<label for="fecha_evaluacion_{{ est.id }}">Fecha Evaluación:</label>
+<input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}" value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}" required onchange="setFechaReevaluacion(this.form.querySelector('select[name=\'fecha_reevaluacion_select\']')); updatePreview(this.form)">                            
 
 
                             <h3 class="section-title">Antecedentes Perinatales</h3>
@@ -974,7 +955,26 @@
                                     <input type="checkbox" name="check_hipertrofia" id="check_hipertrofia_{{ est.id }}" value="HIPERTROFIA_AMIGDALINA" {% if est.check_hipertrofia %}checked{% endif %} onchange="updateCheckboxStyle(this)"> Hipertrofia Amigdalina
                                 </label>
                                 
-                                </div>                           
+                                </div>    
+
+                            <h3 class="section-title">Examen Físico y Clasificación</h3>
+                            
+                            {# NOMBRE DE CAMPO: Altura: (PDF) -> altura (HTML) #}
+                            <label for="altura_{{ est.id }}">Altura (cm):</label>
+                            <input type="number" name="altura" id="altura_{{ est.id }}" step="0.1" min="0" value="{{ est.altura if est.altura is not none else '' }}" placeholder="Ej: 165.5" oninput="calculateIMC(this.form)">
+                            
+                            {# NOMBRE DE CAMPO: Peso (PDF) -> peso (HTML) #}
+                            <label for="peso_{{ est.id }}">Peso (kg):</label>
+                            <input type="number" name="peso" id="peso_{{ est.id }}" step="0.1" min="0" value="{{ est.peso if est.peso is not none else '' }}" placeholder="Ej: 60.2" oninput="calculateIMC(this.form)">
+                            
+                            {# NOMBRE DE CAMPO: I.M.C (PDF) -> imc (HTML) #}
+                            <label for="imc_{{ est.id }}">I.M.C:</label>
+                            <input type="text" name="imc" id="imc_{{ est.id }}" value="{{ est.imc if est.imc is not none else '' }}" readonly>
+                            
+                            {# NOMBRE DE CAMPO: Clasificación (PDF) -> clasificacion_imc (HTML) #}
+                            <label for="clasificacion_imc_{{ est.id }}">Clasificación (IMC):</label>
+                            <input type="text" name="clasificacion_imc" id="clasificacion_imc_{{ est.id }}" value="{{ est.clasificacion_imc if est.clasificacion_imc is not none else '' }}" readonly>
+
                             
 {# CORRECCIÓN UNIFICADA: Desplegable de Diagnósticos PIE (Formato amigable) #}
 <label for="diagnostico_unificado_{{ est.id }}">Diagnóstico (Déficit/PIE):</label>
@@ -1000,7 +1000,7 @@
     {# --- Neurodesarrollo y Aprendizaje --- #}
     <option value="Trastorno del espectro autista" {% if est.diagnostico_1 == 'Trastorno del espectro autista' or est.diagnostico_2 == 'Trastorno del espectro autista' %}selected{% endif %}>Trastorno del espectro autista</option>
     <option value="Trastorno de déficit atencional" {% if est.diagnostico_1 == 'Trastorno de déficit atencional' or est.diagnostico_2 == 'Trastorno de déficit atencional' %}selected{% endif %}>Trastorno de déficit atencional</option>
-    <option value="TDAH" {% if est.diagnostico_1 == 'TDAH' or est.diagnostico_2 == 'TDAH' %}selected{% endif %}>TDAH</option>
+    <option value="Trastorno de deficit atencional-H" {% if est.diagnostico_1 == 'Trastorno de deficit atencional-H' or est.diagnostico_2 == 'Trastorno de deficit atencional-H' %}selected{% endif %}>Trastorno de deficit atencional-H</option>
     <option value="Dificultades específicas del aprendizaje" {% if est.diagnostico_1 == 'Dificultades específicas del aprendizaje' or est.diagnostico_2 == 'Dificultades específicas del aprendizaje' %}selected{% endif %}>Dificultades específicas del aprendizaje</option>
     <option value="GARC" {% if est.diagnostico_1 == 'GARC' or est.diagnostico_2 == 'GARC' %}selected{% endif %}>GARC</option>
 
@@ -1332,11 +1332,11 @@
             } else if (imc >= 25 && imc < 30) {
                 classification = 'Sobrepeso';
             } else if (imc >= 30 && imc < 35) {
-                classification = 'Obesidad Clase I';
+                classification = 'Obesidad';
             } else if (imc >= 35 && imc < 40) {
-                classification = 'Obesidad Clase II';
+                classification = 'Obesidad';
             } else {
-                classification = 'Obesidad Clase III';
+                classification = 'Obesidad';
             }
             clasificacionInput.value = classification;
         }

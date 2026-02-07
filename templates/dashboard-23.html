@@ -2582,9 +2582,13 @@
 async function exportarReporteProyecto() {
     const projectId = document.getElementById('admin-project-filter').value;
     
+    // PEGUE AQUÍ SU CÓDIGO BASE64 DE LA FIRMA
+    // Si aún no la tienes, dejaré un espacio en blanco transparente por ahora.
+    const firmaBase64 = "TU_CODIGO_BASE64_AQUI"; 
+
     Swal.fire({
-        title: 'Generando Reporte Ejecutivo',
-        text: 'Preparando listados y firmas...',
+        title: 'Generando Reporte Oficial',
+        text: 'Preparando certificación de Gerencia...',
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading()
     });
@@ -2597,30 +2601,32 @@ async function exportarReporteProyecto() {
 
         const element = document.createElement('div');
         element.innerHTML = `
-            <div style="padding: 40px; font-family: 'Helvetica', sans-serif; color: #1a202c;">
+            <div style="padding: 40px; font-family: 'Helvetica', sans-serif; color: #1a202c; background: white;">
+                <!-- Encabezado Corporativo -->
                 <div style="display: flex; justify-content: space-between; border-bottom: 3px solid #0A3D62; padding-bottom: 15px; margin-bottom: 25px;">
                     <div>
-                        <h1 style="color: #0A3D62; margin: 0; font-size: 24px;">CARDIOHOME SpA</h1>
-                        <p style="margin: 5px 0; font-size: 14px; color: #4a5568;">Gestión Operativa de Salud Escolar</p>
+                        <h1 style="color: #0A3D62; margin: 0; font-size: 24px; font-weight: bold;">CARDIOHOME SpA</h1>
+                        <p style="margin: 5px 0; font-size: 14px; color: #4a5568;">Gestión de Salud Escolar - Chile</p>
                     </div>
                     <div style="text-align: right; font-size: 12px; color: #718096;">
-                        <p><strong>REPORTE:</strong> ${data.proyecto.toUpperCase()}</p>
-                        <p><strong>FECHA:</strong> ${data.fecha}</p>
+                        <p><strong>PROYECTO:</strong> ${data.proyecto.toUpperCase()}</p>
+                        <p><strong>FECHA EMISIÓN:</strong> ${data.fecha}</p>
                     </div>
                 </div>
 
+                <!-- Dashboard de Resumen Global -->
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 35px;">
-                    <div style="background: #ebf8ff; padding: 15px; border-radius: 12px; border: 1px solid #bee3f8; text-align: center;">
-                        <p style="margin: 0; font-size: 10px; font-weight: bold; color: #2b6cb0;">TOTAL ALUMNOS</p>
-                        <h2 style="margin: 5px 0 0; color: #2c5282;">${data.resumen.total}</h2>
+                    <div style="background: #f7fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center;">
+                        <p style="margin: 0; font-size: 10px; font-weight: bold; color: #4a5568;">TOTAL ALUMNOS</p>
+                        <h2 style="margin: 5px 0 0; color: #0A3D62;">${data.resumen.total}</h2>
                     </div>
                     <div style="background: #f0fff4; padding: 15px; border-radius: 12px; border: 1px solid #c6f6d5; text-align: center;">
                         <p style="margin: 0; font-size: 10px; font-weight: bold; color: #276749;">COMPLETADOS</p>
-                        <h2 style="margin: 5px 0 0; color: #22543d;">${data.resumen.evaluados}</h2>
+                        <h2 style="margin: 5px 0 0; color: #2f855a;">${data.resumen.evaluados}</h2>
                     </div>
                     <div style="background: #fff5f5; padding: 15px; border-radius: 12px; border: 1px solid #fed7d7; text-align: center;">
                         <p style="margin: 0; font-size: 10px; font-weight: bold; color: #9b2c2c;">PENDIENTES</p>
-                        <h2 style="margin: 5px 0 0; color: #822727;">${data.resumen.pendientes}</h2>
+                        <h2 style="margin: 5px 0 0; color: #c53030;">${data.resumen.pendientes}</h2>
                     </div>
                     <div style="background: #0A3D62; padding: 15px; border-radius: 12px; text-align: center;">
                         <p style="margin: 0; font-size: 10px; font-weight: bold; color: #ebf8ff;">% AVANCE</p>
@@ -2628,29 +2634,29 @@ async function exportarReporteProyecto() {
                     </div>
                 </div>
 
+                <!-- Detalle por Nóminas -->
                 ${data.data.map(n => `
                     <div style="margin-bottom: 30px; page-break-inside: avoid;">
-                        <div style="background: #2d3748; color: white; padding: 10px 15px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
-                            <h3 style="margin: 0; font-size: 14px;">${n.colegio}</h3>
-                            <span style="font-size: 11px;">Avance: ${n.evaluados}/${n.total}</span>
+                        <div style="background: #edf2f7; padding: 10px 15px; border-radius: 8px 8px 0 0; border-bottom: 2px solid #cbd5e1;">
+                            <h3 style="margin: 0; font-size: 14px; color: #2d3748;">COLEGIO: ${n.colegio}</h3>
                         </div>
                         <table style="width: 100%; border-collapse: collapse;">
                             <thead>
-                                <tr style="background: #edf2f7; font-size: 11px;">
-                                    <th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0;">ALUMNO</th>
-                                    <th style="padding: 10px; text-align: left; border: 1px solid #e2e8f0;">RUT</th>
-                                    <th style="padding: 10px; text-align: center; border: 1px solid #e2e8f0;">ESTADO</th>
+                                <tr style="background: white; font-size: 10px; color: #718096;">
+                                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0;">NOMBRE DEL ESTUDIANTE</th>
+                                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0;">RUT</th>
+                                    <th style="padding: 10px; text-align: center; border-bottom: 1px solid #e2e8f0;">ESTADO</th>
                                 </tr>
                             </thead>
                             <tbody style="font-size: 11px;">
                                 ${n.alumnos.map(a => `
                                     <tr>
-                                        <td style="padding: 8px; border: 1px solid #e2e8f0;">${a.nombre}</td>
-                                        <td style="padding: 8px; border: 1px solid #e2e8f0;">${a.rut || 'N/A'}</td>
-                                        <td style="padding: 8px; border: 1px solid #e2e8f0; text-align: center;">
+                                        <td style="padding: 8px; border-bottom: 1px solid #edf2f7;">${a.nombre}</td>
+                                        <td style="padding: 8px; border-bottom: 1px solid #edf2f7;">${a.rut || '---'}</td>
+                                        <td style="padding: 8px; border-bottom: 1px solid #edf2f7; text-align: center;">
                                             ${a.evaluado_flag 
-                                                ? '<span style="color: #38a169;">✅ Evaluado</span>' 
-                                                : '<span style="color: #e53e3e;">⏳ Pendiente</span>'}
+                                                ? '<span style="color: #38a169; font-weight: bold;">✅ EVALUADO</span>' 
+                                                : '<span style="color: #e53e3e; font-weight: bold;">⏳ PENDIENTE</span>'}
                                         </td>
                                     </tr>
                                 `).join('')}
@@ -2659,26 +2665,40 @@ async function exportarReporteProyecto() {
                     </div>
                 `).join('')}
 
-                <div style="margin-top: 80px; text-align: center; page-break-inside: avoid;">
-                    <div style="width: 250px; border-top: 2px solid #0A3D62; margin: 0 auto; padding-top: 10px;">
-                        <p style="margin: 0; font-weight: bold; font-size: 14px; color: #0A3D62;">Jorge Enrique Miranda Kirk</p>
-                        <p style="margin: 2px 0; font-size: 12px; color: #4a5568;">Gerente General</p>
-                        <p style="margin: 0; font-weight: bold; font-size: 12px; color: #1C67A3;">Cardiohome SpA</p>
+                <!-- Bloque de Firma Predeterminada -->
+                <div style="margin-top: 60px; text-align: center; page-break-inside: avoid;">
+                    <div style="display: inline-block; position: relative;">
+                        <!-- ESPACIO PARA LA FIRMA -->
+                        ${firmaBase64 !== "TU_CODIGO_BASE64_AQUI" ? 
+                            `<img src="${firmaBase64}" style="width: 180px; height: auto; margin-bottom: -30px; position: relative; z-index: 1;">` : 
+                            `<div style="height: 60px;"></div>`
+                        }
+                        
+                        <div style="width: 300px; border-top: 2px solid #0A3D62; padding-top: 10px; position: relative; z-index: 0;">
+                            <p style="margin: 0; font-weight: bold; font-size: 14px; color: #0A3D62;">Jorge Enrique Miranda Kirk</p>
+                            <p style="margin: 2px 0; font-size: 12px; color: #4a5568;">Gerente General</p>
+                            <p style="margin: 0; font-weight: bold; font-size: 12px; color: #1C67A3;">Cardiohome SpA</p>
+                        </div>
                     </div>
+                </div>
+
+                <div style="margin-top: 50px; text-align: center; font-size: 10px; color: #a0aec0; border-top: 1px solid #edf2f7; padding-top: 20px;">
+                    Documento generado electrónicamente por la plataforma CardioHome SpA.<br>
+                    Para consultas: contacto@speechpsychology.cl | +56978426971
                 </div>
             </div>
         `;
 
         const opt = {
             margin: 10,
-            filename: `REPORTE_CARDIOHOME_${data.proyecto.replace(/\s+/g, '_')}.pdf`,
+            filename: `REPORTE_EJECUTIVO_${data.proyecto.replace(/\s+/g, '_')}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 3 },
+            html2canvas: { scale: 3, useCORS: true },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
         html2pdf().set(opt).from(element).save().then(() => {
-            Swal.fire('¡Éxito!', 'Reporte descargado correctamente.', 'success');
+            Swal.fire('¡Reporte Listo!', 'El documento se ha descargado con éxito.', 'success');
         });
 
     } catch (e) {

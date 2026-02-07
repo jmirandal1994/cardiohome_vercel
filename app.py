@@ -1244,52 +1244,44 @@ def admin_cargar_informe_individual():
 
 @app.route('/api/admin/reporte_proyecto/<project_id>')
 def reporte_proyecto_detalle(project_id):
-    # Verificación de seguridad
     if session.get('usuario') != 'admin': 
-        return jsonify({"success": False, "message": "No autorizado"}), 403
+        return jsonify({"success": False}), 403
 
     try:
-        # 1. Obtener el nombre del proyecto real
+        # 1. Nombre del proyecto
         proyecto_nombre = "Reporte Global"
         if project_id != 'all':
-            url_p = f"{SUPABASE_URL}/rest/v1/proyectos?id=eq.{project_id}&select=nombre_proyecto"
-            res_p = requests.get(url_p, headers=SUPABASE_SERVICE_HEADERS)
+            res_p = requests.get(f"{SUPABASE_URL}/rest/v1/proyectos?id=eq.{project_id}&select=nombre_proyecto", headers=SUPABASE_SERVICE_HEADERS)
             if res_p.ok and res_p.json():
                 proyecto_nombre = res_p.json()[0]['nombre_proyecto']
 
-        # 2. Buscar las nóminas vinculadas a este proyecto
-        if project_id == 'all':
-            url_n = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina"
-        else:
-            url_n = f"{SUPABASE_URL}/rest/v1/nominas_medicas?proyecto_id=eq.{project_id}&select=id,nombre_nomina"
+        # 2. Obtener nóminas
+        url_n = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina"
+        if project_id != 'all':
+            url_n += f"&proyecto_id=eq.{project_id}"
         
-        res_n = requests.get(url_n, headers=SUPABASE_SERVICE_HEADERS)
-        nominas = res_n.json() if res_n.ok else []
+        nominas = requests.get(url_n, headers=SUPABASE_SERVICE_HEADERS).json()
         
-        # 3. Contar alumnos evaluados vs pendientes por cada nómina
-        reporte_data = []
+        detalles_completos = []
         for nom in nominas:
-            # Reutilizamos tu lógica de flags que ya funciona
-            evaluados = get_supabase_count(f"nomina_id=eq.{nom['id']}&evaluado_flag=eq.true")
-            pendientes = get_supabase_count(f"nomina_id=eq.{nom['id']}&evaluado_flag=eq.false")
+            # Traer alumnos de esta nómina
+            url_e = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nom['id']}&select=nombre,rut,evaluado_flag&order=nombre.asc"
+            alumnos = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS).json()
             
-            reporte_data.append({
-                "nomina": nom['nombre_nomina'],
-                "evaluados": evaluados,
-                "pendientes": pendientes,
-                "total": evaluados + pendientes
+            detalles_completos.append({
+                "colegio": nom['nombre_nomina'],
+                "alumnos": alumnos,
+                "total": len(alumnos),
+                "evaluados": len([a for a in alumnos if a.get('evaluado_flag') == True])
             })
 
-        print(f"📊 Reporte generado para proyecto: {proyecto_nombre}")
-        
         return jsonify({
             "success": True,
             "proyecto": proyecto_nombre,
-            "fecha_emision": datetime.now().strftime("%d/%m/%Y %H:%M"),
-            "detalles": reporte_data
+            "fecha": datetime.now().strftime("%d-%m-%Y %H:%M"),
+            "data": detalles_completos
         })
     except Exception as e:
-        print(f"❌ ERROR AL GENERAR DATOS DE REPORTE: {e}")
         return jsonify({"success": False, "error": str(e)})
         
 # - Ruta 

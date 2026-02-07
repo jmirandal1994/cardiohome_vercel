@@ -2580,48 +2580,53 @@
 
 async function exportarReporteProyecto() {
     const projectId = document.getElementById('admin-project-filter').value;
-    
-    // Alerta de carga estética
-    Swal.fire({
-        title: 'Generando Reporte Corporativo',
-        text: 'Estamos procesando los datos de avance...',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-    });
+
+    // 1. ABRIR LA VENTANA INMEDIATAMENTE (Evita el bloqueo del navegador)
+    const win = window.open('', '_blank');
+    if (!win) {
+        Swal.fire('Pop-up Bloqueado', 'Por favor, permite los pop-ups para ver el reporte.', 'warning');
+        return;
+    }
+
+    // 2. PONER UN ESTADO DE CARGA EN LA NUEVA VENTANA
+    win.document.write('<html><body style="font-family:sans-serif; display:flex; justify-content:center; align-items:center; height:100vh;"><h3>Generando reporte profesional... por favor espere.</h3></body></html>');
 
     try {
         const res = await fetch(`/api/admin/reporte_proyecto/${projectId}`);
         const data = await res.json();
 
         if (data.success) {
-            // Creamos un diseño HTML limpio para la impresión
+            // 3. CONSTRUIR EL DISEÑO FINAL
             let reporteHtml = `
                 <html>
                 <head>
-                    <title>Reporte de Avance - ${data.proyecto}</title>
+                    <title>Reporte CardioHome - ${data.proyecto}</title>
                     <style>
-                        body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #333; }
-                        .header { display: flex; justify-content: space-between; border-bottom: 3px solid #0A3D62; padding-bottom: 10px; margin-bottom: 30px; }
-                        h1 { color: #0A3D62; margin: 0; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                        th { background-color: #0A3D62; color: white; padding: 12px; text-align: left; }
-                        td { border-bottom: 1px solid #eee; padding: 12px; }
-                        .percentage { font-weight: bold; color: #1C67A3; }
-                        .footer { margin-top: 50px; font-size: 12px; color: #777; text-align: center; }
+                        body { font-family: 'Inter', -apple-system, sans-serif; padding: 40px; color: #333; line-height: 1.6; }
+                        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #0A3D62; padding-bottom: 20px; margin-bottom: 30px; }
+                        .logo-area h1 { color: #0A3D62; margin: 0; font-size: 28px; text-transform: uppercase; }
+                        .info-area { text-align: right; font-size: 14px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+                        th { background-color: #0A3D62; color: white; padding: 15px; text-align: left; font-size: 13px; text-transform: uppercase; }
+                        td { border-bottom: 1px solid #eee; padding: 15px; font-size: 14px; }
+                        .percentage-bar { background: #eee; border-radius: 10px; height: 8px; width: 100px; display: inline-block; overflow: hidden; margin-right: 10px; }
+                        .percentage-fill { background: #1C67A3; height: 100%; }
+                        .bold { font-weight: bold; color: #0A3D62; }
+                        @media print { .no-print { display: none; } }
                     </style>
                 </head>
                 <body>
                     <div class="header">
-                        <div>
+                        <div class="logo-area">
                             <h1>CardioHome</h1>
-                            <p>Gestión Médica PIE</p>
+                            <p style="margin:0; color:#666;">Reporte Ejecutivo de Avance</p>
                         </div>
-                        <div style="text-align: right;">
-                            <p><strong>Fecha:</strong> ${data.fecha_emision}</p>
+                        <div class="info-area">
                             <p><strong>Proyecto:</strong> ${data.proyecto}</p>
+                            <p><strong>Fecha Emisión:</strong> ${data.fecha_emision}</p>
                         </div>
                     </div>
-                    
+
                     <table>
                         <thead>
                             <tr>
@@ -2632,43 +2637,51 @@ async function exportarReporteProyecto() {
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.detalles.map(n => `
-                                <tr>
-                                    <td>${n.nomina}</td>
-                                    <td style="text-align: center;">${n.evaluados}</td>
-                                    <td style="text-align: center;">${n.pendientes}</td>
-                                    <td style="text-align: center;" class="percentage">
-                                        ${n.total > 0 ? Math.round((n.evaluados/n.total)*100) : 0}%
-                                    </td>
-                                </tr>
-                            `).join('')}
+                            ${data.detalles.map(n => {
+                                const pct = n.total > 0 ? Math.round((n.evaluados/n.total)*100) : 0;
+                                return `
+                                    <tr>
+                                        <td class="bold">${n.nomina}</td>
+                                        <td style="text-align: center;">${n.evaluados}</td>
+                                        <td style="text-align: center;">${n.pendientes}</td>
+                                        <td style="text-align: center;">
+                                            <div class="percentage-bar"><div class="percentage-fill" style="width: ${pct}%"></div></div>
+                                            <span class="bold">${pct}%</span>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
                         </tbody>
                     </table>
-                    <div class="footer">Este documento es un reporte automático generado por la plataforma CardioHome.</div>
+                    
+                    <p style="margin-top: 40px; font-size: 12px; color: #999; text-align: center;">
+                        Este documento es un reporte oficial generado por la plataforma de gestión CardioHome.
+                    </p>
                 </body>
                 </html>
             `;
 
-            // Abrir ventana e imprimir
-            const win = window.open('', '_blank');
+            // 4. REEMPLAZAR EL CONTENIDO DE CARGA CON EL REPORTE REAL
+            win.document.open();
             win.document.write(reporteHtml);
             win.document.close();
-            
-            // Esperar un momento a que cargue el contenido antes de imprimir
+
+            // 5. AUTO-IMPRIMIR
             setTimeout(() => { 
                 win.print(); 
-                Swal.close();
-            }, 500);
+            }, 800);
 
         } else {
-            Swal.fire('Error', 'No se pudo obtener la información del proyecto.', 'error');
+            win.close();
+            Swal.fire('Error', 'No se pudieron obtener los datos: ' + data.error, 'error');
         }
     } catch (e) {
+        if(win) win.close();
         console.error(e);
-        Swal.fire('Error de Conexión', 'No pudimos contactar al servidor.', 'error');
+        Swal.fire('Error de Conexión', 'No se pudo conectar con el servidor para generar el reporte.', 'error');
     }
 }
-     
+        
 
 let adminChartInstance = null;
 

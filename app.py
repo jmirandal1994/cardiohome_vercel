@@ -1002,6 +1002,53 @@ def marcar_evaluado():
     except Exception as e:
         print(f"ERROR: Error inesperado al marcar estudiante como evaluado: {e}")
         return jsonify({"success": False, "message": f"Error interno del servidor: {str(e)}"}), 500
+
+@app.route('/api/admin/reporte_proyecto/<project_id>')
+def reporte_proyecto_detalle(project_id):
+    if session.get('usuario') != 'admin': 
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+
+    try:
+        # 1. Obtener nombre del proyecto
+        proyecto_nombre = "Reporte Global"
+        if project_id != 'all':
+            url_p = f"{SUPABASE_URL}/rest/v1/proyectos?id=eq.{project_id}&select=nombre_proyecto"
+            res_p = requests.get(url_p, headers=SUPABASE_SERVICE_HEADERS)
+            if res_p.ok and res_p.json():
+                proyecto_nombre = res_p.json()[0]['nombre_proyecto']
+
+        # 2. Obtener las nóminas asociadas
+        if project_id == 'all':
+            url_n = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina"
+        else:
+            url_n = f"{SUPABASE_URL}/rest/v1/nominas_medicas?proyecto_id=eq.{project_id}&select=id,nombre_nomina"
+        
+        res_n = requests.get(url_n, headers=SUPABASE_SERVICE_HEADERS)
+        nominas = res_n.json() if res_n.ok else []
+        
+        # 3. Construir el detalle contando alumnos por nómina
+        reporte_data = []
+        for nom in nominas:
+            # Usamos tu función get_supabase_count que ya sabemos que funciona
+            evaluados = get_supabase_count(f"nomina_id=eq.{nom['id']}&evaluado_flag=eq.true")
+            pendientes = get_supabase_count(f"nomina_id=eq.{nom['id']}&evaluado_flag=eq.false")
+            
+            reporte_data.append({
+                "nomina": nom['nombre_nomina'],
+                "evaluados": evaluados,
+                "pendientes": pendientes,
+                "total": evaluados + pendientes
+            })
+
+        return jsonify({
+            "success": True,
+            "proyecto": proyecto_nombre,
+            "fecha_emision": datetime.now().strftime("%d/%m/%Y %H:%M"),
+            "detalles": reporte_data
+        })
+    except Exception as e:
+        print(f"❌ ERROR REPORTE: {e}")
+        return jsonify({"success": False, "error": str(e)})
         
 @app.route('/')
 def index():

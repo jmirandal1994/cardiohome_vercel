@@ -2570,55 +2570,46 @@ def doctor_performance_detail(doctor_id):
 
 @app.route('/admin/crear_proyecto', methods=['POST'])
 def crear_proyecto():
-    if request.method == 'POST':
-        nombre_proyecto_form = request.form.get('nombre_proyecto') # Valor del formulario
-        descripcion_proyecto_form = request.form.get('descripcion_proyecto') # Valor del formulario
-        print(f"DEBUG: Intentando crear proyecto (via requests): {nombre_proyecto_form}, Desc: {descripcion_proyecto_form}")
+    if session.get('usuario') != 'admin':
+        flash('Acceso denegado.', 'error')
+        return redirect(url_for('dashboard'))
 
-        # Datos a enviar a Supabase, usando los nombres de columna que me indicaste
-        payload = {
-            "nombre_proyecto": nombre_proyecto_form,       # Nombre de la columna en Supabase
-            "descripcion_proyecto": descripcion_proyecto_form, # Nombre de la columna en Supabase
-            "fecha_creacion": datetime.now().isoformat() # Asegúrate de que este campo exista y sea 'timestamp with time zone'
-        }
+    # 1. Obtener y limpiar datos
+    nombre = request.form.get('nombre_proyecto', '').strip()
+    descripcion = request.form.get('descripcion_proyecto', '').strip()
+    
+    if not nombre:
+        flash('❌ El nombre del proyecto es obligatorio.', 'error')
+        return redirect(url_for('dashboard'))
 
-        # URL de tu tabla 'proyectos' en Supabase
+    # 2. Payload con nombres de columna estándar de Supabase
+    # IMPORTANTE: Verifica si en tu tabla es 'descripcion' o 'descripcion_proyecto'
+    payload = {
+        "nombre_proyecto": nombre,
+        "descripcion_proyecto": descripcion, # Si falla, prueba cambiándolo a "descripcion"
+        "fecha_creacion": datetime.now().isoformat()
+    }
+
+    try:
+        # Usar POST para insertar
         proyectos_url = f"{SUPABASE_URL}/rest/v1/proyectos"
+        response = requests.post(proyectos_url, json=payload, headers=SUPABASE_SERVICE_HEADERS)
+        
+        # Si Supabase devuelve error, lo capturamos aquí
+        if response.status_code not in [200, 201]:
+            print(f"❌ ERROR SUPABASE ({response.status_code}): {response.text}")
+            flash(f"Error de base de datos: {response.text}", 'error')
+            return redirect(url_for('dashboard'))
 
-        try:
-            # Usar SUPABASE_SERVICE_HEADERS es generalmente más seguro para inserts desde el backend
-            response = requests.post(proyectos_url, json=payload, headers=SUPABASE_SERVICE_HEADERS)
+        flash(f"✅ Proyecto '{nombre}' creado exitosamente.", 'success')
+        
+    except Exception as e:
+        print(f"❌ ERROR CRÍTICO: {e}")
+        flash(f"Error inesperado: {str(e)}", 'error')
 
-            # Para depurar el detalle del error de Supabase
-            if response.status_code != 201: # El código de éxito para POST es 201 Created
-                print(f"DEBUG: Respuesta de error de Supabase (Status {response.status_code}): {response.text}")
-
-            response.raise_for_status() # Lanza una excepción para errores HTTP (4xx o 5xx)
-
-            data = response.json() # Si todo va bien, obtén la respuesta JSON
-
-            print(f"DEBUG: Proyecto '{nombre_proyecto_form}' creado exitosamente en Supabase. Respuesta: {data}")
-            flash('Proyecto creado exitosamente!', 'success')
-            return redirect(url_for('dashboard', _external=True, _scheme='https', section='gestionar_proyectos'))
-
-        except requests.exceptions.HTTPError as errh:
-            print(f"CRÍTICO: Error HTTP al insertar proyecto: {errh}")
-            flash(f"Error al crear el proyecto (HTTP): {errh}", 'danger')
-        except requests.exceptions.ConnectionError as errc:
-            print(f"CRÍTICO: Error de Conexión al insertar proyecto: {errc}")
-            flash(f"Error al crear el proyecto (Conexión): {errc}", 'danger')
-        except requests.exceptions.Timeout as errt:
-            print(f"CRÍTICO: Tiempo de espera agotado al insertar proyecto: {errt}")
-            flash(f"Error al crear el proyecto (Timeout): {errt}", 'danger')
-        except requests.exceptions.RequestException as err:
-            print(f"CRÍTICO: Error inesperado al insertar proyecto: {err}")
-            flash(f"Error en el servidor al crear el proyecto: {err}", 'danger')
-        except Exception as e:
-            print(f"CRÍTICO: Error general al procesar la creación del proyecto: {e}")
-            flash(f"Error inesperado al crear el proyecto: {e}", 'danger')
-
-    return redirect(url_for('dashboard', _external=True, _scheme='https'))
-
+    # Redirección limpia para refrescar la lista
+    return redirect(url_for('dashboard'))
+    
 # app.py (Nueva ruta)
 
 # app.py

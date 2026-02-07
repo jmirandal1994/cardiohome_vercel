@@ -1292,12 +1292,13 @@ def dashboard():
         coordinadores_escuela = []
         
 
-    # --- Lógica de carga de NÓMINAS (Admin y Doctora) ---
+# --- Lógica de carga de NÓMINAS (Admin y Doctora) ---
     if user_role == 'admin':
         # Admin ve TODAS las nóminas
+        # NUEVO: Se agregó 'proyecto_id' al select
         url_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?select=id,nombre_nomina,tipo_nomina,doctora_id,url_excel_original,nombre_excel_original,form_type,doctora_id_para_formulario,nombre_colegio,coord_general_id,coord_escuela_id"
+            f"?select=id,nombre_nomina,tipo_nomina,doctora_id,url_excel_original,nombre_excel_original,form_type,doctora_id_para_formulario,nombre_colegio,coord_general_id,coord_escuela_id,proyecto_id"
             f"&order=nombre_nomina.asc"
         )
         
@@ -1307,11 +1308,10 @@ def dashboard():
             nominas_raw = res_nominas.json()
 
             for nom in nominas_raw:
-                # Buscar nombre de la doctora principal en la lista local de usuarios
                 doctora_obj = next((doc for doc in all_users_for_lookup if doc['id'] == nom.get('doctora_id')), None)
-                doctora_nombre = doctora_obj['usuario'] if doctora_obj else 'N/A'
                 
-                admin_nominas_cargadas.append({
+                # Preparamos el objeto de la nómina
+                datos_nomina = {
                     'id': nom['id'],
                     'nombre_nomina': nom['nombre_nomina'],
                     'tipo_nomina': nom['tipo_nomina'],
@@ -1322,17 +1322,26 @@ def dashboard():
                     'doctora_id_para_formulario': nom.get('doctora_id_para_formulario'),
                     'coord_general_id': nom.get('coord_general_id'),
                     'coord_escuela_id': nom.get('coord_escuela_id'),
-                    
-                    # --- ARREGLO CLAVE PARA NÓMINAS ANTIGUAS ---
-                    # Si 'nombre_colegio' es NULL, usamos 'nombre_nomina' (o un placeholder)
+                    'proyecto_id': nom.get('proyecto_id'), # NUEVO
                     'nombre_colegio': nom.get('nombre_colegio') or nom['nombre_nomina'] 
-                })
+                }
+                
+                # 1. La agregamos a la lista general que ya tenías
+                admin_nominas_cargadas.append(datos_nomina)
+
+                # 2. NUEVO: Lógica de Carpetas
+                # Buscamos el proyecto correspondiente en la lista 'proyectos' y le metemos esta nómina
+                for p in proyectos:
+                    if str(p['id']) == str(nom.get('proyecto_id')):
+                        if 'nominas' not in p:
+                            p['nominas'] = []
+                        p['nominas'].append(datos_nomina)
 
         except requests.exceptions.RequestException as e:
             print(f"❌ ERROR AL OBTENER NÓMINAS (ADMIN): {e}")
             flash('Error al cargar nóminas del administrador.', 'error')
             admin_nominas_cargadas = []
-
+            
 
     elif user_role == 'doctora':
         # Doctora ve solo sus nóminas asignadas (filtrando por doctora_id)

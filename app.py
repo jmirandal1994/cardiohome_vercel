@@ -1287,6 +1287,56 @@ def admin_cargar_informe_individual():
         error_detail = res_insert_estudiantes.text if 'res_insert_estudiantes' in locals() else 'No response from Supabase.'
         flash(f"❌ Error al guardar los estudiantes en la base de datos. {error_detail}", 'error')
         return redirect(url_for('dashboard'))
+
+@app.route('/api/admin/reporte_proyecto/<project_id>')
+def reporte_proyecto_detalle(project_id):
+    # Verificación de seguridad
+    if session.get('usuario') != 'admin': 
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+
+    try:
+        # 1. Obtener el nombre del proyecto real
+        proyecto_nombre = "Reporte Global"
+        if project_id != 'all':
+            url_p = f"{SUPABASE_URL}/rest/v1/proyectos?id=eq.{project_id}&select=nombre_proyecto"
+            res_p = requests.get(url_p, headers=SUPABASE_SERVICE_HEADERS)
+            if res_p.ok and res_p.json():
+                proyecto_nombre = res_p.json()[0]['nombre_proyecto']
+
+        # 2. Buscar las nóminas vinculadas a este proyecto
+        if project_id == 'all':
+            url_n = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina"
+        else:
+            url_n = f"{SUPABASE_URL}/rest/v1/nominas_medicas?proyecto_id=eq.{project_id}&select=id,nombre_nomina"
+        
+        res_n = requests.get(url_n, headers=SUPABASE_SERVICE_HEADERS)
+        nominas = res_n.json() if res_n.ok else []
+        
+        # 3. Contar alumnos evaluados vs pendientes por cada nómina
+        reporte_data = []
+        for nom in nominas:
+            # Reutilizamos tu lógica de flags que ya funciona
+            evaluados = get_supabase_count(f"nomina_id=eq.{nom['id']}&evaluado_flag=eq.true")
+            pendientes = get_supabase_count(f"nomina_id=eq.{nom['id']}&evaluado_flag=eq.false")
+            
+            reporte_data.append({
+                "nomina": nom['nombre_nomina'],
+                "evaluados": evaluados,
+                "pendientes": pendientes,
+                "total": evaluados + pendientes
+            })
+
+        print(f"📊 Reporte generado para proyecto: {proyecto_nombre}")
+        
+        return jsonify({
+            "success": True,
+            "proyecto": proyecto_nombre,
+            "fecha_emision": datetime.now().strftime("%d/%m/%Y %H:%M"),
+            "detalles": reporte_data
+        })
+    except Exception as e:
+        print(f"❌ ERROR AL GENERAR DATOS DE REPORTE: {e}")
+        return jsonify({"success": False, "error": str(e)})
         
 # - Ruta 
 @app.route('/api/admin/stats/<project_id>')

@@ -1241,8 +1241,55 @@ def admin_cargar_informe_individual():
         flash(f"❌ Error al guardar los estudiantes en la base de datos. {error_detail}", 'error')
         return redirect(url_for('dashboard'))
         
-# - Ruta /dashboard corregida y modificada para la Fase 3
+# - Ruta 
+@app.route('/api/admin/stats/<project_id>')
+def get_admin_stats(project_id):
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False}), 403
 
+    try:
+        # 1. Obtener nóminas del proyecto (o todas)
+        url_n = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id"
+        if project_id != 'all':
+            url_n += f"&proyecto_id=eq.{project_id}"
+        
+        res_n = requests.get(url_n, headers=SUPABASE_SERVICE_HEADERS)
+        nomina_ids = [n['id'] for n in res_n.json()] if res_n.ok else []
+
+        if not nomina_ids:
+            return jsonify({"success": True, "total": 0, "completed": 0, "pending": 0, "percent": 0, "chart_data": {}})
+
+        # 2. Consultar estudiantes de esas nóminas
+        # Usamos in.() para filtrar por la lista de IDs de nóminas
+        ids_str = ",".join(nomina_ids)
+        url_e = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=in.({ids_str})&select=estado,doctora_id"
+        res_e = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS)
+        estudiantes = res_e.json() if res_e.ok else []
+
+        # 3. Procesar estadísticas
+        total = len(estudiantes)
+        completed = len([e for e in estudiantes if e['estado'] == 'Completado'])
+        pending = total - completed
+        percent = round((completed / total * 100), 1) if total > 0 else 0
+
+        # 4. Datos para el gráfico (Productividad por doctora)
+        doctor_stats = {}
+        for est in estudiantes:
+            if est['estado'] == 'Completado':
+                doc_id = est['doctora_id'] or "Sin Asignar"
+                doctor_stats[doc_id] = doctor_stats.get(doc_id, 0) + 1
+
+        return jsonify({
+            "success": True,
+            "total": total,
+            "completed": completed,
+            "pending": pending,
+            "percent": f"{percent}%",
+            "chart_data": doctor_stats
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+        
 # app-30.py (Reemplaza la función dashboard completa)
 @app.route('/dashboard')
 def dashboard():

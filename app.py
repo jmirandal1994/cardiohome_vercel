@@ -1652,11 +1652,13 @@ def admin_cargar_nomina():
     doctora_id_from_form = request.form.get('doctora', '').strip()
     excel_file = request.files.get('excel')
     doctora_id_para_formulario = request.form.get('doctora_id_para_formulario', '').strip()
-
+    proyecto_id_from_form = request.form.get('proyecto_id', '').strip()
+    
     # Obtener IDs de coordinación
     coord_general_id_from_form = request.form.get('coord_general_id', '').strip()
     coord_escuela_id_from_form = request.form.get('coord_escuela_id', '').strip()
-    
+
+    proyecto_id_db = proyecto_id_from_form if proyecto_id_from_form else None    
     
     tipo_nomina_normalized = tipo_nomina_raw.strip().lower() if tipo_nomina_raw else ''
     
@@ -1731,7 +1733,7 @@ def admin_cargar_nomina():
         "coord_escuela_id": coord_escuela_id_db,
         "token_acceso": token_generado,
         "establecimiento_id": None 
-        # -----------------------------------------------------------
+        "proyecto_id": proyecto_id_db,     # <--- AÑADIR ESTA LÍNEA        # -----------------------------------------------------------
     }
     
     try:

@@ -2502,6 +2502,59 @@
             // Esto es lo que crea la alarma dinámica en tiempo real
             setInterval(fetchCorrectionAlert, 30000);  
         });
+
+        let adminChartInstance = null;
+
+async function updateAdminStats() {
+    const projectId = document.getElementById('admin-project-filter').value;
+    const response = await fetch(`/api/admin/stats/${projectId}`);
+    const data = await response.json();
+
+    if (data.success) {
+        // Actualizar tarjetas con animación de conteo
+        document.getElementById('stat-total').textContent = data.total;
+        document.getElementById('stat-completed').textContent = data.completed;
+        document.getElementById('stat-pending').textContent = data.pending;
+        document.getElementById('stat-percent').textContent = data.percent;
+
+        // Actualizar Gráfico
+        renderAdminChart(data.chart_data);
+    }
+}
+
+function renderAdminChart(chartData) {
+    const ctx = document.getElementById('adminPerformanceChart').getContext('2d');
+    
+    // Mapear IDs de doctoras a nombres (usando la lista que ya pasamos al dashboard)
+    const labels = Object.keys(chartData).map(id => {
+        const user = all_users_for_lookup.find(u => u.id == id);
+        return user ? user.usuario : 'Desconocida';
+    });
+    const values = Object.values(chartData);
+
+    if (adminChartInstance) adminChartInstance.destroy();
+
+    adminChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Evaluaciones Realizadas',
+                data: values,
+                backgroundColor: '#1C67A3',
+                borderRadius: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+// Iniciar al cargar la sección
+document.querySelector('[data-section="admin-performance"]').addEventListener('click', updateAdminStats);
         
     </script>
 </body>

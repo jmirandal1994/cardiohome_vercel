@@ -1244,33 +1244,42 @@ def admin_cargar_informe_individual():
 
 @app.route('/api/admin/reporte_proyecto/<project_id>')
 def reporte_proyecto_detalle(project_id):
+    """
+    Genera los datos para el reporte ejecutivo de Cardiohome SpA.
+    Incluye totales globales y lista detallada de alumnos por nómina.
+    """
     if session.get('usuario') != 'admin': 
-        return jsonify({"success": False}), 403
+        return jsonify({"success": False, "message": "No autorizado"}), 403
 
     try:
-        # 1. Obtener nombre del proyecto
+        # 1. Obtener nombre del proyecto real
         proyecto_nombre = "Reporte Global"
         if project_id != 'all':
-            res_p = requests.get(f"{SUPABASE_URL}/rest/v1/proyectos?id=eq.{project_id}&select=nombre_proyecto", headers=SUPABASE_SERVICE_HEADERS)
+            url_p = f"{SUPABASE_URL}/rest/v1/proyectos?id=eq.{project_id}&select=nombre_proyecto"
+            res_p = requests.get(url_p, headers=SUPABASE_SERVICE_HEADERS)
             if res_p.ok and res_p.json():
                 proyecto_nombre = res_p.json()[0]['nombre_proyecto']
 
-        # 2. Obtener nóminas
+        # 2. Obtener todas las nóminas vinculadas al proyecto
         url_n = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,nombre_nomina"
         if project_id != 'all':
             url_n += f"&proyecto_id=eq.{project_id}"
         
-        nominas = requests.get(url_n, headers=SUPABASE_SERVICE_HEADERS).json()
+        res_n = requests.get(url_n, headers=SUPABASE_SERVICE_HEADERS)
+        nominas = res_n.json() if res_n.ok else []
         
         detalles_completos = []
         global_total = 0
         global_evaluados = 0
         
+        # 3. Recorrer nóminas para traer alumnos y contar estados
         for nom in nominas:
+            # Traer lista de alumnos por nómina
             url_e = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nom['id']}&select=nombre,rut,evaluado_flag&order=nombre.asc"
-            alumnos = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS).json()
+            res_e = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS)
+            alumnos = res_e.json() if res_e.ok else []
             
-            ev_count = len([a for a in alumnos if a.get('evaluado_flag') == True])
+            ev_count = len([a for a in alumnos if a.get('evaluado_flag') is True])
             total_count = len(alumnos)
             
             global_total += total_count
@@ -1299,7 +1308,9 @@ def reporte_proyecto_detalle(project_id):
             "data": detalles_completos
         })
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})        
+        print(f"Error generando reporte: {str(e)}")
+        return jsonify({"success": False, "error": str(e)})
+        
 # - Ruta 
 @app.route('/api/admin/stats/<project_id>')
 def get_admin_stats(project_id):

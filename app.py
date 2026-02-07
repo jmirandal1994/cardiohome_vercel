@@ -1258,8 +1258,18 @@ def dashboard():
     doctoras_all = [] # Lista completa de doctoras (para select en admin)
     admin_nominas_cargadas = [] # Lista de nóminas para admin
     assigned_nominations = [] # Lista de nóminas para doctora
-
+    proyectos = []
+    
     # --- Lógica de carga de USUARIOS (Necesaria para Admin/Coord.) ---
+    try:
+        url_p = f"{SUPABASE_URL}/rest/v1/proyectos?select=id,nombre_proyecto&order=nombre_proyecto.asc"
+        res_p = requests.get(url_p, headers=SUPABASE_SERVICE_HEADERS)
+        if res_p.ok:
+            proyectos = res_p.json()
+    except Exception as e:
+        print(f"❌ ERROR AL OBTENER PROYECTOS: {e}")
+        proyectos = []
+    
     try:
         url_doctoras = f"{SUPABASE_URL}/rest/v1/doctoras?select=id,usuario,rol,nombre" 
         res_doctoras = requests.get(url_doctoras, headers=SUPABASE_SERVICE_HEADERS) 
@@ -1280,7 +1290,7 @@ def dashboard():
         doctoras_relleno = []
         coordinadoras_generales = []
         coordinadores_escuela = []
-
+        
 
     # --- Lógica de carga de NÓMINAS (Admin y Doctora) ---
     if user_role == 'admin':
@@ -1369,6 +1379,7 @@ def dashboard():
         admin_nominas_cargadas=admin_nominas_cargadas,
         doctoras=doctoras_relleno, # Doctoras para SELECTS
         coordinadoras_generales=coordinadoras_generales, 
+        proyectos=proyectos,
         coordinadores_escuela=coordinadores_escuela,
         all_users_for_lookup=all_users_for_lookup, # CRUCIAL: Lista de todos los usuarios
         

@@ -1248,7 +1248,7 @@ def reporte_proyecto_detalle(project_id):
         return jsonify({"success": False}), 403
 
     try:
-        # 1. Nombre del proyecto
+        # 1. Obtener nombre del proyecto
         proyecto_nombre = "Reporte Global"
         if project_id != 'all':
             res_p = requests.get(f"{SUPABASE_URL}/rest/v1/proyectos?id=eq.{project_id}&select=nombre_proyecto", headers=SUPABASE_SERVICE_HEADERS)
@@ -1263,27 +1263,43 @@ def reporte_proyecto_detalle(project_id):
         nominas = requests.get(url_n, headers=SUPABASE_SERVICE_HEADERS).json()
         
         detalles_completos = []
+        global_total = 0
+        global_evaluados = 0
+        
         for nom in nominas:
-            # Traer alumnos de esta nómina
             url_e = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nom['id']}&select=nombre,rut,evaluado_flag&order=nombre.asc"
             alumnos = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS).json()
+            
+            ev_count = len([a for a in alumnos if a.get('evaluado_flag') == True])
+            total_count = len(alumnos)
+            
+            global_total += total_count
+            global_evaluados += ev_count
             
             detalles_completos.append({
                 "colegio": nom['nombre_nomina'],
                 "alumnos": alumnos,
-                "total": len(alumnos),
-                "evaluados": len([a for a in alumnos if a.get('evaluado_flag') == True])
+                "total": total_count,
+                "evaluados": ev_count
             })
+
+        global_pendientes = global_total - global_evaluados
+        global_porcentaje = round((global_evaluados / global_total * 100), 1) if global_total > 0 else 0
 
         return jsonify({
             "success": True,
             "proyecto": proyecto_nombre,
             "fecha": datetime.now().strftime("%d-%m-%Y %H:%M"),
+            "resumen": {
+                "total": global_total,
+                "evaluados": global_evaluados,
+                "pendientes": global_pendientes,
+                "porcentaje": f"{global_porcentaje}%"
+            },
             "data": detalles_completos
         })
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
-        
+        return jsonify({"success": False, "error": str(e)})        
 # - Ruta 
 @app.route('/api/admin/stats/<project_id>')
 def get_admin_stats(project_id):

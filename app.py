@@ -1261,15 +1261,27 @@ def dashboard():
     proyectos = []
     
     # --- Lógica de carga de USUARIOS (Necesaria para Admin/Coord.) ---
+# --- 1. Lógica de carga de PROYECTOS (ACTUALIZADO) ---
     try:
-        url_p = f"{SUPABASE_URL}/rest/v1/proyectos?select=id,nombre_proyecto&order=nombre_proyecto.asc"
+        # Añadimos descripcion_proyecto y created_at al select
+        url_p = f"{SUPABASE_URL}/rest/v1/proyectos?select=id,nombre_proyecto,descripcion_proyecto,created_at&order=nombre_proyecto.asc"
         res_p = requests.get(url_p, headers=SUPABASE_SERVICE_HEADERS)
         if res_p.ok:
-            proyectos = res_p.json()
+            raw_proyectos = res_p.json()
+            # Mapeamos 'created_at' a 'fecha_creacion' para que el HTML lo entienda
+            proyectos = []
+            for p in raw_proyectos:
+                proyectos.append({
+                    "id": p['id'],
+                    "nombre_proyecto": p['nombre_proyecto'],
+                    "descripcion_proyecto": p.get('descripcion_proyecto'),
+                    "fecha_creacion": p.get('created_at'), # <--- MAPEO CLAVE
+                    "nominas": [] # Se llena más abajo
+                })
     except Exception as e:
         print(f"❌ ERROR AL OBTENER PROYECTOS: {e}")
         proyectos = []
-    
+        
     try:
         url_doctoras = f"{SUPABASE_URL}/rest/v1/doctoras?select=id,usuario,rol,nombre" 
         res_doctoras = requests.get(url_doctoras, headers=SUPABASE_SERVICE_HEADERS) 
@@ -2574,40 +2586,38 @@ def crear_proyecto():
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
 
-    # 1. Obtener y limpiar datos
+    # 1. Obtener datos del formulario
     nombre = request.form.get('nombre_proyecto', '').strip()
     descripcion = request.form.get('descripcion_proyecto', '').strip()
+    
+    # Obtenemos el ID del admin de la sesión para cumplir con la Foreign Key
+    admin_id = session.get('usuario_id') 
     
     if not nombre:
         flash('❌ El nombre del proyecto es obligatorio.', 'error')
         return redirect(url_for('dashboard'))
 
-    # 2. Payload con nombres de columna estándar de Supabase
-    # IMPORTANTE: Verifica si en tu tabla es 'descripcion' o 'descripcion_proyecto'
+    # 2. Payload con nombres largos (como confirmaste)
     payload = {
         "nombre_proyecto": nombre,
-        "descripcion_proyecto": descripcion, # Si falla, prueba cambiándolo a "descripcion"
-        "fecha_creacion": datetime.now().isoformat()
+        "descripcion_proyecto": descripcion,
+        "doctora_id": admin_id  # <--- Esto evita el error de la Foreign Key
     }
 
     try:
-        # Usar POST para insertar
         proyectos_url = f"{SUPABASE_URL}/rest/v1/proyectos"
         response = requests.post(proyectos_url, json=payload, headers=SUPABASE_SERVICE_HEADERS)
         
-        # Si Supabase devuelve error, lo capturamos aquí
         if response.status_code not in [200, 201]:
             print(f"❌ ERROR SUPABASE ({response.status_code}): {response.text}")
-            flash(f"Error de base de datos: {response.text}", 'error')
-            return redirect(url_for('dashboard'))
-
-        flash(f"✅ Proyecto '{nombre}' creado exitosamente.", 'success')
+            flash(f"Error al guardar: {response.text}", 'error')
+        else:
+            flash(f"✅ Proyecto '{nombre}' creado con éxito.", 'success')
         
     except Exception as e:
         print(f"❌ ERROR CRÍTICO: {e}")
         flash(f"Error inesperado: {str(e)}", 'error')
 
-    # Redirección limpia para refrescar la lista
     return redirect(url_for('dashboard'))
     
 # app.py (Nueva ruta)

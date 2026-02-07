@@ -1732,8 +1732,8 @@ def admin_cargar_nomina():
         "coord_general_id": coord_general_id_db,
         "coord_escuela_id": coord_escuela_id_db,
         "token_acceso": token_generado,
-        "establecimiento_id": None 
-        "proyecto_id": proyecto_id_db,     # <--- AÑADIR ESTA LÍNEA        # -----------------------------------------------------------
+        "establecimiento_id": None
+        "proyecto_id": proyecto_id_db,
     }
     
     try:

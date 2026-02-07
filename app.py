@@ -1245,49 +1245,60 @@ def admin_cargar_informe_individual():
 @app.route('/api/admin/stats/<project_id>')
 def get_admin_stats(project_id):
     if session.get('usuario') != 'admin':
-        return jsonify({"success": False}), 403
+        return jsonify({"success": False, "message": "No autorizado"}), 403
 
     try:
-        # 1. Obtener nóminas del proyecto (o todas)
-        url_n = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id"
-        if project_id != 'all':
-            url_n += f"&proyecto_id=eq.{project_id}"
+        # 1. Obtener las nóminas que pertenecen al proyecto
+        if project_id == 'all':
+            url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,tipo_nomina"
+        else:
+            url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?proyecto_id=eq.{project_id}&select=id,tipo_nomina"
         
-        res_n = requests.get(url_n, headers=SUPABASE_SERVICE_HEADERS)
-        nomina_ids = [n['id'] for n in res_n.json()] if res_n.ok else []
+        res_n = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
+        nominas = res_n.json() if res_n.ok else []
 
-        if not nomina_ids:
-            return jsonify({"success": True, "total": 0, "completed": 0, "pending": 0, "percent": 0, "chart_data": {}})
-
-        # 2. Consultar estudiantes de esas nóminas
-        # Usamos in.() para filtrar por la lista de IDs de nóminas
-        ids_str = ",".join(nomina_ids)
-        url_e = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=in.({ids_str})&select=estado,doctora_id"
-        res_e = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS)
-        estudiantes = res_e.json() if res_e.ok else []
-
-        # 3. Procesar estadísticas
-        total = len(estudiantes)
-        completed = len([e for e in estudiantes if e['estado'] == 'Completado'])
-        pending = total - completed
-        percent = round((completed / total * 100), 1) if total > 0 else 0
-
-        # 4. Datos para el gráfico (Productividad por doctora)
+        # Inicializamos contadores exactos como los de tu perfil de coordinadora
+        total_evaluados = 0
+        total_pendientes = 0
+        neuro_count = 0
+        familiar_count = 0
         doctor_stats = {}
-        for est in estudiantes:
-            if est['estado'] == 'Completado':
-                doc_id = est['doctora_id'] or "Sin Asignar"
-                doctor_stats[doc_id] = doctor_stats.get(doc_id, 0) + 1
+
+        # 2. Recorrer cada nómina para contar usando tu lógica de flags
+        for nom in nominas:
+            nom_id = nom.get("id")
+            tipo = (nom.get("tipo_nomina") or "").lower().strip()
+            
+            # Usamos tu misma lógica de get_supabase_count
+            evaluados = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.true")
+            pendientes = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.false")
+
+            total_evaluados += evaluados
+            total_pendientes += pendientes
+
+            # Conteo por especialidad (Neurología vs Familiar/Medicina)
+            if "neuro" in tipo:
+                neuro_count += evaluados
+            elif "familiar" in tipo or "medicina" in tipo:
+                familiar_count += evaluados
+
+        # 3. Calcular porcentaje
+        total_alumnos = total_evaluados + total_pendientes
+        percent = round((total_evaluados / total_alumnos * 100), 1) if total_alumnos > 0 else 0
 
         return jsonify({
             "success": True,
-            "total": total,
-            "completed": completed,
-            "pending": pending,
+            "total": total_alumnos,
+            "completed": total_evaluados,
+            "pending": total_pendientes,
             "percent": f"{percent}%",
-            "chart_data": doctor_stats
+            "neuro": neuro_count,
+            "familiar": familiar_count,
+            # Por ahora enviamos un objeto vacío para el gráfico si no quieres complicarlo
+            "chart_data": {} 
         })
     except Exception as e:
+        print(f"❌ Error en stats premium: {e}")
         return jsonify({"success": False, "error": str(e)})
         
 # app-30.py (Reemplaza la función dashboard completa)

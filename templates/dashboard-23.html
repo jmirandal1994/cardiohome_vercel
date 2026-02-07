@@ -952,22 +952,28 @@
             {# BLOQUE DE SECCIONES DE ADMIN (Manteniendo la estructura de control) #}
             {% if usuario == 'admin' %}
             
-   <div id="admin-performance" class="content-section">
+<div id="admin-performance" class="content-section">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
             <h2 class="text-3xl font-extrabold text-gray-800 font-['Montserrat'] m-0">Rendimiento Operativo</h2>
             <p class="text-gray-500 text-sm">Monitoreo de carga y evaluaciones por proyecto.</p>
         </div>
         
-        <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-200 flex items-center gap-3">
-            <i class="fa-solid fa-filter text-secondary-blue"></i>
-            <span class="text-xs font-black text-gray-400 uppercase">Proyecto:</span>
-            <select id="admin-project-filter" class="border-none focus:ring-0 text-sm font-bold text-primary-blue bg-transparent cursor-pointer" onchange="updateAdminStats()">
-                <option value="all">MOSTRAR TODO (GLOBAL)</option>
-                {% for proyecto in proyectos %}
-                    <option value="{{ proyecto.id }}">{{ proyecto.nombre_proyecto }}</option>
-                {% endfor %}
-            </select>
+        <div class="flex flex-wrap gap-3">
+            <button onclick="exportarReporteProyecto()" class="bg-white text-secondary-blue border-2 border-secondary-blue px-4 py-2 rounded-2xl font-bold text-sm hover:bg-secondary-blue hover:text-white transition-all flex items-center gap-2 shadow-sm">
+                <i class="fa-solid fa-file-pdf text-lg"></i> EXPORTAR AVANCE
+            </button>
+
+            <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-200 flex items-center gap-3">
+                <i class="fa-solid fa-filter text-secondary-blue"></i>
+                <span class="text-xs font-black text-gray-400 uppercase">Proyecto:</span>
+                <select id="admin-project-filter" class="border-none focus:ring-0 text-sm font-bold text-primary-blue bg-transparent cursor-pointer" onchange="updateAdminStats()">
+                    <option value="all">MOSTRAR TODO (GLOBAL)</option>
+                    {% for proyecto in proyectos %}
+                        <option value="{{ proyecto.id }}">{{ proyecto.nombre_proyecto }}</option>
+                    {% endfor %}
+                </select>
+            </div>
         </div>
     </div>
 
@@ -1002,20 +1008,78 @@
         </div>
     </div>
 
-    <div class="card mt-8">
-        <h3><i class="fa-solid fa-chart-simple"></i> Avance por Especialidad</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div class="p-4 bg-blue-50 rounded-xl flex justify-between items-center border border-blue-100">
-                <span class="text-sm font-bold text-blue-800">Neurología</span>
-                <span class="text-2xl font-black text-blue-900" id="stat-neuro">0</span>
+    <div class="card mt-8 overflow-hidden">
+        <div class="flex justify-between items-center mb-8">
+            <h3 class="m-0 border-none pb-0"><i class="fa-solid fa-stethoscope text-secondary-blue mr-2"></i> Análisis por Especialidad</h3>
+            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Distribución de Carga</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+            <div class="relative p-6 rounded-3xl bg-gradient-to-br from-blue-50 to-white border border-blue-100 shadow-sm hover:shadow-md transition-all group">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                            <h4 class="text-blue-900 font-bold text-lg m-0">Neurología</h4>
+                        </div>
+                        <p class="text-blue-700/60 text-[10px] font-bold uppercase tracking-wider">Productividad Médica</p>
+                        <div class="mt-4">
+                            <span class="text-4xl font-black text-blue-900" id="stat-neuro">0</span>
+                            <span class="text-blue-400 text-xs font-bold uppercase block">evaluaciones realizadas</span>
+                        </div>
+                    </div>
+                    <div class="relative flex items-center justify-center w-24 h-24">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle cx="48" cy="48" r="38" stroke="currentColor" stroke-width="7" fill="transparent" class="text-blue-100" />
+                            <circle cx="48" cy="48" r="38" stroke="currentColor" stroke-width="7" fill="transparent" stroke-dasharray="238.76" stroke-dashoffset="238.76" class="text-blue-600 transition-all duration-1000 ease-out" id="ring-neuro" style="stroke-linecap: round;" />
+                        </svg>
+                        <i class="fa-solid fa-brain absolute text-blue-600 text-xl group-hover:scale-125 transition-transform duration-300"></i>
+                    </div>
+                </div>
             </div>
-            <div class="p-4 bg-green-50 rounded-xl flex justify-between items-center border border-green-100">
-                <span class="text-sm font-bold text-green-800">Medicina Familiar</span>
-                <span class="text-2xl font-black text-green-900" id="stat-familiar">0</span>
+
+            <div class="relative p-6 rounded-3xl bg-gradient-to-br from-green-50 to-white border border-green-100 shadow-sm hover:shadow-md transition-all group">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                            <h4 class="text-green-900 font-bold text-lg m-0">Med. Familiar</h4>
+                        </div>
+                        <p class="text-green-700/60 text-[10px] font-bold uppercase tracking-wider">Salud Integral</p>
+                        <div class="mt-4">
+                            <span class="text-4xl font-black text-green-900" id="stat-familiar">0</span>
+                            <span class="text-green-400 text-xs font-bold uppercase block">evaluaciones realizadas</span>
+                        </div>
+                    </div>
+                    <div class="relative flex items-center justify-center w-24 h-24">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle cx="48" cy="48" r="38" stroke="currentColor" stroke-width="7" fill="transparent" class="text-green-100" />
+                            <circle cx="48" cy="48" r="38" stroke="currentColor" stroke-width="7" fill="transparent" stroke-dasharray="238.76" stroke-dashoffset="238.76" class="text-green-600 transition-all duration-1000 ease-out" id="ring-familiar" style="stroke-linecap: round;" />
+                        </svg>
+                        <i class="fa-solid fa-user-doctor absolute text-green-600 text-xl group-hover:scale-125 transition-transform duration-300"></i>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <h4 class="text-xs font-black text-gray-400 uppercase mb-4 tracking-widest flex items-center gap-2">
+            <span class="w-8 h-[1px] bg-gray-200"></span> Productividad por Profesional
+        </h4>
         <div class="chart-container" style="height: 300px;">
             <canvas id="adminPerformanceChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card mt-8">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="m-0 border-none pb-0"><i class="fa-solid fa-clock-rotate-left text-secondary-blue mr-2"></i> Tendencia de Avance</h3>
+            <select id="trend-period" class="bg-gray-50 border border-gray-200 text-[10px] font-black uppercase rounded-lg px-3 py-1 outline-none cursor-pointer hover:bg-gray-100 transition-colors" onchange="updateAdminStats()">
+                <option value="daily">Vista Diaria</option>
+                <option value="weekly">Vista Semanal</option>
+            </select>
+        </div>
+        <div class="chart-container" style="height: 300px;">
+            <canvas id="adminTrendChart"></canvas>
         </div>
     </div>
 </div>
@@ -2531,20 +2595,42 @@ async function updateAdminStats() {
         const response = await fetch(`/api/admin/stats/${projectId}`);
         const data = await response.json();
 
+        // --- AQUÍ VA EL BLOQUE DATA.SUCCESS ---
         if (data.success) {
-            // 3. Actualizar tarjetas principales
+            // Actualizar textos principales
             document.getElementById('stat-total').textContent = data.total;
             document.getElementById('stat-completed').textContent = data.completed;
             document.getElementById('stat-pending').textContent = data.pending;
             document.getElementById('stat-percent').textContent = data.percent;
             
-            // 4. Actualizar contadores de especialidad (NUEVO)
+            // Actualizar contadores de especialidad
             if(document.getElementById('stat-neuro')) 
                 document.getElementById('stat-neuro').textContent = data.neuro || 0;
             if(document.getElementById('stat-familiar')) 
                 document.getElementById('stat-familiar').textContent = data.familiar || 0;
 
-            // 5. Renderizar Gráfico de productividad
+            // -------------------------------------------------------
+            // LÓGICA DE ANILLOS SVG (EL BLOQUE QUE PREGUNTASTE)
+            // -------------------------------------------------------
+            const totalParaAnillos = data.total || 1; // Evitar división por cero
+            const neuroPercent = (data.neuro / totalParaAnillos) * 100;
+            const familiarPercent = (data.familiar / totalParaAnillos) * 100;
+
+            const updateRing = (id, percent) => {
+                const ring = document.getElementById(id);
+                if (!ring) return;
+                const radius = 38;
+                const circumference = 2 * Math.PI * radius;
+                const offset = circumference - (percent / 100) * circumference;
+                ring.style.strokeDasharray = `${circumference} ${circumference}`;
+                ring.style.strokeDashoffset = offset;
+            };
+
+            updateRing('ring-neuro', neuroPercent);
+            updateRing('ring-familiar', familiarPercent);
+            // -------------------------------------------------------
+
+            // Renderizar Gráficos
             renderAdminChart(data.chart_data);
             
             // Restaurar opacidad
@@ -2557,7 +2643,7 @@ async function updateAdminStats() {
         console.error("❌ Error en la carga de estadísticas:", error);
     }
 }
-
+        
 function renderAdminChart(chartData) {
     const canvas = document.getElementById('adminPerformanceChart');
     if (!canvas) return;

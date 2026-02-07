@@ -817,11 +817,66 @@
 <input type="text" name="nacionalidad" id="nacionalidad_{{ est.id }}" value="{{ est.nacionalidad }}" oninput="updatePreview(this.form)">
 <input type="hidden" name="nacionalidad_original" value="{{ est.nacionalidad }}">
 
+                            {# CORRECCIÓN UNIFICADA: Desplegable de Diagnósticos PIE (Formato amigable) #}
+<label for="diagnostico_unificado_{{ est.id }}">Diagnóstico (Déficit/PIE):</label>
+<select name="diagnostico_unificado" id="diagnostico_unificado_{{ est.id }}" onchange="updatePreview(this.form)">
+    <option value="">Seleccione un diagnóstico</option>
+    
+    {# --- Trastornos del Lenguaje --- #}
+    <option value="Trastorno del lenguaje" {% if est.diagnostico_1 == 'Trastorno del lenguaje' or est.diagnostico_2 == 'Trastorno del lenguaje' %}selected{% endif %}>Trastorno del lenguaje</option>
+    <option value="Trastorno específico de lenguaje mixto" {% if est.diagnostico_1 == 'Trastorno específico de lenguaje mixto' or est.diagnostico_2 == 'Trastorno específico de lenguaje mixto' %}selected{% endif %}>Trastorno específico de lenguaje mixto</option>
+    <option value="Trastorno específico de lenguaje expresivo" {% if est.diagnostico_1 == 'Trastorno específico de lenguaje expresivo' or est.diagnostico_2 == 'Trastorno específico de lenguaje expresivo' %}selected{% endif %}>Trastorno específico de lenguaje expresivo</option>
+    <option value="Disfasia" {% if est.diagnostico_1 == 'Disfasia' or est.diagnostico_2 == 'Disfasia' %}selected{% endif %}>Disfasia</option>
+    <option value="Disfasia severa" {% if est.diagnostico_1 == 'Disfasia severa' or est.diagnostico_2 == 'Disfasia severa' %}selected{% endif %}>Disfasia severa</option>
+
+    {# --- Rendimiento / Intelectual --- #}
+    <option value="Rendimiento intelectual limítrofe" {% if est.diagnostico_1 == 'Rendimiento intelectual limítrofe' or est.diagnostico_2 == 'Rendimiento intelectual limítrofe' %}selected{% endif %}>Rendimiento intelectual limítrofe</option>
+    <option value="Funcionamiento intelectual limítrofe" {% if est.diagnostico_1 == 'Funcionamiento intelectual limítrofe' or est.diagnostico_2 == 'Funcionamiento intelectual limítrofe' %}selected{% endif %}>Funcionamiento intelectual limítrofe</option>
+    <option value="Discapacidad intelectual" {% if est.diagnostico_1 == 'Discapacidad intelectual' or est.diagnostico_2 == 'Discapacidad intelectual' %}selected{% endif %}>Discapacidad intelectual</option>
+    <option value="Discapacidad intelectual leve" {% if est.diagnostico_1 == 'Discapacidad intelectual leve' or est.diagnostico_2 == 'Discapacidad intelectual leve' %}selected{% endif %}>Discapacidad intelectual leve</option>
+    <option value="Discapacidad intelectual moderada" {% if est.diagnostico_1 == 'Discapacidad intelectual moderada' or est.diagnostico_2 == 'Discapacidad intelectual moderada' %}selected{% endif %}>Discapacidad intelectual moderada</option>
+    <option value="Síndrome de Down" {% if est.diagnostico_1 == 'Síndrome de Down' or est.diagnostico_2 == 'Síndrome de Down' %}selected{% endif %}>Síndrome de Down</option>
+    <option value="Retraso global del desarrollo" {% if est.diagnostico_1 == 'Retraso global del desarrollo' or est.diagnostico_2 == 'Retraso global del desarrollo' %}selected{% endif %}>Retraso global del desarrollo</option>
+
+    {# --- Neurodesarrollo y Aprendizaje --- #}
+    <option value="Trastorno del espectro autista" {% if est.diagnostico_1 == 'Trastorno del espectro autista' or est.diagnostico_2 == 'Trastorno del espectro autista' %}selected{% endif %}>Trastorno del espectro autista</option>
+    <option value="Trastorno de déficit atencional" {% if est.diagnostico_1 == 'Trastorno de déficit atencional' or est.diagnostico_2 == 'Trastorno de déficit atencional' %}selected{% endif %}>Trastorno de déficit atencional</option>
+    <option value="Trastorno de deficit atencional-H" {% if est.diagnostico_1 == 'Trastorno de deficit atencional-H' or est.diagnostico_2 == 'Trastorno de deficit atencional-H' %}selected{% endif %}>Trastorno de deficit atencional-H</option>
+    <option value="Dificultades específicas del aprendizaje" {% if est.diagnostico_1 == 'Dificultades específicas del aprendizaje' or est.diagnostico_2 == 'Dificultades específicas del aprendizaje' %}selected{% endif %}>Dificultades específicas del aprendizaje</option>
+    <option value="GARC" {% if est.diagnostico_1 == 'GARC' or est.diagnostico_2 == 'GARC' %}selected{% endif %}>GARC</option>
+
+    {# --- Discapacidades Físicas y Sensoriales --- #}
+    <option value="Discapacidad motora" {% if est.diagnostico_1 == 'Discapacidad motora' or est.diagnostico_2 == 'Discapacidad motora' %}selected{% endif %}>Discapacidad motora</option>
+    <option value="Discapacidad motora moderada" {% if est.diagnostico_1 == 'Discapacidad motora moderada' or est.diagnostico_2 == 'Discapacidad motora moderada' %}selected{% endif %}>Discapacidad motora moderada</option>
+    <option value="Discapacidad motora grave" {% if est.diagnostico_1 == 'Discapacidad motora grave' or est.diagnostico_2 == 'Discapacidad motora grave' %}selected{% endif %}>Discapacidad motora grave</option>
+    <option value="Discapacidad auditiva" {% if est.diagnostico_1 == 'Discapacidad auditiva' or est.diagnostico_2 == 'Discapacidad auditiva' %}selected{% endif %}>Discapacidad auditiva</option>
+    <option value="Discapacidad visual" {% if est.diagnostico_1 == 'Discapacidad visual' or est.diagnostico_2 == 'Discapacidad visual' %}selected{% endif %}>Discapacidad visual</option>
+    <option value="Discapacidad múltiple" {% if est.diagnostico_1 == 'Discapacidad múltiple' or est.diagnostico_2 == 'Discapacidad múltiple' %}selected{% endif %}>Discapacidad múltiple</option>
+
+    <option value="Otro" {% if est.diagnostico_1 == 'Otro' or est.diagnostico_2 == 'Otro' %}selected{% endif %}>Otro</option>
+</select>
+                            
 {# NOMBRE DE CAMPO: Fecha evaluación (PDF) -> fecha_evaluacion (HTML) #}
 <label for="fecha_evaluacion_{{ est.id }}">Fecha Evaluación:</label>
 <input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}" value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}" required onchange="setFechaReevaluacion(this.form.querySelector('select[name=\'fecha_reevaluacion_select\']')); updatePreview(this.form)">                            
 
+                                                        {# Plazo de reevaluación (Solo ayuda a calcular la fecha) #}
+                            <label for="fecha_reevaluacion_select_{{ est.id }}">Plazo de Reevaluación (años):</label>
+                            <select name="fecha_reevaluacion_select" id="fecha_reevaluacion_select_{{ est.id }}" onchange="setFechaReevaluacion(this)">
+                                <option value="">Seleccione años</option>
+                                <option value="1" {% if est.fecha_reevaluacion_select == '1' %}selected{% endif %}>1 año</option>
+                                <option value="2" {% if est.fecha_reevaluacion_select == '2' %}selected{% endif %}>2 años</option>
+                                <option value="3" {% if est.fecha_reevaluacion_select == '3' %}selected{% endif %}>3 años</option>
+                                <option value="4" {% if est.fecha_reevaluacion_select == '4' %}selected{% endif %}>4 años</option>
+                                <option value="5" {% if est.fecha_reevaluacion_select == '5' %}selected{% endif %}>5 años</option>
+                            </select>
+                            
+                            {# NOMBRE DE CAMPO: Fecha reevaluación (PDF) -> fecha_reevaluacion (HTML) #}
+                            <label for="fecha_reevaluacion_input_{{ est.id }}">Fecha de reevaluación (calculada):</label>
+                            <input type="date" name="fecha_reevaluacion" id="fecha_reevaluacion_input_{{ est.id }}" value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}" readonly>
+                            <input type="hidden" name="fecha_reevaluacion_pdf" id="fecha_reevaluacion_pdf_{{ est.id }}" value=""> {# Hidden field for PDF format #}
 
+                            
                             <h3 class="section-title">Antecedentes Perinatales</h3>
                             <div class="checkbox-group">
                                 <label class="checkbox-item {% if est.check_cesarea %}checked{% endif %}">
@@ -976,45 +1031,6 @@
                             <input type="text" name="clasificacion_imc" id="clasificacion_imc_{{ est.id }}" value="{{ est.clasificacion_imc if est.clasificacion_imc is not none else '' }}" readonly>
 
                             
-{# CORRECCIÓN UNIFICADA: Desplegable de Diagnósticos PIE (Formato amigable) #}
-<label for="diagnostico_unificado_{{ est.id }}">Diagnóstico (Déficit/PIE):</label>
-<select name="diagnostico_unificado" id="diagnostico_unificado_{{ est.id }}" onchange="updatePreview(this.form)">
-    <option value="">Seleccione un diagnóstico</option>
-    
-    {# --- Trastornos del Lenguaje --- #}
-    <option value="Trastorno del lenguaje" {% if est.diagnostico_1 == 'Trastorno del lenguaje' or est.diagnostico_2 == 'Trastorno del lenguaje' %}selected{% endif %}>Trastorno del lenguaje</option>
-    <option value="Trastorno específico de lenguaje mixto" {% if est.diagnostico_1 == 'Trastorno específico de lenguaje mixto' or est.diagnostico_2 == 'Trastorno específico de lenguaje mixto' %}selected{% endif %}>Trastorno específico de lenguaje mixto</option>
-    <option value="Trastorno específico de lenguaje expresivo" {% if est.diagnostico_1 == 'Trastorno específico de lenguaje expresivo' or est.diagnostico_2 == 'Trastorno específico de lenguaje expresivo' %}selected{% endif %}>Trastorno específico de lenguaje expresivo</option>
-    <option value="Disfasia" {% if est.diagnostico_1 == 'Disfasia' or est.diagnostico_2 == 'Disfasia' %}selected{% endif %}>Disfasia</option>
-    <option value="Disfasia severa" {% if est.diagnostico_1 == 'Disfasia severa' or est.diagnostico_2 == 'Disfasia severa' %}selected{% endif %}>Disfasia severa</option>
-
-    {# --- Rendimiento / Intelectual --- #}
-    <option value="Rendimiento intelectual limítrofe" {% if est.diagnostico_1 == 'Rendimiento intelectual limítrofe' or est.diagnostico_2 == 'Rendimiento intelectual limítrofe' %}selected{% endif %}>Rendimiento intelectual limítrofe</option>
-    <option value="Funcionamiento intelectual limítrofe" {% if est.diagnostico_1 == 'Funcionamiento intelectual limítrofe' or est.diagnostico_2 == 'Funcionamiento intelectual limítrofe' %}selected{% endif %}>Funcionamiento intelectual limítrofe</option>
-    <option value="Discapacidad intelectual" {% if est.diagnostico_1 == 'Discapacidad intelectual' or est.diagnostico_2 == 'Discapacidad intelectual' %}selected{% endif %}>Discapacidad intelectual</option>
-    <option value="Discapacidad intelectual leve" {% if est.diagnostico_1 == 'Discapacidad intelectual leve' or est.diagnostico_2 == 'Discapacidad intelectual leve' %}selected{% endif %}>Discapacidad intelectual leve</option>
-    <option value="Discapacidad intelectual moderada" {% if est.diagnostico_1 == 'Discapacidad intelectual moderada' or est.diagnostico_2 == 'Discapacidad intelectual moderada' %}selected{% endif %}>Discapacidad intelectual moderada</option>
-    <option value="Síndrome de Down" {% if est.diagnostico_1 == 'Síndrome de Down' or est.diagnostico_2 == 'Síndrome de Down' %}selected{% endif %}>Síndrome de Down</option>
-    <option value="Retraso global del desarrollo" {% if est.diagnostico_1 == 'Retraso global del desarrollo' or est.diagnostico_2 == 'Retraso global del desarrollo' %}selected{% endif %}>Retraso global del desarrollo</option>
-
-    {# --- Neurodesarrollo y Aprendizaje --- #}
-    <option value="Trastorno del espectro autista" {% if est.diagnostico_1 == 'Trastorno del espectro autista' or est.diagnostico_2 == 'Trastorno del espectro autista' %}selected{% endif %}>Trastorno del espectro autista</option>
-    <option value="Trastorno de déficit atencional" {% if est.diagnostico_1 == 'Trastorno de déficit atencional' or est.diagnostico_2 == 'Trastorno de déficit atencional' %}selected{% endif %}>Trastorno de déficit atencional</option>
-    <option value="Trastorno de deficit atencional-H" {% if est.diagnostico_1 == 'Trastorno de deficit atencional-H' or est.diagnostico_2 == 'Trastorno de deficit atencional-H' %}selected{% endif %}>Trastorno de deficit atencional-H</option>
-    <option value="Dificultades específicas del aprendizaje" {% if est.diagnostico_1 == 'Dificultades específicas del aprendizaje' or est.diagnostico_2 == 'Dificultades específicas del aprendizaje' %}selected{% endif %}>Dificultades específicas del aprendizaje</option>
-    <option value="GARC" {% if est.diagnostico_1 == 'GARC' or est.diagnostico_2 == 'GARC' %}selected{% endif %}>GARC</option>
-
-    {# --- Discapacidades Físicas y Sensoriales --- #}
-    <option value="Discapacidad motora" {% if est.diagnostico_1 == 'Discapacidad motora' or est.diagnostico_2 == 'Discapacidad motora' %}selected{% endif %}>Discapacidad motora</option>
-    <option value="Discapacidad motora moderada" {% if est.diagnostico_1 == 'Discapacidad motora moderada' or est.diagnostico_2 == 'Discapacidad motora moderada' %}selected{% endif %}>Discapacidad motora moderada</option>
-    <option value="Discapacidad motora grave" {% if est.diagnostico_1 == 'Discapacidad motora grave' or est.diagnostico_2 == 'Discapacidad motora grave' %}selected{% endif %}>Discapacidad motora grave</option>
-    <option value="Discapacidad auditiva" {% if est.diagnostico_1 == 'Discapacidad auditiva' or est.diagnostico_2 == 'Discapacidad auditiva' %}selected{% endif %}>Discapacidad auditiva</option>
-    <option value="Discapacidad visual" {% if est.diagnostico_1 == 'Discapacidad visual' or est.diagnostico_2 == 'Discapacidad visual' %}selected{% endif %}>Discapacidad visual</option>
-    <option value="Discapacidad múltiple" {% if est.diagnostico_1 == 'Discapacidad múltiple' or est.diagnostico_2 == 'Discapacidad múltiple' %}selected{% endif %}>Discapacidad múltiple</option>
-
-    <option value="Otro" {% if est.diagnostico_1 == 'Otro' or est.diagnostico_2 == 'Otro' %}selected{% endif %}>Otro</option>
-</select>
-                            
                             {# NOMBRE DE CAMPO: DIAGNÓSTICO COMPLEMENTARIO (PDF) -> diagnostico_complementario (HTML) #}
                             <label for="diagnostico_complementario_{{ est.id }}">Diagnóstico Complementario:</label>
                             <textarea name="diagnostico_complementario" id="diagnostico_complementario_{{ est.id }}" rows="3" placeholder="Notas adicionales sobre el diagnóstico complementario.">{{ est.diagnostico_complementario if est.diagnostico_complementario is not none else '' }}</textarea>
@@ -1026,25 +1042,7 @@
                             {# CAMPO ORIGINAL: Derivaciones (Nombre HTML: derivaciones) #}
                             <label for="derivaciones_{{ est.id }}">Derivaciones:</label>
                             <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="2" placeholder="Detalles de derivaciones a especialistas.">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
-
-                            {# Plazo de reevaluación (Solo ayuda a calcular la fecha) #}
-                            <label for="fecha_reevaluacion_select_{{ est.id }}">Plazo de Reevaluación (años):</label>
-                            <select name="fecha_reevaluacion_select" id="fecha_reevaluacion_select_{{ est.id }}" onchange="setFechaReevaluacion(this)">
-                                <option value="">Seleccione años</option>
-                                <option value="1" {% if est.fecha_reevaluacion_select == '1' %}selected{% endif %}>1 año</option>
-                                <option value="2" {% if est.fecha_reevaluacion_select == '2' %}selected{% endif %}>2 años</option>
-                                <option value="3" {% if est.fecha_reevaluacion_select == '3' %}selected{% endif %}>3 años</option>
-                                <option value="4" {% if est.fecha_reevaluacion_select == '4' %}selected{% endif %}>4 años</option>
-                                <option value="5" {% if est.fecha_reevaluacion_select == '5' %}selected{% endif %}>5 años</option>
-                            </select>
-                            
-                            {# NOMBRE DE CAMPO: Fecha reevaluación (PDF) -> fecha_reevaluacion (HTML) #}
-                            <label for="fecha_reevaluacion_input_{{ est.id }}">Fecha de reevaluación (calculada):</label>
-                            <input type="date" name="fecha_reevaluacion" id="fecha_reevaluacion_input_{{ est.id }}" value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}" readonly>
-                            <input type="hidden" name="fecha_reevaluacion_pdf" id="fecha_reevaluacion_pdf_{{ est.id }}" value=""> {# Hidden field for PDF format #}
-
-                            
-                            
+        
                             <div class="button-group">
                                 <button type="submit">
                                     <i class="fas fa-file-pdf"></i> Guardar y Generar PDF

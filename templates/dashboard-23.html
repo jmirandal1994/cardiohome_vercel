@@ -1371,110 +1371,159 @@
                 </div>
 
 <div id="gestionar-proyectos" class="content-section">
-    <div class="flex justify-between items-center mb-8">
-        <h2 class="text-3xl font-extrabold text-gray-800 font-['Montserrat'] m-0">
-            <i class="fa-solid fa-folder-tree text-secondary-blue mr-2"></i> Gestión de Proyectos
-        </h2>
-        <span class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase">
-            {{ proyectos|length }} Proyectos Activos
-        </span>
+    <!-- Encabezado de la Sección -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+        <div>
+            <h2 class="text-3xl font-extrabold text-gray-800 font-['Montserrat'] m-0 italic">
+                <i class="fa-solid fa-folder-tree text-secondary-blue mr-2"></i> Gestión de Proyectos
+            </h2>
+            <p class="text-gray-500 text-sm">Organización didáctica de establecimientos y nóminas médicas.</p>
+        </div>
+        <button onclick="document.getElementById('modal-proyecto').classList.remove('hidden')" 
+                class="bg-primary-blue text-white px-6 py-3 rounded-2xl font-bold shadow-lg hover:bg-secondary-blue transition-all flex items-center gap-3 active:scale-95">
+            <i class="fa-solid fa-folder-plus text-xl"></i> CREAR NUEVO PROYECTO
+        </button>
     </div>
 
-    {% if proyectos %}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Lista de Proyectos (Estilo Carpetas Premium) -->
+    <div class="grid grid-cols-1 gap-10">
         {% for proyecto in proyectos %}
-        <div class="card !p-0 overflow-hidden border-t-4 border-primary-blue shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col">
+        <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden transition-all hover:shadow-xl">
             
-            <div class="bg-gradient-to-r from-gray-50 to-white p-6 border-b border-gray-100">
-                <div class="flex items-start justify-between">
-                    <div class="flex items-center gap-4">
-                        <div class="relative">
-                            <i class="fa-solid fa-folder text-5xl text-yellow-500"></i>
-                            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                                {{ proyecto.nominas|length if proyecto.nominas else 0 }}
+            <!-- Cabecera de la Carpeta (Proyecto) -->
+            <div class="p-8 flex flex-wrap justify-between items-center gap-6 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+                <div class="flex items-center gap-6">
+                    <div class="relative group">
+                        <i class="fa-solid fa-folder text-6xl text-yellow-400 group-hover:text-yellow-500 transition-colors drop-shadow-md"></i>
+                        <span class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 text-white text-[10px] font-black">
+                            {{ proyecto.nominas|length if proyecto.nominas else 0 }}
+                        </span>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-black text-primary-blue m-0 uppercase tracking-tighter">{{ proyecto.nombre_proyecto }}</h3>
+                        <div class="flex items-center gap-3 mt-2">
+                            <span class="px-3 py-1 bg-gray-200 text-gray-600 rounded-full text-[10px] font-black uppercase">
+                                <i class="fa-solid fa-calendar mr-1"></i> {{ proyecto.fecha_creacion[:10] if proyecto.fecha_creacion else 'N/A' }}
                             </span>
-                        </div>
-                        <div>
-                            <h4 class="text-xl font-bold text-primary-blue m-0 leading-tight">{{ proyecto.nombre_proyecto }}</h4>
-                            <p class="text-[10px] text-gray-400 uppercase tracking-tighter mt-1">
-                                <i class="fa-solid fa-calendar-check mr-1"></i> {{ proyecto.fecha_creacion[:10] if proyecto.fecha_creacion else 'N/A' }}
-                            </p>
+                            {% if proyecto.descripcion_proyecto or proyecto.descripcion %}
+                            <span class="text-xs text-gray-400 italic font-medium">
+                                "{{ proyecto.descripcion_proyecto or proyecto.descripcion }}"
+                            </span>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
-                {% if proyecto.descripcion_proyecto or proyecto.descripcion %}
-                <p class="text-xs text-gray-600 mt-4 italic line-clamp-2">
-                    "{{ proyecto.descripcion_proyecto or proyecto.descripcion }}"
-                </p>
-                {% endif %}
+                
+                <div class="flex items-center gap-3">
+                    <button class="w-10 h-10 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center shadow-sm">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
             </div>
 
-            <div class="p-4 bg-white flex-grow">
-                <h5 class="text-[10px] font-black uppercase text-gray-400 mb-3 tracking-widest flex items-center gap-2">
-                    <span class="w-4 h-[1px] bg-gray-200"></span> Nóminas Asignadas
+            <!-- Cuerpo de la Carpeta (Nóminas como Tarjetas Didácticas) -->
+            <div class="p-8 bg-gray-50/40">
+                <h5 class="text-[10px] font-black uppercase text-gray-400 mb-6 tracking-widest flex items-center gap-2">
+                    <span class="w-8 h-[1px] bg-gray-200"></span> Nóminas vinculadas a este proyecto
                 </h5>
-                
-                <div class="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {% if proyecto.nominas %}
                         {% for nomina in proyecto.nominas %}
-                        <div class="group flex items-center justify-between p-2.5 bg-gray-50 rounded-xl hover:bg-blue-50 transition-all border border-gray-100 hover:border-blue-200">
-                            <div class="flex items-center gap-3 overflow-hidden">
-                                <i class="fa-solid fa-file-lines text-secondary-blue opacity-70 group-hover:opacity-100"></i>
-                                <span class="text-xs font-bold text-gray-700 truncate">{{ nomina.nombre_nomina }}</span>
+                            
+                            {# Lógica de Colores Dinámica por Tipo de Nómina #}
+                            {% set card_border = 'border-blue-500' %}
+                            {% set icon_bg = 'bg-blue-100' %}
+                            {% set icon_color = 'text-blue-600' %}
+                            {% set badge_color = 'bg-blue-50' %}
+
+                            {% if 'neuro' in nomina.tipo_nomina|lower %}
+                                {% set card_border = 'border-purple-500' %}
+                                {% set icon_bg = 'bg-purple-100' %}
+                                {% set icon_color = 'text-purple-600' %}
+                                {% set badge_color = 'bg-purple-50' %}
+                            {% elif 'familiar' in nomina.tipo_nomina|lower or 'medicina' in nomina.tipo_nomina|lower %}
+                                {% set card_border = 'border-emerald-500' %}
+                                {% set icon_bg = 'bg-emerald-100' %}
+                                {% set icon_color = 'text-emerald-600' %}
+                                {% set badge_color = 'bg-emerald-50' %}
+                            {% endif %}
+
+                            <!-- Tarjeta de Nómina Individual -->
+                            <div class="bg-white border-t-4 {{ card_border }} rounded-3xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all relative overflow-hidden group">
+                                
+                                <!-- Marca de agua decorativa -->
+                                <i class="fa-solid fa-notes-medical absolute -right-4 -bottom-4 text-8xl opacity-5 group-hover:rotate-12 transition-transform"></i>
+
+                                <div class="flex justify-between items-start mb-6">
+                                    <div class="{{ icon_bg }} {{ icon_color }} w-12 h-12 rounded-xl flex items-center justify-center shadow-sm">
+                                        <i class="fa-solid fa-hospital-user text-xl"></i>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-[10px] font-black text-gray-400 uppercase leading-none mb-1">Estudiantes</p>
+                                        <span class="text-3xl font-black {{ icon_color }} tracking-tighter">
+                                            {{ nomina.total_alumnos if nomina.total_alumnos is defined else '0' }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="mb-6">
+                                    <h4 class="text-gray-800 font-extrabold text-sm uppercase mb-1 truncate">{{ nomina.nombre_nomina }}</h4>
+                                    <span class="inline-block px-2 py-1 {{ badge_color }} {{ icon_color }} rounded-md text-[9px] font-black uppercase tracking-wider">
+                                        {{ nomina.tipo_nomina|replace('_', ' ') }}
+                                    </span>
+                                </div>
+
+                                <div class="pt-4 border-t border-gray-100 flex justify-between items-center">
+                                    <a href="{{ url_for('relleno_formulario', nomina_id=nomina.id) }}" 
+                                       class="flex items-center gap-2 text-[10px] font-black text-primary-blue hover:text-secondary-blue uppercase transition-colors">
+                                        <i class="fa-solid fa-arrow-right-to-bracket"></i> Gestionar Alumnos
+                                    </a>
+                                    <div class="flex gap-1">
+                                        <div class="w-1.5 h-1.5 rounded-full {{ icon_bg.replace('100', '500') }} animate-pulse"></div>
+                                        <div class="w-1.5 h-1.5 rounded-full {{ icon_bg.replace('100', '500') }} animate-pulse" style="animation-delay: 0.2s"></div>
+                                    </div>
+                                </div>
                             </div>
-                            <a href="{{ url_for('relleno_formulario', nomina_id=nomina.id) }}" 
-                               class="ml-2 p-1.5 bg-white text-primary-blue rounded-lg shadow-sm hover:bg-primary-blue hover:text-white transition-colors"
-                               title="Gestionar Alumnos">
-                                <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
-                            </a>
-                        </div>
                         {% endfor %}
                     {% else %}
-                        <div class="flex flex-col items-center justify-center py-4 opacity-30">
-                            <i class="fa-solid fa-box-open text-2xl mb-1"></i>
-                            <p class="text-[10px] font-bold uppercase">Carpeta Vacía</p>
+                        <!-- Estado de Carpeta Vacía -->
+                        <div class="col-span-full py-12 flex flex-col items-center justify-center text-center bg-white/50 rounded-3xl border-2 border-dashed border-gray-200">
+                            <i class="fa-solid fa-box-open text-4xl text-gray-200 mb-3"></i>
+                            <p class="text-gray-400 font-bold italic uppercase text-xs tracking-widest">Esta carpeta no contiene nóminas asignadas</p>
                         </div>
                     {% endif %}
                 </div>
             </div>
-
-            <div class="bg-gray-50 p-3 flex justify-between items-center border-t border-gray-100">
-                <button class="text-blue-500 hover:text-blue-700 text-xs font-bold px-2 py-1 transition-colors">
-                    <i class="fa-solid fa-pen-to-square"></i> Editar
-                </button>
-                <button class="bg-white text-red-500 hover:bg-red-500 hover:text-white shadow-sm border border-red-100 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-                        onclick="confirmDelete('proyecto', '{{ proyecto.id }}', '{{ proyecto.nombre_proyecto }}')">
-                    <i class="fa-solid fa-trash-can mr-1"></i> Eliminar
-                </button>
-            </div>
         </div>
         {% endfor %}
     </div>
-    {% else %}
-    <div class="card p-20 text-center bg-white rounded-3xl border-2 border-dashed border-gray-200">
-        <div class="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="fa-solid fa-folder-plus text-4xl text-gray-300"></i>
-        </div>
-        <h3 class="text-xl font-bold text-gray-800">No hay proyectos comerciales</h3>
-        <p class="text-gray-500 max-w-xs mx-auto mt-2">Crea tu primer proyecto en la sección de "Crear Proyecto" para comenzar a organizar tus nóminas.</p>
-    </div>
-    {% endif %}
 </div>
 
 <style>
+    /* Tipografía Montserrat para títulos premium */
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&display=swap');
+    
+    .tracking-tighter { letter-spacing: -0.05em; }
+    .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    /* Scrollbar personalizada para el grid de tarjetas si fuera necesario */
     .custom-scrollbar::-webkit-scrollbar {
         width: 4px;
     }
     .custom-scrollbar::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 10px;
+        background: transparent;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
+        background: #e2e8f0;
         border-radius: 10px;
     }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
+    
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 </style>
             

@@ -952,17 +952,18 @@
             {# BLOQUE DE SECCIONES DE ADMIN (Manteniendo la estructura de control) #}
             {% if usuario == 'admin' %}
             
-    <div id="admin-performance" class="content-section">
+   <div id="admin-performance" class="content-section">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
             <h2 class="text-3xl font-extrabold text-gray-800 font-['Montserrat'] m-0">Rendimiento Operativo</h2>
-            <p class="text-gray-500">Análisis detallado por proyecto y profesional.</p>
+            <p class="text-gray-500 text-sm">Monitoreo de carga y evaluaciones por proyecto.</p>
         </div>
         
-        <div class="bg-white p-2 rounded-2xl shadow-sm border border-gray-200 flex items-center gap-2">
-            <i class="fa-solid fa-filter text-primary-blue ml-2"></i>
-            <select id="admin-project-filter" class="border-none focus:ring-0 text-sm font-bold text-gray-700 bg-transparent cursor-pointer" onchange="updateAdminStats()">
-                <option value="all">TODOS LOS PROYECTOS</option>
+        <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-200 flex items-center gap-3">
+            <i class="fa-solid fa-filter text-secondary-blue"></i>
+            <span class="text-xs font-black text-gray-400 uppercase">Proyecto:</span>
+            <select id="admin-project-filter" class="border-none focus:ring-0 text-sm font-bold text-primary-blue bg-transparent cursor-pointer" onchange="updateAdminStats()">
+                <option value="all">MOSTRAR TODO (GLOBAL)</option>
                 {% for proyecto in proyectos %}
                     <option value="{{ proyecto.id }}">{{ proyecto.nombre_proyecto }}</option>
                 {% endfor %}
@@ -1002,8 +1003,18 @@
     </div>
 
     <div class="card mt-8">
-        <h3><i class="fa-solid fa-chart-simple"></i> Productividad por Doctora en este Proyecto</h3>
-        <div class="chart-container" style="position: relative; height:40vh; width:100%">
+        <h3><i class="fa-solid fa-chart-simple"></i> Avance por Especialidad</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="p-4 bg-blue-50 rounded-xl flex justify-between items-center border border-blue-100">
+                <span class="text-sm font-bold text-blue-800">Neurología</span>
+                <span class="text-2xl font-black text-blue-900" id="stat-neuro">0</span>
+            </div>
+            <div class="p-4 bg-green-50 rounded-xl flex justify-between items-center border border-green-100">
+                <span class="text-sm font-bold text-green-800">Medicina Familiar</span>
+                <span class="text-2xl font-black text-green-900" id="stat-familiar">0</span>
+            </div>
+        </div>
+        <div class="chart-container" style="height: 300px;">
             <canvas id="adminPerformanceChart"></canvas>
         </div>
     </div>
@@ -2503,29 +2514,56 @@
             setInterval(fetchCorrectionAlert, 30000);  
         });
 
-        let adminChartInstance = null;
+let adminChartInstance = null;
 
 async function updateAdminStats() {
     const projectId = document.getElementById('admin-project-filter').value;
-    const response = await fetch(`/api/admin/stats/${projectId}`);
-    const data = await response.json();
+    
+    // 1. Efecto visual de carga
+    const ids = ['stat-total', 'stat-completed', 'stat-pending', 'stat-percent', 'stat-neuro', 'stat-familiar'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.opacity = '0.5';
+    });
 
-    if (data.success) {
-        // Actualizar tarjetas con animación de conteo
-        document.getElementById('stat-total').textContent = data.total;
-        document.getElementById('stat-completed').textContent = data.completed;
-        document.getElementById('stat-pending').textContent = data.pending;
-        document.getElementById('stat-percent').textContent = data.percent;
+    try {
+        // 2. Llamada a la API
+        const response = await fetch(`/api/admin/stats/${projectId}`);
+        const data = await response.json();
 
-        // Actualizar Gráfico
-        renderAdminChart(data.chart_data);
+        if (data.success) {
+            // 3. Actualizar tarjetas principales
+            document.getElementById('stat-total').textContent = data.total;
+            document.getElementById('stat-completed').textContent = data.completed;
+            document.getElementById('stat-pending').textContent = data.pending;
+            document.getElementById('stat-percent').textContent = data.percent;
+            
+            // 4. Actualizar contadores de especialidad (NUEVO)
+            if(document.getElementById('stat-neuro')) 
+                document.getElementById('stat-neuro').textContent = data.neuro || 0;
+            if(document.getElementById('stat-familiar')) 
+                document.getElementById('stat-familiar').textContent = data.familiar || 0;
+
+            // 5. Renderizar Gráfico de productividad
+            renderAdminChart(data.chart_data);
+            
+            // Restaurar opacidad
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.opacity = '1';
+            });
+        }
+    } catch (error) {
+        console.error("❌ Error en la carga de estadísticas:", error);
     }
 }
 
 function renderAdminChart(chartData) {
-    const ctx = document.getElementById('adminPerformanceChart').getContext('2d');
+    const canvas = document.getElementById('adminPerformanceChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
     
-    // Mapear IDs de doctoras a nombres (usando la lista que ya pasamos al dashboard)
+    // Mapear nombres de doctoras
     const labels = Object.keys(chartData).map(id => {
         const user = all_users_for_lookup.find(u => u.id == id);
         return user ? user.usuario : 'Desconocida';
@@ -2542,19 +2580,34 @@ function renderAdminChart(chartData) {
                 label: 'Evaluaciones Realizadas',
                 data: values,
                 backgroundColor: '#1C67A3',
-                borderRadius: 10
+                borderRadius: 8,
+                barThickness: 30
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } }
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            },
+            plugins: { 
+                legend: { display: false },
+                tooltip: { backgroundColor: '#0A3D62' }
+            }
         }
     });
 }
 
-// Iniciar al cargar la sección
-document.querySelector('[data-section="admin-performance"]').addEventListener('click', updateAdminStats);
+// Escuchador para carga inicial al hacer clic en el menú
+document.addEventListener('DOMContentLoaded', function() {
+    const adminPerfLink = document.querySelector('a[data-section="admin-performance"]');
+    if (adminPerfLink) {
+        adminPerfLink.addEventListener('click', () => {
+            // Pequeña pausa para que el DOM se muestre antes de calcular el gráfico
+            setTimeout(updateAdminStats, 250);
+        });
+    }
+});
         
     </script>
 </body>

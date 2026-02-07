@@ -951,44 +951,64 @@
             
             {# BLOQUE DE SECCIONES DE ADMIN (Manteniendo la estructura de control) #}
             {% if usuario == 'admin' %}
-                <div id="admin-performance" class="content-section">
-                    <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">Rendimiento del Administrador</h2>
-                    <div class="summary">
-                        <div class="summary-card-v2 bg-green-600">
-                            <div class="summary-card-header">
-                                <span>COLEGIOS<br>ASIGNADOS</span>
-                                <i class="fa-solid fa-school"></i>
-                            </div>
-                            <p class="count">{{ eventos|length }}</p>
-                        </div>
-                        <div class="summary-card-v2" style="background: linear-gradient(145deg, var(--card-blue), #2A79B3);">
-                            <div class="summary-card-header">
-                                <span>NÓMINAS<br>CARGADAS</span>
-                                <i class="fa-solid fa-file-invoice-dollar"></i>
-                            </div>
-                            <p class="count">{{ admin_nominas_cargadas|length }}</p>
-                        </div>
-                        <div class="summary-card-v2 bg-yellow-500">
-                            <div class="summary-card-header">
-                                <span>TOTAL<br>DOCTORAS</span>
-                                <i class="fa-solid fa-user-doctor"></i>
-                            </div>
-                            <p class="count">{{ doctoras|length }}</p>
-                        </div>
-                    </div>
+            
+    <div id="admin-performance" class="content-section">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h2 class="text-3xl font-extrabold text-gray-800 font-['Montserrat'] m-0">Rendimiento Operativo</h2>
+            <p class="text-gray-500">Análisis detallado por proyecto y profesional.</p>
+        </div>
+        
+        <div class="bg-white p-2 rounded-2xl shadow-sm border border-gray-200 flex items-center gap-2">
+            <i class="fa-solid fa-filter text-primary-blue ml-2"></i>
+            <select id="admin-project-filter" class="border-none focus:ring-0 text-sm font-bold text-gray-700 bg-transparent cursor-pointer" onchange="updateAdminStats()">
+                <option value="all">TODOS LOS PROYECTOS</option>
+                {% for proyecto in proyectos %}
+                    <option value="{{ proyecto.id }}">{{ proyecto.nombre_proyecto }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
 
-                    <div class="card mt-8">
-                        <h3><i class="fa-solid fa-chart-simple"></i> Rendimiento por Doctora (Formularios Completados)</h3>
-                        {% if doctor_performance_data %}
-                            <div class="chart-container">
-                                <canvas id="adminPerformanceChart"></canvas>
-                            </div>
-                        {% else %}
-                            <p style="text-align: center; color: #777;">No hay datos de rendimiento de doctoras disponibles para graficar.</p>
-                        {% endif %}
-                    </div>
-                </div>
+    <div class="summary">
+        <div class="summary-card-v2" style="background: linear-gradient(145deg, #0A3D62, #1C67A3);">
+            <div class="summary-card-header">
+                <span>ESTUDIANTES<br>TOTALES</span>
+                <i class="fa-solid fa-users"></i>
+            </div>
+            <p class="count" id="stat-total">0</p>
+        </div>
+        <div class="summary-card-v2 bg-green-600">
+            <div class="summary-card-header">
+                <span>VALORACIONES<br>COMPLETADAS</span>
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <p class="count" id="stat-completed">0</p>
+        </div>
+        <div class="summary-card-v2 bg-yellow-500">
+            <div class="summary-card-header">
+                <span>PENDIENTES<br>DE EVALUACIÓN</span>
+                <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+            <p class="count" id="stat-pending">0</p>
+        </div>
+        <div class="summary-card-v2 bg-red-600">
+            <div class="summary-card-header">
+                <span>AVANCE<br>PORCENTUAL</span>
+                <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <p class="count" id="stat-percent">0%</p>
+        </div>
+    </div>
 
+    <div class="card mt-8">
+        <h3><i class="fa-solid fa-chart-simple"></i> Productividad por Doctora en este Proyecto</h3>
+        <div class="chart-container" style="position: relative; height:40vh; width:100%">
+            <canvas id="adminPerformanceChart"></canvas>
+        </div>
+    </div>
+</div>
+            
                 <div id="admin-add-visit" class="content-section">
                     <div class="card admin-form">
                         <h3><i class="fa-solid fa-calendar-days"></i> Agregar Visita Programada</h3>

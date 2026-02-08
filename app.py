@@ -1312,14 +1312,13 @@ def reporte_proyecto_detalle(project_id):
         return jsonify({"success": False, "error": str(e)})
         
 # - Ruta 
-# --- ACTUALIZACIÓN DE ESTADÍSTICAS ---
 @app.route('/api/admin/stats/<project_id>')
 def get_admin_stats(project_id):
     if session.get('usuario') != 'admin':
         return jsonify({"success": False, "message": "No autorizado"}), 403
 
     try:
-        # 1. Obtener nóminas del proyecto (Tu lógica original)
+        # 1. Obtener las nóminas que pertenecen al proyecto
         if project_id == 'all':
             url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,tipo_nomina"
         else:
@@ -1328,39 +1327,32 @@ def get_admin_stats(project_id):
         res_n = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
         nominas = res_n.json() if res_n.ok else []
 
+        # Inicializamos contadores exactos como los de tu perfil de coordinadora
         total_evaluados = 0
         total_pendientes = 0
         neuro_count = 0
         familiar_count = 0
-        doctor_stats = {} # <--- Aquí guardaremos la productividad de cada doctora
+        doctor_stats = {}
 
-        # 2. Recorrer nóminas para contadores y productividad
+        # 2. Recorrer cada nómina para contar usando tu lógica de flags
         for nom in nominas:
             nom_id = nom.get("id")
             tipo = (nom.get("tipo_nomina") or "").lower().strip()
             
-            # Conteo de totales (Tu lógica original)
+            # Usamos tu misma lógica de get_supabase_count
             evaluados = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.true")
             pendientes = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.false")
 
             total_evaluados += evaluados
             total_pendientes += pendientes
 
+            # Conteo por especialidad (Neurología vs Familiar/Medicina)
             if "neuro" in tipo:
                 neuro_count += evaluados
             elif "familiar" in tipo or "medicina" in tipo:
                 familiar_count += evaluados
 
-            # NUEVO: Si hay evaluados, buscamos quién los hizo para el gráfico de barras
-            if evaluados > 0:
-                url_detalles = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nom_id}&evaluado_flag=eq.true&select=doctora_evaluadora_id"
-                res_detalles = requests.get(url_detalles, headers=SUPABASE_SERVICE_HEADERS)
-                if res_detalles.ok:
-                    for est in res_detalles.json():
-                        doc_id = est.get('doctora_evaluadora_id')
-                        if doc_id:
-                            doctor_stats[doc_id] = doctor_stats.get(doc_id, 0) + 1
-
+        # 3. Calcular porcentaje
         total_alumnos = total_evaluados + total_pendientes
         percent = round((total_evaluados / total_alumnos * 100), 1) if total_alumnos > 0 else 0
 
@@ -1372,31 +1364,11 @@ def get_admin_stats(project_id):
             "percent": f"{percent}%",
             "neuro": neuro_count,
             "familiar": familiar_count,
-            "chart_data": doctor_stats # <--- Enviamos los datos procesados a las barras
+            # Por ahora enviamos un objeto vacío para el gráfico si no quieres complicarlo
+            "chart_data": {} 
         })
     except Exception as e:
-        print(f"❌ Error en stats: {e}")
-        return jsonify({"success": False, "error": str(e)})
-
-
-# --- NUEVA RUTA: REPORTE POR PROFESIONAL Y PROYECTO ---
-@app.route('/api/admin/reporte_profesional/<doctor_id>/<project_id>')
-def reporte_profesional(doctor_id, project_id):
-    if session.get('usuario') != 'admin':
-        return jsonify({"success": False}), 403
-    
-    try:
-        # Obtener nóminas del proyecto
-        url_n = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id"
-        if project_id != 'all': url_n += f"&proyecto_id=eq.{project_id}"
-        nomina_ids = [n['id'] for n in requests.get(url_n, headers=SUPABASE_SERVICE_HEADERS).json()]
-        
-        # Obtener estudiantes evaluados por esta doctora en este proyecto
-        url_e = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?doctora_evaluadora_id=eq.{doctor_id}&nomina_id=in.({','.join(nomina_ids)})&select=nombre,rut,fecha_relleno,nominas_medicas(nombre_nomina)"
-        estudiantes = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS).json()
-        
-        return jsonify({"success": True, "data": estudiantes})
-    except Exception as e:
+        print(f"❌ Error en stats premium: {e}")
         return jsonify({"success": False, "error": str(e)})
         
 # app-30.py (Reemplaza la función dashboard completa)

@@ -1371,7 +1371,6 @@
                 </div>
 
 <div id="gestionar-proyectos" class="content-section">
-    <!-- Encabezado de la Sección -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
         <div>
             <h2 class="text-3xl font-extrabold text-gray-800 font-['Montserrat'] m-0 italic">
@@ -1379,18 +1378,28 @@
             </h2>
             <p class="text-gray-500 text-sm">Organización didáctica de establecimientos y nóminas médicas.</p>
         </div>
+
+        <div class="relative w-full md:w-80">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </span>
+            <input type="text" id="project-search-input" 
+                   onkeyup="filterProjectFolders()" 
+                   placeholder="Buscar proyecto por nombre..." 
+                   class="pl-10 pr-4 py-2.5 w-full rounded-2xl border border-gray-200 shadow-sm focus:ring-2 focus:ring-secondary-blue focus:border-secondary-blue outline-none transition-all text-sm">
+        </div>
+
         <button onclick="document.getElementById('modal-proyecto').classList.remove('hidden')" 
                 class="bg-primary-blue text-white px-6 py-3 rounded-2xl font-bold shadow-lg hover:bg-secondary-blue transition-all flex items-center gap-3 active:scale-95">
             <i class="fa-solid fa-folder-plus text-xl"></i> CREAR NUEVO PROYECTO
         </button>
     </div>
 
-    <!-- Lista de Proyectos (Estilo Carpetas Premium) -->
-    <div class="grid grid-cols-1 gap-10">
+    <div class="grid grid-cols-1 gap-10" id="projects-main-container">
         {% for proyecto in proyectos %}
-        <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden transition-all hover:shadow-xl">
+        <div class="project-folder-card bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden transition-all hover:shadow-xl"
+             data-project-name="{{ proyecto.nombre_proyecto | lower }}">
             
-            <!-- Cabecera de la Carpeta (Proyecto) -->
             <div class="p-8 flex flex-wrap justify-between items-center gap-6 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
                 <div class="flex items-center gap-6">
                     <div class="relative group">
@@ -1421,7 +1430,6 @@
                 </div>
             </div>
 
-            <!-- Cuerpo de la Carpeta (Nóminas como Tarjetas Didácticas) -->
             <div class="p-8 bg-gray-50/40">
                 <h5 class="text-[10px] font-black uppercase text-gray-400 mb-6 tracking-widest flex items-center gap-2">
                     <span class="w-8 h-[1px] bg-gray-200"></span> Nóminas vinculadas a este proyecto
@@ -1431,7 +1439,6 @@
                     {% if proyecto.nominas %}
                         {% for nomina in proyecto.nominas %}
                             
-                            {# Lógica de Colores Dinámica por Tipo de Nómina #}
                             {% set card_border = 'border-blue-500' %}
                             {% set icon_bg = 'bg-blue-100' %}
                             {% set icon_color = 'text-blue-600' %}
@@ -1449,10 +1456,7 @@
                                 {% set badge_color = 'bg-emerald-50' %}
                             {% endif %}
 
-                            <!-- Tarjeta de Nómina Individual -->
                             <div class="bg-white border-t-4 {{ card_border }} rounded-3xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all relative overflow-hidden group">
-                                
-                                <!-- Marca de agua decorativa -->
                                 <i class="fa-solid fa-notes-medical absolute -right-4 -bottom-4 text-8xl opacity-5 group-hover:rotate-12 transition-transform"></i>
 
                                 <div class="flex justify-between items-start mb-6">
@@ -1462,7 +1466,7 @@
                                     <div class="text-right">
                                         <p class="text-[10px] font-black text-gray-400 uppercase leading-none mb-1">Estudiantes</p>
                                         <span class="text-3xl font-black {{ icon_color }} tracking-tighter">
-                                            {{ nomina.total_alumnos if nomina.total_alumnos is defined else '0' }}
+                                            {{ nomina.total_alumnos if nomina.total_alumnos is defined else (nomina.alumnos | length if nomina.alumnos is defined else 0) }}
                                         </span>
                                     </div>
                                 </div>
@@ -1487,7 +1491,6 @@
                             </div>
                         {% endfor %}
                     {% else %}
-                        <!-- Estado de Carpeta Vacía -->
                         <div class="col-span-full py-12 flex flex-col items-center justify-center text-center bg-white/50 rounded-3xl border-2 border-dashed border-gray-200">
                             <i class="fa-solid fa-box-open text-4xl text-gray-200 mb-3"></i>
                             <p class="text-gray-400 font-bold italic uppercase text-xs tracking-widest">Esta carpeta no contiene nóminas asignadas</p>
@@ -1499,7 +1502,7 @@
         {% endfor %}
     </div>
 </div>
-
+            
 <style>
     /* Tipografía Montserrat para títulos premium */
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&display=swap');
@@ -2804,22 +2807,65 @@ async function updateAdminStats() {
         console.error("❌ Error en la carga de estadísticas:", error);
     }
 }
-        
+
+<script>
+/**
+ * Filtra las carpetas de proyectos en tiempo real basándose en el nombre
+ */
+function filterProjectFolders() {
+    const input = document.getElementById('project-search-input');
+    const filter = input.value.toLowerCase();
+    const folders = document.querySelectorAll('.project-folder-card');
+    const container = document.getElementById('projects-main-container');
+    let resultsFound = false;
+
+    folders.forEach(folder => {
+        const projectName = folder.getAttribute('data-project-name');
+        if (projectName && projectName.includes(filter)) {
+            folder.style.display = "";
+            resultsFound = true;
+        } else {
+            folder.style.display = "none";
+        }
+    });
+
+    // Mostrar mensaje si no hay resultados
+    let emptyMsg = document.getElementById('project-empty-results');
+    if (!resultsFound) {
+        if (!emptyMsg) {
+            emptyMsg = document.createElement('div');
+            emptyMsg.id = 'project-empty-results';
+            emptyMsg.className = 'col-span-full py-20 text-center text-gray-400 bg-white rounded-[2.5rem] shadow-sm border border-dashed';
+            emptyMsg.innerHTML = `
+                <i class="fa-solid fa-folder-minus text-5xl mb-4 opacity-20"></i>
+                <p class="text-lg font-bold">No se encontró ningún proyecto que coincida con "${input.value}"</p>
+            `;
+            container.appendChild(emptyMsg);
+        }
+    } else if (emptyMsg) {
+        emptyMsg.remove();
+    }
+}
+
+/**
+ * Renderiza el gráfico de rendimiento para el administrador
+ */
 function renderAdminChart(chartData) {
     const canvas = document.getElementById('adminPerformanceChart');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     
     // Mapear nombres de doctoras
+    // Nota: Asegúrate de que 'all_users_for_lookup' esté definido globalmente
     const labels = Object.keys(chartData).map(id => {
-        const user = all_users_for_lookup.find(u => u.id == id);
-        return user ? user.usuario : 'Desconocida';
+        const user = typeof all_users_for_lookup !== 'undefined' ? all_users_for_lookup.find(u => u.id == id) : null;
+        return user ? user.usuario : 'ID: ' + id;
     });
     const values = Object.values(chartData);
 
-    if (adminChartInstance) adminChartInstance.destroy();
+    if (window.adminChartInstance) window.adminChartInstance.destroy();
 
-    adminChartInstance = new Chart(ctx, {
+    window.adminChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
@@ -2845,17 +2891,28 @@ function renderAdminChart(chartData) {
     });
 }
 
-// Escuchador para carga inicial al hacer clic en el menú
+// Escuchador para carga inicial y eventos de navegación
 document.addEventListener('DOMContentLoaded', function() {
+    // 1. Manejo de clics en el menú lateral para cargar estadísticas
     const adminPerfLink = document.querySelector('a[data-section="admin-performance"]');
     if (adminPerfLink) {
         adminPerfLink.addEventListener('click', () => {
             // Pequeña pausa para que el DOM se muestre antes de calcular el gráfico
-            setTimeout(updateAdminStats, 250);
+            if (typeof updateAdminStats === 'function') {
+                setTimeout(updateAdminStats, 250);
+            }
         });
     }
+
+    // 2. Inicializar la sección de bienvenida o la activa por defecto
+    const initialActiveLink = document.querySelector('.nav-link.active');
+    if (initialActiveLink && initialActiveLink.dataset.section === 'admin-performance') {
+        if (typeof updateAdminStats === 'function') {
+            setTimeout(updateAdminStats, 500);
+        }
+    }
 });
-        
-    </script>
+</script>
+
 </body>
 </html>

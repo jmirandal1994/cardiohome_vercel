@@ -2750,7 +2750,7 @@ async function updateAdminStats() {
         const data = await response.json();
 
         if (data.success) {
-            // 1. Actualizar Tarjetas de texto
+            // Actualizar tarjetas numéricas
             document.getElementById('stat-total').textContent = data.total;
             document.getElementById('stat-completed').textContent = data.completed;
             document.getElementById('stat-pending').textContent = data.pending;
@@ -2758,29 +2758,29 @@ async function updateAdminStats() {
             document.getElementById('stat-neuro').textContent = data.neuro || 0;
             document.getElementById('stat-familiar').textContent = data.familiar || 0;
 
-            // 2. Actualizar Anillos SVG (Neurología y Med. Familiar)
-            const updateRing = (id, percent) => {
-                const ring = document.getElementById(id);
-                if (!ring) return;
-                const circumference = 2 * Math.PI * 38;
-                const offset = circumference - (percent / 100) * circumference;
-                ring.style.strokeDashoffset = offset;
-            };
-
+            // Actualizar Anillos de colores
             const totalParaAnillos = data.total || 1;
+            const updateRing = (id, val) => {
+                const ring = document.getElementById(id);
+                if (ring) {
+                    const circ = 2 * Math.PI * 38;
+                    ring.style.strokeDasharray = `${circ} ${circ}`;
+                    ring.style.strokeDashoffset = circ - (val / 100) * circ;
+                }
+            };
             updateRing('ring-neuro', (data.neuro / totalParaAnillos) * 100);
             updateRing('ring-familiar', (data.familiar / totalParaAnillos) * 100);
 
-            // 3. RENDERIZAR GRÁFICOS (Aquí es donde se "pintan" las barras y líneas)
-            if (data.chart_data) {
+            // DIBUJAR GRÁFICOS (Barras y Líneas)
+            if (data.chart_data && Object.keys(data.chart_data).length > 0) {
                 renderAdminChart(data.chart_data); 
             }
-            if (data.trend_data) {
+            if (data.trend_data && Object.keys(data.trend_data).length > 0) {
                 renderTrendChart(data.trend_data);
             }
         }
     } catch (error) {
-        console.error("❌ Error en la carga de estadísticas:", error);
+        console.error("Error cargando estadísticas:", error);
     }
 }
         // 2. Gráfico de Tendencia por Avance (Línea)

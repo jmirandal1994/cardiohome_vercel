@@ -2741,76 +2741,76 @@ async function exportarReporteProyecto() {
 
 let adminChartInstance = null;
 
+// 1. Actualizar la función de estadísticas para procesar tendencia y barras
 async function updateAdminStats() {
     const projectId = document.getElementById('admin-project-filter').value;
     
-    // 1. Efecto visual de carga
-    const ids = ['stat-total', 'stat-completed', 'stat-pending', 'stat-percent', 'stat-neuro', 'stat-familiar'];
-    ids.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.opacity = '0.5';
-    });
-
     try {
-        // 2. Llamada a la API
         const response = await fetch(`/api/admin/stats/${projectId}`);
         const data = await response.json();
 
-        // --- AQUÍ VA EL BLOQUE DATA.SUCCESS ---
         if (data.success) {
-            // Actualizar textos principales
+            // Actualizar Tarjetas (Tus contadores de Neurología y Familiar se mantienen)
             document.getElementById('stat-total').textContent = data.total;
             document.getElementById('stat-completed').textContent = data.completed;
             document.getElementById('stat-pending').textContent = data.pending;
             document.getElementById('stat-percent').textContent = data.percent;
-            
-            // Actualizar contadores de especialidad
-            if(document.getElementById('stat-neuro')) 
-                document.getElementById('stat-neuro').textContent = data.neuro || 0;
-            if(document.getElementById('stat-familiar')) 
-                document.getElementById('stat-familiar').textContent = data.familiar || 0;
+            document.getElementById('stat-neuro').textContent = data.neuro;
+            document.getElementById('stat-familiar').textContent = data.familiar;
 
-            // -------------------------------------------------------
-            // LÓGICA DE ANILLOS SVG (EL BLOQUE QUE PREGUNTASTE)
-            // -------------------------------------------------------
-            const totalParaAnillos = data.total || 1; // Evitar división por cero
-            const neuroPercent = (data.neuro / totalParaAnillos) * 100;
-            const familiarPercent = (data.familiar / totalParaAnillos) * 100;
+            // Actualizar Anillos
+            const totalParaAnillos = data.total || 1;
+            updateRing('ring-neuro', (data.neuro / totalParaAnillos) * 100);
+            updateRing('ring-familiar', (data.familiar / totalParaAnillos) * 100);
 
-            const updateRing = (id, percent) => {
-                const ring = document.getElementById(id);
-                if (!ring) return;
-                const radius = 38;
-                const circumference = 2 * Math.PI * radius;
-                const offset = circumference - (percent / 100) * circumference;
-                ring.style.strokeDasharray = `${circumference} ${circumference}`;
-                ring.style.strokeDashoffset = offset;
-            };
-
-            updateRing('ring-neuro', neuroPercent);
-            updateRing('ring-familiar', familiarPercent);
-            // -------------------------------------------------------
-
-            // Renderizar Gráficos
-            renderAdminChart(data.chart_data);
-            
-            // Restaurar opacidad
-            ids.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.style.opacity = '1';
-            });
+            // RENDERIZAR GRÁFICOS
+            renderAdminChart(data.chart_data); // Barras de productividad
+            renderTrendChart(data.trend_data); // Línea de tendencia
         }
     } catch (error) {
-        console.error("❌ Error en la carga de estadísticas:", error);
+        console.error("❌ Error en la carga:", error);
     }
 }
-        
+
+// 2. Gráfico de Tendencia por Avance (Línea)
+let trendChartInstance = null;
+function renderTrendChart(trendData) {
+    const ctx = document.getElementById('adminTrendChart').getContext('2d');
+    
+    // Ordenar fechas para que la línea tenga sentido cronológico
+    const sortedDates = Object.keys(trendData).sort();
+    const values = sortedDates.map(d => trendData[d]);
+
+    if (trendChartInstance) trendChartInstance.destroy();
+
+    trendChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: sortedDates,
+            datasets: [{
+                label: 'Evaluaciones Realizadas',
+                data: values,
+                borderColor: '#2ECC71',
+                backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+}
+
+// 3. Gráfico de Productividad con opción de Reporte
 function renderAdminChart(chartData) {
     const canvas = document.getElementById('adminPerformanceChart');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     
-    // Mapear nombres de doctoras
     const labels = Object.keys(chartData).map(id => {
         const user = all_users_for_lookup.find(u => u.id == id);
         return user ? user.usuario : 'Desconocida';
@@ -2824,37 +2824,50 @@ function renderAdminChart(chartData) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'Evaluaciones Realizadas',
+                label: 'Evaluaciones',
                 data: values,
                 backgroundColor: '#1C67A3',
-                borderRadius: 8,
-                barThickness: 30
+                borderRadius: 8
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            onClick: (e, elements) => {
+                if (elements.length > 0) {
+                    const index = elements[0].index;
+                    const doctorId = Object.keys(chartData)[index];
+                    descargarReporteProfesional(doctorId, labels[index]);
+                }
             },
-            plugins: { 
-                legend: { display: false },
-                tooltip: { backgroundColor: '#0A3D62' }
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        afterLabel: () => 'Haga clic para ver reporte de este profesional'
+                    }
+                }
             }
         }
     });
 }
 
-// Escuchador para carga inicial al hacer clic en el menú
-document.addEventListener('DOMContentLoaded', function() {
-    const adminPerfLink = document.querySelector('a[data-section="admin-performance"]');
-    if (adminPerfLink) {
-        adminPerfLink.addEventListener('click', () => {
-            // Pequeña pausa para que el DOM se muestre antes de calcular el gráfico
-            setTimeout(updateAdminStats, 250);
+// Función para descargar el reporte del profesional seleccionado
+async function descargarReporteProfesional(doctorId, nombreDoctora) {
+    const projectId = document.getElementById('admin-project-filter').value;
+    const res = await fetch(`/api/admin/reporte_profesional/${doctorId}/${projectId}`);
+    const data = await res.json();
+    
+    if (data.success && data.data.length > 0) {
+        // Aquí podrías usar una lógica similar a exportarReporteProyecto para generar un PDF 
+        // con la lista de alumnos que esa doctora evaluó.
+        Swal.fire({
+            title: `Reporte de ${nombreDoctora}`,
+            text: `Ha realizado ${data.data.length} evaluaciones en este proyecto.`,
+            icon: 'info',
+            confirmButtonText: 'Cerrar'
         });
     }
-});
+}
         
     </script>
 </body>

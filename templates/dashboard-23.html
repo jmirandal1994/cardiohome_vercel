@@ -2750,29 +2750,40 @@ async function updateAdminStats() {
         const data = await response.json();
 
         if (data.success) {
-            // Actualizar Tarjetas (Tus contadores de Neurología y Familiar se mantienen)
+            // 1. Actualizar Tarjetas de texto
             document.getElementById('stat-total').textContent = data.total;
             document.getElementById('stat-completed').textContent = data.completed;
             document.getElementById('stat-pending').textContent = data.pending;
             document.getElementById('stat-percent').textContent = data.percent;
-            document.getElementById('stat-neuro').textContent = data.neuro;
-            document.getElementById('stat-familiar').textContent = data.familiar;
+            document.getElementById('stat-neuro').textContent = data.neuro || 0;
+            document.getElementById('stat-familiar').textContent = data.familiar || 0;
 
-            // Actualizar Anillos
+            // 2. Actualizar Anillos SVG (Neurología y Med. Familiar)
+            const updateRing = (id, percent) => {
+                const ring = document.getElementById(id);
+                if (!ring) return;
+                const circumference = 2 * Math.PI * 38;
+                const offset = circumference - (percent / 100) * circumference;
+                ring.style.strokeDashoffset = offset;
+            };
+
             const totalParaAnillos = data.total || 1;
             updateRing('ring-neuro', (data.neuro / totalParaAnillos) * 100);
             updateRing('ring-familiar', (data.familiar / totalParaAnillos) * 100);
 
-            // RENDERIZAR GRÁFICOS
-            renderAdminChart(data.chart_data); // Barras de productividad
-            renderTrendChart(data.trend_data); // Línea de tendencia
+            // 3. RENDERIZAR GRÁFICOS (Aquí es donde se "pintan" las barras y líneas)
+            if (data.chart_data) {
+                renderAdminChart(data.chart_data); 
+            }
+            if (data.trend_data) {
+                renderTrendChart(data.trend_data);
+            }
         }
     } catch (error) {
-        console.error("❌ Error en la carga:", error);
+        console.error("❌ Error en la carga de estadísticas:", error);
     }
 }
-
-// 2. Gráfico de Tendencia por Avance (Línea)
+        // 2. Gráfico de Tendencia por Avance (Línea)
 let trendChartInstance = null;
 function renderTrendChart(trendData) {
     const ctx = document.getElementById('adminTrendChart').getContext('2d');

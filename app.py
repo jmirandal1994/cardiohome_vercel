@@ -1319,7 +1319,6 @@ def get_admin_stats(project_id):
         return jsonify({"success": False, "message": "No autorizado"}), 403
 
     try:
-        # 1. Obtener las nóminas que pertenecen al proyecto
         if project_id == 'all':
             url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,tipo_nomina"
         else:
@@ -1328,21 +1327,17 @@ def get_admin_stats(project_id):
         res_n = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
         nominas = res_n.json() if res_n.ok else []
 
-        # Mantenemos tus contadores originales intactos
         total_evaluados = 0
         total_pendientes = 0
         neuro_count = 0
         familiar_count = 0
-        
-        # Nuevos objetos para los gráficos
-        doctor_stats = {}
-        trend_stats = {}
+        doctor_stats = {} # <--- Objeto para las barras
 
-        # 2. Recorrer cada nómina para los contadores de especialidad (Tu lógica original)
         for nom in nominas:
             nom_id = nom.get("id")
             tipo = (nom.get("tipo_nomina") or "").lower().strip()
             
+            # Tu lógica de conteo existente
             evaluados = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.true")
             pendientes = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.false")
 
@@ -1354,26 +1349,15 @@ def get_admin_stats(project_id):
             elif "familiar" in tipo or "medicina" in tipo:
                 familiar_count += evaluados
 
-        # 3. Lógica Adicional para Gráficos (Productividad y Tendencia)
-        nomina_ids = [n['id'] for n in nominas]
-        if nomina_ids:
-            # Consultamos los detalles de los evaluados para agrupar por doctora y fecha
-            ids_str = ",".join(nomina_ids)
-            url_detalles = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=in.({ids_str})&evaluado_flag=eq.true&select=doctora_evaluadora_id,fecha_relleno"
-            res_detalles = requests.get(url_detalles, headers=SUPABASE_SERVICE_HEADERS)
-            
-            if res_detalles.ok:
-                estudiantes_evaluados = res_detalles.json()
-                for est in estudiantes_evaluados:
-                    # Agrupar por Doctora
-                    doc_id = est.get('doctora_evaluadora_id')
-                    if doc_id:
-                        doctor_stats[doc_id] = doctor_stats.get(doc_id, 0) + 1
-                    
-                    # Agrupar por Fecha para Tendencia
-                    fecha = est.get('fecha_relleno')
-                    if fecha:
-                        trend_stats[fecha] = trend_stats.get(fecha, 0) + 1
+            # NUEVO: Conteo por profesional para este proyecto/nómina
+            if evaluados > 0:
+                url_detalles = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nom_id}&evaluado_flag=eq.true&select=doctora_evaluadora_id"
+                res_detalles = requests.get(url_detalles, headers=SUPABASE_SERVICE_HEADERS)
+                if res_detalles.ok:
+                    for est in res_detalles.json():
+                        doc_id = est.get('doctora_evaluadora_id')
+                        if doc_id:
+                            doctor_stats[doc_id] = doctor_stats.get(doc_id, 0) + 1
 
         total_alumnos = total_evaluados + total_pendientes
         percent = round((total_evaluados / total_alumnos * 100), 1) if total_alumnos > 0 else 0
@@ -1386,13 +1370,11 @@ def get_admin_stats(project_id):
             "percent": f"{percent}%",
             "neuro": neuro_count,
             "familiar": familiar_count,
-            "chart_data": doctor_stats, # Ahora envía los datos de las doctoras
-            "trend_data": trend_stats   # Ahora envía los datos de las fechas
+            "chart_data": doctor_stats # <--- Ahora sí enviamos datos
         })
     except Exception as e:
-        print(f"❌ Error en stats premium: {e}")
         return jsonify({"success": False, "error": str(e)})
-
+        
 # --- NUEVA RUTA: REPORTE POR PROFESIONAL Y PROYECTO ---
 @app.route('/api/admin/reporte_profesional/<doctor_id>/<project_id>')
 def reporte_profesional(doctor_id, project_id):

@@ -1319,6 +1319,7 @@ def get_admin_stats(project_id):
         return jsonify({"success": False, "message": "No autorizado"}), 403
 
     try:
+        # 1. Obtener nóminas del proyecto (Tu lógica original)
         if project_id == 'all':
             url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,tipo_nomina"
         else:
@@ -1331,13 +1332,14 @@ def get_admin_stats(project_id):
         total_pendientes = 0
         neuro_count = 0
         familiar_count = 0
-        doctor_stats = {} # <--- Objeto para las barras
+        doctor_stats = {} # <--- Aquí guardaremos la productividad de cada doctora
 
+        # 2. Recorrer nóminas para contadores y productividad
         for nom in nominas:
             nom_id = nom.get("id")
             tipo = (nom.get("tipo_nomina") or "").lower().strip()
             
-            # Tu lógica de conteo existente
+            # Conteo de totales (Tu lógica original)
             evaluados = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.true")
             pendientes = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.false")
 
@@ -1349,7 +1351,7 @@ def get_admin_stats(project_id):
             elif "familiar" in tipo or "medicina" in tipo:
                 familiar_count += evaluados
 
-            # NUEVO: Conteo por profesional para este proyecto/nómina
+            # NUEVO: Si hay evaluados, buscamos quién los hizo para el gráfico de barras
             if evaluados > 0:
                 url_detalles = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nom_id}&evaluado_flag=eq.true&select=doctora_evaluadora_id"
                 res_detalles = requests.get(url_detalles, headers=SUPABASE_SERVICE_HEADERS)
@@ -1370,11 +1372,13 @@ def get_admin_stats(project_id):
             "percent": f"{percent}%",
             "neuro": neuro_count,
             "familiar": familiar_count,
-            "chart_data": doctor_stats # <--- Ahora sí enviamos datos
+            "chart_data": doctor_stats # <--- Enviamos los datos procesados a las barras
         })
     except Exception as e:
+        print(f"❌ Error en stats: {e}")
         return jsonify({"success": False, "error": str(e)})
-        
+
+
 # --- NUEVA RUTA: REPORTE POR PROFESIONAL Y PROYECTO ---
 @app.route('/api/admin/reporte_profesional/<doctor_id>/<project_id>')
 def reporte_profesional(doctor_id, project_id):

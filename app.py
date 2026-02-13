@@ -3048,10 +3048,14 @@ def generar_pdfs_visibles():
                     "sexo_m": sexo_m_pdf,
                 }
             elif form_type == 'medicina_familiar':
-                 diagnostico_unificado_valor = get_form_field_value('diagnostico_unificado', request.form)
-                 derivaciones = get_form_field_value('derivaciones', request.form)    
+                # Capturamos los valores necesarios para este bloque
+                # Nota: Si vienen de la base de datos, usamos est.get. 
+                # Si vienen de un formulario enviado en el momento, usamos request.form
                 
-                 campos = {
+                diag_valor = est.get('diagnostico_unificado') or get_form_field_value('diagnostico_unificado', request.form)
+                deriv_valor = est.get('derivaciones') or get_form_field_value('derivaciones', request.form)
+                
+                campos = {
                     "nombre": nombre, 
                     "rut": rut, 
                     "fecha_nacimiento": fecha_nac_formato, 
@@ -3059,26 +3063,26 @@ def generar_pdfs_visibles():
                     "nacionalidad": nacionalidad,
                     "sexo_f": sexo_f_pdf, 
                     "sexo_m": sexo_m_pdf,
-                    "diagnostico_1": diagnostico_unificado_valor, 
-                    "diagnostico_2": diagnostico_unificado_valor, 
-                    "diagnostico_complementario": get_form_field_value('diagnostico_complementario', request.form),
-                    "clasificacion": get_form_field_value('clasificacion_imc', request.form),
-                    "indicaciones": get_form_field_value('indicaciones', request.form), 
-                    "derivaciones": derivaciones, 
-                    "fecha_evaluacion": fecha_evaluacion_formatted, 
+                    "diagnostico_1": diag_valor, 
+                    "diagnostico_2": diag_valor, 
+                    "diagnostico_complementario": est.get('diagnostico_complementario') or get_form_field_value('diagnostico_complementario', request.form),
+                    "clasificacion": est.get('clasificacion_imc') or get_form_field_value('clasificacion_imc', request.form),
+                    "indicaciones": est.get('indicaciones') or get_form_field_value('indicaciones', request.form), 
+                    "derivaciones": deriv_valor, 
+                    "fecha_evaluacion": fecha_evaluacion_from_db_formatted, # Corregido el nombre de la variable
                     "fecha_reevaluacion": fecha_reeval_pdf,
-                    "altura": get_form_field_value('altura', request.form), 
-                    "peso": get_form_field_value('peso', request.form), 
-                    "imc": get_form_field_value('imc', request.form),
-                    "observacion_1": get_form_field_value('observacion_1', request.form), 
-                    "observacion_2": get_form_field_value('observacion_2', request.form),
-                    "observacion_3": get_form_field_value('observacion_3', request.form), 
-                    "observacion_4": get_form_field_value('observacion_4', request.form),
-                    "observacion_5": get_form_field_value('observacion_5', request.form), 
-                    "observacion_6": get_form_field_value('observacion_6', request.form),
-                    "observacion_7": get_form_field_value('observacion_7', request.form),
-        
-        # Campos "check" con tus nombres de clave originales
+                    "altura": est.get('altura') or get_form_field_value('altura', request.form), 
+                    "peso": est.get('peso') or get_form_field_value('peso', request.form), 
+                    "imc": est.get('imc') or get_form_field_value('imc', request.form),
+                    "observacion_1": est.get('observacion_1') or get_form_field_value('observacion_1', request.form), 
+                    "observacion_2": est.get('observacion_2') or get_form_field_value('observacion_2', request.form),
+                    "observacion_3": est.get('observacion_3') or get_form_field_value('observacion_3', request.form), 
+                    "observacion_4": est.get('observacion_4') or get_form_field_value('observacion_4', request.form),
+                    "observacion_5": est.get('observacion_5') or get_form_field_value('observacion_5', request.form), 
+                    "observacion_6": est.get('observacion_6') or get_form_field_value('observacion_6', request.form),
+                    "observacion_7": est.get('observacion_7') or get_form_field_value('observacion_7', request.form),
+                    
+                    # Para los checks, asumo que map_check_as_text mira en request.form o est
                     "check_cesarea": map_check_as_text('check_cesarea'),
                     "check_atermino": map_check_as_text('check_atermino'),
                     "check_vaginal": map_check_as_text('check_vaginal'),
@@ -3103,8 +3107,8 @@ def generar_pdfs_visibles():
                     "check_retenciondental": map_check_as_text('check_retenciondental'),
                     "check_frenillolingual": map_check_as_text('check_frenillolingual'),
                     "check_hipertrofia": map_check_as_text('check_hipertrofia'),
-                 }
-    
+                }
+                
             if "/AcroForm" not in writer_single_pdf._root_object:
                 writer_single_pdf._root_object.update({
                     NameObject("/AcroForm"): DictionaryObject()

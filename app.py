@@ -2947,85 +2947,73 @@ def generar_pdfs_visibles():
     student_ids = data.get('student_ids')
 
     if not nomina_id or not student_ids or not isinstance(student_ids, list):
-        return jsonify({"success": False, "message": "Datos de entrada inválidos para la generación de PDFs."}), 400
+        return jsonify({"success": False, "message": "Datos de entrada inválidos."}), 400
+
+    # --- FUNCIONES INTERNAS PARA EVITAR ERROS DE "NOT DEFINED" ---
+    def mapear_check_interno(campo_nombre, diccionario_est):
+        """Busca el valor en el diccionario del estudiante y devuelve 'X' si es verdadero."""
+        val = diccionario_est.get(campo_nombre)
+        if val is True or val in ['on', 'X', 'true', 'True', 1, '1']:
+            return "X"
+        return ""
 
     merged_pdf_writer = PdfWriter()
-    # Obtener el form_type y doctora_id_para_formulario de la sesión para saber qué PDF base usar
     form_type = session.get('current_form_type', 'neurologia') 
     doctora_id_para_formulario = session.get('doctora_id_para_formulario')
 
-    pdf_base_path = ''
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    
     if form_type == 'neurologia':
         if doctora_id_para_formulario:
             pdf_base_path = get_doctor_specific_neurologia_pdf(doctora_id_para_formulario)
         else:
-            # Asegúrate de que PDF_BASE_NEUROLOGIA sea una ruta absoluta si no está en el mismo directorio
-            base_dir = os.path.dirname(os.path.abspath(__file__))
             pdf_base_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
     elif form_type == 'medicina_familiar':
-        # Asegúrate de que PDF_BASE_FAMILIAR sea una ruta absoluta si no está en el mismo directorio
-        base_dir = os.path.dirname(os.path.abspath(__file__))
         pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
     else:
-        return jsonify({"success": False, "message": "Tipo de formulario no reconocido para generar PDF."}), 400
+        return jsonify({"success": False, "message": "Tipo de formulario no reconocido."}), 400
 
     if not os.path.exists(pdf_base_path):
-        return jsonify({"success": False, "message": f"Error interno: Archivo base del formulario '{pdf_base_path}' no encontrado en el servidor."}), 500
+        return jsonify({"success": False, "message": "Archivo base no encontrado."}), 500
 
     try:
         for student_id in student_ids:
-            # Recuperar los datos del estudiante de la base de datos
             url_student_data = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{student_id}&select=*"
             res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
             res_student.raise_for_status()
             student_data = res_student.json()
 
             if not student_data:
-                print(f"ADVERTENCIA: Estudiante con ID {student_id} no encontrado. Saltando.")
                 continue
 
             est = student_data[0] 
 
-            # Preparar los datos para el PDF, asegurando que los Nones sean cadenas vacías
-            nombre = est.get('nombre', '')
-            # APLICA EL FORMATO AL RUT AQUÍ PARA PDFS VISIBLES
-            rut = format_rut_python(est.get('rut', ''))
+            # Preparación de datos básicos
+            nombre_est = est.get('nombre', '')
+            rut_est = format_rut_python(est.get('rut', ''))
+            nacionalidad_est = est.get('nacionalidad', '')
+            edad_est = est.get('edad', '')
             
-            fecha_nac_formato = ''
+            # Formateo de fechas (Uso de variables consistentes)
+            fecha_nac_pdf = ''
             if est.get('fecha_nacimiento'):
                 try:
-                    fecha_nac_formato = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').strftime('%d/%m/%Y')
-                except ValueError:
-                    pass 
+                    fecha_nac_pdf = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').strftime('%d/%m/%Y')
+                except: pass
 
-            edad = est.get('edad', '')
-            nacionalidad = est.get('nacionalidad', '')
-            
-            sexo_f_pdf = ""
-            sexo_m_pdf = ""
-            if form_type == 'neurologia':
-                sexo_f_pdf = "X" if est.get('sexo') == "F" else ""
-                sexo_m_pdf = "X" if est.get('sexo') == "M" else ""
-            elif form_type == 'medicina_familiar':
-                sexo_f_pdf = "X" if est.get('genero_f') else ""
-                sexo_m_pdf = "X" if est.get('genero_m') else ""
-
-
-            fecha_evaluacion_from_db_formatted = ''
+            fecha_eval_pdf = ''
             if est.get('fecha_evaluacion'):
                 try:
-                    fecha_evaluacion_from_db_formatted = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
-                except ValueError:
-                    pass
+                    fecha_eval_pdf = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
+                except: pass
 
             fecha_reeval_pdf = ''
             if est.get('fecha_reevaluacion'):
                 try:
                     fecha_reeval_pdf = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y')
-                except ValueError:
-                    pass
+                except: pass
 
-
+            # Procesar PDF
             reader = PdfReader(pdf_base_path)
             writer_single_pdf = PdfWriter()
             writer_single_pdf.add_page(reader.pages[0])
@@ -3033,115 +3021,83 @@ def generar_pdfs_visibles():
             campos = {}
             if form_type == 'neurologia':
                 campos = {
-                    "nombre": nombre,
-                    "rut": rut, # AHORA 'rut' YA VIENE FORMATEADO
-                    "fecha_nacimiento": fecha_nac_formato, 
-                    "nacionalidad": nacionalidad,
-                    "edad": edad,
-                    "diagnostico_1": est.get('diagnostico', ''),
-                    "diagnostico_2": est.get('diagnostico', ''), 
-                    "estado_general": est.get('estado_general', ''),
-                    "fecha_evaluacion": fecha_evaluacion_from_db_formatted, 
-                    "fecha_reevaluacion": fecha_reeval_pdf,
-                    "derivaciones": est.get('derivaciones', ''),
-                    "sexo_f": sexo_f_pdf,
-                    "sexo_m": sexo_m_pdf,
+                    "nombre": nombre_est, "rut": rut_est, "fecha_nacimiento": fecha_nac_pdf, 
+                    "nacionalidad": nacionalidad_est, "edad": edad_est,
+                    "diagnostico_1": est.get('diagnostico', ''), "diagnostico_2": est.get('diagnostico', ''), 
+                    "estado_general": est.get('estado_general', ''), "fecha_evaluacion": fecha_eval_pdf, 
+                    "fecha_reevaluacion": fecha_reeval_pdf, "derivaciones": est.get('derivaciones', ''),
+                    "sexo_f": "X" if est.get('sexo') == "F" else "", "sexo_m": "X" if est.get('sexo') == "M" else "",
                 }
             elif form_type == 'medicina_familiar':
-                # Capturamos los valores necesarios para este bloque
-                # Nota: Si vienen de la base de datos, usamos est.get. 
-                # Si vienen de un formulario enviado en el momento, usamos request.form
-                
-                diag_valor = est.get('diagnostico_unificado') or get_form_field_value('diagnostico_unificado', request.form)
-                deriv_valor = est.get('derivaciones') or get_form_field_value('derivaciones', request.form)
+                # Nota: En esta ruta masiva usamos los datos de la DB (est.get)
+                diag_unif = est.get('diagnostico_1') or est.get('diagnostico_unificado', '')
                 
                 campos = {
-                    "nombre": nombre, 
-                    "rut": rut, 
-                    "fecha_nacimiento": fecha_nac_formato, 
-                    "edad": edad, 
-                    "nacionalidad": nacionalidad,
-                    "sexo_f": sexo_f_pdf, 
-                    "sexo_m": sexo_m_pdf,
-                    "diagnostico_1": diag_valor, 
-                    "diagnostico_2": diag_valor, 
-                    "diagnostico_complementario": est.get('diagnostico_complementario') or get_form_field_value('diagnostico_complementario', request.form),
-                    "clasificacion": est.get('clasificacion_imc') or get_form_field_value('clasificacion_imc', request.form),
-                    "indicaciones": est.get('indicaciones') or get_form_field_value('indicaciones', request.form), 
-                    "derivaciones": deriv_valor, 
-                    "fecha_evaluacion": fecha_evaluacion_from_db_formatted, # Corregido el nombre de la variable
+                    "nombre": nombre_est, "rut": rut_est, "fecha_nacimiento": fecha_nac_pdf, 
+                    "edad": edad_est, "nacionalidad": nacionalidad_est,
+                    "sexo_f": "X" if est.get('sexo') == "F" else "", "sexo_m": "X" if est.get('sexo') == "M" else "",
+                    "diagnostico_1": diag_unif, "diagnostico_2": diag_unif, 
+                    "diagnostico_complementario": est.get('diagnostico_complementario', ''),
+                    "clasificacion": est.get('clasificacion_imc', '') or est.get('clasificacion', ''),
+                    "indicaciones": est.get('indicaciones', ''), 
+                    "derivaciones": est.get('derivaciones', ''), 
+                    "fecha_evaluacion": fecha_eval_pdf, 
                     "fecha_reevaluacion": fecha_reeval_pdf,
-                    "altura": est.get('altura') or get_form_field_value('altura', request.form), 
-                    "peso": est.get('peso') or get_form_field_value('peso', request.form), 
-                    "imc": est.get('imc') or get_form_field_value('imc', request.form),
-                    "observacion_1": est.get('observacion_1') or get_form_field_value('observacion_1', request.form), 
-                    "observacion_2": est.get('observacion_2') or get_form_field_value('observacion_2', request.form),
-                    "observacion_3": est.get('observacion_3') or get_form_field_value('observacion_3', request.form), 
-                    "observacion_4": est.get('observacion_4') or get_form_field_value('observacion_4', request.form),
-                    "observacion_5": est.get('observacion_5') or get_form_field_value('observacion_5', request.form), 
-                    "observacion_6": est.get('observacion_6') or get_form_field_value('observacion_6', request.form),
-                    "observacion_7": est.get('observacion_7') or get_form_field_value('observacion_7', request.form),
+                    "altura": est.get('altura', ''), "peso": est.get('peso', ''), "imc": est.get('imc', ''),
+                    "observacion_1": est.get('observacion_1', ''), "observacion_2": est.get('observacion_2', ''),
+                    "observacion_3": est.get('observacion_3', ''), "observacion_4": est.get('observacion_4', ''),
+                    "observacion_5": est.get('observacion_5', ''), "observacion_6": est.get('observacion_6', ''),
+                    "observacion_7": est.get('observacion_7', ''),
                     
-                    # Para los checks, asumo que map_check_as_text mira en request.form o est
-                    "check_cesarea": map_check_as_text('check_cesarea'),
-                    "check_atermino": map_check_as_text('check_atermino'),
-                    "check_vaginal": map_check_as_text('check_vaginal'),
-                    "check_prematuro": map_check_as_text('check_prematuro'),
-                    "check_acorde": map_check_as_text('check_acorde'),
-                    "check_retraso": map_check_as_text('check_retraso'),
-                    "check_retrasogeneralizado": map_check_as_text('check_retrasogeneralizado'),
-                    "check_esquemac": map_check_as_text('check_esquemac'),
-                    "check_esquemai": map_check_as_text('check_esquemai'),
-                    "check_alergiano": map_check_as_text('check_alergiano'),
-                    "check_alergiasi": map_check_as_text('check_alergiasi'),
-                    "check_cirugiano": map_check_as_text('check_cirugiano'),
-                    "check_cirugiasi": map_check_as_text('check_cirugiasi'),
-                    "check_visionsinalteracion": map_check_as_text('check_visionsinalteracion'),
-                    "check_visionrefraccion": map_check_as_text('check_visionrefraccion'),
-                    "check_audicionnormal": map_check_as_text('check_audicionnormal'),
-                    "check_hipoacusia": map_check_as_text('check_hipoacusia'),
-                    "check_tapondecerumen": map_check_as_text('check_tapondecerumen'),
-                    "check_sinhallazgos": map_check_as_text('check_sinhallazgos'),
-                    "check_caries": map_check_as_text('check_caries'),
-                    "check_apinamientodental": map_check_as_text('check_apinamientodental'),
-                    "check_retenciondental": map_check_as_text('check_retenciondental'),
-                    "check_frenillolingual": map_check_as_text('check_frenillolingual'),
-                    "check_hipertrofia": map_check_as_text('check_hipertrofia'),
+                    # Uso de la función interna corregida
+                    "check_cesarea": mapear_check_interno('check_cesarea', est),
+                    "check_atermino": mapear_check_interno('check_atermino', est),
+                    "check_vaginal": mapear_check_interno('check_vaginal', est),
+                    "check_prematuro": mapear_check_interno('check_prematuro', est),
+                    "check_acorde": mapear_check_interno('check_acorde', est),
+                    "check_retraso": mapear_check_interno('check_retraso', est),
+                    "check_retrasogeneralizado": mapear_check_interno('check_retrasogeneralizado', est),
+                    "check_esquemac": mapear_check_interno('check_esquemac', est),
+                    "check_esquemai": mapear_check_interno('check_esquemai', est),
+                    "check_alergiano": mapear_check_interno('check_alergiano', est),
+                    "check_alergiasi": mapear_check_interno('check_alergiasi', est),
+                    "check_cirugiano": mapear_check_interno('check_cirugiano', est),
+                    "check_cirugiasi": mapear_check_interno('check_cirugiasi', est),
+                    "check_visionsinalteracion": mapear_check_interno('check_visionsinalteracion', est),
+                    "check_visionrefraccion": mapear_check_interno('check_visionrefraccion', est),
+                    "check_audicionnormal": mapear_check_interno('check_audicionnormal', est),
+                    "check_hipoacusia": mapear_check_interno('check_hipoacusia', est),
+                    "check_tapondecerumen": mapear_check_interno('check_tapondecerumen', est),
+                    "check_sinhallazgos": mapear_check_interno('check_sinhallazgos', est),
+                    "check_caries": mapear_check_interno('check_caries', est),
+                    "check_apinamientodental": mapear_check_interno('check_apinamientodental', est),
+                    "check_retenciondental": mapear_check_interno('check_retenciondental', est),
+                    "check_frenillolingual": mapear_check_interno('check_frenillolingual', est),
+                    "check_hipertrofia": mapear_check_interno('check_hipertrofia', est),
                 }
-                
+
             if "/AcroForm" not in writer_single_pdf._root_object:
-                writer_single_pdf._root_object.update({
-                    NameObject("/AcroForm"): DictionaryObject()
-                })
+                writer_single_pdf._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
+            
             writer_single_pdf.update_page_form_field_values(writer_single_pdf.pages[0], campos)
-            writer_single_pdf._root_object["/AcroForm"].update({
-                NameObject("/NeedAppearances"): BooleanObject(True)
-            })
+            writer_single_pdf._root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
 
             temp_output = io.BytesIO()
             writer_single_pdf.write(temp_output)
             temp_output.seek(0)
-
             temp_reader = PdfReader(temp_output)
-            for page_num in range(len(temp_reader.pages)):
-                merged_pdf_writer.add_page(temp_reader.pages[page_num])
+            merged_pdf_writer.add_page(temp_reader.pages[0])
 
         final_output_pdf = io.BytesIO()
         merged_pdf_writer.write(final_output_pdf)
         final_output_pdf.seek(0)
 
-        establecimiento_nombre = session.get('establecimiento_nombre', 'Nomina_Desconocida').replace(' ', '_')
-        pdf_filename = f"Formularios_Visibles_{establecimiento_nombre}_{date.today().strftime('%Y%m%d')}.pdf"
-
+        pdf_filename = f"PDFs_Visibles_{date.today().strftime('%Y%m%d')}.pdf"
         return send_file(final_output_pdf, as_attachment=False, download_name=pdf_filename, mimetype='application/pdf')
 
-    except requests.exceptions.RequestException as e:
-        print(f"ERROR: Error de solicitud al obtener datos de estudiante para PDF combinado: {e}")
-        return jsonify({"success": False, "message": f"Error de conexión con Supabase al generar PDF: {str(e)}"}), 500
     except Exception as e:
-        print(f"ERROR: Error inesperado al generar PDFs visibles: {e}")
-        return jsonify({"success": False, "message": f"Error interno del servidor al generar PDFs: {str(e)}"}), 500
-
+        print(f"ERROR: {e}")
+        return jsonify({"success": False, "message": f"Error interno: {str(e)}"}), 500
 
 # --- Rutas de Eliminación (Solo para Admin) ---
 

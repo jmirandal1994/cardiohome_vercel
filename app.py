@@ -3049,7 +3049,8 @@ def generar_pdfs_visibles():
                 }
             elif form_type == 'medicina_familiar':
                  diagnostico_unificado_valor = get_form_field_value('diagnostico_unificado', request.form)
-    
+                 derivaciones = get_form_field_value('derivaciones', request.form)    
+                
                  campos = {
                     "nombre": nombre, 
                     "rut": rut, 

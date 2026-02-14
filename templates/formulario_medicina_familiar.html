@@ -16,20 +16,21 @@
             --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             
-            /* Colores sólidos */
+            /* Colores principales */
             --primary-color: #667eea;
             --primary-dark: #5568d3;
             --secondary-color: #764ba2;
+            --accent-blue: hsl(200, 70%, 55%);
             --accent-color: #4facfe;
             --success-color: #00f2fe;
             --danger-color: #f5576c;
+            --google-drive-blue: #4285F4;
+            --signature-purple: #8B5CF6;
             
-            /* Fondos */
+            /* Fondos y textos */
             --bg-primary: #f8f9ff;
             --bg-secondary: #ffffff;
             --bg-card: #ffffff;
-            
-            /* Textos */
             --text-dark: hsl(210, 10%, 15%);
             --text-primary: #2d3748;
             --text-secondary: #718096;
@@ -37,8 +38,8 @@
             
             /* Bordes y sombras */
             --border-color: #e2e8f0;
-            --border-radius-sm: 8px;
             --border-radius-base: 14px;
+            --border-radius-sm: 8px;
             --border-radius-md: 12px;
             --border-radius-lg: 16px;
             --border-radius-xl: 24px;
@@ -49,25 +50,17 @@
             --shadow-medium: rgba(0, 0, 0, 0.15);
             --shadow-lg: 0 10px 30px rgba(0,0,0,0.12);
             --shadow-strong: rgba(0, 0, 0, 0.25);
-            --shadow-xl: 0 20px 40px rgba(0,0,0,0.15);
             
             /* Transiciones */
             --transition-fast: 0.15s ease;
             --transition-base: 0.3s ease;
-            --transition-slow: 0.5s ease;
             
             /* Espaciado */
             --padding-base: 28px;
             --gap-base: 30px;
         }
 
-        /* ============================================
-           ESTILOS GLOBALES
-           ============================================ */
-        * {
-            box-sizing: border-box;
-        }
-
+        /* Estilos globales */
         body {
             font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
             background: linear-gradient(135deg, #f8f9ff 0%, #f0f4f8 100%);
@@ -83,9 +76,14 @@
             margin: 0;
         }
 
-        /* ============================================
-           HEADER MODERNO
-           ============================================ */
+        .main-content-wrapper {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+            flex-grow: 1;
+        }
+
+        /* Header mejorado */
         header {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
@@ -100,12 +98,11 @@
         header img {
             max-width: 150px;
             margin-bottom: 10px;
-            transition: transform var(--transition-base), box-shadow var(--transition-base);
+            transition: transform var(--transition-base);
         }
 
         header img:hover {
-            transform: scale(1.05) rotate(2deg);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            transform: scale(1.05);
         }
 
         header h1 {
@@ -118,7 +115,6 @@
             margin-top: 5px;
         }
 
-        /* Botones del header */
         .header-btn {
             position: absolute;
             top: 20px;
@@ -132,7 +128,6 @@
             gap: 8px;
             transition: all var(--transition-base);
             box-shadow: var(--shadow-md);
-            border: none;
         }
 
         .back-to-dashboard-btn {
@@ -157,19 +152,7 @@
             box-shadow: var(--shadow-lg);
         }
 
-        /* ============================================
-           CONTENEDOR PRINCIPAL
-           ============================================ */
-        .main-content-wrapper {
-            max-width: 1400px;
-            margin: 20px auto;
-            padding: 0 20px;
-            flex-grow: 1;
-        }
-
-        /* ============================================
-           CONTADOR DE EVALUACIONES
-           ============================================ */
+        /* Contador de evaluaciones mejorado */
         .evaluation-counter {
             background: var(--primary-gradient);
             border-radius: var(--border-radius-xl);
@@ -203,23 +186,16 @@
         }
 
         .evaluation-counter i {
-            font-size: 2.5rem;
-            animation: bounce 2s ease-in-out infinite;
+            font-size: 2rem;
             z-index: 1;
         }
 
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
         .evaluation-counter strong {
-            font-size: 2rem;
+            font-size: 1.8rem;
             font-weight: 800;
             padding: 0.5rem 1rem;
             background: rgba(255, 255, 255, 0.2);
             border-radius: var(--border-radius-md);
-            backdrop-filter: blur(10px);
             z-index: 1;
         }
 
@@ -227,12 +203,12 @@
             background: rgba(255, 255, 255, 0.9);
             color: var(--primary-color);
             border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: var(--border-radius-lg);
+            padding: 8px 15px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 0.95rem;
-            font-weight: 700;
-            margin-left: 1rem;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-left: 15px;
             transition: all var(--transition-base);
             z-index: 1;
         }
@@ -240,12 +216,9 @@
         .evaluation-counter button:hover {
             background: white;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
 
-        /* ============================================
-           BOTONES DE ACCIÓN
-           ============================================ */
+        /* Botones de acción */
         .action-buttons {
             display: flex;
             justify-content: center;
@@ -276,9 +249,7 @@
             box-shadow: var(--shadow-lg);
         }
 
-        /* ============================================
-           BUSCADOR Y FILTROS
-           ============================================ */
+        /* Buscador mejorado */
         #buscador {
             width: 100%;
             max-width: 600px;
@@ -299,6 +270,7 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
+        /* Filtros mejorados */
         .filter-group {
             display: flex;
             justify-content: center;
@@ -329,16 +301,10 @@
             width: 1.2rem;
             height: 1.2rem;
             accent-color: var(--primary-color);
+            cursor: pointer;
         }
 
-        .filter-group input[type="radio"]:checked + span {
-            color: var(--primary-color);
-            font-weight: 600;
-        }
-
-        /* ============================================
-           TARJETAS DE ESTUDIANTES
-           ============================================ */
+        /* Tarjetas de estudiantes mejoradas */
         .estudiante {
             background: var(--bg-card);
             border-radius: var(--border-radius-xl);
@@ -351,14 +317,8 @@
         }
 
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .estudiante:hover {
@@ -386,9 +346,9 @@
             display: none;
         }
 
-        /* Ícono de avatar circular */
+        /* Avatar circular con icono */
         .estudiante summary::before {
-            content: '007';
+            content: '\f007';
             font-family: 'Font Awesome 6 Free';
             font-weight: 900;
             width: 60px;
@@ -416,7 +376,6 @@
             color: var(--text-primary);
         }
 
-        /* Ícono de chevron */
         .chevron-icon {
             font-size: 1.5rem;
             color: var(--primary-color);
@@ -427,9 +386,34 @@
             transform: rotate(90deg);
         }
 
-        /* ============================================
-           BADGE DE ESTADO
-           ============================================ */
+        /* Badge de estado evaluado/pendiente */
+        .estudiante[data-evaluated-status="true"] summary::after {
+            content: '✓ Evaluado';
+            position: absolute;
+            right: 60px;
+            background: var(--success-gradient);
+            color: white;
+            padding: 8px 16px;
+            border-radius: var(--border-radius-md);
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .estudiante[data-evaluated-status="false"] summary::after {
+            content: '⏱ Pendiente';
+            position: absolute;
+            right: 60px;
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: var(--border-radius-md);
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Badge guardado */
         .badge {
             position: absolute;
             top: 10px;
@@ -450,38 +434,7 @@
             box-shadow: var(--shadow-md);
         }
 
-        /* Badge de evaluado en el summary */
-        .estudiante[data-evaluated-status="true"] summary::after {
-            content: '058';
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            position: absolute;
-            right: 60px;
-            background: var(--success-gradient);
-            color: white;
-            padding: 8px 16px;
-            border-radius: var(--border-radius-md);
-            font-size: 0.9rem;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .estudiante[data-evaluated-status="false"] summary::after {
-            content: '017';
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 400;
-            position: absolute;
-            right: 60px;
-            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-            color: white;
-            padding: 8px 16px;
-            border-radius: var(--border-radius-md);
-            font-size: 0.9rem;
-            box-shadow: var(--shadow-sm);
-        }
-
-        /* ============================================
-           CONTENEDOR DEL FORMULARIO
-           ============================================ */
+        /* Contenedor del formulario */
         .container {
             display: flex;
             gap: 30px;
@@ -541,9 +494,7 @@
             box-shadow: var(--shadow-md);
         }
 
-        /* ============================================
-           SECCIONES DEL FORMULARIO
-           ============================================ */
+        /* Títulos de sección */
         .section-title {
             font-size: 1.3rem;
             font-weight: 700;
@@ -551,21 +502,9 @@
             margin: 2rem 0 1.5rem;
             padding-bottom: 0.75rem;
             border-bottom: 3px solid var(--primary-color);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
         }
 
-        .section-title::before {
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            color: var(--primary-color);
-            font-size: 1.5rem;
-        }
-
-        /* ============================================
-           CAMPOS DEL FORMULARIO
-           ============================================ */
+        /* Campos de formulario */
         label {
             display: block;
             font-weight: 600;
@@ -618,9 +557,7 @@
             padding-right: 3rem;
         }
 
-        /* ============================================
-           CHECKBOXES MODERNOS
-           ============================================ */
+        /* Checkboxes mejorados */
         .checkbox-group {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -657,9 +594,7 @@
             accent-color: var(--accent-color);
         }
 
-        /* ============================================
-           BOTONES
-           ============================================ */
+        /* Botones */
         .button-group {
             display: flex;
             gap: 1rem;
@@ -714,9 +649,7 @@
             box-shadow: var(--shadow-lg);
         }
 
-        /* ============================================
-           FOOTER
-           ============================================ */
+        /* Footer */
         footer {
             text-align: center;
             padding: 20px;
@@ -725,9 +658,7 @@
             font-size: 0.9rem;
         }
 
-        /* ============================================
-           MENSAJES FLASH
-           ============================================ */
+        /* Mensajes flash */
         .flash-messages {
             list-style: none;
             padding: 0;
@@ -753,23 +684,17 @@
             color: #991b1b;
         }
 
-        /* ============================================
-           RESPONSIVE DESIGN
-           ============================================ */
+        /* Checkbox preview group */
+        .checkbox-preview-group p {
+            margin-left: 20px;
+        }
+
+        /* Responsive */
         @media (max-width: 768px) {
-            body {
-                padding: 15px;
-            }
-
-            .main-content-wrapper {
-                margin: 15px auto;
-                padding: 0 10px;
-            }
-
-            header h1 {
-                font-size: 1.5rem;
-            }
-
+            body { padding: 15px; }
+            .main-content-wrapper { margin: 15px auto; padding: 0 10px; }
+            header h1 { font-size: 1.5rem; }
+            
             .header-btn {
                 position: static;
                 margin-bottom: 10px;
@@ -779,54 +704,23 @@
                 display: flex;
                 justify-content: center;
             }
-
-            .action-buttons button {
-                width: 100%;
-            }
-
-            .filter-group {
-                flex-direction: column;
-                gap: 10px;
-                align-items: stretch;
-            }
-
-            .filter-group label {
-                width: 100%;
-                justify-content: center;
-            }
-
-            header {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-            }
-
-            #buscador {
-                max-width: 100%;
-            }
-
-            .container {
-                flex-direction: column;
-                gap: 20px;
-                padding: 15px;
-            }
-
-            .formulario,
-            .preview {
+            
+            .action-buttons button { width: 100%; }
+            .filter-group { flex-direction: column; align-items: stretch; }
+            .filter-group label { width: 100%; justify-content: center; }
+            header { display: flex; flex-direction: column; align-items: center; }
+            #buscador { max-width: 100%; }
+            
+            .container { flex-direction: column; gap: 20px; padding: 15px; }
+            .formulario, .preview {
                 flex: 1 1 100%;
                 padding: 20px;
                 max-width: none;
                 position: static;
             }
-
-            .button-group {
-                flex-direction: column;
-            }
-
-            .button-group button {
-                width: 100%;
-            }
-
+            
+            .button-group { flex-direction: column; }
+            .button-group button { width: 100%; }
             .estudiante summary::after {
                 position: static;
                 display: block;
@@ -834,32 +728,26 @@
             }
         }
 
-        /* ============================================
-           ESTILOS DE IMPRESIÓN
-           ============================================ */
+        /* Impresión */
         @media print {
-            .header-btn,
-            .action-buttons,
-            .evaluation-counter button,
-            #buscador,
-            .filter-group,
-            .badge,
-            .button-group,
-            footer {
+            .header-btn, .action-buttons, .evaluation-counter button,
+            #buscador, .filter-group, .badge, .button-group, footer {
                 display: none !important;
             }
-
-            .estudiante {
-                page-break-inside: avoid;
-            }
-
-            .container {
-                flex-direction: column;
-            }
-
-            .preview {
-                position: static;
-                max-height: none;
+            .estudiante { page-break-inside: avoid; }
+            .container { flex-direction: column; }
+            .preview { position: static; max-height: none; }
+            .formulario .button-group, .formulario label, 
+            .formulario input:not([readonly]), .formulario textarea, 
+            .formulario select, .preview button, .preview-img, 
+            .badge, .checkbox-item { display: none !important; }
+            .formulario input[readonly] { border: none; background-color: transparent; }
+            input, textarea, select {
+                border: none !important;
+                box-shadow: none !important;
+                background-color: transparent !important;
+                padding: 0 !important;
+                margin: 0 !important;
             }
         }
     </style>
@@ -939,12 +827,12 @@
 
 {# NOMBRE DE CAMPO: Nombres y Apellidos (PDF) -> nombre (HTML) #}
 <label for="nombre_{{ est.id }}">Nombre Completo:</label>
-<input type="text" name="nombre" id="nombre_{{ est.id }}" class="form-control" value="{{ est.nombre }}" required oninput="updatePreview(this.form)">
+<input type="text" name="nombre" id="nombre_{{ est.id }}" class="form-control" value="{{ est.nombre }}" required oninput="updatePreview(this.form); calcularEdadAutomatica(this)">
 <input type="hidden" name="nombre_original" value="{{ est.nombre }}">
 
 {# NOMBRE DE CAMPO: RUN (PDF) -> rut (HTML) #}
 <label for="rut_{{ est.id }}">RUN:</label>
-<input type="text" name="rut" id="rut_{{ est.id }}" value="{{ est.rut }}" required oninput="updatePreview(this.form)">
+<input type="text" name="rut" id="rut_{{ est.id }}" value="{{ est.rut }}" required oninput="updatePreview(this.form); calcularEdadAutomatica(this)">
 <input type="hidden" name="rut_original" value="{{ est.rut }}">
 
 {# NOMBRE DE CAMPO: Genero (PDF) -> genero_f/m (HTML) #}
@@ -965,12 +853,12 @@
 
 {# NOMBRE DE CAMPO: Edad (en años y meses) (PDF) -> edad (HTML) #}
 <label for="edad_{{ est.id }}">Edad:</label>
-<input type="text" name="edad" id="edad_{{ est.id }}" value="{{ est.edad }}" oninput="updatePreview(this.form)">
+<input type="text" name="edad" id="edad_{{ est.id }}" value="{{ est.edad }}" oninput="updatePreview(this.form); calcularEdadAutomatica(this)">
 <input type="hidden" name="edad_original" value="{{ est.edad }}">
 
 {# NOMBRE DE CAMPO: Nacionalidad (PDF) -> nacionalidad (HTML) #}
 <label for="nacionalidad_{{ est.id }}">Nacionalidad:</label>
-<input type="text" name="nacionalidad" id="nacionalidad_{{ est.id }}" value="{{ est.nacionalidad }}" oninput="updatePreview(this.form)">
+<input type="text" name="nacionalidad" id="nacionalidad_{{ est.id }}" value="{{ est.nacionalidad }}" oninput="updatePreview(this.form); calcularEdadAutomatica(this)">
 <input type="hidden" name="nacionalidad_original" value="{{ est.nacionalidad }}">
 
                             {# CORRECCIÓN UNIFICADA: Desplegable de Diagnósticos PIE (Formato amigable) #}
@@ -2157,863 +2045,35 @@
                 const printWindow = window.open('', '_blank');
                 printWindow.document.write('<html><head><title>Imprimir Formularios</title>');
                 printWindow.document.write('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">');
-                printWindow.document.write('<style>
-        /* ============================================
-           VARIABLES CSS PROFESIONALES MODERNAS
-           ============================================ */
-        :root {
-            /* Paleta de colores gradiente premium */
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            
-            /* Colores sólidos */
-            --primary-color: #667eea;
-            --primary-dark: #5568d3;
-            --secondary-color: #764ba2;
-            --accent-color: #4facfe;
-            --success-color: #00f2fe;
-            --danger-color: #f5576c;
-            
-            /* Fondos */
-            --bg-primary: #f8f9ff;
-            --bg-secondary: #ffffff;
-            --bg-card: #ffffff;
-            
-            /* Textos */
-            --text-dark: hsl(210, 10%, 15%);
-            --text-primary: #2d3748;
-            --text-secondary: #718096;
-            --text-light: hsl(0, 0%, 99%);
-            
-            /* Bordes y sombras */
-            --border-color: #e2e8f0;
-            --border-radius-sm: 8px;
-            --border-radius-base: 14px;
-            --border-radius-md: 12px;
-            --border-radius-lg: 16px;
-            --border-radius-xl: 24px;
-            
-            --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
-            --shadow-subtle: rgba(0, 0, 0, 0.08);
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-            --shadow-medium: rgba(0, 0, 0, 0.15);
-            --shadow-lg: 0 10px 30px rgba(0,0,0,0.12);
-            --shadow-strong: rgba(0, 0, 0, 0.25);
-            --shadow-xl: 0 20px 40px rgba(0,0,0,0.15);
-            
-            /* Transiciones */
-            --transition-fast: 0.15s ease;
-            --transition-base: 0.3s ease;
-            --transition-slow: 0.5s ease;
-            
-            /* Espaciado */
-            --padding-base: 28px;
-            --gap-base: 30px;
-        }
-
-        /* ============================================
-           ESTILOS GLOBALES
-           ============================================ */
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #f8f9ff 0%, #f0f4f8 100%);
-            color: var(--text-dark);
-            line-height: 1.6;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            padding: 20px;
-            margin: 0;
-        }
-
-        /* ============================================
-           HEADER MODERNO
-           ============================================ */
-        header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 20px 0;
-            text-align: center;
-            position: relative;
-            box-shadow: var(--shadow-md);
-            border-radius: var(--border-radius-lg);
-            margin-bottom: 2rem;
-        }
-
-        header img {
-            max-width: 150px;
-            margin-bottom: 10px;
-            transition: transform var(--transition-base), box-shadow var(--transition-base);
-        }
-
-        header img:hover {
-            transform: scale(1.05) rotate(2deg);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        header h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-top: 5px;
-        }
-
-        /* Botones del header */
-        .header-btn {
-            position: absolute;
-            top: 20px;
-            padding: 10px 18px;
-            border-radius: 25px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all var(--transition-base);
-            box-shadow: var(--shadow-md);
-            border: none;
-        }
-
-        .back-to-dashboard-btn {
-            left: 20px;
-            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-            color: #fff;
-        }
-
-        .back-to-dashboard-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .logout-btn {
-            right: 20px;
-            background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
-            color: #fff;
-        }
-
-        .logout-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        /* ============================================
-           CONTENEDOR PRINCIPAL
-           ============================================ */
-        .main-content-wrapper {
-            max-width: 1400px;
-            margin: 20px auto;
-            padding: 0 20px;
-            flex-grow: 1;
-        }
-
-        /* ============================================
-           CONTADOR DE EVALUACIONES
-           ============================================ */
-        .evaluation-counter {
-            background: var(--primary-gradient);
-            border-radius: var(--border-radius-xl);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 1.5rem;
-            color: white;
-            box-shadow: var(--shadow-lg);
-            flex-wrap: wrap;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .evaluation-counter::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            animation: pulse 3s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 0.5; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-        }
-
-        .evaluation-counter i {
-            font-size: 2.5rem;
-            animation: bounce 2s ease-in-out infinite;
-            z-index: 1;
-        }
-
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
-        .evaluation-counter strong {
-            font-size: 2rem;
-            font-weight: 800;
-            padding: 0.5rem 1rem;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: var(--border-radius-md);
-            backdrop-filter: blur(10px);
-            z-index: 1;
-        }
-
-        .evaluation-counter button {
-            background: rgba(255, 255, 255, 0.9);
-            color: var(--primary-color);
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: var(--border-radius-lg);
-            cursor: pointer;
-            font-size: 0.95rem;
-            font-weight: 700;
-            margin-left: 1rem;
-            transition: all var(--transition-base);
-            z-index: 1;
-        }
-
-        .evaluation-counter button:hover {
-            background: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-
-        /* ============================================
-           BOTONES DE ACCIÓN
-           ============================================ */
-        .action-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 20px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-
-        .action-buttons button {
-            background: var(--primary-gradient);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: var(--border-radius-lg);
-            cursor: pointer;
-            font-size: 0.95em;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all var(--transition-base);
-            box-shadow: var(--shadow-md);
-        }
-
-        .action-buttons button:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        /* ============================================
-           BUSCADOR Y FILTROS
-           ============================================ */
-        #buscador {
-            width: 100%;
-            max-width: 600px;
-            display: block;
-            margin: 0 auto 20px;
-            padding: 14px 20px 14px 50px;
-            border: 2px solid var(--border-color);
-            border-radius: var(--border-radius-lg);
-            font-size: 1rem;
-            transition: all var(--transition-base);
-            background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 15px center;
-            box-shadow: var(--shadow-sm);
-        }
-
-        #buscador:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .filter-group {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-
-        .filter-group label {
-            padding: 10px 20px;
-            background: white;
-            border: 2px solid var(--border-color);
-            border-radius: var(--border-radius-lg);
-            cursor: pointer;
-            transition: all var(--transition-base);
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .filter-group label:hover {
-            border-color: var(--primary-color);
-            background: rgba(102, 126, 234, 0.05);
-        }
-
-        .filter-group input[type="radio"] {
-            width: 1.2rem;
-            height: 1.2rem;
-            accent-color: var(--primary-color);
-        }
-
-        .filter-group input[type="radio"]:checked + span {
-            color: var(--primary-color);
-            font-weight: 600;
-        }
-
-        /* ============================================
-           TARJETAS DE ESTUDIANTES
-           ============================================ */
-        .estudiante {
-            background: var(--bg-card);
-            border-radius: var(--border-radius-xl);
-            margin-bottom: 1.5rem;
-            box-shadow: var(--shadow-md);
-            border: 2px solid transparent;
-            transition: all var(--transition-base);
-            overflow: hidden;
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .estudiante:hover {
-            border-color: var(--primary-color);
-            box-shadow: var(--shadow-lg);
-            transform: translateY(-2px);
-        }
-
-        .estudiante[open] {
-            border-color: var(--primary-color);
-        }
-
-        .estudiante summary {
-            padding: 1.5rem 2rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            list-style: none;
-            position: relative;
-            background: linear-gradient(to right, transparent, rgba(102, 126, 234, 0.03));
-        }
-
-        .estudiante summary::-webkit-details-marker {
-            display: none;
-        }
-
-        /* Ícono de avatar circular */
-        .estudiante summary::before {
-            content: '007';
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: var(--primary-gradient);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.8rem;
-            flex-shrink: 0;
-            box-shadow: var(--shadow-md);
-            transition: all var(--transition-base);
-        }
-
-        .estudiante:hover summary::before {
-            transform: rotate(10deg) scale(1.1);
-        }
-
-        .estudiante summary span {
-            flex: 1;
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-
-        /* Ícono de chevron */
-        .chevron-icon {
-            font-size: 1.5rem;
-            color: var(--primary-color);
-            transition: transform var(--transition-base);
-        }
-
-        .estudiante[open] .chevron-icon {
-            transform: rotate(90deg);
-        }
-
-        /* ============================================
-           BADGE DE ESTADO
-           ============================================ */
-        .badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            padding: 6px 12px;
-            border-radius: var(--border-radius-md);
-            font-size: 0.8rem;
-            font-weight: 600;
-            opacity: 0;
-            transition: opacity var(--transition-base);
-            z-index: 10;
-        }
-
-        .badge.show {
-            opacity: 1;
-            background: var(--success-gradient);
-            color: white;
-            box-shadow: var(--shadow-md);
-        }
-
-        /* Badge de evaluado en el summary */
-        .estudiante[data-evaluated-status="true"] summary::after {
-            content: '058';
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            position: absolute;
-            right: 60px;
-            background: var(--success-gradient);
-            color: white;
-            padding: 8px 16px;
-            border-radius: var(--border-radius-md);
-            font-size: 0.9rem;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .estudiante[data-evaluated-status="false"] summary::after {
-            content: '017';
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 400;
-            position: absolute;
-            right: 60px;
-            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-            color: white;
-            padding: 8px 16px;
-            border-radius: var(--border-radius-md);
-            font-size: 0.9rem;
-            box-shadow: var(--shadow-sm);
-        }
-
-        /* ============================================
-           CONTENEDOR DEL FORMULARIO
-           ============================================ */
-        .container {
-            display: flex;
-            gap: 30px;
-            padding: 2rem;
-            border-top: 2px solid var(--border-color);
-            background: linear-gradient(to bottom, rgba(102, 126, 234, 0.02), transparent);
-        }
-
-        .formulario {
-            flex: 1;
-            background: white;
-            padding: 2rem;
-            border-radius: var(--border-radius-lg);
-            box-shadow: var(--shadow-sm);
-            position: relative;
-        }
-
-        .preview {
-            flex: 1;
-            max-width: 400px;
-            background: white;
-            padding: 2rem;
-            border-radius: var(--border-radius-lg);
-            box-shadow: var(--shadow-sm);
-            position: sticky;
-            top: 20px;
-            max-height: calc(100vh - 40px);
-            overflow-y: auto;
-        }
-
-        .preview h3 {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 1.5rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 3px solid var(--primary-color);
-        }
-
-        .preview p {
-            margin-bottom: 0.75rem;
-            font-size: 0.95rem;
-        }
-
-        .preview p strong {
-            display: inline-block;
-            width: 150px;
-            color: var(--primary-color);
-            font-weight: 600;
-        }
-
-        .preview-img {
-            max-width: 100%;
-            height: auto;
-            border-radius: var(--border-radius-md);
-            margin-top: 1.5rem;
-            box-shadow: var(--shadow-md);
-        }
-
-        /* ============================================
-           SECCIONES DEL FORMULARIO
-           ============================================ */
-        .section-title {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin: 2rem 0 1.5rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 3px solid var(--primary-color);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .section-title::before {
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            color: var(--primary-color);
-            font-size: 1.5rem;
-        }
-
-        /* ============================================
-           CAMPOS DEL FORMULARIO
-           ============================================ */
-        label {
-            display: block;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 0.5rem;
-            margin-top: 1rem;
-            font-size: 0.95rem;
-        }
-
-        input[type="text"],
-        input[type="number"],
-        input[type="date"],
-        select,
-        textarea {
-            width: 100%;
-            padding: 0.9rem 1.2rem;
-            border: 2px solid var(--border-color);
-            border-radius: var(--border-radius-md);
-            font-size: 1rem;
-            transition: all var(--transition-base);
-            background: white;
-            font-family: inherit;
-        }
-
-        input:focus,
-        select:focus,
-        textarea:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        input[readonly] {
-            background: var(--bg-primary);
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-
-        textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-
-        select {
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            background-size: 1rem;
-            padding-right: 3rem;
-        }
-
-        /* ============================================
-           CHECKBOXES MODERNOS
-           ============================================ */
-        .checkbox-group {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 1rem;
-            margin: 1rem 0;
-        }
-
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-            padding: 1rem;
-            background: white;
-            border: 2px solid var(--border-color);
-            border-radius: var(--border-radius-md);
-            cursor: pointer;
-            transition: all var(--transition-base);
-        }
-
-        .checkbox-item:hover {
-            border-color: var(--accent-color);
-            background: rgba(79, 172, 254, 0.03);
-        }
-
-        .checkbox-item.checked {
-            border-color: var(--accent-color);
-            background: rgba(79, 172, 254, 0.08);
-        }
-
-        .checkbox-item input[type="checkbox"] {
-            width: 1.3rem;
-            height: 1.3rem;
-            margin-right: 0.75rem;
-            cursor: pointer;
-            accent-color: var(--accent-color);
-        }
-
-        /* ============================================
-           BOTONES
-           ============================================ */
-        .button-group {
-            display: flex;
-            gap: 1rem;
-            margin-top: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .button-group button {
-            flex: 1;
-            min-width: 150px;
-            padding: 1rem 1.5rem;
-            border: none;
-            border-radius: var(--border-radius-lg);
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            transition: all var(--transition-base);
-            box-shadow: var(--shadow-md);
-        }
-
-        .button-group button[type="submit"] {
-            background: var(--primary-gradient);
-            color: white;
-        }
-
-        .button-group button.secondary {
-            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-            color: white;
-        }
-
-        .button-group button.signature-button {
-            background: linear-gradient(135deg, #8B5CF6 0%, #667eea 100%);
-            color: white;
-        }
-
-        .button-group button.mark-evaluated-btn {
-            background: var(--success-gradient);
-            color: white;
-        }
-
-        .button-group button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .button-group button:not(:disabled):hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        /* ============================================
-           FOOTER
-           ============================================ */
-        footer {
-            text-align: center;
-            padding: 20px;
-            color: var(--text-secondary);
-            margin-top: 3rem;
-            font-size: 0.9rem;
-        }
-
-        /* ============================================
-           MENSAJES FLASH
-           ============================================ */
-        .flash-messages {
-            list-style: none;
-            padding: 0;
-            margin-bottom: 20px;
-        }
-
-        .flash-messages li {
-            padding: 12px 20px;
-            border-radius: var(--border-radius-md);
-            margin-bottom: 10px;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .flash-messages li.success {
-            background: rgba(79, 172, 254, 0.1);
-            border-left: 4px solid var(--accent-color);
-            color: #0369a1;
-        }
-
-        .flash-messages li.error {
-            background: rgba(245, 87, 108, 0.1);
-            border-left: 4px solid var(--danger-color);
-            color: #991b1b;
-        }
-
-        /* ============================================
-           RESPONSIVE DESIGN
-           ============================================ */
-        @media (max-width: 768px) {
-            body {
-                padding: 15px;
-            }
-
-            .main-content-wrapper {
-                margin: 15px auto;
-                padding: 0 10px;
-            }
-
-            header h1 {
-                font-size: 1.5rem;
-            }
-
-            .header-btn {
-                position: static;
-                margin-bottom: 10px;
-                width: calc(100% - 40px);
-                margin-left: auto;
-                margin-right: auto;
-                display: flex;
-                justify-content: center;
-            }
-
-            .action-buttons button {
-                width: 100%;
-            }
-
-            .filter-group {
-                flex-direction: column;
-                gap: 10px;
-                align-items: stretch;
-            }
-
-            .filter-group label {
-                width: 100%;
-                justify-content: center;
-            }
-
-            header {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-            }
-
-            #buscador {
-                max-width: 100%;
-            }
-
-            .container {
-                flex-direction: column;
-                gap: 20px;
-                padding: 15px;
-            }
-
-            .formulario,
-            .preview {
-                flex: 1 1 100%;
-                padding: 20px;
-                max-width: none;
-                position: static;
-            }
-
-            .button-group {
-                flex-direction: column;
-            }
-
-            .button-group button {
-                width: 100%;
-            }
-
-            .estudiante summary::after {
-                position: static;
-                display: block;
-                margin-top: 10px;
-            }
-        }
-
-        /* ============================================
-           ESTILOS DE IMPRESIÓN
-           ============================================ */
-        @media print {
-            .header-btn,
-            .action-buttons,
-            .evaluation-counter button,
-            #buscador,
-            .filter-group,
-            .badge,
-            .button-group,
-            footer {
-                display: none !important;
-            }
-
-            .estudiante {
-                page-break-inside: avoid;
-            }
-
-            .container {
-                flex-direction: column;
-            }
-
-            .preview {
-                position: static;
-                max-height: none;
-            }
-        }
-    </style></head><body>');
+                printWindow.document.write('<style>');
+                printWindow.document.write(`
+                    body { font-family: 'Segoe UI', sans-serif; margin: 20px; color: #333; }
+                    .print-form-container { margin-bottom: 25px; border: 1px solid #ccc; padding: 15px; border-radius: 8px; page-break-inside: avoid; }
+                    .print-form-container h3 { color: #1a73e8; border-bottom: 2px solid #1a73e8; padding-bottom: 10px; margin-bottom: 15px; }
+                    .print-form-container p { margin: 8px 0; }
+                    .print-form-container p strong { display: inline-block; width: 150px; color: #1a73e8; }
+                    /* Ocultar elementos de UI para impresión */
+                    .formulario .button-group, .formulario label, .formulario input:not([readonly]), .formulario textarea, .formulario select, .preview button, .preview-img, .badge, .checkbox-item { display: none !important; }
+                    .formulario input[readonly] { border: none; background-color: transparent; }
+
+                    /* Asegurar que los inputs y textareas muestren su valor como texto normal */
+                    input, textarea, select {
+                        border: none !important;
+                        box-shadow: none !important;
+                        background-color: transparent !important;
+                        -webkit-print-color-adjust: exact; 
+                        color-adjust: exact;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                    }
+                    textarea {
+                        resize: none !important;
+                    }
+                    .checkbox-preview-group p {
+                        margin-left: 20px; /* Indentar los detalles del checkbox */
+                    }
+                `);
+                printWindow.document.write('</style></head><body>');
 
                 const visibleForms = document.querySelectorAll('details.estudiante:not([style*="display: none"])');
                 if (visibleForms.length === 0) {

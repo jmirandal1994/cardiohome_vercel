@@ -8,91 +8,110 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         /* ═══════════════════════════════════════════════════════════════
-           🎨 PALETA PROFESIONAL MÉDICA - AZUL NAVY Y BLANCO
+           🎨 VARIABLES DE DISEÑO ENTERPRISE - SISTEMA MÉDICO PROFESIONAL
            ═══════════════════════════════════════════════════════════════ */
         :root {
-            /* Paleta Principal - Navy Profesional */
-            --navy-950: #0A1628;
-            --navy-900: #0D1B2A;
-            --navy-800: #1B2838;
-            --navy-700: #2C3E50;
-            --navy-600: #34495E;
-            --navy-500: #4A5F7F;
-            --navy-400: #5F7A9E;
-            --navy-300: #7B95B8;
-            --navy-200: #A8BFD9;
-            --navy-100: #C8D9EC;
-            --navy-50: #E8EFF7;
+            /* Paleta Médica Premium - Inspirada en instituciones de salud mundial */
+            --primary-navy: #0A2540;
+            --primary-blue: #1E4D7B;
+            --primary-cyan: #2E7D9A;
+            --primary-light: #4A9EC1;
             
-            /* Blancos y Grises Neutros */
-            --white: #FFFFFF;
-            --gray-50: #F9FAFB;
-            --gray-100: #F3F4F6;
-            --gray-200: #E5E7EB;
-            --gray-300: #D1D5DB;
-            --gray-400: #9CA3AF;
-            --gray-500: #6B7280;
-            --gray-600: #4B5563;
-            --gray-700: #374151;
-            --gray-800: #1F2937;
-            --gray-900: #111827;
+            --accent-medical: #00A0B0;
+            --accent-teal: #008B8B;
+            --accent-mint: #00C9A7;
+            --accent-emerald: #50C878;
             
-            /* Acentos de Color */
-            --blue-primary: #2563EB;
-            --blue-light: #3B82F6;
-            --blue-lighter: #60A5FA;
+            --gold-accent: #D4AF37;
+            --amber-warm: #F4A460;
             
-            --teal-primary: #0D9488;
-            --teal-light: #14B8A6;
+            --neutral-950: #0F172A;
+            --neutral-900: #1E293B;
+            --neutral-800: #334155;
+            --neutral-700: #475569;
+            --neutral-600: #64748B;
+            --neutral-500: #94A3B8;
+            --neutral-400: #CBD5E1;
+            --neutral-300: #E2E8F0;
+            --neutral-200: #F1F5F9;
+            --neutral-100: #F8FAFC;
+            --neutral-50: #FDFEFF;
             
-            --green-primary: #059669;
-            --green-light: #10B981;
+            --success-dark: #065F46;
+            --success-main: #10B981;
+            --success-light: #D1FAE5;
             
-            --amber-primary: #D97706;
-            --amber-light: #F59E0B;
+            --warning-dark: #92400E;
+            --warning-main: #F59E0B;
+            --warning-light: #FEF3C7;
             
-            --red-primary: #DC2626;
-            --red-light: #EF4444;
+            --error-dark: #991B1B;
+            --error-main: #EF4444;
+            --error-light: #FEE2E2;
             
-            /* Sombras Profesionales */
-            --shadow-xs: 0 1px 2px 0 rgba(10, 22, 40, 0.05);
-            --shadow-sm: 0 1px 3px 0 rgba(10, 22, 40, 0.1), 0 1px 2px -1px rgba(10, 22, 40, 0.1);
-            --shadow-md: 0 4px 6px -1px rgba(10, 22, 40, 0.1), 0 2px 4px -2px rgba(10, 22, 40, 0.1);
-            --shadow-lg: 0 10px 15px -3px rgba(10, 22, 40, 0.1), 0 4px 6px -4px rgba(10, 22, 40, 0.1);
-            --shadow-xl: 0 20px 25px -5px rgba(10, 22, 40, 0.1), 0 8px 10px -6px rgba(10, 22, 40, 0.1);
-            --shadow-2xl: 0 25px 50px -12px rgba(10, 22, 40, 0.25);
+            --info-dark: #1E40AF;
+            --info-main: #3B82F6;
+            --info-light: #DBEAFE;
             
-            /* Sistema de Espaciado */
-            --space-1: 0.25rem;
-            --space-2: 0.5rem;
-            --space-3: 0.75rem;
-            --space-4: 1rem;
-            --space-5: 1.25rem;
-            --space-6: 1.5rem;
-            --space-8: 2rem;
-            --space-10: 2.5rem;
-            --space-12: 3rem;
-            --space-16: 4rem;
+            /* Sombras Profesionales Multi-capa */
+            --shadow-xs: 0 1px 2px 0 rgba(10, 37, 64, 0.05);
+            --shadow-sm: 0 1px 3px 0 rgba(10, 37, 64, 0.1), 0 1px 2px -1px rgba(10, 37, 64, 0.1);
+            --shadow-md: 0 4px 6px -1px rgba(10, 37, 64, 0.1), 0 2px 4px -2px rgba(10, 37, 64, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(10, 37, 64, 0.1), 0 4px 6px -4px rgba(10, 37, 64, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(10, 37, 64, 0.1), 0 8px 10px -6px rgba(10, 37, 64, 0.1);
+            --shadow-2xl: 0 25px 50px -12px rgba(10, 37, 64, 0.25);
+            --shadow-inner: inset 0 2px 4px 0 rgba(10, 37, 64, 0.05);
             
-            /* Border Radius */
-            --radius-sm: 0.375rem;
-            --radius-md: 0.5rem;
-            --radius-lg: 0.75rem;
-            --radius-xl: 1rem;
-            --radius-2xl: 1.5rem;
+            /* Efectos Glassmorphism Premium */
+            --glass-white: rgba(255, 255, 255, 0.9);
+            --glass-blue: rgba(74, 158, 193, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --backdrop-blur: blur(24px) saturate(180%);
+            
+            /* Sistema de Espaciado Consistente */
+            --space-1: 0.25rem;    /* 4px */
+            --space-2: 0.5rem;     /* 8px */
+            --space-3: 0.75rem;    /* 12px */
+            --space-4: 1rem;       /* 16px */
+            --space-5: 1.25rem;    /* 20px */
+            --space-6: 1.5rem;     /* 24px */
+            --space-8: 2rem;       /* 32px */
+            --space-10: 2.5rem;    /* 40px */
+            --space-12: 3rem;      /* 48px */
+            --space-16: 4rem;      /* 64px */
+            --space-20: 5rem;      /* 80px */
+            
+            /* Border Radius Sistema */
+            --radius-sm: 0.375rem;   /* 6px */
+            --radius-md: 0.5rem;     /* 8px */
+            --radius-lg: 0.75rem;    /* 12px */
+            --radius-xl: 1rem;       /* 16px */
+            --radius-2xl: 1.5rem;    /* 24px */
+            --radius-3xl: 2rem;      /* 32px */
             --radius-full: 9999px;
             
-            /* Transiciones */
+            /* Transiciones Fluidas */
             --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
             --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
             --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-bounce: 600ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            
+            /* Z-index Sistema */
+            --z-base: 1;
+            --z-dropdown: 1000;
+            --z-sticky: 1020;
+            --z-fixed: 1030;
+            --z-modal-backdrop: 1040;
+            --z-modal: 1050;
+            --z-popover: 1060;
+            --z-tooltip: 1070;
         }
 
         /* ═══════════════════════════════════════════════════════════════
-           🎯 RESET Y BASE
+           🎯 RESET Y BASE STYLES
            ═══════════════════════════════════════════════════════════════ */
         *, *::before, *::after {
             margin: 0;
@@ -108,16 +127,17 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            color: var(--gray-900);
-            line-height: 1.6;
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            color: var(--neutral-900);
+            line-height: 1.7;
             min-height: 100vh;
-            background: linear-gradient(135deg, #E8EFF7 0%, #F9FAFB 100%);
+            overflow-x: hidden;
+            position: relative;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
             background-attachment: fixed;
-            padding: var(--space-6) var(--space-4);
         }
 
-        /* Patrón sutil de fondo */
+        /* Fondo Animado Profesional */
         body::before {
             content: '';
             position: fixed;
@@ -125,46 +145,98 @@
             left: 0;
             width: 100%;
             height: 100%;
+            background: 
+                radial-gradient(circle at 15% 20%, rgba(100, 200, 255, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 80%, rgba(255, 100, 200, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(200, 100, 255, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+            animation: ambientPulse 20s ease-in-out infinite;
+        }
+
+        @keyframes ambientPulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 0.9; }
+        }
+
+        /* Patrón de Grid Sutil */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background-image: 
-                radial-gradient(circle at 25% 25%, rgba(37, 99, 235, 0.03) 0%, transparent 50%),
-                radial-gradient(circle at 75% 75%, rgba(13, 148, 136, 0.03) 0%, transparent 50%);
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
             pointer-events: none;
             z-index: 0;
         }
 
         /* ═══════════════════════════════════════════════════════════════
-           📐 LAYOUT
+           📐 LAYOUT PRINCIPAL
            ═══════════════════════════════════════════════════════════════ */
         .main-content-wrapper {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
+            padding: var(--space-6) var(--space-4);
             position: relative;
-            z-index: 1;
+            z-index: var(--z-base);
         }
 
         /* ═══════════════════════════════════════════════════════════════
-           🎩 HEADER
+           🎩 HEADER ULTRA PREMIUM
            ═══════════════════════════════════════════════════════════════ */
         header {
-            background: var(--white);
-            border-radius: var(--radius-2xl);
+            background: var(--glass-white);
+            backdrop-filter: var(--backdrop-blur);
+            -webkit-backdrop-filter: var(--backdrop-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-3xl);
             padding: var(--space-8);
             margin-bottom: var(--space-10);
-            box-shadow: var(--shadow-xl);
-            border: 1px solid var(--gray-200);
+            box-shadow: var(--shadow-2xl);
             position: relative;
-            animation: slideDown 0.6s ease-out;
+            overflow: hidden;
+            animation: slideDownHeader 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        @keyframes slideDown {
+        @keyframes slideDownHeader {
             from {
                 opacity: 0;
-                transform: translateY(-30px);
+                transform: translateY(-60px) scale(0.95);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: translateY(0) scale(1);
             }
+        }
+
+        /* Efecto de luz dinámica en header */
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 20%,
+                rgba(255, 255, 255, 0.15) 40%,
+                rgba(255, 255, 255, 0.25) 50%,
+                rgba(255, 255, 255, 0.15) 60%,
+                transparent 80%
+            );
+            transform: rotate(45deg);
+            animation: shimmerEffect 4s linear infinite;
+        }
+
+        @keyframes shimmerEffect {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
         }
 
         .header-content {
@@ -173,229 +245,359 @@
             justify-content: center;
             flex-direction: column;
             gap: var(--space-5);
+            position: relative;
+            z-index: 2;
         }
 
         header img {
-            max-width: 200px;
+            max-width: 220px;
             height: auto;
-            filter: drop-shadow(0 4px 12px rgba(10, 22, 40, 0.1));
-            transition: transform var(--transition-base);
+            filter: drop-shadow(0 8px 16px rgba(10, 37, 64, 0.15));
+            transition: all var(--transition-slow);
+            animation: floatingLogo 4s ease-in-out infinite;
+        }
+
+        @keyframes floatingLogo {
+            0%, 100% { 
+                transform: translateY(0) rotate(0deg);
+            }
+            50% { 
+                transform: translateY(-15px) rotate(2deg);
+            }
         }
 
         header img:hover {
-            transform: scale(1.05);
+            transform: scale(1.08) rotate(-2deg);
+            filter: drop-shadow(0 12px 24px rgba(10, 37, 64, 0.25));
         }
 
         header h1 {
-            font-family: 'Poppins', sans-serif;
-            font-size: clamp(1.75rem, 4vw, 2.5rem);
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: clamp(2rem, 5vw, 3.25rem);
             font-weight: 700;
-            color: var(--navy-900);
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+            background: linear-gradient(135deg, var(--primary-navy), var(--primary-blue), var(--accent-medical));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             text-align: center;
             margin: 0;
+            position: relative;
+            padding-bottom: var(--space-4);
         }
 
-        /* Botones de navegación */
+        header h1::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--gold-accent), transparent);
+            border-radius: var(--radius-full);
+            animation: lineGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes lineGlow {
+            0%, 100% { opacity: 0.4; width: 100px; }
+            50% { opacity: 1; width: 160px; }
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           🔘 BOTONES DE NAVEGACIÓN HEADER
+           ═══════════════════════════════════════════════════════════════ */
         .header-btn {
             position: absolute;
             top: var(--space-6);
             padding: var(--space-3) var(--space-6);
             border-radius: var(--radius-full);
+            font-family: 'Raleway', sans-serif;
             font-weight: 600;
-            font-size: 0.875rem;
+            font-size: 0.9375rem;
             cursor: pointer;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
             gap: var(--space-2);
             transition: all var(--transition-base);
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-lg);
             border: none;
-            color: var(--white);
+            color: white;
+            z-index: 3;
+            overflow: hidden;
+        }
+
+        .header-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left var(--transition-slow);
+        }
+
+        .header-btn:hover::before {
+            left: 100%;
+        }
+
+        .header-btn i {
+            font-size: 1.125rem;
+            transition: transform var(--transition-base);
+        }
+
+        .header-btn:hover i {
+            transform: scale(1.2) rotate(5deg);
         }
 
         .back-to-dashboard-btn {
             left: var(--space-6);
-            background: var(--gray-700);
+            background: linear-gradient(135deg, var(--neutral-700), var(--neutral-800));
         }
 
         .back-to-dashboard-btn:hover {
-            background: var(--gray-800);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+            background: linear-gradient(135deg, var(--neutral-800), var(--neutral-900));
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-xl);
         }
 
         .logout-btn {
             right: var(--space-6);
-            background: var(--red-primary);
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
         }
 
         .logout-btn:hover {
-            background: var(--red-light);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+            background: linear-gradient(135deg, #c0392b, #a93226);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-xl);
         }
 
         /* ═══════════════════════════════════════════════════════════════
-           📊 CONTADOR
+           📊 CONTADOR DE EVALUACIONES PREMIUM
            ═══════════════════════════════════════════════════════════════ */
         .evaluation-counter {
-            background: var(--white);
-            border: 1px solid var(--gray-200);
+            background: var(--glass-white);
+            backdrop-filter: var(--backdrop-blur);
+            -webkit-backdrop-filter: var(--backdrop-blur);
+            border: 2px solid var(--glass-border);
             border-radius: var(--radius-2xl);
             padding: var(--space-6) var(--space-8);
             margin-bottom: var(--space-8);
-            display: grid;
-            grid-template-columns: auto 1fr auto auto;
-            align-items: center;
-            gap: var(--space-5);
-            box-shadow: var(--shadow-lg);
-            animation: fadeIn 0.6s ease-out 0.1s both;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .counter-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: var(--radius-xl);
-            background: linear-gradient(135deg, var(--blue-primary), var(--blue-light));
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--white);
-            font-size: 1.75rem;
-            box-shadow: var(--shadow-md);
+            gap: var(--space-5);
+            flex-wrap: wrap;
+            box-shadow: var(--shadow-xl);
+            position: relative;
+            overflow: hidden;
+            animation: fadeInScale 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
         }
 
-        .counter-text {
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .evaluation-counter::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(74, 158, 193, 0.15), transparent);
+            animation: slideLight 3s infinite;
+        }
+
+        @keyframes slideLight {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .evaluation-counter i {
+            font-size: 2rem;
+            color: var(--accent-medical);
+            filter: drop-shadow(0 2px 8px rgba(0, 160, 176, 0.3));
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .evaluation-counter .counter-text {
+            font-family: 'Raleway', sans-serif;
+            font-size: 1.125rem;
             font-weight: 500;
-            color: var(--gray-700);
+            color: var(--neutral-800);
+            position: relative;
         }
 
-        .counter-number {
+        .evaluation-counter strong {
             font-size: 2.5rem;
             font-weight: 800;
-            font-family: 'Poppins', sans-serif;
-            color: var(--green-primary);
+            font-family: 'Playfair Display', serif;
+            background: linear-gradient(135deg, var(--success-dark), var(--success-main));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+            position: relative;
         }
 
-        .counter-refresh-btn {
-            background: var(--navy-700);
-            color: var(--white);
+        .evaluation-counter button {
+            background: linear-gradient(135deg, var(--accent-medical), var(--accent-teal));
+            color: white;
             border: none;
-            padding: var(--space-3) var(--space-5);
-            border-radius: var(--radius-lg);
+            padding: var(--space-3) var(--space-6);
+            border-radius: var(--radius-xl);
             cursor: pointer;
+            font-family: 'Raleway', sans-serif;
+            font-size: 0.9375rem;
             font-weight: 600;
-            font-size: 0.875rem;
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
             transition: all var(--transition-base);
-            box-shadow: var(--shadow-sm);
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
         }
 
-        .counter-refresh-btn:hover {
-            background: var(--navy-800);
+        .evaluation-counter button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .evaluation-counter button:hover::after {
+            width: 300px;
+            height: 300px;
+        }
+
+        .evaluation-counter button:hover {
             transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-lg);
         }
 
         /* ═══════════════════════════════════════════════════════════════
-           🎯 BOTONES DE ACCIÓN
+           🎯 BOTONES DE ACCIÓN PRINCIPALES
            ═══════════════════════════════════════════════════════════════ */
         .action-buttons {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: var(--space-5);
             margin-bottom: var(--space-10);
-            animation: fadeIn 0.6s ease-out 0.2s both;
+            animation: fadeInScale 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
         }
 
-        .action-btn {
-            background: var(--white);
-            border: 2px solid var(--gray-200);
-            color: var(--navy-800);
+        .action-buttons button {
+            background: var(--glass-white);
+            backdrop-filter: var(--backdrop-blur);
+            -webkit-backdrop-filter: var(--backdrop-blur);
+            border: 2px solid var(--glass-border);
+            color: var(--primary-navy);
             padding: var(--space-5) var(--space-6);
             border-radius: var(--radius-xl);
             cursor: pointer;
+            font-family: 'Raleway', sans-serif;
+            font-size: 1rem;
             font-weight: 600;
-            font-size: 0.9375rem;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: var(--space-3);
             transition: all var(--transition-base);
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
         }
 
-        .action-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-xl);
-            border-color: var(--blue-primary);
-            color: var(--blue-primary);
+        .action-buttons button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(74, 158, 193, 0.2), transparent 70%);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.8s, height 0.8s;
         }
 
-        .action-btn-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: var(--radius-lg);
-            background: var(--gray-100);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-            transition: all var(--transition-base);
+        .action-buttons button:hover::before {
+            width: 400px;
+            height: 400px;
         }
 
-        .action-btn:hover .action-btn-icon {
-            background: var(--blue-primary);
-            color: var(--white);
+        .action-buttons button:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-2xl);
+            border-color: var(--accent-medical);
+            color: var(--accent-teal);
+        }
+
+        .action-buttons button i {
+            font-size: 1.5rem;
+            position: relative;
+            z-index: 1;
+            transition: transform var(--transition-base);
+        }
+
+        .action-buttons button:hover i {
+            transform: scale(1.2) rotate(5deg);
+        }
+
+        .action-buttons button span {
+            position: relative;
+            z-index: 1;
         }
 
         /* ═══════════════════════════════════════════════════════════════
-           🔍 FILTROS
+           🔍 FILTROS Y BÚSQUEDA AVANZADA
            ═══════════════════════════════════════════════════════════════ */
         .search-filter-container {
-            background: var(--white);
-            border: 1px solid var(--gray-200);
+            background: var(--glass-white);
+            backdrop-filter: var(--backdrop-blur);
+            -webkit-backdrop-filter: var(--backdrop-blur);
+            border: 2px solid var(--glass-border);
             border-radius: var(--radius-2xl);
             padding: var(--space-8);
             margin-bottom: var(--space-10);
-            box-shadow: var(--shadow-lg);
-            animation: fadeIn 0.6s ease-out 0.3s both;
+            box-shadow: var(--shadow-xl);
+            animation: fadeInScale 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
         }
 
-        .filter-header {
-            display: flex;
-            align-items: center;
-            gap: var(--space-4);
-            margin-bottom: var(--space-6);
-        }
-
-        .filter-header-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: var(--radius-xl);
-            background: linear-gradient(135deg, var(--teal-primary), var(--teal-light));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--white);
-            font-size: 1.5rem;
-            box-shadow: var(--shadow-md);
-        }
-
-        .filter-header h3 {
-            font-family: 'Poppins', sans-serif;
-            font-size: 1.5rem;
+        .search-filter-container h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.75rem;
             font-weight: 600;
-            color: var(--navy-900);
-            margin: 0;
+            color: var(--primary-navy);
+            margin-bottom: var(--space-6);
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .search-filter-container h3 i {
+            color: var(--accent-medical);
+            font-size: 1.5rem;
         }
 
         .search-wrapper {
@@ -405,86 +607,84 @@
 
         #buscador {
             width: 100%;
-            padding: var(--space-4) var(--space-5) var(--space-4) 3.75rem;
-            border: 2px solid var(--gray-300);
+            padding: var(--space-5) var(--space-6) var(--space-5) 3.5rem;
+            border: 2px solid var(--neutral-300);
             border-radius: var(--radius-xl);
-            font-size: 1rem;
-            color: var(--gray-900);
-            background: var(--white);
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 1.0625rem;
+            color: var(--neutral-900);
+            background: white;
             transition: all var(--transition-base);
+            box-shadow: var(--shadow-sm);
         }
 
         #buscador:focus {
             outline: none;
-            border-color: var(--blue-primary);
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+            border-color: var(--accent-medical);
+            box-shadow: 0 0 0 4px rgba(0, 160, 176, 0.1), var(--shadow-lg);
+            transform: translateY(-2px);
         }
 
-        .search-icon {
+        .search-wrapper i {
             position: absolute;
             left: var(--space-5);
             top: 50%;
             transform: translateY(-50%);
-            width: 36px;
-            height: 36px;
-            border-radius: var(--radius-lg);
-            background: var(--gray-100);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--gray-500);
-            font-size: 1rem;
+            color: var(--neutral-500);
+            font-size: 1.25rem;
             pointer-events: none;
-            transition: all var(--transition-base);
+            transition: color var(--transition-base);
         }
 
-        #buscador:focus + .search-icon {
-            background: var(--blue-primary);
-            color: var(--white);
+        #buscador:focus + i {
+            color: var(--accent-medical);
         }
 
         .filter-group {
             display: flex;
-            gap: var(--space-5);
+            gap: var(--space-6);
             flex-wrap: wrap;
+            justify-content: center;
         }
 
-        .filter-option {
-            flex: 1;
-            min-width: 200px;
+        .filter-group label {
             display: flex;
             align-items: center;
             gap: var(--space-3);
-            padding: var(--space-4) var(--space-5);
-            border: 2px solid var(--gray-200);
-            border-radius: var(--radius-xl);
             cursor: pointer;
+            padding: var(--space-3) var(--space-5);
+            border-radius: var(--radius-xl);
+            font-family: 'Raleway', sans-serif;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            color: var(--neutral-700);
             transition: all var(--transition-base);
-            background: var(--white);
+            position: relative;
         }
 
-        .filter-option:hover {
-            border-color: var(--blue-primary);
-            background: var(--navy-50);
+        .filter-group label:hover {
+            background: rgba(74, 158, 193, 0.08);
+            color: var(--accent-teal);
         }
 
-        .filter-option input[type="radio"] {
+        .filter-group input[type="radio"] {
             appearance: none;
-            width: 1.25rem;
-            height: 1.25rem;
-            border: 2px solid var(--gray-400);
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 2px solid var(--neutral-400);
             border-radius: 50%;
             cursor: pointer;
+            position: relative;
             transition: all var(--transition-fast);
         }
 
-        .filter-option input[type="radio"]:checked {
-            border-color: var(--blue-primary);
-            background: var(--blue-primary);
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
+        .filter-group input[type="radio"]:checked {
+            border-color: var(--accent-medical);
+            background: var(--accent-medical);
+            box-shadow: 0 0 0 4px rgba(0, 160, 176, 0.2);
         }
 
-        .filter-option input[type="radio"]:checked::before {
+        .filter-group input[type="radio"]:checked::before {
             content: '';
             position: absolute;
             top: 50%;
@@ -492,38 +692,29 @@
             transform: translate(-50%, -50%);
             width: 0.5rem;
             height: 0.5rem;
-            background: var(--white);
+            background: white;
             border-radius: 50%;
         }
 
-        .filter-option-label {
-            font-weight: 600;
-            font-size: 0.9375rem;
-            color: var(--gray-700);
-            flex: 1;
-        }
-
-        .filter-option:has(input:checked) {
-            border-color: var(--blue-primary);
-            background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(37, 99, 235, 0.1));
-        }
-
-        .filter-option:has(input:checked) .filter-option-label {
-            color: var(--blue-primary);
+        .filter-group input[type="radio"]:checked + span {
+            color: var(--accent-teal);
+            font-weight: 700;
         }
 
         /* ═══════════════════════════════════════════════════════════════
-           🎴 TARJETAS DE ESTUDIANTES
+           🎴 TARJETAS DE ESTUDIANTES ULTRA PREMIUM
            ═══════════════════════════════════════════════════════════════ */
         .estudiante {
-            background: var(--white);
-            border: 1px solid var(--gray-200);
+            background: var(--glass-white);
+            backdrop-filter: var(--backdrop-blur);
+            -webkit-backdrop-filter: var(--backdrop-blur);
+            border: 2px solid var(--glass-border);
             border-radius: var(--radius-2xl);
             margin-bottom: var(--space-8);
-            box-shadow: var(--shadow-lg);
+            box-shadow: var(--shadow-xl);
             transition: all var(--transition-base);
             overflow: hidden;
-            animation: fadeInUp 0.6s ease-out both;
+            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
             position: relative;
         }
 
@@ -540,8 +731,8 @@
 
         .estudiante:hover {
             box-shadow: var(--shadow-2xl);
-            transform: translateY(-3px);
-            border-color: var(--blue-primary);
+            transform: translateY(-4px);
+            border-color: var(--accent-medical);
         }
 
         .estudiante::before {
@@ -551,17 +742,12 @@
             left: 0;
             width: 5px;
             height: 100%;
-            background: var(--gray-300);
+            background: linear-gradient(180deg, var(--accent-medical), var(--accent-teal));
             opacity: 0;
             transition: opacity var(--transition-base);
         }
 
         .estudiante:hover::before {
-            opacity: 1;
-        }
-
-        .estudiante[data-evaluated-status="true"]::before {
-            background: var(--green-primary);
             opacity: 1;
         }
 
@@ -572,16 +758,34 @@
             user-select: none;
             display: flex;
             align-items: center;
-            gap: var(--space-5);
-            background: var(--navy-800);
-            color: var(--white);
-            font-weight: 600;
-            font-size: 1.125rem;
+            justify-content: space-between;
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-cyan));
+            color: white;
+            font-family: 'Raleway', sans-serif;
+            font-weight: 700;
+            font-size: 1.1875rem;
             transition: all var(--transition-base);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .estudiante summary::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--gold-accent);
+            transition: width var(--transition-slow);
+        }
+
+        .estudiante:hover summary::before {
+            width: 100%;
         }
 
         .estudiante summary:hover {
-            background: var(--navy-900);
+            background: linear-gradient(135deg, var(--primary-navy), var(--primary-blue));
         }
 
         .estudiante summary::-webkit-details-marker,
@@ -589,215 +793,185 @@
             display: none;
         }
 
-        /* Avatar con imagen */
-        .student-avatar {
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 3px solid var(--white);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            flex-shrink: 0;
-            background: var(--gray-200);
-        }
-
-        .student-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .student-info {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-1);
-        }
-
-        .student-name {
-            font-size: 1.125rem;
-            font-weight: 700;
-            color: var(--white);
-        }
-
-        .student-meta {
-            font-size: 0.875rem;
-            color: var(--navy-200);
+        .estudiante summary .student-info {
             display: flex;
             align-items: center;
             gap: var(--space-4);
         }
 
-        .student-meta-item {
+        .estudiante summary .student-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-full);
+            background: rgba(255, 255, 255, 0.2);
             display: flex;
             align-items: center;
-            gap: var(--space-2);
+            justify-content: center;
+            font-size: 1.5rem;
         }
 
-        .chevron-icon {
-            font-size: 1.25rem;
+        .estudiante summary .chevron-icon {
+            font-size: 1.5rem;
             transition: transform var(--transition-base);
-            color: var(--navy-200);
         }
 
         .estudiante[open] summary .chevron-icon {
             transform: rotate(90deg);
         }
 
+        /* Badge de Estado */
         .badge {
             position: absolute;
             top: var(--space-5);
             right: var(--space-8);
             padding: var(--space-2) var(--space-5);
             border-radius: var(--radius-full);
-            font-size: 0.75rem;
+            font-family: 'Raleway', sans-serif;
+            font-size: 0.8125rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             display: inline-flex;
             align-items: center;
             gap: var(--space-2);
-            box-shadow: var(--shadow-lg);
+            box-shadow: var(--shadow-md);
             z-index: 10;
-            background: var(--green-primary);
-            color: var(--white);
-        }
-
-        /* ═══════════════════════════════════════════════════════════════
-           📝 FORMULARIO
-           ═══════════════════════════════════════════════════════════════ */
-        .formulario-container {
-            padding: var(--space-8);
-            background: var(--gray-50);
-        }
-
-        .formulario {
-            background: var(--white);
-            border-radius: var(--radius-2xl);
-            box-shadow: var(--shadow-md);
-            padding: var(--space-8);
-            border-left: 4px solid var(--blue-primary);
-        }
-
-        .section-header {
-            display: flex;
-            align-items: center;
-            gap: var(--space-4);
-            margin: var(--space-10) 0 var(--space-6);
-            padding-bottom: var(--space-4);
-            border-bottom: 2px solid var(--gray-200);
-        }
-
-        .section-header:first-child {
-            margin-top: 0;
-        }
-
-        .section-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: var(--radius-xl);
-            background: linear-gradient(135deg, var(--blue-primary), var(--blue-light));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--white);
-            font-size: 1.5rem;
-            box-shadow: var(--shadow-md);
-        }
-
-        .section-header h3 {
-            font-family: 'Poppins', sans-serif;
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--navy-900);
-            margin: 0;
-        }
-
-        .form-group {
-            margin-bottom: var(--space-6);
-        }
-
-        .form-label {
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-            font-weight: 600;
-            font-size: 0.9375rem;
-            color: var(--gray-800);
-            margin-bottom: var(--space-3);
-        }
-
-        .form-label i {
-            color: var(--blue-primary);
-            font-size: 0.875rem;
-        }
-
-        .form-input,
-        .form-select,
-        .form-textarea {
-            width: 100%;
-            padding: var(--space-4) var(--space-5);
-            border: 2px solid var(--gray-300);
-            border-radius: var(--radius-lg);
-            font-size: 0.9375rem;
-            color: var(--gray-900);
-            background: var(--white);
             transition: all var(--transition-base);
         }
 
-        .form-input:focus,
-        .form-select:focus,
-        .form-textarea:focus {
+        .badge.show {
+            animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3) translateY(-20px);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           📝 CONTAINER Y FORMULARIO
+           ═══════════════════════════════════════════════════════════════ */
+        .container {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: var(--space-8);
+            padding: var(--space-8);
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.3));
+        }
+
+        .formulario {
+            background: white;
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            padding: var(--space-8);
+            border-left: 4px solid var(--accent-medical);
+        }
+
+        .formulario h3.section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-navy);
+            margin: var(--space-8) 0 var(--space-5);
+            padding-bottom: var(--space-3);
+            border-bottom: 2px solid var(--neutral-200);
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .formulario h3.section-title::before {
+            content: '';
+            width: 4px;
+            height: 1.5rem;
+            background: linear-gradient(180deg, var(--accent-medical), var(--accent-teal));
+            border-radius: var(--radius-full);
+        }
+
+        .formulario label {
+            display: block;
+            margin-top: var(--space-5);
+            font-family: 'Raleway', sans-serif;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            color: var(--neutral-800);
+            margin-bottom: var(--space-2);
+        }
+
+        .formulario input,
+        .formulario textarea,
+        .formulario select {
+            width: 100%;
+            padding: var(--space-4) var(--space-5);
+            border: 2px solid var(--neutral-300);
+            border-radius: var(--radius-lg);
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 1rem;
+            color: var(--neutral-900);
+            background: white;
+            transition: all var(--transition-base);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .formulario input:focus,
+        .formulario textarea:focus,
+        .formulario select:focus {
             outline: none;
-            border-color: var(--blue-primary);
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+            border-color: var(--accent-medical);
+            box-shadow: 0 0 0 4px rgba(0, 160, 176, 0.1), var(--shadow-md);
         }
 
-        .form-input:read-only {
-            background: var(--gray-100);
-            color: var(--gray-600);
-            cursor: not-allowed;
-        }
-
-        .form-textarea {
+        .formulario textarea {
             min-height: 100px;
             resize: vertical;
         }
 
-        .checkbox-grid {
+        /* Checkboxes Premium */
+        .checkbox-group {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: var(--space-3);
             margin-top: var(--space-4);
+            margin-bottom: var(--space-5);
         }
 
-        .checkbox-card {
+        .checkbox-item {
             display: flex;
             align-items: center;
             gap: var(--space-3);
-            background: var(--gray-50);
-            padding: var(--space-4);
+            background: var(--neutral-100);
+            padding: var(--space-3) var(--space-4);
             border-radius: var(--radius-lg);
-            border: 2px solid var(--gray-200);
+            border: 2px solid var(--neutral-200);
             cursor: pointer;
             transition: all var(--transition-base);
         }
 
-        .checkbox-card:hover {
-            background: var(--gray-100);
-            border-color: var(--blue-primary);
+        .checkbox-item:hover {
+            background: var(--neutral-200);
+            border-color: var(--accent-medical);
         }
 
-        .checkbox-card.checked {
-            background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.05));
-            border-color: var(--blue-primary);
+        .checkbox-item.checked {
+            background: linear-gradient(135deg, rgba(0, 160, 176, 0.1), rgba(0, 139, 139, 0.1));
+            border-color: var(--accent-medical);
+            color: var(--accent-teal);
         }
 
-        .checkbox-card input[type="checkbox"] {
+        .checkbox-item input[type="checkbox"] {
             appearance: none;
             width: 1.25rem;
             height: 1.25rem;
-            border: 2px solid var(--gray-400);
+            border: 2px solid var(--neutral-400);
             border-radius: var(--radius-sm);
             cursor: pointer;
             position: relative;
@@ -805,12 +979,12 @@
             flex-shrink: 0;
         }
 
-        .checkbox-card input[type="checkbox"]:checked {
-            background: var(--blue-primary);
-            border-color: var(--blue-primary);
+        .checkbox-item input[type="checkbox"]:checked {
+            background: var(--accent-medical);
+            border-color: var(--accent-medical);
         }
 
-        .checkbox-card input[type="checkbox"]:checked::before {
+        .checkbox-item input[type="checkbox"]:checked::before {
             content: '\f00c';
             font-family: 'Font Awesome 6 Free';
             font-weight: 900;
@@ -818,79 +992,196 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: var(--white);
+            color: white;
             font-size: 0.75rem;
-        }
-
-        .checkbox-label {
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--gray-700);
         }
 
         /* ═══════════════════════════════════════════════════════════════
            🎨 BOTONES DEL FORMULARIO
            ═══════════════════════════════════════════════════════════════ */
-        .form-actions {
+        .button-group {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: var(--space-4);
-            margin-top: var(--space-10);
+            margin-top: var(--space-8);
         }
 
-        .form-btn {
+        .button-group button {
             padding: var(--space-4) var(--space-5);
             border: none;
             border-radius: var(--radius-xl);
+            font-family: 'Raleway', sans-serif;
             font-weight: 700;
             font-size: 0.9375rem;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: var(--space-3);
+            gap: var(--space-2);
             transition: all var(--transition-base);
             box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
         }
 
-        .form-btn:hover {
+        .button-group button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .button-group button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .button-group button:hover {
             transform: translateY(-2px);
             box-shadow: var(--shadow-xl);
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, var(--blue-primary), var(--blue-light));
-            color: var(--white);
+        .button-group button[type="submit"] {
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-cyan));
+            color: white;
         }
 
-        .btn-info {
-            background: linear-gradient(135deg, var(--teal-primary), var(--teal-light));
-            color: var(--white);
+        .button-group button.secondary {
+            background: linear-gradient(135deg, var(--success-dark), var(--success-main));
+            color: white;
         }
 
-        .btn-disabled {
-            background: var(--gray-300);
-            color: var(--gray-600);
+        .button-group button.signature-button {
+            background: linear-gradient(135deg, #8B5CF6, #a78bfa);
+            color: white;
+        }
+
+        .button-group button.mark-evaluated-btn {
+            background: linear-gradient(135deg, var(--accent-medical), var(--accent-teal));
+            color: white;
+        }
+
+        .button-group button:disabled {
+            background: var(--neutral-400);
             cursor: not-allowed;
-        }
-
-        .btn-disabled:hover {
             transform: none;
-            box-shadow: var(--shadow-md);
         }
 
         /* ═══════════════════════════════════════════════════════════════
-           📱 RESPONSIVE
+           👁️ VISTA PREVIA
            ═══════════════════════════════════════════════════════════════ */
-        @media (max-width: 1024px) {
-            .evaluation-counter {
+        .preview {
+            background: white;
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-xl);
+            padding: var(--space-8);
+            border-left: 4px solid var(--gold-accent);
+            position: sticky;
+            top: var(--space-6);
+            max-height: calc(100vh - 3rem);
+            overflow-y: auto;
+        }
+
+        .preview::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .preview::-webkit-scrollbar-track {
+            background: var(--neutral-200);
+            border-radius: var(--radius-full);
+        }
+
+        .preview::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--accent-medical), var(--accent-teal));
+            border-radius: var(--radius-full);
+        }
+
+        .preview h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-navy);
+            margin-bottom: var(--space-6);
+            padding-bottom: var(--space-3);
+            border-bottom: 2px solid var(--gold-accent);
+        }
+
+        .preview p {
+            margin: var(--space-3) 0;
+            font-size: 0.9375rem;
+            color: var(--neutral-700);
+            display: flex;
+            gap: var(--space-2);
+        }
+
+        .preview p strong {
+            min-width: 200px;
+            color: var(--accent-teal);
+            font-weight: 600;
+        }
+
+        .preview-img {
+            width: 100%;
+            margin-top: var(--space-6);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .checkbox-preview-group {
+            margin-top: var(--space-6);
+            padding: var(--space-5);
+            background: var(--neutral-100);
+            border-radius: var(--radius-lg);
+        }
+
+        .checkbox-preview-group strong {
+            display: block;
+            color: var(--primary-blue);
+            font-family: 'Raleway', sans-serif;
+            font-size: 1.0625rem;
+            margin-top: var(--space-4);
+            margin-bottom: var(--space-2);
+        }
+
+        .checkbox-preview-group p {
+            margin-left: var(--space-5);
+            font-size: 0.875rem;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           📱 RESPONSIVE DESIGN
+           ═══════════════════════════════════════════════════════════════ */
+        @media (max-width: 1200px) {
+            .container {
                 grid-template-columns: 1fr;
-                text-align: center;
-                justify-items: center;
+            }
+
+            .preview {
+                position: static;
+                max-height: none;
             }
         }
 
         @media (max-width: 768px) {
+            body {
+                padding: var(--space-3);
+            }
+
+            .main-content-wrapper {
+                padding: var(--space-4) var(--space-3);
+            }
+
+            header {
+                padding: var(--space-6) var(--space-4);
+                border-radius: var(--radius-2xl);
+            }
+
             .header-btn {
                 position: static;
                 width: 100%;
@@ -902,39 +1193,121 @@
                 padding-top: var(--space-6);
             }
 
+            header h1 {
+                font-size: 1.75rem;
+            }
+
             .action-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .checkbox-group {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
                 grid-template-columns: 1fr;
             }
 
             .filter-group {
                 flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           🖨️ ESTILOS PARA IMPRESIÓN
+           ═══════════════════════════════════════════════════════════════ */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
             }
 
-            .checkbox-grid {
-                grid-template-columns: 1fr;
+            .header-btn,
+            .action-buttons,
+            .button-group,
+            .search-filter-container,
+            .evaluation-counter {
+                display: none !important;
             }
 
-            .form-actions {
+            .estudiante {
+                page-break-inside: avoid;
+                box-shadow: none;
+                border: 1px solid var(--neutral-400);
+            }
+
+            .container {
                 grid-template-columns: 1fr;
             }
         }
 
-        /* Scrollbar */
+        /* ═══════════════════════════════════════════════════════════════
+           ✨ ANIMACIONES ADICIONALES
+           ═══════════════════════════════════════════════════════════════ */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .flash-messages {
+            list-style: none;
+            margin-bottom: var(--space-6);
+        }
+
+        .flash-messages li {
+            padding: var(--space-4) var(--space-6);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--space-3);
+            animation: slideInRight 0.4s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .flash-messages li.success {
+            background: var(--success-light);
+            color: var(--success-dark);
+            border-left: 4px solid var(--success-main);
+        }
+
+        .flash-messages li.error {
+            background: var(--error-light);
+            color: var(--error-dark);
+            border-left: 4px solid var(--error-main);
+        }
+
+        .flash-messages li.info {
+            background: var(--info-light);
+            color: var(--info-dark);
+            border-left: 4px solid var(--info-main);
+        }
+
+        /* Scrollbar personalizado global */
         ::-webkit-scrollbar {
             width: 12px;
         }
 
         ::-webkit-scrollbar-track {
-            background: var(--gray-100);
+            background: var(--neutral-200);
         }
 
         ::-webkit-scrollbar-thumb {
-            background: var(--navy-600);
+            background: linear-gradient(180deg, var(--primary-blue), var(--accent-medical));
             border-radius: var(--radius-full);
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: var(--navy-700);
+            background: linear-gradient(180deg, var(--primary-navy), var(--primary-blue));
         }
     </style>
 </head>
@@ -950,6 +1323,7 @@
         </button>
         
         <div class="header-content">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="CardioHome Logo">
             <h1>{{ establecimiento_nombre }} — Evaluación de Medicina Familiar</h1>
         </div>
     </header>
@@ -957,57 +1331,46 @@
     <div class="main-content-wrapper">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <ul style="list-style: none; margin-bottom: var(--space-6);">
+                <ul class="flash-messages">
                     {% for category, message in messages %}
-                        <li style="padding: var(--space-4) var(--space-6); border-radius: var(--radius-lg); margin-bottom: var(--space-3); background: var(--blue-lighter); color: var(--navy-900); display: flex; align-items: center; gap: var(--space-3);">
-                            <i class="fas fa-info-circle"></i>
-                            {{ message }}
-                        </li>
+                        <li class="{{ category }}">{{ message }}</li>
                     {% endfor %}
                 </ul>
             {% endif %}
         {% endwith %}
 
+        <!-- CONTADOR DE EVALUACIONES -->
         <div class="evaluation-counter">
-            <div class="counter-icon">
-                <i class="fas fa-clipboard-check"></i>
-            </div>
+            <i class="fas fa-clipboard-check"></i>
             <span class="counter-text">Evaluaciones completadas para esta nómina:</span>
-            <div class="counter-number" id="completed-forms-count">{{ total_forms_completed_for_nomina }}</div>
-            <button class="counter-refresh-btn" onclick="window.location.reload();">
-                <i class="fas fa-sync-alt"></i>
-                <span>Actualizar</span>
+            <strong id="completed-forms-count">{{ total_forms_completed_for_nomina }}</strong>
+            <button onclick="window.location.reload();">
+                <i class="fas fa-sync-alt"></i> Actualizar
             </button>
         </div>
 
+        <!-- BOTONES DE ACCIÓN -->
         <div class="action-buttons">
-            <button class="action-btn" onclick="imprimirTodosLosFormularios()">
-                <div class="action-btn-icon">
-                    <i class="fas fa-print"></i>
-                </div>
-                <span>Imprimir Formularios</span>
+            <button onclick="imprimirTodosLosFormularios()">
+                <i class="fas fa-print"></i>
+                <span>Imprimir Formularios (HTML)</span>
             </button>
-            <button class="action-btn" onclick="descargarExcelCompletados('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
-                <div class="action-btn-icon">
-                    <i class="fas fa-file-excel"></i>
-                </div>
-                <span>Descargar Excel</span>
+            <button onclick="descargarExcelCompletados('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
+                <i class="fas fa-file-excel"></i>
+                <span>Descargar Excel Evaluados</span>
             </button>
-            <button class="action-btn" onclick="generarEImprimirPDFsVisibles('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
-                <div class="action-btn-icon">
-                    <i class="fas fa-file-pdf"></i>
-                </div>
-                <span>Generar PDFs</span>
+            <button onclick="generarEImprimirPDFsVisibles('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
+                <i class="fas fa-file-pdf"></i>
+                <span>Generar PDFs Visibles</span>
             </button>
         </div>
 
+        <!-- FILTROS Y BÚSQUEDA -->
         <div class="search-filter-container">
-            <div class="filter-header">
-                <div class="filter-header-icon">
-                    <i class="fas fa-sliders-h"></i>
-                </div>
-                <h3>Búsqueda y Filtros</h3>
-            </div>
+            <h3>
+                <i class="fas fa-filter"></i>
+                Búsqueda y Filtros
+            </h3>
             
             <div class="search-wrapper">
                 <input 
@@ -1016,540 +1379,382 @@
                     placeholder="Buscar estudiante por nombre..."
                     oninput="aplicarFiltros()"
                 >
-                <div class="search-icon">
-                    <i class="fas fa-search"></i>
-                </div>
+                <i class="fas fa-search"></i>
             </div>
 
             <div class="filter-group">
-                <label class="filter-option">
+                <label>
                     <input type="radio" name="evaluation_filter" value="all" checked onchange="aplicarFiltros()">
-                    <span class="filter-option-label">
-                        <i class="fas fa-list"></i> Todos los Estudiantes
-                    </span>
+                    <span>Todos los Estudiantes</span>
                 </label>
-                <label class="filter-option">
+                <label>
                     <input type="radio" name="evaluation_filter" value="evaluated" onchange="aplicarFiltros()">
-                    <span class="filter-option-label">
-                        <i class="fas fa-check-circle"></i> Evaluados
-                    </span>
+                    <span>Evaluados</span>
                 </label>
-                <label class="filter-option">
+                <label>
                     <input type="radio" name="evaluation_filter" value="not_evaluated" onchange="aplicarFiltros()">
-                    <span class="filter-option-label">
-                        <i class="fas fa-clock"></i> Pendientes
-                    </span>
+                    <span>Pendientes</span>
                 </label>
             </div>
         </div>
 
+        <!-- LISTA DE ESTUDIANTES -->
         {% if estudiantes %}
             {% for est in estudiantes %}
             <details class="estudiante" data-nombre="{{ est.nombre.lower() }}" data-evaluated-status="{{ 'true' if est.fecha_relleno is not none else 'false' }}" style="animation-delay: {{ loop.index0 * 0.05 }}s;">
                 <summary>
-                    <div class="student-avatar">
-                        <img src="https://ui-avatars.com/api/?name={{ est.nombre|urlencode }}&background=2563EB&color=fff&bold=true" alt="{{ est.nombre }}">
-                    </div>
                     <div class="student-info">
-                        <div class="student-name">{{ est.nombre }}</div>
-                        <div class="student-meta">
-                            <div class="student-meta-item">
-                                <i class="fas fa-id-card"></i>
-                                <span>{{ est.rut }}</span>
-                            </div>
-                            <div class="student-meta-item">
-                                <i class="fas fa-birthday-cake"></i>
-                                <span id="edad_display_{{ est.id }}">{{ est.edad }} años</span>
-                            </div>
+                        <div class="student-icon">
+                            <i class="fas fa-user-md"></i>
                         </div>
+                        <span>{{ est.nombre }}</span>
                     </div>
                     <i class="fas fa-chevron-right chevron-icon"></i>
                 </summary>
 
                 {% if est.fecha_relleno is not none %}
-                    <span class="badge">
+                    <span class="badge show" style="background: linear-gradient(135deg, var(--success-main), var(--success-dark)); color: white;">
                         <i class="fas fa-check-circle"></i> Evaluado
                     </span>
                 {% endif %}
 
-                <div class="formulario-container">
+                <div class="container">
                     <div class="formulario">
                         <form method="POST" action="{{ url_for('guardar_formulario', estudiante_id=est.id) }}" onsubmit="return confirmarEnvio(this)">
+                            <!-- INFORMACIÓN BÁSICA -->
+                            <h3 class="section-title">Información del Estudiante</h3>
                             
-                            <div class="section-header">
-                                <div class="section-icon">
-                                    <i class="fas fa-user-circle"></i>
-                                </div>
-                                <h3>Información del Estudiante</h3>
-                            </div>
+                            <label for="nombre_{{ est.id }}">Nombre Completo:</label>
+                            <input type="text" name="nombre" id="nombre_{{ est.id }}" value="{{ est.nombre }}" readonly>
                             
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-signature"></i>
-                                    Nombre Completo
-                                </label>
-                                <input type="text" name="nombre" class="form-input" value="{{ est.nombre }}" readonly>
-                            </div>
+                            <label for="rut_{{ est.id }}">RUT:</label>
+                            <input type="text" name="rut" id="rut_{{ est.id }}" value="{{ est.rut }}" readonly>
                             
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-id-card"></i>
-                                    RUT
-                                </label>
-                                <input type="text" name="rut" class="form-input" value="{{ est.rut }}" readonly>
-                            </div>
+                            <label for="genero_{{ est.id }}">Género:</label>
+                            <input type="text" name="genero" id="genero_{{ est.id }}" value="{{ 'Femenino' if est.genero_f else 'Masculino' if est.genero_m else '-' }}" readonly>
                             
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-venus-mars"></i>
-                                    Género
-                                </label>
-                                <input type="text" name="genero" class="form-input" value="{{ 'Femenino' if est.genero_f else 'Masculino' if est.genero_m else '-' }}" readonly>
-                            </div>
+                            <label for="fecha_nacimiento_{{ est.id }}">Fecha de Nacimiento:</label>
+                            <input type="text" name="fecha_nacimiento" id="fecha_nacimiento_{{ est.id }}" value="{{ est.fecha_nacimiento_formato }}" readonly>
                             
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-calendar-alt"></i>
-                                    Fecha de Nacimiento
-                                </label>
-                                <input type="date" name="fecha_nacimiento" id="fecha_nacimiento_{{ est.id }}" class="form-input" value="{{ est.fecha_nacimiento if est.fecha_nacimiento is not none else '' }}" onchange="calcularEdad(this, 'edad_{{ est.id }}', 'edad_display_{{ est.id }}')">
-                            </div>
+                            <label for="edad_{{ est.id }}">Edad:</label>
+                            <input type="text" name="edad" id="edad_{{ est.id }}" value="{{ est.edad }}" readonly>
                             
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-hourglass-half"></i>
-                                    Edad
-                                </label>
-                                <input type="text" name="edad" id="edad_{{ est.id }}" class="form-input" value="{{ est.edad }}" readonly>
-                            </div>
+                            <label for="nacionalidad_{{ est.id }}">Nacionalidad:</label>
+                            <input type="text" name="nacionalidad" id="nacionalidad_{{ est.id }}" value="{{ est.nacionalidad }}" readonly>
+
+                            <!-- FECHA DE EVALUACIÓN -->
+                            <h3 class="section-title">Evaluación Médica</h3>
                             
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-flag"></i>
-                                    Nacionalidad
-                                </label>
-                                <input type="text" name="nacionalidad" class="form-input" value="{{ est.nacionalidad }}" readonly>
-                            </div>
-
-                            <div class="section-header">
-                                <div class="section-icon">
-                                    <i class="fas fa-stethoscope"></i>
-                                </div>
-                                <h3>Evaluación Médica</h3>
-                            </div>
+                            <label for="fecha_evaluacion_{{ est.id }}">Fecha Evaluación:</label>
+                            <input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}" value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}" oninput="updatePreview(this.form)">
                             
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-notes-medical"></i>
-                                    Diagnóstico Principal
-                                </label>
-                                <textarea name="diagnostico_1" class="form-textarea" rows="3" placeholder="Ingrese el diagnóstico principal...">{{ est.diagnostico_1 if est.diagnostico_1 is not none else '' }}</textarea>
-                            </div>
+                            <label for="diagnostico_1_{{ est.id }}">Diagnóstico Principal:</label>
+                            <textarea name="diagnostico_1" id="diagnostico_1_{{ est.id }}" rows="3" placeholder="Ingrese el diagnóstico principal..." oninput="updatePreview(this.form)">{{ est.diagnostico_1 if est.diagnostico_1 is not none else '' }}</textarea>
 
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-calendar-check"></i>
-                                    Fecha Evaluación
-                                </label>
-                                <input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}" class="form-input" value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}" onchange="actualizarFechaReevaluacion(this)">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-clock"></i>
-                                    Plazo de Reevaluación
-                                </label>
-                                <select name="fecha_reevaluacion_select" id="plazo_reevaluacion_{{ est.id }}" class="form-select" onchange="setFechaReevaluacion(this)">
-                                    <option value="">-- Seleccionar plazo --</option>
-                                    <option value="1">1 año</option>
-                                    <option value="2">2 años</option>
-                                    <option value="3">3 años</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-calendar-day"></i>
-                                    Fecha Reevaluación
-                                </label>
-                                <input type="date" name="fecha_reevaluacion" id="fecha_reevaluacion_{{ est.id }}" class="form-input" value="{% if est.fecha_reevaluacion %}{{ est.fecha_reevaluacion }}{% endif %}">
-                            </div>
-
-                            <div class="section-header">
-                                <div class="section-icon">
-                                    <i class="fas fa-baby"></i>
-                                </div>
-                                <h3>Antecedentes Perinatales</h3>
-                            </div>
+                            <!-- ANTECEDENTES PERINATALES -->
+                            <h3 class="section-title">Antecedentes Perinatales</h3>
                             
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-procedures"></i>
-                                    Tipo de Parto
+                            <label>Tipo de Parto:</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item {% if est.check_cesarea %}checked{% endif %}">
+                                    <input type="checkbox" name="check_cesarea" id="check_cesarea_{{ est.id }}" value="CESAREA" {% if est.check_cesarea %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Cesárea
                                 </label>
-                                <div class="checkbox-grid">
-                                    <label class="checkbox-card {% if est.check_cesarea %}checked{% endif %}">
-                                        <input type="checkbox" name="check_cesarea" value="CESAREA" {% if est.check_cesarea %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Cesárea</span>
-                                    </label>
-                                    <label class="checkbox-card {% if est.check_vaginal %}checked{% endif %}">
-                                        <input type="checkbox" name="check_vaginal" value="VAGINAL" {% if est.check_vaginal %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Vaginal</span>
-                                    </label>
-                                </div>
+                                <label class="checkbox-item {% if est.check_vaginal %}checked{% endif %}">
+                                    <input type="checkbox" name="check_vaginal" id="check_vaginal_{{ est.id }}" value="VAGINAL" {% if est.check_vaginal %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Vaginal
+                                </label>
                             </div>
 
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-clock"></i>
-                                    Gestación
+                            <label>Gestación:</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item {% if est.check_atermino %}checked{% endif %}">
+                                    <input type="checkbox" name="check_atermino" id="check_atermino_{{ est.id }}" value="A_TERMINO" {% if est.check_atermino %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> A Término
                                 </label>
-                                <div class="checkbox-grid">
-                                    <label class="checkbox-card {% if est.check_atermino %}checked{% endif %}">
-                                        <input type="checkbox" name="check_atermino" value="A_TERMINO" {% if est.check_atermino %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">A Término</span>
-                                    </label>
-                                    <label class="checkbox-card {% if est.check_prematuro %}checked{% endif %}">
-                                        <input type="checkbox" name="check_prematuro" value="PREMATURO" {% if est.check_prematuro %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Prematuro</span>
-                                    </label>
-                                </div>
+                                <label class="checkbox-item {% if est.check_prematuro %}checked{% endif %}">
+                                    <input type="checkbox" name="check_prematuro" id="check_prematuro_{{ est.id }}" value="PREMATURO" {% if est.check_prematuro %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Prematuro
+                                </label>
                             </div>
 
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-comment-medical"></i>
-                                    Observación 1 (Antecedentes Perinatales - Máx. 70)
-                                </label>
-                                <textarea name="observacion_1" class="form-textarea" rows="2" maxlength="70" placeholder="Máx. 70 caracteres">{{ est.observacion_1 if est.observacion_1 is not none else '' }}</textarea>
-                            </div>
+                            <label for="observacion_1_{{ est.id }}">Observación 1 (Antecedentes Perinatales - Máx. 70):</label>
+                            <textarea name="observacion_1" id="observacion_1_{{ est.id }}" rows="2" maxlength="70" placeholder="Máx. 70 caracteres" oninput="updatePreview(this.form)">{{ est.observacion_1 if est.observacion_1 is not none else '' }}</textarea>
 
-                            <div class="section-header">
-                                <div class="section-icon">
-                                    <i class="fas fa-brain"></i>
-                                </div>
-                                <h3>Desarrollo Psicomotor (DSM)</h3>
-                            </div>
+                            <!-- DESARROLLO PSICOMOTOR -->
+                            <h3 class="section-title">Desarrollo Psicomotor (DSM)</h3>
                             
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-child"></i>
-                                    Estado del Desarrollo
+                            <label>Estado del Desarrollo:</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item {% if est.check_acorde %}checked{% endif %}">
+                                    <input type="checkbox" name="check_acorde" id="check_acorde_{{ est.id }}" value="LOGRADO_ACORDE_A_EDAD" {% if est.check_acorde %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Logrado Acorde a Edad
                                 </label>
-                                <div class="checkbox-grid">
-                                    <label class="checkbox-card {% if est.check_acorde %}checked{% endif %}">
-                                        <input type="checkbox" name="check_acorde" value="LOGRADO_ACORDE_A_EDAD" {% if est.check_acorde %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Logrado Acorde a Edad</span>
-                                    </label>
-                                    <label class="checkbox-card {% if est.check_retraso %}checked{% endif %}">
-                                        <input type="checkbox" name="check_retraso" value="RETRASO_DEL_LENGUAJE" {% if est.check_retraso %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Retraso del Lenguaje</span>
-                                    </label>
-                                    <label class="checkbox-card {% if est.check_retrasogeneralizado %}checked{% endif %}">
-                                        <input type="checkbox" name="check_retrasogeneralizado" value="RETRASO_GENERALIZADO" {% if est.check_retrasogeneralizado %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Retraso Generalizado</span>
-                                    </label>
-                                </div>
+                                <label class="checkbox-item {% if est.check_retraso %}checked{% endif %}">
+                                    <input type="checkbox" name="check_retraso" id="check_retraso_{{ est.id }}" value="RETRASO_DEL_LENGUAJE" {% if est.check_retraso %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Retraso del Lenguaje
+                                </label>
+                                <label class="checkbox-item {% if est.check_retrasogeneralizado %}checked{% endif %}">
+                                    <input type="checkbox" name="check_retrasogeneralizado" id="check_retrasogeneralizado_{{ est.id }}" value="RETRASO_GENERALIZADO" {% if est.check_retrasogeneralizado %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Retraso Generalizado
+                                </label>
                             </div>
 
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-comment-medical"></i>
-                                    Observación 2 (DSM - Máx. 70)
-                                </label>
-                                <textarea name="observacion_2" class="form-textarea" rows="2" maxlength="70" placeholder="Máx. 70 caracteres">{{ est.observacion_2 if est.observacion_2 is not none else '' }}</textarea>
-                            </div>
+                            <label for="observacion_2_{{ est.id }}">Observación 2 (DSM - Máx. 70):</label>
+                            <textarea name="observacion_2" id="observacion_2_{{ est.id }}" rows="2" maxlength="70" placeholder="Máx. 70 caracteres" oninput="updatePreview(this.form)">{{ est.observacion_2 if est.observacion_2 is not none else '' }}</textarea>
 
-                            <div class="section-header">
-                                <div class="section-icon">
-                                    <i class="fas fa-syringe"></i>
-                                </div>
-                                <h3>Vacunación</h3>
-                            </div>
+                            <!-- VACUNAS -->
+                            <h3 class="section-title">Vacunación</h3>
                             
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-shield-virus"></i>
-                                    Estado del Esquema
+                            <label>Estado del Esquema:</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item {% if est.check_esquemac %}checked{% endif %}">
+                                    <input type="checkbox" name="check_esquemac" id="check_esquemac_{{ est.id }}" value="ESQUEMA_COMPLETO" {% if est.check_esquemac %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Completo
                                 </label>
-                                <div class="checkbox-grid">
-                                    <label class="checkbox-card {% if est.check_esquemac %}checked{% endif %}">
-                                        <input type="checkbox" name="check_esquemac" value="ESQUEMA_COMPLETO" {% if est.check_esquemac %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Completo</span>
-                                    </label>
-                                    <label class="checkbox-card {% if est.check_esquemai %}checked{% endif %}">
-                                        <input type="checkbox" name="check_esquemai" value="ESQUEMA_INCOMPLETO" {% if est.check_esquemai %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Incompleto</span>
-                                    </label>
-                                </div>
+                                <label class="checkbox-item {% if est.check_esquemai %}checked{% endif %}">
+                                    <input type="checkbox" name="check_esquemai" id="check_esquemai_{{ est.id }}" value="ESQUEMA_INCOMPLETO" {% if est.check_esquemai %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Incompleto
+                                </label>
                             </div>
 
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-comment-medical"></i>
-                                    Observación 3 (Vacunas - Máx. 70)
-                                </label>
-                                <textarea name="observacion_3" class="form-textarea" rows="2" maxlength="70" placeholder="Máx. 70 caracteres">{{ est.observacion_3 if est.observacion_3 is not none else '' }}</textarea>
-                            </div>
+                            <label for="observacion_3_{{ est.id }}">Observación 3 (Vacunas - Máx. 70):</label>
+                            <textarea name="observacion_3" id="observacion_3_{{ est.id }}" rows="2" maxlength="70" placeholder="Máx. 70 caracteres" oninput="updatePreview(this.form)">{{ est.observacion_3 if est.observacion_3 is not none else '' }}</textarea>
 
-                            <div class="section-header">
-                                <div class="section-icon">
-                                    <i class="fas fa-allergies"></i>
-                                </div>
-                                <h3>Alergias</h3>
-                            </div>
+                            <!-- ALERGIAS -->
+                            <h3 class="section-title">Alergias</h3>
                             
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    Estado de Alergias
+                            <label>Estado de Alergias:</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item {% if est.check_alergiano %}checked{% endif %}">
+                                    <input type="checkbox" name="check_alergiano" id="check_alergiano_{{ est.id }}" value="NO_ALERGIAS" {% if est.check_alergiano %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> No (NO_1)
                                 </label>
-                                <div class="checkbox-grid">
-                                    <label class="checkbox-card {% if est.check_alergiano %}checked{% endif %}">
-                                        <input type="checkbox" name="check_alergiano" value="NO_ALERGIAS" {% if est.check_alergiano %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">No (NO_1)</span>
-                                    </label>
-                                    <label class="checkbox-card {% if est.check_alergiasi %}checked{% endif %}">
-                                        <input type="checkbox" name="check_alergiasi" value="SI_ALERGIAS" {% if est.check_alergiasi %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Sí (SI_1)</span>
-                                    </label>
-                                </div>
+                                <label class="checkbox-item {% if est.check_alergiasi %}checked{% endif %}">
+                                    <input type="checkbox" name="check_alergiasi" id="check_alergiasi_{{ est.id }}" value="SI_ALERGIAS" {% if est.check_alergiasi %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Sí (SI_1)
+                                </label>
                             </div>
 
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-comment-medical"></i>
-                                    Observación 4 (Alergias - Máx. 70)
-                                </label>
-                                <textarea name="observacion_4" class="form-textarea" rows="2" maxlength="70" placeholder="Máx. 70 caracteres">{{ est.observacion_4 if est.observacion_4 is not none else '' }}</textarea>
-                            </div>
+                            <label for="observacion_4_{{ est.id }}">Observación 4 (Alergias - Máx. 70):</label>
+                            <textarea name="observacion_4" id="observacion_4_{{ est.id }}" rows="2" maxlength="70" placeholder="Máx. 70 caracteres" oninput="updatePreview(this.form)">{{ est.observacion_4 if est.observacion_4 is not none else '' }}</textarea>
 
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-pills"></i>
-                                    Observación 5 (Medicamentos - Máx. 70)
-                                </label>
-                                <textarea name="observacion_5" class="form-textarea" rows="2" maxlength="70" placeholder="Máx. 70 caracteres">{{ est.observacion_5 if est.observacion_5 is not none else '' }}</textarea>
-                            </div>
+                            <label for="observacion_5_{{ est.id }}">Observación 5 (Medicamentos - Máx. 70):</label>
+                            <textarea name="observacion_5" id="observacion_5_{{ est.id }}" rows="2" maxlength="70" placeholder="Máx. 70 caracteres" oninput="updatePreview(this.form)">{{ est.observacion_5 if est.observacion_5 is not none else '' }}</textarea>
 
-                            <div class="section-header">
-                                <div class="section-icon">
-                                    <i class="fas fa-hospital"></i>
-                                </div>
-                                <h3>Hospitalizaciones y Cirugías</h3>
-                            </div>
+                            <!-- HOSPITALIZACIONES/CIRUGÍAS -->
+                            <h3 class="section-title">Hospitalizaciones y Cirugías</h3>
                             
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-user-md"></i>
-                                    Historial Quirúrgico
+                            <label>Historial Quirúrgico:</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item {% if est.check_cirugiano %}checked{% endif %}">
+                                    <input type="checkbox" name="check_cirugiano" id="check_cirugiano_{{ est.id }}" value="NO_CIRUGIAS" {% if est.check_cirugiano %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> No (NO_2)
                                 </label>
-                                <div class="checkbox-grid">
-                                    <label class="checkbox-card {% if est.check_cirugiano %}checked{% endif %}">
-                                        <input type="checkbox" name="check_cirugiano" value="NO_CIRUGIAS" {% if est.check_cirugiano %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">No (NO_2)</span>
-                                    </label>
-                                    <label class="checkbox-card {% if est.check_cirugiasi %}checked{% endif %}">
-                                        <input type="checkbox" name="check_cirugiasi" value="SI_CIRUGIAS" {% if est.check_cirugiasi %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Sí (SI_2)</span>
-                                    </label>
-                                </div>
+                                <label class="checkbox-item {% if est.check_cirugiasi %}checked{% endif %}">
+                                    <input type="checkbox" name="check_cirugiasi" id="check_cirugiasi_{{ est.id }}" value="SI_CIRUGIAS" {% if est.check_cirugiasi %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Sí (SI_2)
+                                </label>
                             </div>
 
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-comment-medical"></i>
-                                    Observación 6 (Hospitalizaciones - Máx. 32)
-                                </label>
-                                <textarea name="observacion_6" class="form-textarea" rows="1" maxlength="32" placeholder="Máx. 32 caracteres">{{ est.observacion_6 if est.observacion_6 is not none else '' }}</textarea>
-                            </div>
+                            <label for="observacion_6_{{ est.id }}">Observación 6 (Hospitalizaciones - Máx. 32):</label>
+                            <textarea name="observacion_6" id="observacion_6_{{ est.id }}" rows="1" maxlength="32" placeholder="Máx. 32 caracteres" oninput="updatePreview(this.form)">{{ est.observacion_6 if est.observacion_6 is not none else '' }}</textarea>
 
-                            <div class="section-header">
-                                <div class="section-icon">
-                                    <i class="fas fa-eye"></i>
-                                </div>
-                                <h3>Visión y Audición</h3>
-                            </div>
+                            <!-- VISIÓN Y AUDICIÓN -->
+                            <h3 class="section-title">Visión y Audición</h3>
                             
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-glasses"></i>
-                                    Evaluación Visual
+                            <label>Evaluación Visual:</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item {% if est.check_visionsinalteracion %}checked{% endif %}">
+                                    <input type="checkbox" name="check_visionsinalteracion" id="check_visionsinalteracion_{{ est.id }}" value="SIN_ALTERACION_VISION" {% if est.check_visionsinalteracion %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Sin Alteración
                                 </label>
-                                <div class="checkbox-grid">
-                                    <label class="checkbox-card {% if est.check_visionsinalteracion %}checked{% endif %}">
-                                        <input type="checkbox" name="check_visionsinalteracion" value="SIN_ALTERACION_VISION" {% if est.check_visionsinalteracion %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Sin Alteración</span>
-                                    </label>
-                                    <label class="checkbox-card {% if est.check_visionrefraccion %}checked{% endif %}">
-                                        <input type="checkbox" name="check_visionrefraccion" value="VICIOS_DE_REFRACCION" {% if est.check_visionrefraccion %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Vicios de Refracción</span>
-                                    </label>
-                                </div>
+                                <label class="checkbox-item {% if est.check_visionrefraccion %}checked{% endif %}">
+                                    <input type="checkbox" name="check_visionrefraccion" id="check_visionrefraccion_{{ est.id }}" value="VICIOS_DE_REFRACCION" {% if est.check_visionrefraccion %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Vicios de Refracción
+                                </label>
                             </div>
 
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-comment-medical"></i>
-                                    Observación 7 (Visión - Máx. 32)
+                            <label for="observacion_7_{{ est.id }}">Observación 7 (Visión - Máx. 32):</label>
+                            <textarea name="observacion_7" id="observacion_7_{{ est.id }}" rows="1" maxlength="32" placeholder="Máx. 32 caracteres" oninput="updatePreview(this.form)">{{ est.observacion_7 if est.observacion_7 is not none else '' }}</textarea>
+
+                            <label>Evaluación Auditiva:</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item {% if est.check_audicionnormal %}checked{% endif %}">
+                                    <input type="checkbox" name="check_audicionnormal" id="check_audicionnormal_{{ est.id }}" value="NORMAL_AUDICION" {% if est.check_audicionnormal %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Normal
                                 </label>
-                                <textarea name="observacion_7" class="form-textarea" rows="1" maxlength="32" placeholder="Máx. 32 caracteres">{{ est.observacion_7 if est.observacion_7 is not none else '' }}</textarea>
+                                <label class="checkbox-item {% if est.check_hipoacusia %}checked{% endif %}">
+                                    <input type="checkbox" name="check_hipoacusia" id="check_hipoacusia_{{ est.id }}" value="HIPOACUSIA" {% if est.check_hipoacusia %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Hipoacusia
+                                </label>
+                                <label class="checkbox-item {% if est.check_tapondecerumen %}checked{% endif %}">
+                                    <input type="checkbox" name="check_tapondecerumen" id="check_tapondecerumen_{{ est.id }}" value="TAPON_DE_CERUMEN" {% if est.check_tapondecerumen %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Tapón de Cerumen
+                                </label>
                             </div>
 
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-assistive-listening-systems"></i>
-                                    Evaluación Auditiva
-                                </label>
-                                <div class="checkbox-grid">
-                                    <label class="checkbox-card {% if est.check_audicionnormal %}checked{% endif %}">
-                                        <input type="checkbox" name="check_audicionnormal" value="NORMAL_AUDICION" {% if est.check_audicionnormal %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Normal</span>
-                                    </label>
-                                    <label class="checkbox-card {% if est.check_hipoacusia %}checked{% endif %}">
-                                        <input type="checkbox" name="check_hipoacusia" value="HIPOACUSIA" {% if est.check_hipoacusia %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Hipoacusia</span>
-                                    </label>
-                                    <label class="checkbox-card {% if est.check_tapondecerumen %}checked{% endif %}">
-                                        <input type="checkbox" name="check_tapondecerumen" value="TAPON_DE_CERUMEN" {% if est.check_tapondecerumen %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Tapón de Cerumen</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="section-header">
-                                <div class="section-icon">
-                                    <i class="fas fa-tooth"></i>
-                                </div>
-                                <h3>Salud Bucodental</h3>
-                            </div>
+                            <!-- SALUD BUCODENTAL -->
+                            <h3 class="section-title">Salud Bucodental</h3>
                             
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-teeth"></i>
-                                    Hallazgos Bucales
+                            <label>Hallazgos Bucales:</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item {% if est.check_sinhallazgos %}checked{% endif %}">
+                                    <input type="checkbox" name="check_sinhallazgos" id="check_sinhallazgos_{{ est.id }}" value="SIN_HALLAZGOS" {% if est.check_sinhallazgos %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Sin Hallazgos
                                 </label>
-                                <div class="checkbox-grid">
-                                    <label class="checkbox-card {% if est.check_sinhallazgos %}checked{% endif %}">
-                                        <input type="checkbox" name="check_sinhallazgos" value="SIN_HALLAZGOS" {% if est.check_sinhallazgos %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Sin Hallazgos</span>
-                                    </label>
-                                    <label class="checkbox-card {% if est.check_caries %}checked{% endif %}">
-                                        <input type="checkbox" name="check_caries" value="CARIES" {% if est.check_caries %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Caries</span>
-                                    </label>
-                                    <label class="checkbox-card {% if est.check_apinamientodental %}checked{% endif %}">
-                                        <input type="checkbox" name="check_apinamientodental" value="APINAMIENTO_DENTAL" {% if est.check_apinamientodental %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Apiñamiento</span>
-                                    </label>
-                                    <label class="checkbox-card {% if est.check_retenciondental %}checked{% endif %}">
-                                        <input type="checkbox" name="check_retenciondental" value="RETENCION_DENTAL" {% if est.check_retenciondental %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Retención</span>
-                                    </label>
-                                    <label class="checkbox-card {% if est.check_frenillolingual %}checked{% endif %}">
-                                        <input type="checkbox" name="check_frenillolingual" value="FRENILLO_LINGUAL" {% if est.check_frenillolingual %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Frenillo</span>
-                                    </label>
-                                    <label class="checkbox-card {% if est.check_hipertrofia %}checked{% endif %}">
-                                        <input type="checkbox" name="check_hipertrofia" value="HIPERTROFIA_AMIGDALINA" {% if est.check_hipertrofia %}checked{% endif %} onchange="updateCheckboxStyle(this)">
-                                        <span class="checkbox-label">Hipertrofia</span>
-                                    </label>
-                                </div>
+                                <label class="checkbox-item {% if est.check_caries %}checked{% endif %}">
+                                    <input type="checkbox" name="check_caries" id="check_caries_{{ est.id }}" value="CARIES" {% if est.check_caries %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Caries
+                                </label>
+                                <label class="checkbox-item {% if est.check_apinamientodental %}checked{% endif %}">
+                                    <input type="checkbox" name="check_apinamientodental" id="check_apinamientodental_{{ est.id }}" value="APINAMIENTO_DENTAL" {% if est.check_apinamientodental %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Apiñamiento
+                                </label>
+                                <label class="checkbox-item {% if est.check_retenciondental %}checked{% endif %}">
+                                    <input type="checkbox" name="check_retenciondental" id="check_retenciondental_{{ est.id }}" value="RETENCION_DENTAL" {% if est.check_retenciondental %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Retención
+                                </label>
+                                <label class="checkbox-item {% if est.check_frenillolingual %}checked{% endif %}">
+                                    <input type="checkbox" name="check_frenillolingual" id="check_frenillolingual_{{ est.id }}" value="FRENILLO_LINGUAL" {% if est.check_frenillolingual %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Frenillo
+                                </label>
+                                <label class="checkbox-item {% if est.check_hipertrofia %}checked{% endif %}">
+                                    <input type="checkbox" name="check_hipertrofia" id="check_hipertrofia_{{ est.id }}" value="HIPERTROFIA_AMIGDALINA" {% if est.check_hipertrofia %}checked{% endif %} onchange="updateCheckboxStyle(this); updatePreview(this.form)"> Hipertrofia
+                                </label>
                             </div>
 
-                            <div class="section-header">
-                                <div class="section-icon">
-                                    <i class="fas fa-weight"></i>
-                                </div>
-                                <h3>Examen Físico y Clasificación</h3>
-                            </div>
+                            <!-- EXAMEN FÍSICO Y CLASIFICACIÓN -->
+                            <h3 class="section-title">Examen Físico y Clasificación</h3>
                             
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-ruler-vertical"></i>
-                                    Altura (cm)
-                                </label>
-                                <input type="number" name="altura" class="form-input" step="0.1" min="0" value="{{ est.altura if est.altura is not none else '' }}" placeholder="Ej: 165.5" oninput="calculateIMC(this.form)">
-                            </div>
+                            <label for="altura_{{ est.id }}">Altura (cm):</label>
+                            <input type="number" name="altura" id="altura_{{ est.id }}" step="0.1" min="0" value="{{ est.altura if est.altura is not none else '' }}" placeholder="Ej: 165.5" oninput="calculateIMC(this.form); updatePreview(this.form)">
                             
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-weight"></i>
-                                    Peso (kg)
-                                </label>
-                                <input type="number" name="peso" class="form-input" step="0.1" min="0" value="{{ est.peso if est.peso is not none else '' }}" placeholder="Ej: 60.2" oninput="calculateIMC(this.form)">
-                            </div>
+                            <label for="peso_{{ est.id }}">Peso (kg):</label>
+                            <input type="number" name="peso" id="peso_{{ est.id }}" step="0.1" min="0" value="{{ est.peso if est.peso is not none else '' }}" placeholder="Ej: 60.2" oninput="calculateIMC(this.form); updatePreview(this.form)">
                             
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-calculator"></i>
-                                    I.M.C
-                                </label>
-                                <input type="text" name="imc" class="form-input" value="{{ est.imc if est.imc is not none else '' }}" readonly>
-                            </div>
+                            <label for="imc_{{ est.id }}">I.M.C:</label>
+                            <input type="text" name="imc" id="imc_{{ est.id }}" value="{{ est.imc if est.imc is not none else '' }}" readonly>
                             
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-chart-line"></i>
-                                    Clasificación (IMC)
-                                </label>
-                                <input type="text" name="clasificacion_imc" class="form-input" value="{{ est.clasificacion_imc if est.clasificacion_imc is not none else '' }}" readonly>
-                            </div>
+                            <label for="clasificacion_imc_{{ est.id }}">Clasificación (IMC):</label>
+                            <input type="text" name="clasificacion_imc" id="clasificacion_imc_{{ est.id }}" value="{{ est.clasificacion_imc if est.clasificacion_imc is not none else '' }}" readonly>
 
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-file-medical"></i>
-                                    Diagnóstico Complementario
-                                </label>
-                                <textarea name="diagnostico_complementario" class="form-textarea" rows="3" placeholder="Notas adicionales sobre el diagnóstico complementario.">{{ est.diagnostico_complementario if est.diagnostico_complementario is not none else '' }}</textarea>
-                            </div>
+                            <label for="diagnostico_complementario_{{ est.id }}">Diagnóstico Complementario:</label>
+                            <textarea name="diagnostico_complementario" id="diagnostico_complementario_{{ est.id }}" rows="3" placeholder="Notas adicionales sobre el diagnóstico complementario." oninput="updatePreview(this.form)">{{ est.diagnostico_complementario if est.diagnostico_complementario is not none else '' }}</textarea>
 
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-prescription"></i>
-                                    Indicaciones
-                                </label>
-                                <textarea name="indicaciones" class="form-textarea" rows="2" placeholder="Detalles de indicaciones.">{{ est.indicaciones if est.indicaciones is not none else '' }}</textarea>
-                            </div>
+                            <label for="indicaciones_{{ est.id }}">Indicaciones:</label>
+                            <textarea name="indicaciones" id="indicaciones_{{ est.id }}" rows="2" placeholder="Detalles de indicaciones." oninput="updatePreview(this.form)">{{ est.indicaciones if est.indicaciones is not none else '' }}</textarea>
                             
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-share"></i>
-                                    Derivaciones
-                                </label>
-                                <textarea name="derivaciones" class="form-textarea" rows="2" placeholder="Detalles de derivaciones a especialistas.">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
-                            </div>
+                            <label for="derivaciones_{{ est.id }}">Derivaciones:</label>
+                            <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="2" placeholder="Detalles de derivaciones a especialistas." oninput="updatePreview(this.form)">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
 
-                            <div class="form-actions">
-                                <button type="submit" class="form-btn btn-primary">
-                                    <i class="fas fa-file-pdf"></i>
-                                    <span>Guardar y Generar PDF</span>
+                            <!-- FECHA DE REEVALUACIÓN -->
+                            <label for="fecha_reevaluacion_select_{{ est.id }}">Plazo de Reevaluación:</label>
+                            <select name="fecha_reevaluacion_select" id="fecha_reevaluacion_select_{{ est.id }}" onchange="setFechaReevaluacion(this)">
+                                <option value="">-- Seleccionar plazo --</option>
+                                <option value="1">1 año</option>
+                                <option value="2">2 años</option>
+                                <option value="3">3 años</option>
+                            </select>
+
+                            <label for="fecha_reevaluacion_{{ est.id }}">Fecha Reevaluación:</label>
+                            <input type="date" name="fecha_reevaluacion" id="fecha_reevaluacion_{{ est.id }}" value="{% if est.fecha_reevaluacion %}{{ est.fecha_reevaluacion }}{% endif %}" oninput="updatePreview(this.form)">
+
+                            <!-- BOTONES DE ACCIÓN -->
+                            <div class="button-group">
+                                <button type="submit">
+                                    <i class="fas fa-file-pdf"></i> Guardar y Generar PDF
                                 </button>
-                                <button type="button" class="form-btn {% if est.fecha_relleno is not none %}btn-disabled{% else %}btn-info{% endif %}" 
+                                <button type="button" class="secondary" onclick="enviarADrive(this.form)">
+                                    <i class="fab fa-google-drive"></i> Enviar a Drive
+                                </button>
+                                <button type="button" class="signature-button" onclick="insertarFirma()">
+                                    <i class="fas fa-signature"></i> Insertar Firma
+                                </button>
+                                <button type="button" class="mark-evaluated-btn" 
                                     {% if est.fecha_relleno is not none %}disabled{% endif %} 
                                     onclick="marcarComoEvaluado(this)">
-                                    <i class="fas fa-check-circle"></i>
-                                    <span>{% if est.fecha_relleno is not none %}Evaluado{% else %}Marcar como Evaluado{% endif %}</span>
+                                    <i class="fas fa-check-circle"></i> 
+                                    {% if est.fecha_relleno is not none %}Evaluado{% else %}Marcar como Evaluado{% endif %}
                                 </button>
                             </div>
                         </form>
+                    </div>
+
+                    <!-- VISTA PREVIA -->
+                    <div class="preview">
+                        <h3><i class="fas fa-eye"></i> Vista Previa</h3>
+                        <p><strong>Nombre:</strong> <span class="prev-nombre">{{ est.nombre }}</span></p>
+                        <p><strong>RUT:</strong> <span class="prev-rut">{{ est.rut }}</span></p>
+                        <p><strong>Género:</strong> <span class="prev-genero">{{ 'Femenino' if est.genero_f else 'Masculino' if est.genero_m else '-' }}</span></p>
+                        <p><strong>Fecha Nacimiento:</strong> <span class="prev-fecha-nacimiento">{{ est.fecha_nacimiento_formato }}</span></p>
+                        <p><strong>Edad:</strong> <span class="prev-edad">{{ est.edad }}</span></p>
+                        <p><strong>Nacionalidad:</strong> <span class="prev-nacionalidad">{{ est.nacionalidad }}</span></p>
+                        <p><strong>Fecha Evaluación:</strong> <span class="prev-fecha-evaluacion">{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '-' }}</span></p>
+                        <p><strong>Diagnóstico:</strong> <span class="prev-diagnostico-unificado">{{ est.diagnostico_1 if est.diagnostico_1 is not none else '-' }}</span></p>
+                        <p><strong>Diagnóstico Comp.:</strong> <span class="prev-diagnostico-complementario">{{ est.diagnostico_complementario if est.diagnostico_complementario is not none else '-' }}</span></p>
+                        <p><strong>Indicaciones:</strong> <span class="prev-indicaciones">{{ est.indicaciones if est.indicaciones is not none else '-' }}</span></p>
+                        <p><strong>Derivaciones:</strong> <span class="prev-derivaciones">{{ est.derivaciones if est.derivaciones is not none else '-' }}</span></p>
+                        <p><strong>Fecha Reevaluación:</strong> <span class="prev-fecha-reevaluacion">
+                            {% if est.fecha_reevaluacion %}
+                                {% set date_obj = est.fecha_reevaluacion.split('-') %}
+                                {{ date_obj[2] }}/{{ date_obj[1] }}/{{ date_obj[0] }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </span></p>
+                        <p><strong>Altura:</strong> <span class="prev-altura">{{ est.altura if est.altura is not none else '-' }}</span> cm</p>
+                        <p><strong>Peso:</strong> <span class="prev-peso">{{ est.peso if est.peso is not none else '-' }}</span> kg</p>
+                        <p><strong>IMC:</strong> <span class="prev-imc">{{ est.imc if est.imc is not none else '-' }}</span></p>
+                        <p><strong>Clasificación:</strong> <span class="prev-clasificacion">{{ est.clasificacion_imc if est.clasificacion_imc is not none else '-' }}</span></p>
+                        
+                        <div class="checkbox-preview-group">
+                            <strong>Antecedentes Perinatales:</strong>
+                            <p>Cesárea: <span class="prev-check-cesarea">{{ 'Sí' if est.check_cesarea else 'No' }}</span></p>
+                            <p>A Término: <span class="prev-check-atermino">{{ 'Sí' if est.check_atermino else 'No' }}</span></p>
+                            <p>Vaginal: <span class="prev-check-vaginal">{{ 'Sí' if est.check_vaginal else 'No' }}</span></p>
+                            <p>Prematuro: <span class="prev-check-prematuro">{{ 'Sí' if est.check_prematuro else 'No' }}</span></p>
+                            
+                            <strong>DSM:</strong>
+                            <p>Logrado Acorde a Edad: <span class="prev-check-acorde">{{ 'Sí' if est.check_acorde else 'No' }}</span></p>
+                            <p>Retraso del Lenguaje: <span class="prev-check-retraso">{{ 'Sí' if est.check_retraso else 'No' }}</span></p>
+                            <p>Retraso Generalizado: <span class="prev-check-retrasogeneralizado">{{ 'Sí' if est.check_retrasogeneralizado else 'No' }}</span></p>
+
+                            <strong>Vacunas:</strong>
+                            <p>Esquema Completo: <span class="prev-check-esquemac">{{ 'Sí' if est.check_esquemac else 'No' }}</span></p>
+                            <p>Esquema Incompleto: <span class="prev-check-esquemai">{{ 'Sí' if est.check_esquemai else 'No' }}</span></p>
+
+                            <strong>Alergias:</strong>
+                            <p>No Alergias: <span class="prev-check-alergiano">{{ 'Sí' if est.check_alergiano else 'No' }}</span></p>
+                            <p>Sí Alergias: <span class="prev-check-alergiasi">{{ 'Sí' if est.check_alergiasi else 'No' }}</span></p>
+
+                            <strong>Hospitalizaciones/Cirugías:</strong>
+                            <p>No Cirugías: <span class="prev-check-cirugiano">{{ 'Sí' if est.check_cirugiano else 'No' }}</span></p>
+                            <p>Sí Cirugías: <span class="prev-check-cirugiasi">{{ 'Sí' if est.check_cirugiasi else 'No' }}</span></p>
+
+                            <strong>Visión:</strong>
+                            <p>Sin Alteración: <span class="prev-check-visionsinalteracion">{{ 'Sí' if est.check_visionsinalteracion else 'No' }}</span></p>
+                            <p>Vicios de Refracción: <span class="prev-check-visionrefraccion">{{ 'Sí' if est.check_visionrefraccion else 'No' }}</span></p>
+
+                            <strong>Audición:</strong>
+                            <p>Normal: <span class="prev-check-audicionnormal">{{ 'Sí' if est.check_audicionnormal else 'No' }}</span></p>
+                            <p>Hipoacusia: <span class="prev-check-hipoacusia">{{ 'Sí' if est.check_hipoacusia else 'No' }}</span></p>
+                            <p>Tapón de Cerumen: <span class="prev-check-tapondecerumen">{{ 'Sí' if est.check_tapondecerumen else 'No' }}</span></p>
+
+                            <strong>Salud Bucodental:</strong>
+                            <p>Sin Hallazgos: <span class="prev-check-sinhallazgos">{{ 'Sí' if est.check_sinhallazgos else 'No' }}</span></p>
+                            <p>Caries: <span class="prev-check-caries">{{ 'Sí' if est.check_caries else 'No' }}</span></p>
+                            <p>Apiñamiento: <span class="prev-check-apinamientodental">{{ 'Sí' if est.check_apinamientodental else 'No' }}</span></p>
+                            <p>Retención: <span class="prev-check-retenciondental">{{ 'Sí' if est.check_retenciondental else 'No' }}</span></p>
+                            <p>Frenillo: <span class="prev-check-frenillolingual">{{ 'Sí' if est.check_frenillolingual else 'No' }}</span></p>
+                            <p>Hipertrofia: <span class="prev-check-hipertrofia">{{ 'Sí' if est.check_hipertrofia else 'No' }}</span></p>
+                        </div>
+
+                        <img src="/static/formulario_muestra.png" alt="Ejemplo Formulario" class="preview-img" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=Imagen+No+Disponible';" />
+
+                        <button onclick="window.print()" style="margin-top: var(--space-6); width: 100%; padding: var(--space-4); background: linear-gradient(135deg, var(--primary-blue), var(--primary-cyan)); color: white; border: none; border-radius: var(--radius-lg); font-weight: 700; cursor: pointer;">
+                            <i class="fas fa-print"></i> Imprimir Vista Previa
+                        </button>
                     </div>
                 </div>
             </details>
             {% endfor %}
         {% else %}
-            <div style="text-align: center; padding: var(--space-20); background: var(--white); border-radius: var(--radius-2xl); box-shadow: var(--shadow-xl);">
-                <i class="fas fa-inbox" style="font-size: 4rem; color: var(--gray-400); margin-bottom: var(--space-6);"></i>
-                <p style="font-size: 1.25rem; color: var(--gray-600); font-weight: 500;">No hay estudiantes en esta nómina o ha ocurrido un error al cargarlos.</p>
+            <div style="text-align: center; padding: var(--space-20); background: var(--glass-white); backdrop-filter: var(--backdrop-blur); border-radius: var(--radius-2xl); box-shadow: var(--shadow-xl);">
+                <i class="fas fa-inbox" style="font-size: 4rem; color: var(--neutral-400); margin-bottom: var(--space-6);"></i>
+                <p style="font-size: 1.25rem; color: var(--neutral-600); font-weight: 500;">No hay estudiantes en esta nómina o ha ocurrido un error al cargarlos.</p>
             </div>
         {% endif %}
     </div>
 
     <script>
+        // ═══════════════════════════════════════════════════════════════
+        // 🚀 JAVASCRIPT - FUNCIONALIDADES DEL SISTEMA
+        // ═══════════════════════════════════════════════════════════════
+
         document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar filtros y previsualizaciones al cargar
             aplicarFiltros();
             
             document.querySelectorAll('.formulario form').forEach(form => {
+                // Autocompletar Fecha Evaluación con la fecha de hoy
                 const fechaEvaluacionInput = form.querySelector('input[name="fecha_evaluacion"]');
                 if (fechaEvaluacionInput && !fechaEvaluacionInput.value) {
                     const today = new Date();
@@ -1559,34 +1764,33 @@
                     fechaEvaluacionInput.value = `${yyyy}-${mm}-${dd}`;
                 }
 
+                updatePreview(form);
+                
+                const fechaReevaluacionInput = form.querySelector('input[name="fecha_reevaluacion"]');
+                const selectPlazo = form.querySelector('select[name="fecha_reevaluacion_select"]');
+                
+                if (selectPlazo && (selectPlazo.value || fechaReevaluacionInput.value)) {
+                    if (selectPlazo.value) {
+                         setFechaReevaluacion(selectPlazo);
+                    }
+                }
+                
                 calculateIMC(form);
 
-                form.querySelectorAll('.checkbox-card input[type="checkbox"]').forEach(checkbox => {
+                form.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(checkbox => {
                     updateCheckboxStyle(checkbox);
                 });
             });
+
+            // Animación escalonada de las tarjetas
+            const estudiantes = document.querySelectorAll('.estudiante');
+            estudiantes.forEach((est, index) => {
+                est.style.animationDelay = `${index * 0.05}s`;
+            });
         });
 
-        function calcularEdad(inputFecha, idEdadInput, idEdadDisplay) {
-            const fechaNacimiento = new Date(inputFecha.value);
-            const hoy = new Date();
-            
-            let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
-            const mes = hoy.getMonth() - fechaNacimiento.getMonth();
-            
-            if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
-                edad--;
-            }
-            
-            const edadInput = document.getElementById(idEdadInput);
-            const edadDisplay = document.getElementById(idEdadDisplay);
-            
-            if (edadInput) edadInput.value = edad;
-            if (edadDisplay) edadDisplay.textContent = edad + ' años';
-        }
-
         function updateCheckboxStyle(checkbox) {
-            const parent = checkbox.closest('.checkbox-card');
+            const parent = checkbox.closest('.checkbox-item');
             if (!parent) return;
             
             if (checkbox.checked) {
@@ -1640,6 +1844,66 @@
             const dd = String(fechaEval.getDate()).padStart(2, '0');
             
             fechaReevaluacionInput.value = `${yyyy}-${mm}-${dd}`;
+            updatePreview(form);
+        }
+
+        function updatePreview(form) {
+            const preview = form.closest('.container').querySelector('.preview');
+            if (!preview) return;
+            
+            const getValue = (name) => {
+                const input = form.querySelector(`[name="${name}"]`);
+                return input ? input.value || '-' : '-';
+            };
+            
+            const getCheckValue = (name) => {
+                const checkbox = form.querySelector(`[name="${name}"]`);
+                return checkbox && checkbox.checked ? 'Sí' : 'No';
+            };
+            
+            preview.querySelector('.prev-fecha-evaluacion').textContent = getValue('fecha_evaluacion');
+            preview.querySelector('.prev-diagnostico-unificado').textContent = getValue('diagnostico_1');
+            preview.querySelector('.prev-diagnostico-complementario').textContent = getValue('diagnostico_complementario');
+            preview.querySelector('.prev-indicaciones').textContent = getValue('indicaciones');
+            preview.querySelector('.prev-derivaciones').textContent = getValue('derivaciones');
+            
+            const fechaReev = getValue('fecha_reevaluacion');
+            if (fechaReev !== '-') {
+                const parts = fechaReev.split('-');
+                preview.querySelector('.prev-fecha-reevaluacion').textContent = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            } else {
+                preview.querySelector('.prev-fecha-reevaluacion').textContent = '-';
+            }
+            
+            preview.querySelector('.prev-altura').textContent = getValue('altura');
+            preview.querySelector('.prev-peso').textContent = getValue('peso');
+            preview.querySelector('.prev-imc').textContent = getValue('imc');
+            preview.querySelector('.prev-clasificacion').textContent = getValue('clasificacion_imc');
+            
+            preview.querySelector('.prev-check-cesarea').textContent = getCheckValue('check_cesarea');
+            preview.querySelector('.prev-check-atermino').textContent = getCheckValue('check_atermino');
+            preview.querySelector('.prev-check-vaginal').textContent = getCheckValue('check_vaginal');
+            preview.querySelector('.prev-check-prematuro').textContent = getCheckValue('check_prematuro');
+            preview.querySelector('.prev-check-acorde').textContent = getCheckValue('check_acorde');
+            preview.querySelector('.prev-check-retraso').textContent = getCheckValue('check_retraso');
+            preview.querySelector('.prev-check-retrasogeneralizado').textContent = getCheckValue('check_retrasogeneralizado');
+            preview.querySelector('.prev-check-esquemac').textContent = getCheckValue('check_esquemac');
+            preview.querySelector('.prev-check-esquemai').textContent = getCheckValue('check_esquemai');
+            preview.querySelector('.prev-check-alergiano').textContent = getCheckValue('check_alergiano');
+            preview.querySelector('.prev-check-alergiasi').textContent = getCheckValue('check_alergiasi');
+            preview.querySelector('.prev-check-cirugiano').textContent = getCheckValue('check_cirugiano');
+            preview.querySelector('.prev-check-cirugiasi').textContent = getCheckValue('check_cirugiasi');
+            preview.querySelector('.prev-check-visionsinalteracion').textContent = getCheckValue('check_visionsinalteracion');
+            preview.querySelector('.prev-check-visionrefraccion').textContent = getCheckValue('check_visionrefraccion');
+            preview.querySelector('.prev-check-audicionnormal').textContent = getCheckValue('check_audicionnormal');
+            preview.querySelector('.prev-check-hipoacusia').textContent = getCheckValue('check_hipoacusia');
+            preview.querySelector('.prev-check-tapondecerumen').textContent = getCheckValue('check_tapondecerumen');
+            preview.querySelector('.prev-check-sinhallazgos').textContent = getCheckValue('check_sinhallazgos');
+            preview.querySelector('.prev-check-caries').textContent = getCheckValue('check_caries');
+            preview.querySelector('.prev-check-apinamientodental').textContent = getCheckValue('check_apinamientodental');
+            preview.querySelector('.prev-check-retenciondental').textContent = getCheckValue('check_retenciondental');
+            preview.querySelector('.prev-check-frenillolingual').textContent = getCheckValue('check_frenillolingual');
+            preview.querySelector('.prev-check-hipertrofia').textContent = getCheckValue('check_hipertrofia');
         }
 
         function confirmarEnvio(form) {
@@ -1650,10 +1914,12 @@
                 html: `Se guardará y generará el PDF para: <br><strong>${nombre}</strong>`,
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonColor: '#2563EB',
-                cancelButtonColor: '#6B7280',
+                confirmButtonColor: 'var(--primary-blue)',
+                cancelButtonColor: 'var(--neutral-600)',
                 confirmButtonText: '<i class="fas fa-check"></i> Sí, guardar',
-                cancelButtonText: '<i class="fas fa-times"></i> Cancelar'
+                cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+                background: 'white',
+                backdrop: `rgba(10, 37, 64, 0.4)`
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.submit();
@@ -1663,9 +1929,38 @@
             return false;
         }
 
+        function enviarADrive(form) {
+            Swal.fire({
+                title: 'Enviando a Google Drive',
+                html: 'Conectando con Google Drive...',
+                icon: 'info',
+                showConfirmButton: false,
+                timer: 2000,
+                timerProgressBar: true,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            }).then(() => {
+                Swal.fire({
+                    title: '¡Funcionalidad próximamente!',
+                    text: 'La integración con Google Drive estará disponible pronto.',
+                    icon: 'info',
+                    confirmButtonColor: 'var(--accent-medical)'
+                });
+            });
+        }
+
+        function insertarFirma() {
+            Swal.fire({
+                title: 'Insertar Firma Digital',
+                html: 'Esta funcionalidad insertará la firma digital según la doctora correspondiente.',
+                icon: 'info',
+                confirmButtonColor: 'var(--accent-medical)',
+                confirmButtonText: 'Entendido'
+            });
+        }
+
         function marcarComoEvaluado(button) {
-            if (button.disabled) return;
-            
             const form = button.closest('form');
             const nombre = form.querySelector('input[name="nombre"]').value;
             
@@ -1674,16 +1969,14 @@
                 html: `¿Desea marcar como evaluado a: <br><strong>${nombre}</strong>?`,
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonColor: '#0D9488',
-                cancelButtonColor: '#6B7280',
+                confirmButtonColor: 'var(--accent-medical)',
+                cancelButtonColor: 'var(--neutral-600)',
                 confirmButtonText: '<i class="fas fa-check-circle"></i> Sí, marcar',
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
                     button.disabled = true;
-                    button.classList.remove('btn-info');
-                    button.classList.add('btn-disabled');
-                    button.innerHTML = '<i class="fas fa-check-circle"></i><span>Evaluado</span>';
+                    button.innerHTML = '<i class="fas fa-check-circle"></i> Evaluado';
                     
                     const detailsElement = button.closest('.estudiante');
                     detailsElement.setAttribute('data-evaluated-status', 'true');
@@ -1691,7 +1984,8 @@
                     const badge = detailsElement.querySelector('.badge');
                     if (!badge) {
                         const newBadge = document.createElement('span');
-                        newBadge.className = 'badge';
+                        newBadge.className = 'badge show';
+                        newBadge.style.cssText = 'background: linear-gradient(135deg, var(--success-main), var(--success-dark)); color: white;';
                         newBadge.innerHTML = '<i class="fas fa-check-circle"></i> Evaluado';
                         detailsElement.querySelector('summary').appendChild(newBadge);
                     }
@@ -1748,8 +2042,8 @@
                 text: 'Se perderán los cambios no guardados',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#DC2626',
-                cancelButtonColor: '#6B7280',
+                confirmButtonColor: '#e74c3c',
+                cancelButtonColor: 'var(--neutral-600)',
                 confirmButtonText: 'Sí, cerrar sesión',
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
@@ -1762,7 +2056,7 @@
         function imprimirTodosLosFormularios() {
             Swal.fire({
                 title: 'Preparando impresión...',
-                text: 'Generando vista previa',
+                text: 'Generando vista previa de todos los formularios visibles',
                 allowOutsideClick: false,
                 didOpen: () => {
                     Swal.showLoading();
@@ -1772,14 +2066,41 @@
             setTimeout(() => { 
                 const printWindow = window.open('', '_blank');
                 printWindow.document.write('<html><head><title>Imprimir Formularios</title>');
-                printWindow.document.write('<style>body { font-family: Inter, sans-serif; margin: 20px; }</style>');
-                printWindow.document.write('</head><body>');
+                printWindow.document.write('<style>');
+                printWindow.document.write(`
+                    body { font-family: 'IBM Plex Sans', sans-serif; margin: 20px; color: #333; }
+                    .print-form-container { margin-bottom: 30px; border: 2px solid #ddd; padding: 20px; border-radius: 12px; page-break-inside: avoid; }
+                    .print-form-container h3 { color: var(--primary-blue); border-bottom: 3px solid var(--accent-medical); padding-bottom: 10px; margin-bottom: 20px; font-size: 1.5rem; }
+                    .print-form-container p { margin: 10px 0; font-size: 0.95rem; }
+                    .print-form-container p strong { display: inline-block; width: 200px; color: var(--accent-teal); font-weight: 600; }
+                `);
+                printWindow.document.write('</style></head><body>');
 
                 const visibleForms = document.querySelectorAll('details.estudiante:not([style*="display: none"])');
-                
+                if (visibleForms.length === 0) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'No hay formularios para imprimir',
+                        text: 'Ajusta el filtro de búsqueda si es necesario.'
+                    });
+                    printWindow.close();
+                    return;
+                }
+
                 visibleForms.forEach(detail => {
-                    const studentName = detail.querySelector('.student-name').textContent;
-                    printWindow.document.write(`<h2>${studentName}</h2>`);
+                    const studentName = detail.querySelector('summary span').textContent;
+                    const previewContent = detail.querySelector('.preview').cloneNode(true);
+                    
+                    const previewImg = previewContent.querySelector('.preview-img');
+                    if (previewImg) previewImg.style.display = 'none';
+                    
+                    const printButton = previewContent.querySelector('button');
+                    if (printButton) printButton.style.display = 'none';
+
+                    printWindow.document.write(`<div class="print-form-container">`);
+                    printWindow.document.write(`<h3>Formulario de ${studentName}</h3>`);
+                    printWindow.document.write(previewContent.innerHTML); 
+                    printWindow.document.write(`</div>`);
                 });
 
                 printWindow.document.write('</body></html>');
@@ -1794,7 +2115,7 @@
         function descargarExcelCompletados(nominaId, establecimientoNombre) {
             Swal.fire({
                 title: 'Preparando descarga...',
-                text: 'Generando Excel',
+                text: 'Generando archivo Excel de formularios evaluados',
                 allowOutsideClick: false,
                 didOpen: () => {
                     Swal.showLoading();
@@ -1802,25 +2123,37 @@
             });
 
             fetch(`/descargar_excel_evaluados/${nominaId}`)
-                .then(response => response.blob())
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(errorData.message || 'Error al descargar el Excel.');
+                        });
+                    }
+                    return response.blob(); 
+                })
                 .then(blob => {
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
+                    a.style.display = 'none';
                     a.href = url;
-                    a.download = `Evaluaciones_${establecimientoNombre}.xlsx`;
+                    a.download = `Evaluaciones_${establecimientoNombre.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0,10)}.xlsx`;
+                    document.body.appendChild(a);
                     a.click();
+                    window.URL.revokeObjectURL(url);
                     Swal.fire({
                         icon: 'success',
                         title: '¡Descarga completa!',
+                        text: 'El archivo Excel se ha descargado correctamente.',
                         timer: 2000,
                         showConfirmButton: false
                     });
                 })
                 .catch(error => {
+                    console.error('Error:', error);
                     Swal.fire({
                         icon: 'error',
-                        title: 'Error',
-                        text: 'No se pudo descargar el archivo'
+                        title: 'Error de descarga',
+                        text: error.message || 'No se pudo descargar el archivo Excel.'
                     });
                 });
         }
@@ -1828,6 +2161,7 @@
         function generarEImprimirPDFsVisibles(nominaId, establecimientoNombre) {
             Swal.fire({
                 title: 'Generando PDFs...',
+                text: 'Esto puede tardar un momento',
                 allowOutsideClick: false,
                 didOpen: () => {
                     Swal.showLoading();
@@ -1835,22 +2169,31 @@
             });
 
             fetch(`/generar_pdfs_visibles/${nominaId}`)
-                .then(response => response.blob())
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(errorData.message || 'Error al generar PDFs.');
+                        });
+                    }
+                    return response.blob();
+                })
                 .then(blob => {
                     const url = window.URL.createObjectURL(blob);
                     window.open(url, '_blank');
                     Swal.fire({
                         icon: 'success',
                         title: '¡PDFs generados!',
+                        text: 'Los PDFs se han abierto en una nueva ventana.',
                         timer: 2000,
                         showConfirmButton: false
                     });
                 })
                 .catch(error => {
+                    console.error('Error:', error);
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
-                        text: 'No se pudieron generar los PDFs'
+                        text: error.message || 'No se pudieron generar los PDFs.'
                     });
                 });
         }

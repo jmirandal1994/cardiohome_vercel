@@ -1388,8 +1388,7 @@ def dashboard():
     assigned_nominations = [] # Lista de nóminas para doctora
     proyectos = []
     
-    # --- Lógica de carga de USUARIOS (Necesaria para Admin/Coord.) ---
-# --- 1. Lógica de carga de PROYECTOS (ACTUALIZADO) ---
+    # --- 1. Lógica de carga de PROYECTOS (ACTUALIZADO) ---
     try:
         # Añadimos descripcion_proyecto y created_at al select
         url_p = f"{SUPABASE_URL}/rest/v1/proyectos?select=id,nombre_proyecto,descripcion_proyecto,created_at&order=nombre_proyecto.asc"
@@ -1409,7 +1408,8 @@ def dashboard():
     except Exception as e:
         print(f"❌ ERROR AL OBTENER PROYECTOS: {e}")
         proyectos = []
-        
+    
+    # --- 2. Lógica de carga de USUARIOS ---
     try:
         url_doctoras = f"{SUPABASE_URL}/rest/v1/doctoras?select=id,usuario,rol,nombre" 
         res_doctoras = requests.get(url_doctoras, headers=SUPABASE_SERVICE_HEADERS) 
@@ -1430,9 +1430,8 @@ def dashboard():
         doctoras_relleno = []
         coordinadoras_generales = []
         coordinadores_escuela = []
-        
 
-# --- Lógica de carga de NÓMINAS (Admin y Doctora) ---
+    # --- 3. Lógica de carga de NÓMINAS (Admin y Doctora) ---
     if user_role == 'admin':
         # Admin ve TODAS las nóminas
         # NUEVO: Se agregó 'proyecto_id' al select
@@ -1481,7 +1480,6 @@ def dashboard():
             print(f"❌ ERROR AL OBTENER NÓMINAS (ADMIN): {e}")
             flash('Error al cargar nóminas del administrador.', 'error')
             admin_nominas_cargadas = []
-            
 
     elif user_role == 'doctora':
         # Doctora ve solo sus nóminas asignadas (filtrando por doctora_id)
@@ -1498,23 +1496,24 @@ def dashboard():
             nominas_raw = res_nominas_asignadas.json()
             
             for nom in nominas_raw:
-    # Buscar el nombre del proyecto si tiene proyecto_id
-            proyecto_nombre = None
-            if nom.get('proyecto_id'):
-            proyecto_encontrado = next((p for p in proyectos if str(p['id']) == str(nom.get('proyecto_id'))), None)
-               if proyecto_encontrado:
-               proyecto_nombre = proyecto_encontrado['nombre_proyecto']
-    
-            assigned_nominations.append({
-               'id': nom['id'],
-               'nombre_establecimiento': nom['nombre_nomina'],
-               'tipo_nomina_display': nom['tipo_nomina'].replace('_', ' ').title(),
-               'form_type': nom.get('form_type'),
-               'doctora_id_para_formulario': nom.get('doctora_id_para_formulario'),
-               'nombre_colegio': nom.get('nombre_colegio') or nom['nombre_nomina'],
-               'proyecto_id': nom.get('proyecto_id'),      # ← NUEVO
-               'proyecto_nombre': proyecto_nombre           # ← NUEVO
-          })        
+                # Buscar el nombre del proyecto si tiene proyecto_id
+                proyecto_nombre = None
+                if nom.get('proyecto_id'):
+                    proyecto_encontrado = next((p for p in proyectos if str(p['id']) == str(nom.get('proyecto_id'))), None)
+                    if proyecto_encontrado:
+                        proyecto_nombre = proyecto_encontrado['nombre_proyecto']
+                
+                assigned_nominations.append({
+                    'id': nom['id'],
+                    'nombre_establecimiento': nom['nombre_nomina'],
+                    'tipo_nomina_display': nom['tipo_nomina'].replace('_', ' ').title(),
+                    'form_type': nom.get('form_type'),
+                    'doctora_id_para_formulario': nom.get('doctora_id_para_formulario'),
+                    'nombre_colegio': nom.get('nombre_colegio') or nom['nombre_nomina'],
+                    'proyecto_id': nom.get('proyecto_id'),      # ← NUEVO
+                    'proyecto_nombre': proyecto_nombre           # ← NUEVO
+                })
+        
         except requests.exceptions.RequestException as e:
             print(f"❌ ERROR AL OBTENER NÓMINAS ASIGNADAS (DOCTORA): {e}")
             flash('Error al cargar nóminas asignadas.', 'error')
@@ -1544,9 +1543,14 @@ def dashboard():
         colegios_asignados=colegios_asignados_escuela,
         
         # Relleno de variables vacías (para evitar TemplateErrors)
-        eventos=[], formularios=[], conteo={}, establecimientos=[],
-        doctor_performance_data={}, doctor_performance_data_single_doctor={'completed': 0, 'pending': 0, 'total': 0},
-        nombre_establecimiento_coordinador=None, nominas_completadas_escuela=None
+        eventos=[], 
+        formularios=[], 
+        conteo={}, 
+        establecimientos=[],
+        doctor_performance_data={}, 
+        doctor_performance_data_single_doctor={'completed': 0, 'pending': 0, 'total': 0},
+        nombre_establecimiento_coordinador=None, 
+        nominas_completadas_escuela=None
     )
     
 @app.route('/logout')

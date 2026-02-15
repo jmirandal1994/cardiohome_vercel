@@ -1488,7 +1488,7 @@ def dashboard():
         url_nominas_asignadas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?doctora_id=eq.{user_id}"
-            f"&select=id,nombre_nomina,tipo_nomina,form_type,doctora_id_para_formulario,nombre_colegio"
+            f"&select=id,nombre_nomina,tipo_nomina,form_type,doctora_id_para_formulario,nombre_colegio,proyecto_id"
             f"&order=nombre_nomina.asc"
         )
         
@@ -1498,18 +1498,23 @@ def dashboard():
             nominas_raw = res_nominas_asignadas.json()
             
             for nom in nominas_raw:
-                assigned_nominations.append({
-                    'id': nom['id'],
-                    'nombre_establecimiento': nom['nombre_nomina'],
-                    'tipo_nomina_display': nom['tipo_nomina'].replace('_', ' ').title(),
-                    'form_type': nom.get('form_type'),
-                    'doctora_id_para_formulario': nom.get('doctora_id_para_formulario'),
-                    
-                    # --- ARREGLO CLAVE PARA NÓMINAS ANTIGUAS ---
-                    # Si 'nombre_colegio' es NULL, usa 'nombre_nomina'
-                    'nombre_colegio': nom.get('nombre_colegio') or nom['nombre_nomina']
-                })
-        
+    # Buscar el nombre del proyecto si tiene proyecto_id
+            proyecto_nombre = None
+            if nom.get('proyecto_id'):
+            proyecto_encontrado = next((p for p in proyectos if str(p['id']) == str(nom.get('proyecto_id'))), None)
+               if proyecto_encontrado:
+               proyecto_nombre = proyecto_encontrado['nombre_proyecto']
+    
+            assigned_nominations.append({
+               'id': nom['id'],
+               'nombre_establecimiento': nom['nombre_nomina'],
+               'tipo_nomina_display': nom['tipo_nomina'].replace('_', ' ').title(),
+               'form_type': nom.get('form_type'),
+               'doctora_id_para_formulario': nom.get('doctora_id_para_formulario'),
+               'nombre_colegio': nom.get('nombre_colegio') or nom['nombre_nomina'],
+               'proyecto_id': nom.get('proyecto_id'),      # ← NUEVO
+               'proyecto_nombre': proyecto_nombre           # ← NUEVO
+          })        
         except requests.exceptions.RequestException as e:
             print(f"❌ ERROR AL OBTENER NÓMINAS ASIGNADAS (DOCTORA): {e}")
             flash('Error al cargar nóminas asignadas.', 'error')

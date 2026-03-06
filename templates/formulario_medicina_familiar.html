@@ -649,25 +649,92 @@
             box-shadow: var(--shadow-lg);
         }
 
-        /* Botón NO INFORMADO */
+        /* Botón NO INFORMADO — estilo discreeto con ícono tick */
         .no-informado-btn {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            border: none;
-            padding: 0.55rem 0.9rem;
-            border-radius: var(--border-radius-md);
-            font-size: 0.75rem;
-            font-weight: 700;
+            background: #f1f5f9;
+            color: #64748b;
+            border: 1.5px solid #cbd5e1;
+            padding: 0.4rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
             cursor: pointer;
             white-space: nowrap;
             flex-shrink: 0;
             transition: all var(--transition-base);
-            box-shadow: var(--shadow-sm);
-            letter-spacing: 0.02em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 2px;
+        }
+        .no-informado-btn::before {
+            content: '✓';
+            font-size: 0.85rem;
+            color: #94a3b8;
         }
         .no-informado-btn:hover {
+            background: #e2e8f0;
+            border-color: #94a3b8;
+            color: #475569;
+        }
+
+        /* Barra de indicaciones rápidas */
+        .indicaciones-quick-bar {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding: 10px 12px;
+            background: #f8f9ff;
+            border: 1.5px solid #e2e8f0;
+            border-radius: var(--border-radius-md);
+        }
+        .indicaciones-quick-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        .ind-btn-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .ind-btn {
+            border: none;
+            padding: 7px 13px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all var(--transition-base);
+            white-space: nowrap;
+            box-shadow: var(--shadow-sm);
+        }
+        .ind-btn-pie {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .ind-btn-pie:hover {
             transform: translateY(-2px);
             box-shadow: var(--shadow-md);
+        }
+        .ind-btn-alt {
+            background: white;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+        .ind-btn-alt:hover {
+            background: rgba(102, 126, 234, 0.08);
+            transform: translateY(-2px);
+        }
+        .ind-btn.active {
+            outline: 3px solid #f5576c;
+            outline-offset: 2px;
         }
 
         /* Footer */
@@ -1112,7 +1179,21 @@
 
                             {# NUEVO CAMPO: Indicaciones (Nombre HTML: indicaciones) #}
                             <label for="indicaciones_{{ est.id }}">Indicaciones:</label>
-                            <textarea name="indicaciones" id="indicaciones_{{ est.id }}" rows="2" placeholder="Detalles de indicaciones.">{{ est.indicaciones if est.indicaciones is not none else '' }}</textarea>
+                            <div class="indicaciones-quick-bar">
+                                <span class="indicaciones-quick-label">Completar rápido:</span>
+                                <button type="button" class="ind-btn ind-btn-pie" onclick="setIndicacion(this, 'REQUIERE RECIBIR APOYO DEL PROGRAMA DE INTEGRACIÓN ESCOLAR', '{{ est.id }}')">
+                                    <i class="fas fa-school"></i> PIE
+                                </button>
+                                <div class="ind-btn-group">
+                                    <button type="button" class="ind-btn ind-btn-alt" onclick="setIndicacion(this, 'REQUIERE RECIBIR APOYO DE ESCUELA ESPECIAL', '{{ est.id }}')">
+                                        <i class="fas fa-building"></i> Escuela Especial
+                                    </button>
+                                    <button type="button" class="ind-btn ind-btn-alt" onclick="setIndicacion(this, 'REQUIERE RECIBIR APOYO DE ESCUELA DE LENGUAJE', '{{ est.id }}')">
+                                        <i class="fas fa-comment-dots"></i> Escuela de Lenguaje
+                                    </button>
+                                </div>
+                            </div>
+                            <textarea name="indicaciones" id="indicaciones_{{ est.id }}" rows="2" placeholder="Detalles de indicaciones." oninput="updatePreview(this.form)">{{ est.indicaciones if est.indicaciones is not none else '' }}</textarea>
                             
                             {# CAMPO ORIGINAL: Derivaciones (Nombre HTML: derivaciones) #}
                             <label for="derivaciones_{{ est.id }}">Derivaciones:</label>
@@ -1281,6 +1362,19 @@
                 radio.addEventListener('change', aplicarFiltros);
             });
         });
+
+        // Función para insertar indicación rápida
+        function setIndicacion(btn, texto, estId) {
+            const textarea = document.getElementById('indicaciones_' + estId);
+            if (textarea) {
+                textarea.value = texto;
+                // Marcar botón activo visualmente
+                const allBtns = btn.closest('.indicaciones-quick-bar').querySelectorAll('.ind-btn');
+                allBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                updatePreview(textarea.form);
+            }
+        }
 
         // Función para insertar NO INFORMADO en el textarea correspondiente
         function setNoInformado(textareaId, form) {
@@ -1508,19 +1602,18 @@
             if (!percEntry || !percEntry[genderKey]) {
                 // Fallback adulto
                 clasificacionInput.value = imc < 18.5 ? 'Bajo peso' : imc < 25 ? 'Peso normal' : imc < 30 ? 'Sobrepeso' : 'Obesidad';
-                return;
             }
 
             const [p3, p85, p97] = percEntry[genderKey];
             let classification = '';
             if (imc < p3) {
-                classification = 'Bajo peso (< p3)';
+                classification = 'Bajo peso';
             } else if (imc < p85) {
-                classification = 'Peso normal (p3-p85)';
+                classification = 'Peso normal';
             } else if (imc < p97) {
-                classification = 'Sobrepeso (p85-p97)';
+                classification = 'Sobrepeso';
             } else {
-                classification = 'Obesidad (≥ p97)';
+                classification = 'Obesidad';
             }
             clasificacionInput.value = classification;
         }

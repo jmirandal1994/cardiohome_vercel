@@ -3653,5 +3653,161 @@ def api_coordinadora_stats():
         return jsonify({"success": False, "message": f"Error interno: {str(e)}"}), 500
 
 
+# ─────────────────────────────────────────────────────────────
+# RUTA: Reporte detallado doctora (alumnos por nomina)
+#  GET /api/doctor/reporte_detalle
+# ─────────────────────────────────────────────────────────────
+@app.route('/api/doctor/reporte_detalle', methods=['GET'])
+def api_doctor_reporte_detalle():
+    if 'usuario' not in session:
+        return jsonify({"success": False, "message": "No autorizado"}), 401
+
+    user_id = session.get('usuario_id')
+    if not user_id:
+        return jsonify({"success": False, "message": "ID de usuario no encontrado"}), 400
+
+    try:
+        # 1. Nóminas de la doctora
+        url_nominas = (
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?doctora_id=eq.{user_id}"
+            f"&select=id,nombre_nomina,nombre_colegio,form_type"
+        )
+        res_n = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
+        nominas = res_n.json() if res_n.ok else []
+
+        detalles = []
+        global_total = 0
+        global_evaluados = 0
+
+        for nom in nominas:
+            url_e = (
+                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                f"?nomina_id=eq.{nom['id']}"
+                f"&select=nombre,rut,evaluado_flag"
+                f"&order=nombre.asc"
+            )
+            res_e = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS)
+            alumnos = res_e.json() if res_e.ok else []
+
+            ev_count    = len([a for a in alumnos if a.get('evaluado_flag') is True])
+            total_count = len(alumnos)
+            global_total     += total_count
+            global_evaluados += ev_count
+
+            colegio = nom.get('nombre_colegio') or nom.get('nombre_nomina') or 'Sin nombre'
+            detalles.append({
+                "colegio":   colegio,
+                "alumnos":   alumnos,
+                "total":     total_count,
+                "evaluados": ev_count
+            })
+
+        return jsonify({
+            "success": True,
+            "resumen": {
+                "total":      global_total,
+                "evaluados":  global_evaluados,
+                "pendientes": global_total - global_evaluados,
+                "porcentaje": f"{round(global_evaluados/global_total*100,1) if global_total>0 else 0}%"
+            },
+            "data": detalles
+        })
+
+    except Exception as e:
+        print(f"ERROR api_doctor_reporte_detalle: {e}")
+        return jsonify({"success": False, "error": str(e)})
+
+
+# ─────────────────────────────────────────────────────────────
+# RUTA: Reporte detallado coordinadora (alumnos por nomina)
+#  GET /api/coordinadora/reporte_detalle
+# ─────────────────────────────────────────────────────────────
+@app.route('/api/coordinadora/reporte_detalle', methods=['GET'])
+def api_coordinadora_reporte_detalle():
+    if 'usuario' not in session:
+        return jsonify({"success": False, "message": "No autorizado"}), 401
+
+    user_role = session.get('usuario')
+    user_id   = session.get('usuario_id')
+
+    if user_role not in ('coordinadora', 'admin'):
+        return jsonify({"success": False, "message": "Acceso denegado"}), 403
+
+    try:
+        # 1. Nóminas según rol
+        if user_role == 'coordinadora':
+            url_nominas = (
+                f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+                f"?coord_general_id=eq.{user_id}"
+                f"&select=id,nombre_nomina,nombre_colegio,form_type,doctora_id"
+            )
+        else:
+            url_nominas = (
+                f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+                f"?select=id,nombre_nomina,nombre_colegio,form_type,doctora_id"
+            )
+
+        res_n = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
+        nominas = res_n.json() if res_n.ok else []
+
+        # 2. Lookup nombres doctoras
+        url_docs = f"{SUPABASE_URL}/rest/v1/doctoras?select=id,nombre,usuario"
+        res_docs = requests.get(url_docs, headers=SUPABASE_SERVICE_HEADERS)
+        doctoras_map = {}
+        if res_docs.ok:
+            for d in res_docs.json():
+                doctoras_map[str(d['id'])] = d.get('nombre') or d.get('usuario', 'Doctora')
+
+        detalles = []
+        global_total = 0
+        global_evaluados = 0
+
+        for nom in nominas:
+            url_e = (
+                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                f"?nomina_id=eq.{nom['id']}"
+                f"&select=nombre,rut,evaluado_flag"
+                f"&order=nombre.asc"
+            )
+            res_e = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS)
+            alumnos = res_e.json() if res_e.ok else []
+
+            ev_count    = len([a for a in alumnos if a.get('evaluado_flag') is True])
+            total_count = len(alumnos)
+            global_total     += total_count
+            global_evaluados += ev_count
+
+            colegio   = nom.get('nombre_colegio') or nom.get('nombre_nomina') or 'Sin nombre'
+            doc_id    = str(nom.get('doctora_id') or '')
+            doc_nombre = doctoras_map.get(doc_id, '')
+            # Agregar nombre doctora al nombre del establecimiento si hay varios
+            label = colegio
+            if doc_nombre:
+                label = colegio + '  (' + doc_nombre + ')'
+
+            detalles.append({
+                "colegio":   label,
+                "alumnos":   alumnos,
+                "total":     total_count,
+                "evaluados": ev_count
+            })
+
+        return jsonify({
+            "success": True,
+            "resumen": {
+                "total":      global_total,
+                "evaluados":  global_evaluados,
+                "pendientes": global_total - global_evaluados,
+                "porcentaje": f"{round(global_evaluados/global_total*100,1) if global_total>0 else 0}%"
+            },
+            "data": detalles
+        })
+
+    except Exception as e:
+        print(f"ERROR api_coordinadora_reporte_detalle: {e}")
+        return jsonify({"success": False, "error": str(e)})
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))

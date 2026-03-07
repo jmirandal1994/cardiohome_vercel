@@ -996,135 +996,229 @@
             {% if usuario == 'admin' %}
             
 <div id="admin-performance" class="content-section">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-            <h2 class="text-3xl font-extrabold text-gray-800 font-['Montserrat'] m-0">Rendimiento Operativo</h2>
-            <p class="text-gray-500 text-sm">Monitoreo de carga y evaluaciones por proyecto.</p>
-        </div>
-        
-        <div class="flex flex-wrap gap-3">
-            <button onclick="exportarReporteProyecto()" class="bg-white text-secondary-blue border-2 border-secondary-blue px-4 py-2 rounded-2xl font-bold text-sm hover:bg-secondary-blue hover:text-white transition-all flex items-center gap-2 shadow-sm">
-                <i class="fa-solid fa-file-pdf text-lg"></i> EXPORTAR AVANCE
-            </button>
 
-            <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-200 flex items-center gap-3">
-                <i class="fa-solid fa-filter text-secondary-blue"></i>
-                <span class="text-xs font-black text-gray-400 uppercase">Proyecto:</span>
-                <select id="admin-project-filter" class="border-none focus:ring-0 text-sm font-bold text-primary-blue bg-transparent cursor-pointer" onchange="updateAdminStats()">
-                    <option value="all">MOSTRAR TODO (GLOBAL)</option>
-                    {% for proyecto in proyectos %}
-                        <option value="{{ proyecto.id }}">{{ proyecto.nombre_proyecto }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+<!-- ══ STYLES: Admin Performance Premium ══ -->
+<style>
+.adm-header { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:1rem; margin-bottom:2rem; }
+.adm-title-block h2 { margin:0; font-size:1.8rem; font-weight:900; color:#0A3D62; letter-spacing:-0.5px; }
+.adm-title-block p  { margin:.25rem 0 0; font-size:.8rem; color:#64748b; font-weight:500; }
+.adm-controls { display:flex; flex-wrap:wrap; gap:.6rem; align-items:center; }
+.adm-filter-pill {
+    display:flex; align-items:center; gap:.5rem;
+    background:white; border:1.5px solid #e2e8f0;
+    border-radius:50px; padding:.4rem .9rem;
+    font-size:.75rem; font-weight:700; color:#0A3D62;
+    box-shadow:0 1px 4px rgba(10,61,98,.07);
+}
+.adm-filter-pill select { border:none; background:transparent; font-weight:700; color:#0A3D62; font-size:.75rem; outline:none; cursor:pointer; max-width:160px; }
+.adm-btn-export {
+    display:flex; align-items:center; gap:.5rem;
+    background:linear-gradient(135deg,#0A3D62,#1C67A3);
+    color:white; border:none; border-radius:50px;
+    padding:.5rem 1.1rem; font-size:.78rem; font-weight:800;
+    cursor:pointer; letter-spacing:.3px;
+    box-shadow:0 3px 12px rgba(10,61,98,.25);
+    transition:all .2s;
+}
+.adm-btn-export:hover { transform:translateY(-1px); box-shadow:0 5px 18px rgba(10,61,98,.35); }
+
+/* KPI row */
+.adm-kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:.9rem; margin-bottom:1.5rem; }
+@media(max-width:900px){ .adm-kpi-grid { grid-template-columns:repeat(2,1fr); } }
+.adm-kpi {
+    background:white; border-radius:18px;
+    padding:1.2rem 1.4rem; border:1.5px solid #e8f0fb;
+    box-shadow:0 2px 10px rgba(10,61,98,.07);
+    position:relative; overflow:hidden;
+}
+.adm-kpi::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:18px 18px 0 0; }
+.adm-kpi.blue::before  { background:linear-gradient(90deg,#0A3D62,#1C67A3); }
+.adm-kpi.green::before { background:linear-gradient(90deg,#059669,#10B981); }
+.adm-kpi.amber::before { background:linear-gradient(90deg,#D97706,#F59E0B); }
+.adm-kpi.rose::before  { background:linear-gradient(90deg,#DC2626,#EF4444); }
+.adm-kpi-label { font-size:.65rem; font-weight:800; color:#94a3b8; letter-spacing:.8px; text-transform:uppercase; }
+.adm-kpi-val   { font-size:2rem; font-weight:900; color:#0A3D62; line-height:1.1; margin-top:.3rem; }
+.adm-kpi-icon  { position:absolute; right:1rem; top:50%; transform:translateY(-50%); font-size:2rem; opacity:.08; }
+
+/* Two-column layout */
+.adm-body { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; }
+@media(max-width:1100px){ .adm-body { grid-template-columns:1fr; } }
+.adm-card {
+    background:white; border-radius:20px; padding:1.4rem;
+    border:1.5px solid #e8f0fb;
+    box-shadow:0 2px 12px rgba(10,61,98,.07);
+}
+.adm-card-title { font-size:.7rem; font-weight:800; color:#0A3D62; letter-spacing:.8px; text-transform:uppercase; display:flex; align-items:center; gap:.5rem; margin-bottom:1rem; }
+.adm-card-full { grid-column:1/-1; }
+
+/* Ranking table */
+.rank-row { display:flex; align-items:center; gap:.7rem; padding:.6rem .5rem; border-radius:12px; transition:background .15s; cursor:pointer; }
+.rank-row:hover { background:#f1f5f9; }
+.rank-medal { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.85rem; font-weight:900; flex-shrink:0; }
+.rank-medal.gold   { background:linear-gradient(135deg,#F59E0B,#FBBF24); color:white; }
+.rank-medal.silver { background:linear-gradient(135deg,#94a3b8,#cbd5e1); color:white; }
+.rank-medal.bronze { background:linear-gradient(135deg,#B45309,#D97706); color:white; }
+.rank-medal.plain  { background:#f1f5f9; color:#64748b; font-size:.7rem; }
+.rank-name  { flex:1; font-size:.82rem; font-weight:700; color:#1e293b; }
+.rank-bar-wrap { width:90px; height:6px; background:#f1f5f9; border-radius:99px; overflow:hidden; }
+.rank-bar-fill  { height:100%; border-radius:99px; background:linear-gradient(90deg,#0A3D62,#1C67A3); transition:width 1s cubic-bezier(.4,0,.2,1); }
+.rank-pct  { font-size:.72rem; font-weight:800; color:#0A3D62; width:36px; text-align:right; }
+
+/* Establishment table */
+.est-row { display:flex; align-items:center; gap:.6rem; padding:.5rem 0; border-bottom:1px solid #f1f5f9; }
+.est-row:last-child { border-bottom:none; }
+.est-name  { flex:1; font-size:.78rem; font-weight:600; color:#334155; }
+.est-count { font-size:.72rem; font-weight:800; color:#1C67A3; }
+.est-bar-wrap { width:70px; height:5px; background:#f1f5f9; border-radius:99px; overflow:hidden; }
+.est-bar-fill  { height:100%; background:linear-gradient(90deg,#059669,#10B981); border-radius:99px; transition:width 1s ease; }
+
+/* Chart containers */
+.adm-chart-wrap { position:relative; height:220px; }
+
+/* Skeleton */
+.adm-skeleton { background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:10px; height:180px; }
+@keyframes adm-shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+</style>
+
+<!-- ══ HEADER ══ -->
+<div class="adm-header">
+    <div class="adm-title-block">
+        <h2>🏆 Rendimiento Operativo</h2>
+        <p>Ranking de doctoras · Avance por proyecto y establecimiento · Reportes certificados</p>
+    </div>
+    <div class="adm-controls">
+        <div class="adm-filter-pill">
+            <i class="fa-solid fa-folder-open" style="color:#0A3D62;font-size:.8rem;"></i>
+            <span>Proyecto:</span>
+            <select id="admin-project-filter" onchange="updateAdminStats()">
+                <option value="all">Global (todos)</option>
+                {% for proyecto in proyectos %}
+                    <option value="{{ proyecto.id }}">{{ proyecto.nombre_proyecto }}</option>
+                {% endfor %}
+            </select>
         </div>
+        <div class="adm-filter-pill">
+            <i class="fa-solid fa-user-doctor" style="color:#0A3D62;font-size:.8rem;"></i>
+            <span>Doctora:</span>
+            <select id="admin-doctor-filter" onchange="updateAdminStats()">
+                <option value="all">Todas</option>
+                {% for doc in doctoras %}
+                    <option value="{{ doc.id }}">{{ doc.nombre or doc.usuario }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button class="adm-btn-export" onclick="exportarReporteAdmin()">
+            <i class="fa-solid fa-file-pdf"></i> Exportar Reporte PDF
+        </button>
+    </div>
+</div>
+
+<!-- ══ KPI ROW ══ -->
+<div class="adm-kpi-grid">
+    <div class="adm-kpi blue">
+        <div class="adm-kpi-label">Total Alumnos</div>
+        <div class="adm-kpi-val" id="stat-total">—</div>
+        <i class="fa-solid fa-users adm-kpi-icon"></i>
+    </div>
+    <div class="adm-kpi green">
+        <div class="adm-kpi-label">Completados</div>
+        <div class="adm-kpi-val" id="stat-completed">—</div>
+        <i class="fa-solid fa-circle-check adm-kpi-icon"></i>
+    </div>
+    <div class="adm-kpi amber">
+        <div class="adm-kpi-label">Pendientes</div>
+        <div class="adm-kpi-val" id="stat-pending">—</div>
+        <i class="fa-solid fa-hourglass adm-kpi-icon"></i>
+    </div>
+    <div class="adm-kpi rose">
+        <div class="adm-kpi-label">% Avance</div>
+        <div class="adm-kpi-val" id="stat-percent">—</div>
+        <i class="fa-solid fa-chart-line adm-kpi-icon"></i>
+    </div>
+</div>
+
+<!-- ══ BODY GRID ══ -->
+<div class="adm-body">
+
+    <!-- Ranking de Doctoras -->
+    <div class="adm-card">
+        <div class="adm-card-title"><i class="fa-solid fa-ranking-star" style="color:#F59E0B;"></i> Ranking de Doctoras</div>
+        <div id="adm-ranking-list"><div class="adm-skeleton"></div></div>
     </div>
 
-    <div class="summary">
-        <div class="summary-card-v2" style="background: linear-gradient(145deg, #0A3D62, #1C67A3);">
-            <div class="summary-card-header">
-                <span>ESTUDIANTES<br>TOTALES</span>
-                <i class="fa-solid fa-users"></i>
-            </div>
-            <p class="count" id="stat-total">0</p>
-        </div>
-        <div class="summary-card-v2 bg-green-600">
-            <div class="summary-card-header">
-                <span>VALORACIONES<br>COMPLETADAS</span>
-                <i class="fa-solid fa-circle-check"></i>
-            </div>
-            <p class="count" id="stat-completed">0</p>
-        </div>
-        <div class="summary-card-v2 bg-yellow-500">
-            <div class="summary-card-header">
-                <span>PENDIENTES<br>DE EVALUACIÓN</span>
-                <i class="fa-solid fa-clock-rotate-left"></i>
-            </div>
-            <p class="count" id="stat-pending">0</p>
-        </div>
-        <div class="summary-card-v2 bg-red-600">
-            <div class="summary-card-header">
-                <span>AVANCE<br>PORCENTUAL</span>
-                <i class="fa-solid fa-chart-line"></i>
-            </div>
-            <p class="count" id="stat-percent">0%</p>
-        </div>
+    <!-- Top Establecimientos -->
+    <div class="adm-card">
+        <div class="adm-card-title"><i class="fa-solid fa-building-columns" style="color:#1C67A3;"></i> Top Establecimientos</div>
+        <div id="adm-est-list"><div class="adm-skeleton"></div></div>
     </div>
 
-    <div class="card mt-8 overflow-hidden">
-        <div class="flex justify-between items-center mb-8">
-            <h3 class="m-0 border-none pb-0"><i class="fa-solid fa-stethoscope text-secondary-blue mr-2"></i> Análisis por Especialidad</h3>
-            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Distribución de Carga</span>
-        </div>
+    <!-- Gráfico de barras: evaluaciones por doctora -->
+    <div class="adm-card">
+        <div class="adm-card-title"><i class="fa-solid fa-chart-bar" style="color:#0A3D62;"></i> Productividad por Profesional</div>
+        <div class="adm-chart-wrap"><canvas id="adminPerformanceChart"></canvas></div>
+    </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-            <div class="relative p-6 rounded-3xl bg-gradient-to-br from-blue-50 to-white border border-blue-100 shadow-sm hover:shadow-md transition-all group">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                            <h4 class="text-blue-900 font-bold text-lg m-0">Neurología</h4>
-                        </div>
-                        <p class="text-blue-700/60 text-[10px] font-bold uppercase tracking-wider">Productividad Médica</p>
-                        <div class="mt-4">
-                            <span class="text-4xl font-black text-blue-900" id="stat-neuro">0</span>
-                            <span class="text-blue-400 text-xs font-bold uppercase block">evaluaciones realizadas</span>
-                        </div>
-                    </div>
-                    <div class="relative flex items-center justify-center w-24 h-24">
-                        <svg class="w-full h-full transform -rotate-90">
-                            <circle cx="48" cy="48" r="38" stroke="currentColor" stroke-width="7" fill="transparent" class="text-blue-100" />
-                            <circle cx="48" cy="48" r="38" stroke="currentColor" stroke-width="7" fill="transparent" stroke-dasharray="238.76" stroke-dashoffset="238.76" class="text-blue-600 transition-all duration-1000 ease-out" id="ring-neuro" style="stroke-linecap: round;" />
-                        </svg>
-                        <i class="fa-solid fa-brain absolute text-blue-600 text-xl group-hover:scale-125 transition-transform duration-300"></i>
+    <!-- Anillos por especialidad -->
+    <div class="adm-card">
+        <div class="adm-card-title"><i class="fa-solid fa-stethoscope" style="color:#059669;"></i> Distribución por Especialidad</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;align-items:center;">
+            <div style="text-align:center;">
+                <div style="position:relative;width:100px;height:100px;margin:0 auto;">
+                    <svg viewBox="0 0 100 100" style="transform:rotate(-90deg)">
+                        <circle cx="50" cy="50" r="38" stroke="#dbeafe" stroke-width="9" fill="none"/>
+                        <circle cx="50" cy="50" r="38" stroke="url(#gNeuro)" stroke-width="9" fill="none"
+                            stroke-dasharray="238.76" stroke-dashoffset="238.76" id="ring-neuro"
+                            style="stroke-linecap:round;transition:stroke-dashoffset 1.2s ease;"/>
+                        <defs><linearGradient id="gNeuro" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#0A3D62"/><stop offset="100%" stop-color="#1C67A3"/>
+                        </linearGradient></defs>
+                    </svg>
+                    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+                        <i class="fa-solid fa-brain" style="color:#0A3D62;font-size:1.1rem;"></i>
                     </div>
                 </div>
+                <div style="margin-top:.5rem;font-size:.72rem;font-weight:700;color:#0A3D62;">Neurología</div>
+                <div style="font-size:1.6rem;font-weight:900;color:#0A3D62;" id="stat-neuro">0</div>
             </div>
-
-            <div class="relative p-6 rounded-3xl bg-gradient-to-br from-green-50 to-white border border-green-100 shadow-sm hover:shadow-md transition-all group">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                            <h4 class="text-green-900 font-bold text-lg m-0">Med. Familiar</h4>
-                        </div>
-                        <p class="text-green-700/60 text-[10px] font-bold uppercase tracking-wider">Salud Integral</p>
-                        <div class="mt-4">
-                            <span class="text-4xl font-black text-green-900" id="stat-familiar">0</span>
-                            <span class="text-green-400 text-xs font-bold uppercase block">evaluaciones realizadas</span>
-                        </div>
-                    </div>
-                    <div class="relative flex items-center justify-center w-24 h-24">
-                        <svg class="w-full h-full transform -rotate-90">
-                            <circle cx="48" cy="48" r="38" stroke="currentColor" stroke-width="7" fill="transparent" class="text-green-100" />
-                            <circle cx="48" cy="48" r="38" stroke="currentColor" stroke-width="7" fill="transparent" stroke-dasharray="238.76" stroke-dashoffset="238.76" class="text-green-600 transition-all duration-1000 ease-out" id="ring-familiar" style="stroke-linecap: round;" />
-                        </svg>
-                        <i class="fa-solid fa-user-doctor absolute text-green-600 text-xl group-hover:scale-125 transition-transform duration-300"></i>
+            <div style="text-align:center;">
+                <div style="position:relative;width:100px;height:100px;margin:0 auto;">
+                    <svg viewBox="0 0 100 100" style="transform:rotate(-90deg)">
+                        <circle cx="50" cy="50" r="38" stroke="#d1fae5" stroke-width="9" fill="none"/>
+                        <circle cx="50" cy="50" r="38" stroke="url(#gFam)" stroke-width="9" fill="none"
+                            stroke-dasharray="238.76" stroke-dashoffset="238.76" id="ring-familiar"
+                            style="stroke-linecap:round;transition:stroke-dashoffset 1.2s ease;"/>
+                        <defs><linearGradient id="gFam" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#059669"/><stop offset="100%" stop-color="#10B981"/>
+                        </linearGradient></defs>
+                    </svg>
+                    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+                        <i class="fa-solid fa-user-doctor" style="color:#059669;font-size:1.1rem;"></i>
                     </div>
                 </div>
+                <div style="margin-top:.5rem;font-size:.72rem;font-weight:700;color:#059669;">Med. Familiar</div>
+                <div style="font-size:1.6rem;font-weight:900;color:#059669;" id="stat-familiar">0</div>
             </div>
-        </div>
-
-        <h4 class="text-xs font-black text-gray-400 uppercase mb-4 tracking-widest flex items-center gap-2">
-            <span class="w-8 h-[1px] bg-gray-200"></span> Productividad por Profesional
-        </h4>
-        <div class="chart-container" style="height: 300px;">
-            <canvas id="adminPerformanceChart"></canvas>
         </div>
     </div>
 
-    <div class="card mt-8">
-        <div class="flex justify-between items-center mb-6">
-            <h3 class="m-0 border-none pb-0"><i class="fa-solid fa-clock-rotate-left text-secondary-blue mr-2"></i> Tendencia de Avance</h3>
-            <select id="trend-period" class="bg-gray-50 border border-gray-200 text-[10px] font-black uppercase rounded-lg px-3 py-1 outline-none cursor-pointer hover:bg-gray-100 transition-colors" onchange="updateAdminStats()">
+    <!-- Tendencia temporal -->
+    <div class="adm-card adm-card-full">
+        <div class="adm-card-title" style="justify-content:space-between;">
+            <span><i class="fa-solid fa-chart-area" style="color:#8B5CF6;"></i> Tendencia de Avance</span>
+            <select id="trend-period" style="font-size:.7rem;font-weight:700;border:1.5px solid #e2e8f0;border-radius:8px;padding:.25rem .6rem;color:#0A3D62;background:white;outline:none;cursor:pointer;" onchange="updateAdminStats()">
                 <option value="daily">Vista Diaria</option>
                 <option value="weekly">Vista Semanal</option>
             </select>
         </div>
-        <div class="chart-container" style="height: 300px;">
-            <canvas id="adminTrendChart"></canvas>
-        </div>
+        <div class="adm-chart-wrap" style="height:200px;"><canvas id="adminTrendChart"></canvas></div>
     </div>
+
+</div><!-- end adm-body -->
+</div><!-- end admin-performance -->
+
+
+
+
 </div>
             
                 <div id="admin-add-visit" class="content-section">
@@ -2933,231 +3027,326 @@
             setInterval(fetchCorrectionAlert, 30000);  
         });
 
-async function exportarReporteProyecto() {
-    const projectId = document.getElementById('admin-project-filter').value;
-    const firmaBase64 = "data:image/png;base64,{{ TU_CODIGO_RECIBIDO }}"; // Aquí va el código que me pasaste
+// ══════════════════════════════════════════════════════════════════
+// ADMIN PERFORMANCE — JS PREMIUM
+// ══════════════════════════════════════════════════════════════════
 
-    Swal.fire({
-        title: 'Generando Reporte Oficial',
-        text: 'Estamos certificando los datos de Cardiohome SpA...',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
+let adminChartInstance = null;
+let adminTrendInstance = null;
+let _adminData = null; // cache for export
+
+// Cached doctor lookup (injected by Jinja)
+const ALL_USERS = {{ all_users_for_lookup | tojson }};
+function doctorName(id) {
+    const u = ALL_USERS.find(u => String(u.id) === String(id));
+    return u ? (u.nombre || u.usuario || 'Desconocida') : 'Desconocida';
+}
+
+async function updateAdminStats() {
+    const projectId  = document.getElementById('admin-project-filter').value;
+    const doctorId   = (document.getElementById('admin-doctor-filter') || {}).value || 'all';
+
+    // Skeleton placeholders
+    ['stat-total','stat-completed','stat-pending','stat-percent','stat-neuro','stat-familiar'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.style.opacity = '.4'; }
     });
+    document.getElementById('adm-ranking-list').innerHTML = '<div class="adm-skeleton" style="height:150px;"></div>';
+    document.getElementById('adm-est-list').innerHTML     = '<div class="adm-skeleton" style="height:150px;"></div>';
 
     try {
-        const res = await fetch(`/api/admin/reporte_proyecto/${projectId}`);
+        // Build URL with optional doctor filter
+        let url = `/api/admin/stats/${projectId}`;
+        if (doctorId !== 'all') url += `?doctor_id=${doctorId}`;
+
+        const res  = await fetch(url);
         const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Error API');
 
-        if (!data.success) throw new Error(data.error);
+        _adminData = data; // cache for PDF export
 
-        const element = document.createElement('div');
-        element.innerHTML = `
-            <div style="padding: 40px; font-family: 'Arial', sans-serif; color: #1a202c; background: white;">
-                <!-- Header -->
-                <div style="display: flex; justify-content: space-between; border-bottom: 3px solid #0A3D62; padding-bottom: 15px; margin-bottom: 25px;">
-                    <div>
-                        <h1 style="color: #0A3D62; margin: 0; font-size: 24px;">CARDIOHOME SpA</h1>
-                        <p style="margin: 5px 0; font-size: 12px; color: #4a5568;">Gestión Operativa Médica - Chile</p>
-                    </div>
-                    <div style="text-align: right; font-size: 11px; color: #718096;">
-                        <p><strong>PROYECTO:</strong> ${data.proyecto.toUpperCase()}</p>
-                        <p><strong>FECHA:</strong> ${data.fecha}</p>
-                    </div>
-                </div>
+        // KPIs
+        document.getElementById('stat-total').textContent     = (data.total || 0).toLocaleString('es-CL');
+        document.getElementById('stat-completed').textContent = (data.completed || 0).toLocaleString('es-CL');
+        document.getElementById('stat-pending').textContent   = (data.pending || 0).toLocaleString('es-CL');
+        document.getElementById('stat-percent').textContent   = data.percent || '0%';
+        document.getElementById('stat-neuro').textContent     = (data.neuro || 0).toLocaleString('es-CL');
+        document.getElementById('stat-familiar').textContent  = (data.familiar || 0).toLocaleString('es-CL');
 
-                <!-- Resumen Global -->
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 30px;">
-                    <div style="background: #f7fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; text-align: center;">
-                        <p style="margin: 0; font-size: 9px; font-weight: bold; color: #4a5568;">TOTAL ALUMNOS</p>
-                        <h2 style="margin: 5px 0 0; color: #0A3D62; font-size: 18px;">${data.resumen.total}</h2>
-                    </div>
-                    <div style="background: #f0fff4; padding: 15px; border-radius: 10px; border: 1px solid #c6f6d5; text-align: center;">
-                        <p style="margin: 0; font-size: 9px; font-weight: bold; color: #276749;">COMPLETADOS</p>
-                        <h2 style="margin: 5px 0 0; color: #2f855a; font-size: 18px;">${data.resumen.evaluados}</h2>
-                    </div>
-                    <div style="background: #fff5f5; padding: 15px; border-radius: 10px; border: 1px solid #fed7d7; text-align: center;">
-                        <p style="margin: 0; font-size: 9px; font-weight: bold; color: #9b2c2c;">PENDIENTES</p>
-                        <h2 style="margin: 5px 0 0; color: #c53030; font-size: 18px;">${data.resumen.pendientes}</h2>
-                    </div>
-                    <div style="background: #0A3D62; padding: 15px; border-radius: 10px; text-align: center;">
-                        <p style="margin: 0; font-size: 9px; font-weight: bold; color: #ebf8ff;">% AVANCE</p>
-                        <h2 style="margin: 5px 0 0; color: white; font-size: 18px;">${data.resumen.porcentaje}</h2>
-                    </div>
-                </div>
+        ['stat-total','stat-completed','stat-pending','stat-percent','stat-neuro','stat-familiar'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.opacity = '1';
+        });
 
-                <!-- Listado por Colegios -->
-                ${data.data.map(n => `
-                    <div style="margin-bottom: 25px; page-break-inside: avoid;">
-                        <div style="background: #edf2f7; padding: 8px 15px; border-radius: 5px; border-bottom: 2px solid #cbd5e1; margin-bottom: 10px;">
-                            <h3 style="margin: 0; font-size: 13px; color: #2d3748;">COLEGIO: ${n.colegio} (${Math.round((n.evaluados/n.total)*100)}% de avance)</h3>
-                        </div>
-                        <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-                            <thead>
-                                <tr style="background: #f8fafc; color: #718096;">
-                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0; width: 40%;">ESTUDIANTE</th>
-                                    <th style="padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0; width: 30%;">RUT</th>
-                                    <th style="padding: 8px; text-align: center; border-bottom: 1px solid #e2e8f0; width: 30%;">ESTADO</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${n.alumnos.map(a => `
-                                    <tr>
-                                        <td style="padding: 6px 8px; border-bottom: 1px solid #edf2f7;">${a.nombre}</td>
-                                        <td style="padding: 6px 8px; border-bottom: 1px solid #edf2f7;">${a.rut || '---'}</td>
-                                        <td style="padding: 6px 8px; border-bottom: 1px solid #edf2f7; text-align: center; font-weight: bold;">
-                                            ${a.evaluado_flag ? '<span style="color: #38a169;">✅ EVALUADO</span>' : '<span style="color: #e53e3e;">⏳ PENDIENTE</span>'}
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `).join('')}
+        // Rings
+        const totalR = data.total || 1;
+        const setRing = (id, pct) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const circ = 238.76;
+            el.style.strokeDashoffset = circ - (Math.min(pct,100)/100)*circ;
+        };
+        setRing('ring-neuro',    (data.neuro    / totalR) * 100);
+        setRing('ring-familiar', (data.familiar / totalR) * 100);
 
-                <!-- Bloque de Firma Final -->
-                <div style="margin-top: 60px; text-align: center; page-break-inside: avoid;">
-                    <div style="display: inline-block; position: relative;">
-                        <!-- Imagen de la Firma Base64 -->
-                        <img src="data:image/png;base64,${'{{ TU_CODIGO_AQUI }}'}" style="width: 200px; height: auto; position: absolute; top: -70px; left: 50%; transform: translateX(-50%); z-index: 1;">
-                        
-                        <div style="width: 320px; border-top: 2px solid #0A3D62; padding-top: 10px; position: relative; z-index: 0;">
-                            <p style="margin: 0; font-weight: bold; font-size: 14px; color: #0A3D62;">Jorge Enrique Miranda Kirk</p>
-                            <p style="margin: 2px 0; font-size: 12px; color: #4a5568;">Gerente General</p>
-                            <p style="margin: 0; font-weight: bold; font-size: 12px; color: #1C67A3;">Cardiohome SpA</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
+        // Render sub-components
+        renderAdminRanking(data.ranking || []);
+        renderAdminEst(data.establecimientos || []);
+        renderAdminBarChart(data.ranking || []);
+        renderAdminTrendChart(data.trend || {});
+
+    } catch(e) {
+        console.error('updateAdminStats:', e);
+    }
+}
+
+function renderAdminRanking(ranking) {
+    const el = document.getElementById('adm-ranking-list');
+    if (!el) return;
+    if (!ranking.length) { el.innerHTML = '<p style="font-size:.78rem;color:#94a3b8;text-align:center;padding:1rem;">Sin datos</p>'; return; }
+    const medals = ['gold','silver','bronze'];
+    el.innerHTML = ranking.slice(0,10).map((d,i) => {
+        const name    = d.nombre || doctorName(d.id);
+        const pct     = d.percent || 0;
+        const medCls  = medals[i] || 'plain';
+        const medLbl  = i < 3 ? ['🥇','🥈','🥉'][i] : (i+1);
+        return `<div class="rank-row">
+            <div class="rank-medal ${medCls}">${medLbl}</div>
+            <div class="rank-name">${name}</div>
+            <div class="rank-bar-wrap"><div class="rank-bar-fill" style="width:${pct}%"></div></div>
+            <div class="rank-pct">${pct}%</div>
+            <div style="font-size:.68rem;color:#64748b;white-space:nowrap;">${d.completed||0}/${d.total||0}</div>
+        </div>`;
+    }).join('');
+}
+
+function renderAdminEst(establecimientos) {
+    const el = document.getElementById('adm-est-list');
+    if (!el) return;
+    if (!establecimientos.length) { el.innerHTML = '<p style="font-size:.78rem;color:#94a3b8;text-align:center;padding:1rem;">Sin datos</p>'; return; }
+    el.innerHTML = establecimientos.slice(0,10).map(e => {
+        const pct = e.percent || 0;
+        return `<div class="est-row">
+            <div class="est-name">${e.nombre}</div>
+            <div class="est-bar-wrap"><div class="est-bar-fill" style="width:${pct}%"></div></div>
+            <div class="est-count">${e.completed||0}/${e.total||0}</div>
+        </div>`;
+    }).join('');
+}
+
+function renderAdminBarChart(ranking) {
+    const canvas = document.getElementById('adminPerformanceChart');
+    if (!canvas) return;
+    if (adminChartInstance) { adminChartInstance.destroy(); adminChartInstance = null; }
+    const labels = ranking.slice(0,8).map(d => (d.nombre || doctorName(d.id)).split(' ')[0]);
+    const vals   = ranking.slice(0,8).map(d => d.completed || 0);
+    const tots   = ranking.slice(0,8).map(d => d.total || 0);
+    adminChartInstance = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Completados', data: vals, backgroundColor: '#1C67A3', borderRadius: 8, barThickness: 22 },
+                { label: 'Total',       data: tots, backgroundColor: '#e2e8f0', borderRadius: 8, barThickness: 22 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } }, x: { ticks: { font: { size: 10 } } } },
+            plugins: { legend: { display: true, labels: { font: { size: 10 }, boxWidth: 12 } }, tooltip: { backgroundColor: '#0A3D62' } }
+        }
+    });
+}
+
+function renderAdminTrendChart(trend) {
+    const canvas = document.getElementById('adminTrendChart');
+    if (!canvas) return;
+    if (adminTrendInstance) { adminTrendInstance.destroy(); adminTrendInstance = null; }
+    const period = (document.getElementById('trend-period') || {}).value || 'daily';
+    const src    = trend[period] || {};
+    const labels = Object.keys(src).sort();
+    const vals   = labels.map(k => src[k] || 0);
+    adminTrendInstance = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{ label: 'Evaluaciones', data: vals, fill: true,
+                borderColor: '#1C67A3', backgroundColor: 'rgba(28,103,163,.1)',
+                tension: .35, pointRadius: 3, pointBackgroundColor: '#0A3D62' }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, ticks: { font: { size: 10 } } }, x: { ticks: { font: { size: 10 }, maxTicksLimit: 12 } } },
+            plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0A3D62' } }
+        }
+    });
+}
+
+// ── PDF EXPORT PROFESIONAL ──────────────────────────────────────────
+async function exportarReporteAdmin() {
+    const projectId  = document.getElementById('admin-project-filter').value;
+    const filterEl   = document.getElementById('admin-project-filter');
+    const projectName = filterEl ? filterEl.options[filterEl.selectedIndex].text : 'Global';
+
+    Swal.fire({ title: 'Generando Reporte Oficial', html: 'Certificando datos Cardiohome SpA…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    try {
+        let url = `/api/admin/reporte_proyecto/${projectId}`;
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Error API');
+
+        const fecha   = new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'});
+        const hora    = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+        const pct     = data.resumen.porcentaje || '0%';
+        const ranking = _adminData ? (_adminData.ranking || []) : [];
+        const establecimientos = _adminData ? (_adminData.establecimientos || []) : [];
+
+        const rankingRows = ranking.slice(0,10).map((d,i) => {
+            const medals = ['🥇','🥈','🥉'];
+            const medal  = i < 3 ? medals[i] : (i+1);
+            return `<tr style="background:${i%2===0?'#f8fafc':'white'};">
+                <td style="padding:6px 10px;font-weight:700;">${medal}</td>
+                <td style="padding:6px 10px;">${d.nombre || doctorName(d.id)}</td>
+                <td style="padding:6px 10px;text-align:center;">${d.completed||0}</td>
+                <td style="padding:6px 10px;text-align:center;">${d.total||0}</td>
+                <td style="padding:6px 10px;text-align:center;font-weight:800;color:${(d.percent||0)>=80?'#059669':'#D97706'};">${d.percent||0}%</td>
+            </tr>`;
+        }).join('');
+
+        const estRows = establecimientos.slice(0,15).map((e,i) =>
+            `<tr style="background:${i%2===0?'#f8fafc':'white'};">
+                <td style="padding:5px 10px;">${e.nombre}</td>
+                <td style="padding:5px 10px;text-align:center;">${e.completed||0}</td>
+                <td style="padding:5px 10px;text-align:center;">${e.total||0}</td>
+                <td style="padding:5px 10px;text-align:center;font-weight:700;color:${(e.percent||0)>=80?'#059669':'#D97706'};">${e.percent||0}%</td>
+            </tr>`
+        ).join('');
+
+        const nominasRows = (data.data || []).map(n =>
+            `<tr><td style="padding:5px 10px;font-weight:600;">${n.colegio}</td>
+             <td style="padding:5px 10px;text-align:center;">${n.total||0}</td>
+             <td style="padding:5px 10px;text-align:center;">${n.evaluados||0}</td>
+             <td style="padding:5px 10px;text-align:center;">${n.total-n.evaluados||0}</td>
+             <td style="padding:5px 10px;text-align:center;font-weight:700;color:${Math.round((n.evaluados/Math.max(n.total,1))*100)>=80?'#059669':'#D97706'};">
+                ${Math.round((n.evaluados/Math.max(n.total,1))*100)}%</td></tr>`
+        ).join('');
+
+        const el = document.createElement('div');
+        el.innerHTML = `
+<div style="font-family:'Arial',sans-serif;color:#1e293b;background:white;padding:0;">
+
+  <!-- PORTADA / HEADER -->
+  <div style="background:linear-gradient(135deg,#0A3D62 0%,#1C67A3 100%);padding:32px 40px 24px;margin-bottom:0;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <div style="background:white;display:inline-block;padding:6px 14px;border-radius:8px;margin-bottom:12px;">
+          <span style="font-size:18px;font-weight:900;color:#0A3D62;letter-spacing:-0.5px;">CARDIO</span><span style="font-size:18px;font-weight:900;color:#1C67A3;">HOME</span>
+          <span style="font-size:9px;font-weight:600;color:#64748b;display:block;margin-top:-2px;letter-spacing:1px;">GESTIÓN OPERATIVA MÉDICA</span>
+        </div>
+        <h1 style="margin:0;font-size:22px;font-weight:900;color:white;letter-spacing:-0.5px;">Reporte de Rendimiento Operativo</h1>
+        <p style="margin:6px 0 0;font-size:11px;color:rgba(255,255,255,.75);">Análisis de evaluaciones médicas · Chile</p>
+      </div>
+      <div style="text-align:right;background:rgba(255,255,255,.12);border-radius:12px;padding:12px 16px;">
+        <p style="margin:0;font-size:9px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:1px;text-transform:uppercase;">Proyecto</p>
+        <p style="margin:4px 0 0;font-size:14px;font-weight:900;color:white;">${projectName}</p>
+        <p style="margin:8px 0 0;font-size:9px;color:rgba(255,255,255,.6);">${fecha} · ${hora}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI BAR -->
+  <div style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:18px 40px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+    ${[
+      {label:'Total Alumnos',val:data.resumen.total,color:'#0A3D62',bg:'#eff6ff'},
+      {label:'Completados',  val:data.resumen.evaluados,color:'#059669',bg:'#f0fdf4'},
+      {label:'Pendientes',   val:data.resumen.pendientes,color:'#D97706',bg:'#fffbeb'},
+      {label:'% Avance',     val:pct,color:'#7C3AED',bg:'#f5f3ff'},
+    ].map(k=>`<div style="background:${k.bg};border-radius:10px;padding:12px 14px;text-align:center;border:1px solid ${k.color}22;">
+      <p style="margin:0;font-size:8px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;">${k.label}</p>
+      <p style="margin:4px 0 0;font-size:22px;font-weight:900;color:${k.color};">${k.val}</p>
+    </div>`).join('')}
+  </div>
+
+  <div style="padding:28px 40px;">
+
+    <!-- RANKING -->
+    ${ranking.length ? `
+    <h3 style="font-size:11px;font-weight:800;color:#0A3D62;letter-spacing:1px;text-transform:uppercase;margin:0 0 10px;border-left:4px solid #1C67A3;padding-left:10px;">🏆 Ranking de Doctoras</h3>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:10px;">
+      <thead><tr style="background:#0A3D62;color:white;">
+        <th style="padding:7px 10px;text-align:left;border-radius:8px 0 0 8px;">#</th>
+        <th style="padding:7px 10px;text-align:left;">Profesional</th>
+        <th style="padding:7px 10px;text-align:center;">Completadas</th>
+        <th style="padding:7px 10px;text-align:center;">Total</th>
+        <th style="padding:7px 10px;text-align:center;border-radius:0 8px 8px 0;">Avance</th>
+      </thead><tbody>${rankingRows}</tbody>
+    </table>` : ''}
+
+    <!-- ESTABLECIMIENTOS -->
+    ${establecimientos.length ? `
+    <h3 style="font-size:11px;font-weight:800;color:#0A3D62;letter-spacing:1px;text-transform:uppercase;margin:0 0 10px;border-left:4px solid #059669;padding-left:10px;">🏫 Top Establecimientos</h3>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:10px;">
+      <thead><tr style="background:#059669;color:white;">
+        <th style="padding:7px 10px;text-align:left;border-radius:8px 0 0 8px;">Establecimiento</th>
+        <th style="padding:7px 10px;text-align:center;">Completados</th>
+        <th style="padding:7px 10px;text-align:center;">Total</th>
+        <th style="padding:7px 10px;text-align:center;border-radius:0 8px 8px 0;">Avance</th>
+      </thead><tbody>${estRows}</tbody>
+    </table>` : ''}
+
+    <!-- NÓMINAS DETALLE -->
+    ${data.data && data.data.length ? `
+    <h3 style="font-size:11px;font-weight:800;color:#0A3D62;letter-spacing:1px;text-transform:uppercase;margin:0 0 10px;border-left:4px solid #8B5CF6;padding-left:10px;">📋 Detalle por Nómina</h3>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:28px;font-size:10px;">
+      <thead><tr style="background:#7C3AED;color:white;">
+        <th style="padding:7px 10px;text-align:left;border-radius:8px 0 0 8px;">Colegio / Nómina</th>
+        <th style="padding:7px 10px;text-align:center;">Total</th>
+        <th style="padding:7px 10px;text-align:center;">Evaluados</th>
+        <th style="padding:7px 10px;text-align:center;">Pendientes</th>
+        <th style="padding:7px 10px;text-align:center;border-radius:0 8px 8px 0;">Avance</th>
+      </thead><tbody>${nominasRows}</tbody>
+    </table>` : ''}
+
+    <!-- FIRMA -->
+    <div style="margin-top:40px;display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid #e2e8f0;padding-top:20px;">
+      <div style="font-size:9px;color:#94a3b8;line-height:1.7;">
+        <p style="margin:0;font-weight:700;color:#64748b;">Cardiohome SpA — Sistema de Gestión Operativa Médica</p>
+        <p style="margin:0;">Reporte generado automáticamente · ${fecha} ${hora}</p>
+        <p style="margin:0;">Documento de uso interno · Confidencial</p>
+      </div>
+      <div style="text-align:center;">
+        <div style="width:180px;border-top:2px solid #0A3D62;padding-top:8px;">
+          <p style="margin:0;font-weight:900;font-size:11px;color:#0A3D62;">Jorge Enrique Miranda Kirk</p>
+          <p style="margin:2px 0 0;font-size:9px;color:#64748b;">Gerente General · Cardiohome SpA</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>`;
 
         const opt = {
-            margin: 10,
-            filename: `REPORTE_CARDIOHOME_${data.proyecto.replace(/\s+/g, '_')}.pdf`,
-            html2canvas: { scale: 3, useCORS: true },
+            margin: 0,
+            filename: `REPORTE_ADMIN_CARDIOHOME_${projectName.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.pdf`,
+            html2canvas: { scale: 2, useCORS: true, letterRendering: true },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
+        await html2pdf().set(opt).from(el).save();
+        Swal.close();
 
-        html2pdf().set(opt).from(element).save().then(() => { Swal.close(); });
-
-    } catch (e) {
+    } catch(e) {
         Swal.fire('Error', 'No se pudo generar el reporte: ' + e.message, 'error');
     }
 }
 
-let adminChartInstance = null;
+// Keep old name as alias for backward compat
+const exportarReporteProyecto = exportarReporteAdmin;
 
-async function updateAdminStats() {
-    const projectId = document.getElementById('admin-project-filter').value;
-    
-    // 1. Efecto visual de carga
-    const ids = ['stat-total', 'stat-completed', 'stat-pending', 'stat-percent', 'stat-neuro', 'stat-familiar'];
-    ids.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.opacity = '0.5';
-    });
-
-    try {
-        // 2. Llamada a la API
-        const response = await fetch(`/api/admin/stats/${projectId}`);
-        const data = await response.json();
-
-        // --- AQUÍ VA EL BLOQUE DATA.SUCCESS ---
-        if (data.success) {
-            // Actualizar textos principales
-            document.getElementById('stat-total').textContent = data.total;
-            document.getElementById('stat-completed').textContent = data.completed;
-            document.getElementById('stat-pending').textContent = data.pending;
-            document.getElementById('stat-percent').textContent = data.percent;
-            
-            // Actualizar contadores de especialidad
-            if(document.getElementById('stat-neuro')) 
-                document.getElementById('stat-neuro').textContent = data.neuro || 0;
-            if(document.getElementById('stat-familiar')) 
-                document.getElementById('stat-familiar').textContent = data.familiar || 0;
-
-            // -------------------------------------------------------
-            // LÓGICA DE ANILLOS SVG (EL BLOQUE QUE PREGUNTASTE)
-            // -------------------------------------------------------
-            const totalParaAnillos = data.total || 1; // Evitar división por cero
-            const neuroPercent = (data.neuro / totalParaAnillos) * 100;
-            const familiarPercent = (data.familiar / totalParaAnillos) * 100;
-
-            const updateRing = (id, percent) => {
-                const ring = document.getElementById(id);
-                if (!ring) return;
-                const radius = 38;
-                const circumference = 2 * Math.PI * radius;
-                const offset = circumference - (percent / 100) * circumference;
-                ring.style.strokeDasharray = `${circumference} ${circumference}`;
-                ring.style.strokeDashoffset = offset;
-            };
-
-            updateRing('ring-neuro', neuroPercent);
-            updateRing('ring-familiar', familiarPercent);
-            // -------------------------------------------------------
-
-            // Renderizar Gráficos
-            renderAdminChart(data.chart_data);
-            
-            // Restaurar opacidad
-            ids.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.style.opacity = '1';
-            });
-        }
-    } catch (error) {
-        console.error("❌ Error en la carga de estadísticas:", error);
-    }
-}
-        
-function renderAdminChart(chartData) {
-    const canvas = document.getElementById('adminPerformanceChart');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    
-    // Mapear nombres de doctoras
-    const labels = Object.keys(chartData).map(id => {
-        const user = all_users_for_lookup.find(u => u.id == id);
-        return user ? user.usuario : 'Desconocida';
-    });
-    const values = Object.values(chartData);
-
-    if (adminChartInstance) adminChartInstance.destroy();
-
-    adminChartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Evaluaciones Realizadas',
-                data: values,
-                backgroundColor: '#1C67A3',
-                borderRadius: 8,
-                barThickness: 30
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1 } }
-            },
-            plugins: { 
-                legend: { display: false },
-                tooltip: { backgroundColor: '#0A3D62' }
-            }
-        }
-    });
-}
-
-// Escuchador para carga inicial al hacer clic en el menú
 document.addEventListener('DOMContentLoaded', function() {
     const adminPerfLink = document.querySelector('a[data-section="admin-performance"]');
     if (adminPerfLink) {
-        adminPerfLink.addEventListener('click', () => {
-            // Pequeña pausa para que el DOM se muestre antes de calcular el gráfico
-            setTimeout(updateAdminStats, 250);
-        });
+        adminPerfLink.addEventListener('click', () => setTimeout(updateAdminStats, 250));
     }
 });
         
@@ -3384,116 +3573,109 @@ function renderDpNominasList(labels, completed, totals) {
 
 // PDF Reporte Doctora — genera una página HTML con todos los datos y la imprime
 function exportarPDFDoctora() {
-    const usuario = '{{ session.get("usuario") | capitalize }}';
     const total     = document.getElementById('dp-total')?.textContent     || '0';
     const completed = document.getElementById('dp-completed')?.textContent || '0';
     const pending   = document.getElementById('dp-pending')?.textContent   || '0';
     const percent   = document.getElementById('dp-percent')?.textContent   || '0%';
     const neuro     = document.getElementById('dp-neuro')?.textContent     || '—';
     const familiar  = document.getElementById('dp-familiar')?.textContent  || '—';
-    const nominas   = document.getElementById('dp-nominas')?.textContent   || '—';
+    const nominasN  = document.getElementById('dp-nominas')?.textContent   || '—';
+    const nominasHTML = document.getElementById('dp-nominas-list')?.innerHTML || '';
+    const fecha = new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'});
+    const hora  = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+    const usuario = '{{ session.get("usuario_nombre") or "Profesional" }}';
 
-    const win = window.open('', '_blank', 'width=900,height=700');
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-    <title>Reporte Rendimiento — CardioHome</title>
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; color: #2d3748; background: white; }
-        .header { background: linear-gradient(135deg, #0A3D62, #1C67A3); color: white; padding: 2rem; display: flex; justify-content: space-between; align-items: center; }
-        .header h1 { margin: 0; font-size: 1.6rem; font-weight: 900; }
-        .header p  { margin: .25rem 0 0; opacity: .75; font-size: .85rem; }
-        .body { padding: 2rem; }
-        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
-        .kpi { border-radius: 12px; padding: 1.25rem; color: white; text-align: center; }
-        .kpi-label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; opacity: .85; margin-bottom: .5rem; }
-        .kpi-value { font-size: 2.2rem; font-weight: 900; line-height: 1; }
-        .section { background: #f8fafc; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid #e2e8f0; }
-        .section h2 { font-size: 1rem; font-weight: 700; color: #0A3D62; margin: 0 0 1rem; border-bottom: 2px solid #e2e8f0; padding-bottom: .75rem; }
-        .row { display: flex; gap: 1rem; }
-        .metric { flex: 1; background: white; border-radius: 8px; padding: 1rem; border: 1px solid #e2e8f0; text-align: center; }
-        .metric-val { font-size: 1.5rem; font-weight: 800; }
-        .metric-lbl { font-size: .75rem; color: #718096; margin-top: .25rem; }
-        .footer { text-align: center; padding: 1.5rem; color: #94a3b8; font-size: .75rem; border-top: 1px solid #e2e8f0; margin-top: 2rem; }
-        @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-    </style></head><body>
-    <div class="header">
-        <div>
-            <h1>📊 Reporte de Rendimiento Médico</h1>
-            <p>Perfil: ${usuario} · Generado: ${new Date().toLocaleString('es-CL')}</p>
+    Swal.fire({ title: 'Generando Reporte PDF', html: 'Preparando informe de rendimiento…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    const el = document.createElement('div');
+    el.innerHTML = `
+<div style="font-family:Arial,sans-serif;color:#1e293b;background:white;padding:0;min-width:700px;">
+
+  <!-- HEADER -->
+  <div style="background:linear-gradient(135deg,#0A3D62 0%,#1C67A3 100%);padding:28px 36px 22px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <div style="background:white;display:inline-block;padding:5px 12px;border-radius:7px;margin-bottom:10px;">
+          <span style="font-size:16px;font-weight:900;color:#0A3D62;">CARDIO</span><span style="font-size:16px;font-weight:900;color:#1C67A3;">HOME</span>
+          <span style="font-size:8px;font-weight:600;color:#64748b;display:block;letter-spacing:1px;">GESTIÓN OPERATIVA MÉDICA</span>
         </div>
-        <div style="text-align:right;font-size:.8rem;opacity:.8;">
-            <div style="font-weight:800;font-size:1.1rem;">CardioHome SpA</div>
-            <div>Programa de Integración Escolar</div>
-        </div>
+        <h1 style="margin:0;font-size:19px;font-weight:900;color:white;">Informe de Rendimiento Profesional</h1>
+        <p style="margin:5px 0 0;font-size:10px;color:rgba(255,255,255,.75);">Evaluaciones médicas · Datos en tiempo real</p>
+      </div>
+      <div style="text-align:right;background:rgba(255,255,255,.12);border-radius:10px;padding:10px 14px;">
+        <p style="margin:0;font-size:8px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px;">Profesional</p>
+        <p style="margin:3px 0 0;font-size:13px;font-weight:900;color:white;">${usuario}</p>
+        <p style="margin:8px 0 0;font-size:8px;color:rgba(255,255,255,.6);">${fecha} · ${hora}</p>
+      </div>
     </div>
-    <div class="body">
-        <div class="kpi-grid">
-            <div class="kpi" style="background:linear-gradient(135deg,#0A3D62,#1C67A3);">
-                <div class="kpi-label">Asignados</div><div class="kpi-value">${total}</div>
-            </div>
-            <div class="kpi" style="background:linear-gradient(135deg,#2ECC71,#27AE60);">
-                <div class="kpi-label">Completados</div><div class="kpi-value">${completed}</div>
-            </div>
-            <div class="kpi" style="background:linear-gradient(135deg,#F1C40F,#D4A80F);">
-                <div class="kpi-label">Pendientes</div><div class="kpi-value">${pending}</div>
-            </div>
-            <div class="kpi" style="background:linear-gradient(135deg,#E74C3C,#C2382B);">
-                <div class="kpi-label">Avance</div><div class="kpi-value">${percent}</div>
-            </div>
-        </div>
-        <div class="section">
-            <h2>Desglose por Especialidad</h2>
-            <div class="row">
-                <div class="metric">
-                    <div class="metric-val" style="color:#6d28d9;">${neuro}</div>
-                    <div class="metric-lbl">Evaluaciones Neurología</div>
-                </div>
-                <div class="metric">
-                    <div class="metric-val" style="color:#ea580c;">${familiar}</div>
-                    <div class="metric-lbl">Medicina Familiar</div>
-                </div>
-                <div class="metric">
-                    <div class="metric-val" style="color:#1C67A3;">${nominas}</div>
-                    <div class="metric-lbl">Nóminas Activas</div>
-                </div>
-            </div>
-        </div>
-        <div class="section">
-            <h2>Nóminas Asignadas</h2>
-            ${document.getElementById('dp-nominas-list')?.innerHTML || '<p style="color:#a0aec0;">Sin datos</p>'}
-        </div>
+  </div>
+
+  <!-- KPIs -->
+  <div style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:16px 36px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+    ${[
+      {label:'Asignados',  val:total,     color:'#0A3D62',bg:'#eff6ff'},
+      {label:'Completados',val:completed, color:'#059669',bg:'#f0fdf4'},
+      {label:'Pendientes', val:pending,   color:'#D97706',bg:'#fffbeb'},
+      {label:'% Avance',   val:percent,   color:'#7C3AED',bg:'#f5f3ff'},
+    ].map(k=>`<div style="background:${k.bg};border-radius:9px;padding:10px 12px;text-align:center;border:1px solid ${k.color}22;">
+      <p style="margin:0;font-size:7px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;">${k.label}</p>
+      <p style="margin:3px 0 0;font-size:20px;font-weight:900;color:${k.color};">${k.val}</p>
+    </div>`).join('')}
+  </div>
+
+  <div style="padding:24px 36px;">
+
+    <!-- Especialidades -->
+    <h3 style="font-size:10px;font-weight:800;color:#0A3D62;letter-spacing:1px;text-transform:uppercase;margin:0 0 10px;border-left:4px solid #1C67A3;padding-left:8px;">Desglose por Especialidad</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:22px;">
+      <div style="background:#f0f4ff;border-radius:10px;padding:12px;text-align:center;border:1px solid #c7d8f5;">
+        <p style="margin:0;font-size:7px;font-weight:700;color:#4f46e5;text-transform:uppercase;letter-spacing:.8px;">Neurología</p>
+        <p style="margin:4px 0 0;font-size:22px;font-weight:900;color:#3730a3;">${neuro}</p>
+        <p style="margin:2px 0 0;font-size:7px;color:#6366f1;">evaluaciones</p>
+      </div>
+      <div style="background:#fff7ed;border-radius:10px;padding:12px;text-align:center;border:1px solid #fed7aa;">
+        <p style="margin:0;font-size:7px;font-weight:700;color:#ea580c;text-transform:uppercase;letter-spacing:.8px;">Med. Familiar</p>
+        <p style="margin:4px 0 0;font-size:22px;font-weight:900;color:#c2410c;">${familiar}</p>
+        <p style="margin:2px 0 0;font-size:7px;color:#f97316;">evaluaciones</p>
+      </div>
+      <div style="background:#f0fdf4;border-radius:10px;padding:12px;text-align:center;border:1px solid #bbf7d0;">
+        <p style="margin:0;font-size:7px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:.8px;">Nóminas Activas</p>
+        <p style="margin:4px 0 0;font-size:22px;font-weight:900;color:#065f46;">${nominasN}</p>
+        <p style="margin:2px 0 0;font-size:7px;color:#10b981;">asignadas</p>
+      </div>
     </div>
-    <div class="footer">CardioHome SpA · Reporte generado automáticamente desde el Dashboard · ${new Date().getFullYear()}</div>
-    <script>window.onload = () => { setTimeout(() => window.print(), 600); }<\/script>
-    </body></html>`);
-    win.document.close();
+
+    <!-- Nóminas -->
+    ${nominasHTML ? `
+    <h3 style="font-size:10px;font-weight:800;color:#0A3D62;letter-spacing:1px;text-transform:uppercase;margin:0 0 10px;border-left:4px solid #10B981;padding-left:8px;">Detalle de Nóminas Asignadas</h3>
+    <div style="margin-bottom:24px;">${nominasHTML}</div>` : ''}
+
+    <!-- Firma -->
+    <div style="margin-top:36px;display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid #e2e8f0;padding-top:18px;">
+      <div style="font-size:8px;color:#94a3b8;line-height:1.8;">
+        <p style="margin:0;font-weight:700;color:#64748b;">Cardiohome SpA — Sistema de Gestión Operativa Médica</p>
+        <p style="margin:0;">Documento generado automáticamente · ${fecha} ${hora}</p>
+        <p style="margin:0;">Documento de uso interno · Confidencial</p>
+      </div>
+      <div style="text-align:center;">
+        <div style="width:160px;border-top:2px solid #0A3D62;padding-top:7px;">
+          <p style="margin:0;font-weight:900;font-size:10px;color:#0A3D62;">Jorge Enrique Miranda Kirk</p>
+          <p style="margin:2px 0 0;font-size:8px;color:#64748b;">Gerente General · Cardiohome SpA</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>`;
+
+    const opt = {
+        margin: 0,
+        filename: `INFORME_RENDIMIENTO_DOCTORA_${fecha.replace(/\s+/g,'_')}.pdf`,
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(el).save().then(() => Swal.close());
 }
 
-// ══════════════════════════════════════════════════════════════════
-//  B. CALENDARIO DE VISITAS — fetch desde /api/doctor/visitas
-// ══════════════════════════════════════════════════════════════════
-let calCurrentYear, calCurrentMonth;
-let calEvents = {}; // { 'YYYY-MM-DD': [{...}, ...] }
-
-async function loadCalendarEvents() {
-    try {
-        const res  = await fetch('/api/doctor/visitas');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        if (!data.success) throw new Error(data.message);
-
-        // Convertir lista a dict por fecha
-        const evMap = {};
-        (data.eventos || []).forEach(ev => {
-            if (!evMap[ev.fecha]) evMap[ev.fecha] = [];
-            evMap[ev.fecha].push(ev);
-        });
-        calEvents = evMap;
-    } catch(e) {
-        console.warn('loadCalendarEvents fallback (usando datos Jinja):', e.message);
-        // Fallback: usar datos ya embebidos desde Jinja (la vista lista sigue funcionando)
-        calEvents = window.__doctorEventosFallback || {};
-    }
-}
 
 function initCalendar() {
     const today = new Date();
@@ -3844,112 +4026,149 @@ function exportarPDFCoordinadora() {
         return;
     }
     const d = _coordData;
-    const globalPct = d.percent;
-    const win = window.open('', '_blank', 'width=960,height=800');
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-    <title>Reporte Coordinación General — CardioHome</title>
-    <style>
-        body { font-family:'Segoe UI',sans-serif; margin:0; padding:0; color:#2d3748; background:white; }
-        .header { background:linear-gradient(135deg,#0A3D62,#1C67A3); color:white; padding:2rem 2.5rem; display:flex; justify-content:space-between; align-items:center; }
-        .header h1 { margin:0; font-size:1.5rem; font-weight:900; }
-        .header p  { margin:.25rem 0 0; opacity:.75; font-size:.8rem; }
-        .body { padding:2rem 2.5rem; }
-        .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:2rem; }
-        .kpi { border-radius:12px; padding:1.25rem; color:white; text-align:center; }
-        .kpi-label { font-size:.68rem; font-weight:700; text-transform:uppercase; opacity:.85; margin-bottom:.5rem; }
-        .kpi-value { font-size:2rem; font-weight:900; line-height:1; }
-        .section { background:#f8fafc; border-radius:12px; padding:1.5rem; margin-bottom:1.5rem; border:1px solid #e2e8f0; }
-        .section h2 { font-size:.95rem; font-weight:700; color:#0A3D62; margin:0 0 1rem; border-bottom:2px solid #e2e8f0; padding-bottom:.6rem; }
-        .two-col { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
-        .spec-card { background:white; border-radius:10px; padding:1.25rem; border:1px solid #e2e8f0; text-align:center; }
-        .spec-val { font-size:1.8rem; font-weight:900; }
-        .spec-lbl { font-size:.72rem; color:#718096; margin-top:.25rem; }
-        .prog-bar-wrap { height:8px; background:#e2e8f0; border-radius:99px; overflow:hidden; margin:.5rem 0 0; }
-        .prog-bar-fill { height:100%; border-radius:99px; }
-        .ranking-item { display:flex; align-items:center; gap:.75rem; padding:.6rem .75rem; background:white; border-radius:9px; margin-bottom:.5rem; border:1px solid #e2e8f0; }
-        .footer { text-align:center; padding:1.5rem; color:#94a3b8; font-size:.72rem; border-top:1px solid #e2e8f0; margin-top:2rem; }
-        @media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
-    </style></head><body>
-    <div class="header">
-        <div>
-            <h1>📊 Reporte de Coordinación General</h1>
-            <p>Generado: ${new Date().toLocaleString('es-CL')} · CardioHome Programa PIE</p>
+    const fecha = new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'});
+    const hora  = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+    const pct   = typeof d.percent === 'number' ? d.percent : d.percent;
+
+    Swal.fire({ title: 'Generando Reporte PDF', html: 'Preparando informe de coordinación…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    const rankingRows = (d.doctoras_ranking||[]).slice(0,10).map((doc,i)=>{
+        const medals = ['🥇','🥈','🥉'];
+        const medal  = i < 3 ? medals[i] : (i+1);
+        const c = doc.percent>=80?'#059669':doc.percent>=50?'#D97706':'#DC2626';
+        return `<tr style="background:${i%2===0?'#f8fafc':'white'};">
+            <td style="padding:6px 10px;font-weight:700;font-size:11px;">${medal}</td>
+            <td style="padding:6px 10px;font-size:11px;">${doc.nombre}</td>
+            <td style="padding:6px 10px;text-align:center;font-size:11px;">${doc.completed||0}</td>
+            <td style="padding:6px 10px;text-align:center;font-size:11px;">${doc.total||0}</td>
+            <td style="padding:6px 10px;text-align:center;font-weight:800;color:${c};font-size:11px;">${doc.percent||0}%</td>
+        </tr>`;
+    }).join('');
+
+    const estRows = (d.establecimientos||[]).slice(0,12).map((e,i)=>{
+        const c = e.percent>=80?'#059669':e.percent>=50?'#D97706':'#DC2626';
+        return `<tr style="background:${i%2===0?'#f8fafc':'white'};">
+            <td style="padding:5px 10px;font-size:10px;">${e.nombre}</td>
+            <td style="padding:5px 10px;text-align:center;font-size:10px;">${e.completed||0}</td>
+            <td style="padding:5px 10px;text-align:center;font-size:10px;">${e.total||0}</td>
+            <td style="padding:5px 10px;text-align:center;font-weight:700;color:${c};font-size:10px;">${e.percent||0}%</td>
+        </tr>`;
+    }).join('');
+
+    const neuroP  = d.neuro_total  > 0 ? Math.round(d.neuro_completed  / d.neuro_total  * 100) : 0;
+    const familP  = d.familiar_total > 0 ? Math.round(d.familiar_completed / d.familiar_total * 100) : 0;
+
+    const el = document.createElement('div');
+    el.innerHTML = `
+<div style="font-family:Arial,sans-serif;color:#1e293b;background:white;padding:0;min-width:720px;">
+
+  <!-- HEADER -->
+  <div style="background:linear-gradient(135deg,#0A3D62 0%,#1C67A3 100%);padding:28px 36px 22px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <div style="background:white;display:inline-block;padding:5px 12px;border-radius:7px;margin-bottom:10px;">
+          <span style="font-size:16px;font-weight:900;color:#0A3D62;">CARDIO</span><span style="font-size:16px;font-weight:900;color:#1C67A3;">HOME</span>
+          <span style="font-size:8px;font-weight:600;color:#64748b;display:block;letter-spacing:1px;">GESTIÓN OPERATIVA MÉDICA</span>
         </div>
-        <div style="text-align:right;font-size:.8rem;opacity:.85;">
-            <div style="font-weight:800;font-size:1.1rem;">CardioHome SpA</div>
-            <div>Coordinación General</div>
-        </div>
+        <h1 style="margin:0;font-size:19px;font-weight:900;color:white;">Informe de Coordinación General</h1>
+        <p style="margin:5px 0 0;font-size:10px;color:rgba(255,255,255,.75);">Neurología y Medicina Familiar · Todas las doctoras</p>
+      </div>
+      <div style="text-align:right;background:rgba(255,255,255,.12);border-radius:10px;padding:10px 14px;">
+        <p style="margin:0;font-size:8px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px;">Reporte</p>
+        <p style="margin:3px 0 0;font-size:12px;font-weight:900;color:white;">Coordinación General</p>
+        <p style="margin:8px 0 0;font-size:8px;color:rgba(255,255,255,.6);">${fecha} · ${hora}</p>
+      </div>
     </div>
-    <div class="body">
-        <div class="kpi-grid">
-            <div class="kpi" style="background:linear-gradient(135deg,#0A3D62,#1C67A3);">
-                <div class="kpi-label">Total Estudiantes</div><div class="kpi-value">${d.total}</div>
-            </div>
-            <div class="kpi" style="background:linear-gradient(135deg,#2ECC71,#27AE60);">
-                <div class="kpi-label">Completadas</div><div class="kpi-value">${d.completed}</div>
-            </div>
-            <div class="kpi" style="background:linear-gradient(135deg,#F1C40F,#D4A80F);">
-                <div class="kpi-label">Pendientes</div><div class="kpi-value">${d.pending}</div>
-            </div>
-            <div class="kpi" style="background:linear-gradient(135deg,#E74C3C,#C2382B);">
-                <div class="kpi-label">Avance Global</div><div class="kpi-value">${globalPct}%</div>
-            </div>
+  </div>
+
+  <!-- KPIs -->
+  <div style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:16px 36px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+    ${[
+      {label:'Total Alumnos', val:d.total,     color:'#0A3D62',bg:'#eff6ff'},
+      {label:'Completados',   val:d.completed, color:'#059669',bg:'#f0fdf4'},
+      {label:'Pendientes',    val:d.pending,   color:'#D97706',bg:'#fffbeb'},
+      {label:'% Avance',      val:pct+'%',     color:'#7C3AED',bg:'#f5f3ff'},
+    ].map(k=>'<div style="background:'+k.bg+';border-radius:9px;padding:10px 12px;text-align:center;border:1px solid '+k.color+'22;"><p style="margin:0;font-size:7px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;">'+k.label+'</p><p style="margin:3px 0 0;font-size:20px;font-weight:900;color:'+k.color+';">'+k.val+'</p></div>').join('')}
+  </div>
+
+  <div style="padding:24px 36px;">
+
+    <!-- Especialidades -->
+    <h3 style="font-size:10px;font-weight:800;color:#0A3D62;letter-spacing:1px;text-transform:uppercase;margin:0 0 10px;border-left:4px solid #1C67A3;padding-left:8px;">Desglose por Especialidad</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px;">
+      <div style="background:#f0f4ff;border-radius:10px;padding:14px;border:1px solid #c7d8f5;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div><p style="margin:0;font-size:8px;font-weight:700;color:#4f46e5;text-transform:uppercase;letter-spacing:.8px;">🧠 Neurología</p>
+            <p style="margin:4px 0 0;font-size:24px;font-weight:900;color:#3730a3;">${d.neuro_completed}<span style="font-size:11px;color:#6366f1;"> / ${d.neuro_total}</span></p>
+          </div>
+          <div style="font-size:20px;font-weight:900;color:${neuroP>=80?'#059669':neuroP>=50?'#D97706':'#DC2626'};">${neuroP}%</div>
         </div>
-        <div class="section">
-            <h2>Desglose por Especialidad</h2>
-            <div class="two-col">
-                <div class="spec-card">
-                    <div class="spec-val" style="color:#6d28d9;">${d.neuro_completed}</div>
-                    <div class="spec-lbl">Neurología Completadas</div>
-                    <div class="spec-lbl">Total asignados: ${d.neuro_total}</div>
-                    <div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:${d.neuro_total>0?Math.round(d.neuro_completed/d.neuro_total*100):0}%;background:#8b5cf6;"></div></div>
-                    <div class="spec-lbl" style="margin-top:.3rem;">${d.neuro_total>0?Math.round(d.neuro_completed/d.neuro_total*100):0}% avance</div>
-                </div>
-                <div class="spec-card">
-                    <div class="spec-val" style="color:#ea580c;">${d.familiar_completed}</div>
-                    <div class="spec-lbl">Med. Familiar Completadas</div>
-                    <div class="spec-lbl">Total asignados: ${d.familiar_total}</div>
-                    <div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:${d.familiar_total>0?Math.round(d.familiar_completed/d.familiar_total*100):0}%;background:#f97316;"></div></div>
-                    <div class="spec-lbl" style="margin-top:.3rem;">${d.familiar_total>0?Math.round(d.familiar_completed/d.familiar_total*100):0}% avance</div>
-                </div>
-            </div>
+        <div style="height:6px;background:#ddd5fe;border-radius:99px;margin-top:8px;overflow:hidden;">
+          <div style="height:100%;width:${neuroP}%;background:#4f46e5;border-radius:99px;"></div></div>
+      </div>
+      <div style="background:#fff7ed;border-radius:10px;padding:14px;border:1px solid #fed7aa;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div><p style="margin:0;font-size:8px;font-weight:700;color:#ea580c;text-transform:uppercase;letter-spacing:.8px;">👨‍⚕️ Med. Familiar</p>
+            <p style="margin:4px 0 0;font-size:24px;font-weight:900;color:#c2410c;">${d.familiar_completed}<span style="font-size:11px;color:#f97316;"> / ${d.familiar_total}</span></p>
+          </div>
+          <div style="font-size:20px;font-weight:900;color:${familP>=80?'#059669':familP>=50?'#D97706':'#DC2626'};">${familP}%</div>
         </div>
-        <div class="two-col" style="margin-bottom:1.5rem;">
-            <div class="section" style="margin-bottom:0;">
-                <h2>Ranking de Doctoras</h2>
-                ${(d.doctoras_ranking||[]).slice(0,8).map((doc,i)=>{
-                    const c = doc.percent>=80?'#2ECC71':doc.percent>=50?'#F1C40F':'#E74C3C';
-                    const medals=['🥇','🥈','🥉'];
-                    return `<div class="ranking-item">
-                        <div style="font-size:1.1rem;">${medals[i]||`#${i+1}`}</div>
-                        <div style="flex:1;min-width:0;">
-                            <div style="font-weight:700;font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${doc.nombre}</div>
-                            <div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:${doc.percent}%;background:${c};"></div></div>
-                        </div>
-                        <div style="font-weight:900;color:${c};font-size:.9rem;">${doc.percent}%</div>
-                    </div>`;
-                }).join('')}
-            </div>
-            <div class="section" style="margin-bottom:0;">
-                <h2>Top Establecimientos</h2>
-                ${(d.establecimientos||[]).slice(0,8).map(est=>{
-                    const c = est.percent>=80?'#2ECC71':est.percent>=50?'#F1C40F':'#E74C3C';
-                    return `<div class="ranking-item">
-                        <div style="flex:1;min-width:0;">
-                            <div style="font-weight:600;font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${est.nombre}">${est.nombre}</div>
-                            <div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:${est.percent}%;background:${c};"></div></div>
-                        </div>
-                        <div style="font-weight:800;color:${c};font-size:.85rem;min-width:42px;text-align:right;">${est.percent}%</div>
-                    </div>`;
-                }).join('')}
-            </div>
-        </div>
+        <div style="height:6px;background:#fed7aa;border-radius:99px;margin-top:8px;overflow:hidden;">
+          <div style="height:100%;width:${familP}%;background:#f97316;border-radius:99px;"></div></div>
+      </div>
     </div>
-    <div class="footer">CardioHome SpA · Reporte Coordinación General · ${new Date().getFullYear()}</div>
-    <script>window.onload=()=>{setTimeout(()=>window.print(),600);}<\/script>
-    </body></html>`);
-    win.document.close();
+
+    <!-- Ranking -->
+    ${rankingRows ? `
+    <h3 style="font-size:10px;font-weight:800;color:#0A3D62;letter-spacing:1px;text-transform:uppercase;margin:0 0 10px;border-left:4px solid #F59E0B;padding-left:8px;">🏆 Ranking de Doctoras</h3>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:22px;font-size:11px;">
+      <thead><tr style="background:#0A3D62;color:white;">
+        <th style="padding:7px 10px;text-align:left;border-radius:8px 0 0 8px;">#</th>
+        <th style="padding:7px 10px;text-align:left;">Profesional</th>
+        <th style="padding:7px 10px;text-align:center;">Completadas</th>
+        <th style="padding:7px 10px;text-align:center;">Total</th>
+        <th style="padding:7px 10px;text-align:center;border-radius:0 8px 8px 0;">Avance</th>
+      </thead><tbody>${rankingRows}</tbody>
+    </table>` : ''}
+
+    <!-- Establecimientos -->
+    ${estRows ? `
+    <h3 style="font-size:10px;font-weight:800;color:#0A3D62;letter-spacing:1px;text-transform:uppercase;margin:0 0 10px;border-left:4px solid #059669;padding-left:8px;">🏫 Top Establecimientos</h3>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:10px;">
+      <thead><tr style="background:#059669;color:white;">
+        <th style="padding:7px 10px;text-align:left;border-radius:8px 0 0 8px;">Establecimiento</th>
+        <th style="padding:7px 10px;text-align:center;">Completados</th>
+        <th style="padding:7px 10px;text-align:center;">Total</th>
+        <th style="padding:7px 10px;text-align:center;border-radius:0 8px 8px 0;">Avance</th>
+      </thead><tbody>${estRows}</tbody>
+    </table>` : ''}
+
+    <!-- Firma -->
+    <div style="margin-top:36px;display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid #e2e8f0;padding-top:18px;">
+      <div style="font-size:8px;color:#94a3b8;line-height:1.8;">
+        <p style="margin:0;font-weight:700;color:#64748b;">Cardiohome SpA — Sistema de Gestión Operativa Médica</p>
+        <p style="margin:0;">Documento generado automáticamente · ${fecha} ${hora}</p>
+        <p style="margin:0;">Documento de uso interno · Confidencial</p>
+      </div>
+      <div style="text-align:center;">
+        <div style="width:160px;border-top:2px solid #0A3D62;padding-top:7px;">
+          <p style="margin:0;font-weight:900;font-size:10px;color:#0A3D62;">Jorge Enrique Miranda Kirk</p>
+          <p style="margin:2px 0 0;font-size:8px;color:#64748b;">Gerente General · Cardiohome SpA</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>`;
+
+    const opt = {
+        margin: 0,
+        filename: `INFORME_COORDINACION_CARDIOHOME_${fecha.replace(/ /g,'_')}.pdf`,
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(el).save().then(() => Swal.close());
 }
+
 
 // ── Helpers ──────────────────────────────────────────────────────────
 function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }

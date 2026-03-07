@@ -3906,18 +3906,16 @@ async function exportarPDFDoctora() {
             y += 3;
         }
 
-        // También intentar cargar nóminas desde API para desglose de alumnos
-        try {
-            var resD = await fetch('/api/doctor/nominas_detalle');
-            var dataD = await resD.json();
-            if (dataD.success && dataD.data && dataD.data.length) {
-                y = _drawSec(doc, y, 'Desglose Detallado - Alumnos por Nomina', 76, 29, 149);
-                y += 2;
-                dataD.data.forEach(function(nom) {
-                    y = _drawColegioBlock(doc, y, nom);
-                });
-            }
-        } catch(e2) { /* endpoint opcional */ }
+        // Desglose detallado alumnos por establecimiento
+        var resD = await fetch('/api/doctor/reporte_detalle');
+        var dataD = await resD.json();
+        if (dataD.success && dataD.data && dataD.data.length) {
+            y = _drawSec(doc, y, 'Desglose Detallado - Alumnos por Establecimiento', 76, 29, 149);
+            y += 2;
+            dataD.data.forEach(function(nom) {
+                y = _drawColegioBlock(doc, y, nom);
+            });
+        }
 
         _drawSignature(doc);
         _drawFooter(doc);
@@ -4030,18 +4028,16 @@ async function exportarPDFCoordinadora() {
             y += 4;
         }
 
-        // Desglose establecimientos con alumnos (si el endpoint lo provee)
-        try {
-            var resC = await fetch('/api/coordinadora/reporte_detalle');
-            var dataC = await resC.json();
-            if (dataC.success && dataC.data && dataC.data.length) {
-                y = _drawSec(doc, y, 'Desglose Detallado - Alumnos por Establecimiento', 76, 29, 149);
-                y += 2;
-                dataC.data.forEach(function(nom) {
-                    y = _drawColegioBlock(doc, y, nom);
-                });
-            }
-        } catch(e2) { /* endpoint opcional */ }
+        // Desglose detallado alumnos por establecimiento
+        var resC = await fetch('/api/coordinadora/reporte_detalle');
+        var dataC = await resC.json();
+        if (dataC.success && dataC.data && dataC.data.length) {
+            y = _drawSec(doc, y, 'Desglose Detallado - Alumnos por Establecimiento', 76, 29, 149);
+            y += 2;
+            dataC.data.forEach(function(nom) {
+                y = _drawColegioBlock(doc, y, nom);
+            });
+        }
 
         _drawSignature(doc);
         _drawFooter(doc);

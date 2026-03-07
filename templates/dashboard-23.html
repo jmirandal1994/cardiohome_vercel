@@ -3546,8 +3546,8 @@ function _drawTRow(doc, y, cells, cols, even) {
 // ── Helpers badge / bar ──────────────────────────────────────────────────
 function _badge(ev) {
     return ev
-        ? { badge: true, text: '✓ Evaluado',   r: 220, g: 252, b: 231, tr: 21, tg: 128, tb: 61 }
-        : { badge: true, text: '⏳ Pendiente', r: 254, g: 243, b: 199, tr: 146, tg: 64, tb: 14 };
+        ? { badge: true, text: 'Evaluado',   r: 220, g: 252, b: 231, tr: 21, tg: 128, tb: 61 }
+        : { badge: true, text: 'Pendiente', r: 254, g: 243, b: 199, tr: 146, tg: 64, tb: 14 };
 }
 function _bar(pct) {
     var p = Math.round(pct);
@@ -3562,7 +3562,7 @@ function _drawChart(doc, y, nominas) {
     var items = nominas.filter(function(n) { return (n.total || 0) > 0; }).slice(0, 18);
     if (!items.length) return y;
 
-    y = _drawSec(doc, y, '📊  Avance por Establecimiento', 76, 29, 149);
+    y = _drawSec(doc, y, 'Avance por Establecimiento', 76, 29, 149);
 
     var labelW  = 64;
     var barX    = PDF_M + labelW + 1;
@@ -3656,7 +3656,7 @@ function _drawColegioBlock(doc, y, nom) {
     doc.setTextColor(255, 255, 255);
     var nombre = (nom.colegio || 'Sin nombre');
     if (nombre.length > 52) nombre = nombre.substring(0, 51) + '…';
-    doc.text('🏫  ' + nombre, PDF_M + 3, y + 4.7);
+    doc.text(nombre, PDF_M + 3, y + 4.7);
 
     // Badge porcentaje
     doc.setFillColor(cr, cg, cb);
@@ -3693,6 +3693,53 @@ function _drawColegioBlock(doc, y, nom) {
 
     return y + 3;
 }
+
+// ── Bloque de firma final ────────────────────────────────────────────────
+function _drawSignature(doc) {
+    var y = _needPage(doc, 240, 40);
+    y += 4;
+
+    // Línea separadora
+    doc.setDrawColor(200, 210, 225);
+    doc.setLineWidth(0.4);
+    doc.line(PDF_M, y, PDF_W - PDF_M, y);
+    y += 6;
+
+    // Título sección
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(15, 52, 96);
+    doc.text('FIRMA Y VALIDACION DEL INFORME', PDF_M, y);
+    y += 8;
+
+    // Caja firma centrada
+    var bw = 70, bx = (PDF_W - bw) / 2;
+    doc.setDrawColor(180, 195, 215);
+    doc.setLineWidth(0.3);
+    doc.rect(bx, y, bw, 18, 'S');
+
+    // Línea de firma
+    doc.setDrawColor(80, 100, 130);
+    doc.setLineWidth(0.5);
+    doc.line(bx + 6, y + 13, bx + bw - 6, y + 13);
+
+    // Nombre y cargo
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(15, 52, 96);
+    doc.text('Jorge Enrique Miranda Kirk', PDF_W / 2, y + 17, { align: 'center' });
+    y += 22;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(80, 90, 110);
+    doc.text('Gerente General', PDF_W / 2, y, { align: 'center' });
+    y += 4;
+    doc.text('Cardiohome SpA  |  RUT 77.028.328-0', PDF_W / 2, y, { align: 'center' });
+
+    return y + 6;
+}
+
 
 // ════════════════════════════════════════════════════════════════════════
 // ADMIN PDF
@@ -3734,7 +3781,7 @@ async function exportarReporteAdmin() {
 
         // Ranking doctoras
         if (ranking.length) {
-            y = _drawSec(doc, y, '🏆  Ranking de Doctoras', 15, 52, 96);
+            y = _drawSec(doc, y, 'Ranking de Doctoras', 15, 52, 96);
             var rCols = [
                 { lbl: '#',           x: PDF_M,        w: 8  },
                 { lbl: 'Profesional', x: PDF_M + 8,    w: 74 },
@@ -3743,7 +3790,7 @@ async function exportarReporteAdmin() {
                 { lbl: 'Avance',      x: PDF_M + 132,  w: 52 }
             ];
             y = _drawTHead(doc, y, rCols, 28, 103, 163);
-            var med = ['🥇', '🥈', '🥉'];
+            var med = ['1.', '2.', '3.'];
             ranking.slice(0, 15).forEach(function(d, i) {
                 y = _drawTRow(doc, y, [
                     i < 3 ? med[i] : String(i + 1),
@@ -3758,13 +3805,14 @@ async function exportarReporteAdmin() {
 
         // Desglose detallado por colegio
         if (nominas.length) {
-            y = _drawSec(doc, y, '📋  Desglose Detallado — Alumnos por Establecimiento', 76, 29, 149);
+            y = _drawSec(doc, y, 'Desglose Detallado - Alumnos por Establecimiento', 76, 29, 149);
             y += 2;
             nominas.forEach(function(nom) {
                 y = _drawColegioBlock(doc, y, nom);
             });
         }
 
+        _drawSignature(doc);
         _drawFooter(doc);
         doc.save('REPORTE_ADMIN_' + projectName.replace(/\s+/g, '_') + '_' + fecha.replace(/ /g, '_') + '.pdf');
         Swal.close();
@@ -3807,12 +3855,12 @@ async function exportarPDFDoctora() {
         ]);
 
         // Especialidades
-        y = _drawSec(doc, y, '📊  Desglose por Especialidad', 28, 103, 163);
+        y = _drawSec(doc, y, 'Desglose por Especialidad', 28, 103, 163);
         var eW = (PDF_INN - 4) / 3;
         [
-            { lbl: '🧠 NEUROLOGÍA',     val: neuro,    fr: 239, fg: 246, fb: 255, vr: 55,  vg: 48,  vb: 163 },
-            { lbl: '👨‍⚕️ MED. FAMILIAR', val: familiar, fr: 255, fg: 247, fb: 237, vr: 194, vg: 65,  vb: 12  },
-            { lbl: '📋 NÓMINAS',        val: nominasN, fr: 240, fg: 253, fb: 244, vr: 5,   vg: 150, vb: 105 }
+            { lbl: 'NEUROLOGIA',     val: neuro,    fr: 239, fg: 246, fb: 255, vr: 55,  vg: 48,  vb: 163 },
+            { lbl: 'MED. FAMILIAR', val: familiar, fr: 255, fg: 247, fb: 237, vr: 194, vg: 65,  vb: 12  },
+            { lbl: 'NOMINAS',        val: nominasN, fr: 240, fg: 253, fb: 244, vr: 5,   vg: 150, vb: 105 }
         ].forEach(function(e, i) {
             var ex = PDF_M + i * (eW + 2);
             doc.setFillColor(e.fr, e.fg, e.fb);
@@ -3846,7 +3894,7 @@ async function exportarPDFDoctora() {
         }
 
         if (nomRows.length) {
-            y = _drawSec(doc, y, '📁  Nóminas Asignadas — Avance por Establecimiento', 5, 150, 105);
+            y = _drawSec(doc, y, 'Nominas Asignadas - Avance por Establecimiento', 5, 150, 105);
             var nCols = [
                 { lbl: 'Colegio / Nómina', x: PDF_M,        w: 120 },
                 { lbl: 'Avance',           x: PDF_M + 120,  w: 64  }
@@ -3863,7 +3911,7 @@ async function exportarPDFDoctora() {
             var resD = await fetch('/api/doctor/nominas_detalle');
             var dataD = await resD.json();
             if (dataD.success && dataD.data && dataD.data.length) {
-                y = _drawSec(doc, y, '📋  Desglose Detallado — Alumnos por Nómina', 76, 29, 149);
+                y = _drawSec(doc, y, 'Desglose Detallado - Alumnos por Nomina', 76, 29, 149);
                 y += 2;
                 dataD.data.forEach(function(nom) {
                     y = _drawColegioBlock(doc, y, nom);
@@ -3871,6 +3919,7 @@ async function exportarPDFDoctora() {
             }
         } catch(e2) { /* endpoint opcional */ }
 
+        _drawSignature(doc);
         _drawFooter(doc);
         doc.save('INFORME_DOCTORA_' + fecha.replace(/ /g, '_') + '.pdf');
         Swal.close();
@@ -3907,13 +3956,13 @@ async function exportarPDFCoordinadora() {
         ]);
 
         // Especialidades con mini barras
-        y = _drawSec(doc, y, '📊  Desglose por Especialidad', 28, 103, 163);
+        y = _drawSec(doc, y, 'Desglose por Especialidad', 28, 103, 163);
         var np  = (d.neuro_total    || 0) > 0 ? Math.round((d.neuro_completed    || 0) / d.neuro_total    * 100) : 0;
         var fp  = (d.familiar_total || 0) > 0 ? Math.round((d.familiar_completed || 0) / d.familiar_total * 100) : 0;
         var eW2 = (PDF_INN - 3) / 2;
         [
-            { lbl: '🧠 NEUROLOGÍA',     comp: d.neuro_completed    || 0, tot: d.neuro_total    || 0, p: np, fr: 239, fg: 246, fb: 255, vr: 55,  vg: 48,  vb: 163 },
-            { lbl: '👨‍⚕️ MED. FAMILIAR', comp: d.familiar_completed || 0, tot: d.familiar_total || 0, p: fp, fr: 255, fg: 247, fb: 237, vr: 194, vg: 65,  vb: 12  }
+            { lbl: 'NEUROLOGIA',     comp: d.neuro_completed    || 0, tot: d.neuro_total    || 0, p: np, fr: 239, fg: 246, fb: 255, vr: 55,  vg: 48,  vb: 163 },
+            { lbl: 'MED. FAMILIAR', comp: d.familiar_completed || 0, tot: d.familiar_total || 0, p: fp, fr: 255, fg: 247, fb: 237, vr: 194, vg: 65,  vb: 12  }
         ].forEach(function(e, i) {
             var ex = PDF_M + i * (eW2 + 3);
             doc.setFillColor(e.fr, e.fg, e.fb);
@@ -3959,7 +4008,7 @@ async function exportarPDFCoordinadora() {
         // Ranking doctoras
         var ranking = d.doctoras_ranking || [];
         if (ranking.length) {
-            y = _drawSec(doc, y, '🏆  Ranking de Doctoras', 15, 52, 96);
+            y = _drawSec(doc, y, 'Ranking de Doctoras', 15, 52, 96);
             var rkC = [
                 { lbl: '#',           x: PDF_M,        w: 8  },
                 { lbl: 'Profesional', x: PDF_M + 8,    w: 74 },
@@ -3968,7 +4017,7 @@ async function exportarPDFCoordinadora() {
                 { lbl: 'Avance',      x: PDF_M + 132,  w: 52 }
             ];
             y = _drawTHead(doc, y, rkC, 28, 103, 163);
-            var med2 = ['🥇', '🥈', '🥉'];
+            var med2 = ['1.', '2.', '3.'];
             ranking.slice(0, 20).forEach(function(dr, i) {
                 y = _drawTRow(doc, y, [
                     i < 3 ? med2[i] : String(i + 1),
@@ -3986,7 +4035,7 @@ async function exportarPDFCoordinadora() {
             var resC = await fetch('/api/coordinadora/reporte_detalle');
             var dataC = await resC.json();
             if (dataC.success && dataC.data && dataC.data.length) {
-                y = _drawSec(doc, y, '📋  Desglose Detallado — Alumnos por Establecimiento', 76, 29, 149);
+                y = _drawSec(doc, y, 'Desglose Detallado - Alumnos por Establecimiento', 76, 29, 149);
                 y += 2;
                 dataC.data.forEach(function(nom) {
                     y = _drawColegioBlock(doc, y, nom);
@@ -3994,6 +4043,7 @@ async function exportarPDFCoordinadora() {
             }
         } catch(e2) { /* endpoint opcional */ }
 
+        _drawSignature(doc);
         _drawFooter(doc);
         doc.save('INFORME_COORDINACION_' + fecha.replace(/ /g, '_') + '.pdf');
         Swal.close();

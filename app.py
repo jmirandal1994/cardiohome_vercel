@@ -3654,6 +3654,45 @@ def api_coordinadora_stats():
 
 
 # ─────────────────────────────────────────────────────────────
+# RUTA: Stats de todas las nóminas de un proyecto
+#  GET /api/admin/proyecto_stats/<project_id>
+#  Retorna: [{nomina_id, total, evaluados, pct}]
+# ─────────────────────────────────────────────────────────────
+@app.route('/api/admin/proyecto_stats/<project_id>', methods=['GET'])
+def api_admin_proyecto_stats(project_id):
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        # 1. Obtener nóminas del proyecto
+        url_n = (f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+                 f"?proyecto_id=eq.{project_id}&select=id")
+        res_n = requests.get(url_n, headers=SUPABASE_SERVICE_HEADERS)
+        nominas = res_n.json() if res_n.ok else []
+
+        result = []
+        proj_total = 0
+        proj_eval  = 0
+
+        for nom in nominas:
+            nid   = nom['id']
+            total = get_supabase_count(f"nomina_id=eq.{nid}")
+            eval_ = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true")
+            pct   = round(eval_ / total * 100, 1) if total > 0 else 0
+            proj_total += total
+            proj_eval  += eval_
+            result.append({"nomina_id": nid, "total": total, "evaluados": eval_, "pct": pct})
+
+        proj_pct = round(proj_eval / proj_total * 100, 1) if proj_total > 0 else 0
+        return jsonify({
+            "success": True,
+            "nominas": result,
+            "proyecto": {"total": proj_total, "evaluados": proj_eval, "pct": proj_pct}
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+# ─────────────────────────────────────────────────────────────
 # RUTA: Visitas de una doctora específica (para calendario admin)
 #  GET /api/admin/visitas_doctora/<doctor_id>
 # ─────────────────────────────────────────────────────────────

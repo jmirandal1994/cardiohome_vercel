@@ -3176,5 +3176,385 @@ def eliminar_nomina(nomina_id):
         print(f"ERROR: Error inesperado al eliminar nómina: {e}")
         return jsonify({"success": False, "message": f"Error interno del servidor al eliminar nómina: {str(e)}"}), 500
 
+
+# ============================================================
+# NUEVAS RUTAS API — Doctora (rendimiento + visitas) y
+#                    Coordinadora General (stats completas)
+# ============================================================
+
+# ─────────────────────────────────────────────────────────────
+# RUTA 1: Rendimiento real de la Doctora logueada
+#  GET /api/doctor/performance
+#  Retorna: total, completed, pending, percent, nomina_labels,
+#           nomina_completed, nomina_totals, by_type (neuro/familiar)
+# ─────────────────────────────────────────────────────────────
+@app.route('/api/doctor/performance', methods=['GET'])
+def api_doctor_performance():
+    if 'usuario' not in session:
+        return jsonify({"success": False, "message": "No autorizado"}), 401
+
+    user_id = session.get('usuario_id')
+    if not user_id:
+        return jsonify({"success": False, "message": "ID de usuario no encontrado en sesión"}), 400
+
+    try:
+        # 1. Obtener nóminas asignadas a esta doctora
+        url_nominas = (
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?doctora_id=eq.{user_id}"
+            f"&select=id,nombre_nomina,nombre_colegio,form_type,tipo_nomina"
+        )
+        res_nominas = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
+        res_nominas.raise_for_status()
+        nominas = res_nominas.json()
+
+        if not nominas:
+            return jsonify({
+                "success": True,
+                "total": 0, "completed": 0, "pending": 0, "percent": "0%",
+                "nominas_count": 0,
+                "nomina_labels": [], "nomina_completed": [], "nomina_totals": [],
+                "by_type": {"neurologia": 0, "medicina_familiar": 0}
+            })
+
+        nomina_labels = []
+        nomina_completed = []
+        nomina_totals = []
+        total_global = 0
+        completed_global = 0
+        neuro_completed = 0
+        familiar_completed = 0
+
+        for nomina in nominas:
+            nid   = nomina['id']
+            # Preferir nombre_colegio, si no, nombre_nomina (truncado a 30 chars para el gráfico)
+            label = (nomina.get('nombre_colegio') or nomina.get('nombre_nomina') or 'Nómina')[:30]
+            ftype = nomina.get('form_type', '')
+
+            # Usar get_supabase_count exactamente como hace el resto del app
+            total_n = get_supabase_count(f"nomina_id=eq.{nid}")
+            comp_n  = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true")
+
+            nomina_labels.append(label)
+            nomina_totals.append(total_n)
+            nomina_completed.append(comp_n)
+            total_global     += total_n
+            completed_global += comp_n
+
+            if ftype == 'neurologia':
+                neuro_completed += comp_n
+            elif ftype == 'medicina_familiar':
+                familiar_completed += comp_n
+
+        pending_global = total_global - completed_global
+        percent = round((completed_global / total_global * 100), 1) if total_global > 0 else 0
+
+        print(f"DEBUG api_doctor_performance: total={total_global}, comp={completed_global}, pct={percent}%")
+
+        return jsonify({
+            "success": True,
+            "total": total_global,
+            "completed": completed_global,
+            "pending": pending_global,
+            "percent": f"{percent}%",
+            "nominas_count": len(nominas),
+            "nomina_labels": nomina_labels,
+            "nomina_completed": nomina_completed,
+            "nomina_totals": nomina_totals,
+            "by_type": {
+                "neurologia": neuro_completed,
+                "medicina_familiar": familiar_completed
+            }
+        })
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ ERROR api_doctor_performance (requests): {e}")
+        return jsonify({"success": False, "message": f"Error de conexión con BD: {str(e)}"}), 500
+    except Exception as e:
+        print(f"❌ ERROR api_doctor_performance: {e}")
+        return jsonify({"success": False, "message": f"Error interno: {str(e)}"}), 500
+
+
+# ─────────────────────────────────────────────────────────────
+# RUTA 2: Visitas / eventos de la Doctora para el calendario
+#  GET /api/doctor/visitas
+#  Retorna: lista de eventos con fecha en formato YYYY-MM-DD
+#  (el admin las crea desde /admin/agregar → tabla establecimientos
+#   con columna doctora_id)
+# ─────────────────────────────────────────────────────────────
+@app.route('/api/doctor/visitas', methods=['GET'])
+def api_doctor_visitas():
+    if 'usuario' not in session:
+        return jsonify({"success": False, "message": "No autorizado"}), 401
+
+    user_id = session.get('usuario_id')
+    if not user_id:
+        return jsonify({"success": False, "message": "ID de usuario no encontrado en sesión"}), 400
+
+    try:
+        url_eventos = (
+            f"{SUPABASE_URL}/rest/v1/establecimientos"
+            f"?doctora_id=eq.{user_id}"
+            f"&select=id,nombre,fecha,horario,cantidad_alumnos,observaciones,url_archivo"
+            f"&order=fecha.asc"
+        )
+        res = requests.get(url_eventos, headers=SUPABASE_SERVICE_HEADERS)
+        res.raise_for_status()
+        eventos_raw = res.json()
+
+        eventos_formateados = []
+        for ev in eventos_raw:
+            fecha_raw  = ev.get('fecha', '') or ''
+            fecha_norm = fecha_raw
+
+            # Normalizar a YYYY-MM-DD si viene en otro formato
+            if fecha_raw and '/' in fecha_raw:
+                try:
+                    fecha_norm = datetime.strptime(fecha_raw, '%d/%m/%Y').strftime('%Y-%m-%d')
+                except ValueError:
+                    fecha_norm = fecha_raw
+
+            eventos_formateados.append({
+                "id":               ev.get('id', ''),
+                "nombre":           ev.get('nombre', ''),
+                "fecha":            fecha_norm,
+                "horario":          ev.get('horario', ''),
+                "cantidad_alumnos": ev.get('cantidad_alumnos'),
+                "observaciones":    ev.get('observaciones', ''),
+                "url_archivo":      ev.get('url_archivo', '')
+            })
+
+        print(f"DEBUG api_doctor_visitas: {len(eventos_formateados)} eventos para doctora {user_id}")
+        return jsonify({"success": True, "eventos": eventos_formateados})
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ ERROR api_doctor_visitas (requests): {e}")
+        return jsonify({"success": False, "message": f"Error de conexión con BD: {str(e)}"}), 500
+    except Exception as e:
+        print(f"❌ ERROR api_doctor_visitas: {e}")
+        return jsonify({"success": False, "message": f"Error interno: {str(e)}"}), 500
+
+
+# ─────────────────────────────────────────────────────────────
+# RUTA 3: Estadísticas completas para la Coordinadora General
+#  GET /api/coordinadora/stats
+#  Retorna: totales, desglose neuro/familiar, datos por día y
+#           semana (últimos 30 días / 12 semanas), ranking de
+#           doctoras y top de establecimientos
+# ─────────────────────────────────────────────────────────────
+@app.route('/api/coordinadora/stats', methods=['GET'])
+def api_coordinadora_stats():
+    if 'usuario' not in session:
+        return jsonify({"success": False, "message": "No autorizado"}), 401
+
+    user_role = session.get('usuario')
+    user_id   = session.get('usuario_id')
+
+    if user_role not in ('coordinadora', 'admin'):
+        return jsonify({"success": False, "message": "Acceso denegado"}), 403
+
+    try:
+        # ── 1. Nóminas de la coordinadora (o todas si es admin) ──────────
+        if user_role == 'coordinadora':
+            url_nominas = (
+                f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+                f"?coord_general_id=eq.{user_id}"
+                f"&select=id,form_type,nombre_colegio,nombre_nomina,doctora_id,tipo_nomina"
+            )
+        else:
+            url_nominas = (
+                f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+                f"?select=id,form_type,nombre_colegio,nombre_nomina,doctora_id,tipo_nomina"
+            )
+
+        res_nominas = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
+        res_nominas.raise_for_status()
+        nominas = res_nominas.json()
+
+        # Respuesta vacía si no hay nóminas
+        if not nominas:
+            return jsonify({
+                "success": True,
+                "total": 0, "completed": 0, "pending": 0, "percent": 0,
+                "neuro_total": 0, "neuro_completed": 0,
+                "familiar_total": 0, "familiar_completed": 0,
+                "por_dia": {}, "por_semana": {},
+                "doctoras_ranking": [],
+                "establecimientos": []
+            })
+
+        nomina_ids   = [n['id'] for n in nominas]
+        nominas_set  = set(nomina_ids)
+
+        # ── 2. Conteos globales usando get_supabase_count (igual que el resto del app) ──
+        total_global     = 0
+        completed_global = 0
+        neuro_total      = 0
+        neuro_completed  = 0
+        familiar_total   = 0
+        familiar_completed = 0
+
+        for nomina in nominas:
+            nid   = nomina['id']
+            ftype = nomina.get('form_type', '') or ''
+            tipo  = (nomina.get('tipo_nomina') or '').lower()
+
+            t = get_supabase_count(f"nomina_id=eq.{nid}")
+            c = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true")
+
+            total_global     += t
+            completed_global += c
+
+            # Detectar tipo por form_type primero, luego por tipo_nomina (igual que dashboard_counts)
+            if ftype == 'neurologia' or 'neuro' in tipo:
+                neuro_total     += t
+                neuro_completed += c
+            elif ftype == 'medicina_familiar' or 'familiar' in tipo or 'medicina' in tipo:
+                familiar_total     += t
+                familiar_completed += c
+
+        pending_global = total_global - completed_global
+        percent = round((completed_global / total_global * 100), 1) if total_global > 0 else 0
+
+        # ── 3. Datos diarios y semanales desde estudiantes_nomina ────────
+        # Traemos estudiantes evaluados de todas las nóminas de la coordinadora
+        # Límite de 2000 para evitar timeouts (suficiente para 30 días de actividad)
+        url_evaluados = (
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            f"?evaluado_flag=eq.true"
+            f"&select=fecha_evaluacion,nomina_id"
+            f"&limit=2000"
+        )
+        res_ev = requests.get(url_evaluados, headers=SUPABASE_SERVICE_HEADERS)
+        evaluados_raw = res_ev.json() if res_ev.ok else []
+
+        # Filtrar solo los que pertenecen a nóminas de esta coordinadora
+        evaluados = [e for e in evaluados_raw if e.get('nomina_id') in nominas_set]
+
+        # Mapear nomina_id → form_type
+        nomina_type_map = {n['id']: (n.get('form_type') or '') for n in nominas}
+
+        hoy       = date.today()
+        hace_30   = hoy - timedelta(days=30)
+        hace_12s  = hoy - timedelta(weeks=12)
+
+        # Usamos defaultdict para acumular
+        from collections import defaultdict
+        por_dia    = defaultdict(lambda: {"neurologia": 0, "medicina_familiar": 0, "total": 0})
+        por_semana = defaultdict(lambda: {"neurologia": 0, "medicina_familiar": 0, "total": 0})
+
+        for ev in evaluados:
+            fecha_str = (ev.get('fecha_evaluacion') or '')[:10]
+            if not fecha_str:
+                continue
+            try:
+                fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+            except ValueError:
+                continue
+
+            ftype     = nomina_type_map.get(ev.get('nomina_id', ''), '')
+            key_dia   = fecha.strftime('%Y-%m-%d')
+            iso_cal   = fecha.isocalendar()
+            key_sem   = f"S{iso_cal[1]:02d}/{iso_cal[0]}"
+
+            # Gráfico diario: últimos 30 días
+            if fecha >= hace_30:
+                por_dia[key_dia]["total"] += 1
+                if ftype == 'neurologia':
+                    por_dia[key_dia]["neurologia"] += 1
+                elif ftype == 'medicina_familiar':
+                    por_dia[key_dia]["medicina_familiar"] += 1
+
+            # Gráfico semanal: últimas 12 semanas
+            if fecha >= hace_12s:
+                por_semana[key_sem]["total"] += 1
+                if ftype == 'neurologia':
+                    por_semana[key_sem]["neurologia"] += 1
+                elif ftype == 'medicina_familiar':
+                    por_semana[key_sem]["medicina_familiar"] += 1
+
+        # Ordenar por clave cronológicamente
+        por_dia_sorted    = dict(sorted(por_dia.items()))
+        por_semana_sorted = dict(sorted(por_semana.items()))
+
+        # ── 4. Ranking de doctoras ────────────────────────────────────────
+        # Agrupar nóminas por doctora_id
+        doctoras_nominas = defaultdict(list)
+        for n in nominas:
+            did = n.get('doctora_id')
+            if did:
+                doctoras_nominas[did].append(n['id'])
+
+        # Obtener nombres de doctoras de la tabla doctoras
+        doctoras_ranking = []
+        if doctoras_nominas:
+            url_docs = f"{SUPABASE_URL}/rest/v1/doctoras?select=id,usuario,nombre"
+            res_docs = requests.get(url_docs, headers=SUPABASE_SERVICE_HEADERS)
+            doctoras_info = {d['id']: d for d in (res_docs.json() if res_docs.ok else [])}
+
+            for did, nids in doctoras_nominas.items():
+                doc_total = sum(get_supabase_count(f"nomina_id=eq.{nid}") for nid in nids)
+                doc_comp  = sum(get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true") for nid in nids)
+                doc_pct   = round((doc_comp / doc_total * 100), 1) if doc_total > 0 else 0
+                # Usar 'usuario' o 'nombre' para mostrar
+                doc_info  = doctoras_info.get(did, {})
+                doc_name  = doc_info.get('nombre') or doc_info.get('usuario') or f'Doctora {str(did)[:6]}'
+                doctoras_ranking.append({
+                    "id":        did,
+                    "nombre":    doc_name,
+                    "total":     doc_total,
+                    "completed": doc_comp,
+                    "percent":   doc_pct
+                })
+
+        doctoras_ranking.sort(key=lambda x: x['percent'], reverse=True)
+
+        # ── 5. Top establecimientos (agrupados por nombre_colegio) ────────
+        est_data = defaultdict(lambda: {"total": 0, "completed": 0})
+        for nomina in nominas:
+            nid   = nomina['id']
+            ename = nomina.get('nombre_colegio') or nomina.get('nombre_nomina') or 'Sin nombre'
+            t = get_supabase_count(f"nomina_id=eq.{nid}")
+            c = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true")
+            est_data[ename]["total"]     += t
+            est_data[ename]["completed"] += c
+
+        establecimientos = [
+            {
+                "nombre":    k,
+                "total":     v["total"],
+                "completed": v["completed"],
+                "percent":   round((v["completed"] / v["total"] * 100), 1) if v["total"] > 0 else 0
+            }
+            for k, v in est_data.items()
+        ]
+        establecimientos.sort(key=lambda x: x["completed"], reverse=True)
+
+        print(f"DEBUG api_coordinadora_stats: total={total_global}, comp={completed_global}, doctoras={len(doctoras_ranking)}")
+
+        return jsonify({
+            "success": True,
+            "total":              total_global,
+            "completed":          completed_global,
+            "pending":            pending_global,
+            "percent":            percent,
+            "neuro_total":        neuro_total,
+            "neuro_completed":    neuro_completed,
+            "familiar_total":     familiar_total,
+            "familiar_completed": familiar_completed,
+            "por_dia":            por_dia_sorted,
+            "por_semana":         por_semana_sorted,
+            "doctoras_ranking":   doctoras_ranking[:10],
+            "establecimientos":   establecimientos[:10]
+        })
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ ERROR api_coordinadora_stats (requests): {e}")
+        return jsonify({"success": False, "message": f"Error de conexión con BD: {str(e)}"}), 500
+    except Exception as e:
+        print(f"❌ ERROR api_coordinadora_stats: {e}")
+        return jsonify({"success": False, "message": f"Error interno: {str(e)}"}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))

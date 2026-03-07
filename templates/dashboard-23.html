@@ -3509,15 +3509,98 @@ function _chFirma(fecha, hora) {
 
 function _chGenerate(html, filename) {
     var el = document.createElement('div');
-    el.style.cssText = 'width:720px;background:white;font-family:Arial,sans-serif;';
+    el.style.cssText = 'width:710px;background:white;font-family:Arial,sans-serif;box-sizing:border-box;';
     el.innerHTML = html;
+    document.body.appendChild(el);
     var opt = {
-        margin:      [5, 5, 5, 5],
+        margin:      [8, 8, 8, 8],
         filename:    filename,
-        html2canvas: { scale: 2.5, useCORS: true, allowTaint: true, letterRendering: true, logging: false },
-        jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        html2canvas: { scale: 2, useCORS: true, allowTaint: true, letterRendering: true, logging: false, scrollX: 0, scrollY: 0 },
+        jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:   { mode: ['css', 'legacy'], before: '.pdf-page-break', avoid: '.pdf-no-break' }
     };
-    return html2pdf().set(opt).from(el).save();
+    return html2pdf().set(opt).from(el).save().then(function(){ document.body.removeChild(el); });
+}
+
+// Dibuja gráfico de avance por colegio en un canvas y devuelve dataURL
+async function _chGraficoColegios(nominas) {
+    var MAX = 14;
+    var items = nominas.filter(function(n){ return n.total > 0; }).slice(0, MAX);
+    if (!items.length) return null;
+
+    var BAR_H   = 18;
+    var GAP     = 6;
+    var PAD_L   = 230;
+    var PAD_R   = 60;
+    var PAD_T   = 40;
+    var PAD_B   = 20;
+    var W       = 680;
+    var H       = PAD_T + items.length * (BAR_H + GAP) + PAD_B;
+
+    var canvas  = document.createElement('canvas');
+    canvas.width  = W * 2;
+    canvas.height = H * 2;
+    var ctx = canvas.getContext('2d');
+    ctx.scale(2, 2);
+
+    // Fondo
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(0, 0, W, H);
+
+    // Título sección
+    ctx.fillStyle = '#0A3D62';
+    ctx.font = 'bold 9px Arial';
+    ctx.fillText('AVANCE POR COLEGIO', PAD_L, 18);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '7px Arial';
+    ctx.fillText('Completados vs Total alumnos', PAD_L, 30);
+
+    // Eje vertical
+    var BAR_W = W - PAD_L - PAD_R;
+
+    items.forEach(function(nom, i) {
+        var y   = PAD_T + i * (BAR_H + GAP);
+        var pct = nom.total > 0 ? Math.round(nom.evaluados / nom.total * 100) : 0;
+        var color = pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444';
+        var nombre = nom.colegio || 'Sin nombre';
+        if (nombre.length > 28) nombre = nombre.substring(0,26) + '…';
+
+        // Nombre colegio
+        ctx.fillStyle = '#1e293b';
+        ctx.font = 'bold 7.5px Arial';
+        ctx.textAlign = 'right';
+        ctx.fillText(nombre, PAD_L - 8, y + BAR_H * 0.7);
+
+        // Barra fondo
+        ctx.fillStyle = '#e2e8f0';
+        ctx.beginPath();
+        ctx.roundRect(PAD_L, y + 2, BAR_W, BAR_H - 4, 4);
+        ctx.fill();
+
+        // Barra completados
+        var fillW = Math.max(4, (pct / 100) * BAR_W);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.roundRect(PAD_L, y + 2, fillW, BAR_H - 4, 4);
+        ctx.fill();
+
+        // Texto porcentaje
+        ctx.fillStyle = '#1e293b';
+        ctx.font = 'bold 8px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(pct + '%  (' + nom.evaluados + '/' + nom.total + ')', PAD_L + fillW + 6, y + BAR_H * 0.7);
+    });
+
+    // Leyenda
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#10B981'; ctx.fillRect(PAD_L, H - 14, 8, 8);
+    ctx.fillStyle = '#475569'; ctx.font = '6.5px Arial'; ctx.fillText('≥80%', PAD_L + 11, H - 7);
+    ctx.fillStyle = '#F59E0B'; ctx.fillRect(PAD_L + 45, H - 14, 8, 8);
+    ctx.fillText('50–79%', PAD_L + 58, H - 7);
+    ctx.fillStyle = '#EF4444'; ctx.fillRect(PAD_L + 105, H - 14, 8, 8);
+    ctx.fillText('<50%', PAD_L + 118, H - 7);
+
+    return { dataUrl: canvas.toDataURL('image/png'), w: W, h: H };
 }
 
 // ── ADMIN PDF ─────────────────────────────────────────────────────
@@ -3535,6 +3618,7 @@ async function exportarReporteAdmin() {
         var fecha = new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'});
         var hora  = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
         var ranking = (_adminData && _adminData.ranking) || [];
+        var nominas = data.data || [];
 
         var kpis = _chKpis([
             {label:'Total Alumnos', val:data.resumen.total,      color:'#0A3D62', bg:'#eff6ff', border:'#bfdbfe'},
@@ -3543,54 +3627,104 @@ async function exportarReporteAdmin() {
             {label:'% Avance',      val:data.resumen.porcentaje, color:'#7C3AED', bg:'#f5f3ff', border:'#ddd6fe'}
         ]);
 
-        // Ranking
+        // ── Gráfico canvas ──────────────────────────────────────────
+        var grafico = await _chGraficoColegios(nominas);
+        var graficoHtml = '';
+        if (grafico) {
+            var aspectPct = (grafico.h / grafico.w * 100).toFixed(1);
+            graficoHtml = (
+                '<div class="pdf-no-break" style="margin-bottom:12px;background:#f8fafc;border-radius:8px;padding:12px;border:1px solid #e2e8f0;">'
+              + '<img src="' + grafico.dataUrl + '" style="width:100%;height:auto;display:block;border-radius:4px;" />'
+              + '</div>'
+            );
+        }
+
+        // ── Ranking doctoras ────────────────────────────────────────
         var rkBody = '';
         if (ranking.length) {
             var medals = ['🥇','🥈','🥉'];
-            var rkRows = ranking.slice(0,10).map(function(d,i){
+            var rkRows = ranking.slice(0,12).map(function(d,i){
                 var p = d.percent||0;
                 var c = p>=80?'#059669':p>=50?'#D97706':'#DC2626';
                 return [i<3 ? medals[i] : String(i+1), d.nombre||'—', String(d.completed||0), String(d.total||0), _chBar(p,c)];
             });
-            rkBody = _chSec('🏆','Ranking de Doctoras','#0A3D62')
-                   + _chTable(['#','Profesional','Completadas','Total','Avance'], rkRows, '#1C67A3', ['4%','36%','15%','15%','30%']);
+            rkBody = (
+                '<div class="pdf-no-break" style="margin-bottom:14px;">'
+              + _chSec('🏆','Ranking de Doctoras','#0A3D62')
+              + _chTable(['#','Profesional','Completadas','Total','Avance'], rkRows, '#1C67A3', ['4%','36%','15%','15%','30%'])
+              + '</div>'
+            );
         }
 
-        // Desglose por colegio con alumnos
+        // ── Desglose por colegio — CADA COLEGIO EN BLOQUE SEPARADO ──
+        // Clave: cada colegio = su propio <div> con header + tabla completa
+        // Cada fila de alumno usa height fijo para que html2canvas no la corte
         var detalleBody = '';
-        if (data.data && data.data.length) {
-            detalleBody += _chSec('📋','Desglose por Colegio y Alumnos','#4c1d95');
-            data.data.forEach(function(nom) {
-                var p = nom.total > 0 ? Math.round(nom.evaluados / nom.total * 100) : 0;
+        if (nominas.length) {
+            detalleBody += '<div style="margin-bottom:4px;">' + _chSec('📋','Desglose Detallado — Alumnos por Colegio','#4c1d95') + '</div>';
+
+            nominas.forEach(function(nom) {
+                var p  = nom.total > 0 ? Math.round(nom.evaluados / nom.total * 100) : 0;
                 var bc = p>=80?'#059669':p>=50?'#D97706':'#DC2626';
-                detalleBody += (
-                    '<div style="page-break-inside:avoid;margin-bottom:9px;">'
-                  + '<div style="-webkit-print-color-adjust:exact;print-color-adjust:exact;'
-                  + 'background:#f1f5f9;border-left:4px solid ' + bc + ';'
-                  + 'padding:5px 8px;border-radius:0 5px 5px 0;margin-bottom:3px;">'
-                  + '<div style="display:flex;justify-content:space-between;align-items:center;">'
-                  + '<span style="font-size:8.5px;font-weight:800;color:#1e293b;font-family:Arial,sans-serif;">'
+                var alumnos = nom.alumnos || [];
+
+                // Header del colegio
+                var headerHtml = (
+                    '<div style="-webkit-print-color-adjust:exact;print-color-adjust:exact;'
+                  + 'background:#1e293b;padding:6px 10px;border-radius:5px 5px 0 0;'
+                  + 'display:flex;justify-content:space-between;align-items:center;">'
+                  + '<span style="font-size:8px;font-weight:800;color:white;font-family:Arial,sans-serif;">'
                   + '🏫 ' + (nom.colegio || 'Sin nombre') + '</span>'
-                  + '<span style="font-size:7.5px;font-weight:700;color:' + bc + ';font-family:Arial,sans-serif;">'
-                  + nom.evaluados + ' / ' + nom.total + ' evaluados · ' + p + '% completado</span>'
-                  + '</div>'
+                  + '<span style="-webkit-print-color-adjust:exact;print-color-adjust:exact;'
+                  + 'background:' + bc + ';color:white;font-size:7px;font-weight:700;'
+                  + 'padding:2px 8px;border-radius:99px;font-family:Arial,sans-serif;">'
+                  + nom.evaluados + ' / ' + nom.total + ' · ' + p + '%</span>'
                   + '</div>'
                 );
-                if (nom.alumnos && nom.alumnos.length) {
-                    var alRows = nom.alumnos.map(function(a) {
-                        return [a.nombre||'—', a.rut||'—', _chBadge(a.evaluado_flag)];
-                    });
-                    detalleBody += _chTable(['Nombre del Alumno','RUT','Estado'], alRows, '#475569', ['54%','26%','20%']);
-                }
-                detalleBody += '</div>';
+
+                // Tabla de alumnos — filas de altura fija 18px para evitar cortes
+                var rowsHtml = '';
+                alumnos.forEach(function(a, ri) {
+                    var bg = ri%2===0?'#f8fafc':'#ffffff';
+                    var badge = a.evaluado_flag
+                        ? '<span style="-webkit-print-color-adjust:exact;print-color-adjust:exact;display:inline-block;background:#dcfce7;color:#166534;font-size:6.5px;font-weight:700;padding:1px 6px;border-radius:99px;border:1px solid #86efac;">✓ Evaluado</span>'
+                        : '<span style="-webkit-print-color-adjust:exact;print-color-adjust:exact;display:inline-block;background:#fef3c7;color:#92400e;font-size:6.5px;font-weight:700;padding:1px 6px;border-radius:99px;border:1px solid #fcd34d;">⏳ Pendiente</span>';
+                    rowsHtml += (
+                        '<tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:' + bg + ';">'
+                      + '<td style="padding:3px 7px;font-size:7.5px;color:#1e293b;font-family:Arial,sans-serif;border-bottom:1px solid #f0f4f8;width:54%;height:18px;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0;">' + (a.nombre||'—') + '</td>'
+                      + '<td style="padding:3px 7px;font-size:7.5px;color:#475569;font-family:Arial,sans-serif;border-bottom:1px solid #f0f4f8;width:26%;height:18px;line-height:18px;">' + (a.rut||'—') + '</td>'
+                      + '<td style="padding:3px 7px;font-size:7.5px;font-family:Arial,sans-serif;border-bottom:1px solid #f0f4f8;width:20%;height:18px;line-height:18px;">' + badge + '</td>'
+                      + '</tr>'
+                    );
+                });
+
+                var tableHtml = alumnos.length ? (
+                    '<table style="width:100%;border-collapse:collapse;table-layout:fixed;">'
+                  + '<thead><tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#475569;">'
+                  + '<th style="padding:4px 7px;text-align:left;color:white;font-size:6.5px;font-weight:700;text-transform:uppercase;font-family:Arial,sans-serif;width:54%;">Nombre del Alumno</th>'
+                  + '<th style="padding:4px 7px;text-align:left;color:white;font-size:6.5px;font-weight:700;text-transform:uppercase;font-family:Arial,sans-serif;width:26%;">RUT</th>'
+                  + '<th style="padding:4px 7px;text-align:left;color:white;font-size:6.5px;font-weight:700;text-transform:uppercase;font-family:Arial,sans-serif;width:20%;">Estado</th>'
+                  + '</tr></thead>'
+                  + '<tbody>' + rowsHtml + '</tbody>'
+                  + '</table>'
+                ) : '<div style="padding:5px 10px;font-size:7.5px;color:#94a3b8;font-family:Arial,sans-serif;">Sin alumnos registrados</div>';
+
+                detalleBody += (
+                    '<div class="pdf-no-break" style="margin-bottom:10px;border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;">'
+                  + headerHtml
+                  + tableHtml
+                  + '</div>'
+                );
             });
         }
 
         var html = _chHdr('Reporte de Rendimiento Operativo',
             'Evaluaciones médicas · Neurología y Medicina Familiar', projectName, fecha, hora)
             + kpis
-            + '<div style="padding:12px 26px;">'
-            + rkBody + detalleBody
+            + '<div style="padding:12px 20px;">'
+            + graficoHtml
+            + rkBody
+            + detalleBody
             + _chFirma(fecha, hora)
             + '</div>';
 

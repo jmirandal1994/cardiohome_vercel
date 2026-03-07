@@ -3345,537 +3345,661 @@ function renderAdminTrendChart(trend) {
     });
 }
 
-// ── PDF EXPORT PROFESIONAL ──────────────────────────────────────────
-// ══════════════════════════════════════════════════════════════════
-// PDF HELPERS — Funciones de reporte profesional Cardiohome
-// Usa html2pdf.js para descarga directa (sin ventana de impresión)
-// ══════════════════════════════════════════════════════════════════
+// ── PDF ENGINE v5 — jsPDF nativo (sin cortes, sin html2canvas) ──────────
 
-// ══════════════════════════════════════════════════════════════════
-// PDF ENGINE v2 — Cardiohome SpA
-// Sin template literals anidados — solo concatenación de strings
-// page-break-inside:avoid en cada sección de tabla
-// ══════════════════════════════════════════════════════════════════
-
-
-// ═══════════════════════════════════════════════════════════════
-// PDF ENGINE v4 — Cardiohome SpA
-// Logo + Firma reales | Desglose por alumno | Sin template literals
-// ═══════════════════════════════════════════════════════════════
-
-var _CH_LOGO  = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACgCAYAAACLz2ctAAA0PklEQVR42u19aZhdVZX2u/beZ7hTzZWQgcpMJCCCBYJDW+ETx8/W1vbGz4F2aMXudmicWhBIpSI4AM4jaNttt2PKtrUbxLGhtNsWoRQHokCozEOlxlt3PMPe6/txzr11q5JARLASc97nuc9Nbp1xn3XWXutdwwYSJEiQIEGCBAkSJEiQIEGCBAkSJEiQIEGCBAkSJEiQIEGCBAkSJEiQIEGCBAkSJEiQIEGCBAkSJEiQIEGCBAkSHAcoGYI/YOz6+yQAYGBIA+BkSBL8cbAtL4/rtwQJHlX09wswEwCs6FvhZvsv+ods/5OvwEVINf7e3y+SgUqm4EdZ8CBwVp6waVADQGbzhS+Fa/VTxj2TCDCl2u9QqQ2Ur737qw1teO8gYwAmGbxEAP9wO29gKASA7JW9T0UuPYCU/QwCYHwdEgGwpCIAXPF/gKmZLaUbf/k/keD2qcQ+TATwEWq9PlUXvNw7z10XtqSulo79V3AtoBbqeOxE9MUGDIarJGohcxj+Yzg++QHvw9t3NDRirD0TJAL40MjnJQYjYWn92572cPHStyFlX05pJ4tqyGA2IJKRUqPZUWQAzBpEglKSuOwX2Qs+ZP9m9MNTgyOF+cdOkAjgkXbe9jzFAiKzWy58LTvWVZRxV8A3YG1CIkiAYnFjmjuMdYFkBkNDCgVbgCveiPDD64qb//efAZjISRlAYh8mAhiBQdgya+el333+cynrbqWMcz40A6EJwZAg0Nzh4mjqBQEgMfsbRcLJYBA0lFQkAVPy75R+bcvMwF3faUzL+UEDOrXtQzql773Jwchced45nE1vJtf+S5IC8E0IsIjHqC58kbAwA0QaSiiAgZBDgOXsdg1BjPZhMBwlSRsYz/sml2rvqbx3+OeJo3KqCmCTU5D+uw2nYUnbO8hSb6K07aCmDZgZ0XQ7KxYUSx6zgZSSHAldqI4QwKLVXcM1DRgOQVBN0zLHUzbARgNElLIE14IQNf8mPTrx3uon7ztwKjsqpxZ73w+BOxg4e5NBHnZm04VvEp0tXxQtqWfBkEJoQgACRGKOg0ENBwOUtiT7QYVLlRsqv9rxipYK3xTYQkLKJ4qM7SBkA4aJj0GzEz0RQIRQGxAp5NwniZR7qfPUpfCx7+e4cXuA/n6BjUOEoVNHG9IpI3hNRHLr5iflg5Rztcg45yBgQJswfhmPMh5sgGgK5SAE1/yvhjOFrf719/62eavsleduMKnUZuE6LyVHgWuhju1GMeuhxBqRmRmkSZKCJYBK7Tey6m8tbP3ZYEMbniJENv3J31+TnZd79xMv0pn0e0TavgQQYF+HBJaRdmoYd9F+zMxEmhQpSIIp1/6HZspbyu+/5wfzbDdgW140oiRXnHsJsqmtIpt+MhsGgtg+JKImT7lxCgCabKUAA132vqdmqv3F63/+01PFPvzTFcAmm8p5x1lrVEvrVeRar4JjCa6FOvIWiOIRaBqHSChAQsEV4FJtN5e9ayvX3vW5h9ROc7UsZa/qfS0yqWso665gzwDGhJFdeZQxZxgGmFwl4QWGa94Xwsnytd5Hfj3yp24f/ukJYD4vsS2iN1pf3tMenrns72Fbl1PKbuWaZjLGgIRsqKE5zAprEBG5SpiKV0at9nF1/6HrC1/eMwUGYVNePCyRPP/8Zyy5HK5zuUjbLVzVDLABQTITgzhWt3Vnx2iABNKKuOJPwws+Vv716IcwOFI47vMnAnhC2HmU7r/wVZSy+ynjrkRNRxoIULN+AZq5YwMiA1sqhCFMxfuanCj1Fz/66/sesQZq2qflHWetMS2t/XDtSxv2YSR34ohHEM3LkX3oSHDRe5B9b6Cy5WdfBMB/avbhyS+ADMJgkw121fmXIOMOIO08hQzAganbeWDm2NqjxrOmOp9HDFOp/YRKlS3l993z/UfJBpuXzPDEP0PG3UppdyMTAYEJmVlSwxTgxpk4ujNNSipIgMveT1D0Npffd9cPG9e2ZUif7EQ2ndTX3vxw337uBtOe2Swc+6WwJNiL7DwGiSYypMn2J02CFBwBLtdGuFS7tnLd3f/0mHih89O5rjr/pcg4m0XG3cBNXjgTiOoC2LhmNgBF9qEfwvjBV8Rk+drSB+/Z/qfgqJycAtgU1M+8ZdVi7lj8D+Q6f0tpO8W10MSqTsZCV7f1GMzEYA0SgtwoYQC+/xH7N4c/OPXHsLPyeYlt2wyIeHkeqckzL3gLXOcdMut2RUS20RF/GFmHhDkEjiECyLWEqfpVU/U+KQ4dvqH8mZHDJ7OjcnIJYD8E0A8MDERE8oYL/waucwVl7CXsGVD0AI9OrnPM57lKohYw+94X5OTMdTMLkTLVdK7Um9cuF51dV5JrX0YpW3EtNLHUidkgDM1aDcYYkkLCkUAlOMA17/3lbT+9Cdvhn4yJDieHAM6z81JXnP8CkUsNUNY5dw6R3ESpxNFYbsRtrdjOK1dvl9Xq1cXr7vnJAk9hc0yI1DvPPl+2tGyhtPN/IQTYNyGYoySIOnXYCDXHjooSChaBS949wgv6iwN3/kdDwE+SRAc64a+v6SGl3/n4J1Jr2wClreeDIiI5ShggUaePZz0MzHqTNoGLtfvh+VvLW+/60mNi5z1KL1fu6guezyl7gDLOE1kDHJqQEGfjMGazwSLCkgEYspQCG6Bau01M+v0zH7z7rpPFPjxxBbB5mnrj+qW0uPNKcqw3CNe2uBboKKZFgsGR7U5zJE+DSJIrYcq1cXjejZl7d31ybHCsBGbCFqITbppqNi8AK3vN+a9Hyr2SMu5y48fmBUhG9zmblBNrR00AKGVJUwkC+P7n7fHp9059bPueE90+PPEEsMlQX/L8JelCb89b4Npvp4zbhVoIMqxBECAiZqA5XYXAhgkgRwmu+iF8/2YzNv6+6sd37DtpDPUmByv7mrXd3NP5TqScN4q0k+ZaYGKnKjI3OPLz625z5GCRFK4CV7wJU6l9MDey+2OjXxwtn6hENp1QGmAOVXHBK5B1rkbafRwFBqw5JNRTneZSyVFsnzTZUsFocLn2n6pY2lK44dcna87dXIrpzRs2oKu1H2lnEywV1aQQiAkCaJLBWUtRQ1Kcke3fj5L/nvK1d37xhDI9TiABnDvY7+p9GnKp9yDjbAQDCEwIYgGOs44pplZiYgXNg12q3iMq1WuK1/78lpPNGD+esWm5sveZOu1spZx7EWL7EICkun04L64IkIYdJc1y2f8RlWubS++7e+hEeikXVgCbpsTWv1+/Und1DrBj/xU50VvOAIFIEDdbPI3EFQ0hJFwBlKoH2Q8/sGLbnZ/efpLSEb/H7CCyV1/wWnata6gl3cOeBhkOAajIPqRGInb8shpwlOjAfghT9b8qJyqbix+754EmQQxPLQFsCti3X7a6NVi+6HJj25eLtNMWVZ4ZA0ECXCdW4lS6SPI0SBAcKbjieez7n6I9hz9Q/sedo/NtqD855PMSXx/UYKDlr5d36J7lbyNH/T1SbhZeRMAzSFJ9vGgOHWVAQiCliMteEV7tk3LvgRtm/nHfJAjASxZm3OiP/ibPVp5Ruv9JryHXvUpkndXG0xGfx5CN7LxGSnFcewsysIWC1uCq9w0UigPlG3/zq5PUzntUZo7c2845g9sz18C2X0mOAnu6XrNMaErrjqwWMDMbkkKSI8Flbzeq/nWlrXd+HoBeiJnjjyOA8yrPMv/Q+0zR4vZz1n0qm9jOY5YQRPWZY74tw4oUSQLKtbtpujpQvOFPxs57dGznd57bh5ZMP7LOxWACAt1UzXfkE2FAQwlFioCSd5cpVrZW3v/HH1P6ow7S28/dgPbMZsQJA/DmpSU1VTXWC4BYCkmOApeq+6hava70nuHPLtTbehLYh8hced4rkc1sFjl3HXtxoRSg6tGUWaa+nvTNBo6SHGqgGnyLC6UtlRt/ec8fa1Z57ASwaZrIvmZtt+npehe5zt9RJkoYoCglRc6vtY3t56iewlWCK35V1LxP5A5OXX/w5vvHF9JeOeHtw5g/7XxBZy544rq3aVu9gzJuFjUd2dVEgikiUHmuPowScVNKcMX3qRZ+xkxPvr/ykd8dfKz5U3pM3sg6o78BduYvL7oMafsKkXGWNb2REpiNccZZUgBgmMFwpEQQgqre1+yZma2TH9y+/UTw2E46+/CNjzuDF3dcDce6FLYVzThU72nTRKTWHwPDkCBJEZF9iGr+9R23//TTu4dQe6xmnEdPAOcnDLz7gheJtNMvsu4TOKwnDLCcU6oYfVE9bgtLKAgGyrX/VoXalsINv/hh06AaJF2mHpHp0/r2J2wM29JbKZf+M4SIuj0QSxzR3AazMXQllLAETNn7FSree0rX/uzrjWfxKBLZ9GjfbO6tT7yI29ObkbafCxFl/cYJA4Qj/QsGoDlODEWxOiIq1etK7/3F5/kxuNlT3T7MvfuCV3PauQY5ZzU8A2ijIUg2C2AjsMkwTGTIEgrMoJL3PRTKA8UPPbpZRI+aBmy/bEOPv6T13eSq1yFlS65pHadviKOexbBhIoGUIpS9IirVjy6+78EbRwanGomhPDhomi400X7HNRHNHW0CeA7vml/d6p/ZdQVc582UdjLsRfY4z2YU1SnEKD+b2TAAcqXkasDk6y/IseLWwid+tXOhNSCBgdbLn9AatGbeiJR6u8g47ahq5riFWSO/fNa/nR0lW8L4PkS19kV3rPae8U/+6v7Ilt5gbzvcbTA0pOcL3e19fWrj0JAhHJdGpG2xrZOfjZGah3l4AgAG541LHuBBgPL5PHD4MA0ODfEmQD/UMY6G5mNgaChKpXqIF4sBMQhQfP18rG0ZIPT1SQxtNIQBM/dv/eKOvjvExqEhTU31y51vO/txXi6zmdPuy8i2wIGeaxQ2JuZ6EIA1IVIYXPEL8MOPyin90ZkP/XSqkYb0RxXAOOLQ8u6nfJ4Xp19jij7ARhOR5Pqh4/48RHNUO7MAk9E/UoXKlukb7hkCgL7+PrXlDuDioVknYxTIOstb7LCiwq7JyZl5D5l/X60471IeFU3zhx6PAUnHEOZHsj8DbqG1NYUc09S+mcoqoDZvWzPHPnznEy7WrdlrWIg+GIjGXc0pom9SI8wagiTlHOBg8bul9935HPRDPFIzif5A7ckdb71omWXptqAaMCstARuAP2dDC0AQ/9vWxORKfej6X/y2btTmBwcxOBgN4uSyRedYTvbSUKina8LpBLIJCCXjoGTzk1qt8i9d+/ffeSyBqv821tmZo5b2zwkhMq4Qsqz94e6Rkasfap+JNWvfkxKqt8omIIYyIBYxacYEo7QpC+IHTODf1rpnz0/mX8PtgDpn1ZqbbWUtCQwbE/XlqPv5xGxCAlcVYTcb/aOf79z5g4uBGgOirp3rxxtfu3Y5GJ8BC9MihTWt/U8sGhm5tVngtgFyE6APZLPdma6uV0Oq54REa1jKDEAQhkuCzL0mDG8dLYx88cwJFBv7z7MPO/7+vDMt1tK3GiZSdOcisgajfzuRZRhqzWSEsq3q2I3DD57IRPRDn3lzv+CBAQaAYUCtXb3qvWS7l2csW1UNENY5+zgPKy0EqqEP49U+kRsZeRviTZoF6nZAbQT0RE/Piztz7V+vAnCEwHStqs3kWE/3xMSBfkAMNE3HdQEYX/e4H3em0k+raQ2JJrVST7uLryNgA+17Xw8Pj17WVihM1fdnQE2sW7+3002f5hkDQvRj8ygTRRyUMYxQB78LKqX+tr17tzUdQxBgxlauXJ9NZ39HJOFIgbHC5FsX7d79Ee7rUzQ0FNYFabKn5xW2m7k+ZdtLa8wImuqeGQyXCBYYZd97sOpV3n7arr3fmqM1m+LLCwH1qNAvW/oJGPj99huAiYVPABArzlj7zVYn87wJbfR0aMKcFMoyBqExsETUsGoqDANAiM5My5umVq1Z2r7zwXz8eBuyshF5JgzyYeW8KgR01ZigYgy12Y4zncu9BBMTH9vS1ycGhoaONmUUfR3qijEhGFZGCBF76xAgMBEKhg0DptPNvGSie9HSPYXCJQC8JhErlLXu9ozRRLDToEbHGRIEwYQqAJ/hpyz7cblc29cmVqjH0+6d13AkmxEXL4SpGOOBiBRYSsj5U6ke6+l5R1uu9YYiCJPa+BlJdtoYVIwGAchIiQDANLPnWM6adqm+Obpq+Rtp575PNYSwTuj345EtL/EHMhTqUdBkDAw8svcnnxc0OKgPrVn1ocVO9nnjYehZJByYICz5wT/D924jKUcDY7qMsl9o286lmgRPhmGtI5158dSKFX/TsXt3YzAj7TGoJ5cs6YFSlxTZCAYcYjYBAJb2Kxj4OIaG9DFuRTJICpAw2h8tV2tvBSkGACEobYieIJV6NUnVOhGGtU43/RSsXH0Z7Rr56LbIJgYI0gDSFULUAu+nVT+4gYgsEBkW1MbgdUKoS3KWdV5JG10jMh25lqvHV60apZ07P8G9vRaGh40DIIxiuSCQNFGzTGD/fkmAN7FixXNy6dwN0wYhwyBHsKvV6rdrRn9F1Gq/hRCqZFnnwLZfkbPcvpI2QSCkaE21fnJ8Je2gXXu/N0cTLhDVpRZqBt4GSBoc1NM9S3qFnXrLVKgDh4RiHcyY0swLO/fvv2PeLv82tWzZt6xs25cDKW1NAqScD80sWbKNDh6ciD1BgaEhw5azqU3ZqSljQpgQTIIqzOwq6/zppUvPbT9w4Bd1+2nuKSKLTxCRBspdu3d/df51T55++r9ZmdwPBQlVYxiW1ssAfHTT4KC+G7BWxrO1TUQe86723SPfOJoDM7Nq1VttN31jAOICs7Zt94bp07tvw/DwCAB4zPMJumhuPe+8kMs70hOW+ylfSGYdckYKq1wtXtE5susD8051J4DPTqxe+65UKvX+ijFBKJVgK/Wp/cA5AKqPpmP2SLBgq/rk83kAgFaZt6SlDUMwDljWSuU3te/ffwdv2GAzIBufDRvs9v37/80Lap/MhKEuVko/EiZ4PxkjGg9paEgzINiyLq2CuUUKSb73L9Dh/7pElFJKaNd9JQDk+/roSA1oGlUmDJIMpG5Hn7obvRb39Snu7bU69u79safDu9NCKM8YIQRWjnd0tABAb7N3xoABubcD6v61a53b0ae4L/qgv59ad+78kOdVN+dIqNBwmLMdV6vsm+vC4NRLXmILUtZzngcH9ZTV8+IO215VNdpvkcqq1mpf6hzZ9QHu61MMKAZE9OlTnM/LzpEdHyhXy//SJqVV08bvcNw19qqeFxPA6Otb0CalCyKADBANDuqDi5GBks8sG8MukVP0vfsW7d/zJQYktm8PCND1D7ZvDxgQMgzeY8qFs9pHdvS17ty5JTc6erhJffFkT89FruWcU2U2YEPCr32c2HwzTYQSM7O0NvGSJenYkKd519UkQAbAcmwE0IthYKh5QzKzNaBk2Y5jH83JYgZfDITrzjsvvBhDIQ1Fny0DA2BAHhoZuX7G93bbgpySYZCyn/ebiEaAxzxXMzU9KWM7+ZAkCyZZ0aFmr/oBBgSGhpiAkCJ+0RCGwsHBQTAgMtXqNeXALwtAaRAL6UQaYNEiPuUEsP5WO2rZGiHkkoBZp0iAYL5PgEFf3xHTAkW8n2nbs2fK3b//AQYofuMJAO6INRpJ61JXClhEohB4u9oOHPgl/Np3CqGvQ2bTatnLp2372dFR5779hEYzAhDIEPZVCUMhAQFhKKTh4WBq2bKNrlQXVIzWDpFh5tHcwYNTsSc/B3WthcH5dnt0j2cDPuvwlgwJ+MZoCLFq0dKlKwHAtUy9QXrkTcfPav8SpEmoc2psyBFChWF4f/u+fffGvOgRtm3dzEgfPLjHY74rLYSsMpMQ8lxescKlwUHNC8iGLKgAhkotSwkJItLEDMG883i0Z0xVMA0NhfXI0cVDQ+FYZ2fOSPWiomHOgoiMHiSAO/bu/a0fhj9LCRJMAlrZr4195vmGN0XUCRsi5A4vWf7Xo6ef/qrR009/9eGela8fX7P2M5RtvVULaRtGkBJCkAm/RYDmeJFCarrQh3uwDBAztsflLtolqSzLWgYAnjerlLkpgSWVWt0Fou6AmZ0o9f53BBjk88d+ln19ggESYXivTYQwSjjo3Fssdi506FAt6MmZG/ULHE1pwXFILh8l7CMBaJHLPTdn2YtngLBiAsWeN8jIS+QBddddX0k57pOnDGsh1SUHFy9eSaMDu/iI1CSCYTZCWt3Zto7P1Wk1GfcYnzFRE/1OpdxCtfJrMTF+PQOCBgYMA2KCj49hvQPAxQBPCiqZmKZWINQMtQCA4zQPBkPETmrg+7ayXBWH8SSISwBwx+HD9HDjNs66Ev9XMwnbbW3NYHISR4Y8TgEnJCLbhW+4qZuGhvNIAu5APgoSSetSIwSniJQX+D/q3rfvLsKgpsFBXdi167NTgT8mAGqxbNdOZfJ17dB0RbNPgQhGCGgSCEEoaB0UwjBgNtoGF0vV8tdrxelnthUKU4/k3jfW74M5U683DZlhyJTRRCzOlwpljAeGj8jRADFlAWDj0EPbcgyQhLA5SkYVYBOq6ekaAGw5BTVgxK1x5WBVp5mFlCwEQNhQ1w4P9zYz8jI2rpgwqCeWLj1dSPWMMhvYDCYS7WNr1n0eTJIJrJgDwxwCIJ8BlurlDHwQQ0N6EPUC7yh4TURkTFip+tWfGGYGyCVl/xmkCFuFkNOV0le7d45c1vQy8BE3dxz6hACeADaAADYsq0ZrKwz3AoDtEwdO84sWiamvD0xa3DJlkcr5YBjCGZEWHzw2jze00RCGeFyK9XE2sGDmQqCmJmMB5IEFEgSxkAI4Wj28yxh9WBGpqjHQQvUxoDYODfHR7Kc6vbBvaa6TMBh5x+gHANKO85IWy07BsK6xMcpyHp9z06/Juqm/anFTr8qk0q8jZZ+m2ZgqG+NY6tyJZcueRADne3sF4jmNGZBEEsYc7HxwxzO7Rx58VvfIjqfD927LCaHKhkPbsl86vbx77bZ5SzsMNzkNDzUFRx7rImbAEVK+oGyYbUGS2IyMHjiwK9bA80rNI4poySjKMOG9KSKuGRPaSq2fXLx4AyLb+AhKpR8QwACme3raSaoLK2xMWhAzm98uHkOJ0S9OOR6QAOZ8Xp45gSKH4X9lBMFj9toce/VYT8+rCNAPrF1rb4s4QMGAuH/tWocAM7lixUsX5ZbfX1hzxpfKK1e+cHz9VzMAWEjrlX7kLVJOKpmVAgSCpOgmCUC7EOQKIZmNTisbcNxLAQDVar25FtWTxphZ7lyxwuV8XjJAhqtXeWGoNZizttPiq9z7Ig8z35CRXoDn5HubyFPH2mKDA7y9r09FFMmgnli1ZiBnuz0es58lQQiDb51Rn32JmldDhGmWxcD/N8lMBtBpaSlOZa6oswfNPODtgNrS2ysJMKG03tVm2e0hI7AAQuh9JTJB7lhQM2zB3O96JGJs+fILUtmWnwWQvhCQFIYVrzzzgu4jIyEYP+20M52W9v+Sln2aTQKBX0OpWlrmMneKbOsvqySMQyQ9v/odYtyHOKMlfp6CDAJW4hLXcs7UAAWBdxgTY2d0Tk4WCeCJdeu/m7WcZ9UA+L6/q2vH79YT4NcTAMZWrflyeyb7smlt/DRruzY92ddx6NCPbgfUxUB4N2CtPGP97yzlrE4ToVCtbOsaeeCl8+9jqhVt6FzzLtdNX1E1HCghhAm8mikWzmo/dGgPAVxYvXqdttztRkhqF0JOVUpv7tr54CcYkOOdSKN9/W9Tjru0pnWYIbL8yszbWnfv/vDRxnpq1YrXWk72sz6EtqVQvl/dF0xPbVg0NlZucuxOLS94UxS7lbRv310TK1d+uCPb+tZxbTxLWTkr0/LdyVXup8LA+6YQYkwZk2FlXywt5x+EsjorWldTAqkZz7++e+/eAxOrV7+7XSqqGQOtg6pdPnhpy8HS+NHOO7Zy5Qsdy/7mDMNvs+zFhUzmOTQ5uW0OEcNRfc6sDRWZBGN+rb9sWS8SUikhFUwmcyMDF0VOUEz2GYIgQo2ZSYqzx1avvYKYBSCYYFwWtA5SPj1juctmtA5IkMyCxZhfedPiQ4d2x7HgIHaJmnJbYhNv7VrVvWNHcTJX+TvHsr7lE1EFHGbSuQ8V1q57Ngf+PzPwuwAgi3kNWfbLHMd9cQWkCaAUa/KD6psXj42V/tBcxJOehgFgtgGyY9eud06tXru8K53JTxqGkUq2Kutyz3Ev99mETEJlhEKRDTxm3aVUarpS/t6B3Q9es3/JkjQr+/kzzEFOCJoJwx92HSyN3792rbNu2bLG4A6XStSbzfLEr399+4zljEpld4REobacV0QKGSCGZuYwWquQ9JwZMA+xaHD/AxOrV3661W5563Soyzk7dcFUT8/LOvYMfon7+wUGBnhSIBDMYdUYI5S9odUW7+OmNGMDoMqMgtG6RUlLBz4ma5W3Lt69958ZkBge1nUvWJAI6+0MGv3zly3TvGOHpF17/2O0h97ZmWm5oSoEiob9jJN+tnDcZ5e1hiLAFRJEAiXNviPJThmDyWrxHd3zU7JOwUhIwxbMR8/EdIzs2FQozlxl62CmXZAMCNBSQSlLCangAWgVAi4bUSoWbmobeeAvzgZ8x3Fe0um4K1wiyxJQIgy/ygCt27FD10NfNDQUnh9rla7JyRnS4a2tlrIkCdVhOy8orVz2hNhs63SkVK1SKmLTvat5fAajXD2rUntfyfOLnUplbKlAjvu5iaVLT6eBAfMAIJlNV1pK1S6l3SrrBAvNISxzBCg25NUqPywVpjZ27d79kfkCIaRUrVI4OSEcqZQCi1TTuGkG5OI9e26cnpnJc+Dvahdkg4AaCUhlQUgLPgkwgDYJG6E3UigVNnXv3P3BE0X4TgQN2KiBYYBo9873Tp7W9iV22l9hpHqWUXKNYaSJ2bPAB2qs/1sElX/N7Dk4XN9nHLoQlopbS0y6hJCFELdQvfXEEXTEkGGAJnR4Y1ic2VsEglbADkNyAEB4tU/XgvA7PsDShDMr5yW8MkAthw6NHZby/4Vh8KQiEGQAtyrlYgB7ZwDTUa0NlELdFRpwXXyjzGgBACyN8Rl8UGn/rty+fb+Jj9ssEAwAHtHYVLm8WShBOSZFgf5x/R6ahZD27/n63e34/hmtK19qpP3nhmiDkdQGkBbGTPlstgcc3rp/eufX5mREJzgaPZGfQyMcBDIHTjutexTIHkFjLBx/RI/msbb9gUvmzqdeGLD3L1nSNd3T2n77PAXDJ+DyvGrBFWA+L+oGPGEQ/Yf71BYAW4aGzBKgjEOHyo0B7OtTaK6K64e47JZeeVZ3oSGQb/nODv/hvDoG5L0bNsizUilGNsv1CjwGJOKkhjuGhnBxvSqgSejmbxdrpUYF3929vdb/NF1PHU8dazW92Sw3a+P4Po6qjfr7ITruXFuv0MBkdZkeWDTEGMScAn3KA32H+9QbF42JqfYU0013BxA0HnNJdNMbzrfap6r0ycPdhhYNxe1QZs0KJOWuD60h6p9H41i3N2XPPNzv/YDgvj515HH6BZ9qC33/KfKAALD47edkEOLsiFwFQqUNAsDW7r0Hbx6uPNz+p7/uzLNMSuVCXxslFZEOuaOs7v3VF39VRlOIrLnqDAC4vb0VLS0pTE971BTLbSoMmlvquHjxorLjyMyePTMElJuFtKm4iQDwhss29BQycmnoESvJBE0cOEwtYXX7jo/tKB5HDS0BwPK3bmj3pbOeAm04rkojHfLyMP3r4XhsNvRvsGem7Cf4OlSkRFTqz8I00hgMEwRxVJcYD7JhgrAZhkmE1oMHbx4exwImIyzMFBzXkeqAH1frbv0pSwFiBguC8EOo0amzAdx7zHrTeGWGyUXZf6KO7AWoBGApQDrExMHxJwG4C3kIDEJvi4XpbiB9xqpVryZpv7QgaD2TSNHitFdYdNr9gvVgaceOzxFQ5t5ei4aHg70dHcs72jr+Riv1/AJoBYhEYf3jZora/EoH3pfadu/+8kBTFVu91nayxfmbypLWK00lBAkCGwZlLNSmSv8CwqsettNUXDxeSKc/wx25PKpBVNxJAGmNPeOl8wDcAwD+pFxU6Ez9N7u2DW3iJLXmaOfRFoDnyCtyCGJ05nUA/rG5TviUsgED0pqFYEjJiDrdCyMNB5Y4rgIZdpUPIRiWirrGQwqI2QYMjWjL6aedn3Jbv5B2nA01JgTGwERxtxaXqDtNeKpYu/4NY6XKX9Hw8N3Tp6/cZKfcT6Qsp7vEjIgYJEhCi2XR8rTjPG9m3brXh6XxV9HBqT1cLyYBEFhWyEIxJEIWLCEADsCcdl+eufwJ15c3DW4/ZhvhfCScXZc//om1rPuXCKGhVD2UAzBR0HR/1RTAtvRZSItAzI2OBsdQaPX+Q4pCKFJQtOD234LygDBMICZiEJgp7pQFX/HxmQbGUDTsJuaRmeo5dJeN9IpNgB477bTz06m2HyjH3TARGs9jgxYh0EpELUTQYExoXbNd90zZkvn21MrV11I6/TVj2d0TRnsCQBsRtQGUIULZGJ4y8DJuZqPKLbp9fHnHMgCc3z4mYspFoB5T5rhNrtEM11bIOVuPZ6qr5tID5LoCRjMYghjRfTJTfTpuosjjMWAQsyATlbnGajOqZ533IYaCIAEosdACuMBecN02qa9zFH3ZsI/fhI2S94kIZJo6Sk+tXm1G9+zJynTuK8J2Wktaey1SOBXfO1gIw23MPEKSuoVQL26znA2FUAdCqu5s2r5qxhijteEckVPxqv9dDcPvgKhEQjxRKusvHMtqmQxDr9NOrZ4I2/4JmHx2e3uKZwNm1FBZ8b8lPG0ok3pR7u3nXFj84OCdyENisMkDzkNicFC3v+2spwRZ5/nGCw1BSJ6NENJRX8t6zzHTWHPYcKC9eRUuaCxqEQ23JmIL0OEpLYCBCGPrmqIe5HGhj3/cni1T/Vk3qxUJYHBwUH9q1ao3tKdSa8e19lqEcGq16vdV6cArc6PleiET7geulStXX9eayrx9hjmYYQ1JgpTRslot/2377t2faT5noatrXdDW/vWskzpnymiv3Uk/c3T58r+4+ebhf29KKowur14eByJmaHItZTKpAQDPAfKYUyyyoZ+BAQTZ7FayLXAtZFAUyogOQ0xE1HhnAVSVYG5MulE7Y+EFE5icerpmrwiLCQVipOMd6m6dEgzbUK5cmioAWMimnwurAS2rrsHmsiC+f7wKsNHTlyhuniGZNIA8IGFZl5ZBbBNZNa+2N5h64CVdk5jh3l7rjuEsb+wDMDTk066Rd0ytWm23pbJvnmauZgmpQlh5Q+fu3TdzPi9RT3cvlYiGhx+YksELIZb+UkiZMUKybTmvA/Dv8UUJUNPSlhQla4NJwgs1taSe3Xrlec8ovG/whw2HZFteYtOAzlz5+Gcgl3oGe1qDIJnR3C4tulnDdDQlyMQgAgwb3TVR3LX7C7trDzvVJ0R0k2XcWGQVBNs+Tvmrr1sjonAeEVIhiyKA/tVLlhHJdVVjuJ1ITIfhZ+vCR3FcGENxkmtfn6ShobcUVq87oz3b8uyJ4uRNXTt33cy9vRYGB8M5vmW0/67xdPfX2iz79UU2gJLnbVvd3rppZKogAGjQXEc0XlmRmSGkhdBxrgPwX7h3Q7RF9A046a1QEgjDeDKIl8dstPYkwDpybJpFkkE0Dbjoh4/tIGx4CJtz4Kj1NaeQAJpoumqsQ0N1kkyJqCfxHQL9G4/cb3CQ0N/PzN+dfQRM1Kwa2kOrS1oibUBhyEYIE/6cAcLwsJmnPQwPRUW/Xui9plSevry4c2d/vG14RFQlm2UGaBr4KZhfbxiGIFrPUHYHgAJzU2FcrKFJELFhBkhyLdDUkrowe+V5LyoNDHwDb36Og4EBL3X1+S+gXPop8LTmeNHtmMbh5oS94OFfZXBHRgB9ApeUCAeyRxewE2RNFXUiKECex1spb6aMDw6YyKYfOrb8brnIiMgRiSdiRpwAAiaK+25zc7/FY7kyBgAW7dlzEMC7ju/CdXOSCwl24hZmolkUIvOt5u8h1+7hRkN2wcZNDeCy3v9ER1UjDymU2hqtPhsCgsBa10zNf1Dk0mdBxwbyfISmidZuOGB65sPbJ0+WSMjCCqAIef76ekIKDhd1fTG7tasWk0QGDDIManAG0erAxkhxNgKNaGXxuSuyTFjhmMumTJApKSSMlH9GwC3c2yvqOXdHC9dFnUaP7M46T2B5nGljzGMJw1zck5pbHcdkAJAmV0lRLN2sBb2SMu569kNiLzSiJXV2ulx+ZWVg6J/SV5x3KbWknxCvcgRKKfBE7VtGezuk23IWlwMNQIEYVtBsH6cQ+f/xZRkGhGhLb77wS8QczPGCwQSIeMkuVjQdvL/08Xu2/yHNJU9+AZwzRHU9JQTlUk8B0ZxGnaLO4jcpMxFocLx0dX3bSvzXb+zYf+DNa9f9yrWci0pstKOc1+5b2v4JGh7ee6yUJAIYQ8f2CBmQNDQUFpZ1rROO86IZw2GOSJbC8GfP/3VhSgBgabi+9g4DDEHQIT0oy+WtptX9MnzSIBYwYGTSV7Tn27/hpdwr6+1kSRDBCyCKpS1Bynn5EVc4xwasAnBmVaBhhpJpmW15+dw8+yZzkqO1CoLq4S8C2I7teTqidcMpQ0RL1bDbqJmpr4UB1wKfq6HPtdBHNfBQDTzUQj/6BD7XAp+1aXpzYzcwvqkBwMALbkoxU8AcWrbT1ZLu+vcH29tb663cfk9LQRCgR7uR5XTH15SyM1Gk11BgqjfV/SFjMDeyygypZMfM++/5Ck9VdpIlJRjgQBM59hnBmWf8u7DtM+EbIiKGowQXq98ufeg3vyPiNjSIlniM5njBqYbibppF2FQCz1QCjyu+x5Wg8UHZ97gaVLkSeNBhgBMAC86Ez6+hjTqyK0u4lk2usimlbLiWA9dykIp+g2vZ5Fo2CSHipR5AzMSIugFqANvyedm5d9eXJ2uVu9qUcopae2k309vd2XXbZDta691Ifw/hMweBTKr1jP/MOunzSkbX2oVwpmvV2xbtOXDrZa/vtXR9QLke06krH7YBgKv+AJGJGZWYXGnNXBzZsFEdADw/NNWgHwyapRQf0ltoXv+CKFrxyBEp5VDKavq2HEpZDrlWilKWI2Uzo3hK0zCzXFfU65TZTFd+wqyL0foi9bgwN5P7BBCTbV0kbKuNdd1CnNUEPxgZEZuAYDoovMyryZ+kndSiqTD0OtzMkyvt6749Tg88lyYxMz9T5ljCN9qNbKr1jP/MuumNk2FYa1HSLXiVB/xq+VUM4Kyp6lwypGlVAGOivMLK94e/nP3zCy+nluy5HK2TJznQJvJ3EZKrFI/NfK16wy/uxg0AriLdfE/MDMyxAeMpOBZ4AhFr7XGh9mNmhIKZNDPPHWnBEGyRZ8YiAnyQT2kBbG7mQ0QwJoQ+NPlK76b7dj3cvqmBJ/8YtvM0VI2JV1BvHO7m1cOGhyFo79iDh5fwczPU9YO0ZbdP6tDrSGWewmLdbQ/yA8+jKRSOJYT133/Tjazbtv6WrJPqm9BhLSel63m1nbWZmWcvHR0dY0Bs39BtGqE4mo0vEjVpw2EE9OzwahhzC8/6DpHbLEiYcs0TxUJ/PdsHcb4oNes6x+HmKZhi6wMGDEVg30xX+v/3uYiTaR8WC7wI0ImhAeuDCAIRWGWdrFfnAbcfpedJPg/cey+Dvidn2Rum+e2N6o3D6eD4zw9p8bxcW8d3U8pumdKh1+FknoL2td/+rdjxHIpqJebmDNan3cWLM+lc6605J/X0yTCstkiZ8rzqSLk4esmS0cLOJodGzNIw85L+6rJ2U69VfMPwrZn+C/+H2nJP5VqgKeL8NDlScbH4r8WP3ncfVj/XQaM9DM2J6s61Aatg2KgHg+uUfuvfPj5XWPTiAs7aTnP8iw0bZscy6s+d8IBHY/RJao2BAYN+1NPG52LbNsKmTYwtF82JOET5SNZ8DRsyoOjw4Z9OKDzHzXbe5iirdUKHXkc685SltO7bo2L6uRTVyc7pVH8PkEm3tN2ac1JPnwjDWk7JlO/XRiaLo5esnCt8s9xkPR2BY53cjFq3AADL967SYeoOJjLMhkkqmLJXUTPF66Km73t4VuVxE1MwX15S8+aQOgpoNI0/ViSkHxRvwokANqkJBoAq0++5a9NEFRztz5EQHjj8v4eXyD/PZFtvcyw7Mxlqr9PNPA2gWw6Ksf9LoygzoAgIDy5GJpNbd0vGSfVNhNG0G3jVXZPTU89aOXZ04QMAYczssn/1eHBcnonJqsa2vJzeNDiU3fyk28SS9udyOQBlbPC+4ocLH71vF56al8BhMzstzFtiTwQ81wa0MTecCW6rULVwkqyvt8BENMW+IGNOaqQ4zkTJ+vrqERUYmVXWMWU0EsKDB388tkw8P53O3eJYdmbChF5HKt1HtO4/Rs30C2lsrDTa3Z11c23fyrqZjXXh873KrqnC9CUrxsYefKjSRoPIzY2siegShW6ShTj+a4rlK0lRC4wAZsrV3ExwQ5lBwKDBvXHnVlF3aLiJiLGPFYGLoscMNeba653X9cxAsICsj6UDF0ANHhCAYTmUUTw++fEdMzjlUvLnENH1PMDG6q0EZf0eGnCWwmYACKyHUpSREO7ff8dYT88L0kLcakvlTmntdTqZ/6Nb8I0pId7AubabW9zU/xmvC59f3VONhe/2WEMe853i+W8PoTmIg4FoLbfKh+/9JYCn1X8uAcDHG9NjtKeZ46ZFHs0RPGDEwkcesIG0ZAefvvguWecPo6gRA0DITArEzBySKy2/UHsLgE8vZEq+WHglzLMk9DHKGI5NgBE3GenRk7GCh5utw7sBq3vPnv8qlwp/qYz2FJE9qcPAdtxncmv7PY7tXDIehn5WCtf3a3tnpiafuTjWfBc/nHc5a/c9dJvAehY4M0WJF0dtRzf3m+cfrTq7yHyU+MAsBJFjW+Q6FrmOBcdV5DgW2Y5FjqPIsS1yHJscR3F97ZFTdgqOlFU4h+Fj5uNNSWVmHdMNOupDwAb64afv84Eg1oTfPrxCvTidynyDhLKqRodKWS1VY/yslHYY1PbPlMefuXx84v6H03xNbwWD42uKfQiKsm2Pbj48BM8siHSsteMODfUqt/rTE4yoK34YC2Jk0+jIHWtebpCaV8FkhNCsyJA5pQVQhUKZlKVIyobvSRagJ+i4WHoCtYu0UgwoCIJgAfDx7ovwbvRai3YPf/twT89LMqnsN1lKEWjjp5Wyg6B2sDRTeNbyQxP31duvHddxjclS2lLMUACDMgo0DvcRzQ3MWaSVIs2KJIGMAI/PPjMmSwglWpFSUXCRmkKa1LSQxBwin8CGLUorYEo6p6YAbgFjAFA6POSPFj/KijQMYAQgmIn9cKx5u6Nomeir6n3eHJxeZfwwFNHPSgV0IHwo+mGOJhwOGH2K9gzdcmj58nwu0/K1tG3bNb96uFwpP2vpoUPb+Xg1H6KeLSLUt4cHJiVCUwMzYUbawuDOaJuND5leNv9Y5AXf4wNTPvvsG0FCaBa2Lw42HB7tlVCk67lUsQzH+eFi3jRPYMHEhpkQx5UM2AhLWQiDu36/60rw2FihcQeEwz09+er6x927b8XS84Bo5c1kdB5r8m2hz99/lKWijjdbd1te4t55yxM8wkzfOvncD6iByO4Sx7ky+3yCN8pGnq/RBh6lY82/v/6+P+AleYTXleCx8scbySwiGY0ECyWElIxCggQJEiRIkCBBggQJEiRIkCBBggQJEiRIkCBBggQJEiRIkCBBggQJEiRIkCBBggQJEiRIkCBBggQJEiRIkCBBggQJEiRIkCBBggQJEiRIkCBBggQJEiRIkCBBggQJEiRIkCBBggQJEiRIkCBBggQJEiRIkCBBggQJEiRIkCBBggQJEiT4PfH/AWKEIP52VRRZAAAAAElFTkSuQmCC';
-var _CH_FIRMA = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALEAAABaCAYAAAD3qreEAAAhXklEQVR42u2deXwTdf7/35+ZyWRy32mSpvdJSsvRcghIihyigICaiqCg4hYvVLzQdTXUG11vXbx/rqvuQh7seq3X7n6lnourgiDlKmCBXmnTHM01ycx8fn+kpRE5CpTTeT0efbSdJHNknp/35/V+fz4zAyBKlChRokSJEiVK1MkWRm43JsTvQdTpiS/GqO8/90kBWWw9oo5aLtcqEiGEKytflEyb9OQ7FcX+MQAA7hMMswjxmS10vKKj0+mmPJ4aHmPMFGRJ13A87pao4mvdbjdRB3WC+NWLGgAdv2jodLopAIBxI/5Y7Jr2+qaZM55+Is1aIPG7FzVgkDkcLjrfcH1VX1QeuHVXDbv+olnnPRabPObh21PWApMiwKIGpErQC1lZyS1jSnJu/5ddc+2sAbIV+9ZdVXXvlZOrH4rNnlrnAgBwu1PLRYk6xiTLRfb+Pazy5jsmOO//esywh87qhfuYIzA4KQCA0cMf/P3Ysx5pmTbt8SGpyPxZPwB2EwOxD6J+A/YhX+fSTDj7j++dO+nJtatWdWn2h/vok8MUwBWl9zxaVb5s+7Bhc2zp2z0kvm63WDwQdWj7AD2Qjh3rHj1x/NMtUyc+tbq3djswAANCCCA7c+kKi+XGzwEqFKl1ryIPu289Hnl85SPlF058In+gegVRZ4p9gD6IplT/aWn1mMciFYNvvbEPvmOFJRVBMcYoO6P2db1q4Zv9r3ykXicIBNctfHHR+dV/3DO26vdX9Q9+Ub8R+5DyoSNKHzJUVTz5ycghDzXl5MwendbFHyPAqQh+2WVvKLKtF6/WKs/7fV8UPRzAqc+6b3nPeMNlzz0we8pdK3Iyz7m5Z59EayEKo97RsKryJyYNdzzaNrj4jj8DANNfj9pfgJ0jrrPk2Ka/o1NPuSRtOerPZ8uKlgzJz6rxjCxbdFtxtuuBkpKrVOn2QtRvVn3dcFXFM+6ykuWBPPu1CwEAECL2AXSMMZ4CACiyzBpkN53zgUEzqjp9eX8+m2WdNc5inv1+jm3WWeWls57OyppV0PMG4hC+W9RvpfrgrHzLOLTgqf+U5N72k8Ewr2Tg7EMfhBXF08fZjeNWK+mhjv4DnGpANtucYRbThe+Wl8+zDy2/6tki2/lD018/QOIn6jdRfejtokufml6a/WCH3bT4hb6oNmCDDKkoaht2QaZ52OsWy1DTweE7MMCDCq4uy7Jd+vchQxZoK4ouXZ5rvWjKwdbR2ygxBlRsvdQoRuQzt/6w7+Q7cu++Nyvrtg6Nau4VqbNNwADNjUAAQAIA5GedvShDX/5ir7/uXd6fKkRBwdlZOdYJ75faZhnK8s/9g9087tIDR3E30Vv2c+TXZudlLlqRZZhTBcdxopKok6Ye++B8UluYfd+HVt3ibxmozE57DQ0QwAgAwGwccrdBVfZQ2mv9AYoAAMjJWaA1Gs5ezTDWbEf+xYuKsqbMB+gb4evbVl+jHF/5+PzhxXess2kWTExvDKLODO0bHSsurhtrsdy2S6dZ9PT+vnUARACkRtOybRVPaVQFt6UtR/1sAJCT42Ss5prVWu2MipEV8+fn2KZd+2uA++CdNn5F0YSxK/5RPfbhrZPG3zQIYEAGZESdQtGXSFUaAKyGJUv16qt3y+jZF6clQQMUrVLQjBw5T20xVb2sVRVcntZA+gsw4XZjKjPD9aZRO85ZMWjhJQX2C2/9JcDufQ3COWKBpWLQjIVlBVd/WDn4xo8AQNZ/zy3qdKk/UKmohGm9cuFKGX3JFwCO7AFO3vZBU1LizDVpy/+qUw0678gjvJtAiIBcW80rGYaaCYPzr5xtN0//Q9r691kHhACGDJp3WUnO7GX2jOonGLp0aV9DGTiAxYzwlAC4nsuzXV7sD0bejsRj/0ryH93Vd6I9/EBux6odeTYrhG9h+fi9kcjOjb3L+98IPHyGbsoTySTxhUYfpti4tKTF+58H+qBM7W9JyXlVSTYylyCY7+KhsJwTQNXWNflpjJdhhBAAABbP/Rnhf1MnPitj4QyVfPYmmjz7orSumBjo7dit42erFYPfAbBlHXkE7hnMMM26U6ccV5ufc+6lZuOYewEAKitrJb3vqqiYbS7Im353jq36Jb1+SGa+ZdZ5NkP1M/tbDFGnvfq6W6N2yt1q2blfAUwpHXj70Fe6yjCds1SrGOsBAHXPa+SR7m92xoJpVt3sZSX506/Msk5elnotBXBtba3EUTR1QVH2eX8ym8fPBgDIt82caM+Y+JfUPogAn3H+1+Fw6Q3qs1cz9KgXAEAy8IlOX6Jo1kx6TiUfviINoiOJ8gQAQIndVZ5lvPSxQfkLbs/JnvhI+huKCy6bWpQ/5bnc7HGXAxRKAQDys2eMtRir37NaK+WQVs4TdYbYh3zrpHEa+ZBPJYTjyv2hG8hIv3jxYqlJN/Mdlcy5PK3KgY60MTgcLlqvm/mw3XLOQ0V5s5f1vlJVcdXgIWVz6/Kz59yhUEw29y4vzZ5ntWdM+zRD48wd+GMTdZLUcxIRgEk78nqNovwTgKJBR1jaOqJIb1JfV2hUX7VOJZ9529Fvx0UCAGGg3aUG3YLP7dYxVwMAzJv92vDzJtQtG1q68M6SXFdJ3/sddGHhVKlZN9Fj1E4YP/C9i6iT6n8XT90mNeumvC5jBr8MANIjT6z61VgoAIDCTPdoo2rhZkZy4dxj207K72ZbFzyfk1XbNH1S7URH3pzHzhq69Nnzq58c9ctj7JkEZKx+2GwYuej4HJ+ok+Z/i3IuGWRQj6tXUGOW7HMWAzxBvHdSTU7GDVcU5t7Sas+YPzIdxKPd9/ycYddk26te0GvPuTvXNu6hbNuUMfv1MPuSR51uxliredrzIsBnjP9NZf+ZpmkunXrUNySZPen42Ic+gDMtl1+olM3YqlROdRxbpSMFYKZpmkuvr3zuV/He7SZ+eauqVBQ2mWbU2e0zy8XTf/orbfh44jKlvGolgDnjeEWn3hqto+j+BQbD5WsBSq3H5kV7InDmvGk2w4yX+6yCk3KBizxwktYDsfasJ3Ms4wddd51bOX16rVxE4TS2D06HW5lhHPOiSlH1QNqLh4AKI1dPEnU0Ebhm5iPnDnUs/ptGM1ObGgw7NoALMi+qzs6ctiojY7IivWEeruGqZcUjSgvGXv+7K2+eNGfOjRkA+981U9RpAXBGRtVgjXro+wwzqOaXvvHXliN1T4ajPcmpy5VGlN83t6ps8dsmk0n5i0rIUe5/of1yp80w+8O+ifHixZ2/Ff+LAABK88+/0KAZ/FeJJGPwkdiHCy643laYN3lhrn2csz/gOJ2p9Y4Zdus1BdnznoCeKzOOFmBnj3cuyJl+lt069V2TyWk5yvURAIBO9I0FxQzymOQmAOoEhBBYDTPv9ncF7FSQuDoJ7ZHDTKxBN9c+YMmym4zrNnTNbG3vrlYw+q0Yhdf2ZPsAUHfAD7pcLtLj8XBjq2672e/rzNmx+60lGDBCgBAc1S1VXWQ91HGlhZdMj7KRq1gutqijo76t99iOcGVCKh9ACACDy1VDejwATqdjH9DV1anfDQ1l2OOpEUCcCHTy1ONhweW8TmnUTX5Lq5p84/4e8WC66oLlqiU3PDLy/EnLLh8z6r5A9dg7n3C7P1SnRfaDRPzUNsdV3r60JG9u3WHsSj8bIcDowffPG1156w+1tY9ojjICI5fLRabmEp/40TnRdB+1f6znSkrmlUSCifsD4W1/DYd//EfPVMV+RBeMABB2FN6+srAk69/v/fPGl9PgFw5hWYRRjlvuCcW6hc27Xn7QDW6iDurw0UWz1LRKi6nmIpPO8pxFaxrzr2/v2dWP6Z8IAMANbtTgKkMAAB5PzS/e/9itnyj+vubrLJ70Ffi83fq8vMJMNsroeJ4lSx1qUq/TRHftbP1x9fuPfQTg6+5ZJxYhPrH+V6hw1E7t8u/+nT8UrotEvtxwZPNyU7XWurq6ni4Y9YB9oBOZAh4hBMOKFt8fCUebt7a88oILXKTn2OYaEwAgyKiKUTGu1QfQ0egEJ1XtrhYa6hqQBxw4ZWqWYQB0GMDcVFlxcBSXCA1nKE02koGeZYNJkpbEgn5/k81mZ2USY5dOo+saPlLBKxRJYuXKHyY0746PfOL5V6bW1CBBhPgE+t9UAnfT0miILQ0mf7olGPzSfyyT112uVeT+kWzfFlORVsAYk2cNvuVpfyC0cWvzqy8e6jOHPtduBNCAXC4Aj8eDDxL1D1rOM5uBcHirhe3Kzapgcns2xoZhSpn6PI0yMcQb6NodTwa/V0vkGxBBNno+eOR/+1NZWVkrwbi4AiG2io+0m2Mst3nOfNPf6+qOtjcRIT7irreycqmmvXXvY4kE7PF2vnX//nAfj0ZTW/ud/Mev/vJSd7jjw4amt992Ot1UfX0ddyhQXa4G5PEAuADgcNHaDqNlxaOL9RzG6lAXRRuNaouvYw/d3twOhWVZJkalJDtbfZ2MUkKUlZaOsWbkTWja1bG9sWnHZpXW0JJhzfSOHKLi5UqiS6fho4GOANHcRGqbA7HGDn9gUKALDQsGBdpokRWHYhzJ8YY2GcN+LXSEP63/sS4geuITE4EpgDqucvBdpV2htsfD4bbXOro+Wt0D2TFFkMNYDeGqC5arftrx8zPd4ei7m5v+/E4awH1RNQXqQaOq242Jj966URlh95hohd4c6EgYLZkGU5t3e0KrJ3U+X7eg0SmxVqUU2tqFRqvFwIcCbeHmplZ/TmEOq1Pr2G0tsVB+PpejUcjzs/MzGp955oHt+2/HZry6WKrNLM61WPNi4fZMguBMUjlF+rra27kYs8Fiz9zOE+/9UF+fbrkG5vIrEeJ+JHBluXdOYfnokhDrXer1/u2I/e+RVj084OGnjHbrO7pbnomF9ryxZc/HnxYWTpU2Nn6cOFijcThcNMRjlniMz9LoVZYkS6plNJ3R6vVRZp1F6Ai07jUazUJnc8Jrshl8Pl9jc4JqD9XWTo/X1fWvJ3G7MeHxLLNnWqxDgqGuAgSogGWDWiATVDjaHUekeodWqdsb94e2hJLslqampwMHsk89yeCAlddEiA+TwBVl3bwgGu6+mCS7and3/qP1+ACMEcAyVFnZSn7//UvJSWOW21radj0ZjHQ80dy+eu2+nUIA5eWXKfho2BKJ+zIRwWQzdKYBUFIRCQpKDvswFhJBlYr6mSCVOxRSVUeL39/Z2vpB9Ej25oIxy1UBqtvua+/MNurseWycyWSFoJ1CIENIiSJstz8U9W5TS+Q/CZxi6+afO1oAXkoeqEdZswYIc30DdoADH69Hg4kQH8SLIoQgP/uKZbFI0tLS+eZiAEgOQPe3zwak/v21DVhw/irLhh1rnhE4bkUk3rGdUITL45GgUYoslu6oIFfrKQh0dQVkDGLD0XCr3lTUlgjwTRKNxd/Y+Czb3x15+mks/ctLfzJLlbGc7pjXjjg+B/MSvUal1EWTfhRlkwKbiDTLJbSXTWgaQ9HO1vb24E4AT+xgeYPT6UBmcxn2eDbh42W1RIj7mcBNqnxEs7mp4akEjjV0+DyPHV0ChxFATVrh/8DwT536tDQWaM2Ksl1aUpLnCHX4bmaFpg5SYD9OJClFkN3ZRpPJNiTodgKt7Ghr+7izv3Asce2Wdcb+a+rsjplBCOV0+ZszgVLYY2Falkh0KkgaRTmMI9FEsJWLhdoVCuUumQT2bmx8pT3VaA98XE7nMrK+HnrKg/0pwYkQn1CAS3IW5cbZ4DPhcPg1X/iDd/oxgNGv0pXT6abC7UGTP9Gdz7KhPKmUtyLEKiQSmS4UoML5eSY7gQyTG7atvzTe2bApDNYwQH388D51F7N13Td6XsA5LA7bQUhkBXxBXXeo26qgaYpAdNIfiXcQCPu7w3sbaTnV1t5MNfvj7/oA2iOHSi7XrFlDmM1m7PE4eo791HxSqAgxpCbA1EMdV2y/c0R3zPsQJ7S5O/wffn0A/5sqYUED8hzEDgAAVFpr5QEqlIcQzktyfLZaFckIRSMyQTBhzKl9Sej08Xyy0axRNTfs8OyYP+0B20+7t9V1BD67d8+ePS2/Asq1im6IRPRyhcTCRSPZ4VjU2h3nCjmelUkoRh7q7oxilOBpGbM3wXKd3V3BXS1dO5q7u//dDADRQ/UWLpeH8HieRwBmDOA4oTZAhHiAS2gF9jlToyy5OBznlnR3r9wGUCkBmM6n+dcDRmO9fqpaI4NchqHysYTOD/jDBilNUJhXhLEQ6SRA3sSRndsFIdLc2vr9r4C6ceHbGes3fPskJuGPEnlWeyLYmosFTs8wKisiZabde7fLAcJSnVKNpYzej4CM+n2BPayQ6MK4+2d/zNvR0VEfPiimGKOaGg/h9W5C9fUN6aACnCGTb37jEKcibWH+9XPD4eb5ctQ+f2f7N94DJXAIAYwf7za27dmZSxLhXCEhzUgiMtsfalcS4A+ZDBmNUYhs6mgRmqLRL1p/9UUjBPPmParo6IjZeT5pl2FQkrggyxv01kqk7d5wOLE1FOoiODbkZWRMG03Tu4HQNHcGWzubm//RCQDx/oB6MhIrEeKTVoFYQwDUc47C25cEg82VzR1vz4e+qYRQkjXXCpJILieQBQIfz+MTBiVBUsBBlz/Gtv6spXQbGts+3gEA+yoCJCGBC6csM7UFmrJi0USmVm7JDAVYczDiVah0JGASE8kExavU0jCfELITMcbZ4g3/Tkt3bdrS8k38UB61t+s/kyOqCPFha74uBOABANgXYfOzF90h8JS5wAYP+5KcPRxOFLERwc5jXsPzoagAnR00rdjNMMzuQMDU7vO91v3ZZ5j60/LXdI3tP+TQdCKnfa/XqFJSBoRpmRRlkiDxU+2BPV6lTBlCHNUqYN7b3NraGWK3eh2QwTZAQ2K+6/HMn7ZsvWdzS/19Md/WlvRkqqGuAXmdXlRff/p6VBHiATgmt9uNGhoakMPhwPuPRrkBiP8UPmjwYmI5I+2qSOKupyLdtAWjRAQguhcniTYkCUVtxjyy09euNGrV1s6uvTqSAj1FaDSBcDwhk9FEjE20qTTJznCguzMU3dNsMlkCO3d+4z3oTiEEGGNwXfBKSXvr9sd3N6+/9eeWT7b2WBpejKi/aYjdBEAZcjo3ofo1y3hA+9cscxiDwZSjYGyFMW6P2W4/p0Ktss5r3L7xfaNS/21c8EOcDyCDihC8bXtpkpEpSSTFJGij0XjMLySC7YwcAl7/nt2RiBAEaIof/MtEcC/cS9RBA3Lui6Ye7HS6ifr6Om7uhW/l72jcuLyjpe33Oztf3z6wt24VIT6N9teNnLCGqAczPhAAVustxrKyjLK2lu2VWAiUJVms4yEslTMaVkbpoZvj7DIl3apA/g+bm8Isi1A4ngz45HLSC9GAf49vnRcAuEN70xrC4+n9/9DetHcyzxUzP85q6drw1I6ff7h3x56/bRIB/m1AvP8QLf9rQFbRb7zxZSkfV40yGBXDkpJIsU6pzsq2quOdwa2+XTs3fc3QynY+Ef8hP99RGguhazdt+6G2tfP/fjhcdO+rBTtwz/VuR+xNe+cDL3atMn27Zd3z4Xj8wU3bn/zRBatID9SIAJ9ZELsJl6sMeb2bENQD1EMdvz8wCBBUOeZbguEuByEhHeEYkZ9gNbYEjgoyidGvVpM7OYL93kCHG7/d+Nbe9M/Om/2XEbv2brpz/f/euz4KDW0u1yrS4diE6+p6G8jxyPRTV2TU1r4n3/XjuldaWnc/v2n3q1+JAJ8hEKfXNT///D4OY/yrJOj8sQ/pWqNb8gOB3SUAtB0JSV0iFqXYZMIvlTA7Yjy1rbMT7QKoDxwoibr44pW0x1OTOH/Sgxe27m2/4eefd17hj3+w+8R04xgBIPjsM0wuvemmFaGA750tu9/6p9PppH45n1bUQOgEXrLvJlJXHDgwQkhIL3VNnfBiAcfLy1o7/CUMEStq79jArNu5Jo4Q1YpQbFs83vnvZBJ2BYMb/QdO7IBwOgHq61N13uHDW0mPpyZx/rnPXdHe4btk3ZbPLgLY6D9BPhQB1BAYY2Hy+LuficT8H6UAPuQVGaJOt0j8yVfY/PZL75+9t6lppkYpHxoI+lXdUX5vdzfx32ikcW1755bvWLa+6QBdOwJwkqlxfg8+gE9FTqebrK+v48aPXXFTKLJz8vr1n1wCsCFy/C4j+qWc4KTqoZ6rKLrlCUCxTRu2rXhVBPgMgNjtdlP/+RgcEa7TWeYYOj7JJezhgBBgWWI9I+U/37L9w+8aGz/u+PWuXdz7RB7cj8Rq30T2Gec+9fs9e/xD1zfUzUUIOIxPEMA9sI4dfuddPl8X3tL00iO9k4tO8jkW68/HYiEAAOw65+Bc6yXP5+Zefntx8VUTAUB3IJ+cukFe77PQjsxjAwCQJAGTnTf9sax4zrP778OJOtZKx10XlxbULgfou8HKSVLqBoWpOwySIE72GuDQgFLXWjmdbip1zdUx3TkRAQCscmFybOUdb44Zce0tqeiPT9jTenrv1VtRes3gQQXXvFA7555RLpebPkngHOrxYSLMxx6p9t3maIC+SIwA3MS8eU9Yp0y4+0NH/rxFvd36CTxZCMBNmEwu5dCya9aeM+7Ku91LHtcf3UNejtk2pEf+EWqtbrXBnLFVplReAwDy/RJ6EeZTolm4UxFwcOmc2Q7HpVemAXzC8wqN9Nzc/Mz5S53OBdqTkDSnw+vQGQ2rrfZMbLDYsNFm22PNzcKGDPMemUy2GAA0B/mcqFPJg/+Gqj5EGoiMRqerM9szcXZONlZrtasBoBwAGLVafYPRZm212+3YZjR7FQrVzQCgFGE+pYSRy3XSHzWFnMfheRyHaCT7GixNyy4ymsybc/PysMlq+YEkyQsO0JwIuVx+ldFo+slosWGN0bhdImEuO0B1R5SoE6pSpVaz0padi7PzC3m5XH4FACgAgKZp2gEAEwEgk6Zpl1wuHwoApQAwWm0wfGnOzcNmiw0r9brvpHLpuad1oUDk4LQ7XwgAMnR6/aNylfKyWDyekMuU3yNBGBHwdfxTIIhmCUVMTia5rQazaXp3OOzneY5GGFhMUnoEkERA/EQgQidw3EoWhDkMJnISidgHCKErw+Gwr7d7O12+FPF5DKefBAC4FAuCLRGNvdbV7h0cDUai3YHQ/d2RyCuUTOpitPoiWq0expMEKLRaHSVF/6MpqVciZQBoiUTg2M+T0TCOhkNfxbq6CiN+toSiqHu0Wm0EjmK2nhiJRR2zjCbLm1jgxgmAkxyJtARCnRRBZpAEuYETkrkSJOTEo+xmoCkvx3MdRBJGsgn23fKy8lu///775Ol+/GJWevraChJ66r3xeFTD89xaSkJSwAvfYCywPJeQcjzbxMYSG6WMUtnV0TlBIWGcsXD4E1IuKQMMTGtT60YBhHbomwiGRYhFndCSTC90OqPxU4TQVzxBlEgV0gUAhFrgoUEqoc+WMorx0WRSQxJEJcnIZhitlpFxNm4SEny7kBT+KYDgTbMpp6XEpyedAR6ZkTE7pTLmSR4RmKSEWCQWhGQ08hwWZENohuIlEolSRlOTkARhkkIqCshoEgAlIcmeCV+AGInPAClk8ocEjD8WEgkV5oR/MHL5XppmHuMS/PuYj/+YjEfMKqXyuUQ0lpmIxn0kIDtJkupkIvkfjPGungQf75cnof3+FiEWdcTqnWOC0yBLn9zTO1qHSYBhQV/XK1wiEQmFQl+cN+XcZxu3bd8dCgaX6XVaRuD4nzq9nY/KGLI5mYh+StOSbylK+jVBEB+yLBs7jBcmQJzKKeooE7cTJT0AqNP+t/VsP7Pn795ltBiJRR2RZDJZlUolNcTjSS8AVAKAl6KoSoKmCwWOCzEUVYlIcpwgCHtJUjoaY56TSqW3SSQSK8dxOgBgKIoqJQgim6bpe0iSvJggCIYkqRsIKd2pVCqfkdJ0KUJouSAINMb4O4VC8U+O40YQBKFVqbRPkwQ5i0RkTKFSvErSdCCZSPzYk0edUkmgmNidekGF12h0d0gkkht5PrGdYZhlWq32/zDGc6Px6DkERY3jJZL1pIBVWEIpGIyngYCl8QSxWyqlC0mCGCWVy+WY54OYJDOT8fjPWrU6ynLJApZNZEtlsrNoqXQE8EIpwQlShAgqHo//DQAEjuPWqtXqYYlEQidTyg0IK/zBTl+5VqkuTLLspdHu7jdOxSqGGIlPPR+MtVrtqzRFv+Lt8F4tYSQjc7JyajBglEjyzTKl0gmA3sMUiRVS6b8QJ5xDyKU+nksSAkZfMXKGlpJUEUWSGJHYhgCiFKLCQCAzRjioUSr0BBaysMBtJSgsB0A0l+AShUWFuyiCOJ+SSEcQBOJoBAGTOfcKCZH4g0at+hIjYhxFS/4VjUZbTzWfLEJ8CkIsldJ5lIRcSJLkGKVcuTDGxr5gE4lcwIIhFo1+Ho1ECiUEyfBJbgEC4XUsCBapRLJWJmMeCEXD7Uk28d9oLPaaUq7cIGBoIQhcFo/F1sukzGqBF3w8L2w2GvSrZIxsrc5gNFAIvm3cuXPt22+8mS8g8hudTvPMK/Nf+/Ojqx6IFeYWkOs2/XRn+ZCKrSRJbvF6vRHxNInqT0JHKJXK2SaTaWpmZmZRzzKdTqEoS0vGtACQAQBgtVrlAADFxcVG+OUVHIb91l/Q8zkAgHEA0LvuUQAwIu19ZrlcdZtUKs1Pa1yiRB21LFKp9EmVRrMMKKqKYZi7tGrtvTRNlwIA0DQ9g5ZKv2QkkstIkryYpul6lUp1q0qhWCKTyRqkUsn9AEDRNO2gCOIdBcO8q1Yq3UqZbL1erV4vk8luUivVnQzDfAMAkp51rtTptN/I5bK3euZpkz2/T8l6sWgnTl1JeqAxUhSlljKy+5LJxKcqhSJISajn4vH464IgtCqVyg8IhP5NUpIpcTb+d4IgbDRNm2mGMUhkzDAecCTJJlbyPN9BYKTTa7WuRDy+PMnzAs/zQY3B0EUx9DCSQD61Vm1SyRXVFEEUdEci/w9hPHbDxo1/BgBoaGg4ZYelRYhPXQk93XiXSi53sCyrTLCsO5lMjk8kE4FkIvkKAJQqFPJqiqIQxwthqVRqlSsUi/x+/61SmeyKJJcMgQBJxHFxmUIxVipnZmEBcxqNjtUbDfchklyvUqsZBFBOUwyt0WrjWq3Gp1cq8zUa5W08l3w1Eot/0cMJFiEWdTT+GAOAhJRIXqKk0kfYeHwnQRDXEgSxjKIoHcZ4Ak1LX0wmE+cmk8kXSZJU0xTlx0AGJRTxLo8xTZDCChznTTKlYo/OZNCGu8MvVw4fFlcr1c0ERYZVNP1GhsnilUrIFet//PHZtra2L7Qq1Tq7PXvt7JpLXqivrxfEUyFqIGA+UaNlhJjEiToRlQuU9tMLHQV9cymont9k2vKemy46KQAg3W434XQ6qZ5kLf3vfTD3vPe0uGji/wMzOZfX0drbUgAAAABJRU5ErkJggg==';
-
-function _chHdr(titulo, sub, proyecto, fecha, hora) {
-    return (
-        '<div style="-webkit-print-color-adjust:exact;print-color-adjust:exact;'
-      + 'background:linear-gradient(135deg,#0A3D62 0%,#1C67A3 100%);padding:18px 26px 14px;">'
-      + '<table style="width:100%;border-collapse:collapse;"><tr>'
-      + '<td style="width:60px;padding-right:12px;vertical-align:middle;">'
-      + '<img src="' + _CH_LOGO + '" style="width:52px;height:52px;border-radius:8px;background:white;padding:3px;" />'
-      + '</td>'
-      + '<td style="vertical-align:middle;">'
-      + '<div style="font-size:16px;font-weight:900;color:white;font-family:Arial,sans-serif;">' + titulo + '</div>'
-      + '<div style="font-size:7.5px;color:rgba(255,255,255,.7);margin-top:2px;font-family:Arial,sans-serif;">' + sub + '</div>'
-      + '</td>'
-      + '<td style="text-align:right;vertical-align:middle;min-width:150px;">'
-      + '<div style="-webkit-print-color-adjust:exact;print-color-adjust:exact;'
-      + 'background:rgba(255,255,255,.13);border-radius:7px;padding:7px 11px;display:inline-block;">'
-      + '<div style="font-size:6px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:.8px;text-transform:uppercase;font-family:Arial,sans-serif;">Proyecto</div>'
-      + '<div style="font-size:10px;font-weight:900;color:white;font-family:Arial,sans-serif;">' + proyecto + '</div>'
-      + '<div style="font-size:6px;color:rgba(255,255,255,.5);margin-top:4px;font-family:Arial,sans-serif;">Emitido: ' + fecha + ' · ' + hora + '</div>'
-      + '<div style="font-size:5.5px;color:rgba(255,255,255,.4);font-family:Arial,sans-serif;">Cardiohome SpA · 77.028.328-0</div>'
-      + '</div>'
-      + '</td>'
-      + '</tr></table>'
-      + '</div>'
-    );
+// ── Loader jsPDF ────────────────────────────────────────────────────────
+function _loadJsPDF() {
+    return new Promise(function(resolve, reject) {
+        if (window.jspdf) { resolve(); return; }
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        s.onload = resolve;
+        s.onerror = function(){ reject(new Error('No se pudo cargar jsPDF')); };
+        document.head.appendChild(s);
+    });
 }
 
-function _chKpis(items) {
-    var cells = items.map(function(k) {
-        return (
-            '<td style="padding:3px;">'
-          + '<div style="-webkit-print-color-adjust:exact;print-color-adjust:exact;'
-          + 'background:' + k.bg + ';border-radius:8px;padding:8px 10px;text-align:center;border:1px solid ' + k.border + ';">'
-          + '<div style="font-size:5.5px;font-weight:800;color:#475569;letter-spacing:.7px;text-transform:uppercase;font-family:Arial,sans-serif;">' + k.label + '</div>'
-          + '<div style="font-size:16px;font-weight:900;color:' + k.color + ';margin-top:2px;font-family:Arial,sans-serif;">' + k.val + '</div>'
-          + '</div>'
-          + '</td>'
-        );
-    }).join('');
-    return (
-        '<div style="-webkit-print-color-adjust:exact;print-color-adjust:exact;'
-      + 'background:#f8fafc;padding:8px 26px;border-bottom:1px solid #e2e8f0;">'
-      + '<table style="width:100%;border-collapse:collapse;"><tr>' + cells + '</tr></table>'
-      + '</div>'
-    );
+var _CH_LOGO_B64 =  + LOGO + ;
+
+// ── Constantes ───────────────────────────────────────────────────────────
+var PDF_M   = 13;   // margen
+var PDF_W   = 210;
+var PDF_H   = 297;
+var PDF_INN = PDF_W - PDF_M * 2;  // 184mm
+var PDF_FTH = 12;   // footer height
+
+function _pdfNew() {
+    return new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 }
 
-function _chSec(icon, text, color) {
-    return (
-        '<div style="-webkit-print-color-adjust:exact;print-color-adjust:exact;'
-      + 'background:' + color + ';color:white;font-size:7.5px;font-weight:900;'
-      + 'letter-spacing:.6px;text-transform:uppercase;padding:4px 8px;border-radius:4px;'
-      + 'margin-bottom:5px;margin-top:10px;font-family:Arial,sans-serif;">'
-      + icon + '  ' + text
-      + '</div>'
-    );
-}
-
-function _chTable(headers, rows, hBg, widths) {
-    widths = widths || [];
-    var ths = headers.map(function(h, i) {
-        return (
-            '<th style="-webkit-print-color-adjust:exact;print-color-adjust:exact;'
-          + (widths[i] ? 'width:' + widths[i] + ';' : '')
-          + 'padding:5px 6px;text-align:left;color:white;font-size:6.5px;font-weight:700;'
-          + 'text-transform:uppercase;font-family:Arial,sans-serif;">' + h + '</th>'
-        );
-    }).join('');
-    var trs = rows.map(function(row, ri) {
-        var bg = ri % 2 === 0 ? '#f8fafc' : '#ffffff';
-        var tds = row.map(function(cell, ci) {
-            return (
-                '<td style="-webkit-print-color-adjust:exact;print-color-adjust:exact;'
-              + 'background:' + bg + ';'
-              + (widths[ci] ? 'width:' + widths[ci] + ';' : '')
-              + 'padding:4px 6px;font-size:8px;color:#1e293b;'
-              + 'border-bottom:1px solid #f0f0f0;font-family:Arial,sans-serif;vertical-align:middle;">'
-              + (cell || '—')
-              + '</td>'
-            );
-        }).join('');
-        return '<tr>' + tds + '</tr>';
-    }).join('');
-    return (
-        '<table style="width:100%;border-collapse:collapse;">'
-      + '<thead><tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:' + hBg + ';">' + ths + '</tr></thead>'
-      + '<tbody>' + trs + '</tbody>'
-      + '</table>'
-    );
-}
-
-function _chBar(pct, color) {
-    var w = Math.min(Number(pct), 100);
-    return (
-        '<div style="display:flex;align-items:center;gap:4px;">'
-      + '<div style="-webkit-print-color-adjust:exact;print-color-adjust:exact;'
-      + 'flex:1;height:5px;background:#e2e8f0;border-radius:99px;overflow:hidden;">'
-      + '<div style="-webkit-print-color-adjust:exact;print-color-adjust:exact;'
-      + 'width:' + w + '%;height:100%;background:' + color + ';border-radius:99px;"></div>'
-      + '</div>'
-      + '<span style="font-size:7.5px;font-weight:800;color:' + color + ';min-width:26px;">' + pct + '%</span>'
-      + '</div>'
-    );
-}
-
-function _chBadge(evaluado) {
-    if (evaluado) {
-        return (
-            '<span style="-webkit-print-color-adjust:exact;print-color-adjust:exact;'
-          + 'display:inline-block;background:#dcfce7;color:#166534;'
-          + 'font-size:6.5px;font-weight:700;padding:2px 7px;border-radius:99px;'
-          + 'border:1px solid #86efac;">✓ Evaluado</span>'
-        );
+// Si queda menos de "needed" mm antes del footer → nueva página
+function _needPage(doc, y, needed) {
+    if (y + needed > PDF_H - PDF_FTH - 2) {
+        _drawFooter(doc);
+        doc.addPage();
+        return PDF_M + 2;
     }
-    return (
-        '<span style="-webkit-print-color-adjust:exact;print-color-adjust:exact;'
-      + 'display:inline-block;background:#fef3c7;color:#92400e;'
-      + 'font-size:6.5px;font-weight:700;padding:2px 7px;border-radius:99px;'
-      + 'border:1px solid #fcd34d;">⏳ Pendiente</span>'
+    return y;
+}
+
+function _drawFooter(doc) {
+    var fy = PDF_H - 7;
+    doc.setDrawColor(210, 210, 210);
+    doc.setLineWidth(0.3);
+    doc.line(PDF_M, fy - 2, PDF_W - PDF_M, fy - 2);
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(120, 120, 120);
+    doc.text(
+        'Jorge Enrique Miranda Kirk  |  Gerente General  |  Cardiohome SpA  |  RUT 77.028.328-0',
+        PDF_W / 2, fy + 0.5, { align: 'center' }
     );
 }
 
-function _chFirma(fecha, hora) {
-    return (
-        '<div style="border-top:1px solid #e2e8f0;padding-top:14px;margin-top:20px;'
-      + 'display:flex;justify-content:space-between;align-items:flex-end;">'
-      + '<div style="font-size:6px;color:#94a3b8;line-height:1.8;font-family:Arial,sans-serif;">'
-      + '<div style="font-weight:700;color:#64748b;">Cardiohome SpA · RUT 77.028.328-0</div>'
-      + '<div>Generado automáticamente · ' + fecha + ' · ' + hora + '</div>'
-      + '<div>Uso interno · Confidencial</div>'
-      + '</div>'
-      + '<div style="text-align:center;">'
-      + '<img src="' + _CH_FIRMA + '" style="width:140px;height:auto;display:block;margin:0 auto 6px;" />'
-      + '<div style="width:170px;border-top:1.5px solid #0A3D62;padding-top:5px;margin:0 auto;">'
-      + '<div style="font-size:8px;font-weight:900;color:#0A3D62;font-family:Arial,sans-serif;">Jorge Enrique Miranda Kirk</div>'
-      + '<div style="font-size:6.5px;color:#64748b;font-family:Arial,sans-serif;">Gerente General · Cardiohome SpA</div>'
-      + '</div>'
-      + '</div>'
-      + '</div>'
-    );
-}
-
-function _chGenerate(html, filename) {
-    var el = document.createElement('div');
-    el.style.cssText = 'width:710px;background:white;font-family:Arial,sans-serif;box-sizing:border-box;';
-    el.innerHTML = html;
-    document.body.appendChild(el);
-    var opt = {
-        margin:      [8, 8, 8, 8],
-        filename:    filename,
-        html2canvas: { scale: 2, useCORS: true, allowTaint: true, letterRendering: true, logging: false, scrollX: 0, scrollY: 0 },
-        jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak:   { mode: ['css', 'legacy'], before: '.pdf-page-break', avoid: '.pdf-no-break' }
-    };
-    return html2pdf().set(opt).from(el).save().then(function(){ document.body.removeChild(el); });
-}
-
-// Dibuja gráfico de avance por colegio en un canvas y devuelve dataURL
-async function _chGraficoColegios(nominas) {
-    var MAX = 14;
-    var items = nominas.filter(function(n){ return n.total > 0; }).slice(0, MAX);
-    if (!items.length) return null;
-
-    var BAR_H   = 18;
-    var GAP     = 6;
-    var PAD_L   = 230;
-    var PAD_R   = 60;
-    var PAD_T   = 40;
-    var PAD_B   = 20;
-    var W       = 680;
-    var H       = PAD_T + items.length * (BAR_H + GAP) + PAD_B;
-
-    var canvas  = document.createElement('canvas');
-    canvas.width  = W * 2;
-    canvas.height = H * 2;
-    var ctx = canvas.getContext('2d');
-    ctx.scale(2, 2);
-
+// ── Header azul ──────────────────────────────────────────────────────────
+function _drawHeader(doc, titulo, sub, proyecto, fecha, hora) {
     // Fondo
-    ctx.fillStyle = '#f8fafc';
-    ctx.fillRect(0, 0, W, H);
+    doc.setFillColor(15, 52, 96);
+    doc.rect(0, 0, PDF_W, 26, 'F');
+    doc.setFillColor(28, 103, 163);
+    doc.rect(PDF_W * 0.55, 0, PDF_W * 0.45, 26, 'F');
 
-    // Título sección
-    ctx.fillStyle = '#0A3D62';
-    ctx.font = 'bold 9px Arial';
-    ctx.fillText('AVANCE POR COLEGIO', PAD_L, 18);
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '7px Arial';
-    ctx.fillText('Completados vs Total alumnos', PAD_L, 30);
+    // Logo
+    try {
+        doc.addImage('data:image/png;base64,' + _CH_LOGO_B64, 'PNG', PDF_M, 4, 15, 15);
+    } catch(e) {}
 
-    // Eje vertical
-    var BAR_W = W - PAD_L - PAD_R;
+    // Título
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(255, 255, 255);
+    doc.text(titulo, PDF_M + 18, 13);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(190, 215, 240);
+    doc.text(sub, PDF_M + 18, 19);
+
+    // Caja proyecto (derecha)
+    var bx = PDF_W - PDF_M - 48;
+    doc.setFillColor(20, 65, 120);
+    doc.roundedRect(bx, 3, 48, 20, 2, 2, 'F');
+    doc.setFontSize(5.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(160, 200, 240);
+    doc.text('PROYECTO', bx + 24, 8.5, { align: 'center' });
+    doc.setFontSize(8.5);
+    doc.setTextColor(255, 255, 255);
+    var pnLabel = proyecto.length > 20 ? proyecto.substring(0, 19) + '…' : proyecto;
+    doc.text(pnLabel, bx + 24, 14, { align: 'center' });
+    doc.setFontSize(5.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(160, 200, 240);
+    doc.text(fecha + '  ' + hora, bx + 24, 19.5, { align: 'center' });
+
+    return 30;
+}
+
+// ── 4 KPI Cards ──────────────────────────────────────────────────────────
+// items: [{label, val, fr,fg,fb, vr,vg,vb}]
+function _drawKpis(doc, y, items) {
+    var n  = items.length;
+    var cw = (PDF_INN - (n - 1) * 3) / n;
+    items.forEach(function(k, i) {
+        var cx = PDF_M + i * (cw + 3);
+        doc.setFillColor(k.fr || 240, k.fg || 245, k.fb || 255);
+        doc.roundedRect(cx, y, cw, 15, 2, 2, 'F');
+        doc.setDrawColor(220, 230, 245);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(cx, y, cw, 15, 2, 2, 'S');
+        doc.setFontSize(5.5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(100, 110, 130);
+        doc.text(k.label.toUpperCase(), cx + cw / 2, y + 5.5, { align: 'center' });
+        doc.setFontSize(15);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(k.vr || 15, k.vg || 52, k.vb || 96);
+        doc.text(String(k.val), cx + cw / 2, y + 12, { align: 'center' });
+    });
+    return y + 19;
+}
+
+// ── Título de sección ────────────────────────────────────────────────────
+function _drawSec(doc, y, text, r, g, b) {
+    y = _needPage(doc, y, 8);
+    doc.setFillColor(r || 15, g || 52, b || 96);
+    doc.rect(PDF_M, y, PDF_INN, 6.5, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(255, 255, 255);
+    doc.text(text, PDF_M + 3, y + 4.5);
+    return y + 8;
+}
+
+// ── Encabezado de tabla ──────────────────────────────────────────────────
+// cols: [{lbl, x, w, align?}]
+function _drawTHead(doc, y, cols, r, g, b) {
+    y = _needPage(doc, y, 6);
+    doc.setFillColor(r || 60, g || 90, b || 130);
+    doc.rect(PDF_M, y, PDF_INN, 5.5, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6);
+    doc.setTextColor(255, 255, 255);
+    cols.forEach(function(c) {
+        var tx = c.align === 'right' ? c.x + c.w - 1 : c.x + 1.5;
+        doc.text(c.lbl, tx, y + 3.8, { align: c.align || 'left' });
+    });
+    return y + 5.5;
+}
+
+// ── Fila de tabla ────────────────────────────────────────────────────────
+// cells: string | {badge: true, text, r,g,b,tr,tg,tb} | {bar: true, pct, r,g,b}
+function _drawTRow(doc, y, cells, cols, even) {
+    y = _needPage(doc, y, 5.5);
+    doc.setFillColor(even ? 247 : 255, even ? 249 : 255, even ? 252 : 255);
+    doc.rect(PDF_M, y, PDF_INN, 5, 'F');
+    doc.setDrawColor(235, 240, 245);
+    doc.setLineWidth(0.1);
+    doc.line(PDF_M, y + 5, PDF_W - PDF_M, y + 5);
+
+    cells.forEach(function(cell, i) {
+        var c = cols[i];
+        if (!c) return;
+        if (cell && cell.badge) {
+            // Badge pill
+            var bw = 20, bh = 3.5, bx = c.x + 1, by_ = y + 0.8;
+            doc.setFillColor(cell.r, cell.g, cell.b);
+            doc.roundedRect(bx, by_, bw, bh, 1.2, 1.2, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(5.5);
+            doc.setTextColor(cell.tr, cell.tg, cell.tb);
+            doc.text(cell.text, bx + bw / 2, by_ + 2.5, { align: 'center' });
+        } else if (cell && cell.bar) {
+            // Barra de progreso
+            var bw2 = c.w - 26, bx2 = c.x + 1, by2 = y + 1.5;
+            doc.setFillColor(220, 228, 238);
+            doc.roundedRect(bx2, by2, bw2, 2.5, 0.7, 0.7, 'F');
+            var fill = Math.max(0.5, Math.min(cell.pct, 100) / 100 * bw2);
+            doc.setFillColor(cell.r, cell.g, cell.b);
+            doc.roundedRect(bx2, by2, fill, 2.5, 0.7, 0.7, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(6.5);
+            doc.setTextColor(cell.r, cell.g, cell.b);
+            doc.text(cell.pct + '%', bx2 + bw2 + 2, by2 + 2.2);
+        } else {
+            var txt = String(cell === null || cell === undefined ? '—' : cell);
+            // Truncate to fit column
+            var maxCh = Math.floor(c.w / 2.0);
+            if (txt.length > maxCh) txt = txt.substring(0, maxCh - 1) + '…';
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7);
+            doc.setTextColor(30, 41, 59);
+            var tx2 = c.align === 'right' ? c.x + c.w - 1.5 : c.x + 1.5;
+            doc.text(txt, tx2, y + 3.6, { align: c.align || 'left' });
+        }
+    });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(30, 41, 59);
+    return y + 5;
+}
+
+// ── Helpers badge / bar ──────────────────────────────────────────────────
+function _badge(ev) {
+    return ev
+        ? { badge: true, text: '✓ Evaluado',   r: 220, g: 252, b: 231, tr: 21, tg: 128, tb: 61 }
+        : { badge: true, text: '⏳ Pendiente', r: 254, g: 243, b: 199, tr: 146, tg: 64, tb: 14 };
+}
+function _bar(pct) {
+    var p = Math.round(pct);
+    var r = p >= 80 ? 16  : p >= 50 ? 245 : 220;
+    var g = p >= 80 ? 185 : p >= 50 ? 158 : 38;
+    var b = p >= 80 ? 129 : p >= 50 ? 11  : 38;
+    return { bar: true, pct: p, r: r, g: g, b: b };
+}
+
+// ── Gráfico barras horizontales ──────────────────────────────────────────
+function _drawChart(doc, y, nominas) {
+    var items = nominas.filter(function(n) { return (n.total || 0) > 0; }).slice(0, 18);
+    if (!items.length) return y;
+
+    y = _drawSec(doc, y, '📊  Avance por Establecimiento', 76, 29, 149);
+
+    var labelW  = 64;
+    var barX    = PDF_M + labelW + 1;
+    var barW    = PDF_INN - labelW - 30;
+    var rowH    = 6.2;
 
     items.forEach(function(nom, i) {
-        var y   = PAD_T + i * (BAR_H + GAP);
-        var pct = nom.total > 0 ? Math.round(nom.evaluados / nom.total * 100) : 0;
-        var color = pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444';
-        var nombre = nom.colegio || 'Sin nombre';
-        if (nombre.length > 28) nombre = nombre.substring(0,26) + '…';
+        y = _needPage(doc, y, rowH + 1);
+        var ev  = nom.evaluados || 0;
+        var tot = nom.total     || 1;
+        var pct = Math.round(ev / tot * 100);
+        var r   = pct >= 80 ? 16  : pct >= 50 ? 245 : 220;
+        var g   = pct >= 80 ? 185 : pct >= 50 ? 158 : 38;
+        var b_  = pct >= 80 ? 129 : pct >= 50 ? 11  : 38;
 
-        // Nombre colegio
-        ctx.fillStyle = '#1e293b';
-        ctx.font = 'bold 7.5px Arial';
-        ctx.textAlign = 'right';
-        ctx.fillText(nombre, PAD_L - 8, y + BAR_H * 0.7);
+        // Fondo alterno
+        if (i % 2 === 0) {
+            doc.setFillColor(248, 250, 253);
+            doc.rect(PDF_M, y, PDF_INN, rowH, 'F');
+        }
+
+        // Nombre
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6.5);
+        doc.setTextColor(30, 41, 59);
+        var lbl = (nom.colegio || '').substring(0, 28);
+        doc.text(lbl, PDF_M + labelW - 1, y + rowH * 0.68, { align: 'right' });
 
         // Barra fondo
-        ctx.fillStyle = '#e2e8f0';
-        ctx.beginPath();
-        ctx.roundRect(PAD_L, y + 2, BAR_W, BAR_H - 4, 4);
-        ctx.fill();
+        doc.setFillColor(220, 228, 238);
+        doc.roundedRect(barX, y + 1.5, barW, 3, 0.8, 0.8, 'F');
 
-        // Barra completados
-        var fillW = Math.max(4, (pct / 100) * BAR_W);
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.roundRect(PAD_L, y + 2, fillW, BAR_H - 4, 4);
-        ctx.fill();
+        // Barra fill
+        var fillW = Math.max(0.5, pct / 100 * barW);
+        doc.setFillColor(r, g, b_);
+        doc.roundedRect(barX, y + 1.5, fillW, 3, 0.8, 0.8, 'F');
 
-        // Texto porcentaje
-        ctx.fillStyle = '#1e293b';
-        ctx.font = 'bold 8px Arial';
-        ctx.textAlign = 'left';
-        ctx.fillText(pct + '%  (' + nom.evaluados + '/' + nom.total + ')', PAD_L + fillW + 6, y + BAR_H * 0.7);
+        // Label
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(6);
+        doc.setTextColor(r, g, b_);
+        doc.text(pct + '%  (' + ev + '/' + tot + ')', barX + barW + 2, y + rowH * 0.68);
+
+        y += rowH;
     });
 
     // Leyenda
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#10B981'; ctx.fillRect(PAD_L, H - 14, 8, 8);
-    ctx.fillStyle = '#475569'; ctx.font = '6.5px Arial'; ctx.fillText('≥80%', PAD_L + 11, H - 7);
-    ctx.fillStyle = '#F59E0B'; ctx.fillRect(PAD_L + 45, H - 14, 8, 8);
-    ctx.fillText('50–79%', PAD_L + 58, H - 7);
-    ctx.fillStyle = '#EF4444'; ctx.fillRect(PAD_L + 105, H - 14, 8, 8);
-    ctx.fillText('<50%', PAD_L + 118, H - 7);
+    y = _needPage(doc, y, 7);
+    var legends = [[16,185,129,'≥80%'],[245,158,11,'50–79%'],[220,38,38,'<50%']];
+    var lx = PDF_M + labelW + 1;
+    legends.forEach(function(leg, i) {
+        doc.setFillColor(leg[0], leg[1], leg[2]);
+        doc.rect(lx + i * 27, y + 1, 5, 3, 'F');
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(5.5);
+        doc.setTextColor(80, 80, 80);
+        doc.text(leg[3], lx + i * 27 + 6.5, y + 3.5);
+    });
 
-    return { dataUrl: canvas.toDataURL('image/png'), w: W, h: H };
+    return y + 8;
 }
 
-// ── ADMIN PDF ─────────────────────────────────────────────────────
+// ── Bloque colegio (header oscuro + tabla alumnos) ───────────────────────
+function _drawColegioBlock(doc, y, nom) {
+    var alumnos = nom.alumnos || [];
+    var ev      = nom.evaluados || 0;
+    var tot     = nom.total     || 0;
+    var pct     = tot > 0 ? Math.round(ev / tot * 100) : 0;
+
+    // Estimar altura bloque para evitar orfandad: header(7) + thead(5.5) + rows(alumnos*5) + gap(3)
+    var blockH = 7 + 5.5 + alumnos.length * 5 + 3;
+    // Si el bloque cabe en lo que queda, bien; si no y ya hay algo en página, nueva página
+    if (blockH > 40) {
+        // Bloque grande: solo saltar si queda muy poco (menos de 40mm)
+        y = _needPage(doc, y, 40);
+    } else {
+        y = _needPage(doc, y, blockH);
+    }
+
+    // Header colegio
+    var cr = pct >= 80 ? 16  : pct >= 50 ? 180 : 200;
+    var cg = pct >= 80 ? 185 : pct >= 50 ? 115 : 30;
+    var cb = pct >= 80 ? 129 : pct >= 50 ? 20  : 30;
+
+    doc.setFillColor(28, 41, 64);
+    doc.roundedRect(PDF_M, y, PDF_INN, 7, 1.5, 1.5, 'F');
+
+    // Nombre
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(255, 255, 255);
+    var nombre = (nom.colegio || 'Sin nombre');
+    if (nombre.length > 52) nombre = nombre.substring(0, 51) + '…';
+    doc.text('🏫  ' + nombre, PDF_M + 3, y + 4.7);
+
+    // Badge porcentaje
+    doc.setFillColor(cr, cg, cb);
+    doc.roundedRect(PDF_W - PDF_M - 31, y + 1.5, 29, 4, 1.2, 1.2, 'F');
+    doc.setFontSize(6.5);
+    doc.setTextColor(255, 255, 255);
+    doc.text(ev + ' / ' + tot + '  ·  ' + pct + '%', PDF_W - PDF_M - 16.5, y + 4.5, { align: 'center' });
+
+    y += 7;
+
+    if (!alumnos.length) {
+        y = _needPage(doc, y, 6);
+        doc.setFillColor(250, 250, 252);
+        doc.rect(PDF_M, y, PDF_INN, 6, 'F');
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(6.5);
+        doc.setTextColor(150, 150, 160);
+        doc.text('Sin alumnos registrados', PDF_M + 3, y + 4);
+        return y + 8;
+    }
+
+    // Columnas alumnos
+    var cols = [
+        { lbl: 'Nombre del Alumno', x: PDF_M,        w: 98 },
+        { lbl: 'RUT',               x: PDF_M + 98,   w: 44 },
+        { lbl: 'Estado',            x: PDF_M + 142,  w: 42 }
+    ];
+
+    y = _drawTHead(doc, y, cols, 71, 85, 105);
+
+    alumnos.forEach(function(a, ri) {
+        y = _drawTRow(doc, y, [a.nombre || '—', a.rut || '—', _badge(a.evaluado_flag)], cols, ri % 2 === 0);
+    });
+
+    return y + 3;
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// ADMIN PDF
+// ════════════════════════════════════════════════════════════════════════
 async function exportarReporteAdmin() {
     var filterEl    = document.getElementById('admin-project-filter');
     var projectId   = filterEl ? filterEl.value : 'all';
-    var projectName = filterEl ? filterEl.options[filterEl.selectedIndex].text : 'Global';
+    var projectName = filterEl ? (filterEl.options[filterEl.selectedIndex] || {}).text || 'Global' : 'Global';
 
-    Swal.fire({title:'Generando Reporte…',html:'Obteniendo datos…',allowOutsideClick:false,didOpen:function(){Swal.showLoading();}});
+    Swal.fire({ title: 'Generando PDF…', html: 'Preparando reporte administrativo…', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
+
     try {
+        await _loadJsPDF();
+
         var res  = await fetch('/api/admin/reporte_proyecto/' + projectId);
         var data = await res.json();
         if (!data.success) throw new Error(data.error || 'Error API');
 
-        var fecha = new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'});
-        var hora  = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+        var fecha   = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' });
+        var hora    = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
         var ranking = (_adminData && _adminData.ranking) || [];
         var nominas = data.data || [];
 
-        var kpis = _chKpis([
-            {label:'Total Alumnos', val:data.resumen.total,      color:'#0A3D62', bg:'#eff6ff', border:'#bfdbfe'},
-            {label:'Completados',   val:data.resumen.evaluados,  color:'#059669', bg:'#f0fdf4', border:'#bbf7d0'},
-            {label:'Pendientes',    val:data.resumen.pendientes, color:'#D97706', bg:'#fffbeb', border:'#fde68a'},
-            {label:'% Avance',      val:data.resumen.porcentaje, color:'#7C3AED', bg:'#f5f3ff', border:'#ddd6fe'}
+        var doc = _pdfNew();
+        var y   = _drawHeader(doc, 'Reporte de Rendimiento Operativo',
+                    'Evaluaciones médicas · Neurología y Medicina Familiar',
+                    projectName, fecha, hora);
+
+        // KPIs
+        y = _drawKpis(doc, y, [
+            { label: 'Total Alumnos', val: data.resumen.total,      fr: 239, fg: 246, fb: 255, vr: 15,  vg: 52,  vb: 96  },
+            { label: 'Completados',   val: data.resumen.evaluados,  fr: 240, fg: 253, fb: 244, vr: 5,   vg: 150, vb: 105 },
+            { label: 'Pendientes',    val: data.resumen.pendientes, fr: 255, fg: 251, fb: 235, vr: 217, vg: 119, vb: 6   },
+            { label: '% Avance',      val: data.resumen.porcentaje, fr: 245, fg: 243, fb: 255, vr: 124, vg: 58,  vb: 237 }
         ]);
 
-        // ── Gráfico canvas ──────────────────────────────────────────
-        var grafico = await _chGraficoColegios(nominas);
-        var graficoHtml = '';
-        if (grafico) {
-            var aspectPct = (grafico.h / grafico.w * 100).toFixed(1);
-            graficoHtml = (
-                '<div class="pdf-no-break" style="margin-bottom:12px;background:#f8fafc;border-radius:8px;padding:12px;border:1px solid #e2e8f0;">'
-              + '<img src="' + grafico.dataUrl + '" style="width:100%;height:auto;display:block;border-radius:4px;" />'
-              + '</div>'
-            );
-        }
+        // Gráfico
+        y = _drawChart(doc, y, nominas);
 
-        // ── Ranking doctoras ────────────────────────────────────────
-        var rkBody = '';
+        // Ranking doctoras
         if (ranking.length) {
-            var medals = ['🥇','🥈','🥉'];
-            var rkRows = ranking.slice(0,12).map(function(d,i){
-                var p = d.percent||0;
-                var c = p>=80?'#059669':p>=50?'#D97706':'#DC2626';
-                return [i<3 ? medals[i] : String(i+1), d.nombre||'—', String(d.completed||0), String(d.total||0), _chBar(p,c)];
+            y = _drawSec(doc, y, '🏆  Ranking de Doctoras', 15, 52, 96);
+            var rCols = [
+                { lbl: '#',           x: PDF_M,        w: 8  },
+                { lbl: 'Profesional', x: PDF_M + 8,    w: 74 },
+                { lbl: 'Completadas', x: PDF_M + 82,   w: 28, align: 'right' },
+                { lbl: 'Total',       x: PDF_M + 110,  w: 22, align: 'right' },
+                { lbl: 'Avance',      x: PDF_M + 132,  w: 52 }
+            ];
+            y = _drawTHead(doc, y, rCols, 28, 103, 163);
+            var med = ['🥇', '🥈', '🥉'];
+            ranking.slice(0, 15).forEach(function(d, i) {
+                y = _drawTRow(doc, y, [
+                    i < 3 ? med[i] : String(i + 1),
+                    d.nombre || '—',
+                    String(d.completed || 0),
+                    String(d.total || 0),
+                    _bar(d.percent || 0)
+                ], rCols, i % 2 === 0);
             });
-            rkBody = (
-                '<div class="pdf-no-break" style="margin-bottom:14px;">'
-              + _chSec('🏆','Ranking de Doctoras','#0A3D62')
-              + _chTable(['#','Profesional','Completadas','Total','Avance'], rkRows, '#1C67A3', ['4%','36%','15%','15%','30%'])
-              + '</div>'
-            );
+            y += 4;
         }
 
-        // ── Desglose por colegio — CADA COLEGIO EN BLOQUE SEPARADO ──
-        // Clave: cada colegio = su propio <div> con header + tabla completa
-        // Cada fila de alumno usa height fijo para que html2canvas no la corte
-        var detalleBody = '';
+        // Desglose detallado por colegio
         if (nominas.length) {
-            detalleBody += '<div style="margin-bottom:4px;">' + _chSec('📋','Desglose Detallado — Alumnos por Colegio','#4c1d95') + '</div>';
-
+            y = _drawSec(doc, y, '📋  Desglose Detallado — Alumnos por Establecimiento', 76, 29, 149);
+            y += 2;
             nominas.forEach(function(nom) {
-                var p  = nom.total > 0 ? Math.round(nom.evaluados / nom.total * 100) : 0;
-                var bc = p>=80?'#059669':p>=50?'#D97706':'#DC2626';
-                var alumnos = nom.alumnos || [];
-
-                // Header del colegio
-                var headerHtml = (
-                    '<div style="-webkit-print-color-adjust:exact;print-color-adjust:exact;'
-                  + 'background:#1e293b;padding:6px 10px;border-radius:5px 5px 0 0;'
-                  + 'display:flex;justify-content:space-between;align-items:center;">'
-                  + '<span style="font-size:8px;font-weight:800;color:white;font-family:Arial,sans-serif;">'
-                  + '🏫 ' + (nom.colegio || 'Sin nombre') + '</span>'
-                  + '<span style="-webkit-print-color-adjust:exact;print-color-adjust:exact;'
-                  + 'background:' + bc + ';color:white;font-size:7px;font-weight:700;'
-                  + 'padding:2px 8px;border-radius:99px;font-family:Arial,sans-serif;">'
-                  + nom.evaluados + ' / ' + nom.total + ' · ' + p + '%</span>'
-                  + '</div>'
-                );
-
-                // Tabla de alumnos — filas de altura fija 18px para evitar cortes
-                var rowsHtml = '';
-                alumnos.forEach(function(a, ri) {
-                    var bg = ri%2===0?'#f8fafc':'#ffffff';
-                    var badge = a.evaluado_flag
-                        ? '<span style="-webkit-print-color-adjust:exact;print-color-adjust:exact;display:inline-block;background:#dcfce7;color:#166534;font-size:6.5px;font-weight:700;padding:1px 6px;border-radius:99px;border:1px solid #86efac;">✓ Evaluado</span>'
-                        : '<span style="-webkit-print-color-adjust:exact;print-color-adjust:exact;display:inline-block;background:#fef3c7;color:#92400e;font-size:6.5px;font-weight:700;padding:1px 6px;border-radius:99px;border:1px solid #fcd34d;">⏳ Pendiente</span>';
-                    rowsHtml += (
-                        '<tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:' + bg + ';">'
-                      + '<td style="padding:3px 7px;font-size:7.5px;color:#1e293b;font-family:Arial,sans-serif;border-bottom:1px solid #f0f4f8;width:54%;height:18px;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0;">' + (a.nombre||'—') + '</td>'
-                      + '<td style="padding:3px 7px;font-size:7.5px;color:#475569;font-family:Arial,sans-serif;border-bottom:1px solid #f0f4f8;width:26%;height:18px;line-height:18px;">' + (a.rut||'—') + '</td>'
-                      + '<td style="padding:3px 7px;font-size:7.5px;font-family:Arial,sans-serif;border-bottom:1px solid #f0f4f8;width:20%;height:18px;line-height:18px;">' + badge + '</td>'
-                      + '</tr>'
-                    );
-                });
-
-                var tableHtml = alumnos.length ? (
-                    '<table style="width:100%;border-collapse:collapse;table-layout:fixed;">'
-                  + '<thead><tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#475569;">'
-                  + '<th style="padding:4px 7px;text-align:left;color:white;font-size:6.5px;font-weight:700;text-transform:uppercase;font-family:Arial,sans-serif;width:54%;">Nombre del Alumno</th>'
-                  + '<th style="padding:4px 7px;text-align:left;color:white;font-size:6.5px;font-weight:700;text-transform:uppercase;font-family:Arial,sans-serif;width:26%;">RUT</th>'
-                  + '<th style="padding:4px 7px;text-align:left;color:white;font-size:6.5px;font-weight:700;text-transform:uppercase;font-family:Arial,sans-serif;width:20%;">Estado</th>'
-                  + '</tr></thead>'
-                  + '<tbody>' + rowsHtml + '</tbody>'
-                  + '</table>'
-                ) : '<div style="padding:5px 10px;font-size:7.5px;color:#94a3b8;font-family:Arial,sans-serif;">Sin alumnos registrados</div>';
-
-                detalleBody += (
-                    '<div class="pdf-no-break" style="margin-bottom:10px;border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;">'
-                  + headerHtml
-                  + tableHtml
-                  + '</div>'
-                );
+                y = _drawColegioBlock(doc, y, nom);
             });
         }
 
-        var html = _chHdr('Reporte de Rendimiento Operativo',
-            'Evaluaciones médicas · Neurología y Medicina Familiar', projectName, fecha, hora)
-            + kpis
-            + '<div style="padding:12px 20px;">'
-            + graficoHtml
-            + rkBody
-            + detalleBody
-            + _chFirma(fecha, hora)
-            + '</div>';
-
-        await _chGenerate(html, 'REPORTE_ADMIN_' + projectName.replace(/\s+/g,'_') + '_' + fecha.replace(/ /g,'_') + '.pdf');
+        _drawFooter(doc);
+        doc.save('REPORTE_ADMIN_' + projectName.replace(/\s+/g, '_') + '_' + fecha.replace(/ /g, '_') + '.pdf');
         Swal.close();
-    } catch(e) {
-        Swal.fire('Error','No se pudo generar el reporte: ' + e.message,'error');
+    } catch (e) {
+        Swal.fire('Error', 'No se pudo generar el reporte: ' + e.message, 'error');
     }
 }
 var exportarReporteProyecto = exportarReporteAdmin;
 
-// ── DOCTORA PDF ───────────────────────────────────────────────────
-function exportarPDFDoctora() {
-    var total     = ((document.getElementById('dp-total')     || {}).textContent || '0').trim();
-    var completed = ((document.getElementById('dp-completed') || {}).textContent || '0').trim();
-    var pending   = ((document.getElementById('dp-pending')   || {}).textContent || '0').trim();
-    var percent   = ((document.getElementById('dp-percent')   || {}).textContent || '0%').trim();
-    var neuro     = ((document.getElementById('dp-neuro')     || {}).textContent || '—').trim();
-    var familiar  = ((document.getElementById('dp-familiar')  || {}).textContent || '—').trim();
-    var nominasN  = ((document.getElementById('dp-nominas')   || {}).textContent || '0').trim();
-    var fecha = new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'});
-    var hora  = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+// ════════════════════════════════════════════════════════════════════════
+// DOCTORA PDF
+// ════════════════════════════════════════════════════════════════════════
+async function exportarPDFDoctora() {
+    var g = function(id) { return ((document.getElementById(id) || {}).textContent || '0').trim(); };
+    var total     = g('dp-total');
+    var completed = g('dp-completed');
+    var pending   = g('dp-pending');
+    var percent   = g('dp-percent');
+    var neuro     = g('dp-neuro');
+    var familiar  = g('dp-familiar');
+    var nominasN  = g('dp-nominas');
+    var fecha = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' });
+    var hora  = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
 
-    Swal.fire({title:'Generando Reporte…',html:'Preparando informe…',allowOutsideClick:false,didOpen:function(){Swal.showLoading();}});
+    Swal.fire({ title: 'Generando PDF…', html: 'Preparando informe profesional…', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
+    try {
+        await _loadJsPDF();
 
-    var kpis = _chKpis([
-        {label:'Formularios Asignados', val:total,     color:'#0A3D62', bg:'#eff6ff', border:'#bfdbfe'},
-        {label:'Completados',           val:completed, color:'#059669', bg:'#f0fdf4', border:'#bbf7d0'},
-        {label:'Pendientes',            val:pending,   color:'#D97706', bg:'#fffbeb', border:'#fde68a'},
-        {label:'% Avance',              val:percent,   color:'#7C3AED', bg:'#f5f3ff', border:'#ddd6fe'}
-    ]);
+        var doc = _pdfNew();
+        var y   = _drawHeader(doc, 'Informe de Rendimiento Profesional',
+                    'Evaluaciones médicas · Datos en tiempo real',
+                    '—', fecha, hora);
 
-    var especBody = (
-        '<table style="width:100%;border-collapse:separate;border-spacing:5px 0;">'
-      + '<tr>'
-      + '<td style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#eff6ff;border-radius:8px;padding:10px;text-align:center;border:1px solid #bfdbfe;">'
-      + '<div style="font-size:6px;font-weight:800;color:#4f46e5;letter-spacing:.7px;text-transform:uppercase;font-family:Arial,sans-serif;">🧠 Neurología</div>'
-      + '<div style="font-size:20px;font-weight:900;color:#3730a3;font-family:Arial,sans-serif;">' + neuro + '</div>'
-      + '<div style="font-size:6.5px;color:#818cf8;font-family:Arial,sans-serif;">evaluaciones</div>'
-      + '</td>'
-      + '<td style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#fff7ed;border-radius:8px;padding:10px;text-align:center;border:1px solid #fed7aa;">'
-      + '<div style="font-size:6px;font-weight:800;color:#ea580c;letter-spacing:.7px;text-transform:uppercase;font-family:Arial,sans-serif;">👨‍⚕️ Med. Familiar</div>'
-      + '<div style="font-size:20px;font-weight:900;color:#c2410c;font-family:Arial,sans-serif;">' + familiar + '</div>'
-      + '<div style="font-size:6.5px;color:#f97316;font-family:Arial,sans-serif;">evaluaciones</div>'
-      + '</td>'
-      + '<td style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#f0fdf4;border-radius:8px;padding:10px;text-align:center;border:1px solid #bbf7d0;">'
-      + '<div style="font-size:6px;font-weight:800;color:#059669;letter-spacing:.7px;text-transform:uppercase;font-family:Arial,sans-serif;">📋 Nóminas</div>'
-      + '<div style="font-size:20px;font-weight:900;color:#065f46;font-family:Arial,sans-serif;">' + nominasN + '</div>'
-      + '<div style="font-size:6.5px;color:#10b981;font-family:Arial,sans-serif;">asignadas</div>'
-      + '</td>'
-      + '</tr></table>'
-    );
+        // KPIs
+        y = _drawKpis(doc, y, [
+            { label: 'Asignados',   val: total,     fr: 239, fg: 246, fb: 255, vr: 15,  vg: 52,  vb: 96  },
+            { label: 'Completados', val: completed, fr: 240, fg: 253, fb: 244, vr: 5,   vg: 150, vb: 105 },
+            { label: 'Pendientes',  val: pending,   fr: 255, fg: 251, fb: 235, vr: 217, vg: 119, vb: 6   },
+            { label: '% Avance',    val: percent,   fr: 245, fg: 243, fb: 255, vr: 124, vg: 58,  vb: 237 }
+        ]);
 
-    // Extract nóminas rows from DOM
-    var nomRows = [];
-    var listEl = document.getElementById('dp-nominas-list');
-    if (listEl) {
-        listEl.querySelectorAll('[style*="flex"]').forEach(function(row) {
-            var nameEl = row.querySelector('[title]');
-            var pctEl  = Array.from(row.querySelectorAll('*')).find(function(el){ return el.textContent.includes('%'); });
-            if (nameEl) {
-                var name = nameEl.getAttribute('title') || nameEl.textContent.replace(/\s+/g,' ').trim();
-                var p    = pctEl ? parseInt(pctEl.textContent) || 0 : 0;
-                var c    = p>=80?'#059669':p>=50?'#D97706':'#DC2626';
-                nomRows.push([name, _chBar(p, c)]);
-            }
+        // Especialidades
+        y = _drawSec(doc, y, '📊  Desglose por Especialidad', 28, 103, 163);
+        var eW = (PDF_INN - 4) / 3;
+        [
+            { lbl: '🧠 NEUROLOGÍA',     val: neuro,    fr: 239, fg: 246, fb: 255, vr: 55,  vg: 48,  vb: 163 },
+            { lbl: '👨‍⚕️ MED. FAMILIAR', val: familiar, fr: 255, fg: 247, fb: 237, vr: 194, vg: 65,  vb: 12  },
+            { lbl: '📋 NÓMINAS',        val: nominasN, fr: 240, fg: 253, fb: 244, vr: 5,   vg: 150, vb: 105 }
+        ].forEach(function(e, i) {
+            var ex = PDF_M + i * (eW + 2);
+            doc.setFillColor(e.fr, e.fg, e.fb);
+            doc.roundedRect(ex, y, eW, 17, 2, 2, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(6.5);
+            doc.setTextColor(e.vr, e.vg, e.vb);
+            doc.text(e.lbl, ex + eW / 2, y + 6, { align: 'center' });
+            doc.setFontSize(18);
+            doc.text(String(e.val), ex + eW / 2, y + 13.5, { align: 'center' });
         });
+        y += 21;
+
+        // Nóminas desde el DOM
+        var nomRows = [];
+        var listEl = document.getElementById('dp-nominas-list');
+        if (listEl) {
+            listEl.querySelectorAll('[data-nomina-id], [style*="border"]').forEach(function(row) {
+                var pctEl = row.querySelector('[style*="color"]');
+                var nameEl = row.querySelector('span, b, strong, [title]');
+                if (nameEl && nameEl.textContent.trim()) {
+                    var name = nameEl.getAttribute('title') || nameEl.textContent.trim();
+                    var pctText = '';
+                    row.querySelectorAll('*').forEach(function(el) {
+                        if (el.textContent.includes('%') && el.children.length === 0) pctText = el.textContent;
+                    });
+                    var p = parseInt(pctText) || 0;
+                    if (name.length > 3) nomRows.push({ nombre: name, pct: p });
+                }
+            });
+        }
+
+        if (nomRows.length) {
+            y = _drawSec(doc, y, '📁  Nóminas Asignadas — Avance por Establecimiento', 5, 150, 105);
+            var nCols = [
+                { lbl: 'Colegio / Nómina', x: PDF_M,        w: 120 },
+                { lbl: 'Avance',           x: PDF_M + 120,  w: 64  }
+            ];
+            y = _drawTHead(doc, y, nCols, 16, 120, 90);
+            nomRows.forEach(function(n, i) {
+                y = _drawTRow(doc, y, [n.nombre, _bar(n.pct)], nCols, i % 2 === 0);
+            });
+            y += 3;
+        }
+
+        // También intentar cargar nóminas desde API para desglose de alumnos
+        try {
+            var resD = await fetch('/api/doctor/nominas_detalle');
+            var dataD = await resD.json();
+            if (dataD.success && dataD.data && dataD.data.length) {
+                y = _drawSec(doc, y, '📋  Desglose Detallado — Alumnos por Nómina', 76, 29, 149);
+                y += 2;
+                dataD.data.forEach(function(nom) {
+                    y = _drawColegioBlock(doc, y, nom);
+                });
+            }
+        } catch(e2) { /* endpoint opcional */ }
+
+        _drawFooter(doc);
+        doc.save('INFORME_DOCTORA_' + fecha.replace(/ /g, '_') + '.pdf');
+        Swal.close();
+    } catch (e) {
+        Swal.fire('Error', 'No se pudo generar: ' + e.message, 'error');
     }
-    var nomBody = nomRows.length
-        ? _chSec('📁','Nóminas Asignadas — Avance por Colegio','#059669')
-          + _chTable(['Colegio / Nómina','Avance'], nomRows, '#059669', ['72%','28%'])
-        : '';
-
-    var html = _chHdr('Informe de Rendimiento Profesional',
-        'Evaluaciones médicas · Datos en tiempo real', '—', fecha, hora)
-        + kpis
-        + '<div style="padding:12px 26px;">'
-        + _chSec('📊','Desglose por Especialidad','#1C67A3') + especBody
-        + nomBody
-        + _chFirma(fecha, hora)
-        + '</div>';
-
-    _chGenerate(html, 'INFORME_DOCTORA_' + fecha.replace(/ /g,'_') + '.pdf').then(function(){ Swal.close(); });
 }
 
-// ── COORDINADORA PDF ──────────────────────────────────────────────
-function exportarPDFCoordinadora() {
-    if (!_coordData) { Swal.fire('Sin datos','Haz clic en Actualizar primero.','warning'); return; }
-    var d    = _coordData;
-    var pct  = parseFloat(d.percent) || 0;
-    var fecha = new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'});
-    var hora  = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+// ════════════════════════════════════════════════════════════════════════
+// COORDINADORA PDF
+// ════════════════════════════════════════════════════════════════════════
+async function exportarPDFCoordinadora() {
+    if (!_coordData) { Swal.fire('Sin datos', 'Haz clic en Actualizar primero.', 'warning'); return; }
+    var d     = _coordData;
+    var pct   = parseFloat(d.percent) || 0;
+    var fecha = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' });
+    var hora  = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
 
-    Swal.fire({title:'Generando Reporte…',html:'Preparando informe…',allowOutsideClick:false,didOpen:function(){Swal.showLoading();}});
+    Swal.fire({ title: 'Generando PDF…', html: 'Preparando informe de coordinación…', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
+    try {
+        await _loadJsPDF();
 
-    var kpis = _chKpis([
-        {label:'Total Alumnos', val:d.total,     color:'#0A3D62', bg:'#eff6ff', border:'#bfdbfe'},
-        {label:'Completados',   val:d.completed, color:'#059669', bg:'#f0fdf4', border:'#bbf7d0'},
-        {label:'Pendientes',    val:d.pending,   color:'#D97706', bg:'#fffbeb', border:'#fde68a'},
-        {label:'% Avance',      val:pct+'%',     color:'#7C3AED', bg:'#f5f3ff', border:'#ddd6fe'}
-    ]);
+        var doc = _pdfNew();
+        var y   = _drawHeader(doc, 'Informe de Coordinación General',
+                    'Neurología y Medicina Familiar · Todas las doctoras',
+                    'General', fecha, hora);
 
-    var np = d.neuro_total>0    ? Math.round(d.neuro_completed/d.neuro_total*100)      : 0;
-    var fp = d.familiar_total>0 ? Math.round(d.familiar_completed/d.familiar_total*100) : 0;
-    var nc = np>=80?'#059669':np>=50?'#D97706':'#DC2626';
-    var fc = fp>=80?'#059669':fp>=50?'#D97706':'#DC2626';
+        // KPIs
+        y = _drawKpis(doc, y, [
+            { label: 'Total Alumnos', val: d.total     || 0, fr: 239, fg: 246, fb: 255, vr: 15,  vg: 52,  vb: 96  },
+            { label: 'Completados',   val: d.completed || 0, fr: 240, fg: 253, fb: 244, vr: 5,   vg: 150, vb: 105 },
+            { label: 'Pendientes',    val: d.pending   || 0, fr: 255, fg: 251, fb: 235, vr: 217, vg: 119, vb: 6   },
+            { label: '% Avance',      val: pct + '%',        fr: 245, fg: 243, fb: 255, vr: 124, vg: 58,  vb: 237 }
+        ]);
 
-    var especBody = (
-        '<table style="width:100%;border-collapse:separate;border-spacing:6px 0;"><tr>'
-      + '<td style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#eff6ff;border-radius:8px;padding:10px 12px;border:1px solid #bfdbfe;">'
-      + '<div style="font-size:6px;font-weight:800;color:#4f46e5;letter-spacing:.7px;text-transform:uppercase;font-family:Arial,sans-serif;">🧠 Neurología</div>'
-      + '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:3px;">'
-      + '<div style="font-size:18px;font-weight:900;color:#3730a3;font-family:Arial,sans-serif;">' + (d.neuro_completed||0) + '<span style="font-size:8px;color:#818cf8;"> / ' + (d.neuro_total||0) + '</span></div>'
-      + '<div style="font-size:15px;font-weight:900;color:' + nc + ';font-family:Arial,sans-serif;">' + np + '%</div>'
-      + '</div>'
-      + '<div style="-webkit-print-color-adjust:exact;print-color-adjust:exact;height:4px;background:#ddd5fe;border-radius:99px;margin-top:4px;overflow:hidden;">'
-      + '<div style="-webkit-print-color-adjust:exact;print-color-adjust:exact;width:' + np + '%;height:100%;background:#4f46e5;"></div></div>'
-      + '</td>'
-      + '<td style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#fff7ed;border-radius:8px;padding:10px 12px;border:1px solid #fed7aa;">'
-      + '<div style="font-size:6px;font-weight:800;color:#ea580c;letter-spacing:.7px;text-transform:uppercase;font-family:Arial,sans-serif;">👨‍⚕️ Med. Familiar</div>'
-      + '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:3px;">'
-      + '<div style="font-size:18px;font-weight:900;color:#c2410c;font-family:Arial,sans-serif;">' + (d.familiar_completed||0) + '<span style="font-size:8px;color:#f97316;"> / ' + (d.familiar_total||0) + '</span></div>'
-      + '<div style="font-size:15px;font-weight:900;color:' + fc + ';font-family:Arial,sans-serif;">' + fp + '%</div>'
-      + '</div>'
-      + '<div style="-webkit-print-color-adjust:exact;print-color-adjust:exact;height:4px;background:#fed7aa;border-radius:99px;margin-top:4px;overflow:hidden;">'
-      + '<div style="-webkit-print-color-adjust:exact;print-color-adjust:exact;width:' + fp + '%;height:100%;background:#f97316;"></div></div>'
-      + '</td>'
-      + '</tr></table>'
-    );
+        // Especialidades con mini barras
+        y = _drawSec(doc, y, '📊  Desglose por Especialidad', 28, 103, 163);
+        var np  = (d.neuro_total    || 0) > 0 ? Math.round((d.neuro_completed    || 0) / d.neuro_total    * 100) : 0;
+        var fp  = (d.familiar_total || 0) > 0 ? Math.round((d.familiar_completed || 0) / d.familiar_total * 100) : 0;
+        var eW2 = (PDF_INN - 3) / 2;
+        [
+            { lbl: '🧠 NEUROLOGÍA',     comp: d.neuro_completed    || 0, tot: d.neuro_total    || 0, p: np, fr: 239, fg: 246, fb: 255, vr: 55,  vg: 48,  vb: 163 },
+            { lbl: '👨‍⚕️ MED. FAMILIAR', comp: d.familiar_completed || 0, tot: d.familiar_total || 0, p: fp, fr: 255, fg: 247, fb: 237, vr: 194, vg: 65,  vb: 12  }
+        ].forEach(function(e, i) {
+            var ex = PDF_M + i * (eW2 + 3);
+            doc.setFillColor(e.fr, e.fg, e.fb);
+            doc.roundedRect(ex, y, eW2, 20, 2, 2, 'F');
 
-    var medals = ['🥇','🥈','🥉'];
-    var rkRows = (d.doctoras_ranking||[]).slice(0,12).map(function(doc,i){
-        var p = doc.percent||0; var c = p>=80?'#059669':p>=50?'#D97706':'#DC2626';
-        return [i<3?medals[i]:String(i+1), doc.nombre||'—', String(doc.completed||0), String(doc.total||0), _chBar(p,c)];
-    });
-    var estRows = (d.establecimientos||[]).slice(0,15).map(function(e){
-        var p = e.percent||0; var c = p>=80?'#059669':p>=50?'#D97706':'#DC2626';
-        return [e.nombre||'—', String(e.completed||0), String(e.total||0), _chBar(p,c)];
-    });
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7);
+            doc.setTextColor(e.vr, e.vg, e.vb);
+            doc.text(e.lbl, ex + 4, y + 6);
 
-    var html = _chHdr('Informe de Coordinación General',
-        'Neurología y Medicina Familiar · Todas las doctoras', 'General', fecha, hora)
-        + kpis
-        + '<div style="padding:12px 26px;">'
-        + _chSec('📊','Desglose por Especialidad','#1C67A3') + especBody
-        + (rkRows.length ? _chSec('🏆','Ranking de Doctoras','#0A3D62') + _chTable(['#','Profesional','Completadas','Total','Avance'],rkRows,'#1C67A3',['4%','36%','15%','15%','30%']) : '')
-        + (estRows.length ? _chSec('🏫','Top Establecimientos','#059669') + _chTable(['Establecimiento','Completados','Total','Avance'],estRows,'#059669',['48%','18%','18%','16%']) : '')
-        + _chFirma(fecha, hora)
-        + '</div>';
+            doc.setFontSize(14);
+            doc.text(String(e.comp), ex + 4, y + 13.5);
 
-    _chGenerate(html, 'INFORME_COORDINACION_' + fecha.replace(/ /g,'_') + '.pdf').then(function(){ Swal.close(); });
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(80, 80, 80);
+            var xOff = ex + 4 + doc.getTextWidth(String(e.comp)) + 1.5;
+            doc.text('/ ' + e.tot, xOff, y + 13.5);
+
+            // Barra mini
+            var bx3 = ex + 4, by3 = y + 15.5, bw3 = eW2 - 8;
+            doc.setFillColor(210, 220, 235);
+            doc.roundedRect(bx3, by3, bw3, 2, 0.6, 0.6, 'F');
+            var fillW3 = Math.max(0.5, e.p / 100 * bw3);
+            doc.setFillColor(e.vr, e.vg, e.vb);
+            doc.roundedRect(bx3, by3, fillW3, 2, 0.6, 0.6, 'F');
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7);
+            doc.setTextColor(e.vr, e.vg, e.vb);
+            doc.text(e.p + '%', ex + eW2 - 3, y + 13.5, { align: 'right' });
+        });
+        y += 24;
+
+        // Gráfico establecimientos
+        var estData = (d.establecimientos || []).map(function(e) {
+            return { colegio: e.nombre, evaluados: e.completed || 0, total: e.total || 0 };
+        });
+        if (estData.length) {
+            y = _drawChart(doc, y, estData.slice(0, 20));
+        }
+
+        // Ranking doctoras
+        var ranking = d.doctoras_ranking || [];
+        if (ranking.length) {
+            y = _drawSec(doc, y, '🏆  Ranking de Doctoras', 15, 52, 96);
+            var rkC = [
+                { lbl: '#',           x: PDF_M,        w: 8  },
+                { lbl: 'Profesional', x: PDF_M + 8,    w: 74 },
+                { lbl: 'Completadas', x: PDF_M + 82,   w: 28, align: 'right' },
+                { lbl: 'Total',       x: PDF_M + 110,  w: 22, align: 'right' },
+                { lbl: 'Avance',      x: PDF_M + 132,  w: 52 }
+            ];
+            y = _drawTHead(doc, y, rkC, 28, 103, 163);
+            var med2 = ['🥇', '🥈', '🥉'];
+            ranking.slice(0, 20).forEach(function(dr, i) {
+                y = _drawTRow(doc, y, [
+                    i < 3 ? med2[i] : String(i + 1),
+                    dr.nombre || '—',
+                    String(dr.completed || 0),
+                    String(dr.total || 0),
+                    _bar(dr.percent || 0)
+                ], rkC, i % 2 === 0);
+            });
+            y += 4;
+        }
+
+        // Desglose establecimientos con alumnos (si el endpoint lo provee)
+        try {
+            var resC = await fetch('/api/coordinadora/reporte_detalle');
+            var dataC = await resC.json();
+            if (dataC.success && dataC.data && dataC.data.length) {
+                y = _drawSec(doc, y, '📋  Desglose Detallado — Alumnos por Establecimiento', 76, 29, 149);
+                y += 2;
+                dataC.data.forEach(function(nom) {
+                    y = _drawColegioBlock(doc, y, nom);
+                });
+            }
+        } catch(e2) { /* endpoint opcional */ }
+
+        _drawFooter(doc);
+        doc.save('INFORME_COORDINACION_' + fecha.replace(/ /g, '_') + '.pdf');
+        Swal.close();
+    } catch (e) {
+        Swal.fire('Error', 'No se pudo generar: ' + e.message, 'error');
+    }
 }
 
 

@@ -1027,8 +1027,8 @@
 .kpi-ring-wrap svg { transform:rotate(-90deg); }
 
 </style>
-<body class="bg-gray-100 font-sans leading-normal tracking-normal">
-    <header class="flex items-center justify-between p-4 bg-white shadow-md">
+<body style="margin:0;padding:0;height:100vh;overflow:hidden;display:flex;flex-direction:column;background:#f4f7f9;font-family:Inter,sans-serif;">
+    <header style="display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;height:58px;min-height:58px;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.08);flex-shrink:0;z-index:20;">
         <div class="flex items-center space-x-4">
             <button id="menuToggle" class="text-xl text-gray-700 focus:outline-none md:hidden">
                 <i class="fas fa-bars"></i>
@@ -1045,8 +1045,8 @@
         </div>
     </header>
 
-    <div class="dashboard-wrapper">
-        <aside class="sidebar" id="sidebar">
+    <div style="display:flex;flex-direction:row;flex:1;height:calc(100vh - 58px);overflow:hidden;padding:12px;gap:12px;box-sizing:border-box;">
+        <aside id="sidebar" style="width:245px;min-width:245px;flex-shrink:0;background:#0f3460;color:white;border-radius:14px;padding:1.2rem 0.9rem;height:100%;overflow-y:auto;overflow-x:hidden;box-sizing:border-box;box-shadow:0 4px 16px rgba(0,0,0,0.12);transition:width 0.3s,padding 0.3s;">
             <div class="sidebar-header">MENÚ DE NAVEGACIÓN</div>
             <nav class="p-0">
                 <ul class="sidebar-nav">
@@ -1083,7 +1083,7 @@
             </nav>
         </aside>
 
-        <main class="main-content" id="mainContent">
+        <main id="mainContent" style="flex:1;min-width:0;height:100%;overflow-y:auto;overflow-x:hidden;padding:1.4rem 1.8rem;background:#f4f7f9;border-radius:14px;box-sizing:border-box;">
             
             {# NUEVA SECCIÓN DE BIENVENIDA (Reemplaza el antiguo resumen del proyecto) #}
             {% if usuario != 'coordinadora' and usuario != 'coordinador_escuela' %}
@@ -1399,11 +1399,6 @@
 </div><!-- end adm-body -->
 </div><!-- end admin-performance -->
 
-
-
-
-</div>
-            
                 <div id="admin-add-visit" class="content-section">
             <div class="section-topbar">
                 <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
@@ -1933,7 +1928,7 @@
     <!-- Tabla de proyectos -->
     <div id="proyectos-container">
     {% for proyecto in proyectos %}
-    <div class="proy-card" data-nombre="{{ proyecto.nombre_proyecto | lower }}"
+    <div class="proy-card" data-nombre="{{ proyecto.nombre_proyecto | lower }}" data-proyecto-id="{{ proyecto.id }}"
          style="background:white;border-radius:16px;border:1px solid #e2e8f4;margin-bottom:1rem;overflow:hidden;box-shadow:0 2px 8px rgba(15,52,96,.06);">
 
         <!-- Header del proyecto -->
@@ -1969,18 +1964,16 @@
                     <span style="color:white;font-weight:800;font-size:.95rem;">{{ total_proy.val }}</span>
                 </div>
 
-                <!-- Barra de progreso compacta -->
-                <div style="min-width:120px;">
+                <!-- Barra de progreso compacta - cargada via JS -->
+                <div id="projbar-{{proyecto.id}}" style="min-width:130px;">
                     <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
                         <span style="color:#b8d4f0;font-size:.68rem;">AVANCE</span>
-                        <span style="color:white;font-weight:800;font-size:.82rem;">{{ pct_proy }}%</span>
+                        <span id="projpct-{{proyecto.id}}" style="color:white;font-weight:800;font-size:.82rem;">…</span>
                     </div>
                     <div style="background:rgba(255,255,255,.2);border-radius:4px;height:7px;overflow:hidden;">
-                        <div style="height:100%;border-radius:4px;width:{{ pct_proy }}%;
-                            background:{% if pct_proy >= 80 %}#10b981{% elif pct_proy >= 50 %}#f59e0b{% else %}#ef4444{% endif %};
-                            transition:width .4s ease;"></div>
+                        <div id="projfill-{{proyecto.id}}" style="height:100%;border-radius:4px;width:0%;background:#94a3b8;transition:width .4s ease;"></div>
                     </div>
-                    <div style="color:#b8d4f0;font-size:.65rem;margin-top:3px;">{{ eval_proy.val }} / {{ total_proy.val }} completados</div>
+                    <div id="projcount-{{proyecto.id}}" style="color:#b8d4f0;font-size:.65rem;margin-top:3px;">cargando…</div>
                 </div>
 
                 <i class="fa-solid fa-chevron-down proy-chevron-{{ proyecto.id }}" style="color:rgba(255,255,255,.6);transition:transform .25s;"></i>
@@ -2022,15 +2015,14 @@
                                     {{ nomina.tipo_nomina|replace('_',' ') }}
                                 </span>
                             </td>
-                            <td style="padding:10px 12px;text-align:center;font-weight:700;color:#334155;">{{ tot_n }}</td>
-                            <td style="padding:10px 12px;text-align:center;font-weight:700;color:#059669;">{{ ev_n }}</td>
-                            <td style="padding:10px 12px;">
+                            <td id="tot-{{nomina.id}}" style="padding:10px 12px;text-align:center;font-weight:700;color:#334155;">—</td>
+                            <td id="ev-{{nomina.id}}" style="padding:10px 12px;text-align:center;font-weight:700;color:#059669;">—</td>
+                            <td id="bar-{{nomina.id}}" style="padding:10px 12px;">
                                 <div style="display:flex;align-items:center;gap:8px;">
                                     <div style="flex:1;background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden;">
-                                        <div style="height:100%;border-radius:4px;width:{{ pct_n }}%;
-                                            background:{% if pct_n >= 80 %}#10b981{% elif pct_n >= 50 %}#f59e0b{% else %}#ef4444{% endif %};"></div>
+                                        <div id="barfill-{{nomina.id}}" style="height:100%;border-radius:4px;width:0%;background:#e2e8f0;"></div>
                                     </div>
-                                    <span style="font-size:.75rem;font-weight:700;color:{% if pct_n >= 80 %}#059669{% elif pct_n >= 50 %}#d97706{% else %}#dc2626{% endif %};min-width:36px;">{{ pct_n }}%</span>
+                                    <span id="pct-{{nomina.id}}" style="font-size:.75rem;font-weight:700;color:#94a3b8;min-width:36px;">—</span>
                                 </div>
                             </td>
                             <td style="padding:10px 12px;text-align:center;">
@@ -2079,6 +2071,46 @@
             var nombre = card.getAttribute('data-nombre') || '';
             card.style.display = nombre.includes(q) ? 'block' : 'none';
         });
+    }
+
+    // Carga stats reales desde la API para cada proyecto
+    async function cargarStatsProyectos() {
+        var cards = document.querySelectorAll('.proy-card[data-proyecto-id]');
+        for (var card of cards) {
+            var pid = card.getAttribute('data-proyecto-id');
+            try {
+                var res  = await fetch('/api/admin/proyecto_stats/' + pid);
+                var data = await res.json();
+                if (!data.success) continue;
+
+                // Actualizar barra del proyecto
+                var proy = data.proyecto;
+                var pct  = proy.pct;
+                var barColor = pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444';
+                var pctEl    = document.getElementById('projpct-'   + pid);
+                var fillEl   = document.getElementById('projfill-'  + pid);
+                var countEl  = document.getElementById('projcount-' + pid);
+                if (pctEl)   pctEl.textContent   = pct + '%';
+                if (fillEl)  { fillEl.style.width = pct + '%'; fillEl.style.background = barColor; }
+                if (countEl) countEl.textContent  = proy.evaluados + ' / ' + proy.total + ' completados';
+
+                // Actualizar filas de nóminas
+                for (var nom of data.nominas) {
+                    var nid      = nom.nomina_id;
+                    var npct     = nom.pct;
+                    var ncolor   = npct >= 80 ? '#10b981' : npct >= 50 ? '#f59e0b' : '#ef4444';
+                    var ntxtcol  = npct >= 80 ? '#059669' : npct >= 50 ? '#d97706' : '#dc2626';
+                    var totEl    = document.getElementById('tot-'     + nid);
+                    var evEl     = document.getElementById('ev-'      + nid);
+                    var pctNEl   = document.getElementById('pct-'     + nid);
+                    var fillNEl  = document.getElementById('barfill-' + nid);
+                    if (totEl)   totEl.textContent   = nom.total;
+                    if (evEl)    evEl.textContent     = nom.evaluados;
+                    if (pctNEl)  { pctNEl.textContent = npct + '%'; pctNEl.style.color = ntxtcol; }
+                    if (fillNEl) { fillNEl.style.width = npct + '%'; fillNEl.style.background = ncolor; }
+                }
+            } catch(e) { console.warn('Stats error proyecto', pid, e); }
+        }
     }
     </script>
 </div>
@@ -3068,6 +3100,8 @@
                     if (typeof initCalendar === 'function') initCalendar();
                 } else if (sectionId === 'admin-correction-requests') {
                     loadCorrectionRequests();
+                } else if (sectionId === 'gestionar-proyectos') {
+                    if (typeof cargarStatsProyectos === 'function') cargarStatsProyectos();
                 } else if (sectionId === 'admin-calendar-doctoras') {
                     // reset calendar on entry
                     var sel = document.getElementById('adminCalDoctorSelect');

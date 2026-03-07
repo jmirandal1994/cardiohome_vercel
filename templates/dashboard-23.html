@@ -868,9 +868,121 @@
         background-color: var(--primary-blue);
     }
 
+    /* ══════════════════════════════════════════════
+       ESTILOS: PERFIL DOCTORA — RENDIMIENTO Y CALENDARIO
+       ══════════════════════════════════════════════ */
+
+    /* Responsive: grids del doctor performance */
+    @media (max-width: 900px) {
+        .doctor-perf-grid { grid-template-columns: 1fr !important; }
+        .doctor-donut-grid { grid-template-columns: 1fr !important; }
+    }
+
+    /* Celdas del calendario */
+    .cal-cell {
+        background: white;
+        min-height: 90px;
+        padding: 6px 8px;
+        border-right: 1px solid #e2e8f0;
+        border-bottom: 1px solid #e2e8f0;
+        cursor: pointer;
+        transition: background 0.15s ease;
+        position: relative;
+    }
+    .cal-cell:hover { background: #f0f9ff; }
+    .cal-cell.other-month { background: #fafafa; }
+    .cal-cell.other-month .cal-day-num { color: #cbd5e0; }
+    .cal-cell.today { background: #eff6ff; }
+    .cal-cell.today .cal-day-num {
+        background: var(--secondary-blue);
+        color: white;
+        border-radius: 50%;
+        width: 26px;
+        height: 26px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+    }
+    .cal-cell.has-event { background: #f0fdf4; }
+    .cal-cell.selected { background: #dbeafe; border: 2px solid var(--secondary-blue); }
+
+    .cal-day-num {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #374151;
+        margin-bottom: 4px;
+        display: inline-block;
+        line-height: 1;
+        width: 26px;
+        height: 26px;
+        text-align: center;
+        line-height: 26px;
+    }
+
+    .cal-event-pill {
+        background: linear-gradient(90deg, #1C67A3, #0A3D62);
+        color: white;
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-bottom: 2px;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        cursor: pointer;
+        transition: opacity 0.15s;
+    }
+    .cal-event-pill:hover { opacity: 0.85; }
+    .cal-event-pill.weekend { background: linear-gradient(90deg, #2ECC71, #27AE60); }
+
+    /* Barra lateral del detalle de visita */
+    .visit-detail-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-left: 4px solid var(--secondary-blue);
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.2s ease;
+    }
+    .visit-detail-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        transform: translateX(3px);
+    }
+    .visit-detail-card .vd-header {
+        font-weight: 700;
+        color: var(--primary-blue);
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .visit-detail-card .vd-meta {
+        font-size: 0.8rem;
+        color: #718096;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 1.25rem;
+        margin-bottom: 0.75rem;
+    }
+    .vd-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 99px;
+        font-size: 0.72rem;
+        font-weight: 700;
+    }
+    .vd-badge.blue { background: #dbeafe; color: #1d4ed8; }
+    .vd-badge.green { background: #dcfce7; color: #166534; }
+    .vd-badge.yellow { background: #fef9c3; color: #854d0e; }
+
 </style>
-    
-</head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
     <header class="flex items-center justify-between p-4 bg-white shadow-md">
         <div class="flex items-center space-x-4">
@@ -1808,33 +1920,268 @@
                 </div>
 
             {% else %}
+                <!-- ══════════════════════════════════════════════
+                     SECCIÓN: MI RENDIMIENTO — PERFIL DOCTORA
+                     Diseño premium con tarjetas, gráficos y KPIs
+                     ══════════════════════════════════════════════ -->
                 <div id="doctor-performance" class="content-section">
-                    <div class="card">
-                        <h3><i class="fa-solid fa-chart-simple"></i> Mi Rendimiento (Formularios)</h3>
-                        {% if doctor_performance_data_single_doctor %}
-                            <p class="text-center text-4xl font-extrabold text-secondary-blue my-4">
-                                {{ doctor_performance_data_single_doctor.completed }}
-                            </p>
-                            <p class="text-center text-lg text-gray-600 mb-4">Formularios Completados</p>
-                            <div class="chart-container">
+
+                    <!-- Encabezado -->
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                        <div>
+                            <h2 class="text-3xl font-extrabold text-gray-800 font-['Montserrat'] m-0">
+                                Mi Rendimiento
+                            </h2>
+                            <p class="text-gray-500 text-sm mt-1">Panel de métricas personales · Formularios completados y avance por nómina.</p>
+                        </div>
+                        <div class="flex gap-3 flex-wrap">
+                            <button onclick="exportarRendimientoDoctora()" class="bg-white text-blue-700 border-2 border-blue-600 px-4 py-2 rounded-2xl font-bold text-sm hover:bg-blue-600 hover:text-white transition-all flex items-center gap-2 shadow-sm">
+                                <i class="fa-solid fa-file-pdf"></i> Exportar Reporte
+                            </button>
+                            <div class="bg-white px-4 py-2 rounded-2xl shadow-sm border border-gray-200 flex items-center gap-2 text-sm font-semibold text-gray-500">
+                                <i class="fa-solid fa-user-doctor text-blue-500"></i>
+                                {{ session.get('usuario') | replace('_', ' ') | capitalize }}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if doctor_performance_data_single_doctor %}
+                    {% set perf = doctor_performance_data_single_doctor %}
+                    {% set pct_val = ((perf.completed / perf.total) * 100) | round(1) if perf.total > 0 else 0 %}
+
+                    <!-- Tarjetas KPI -->
+                    <div class="summary" style="margin-bottom: 2rem;">
+                        <!-- Total asignados -->
+                        <div class="summary-card-v2" style="background: linear-gradient(145deg, #0A3D62, #1C67A3);">
+                            <div class="summary-card-header">
+                                <span>FORMULARIOS<br>ASIGNADOS</span>
+                                <i class="fa-solid fa-file-medical"></i>
+                            </div>
+                            <p class="count">{{ perf.total }}</p>
+                        </div>
+                        <!-- Completados -->
+                        <div class="summary-card-v2 bg-green-600">
+                            <div class="summary-card-header">
+                                <span>EVALUACIONES<br>COMPLETADAS</span>
+                                <i class="fa-solid fa-circle-check"></i>
+                            </div>
+                            <p class="count">{{ perf.completed }}</p>
+                        </div>
+                        <!-- Pendientes -->
+                        <div class="summary-card-v2 bg-yellow-500">
+                            <div class="summary-card-header">
+                                <span>PENDIENTES<br>DE EVALUAR</span>
+                                <i class="fa-solid fa-hourglass-half"></i>
+                            </div>
+                            <p class="count">{{ perf.total - perf.completed }}</p>
+                        </div>
+                        <!-- % avance -->
+                        <div class="summary-card-v2 bg-red-600">
+                            <div class="summary-card-header">
+                                <span>AVANCE<br>PORCENTUAL</span>
+                                <i class="fa-solid fa-chart-pie"></i>
+                            </div>
+                            <p class="count">{{ pct_val }}%</p>
+                        </div>
+                    </div>
+
+                    <!-- Fila: Gráfico de barras + Anillo de progreso -->
+                    <div style="display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; margin-bottom: 1.5rem;" class="doctor-perf-grid">
+
+                        <!-- Gráfico de barras: completados vs total por nómina -->
+                        <div class="card" style="margin-bottom: 0; padding: 1.75rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                                <h3 style="margin: 0; border: none; padding: 0; font-size: 1.1rem; color: var(--primary-blue); display: flex; align-items: center; gap: 8px;">
+                                    <i class="fa-solid fa-chart-column text-blue-500"></i> Evaluaciones por Nómina
+                                </h3>
+                                <span class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Completados vs Total</span>
+                            </div>
+                            <div style="position: relative; height: 260px;">
                                 <canvas id="doctorPerformanceChart"></canvas>
                             </div>
-                            <div class="text-center text-sm text-gray-500 mt-4">
-                                Total de formularios en tus nóminas: {{ doctor_performance_data_single_doctor.total }}
+                        </div>
+
+                        <!-- Panel derecho: Anillo + barra de progreso global -->
+                        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+
+                            <!-- Tarjeta anillo -->
+                            <div class="card" style="margin-bottom: 0; padding: 1.75rem; text-align: center; flex: 1;">
+                                <h3 style="margin: 0 0 1rem 0; border: none; padding: 0; font-size: 1rem; color: var(--primary-blue);">
+                                    <i class="fa-solid fa-bullseye-arrow text-green-500 mr-1"></i> Progreso Global
+                                </h3>
+                                <!-- Anillo SVG -->
+                                <div style="position: relative; display: inline-flex; align-items: center; justify-content: center; margin: 0 auto;">
+                                    <svg width="140" height="140" viewBox="0 0 100 100" style="transform: rotate(-90deg);">
+                                        <circle cx="50" cy="50" r="38" fill="none" stroke="#e2e8f0" stroke-width="10"/>
+                                        <circle id="doctor-ring-main" cx="50" cy="50" r="38" fill="none"
+                                            stroke="url(#doctorGrad)" stroke-width="10"
+                                            stroke-linecap="round"
+                                            style="transition: stroke-dashoffset 1s ease; stroke-dasharray: 238.76; stroke-dashoffset: {{ (238.76 * (1 - pct_val / 100)) | round(2) }}"/>
+                                        <defs>
+                                            <linearGradient id="doctorGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" stop-color="#2ECC71"/>
+                                                <stop offset="100%" stop-color="#1abc9c"/>
+                                            </linearGradient>
+                                        </defs>
+                                    </svg>
+                                    <div style="position: absolute; text-align: center;">
+                                        <div style="font-family: 'Montserrat', sans-serif; font-size: 1.6rem; font-weight: 900; color: var(--primary-blue); line-height: 1;">{{ pct_val }}%</div>
+                                        <div style="font-size: 0.7rem; color: #718096; font-weight: 600;">AVANCE</div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 1rem; display: flex; justify-content: center; gap: 1.5rem; font-size: 0.82rem;">
+                                    <div style="text-align: center;">
+                                        <div style="font-weight: 800; color: #2ECC71; font-size: 1.2rem;">{{ perf.completed }}</div>
+                                        <div style="color: #718096;">Completados</div>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <div style="font-weight: 800; color: #E74C3C; font-size: 1.2rem;">{{ perf.total - perf.completed }}</div>
+                                        <div style="color: #718096;">Pendientes</div>
+                                    </div>
+                                </div>
                             </div>
-                        {% else %}
-                            <p style="text-align: center; color: #777;">No hay datos de rendimiento disponibles para graficar.</p>
-                        {% endif %}
+
+                            <!-- Mini-card: racha y tasa -->
+                            <div class="card" style="margin-bottom: 0; padding: 1.25rem;">
+                                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.9rem; background: #f0fdf4; border-radius: 10px; border-left: 4px solid #2ECC71;">
+                                        <span style="font-size: 0.82rem; font-weight: 600; color: #2d3748;">
+                                            <i class="fa-solid fa-fire-flame-curved text-orange-400 mr-1"></i> Tasa de éxito
+                                        </span>
+                                        <span style="font-weight: 800; color: #2ECC71;">{{ pct_val }}%</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.9rem; background: #eff6ff; border-radius: 10px; border-left: 4px solid #1C67A3;">
+                                        <span style="font-size: 0.82rem; font-weight: 600; color: #2d3748;">
+                                            <i class="fa-solid fa-layer-group text-blue-500 mr-1"></i> Nóminas activas
+                                        </span>
+                                        <span style="font-weight: 800; color: #1C67A3;">{{ perf.nominas_count if perf.nominas_count is defined else '—' }}</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.9rem; background: #fff7ed; border-radius: 10px; border-left: 4px solid #F1C40F;">
+                                        <span style="font-size: 0.82rem; font-weight: 600; color: #2d3748;">
+                                            <i class="fa-solid fa-calendar-check text-yellow-500 mr-1"></i> Promedio/nómina
+                                        </span>
+                                        <span style="font-weight: 800; color: #e67e22;">{{ ((perf.completed / (perf.nominas_count if perf.nominas_count is defined and perf.nominas_count > 0 else 1)) | round(1)) if perf.completed > 0 else 0 }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Gráfico de dona: distribución completados vs pendientes -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;" class="doctor-donut-grid">
+                        <div class="card" style="margin-bottom: 0; padding: 1.75rem;">
+                            <h3 style="margin: 0 0 1rem 0; border: none; padding: 0; font-size: 1.05rem; color: var(--primary-blue);">
+                                <i class="fa-solid fa-chart-pie text-blue-400 mr-1"></i> Distribución Global
+                            </h3>
+                            <div style="position: relative; height: 200px; display: flex; align-items: center; justify-content: center;">
+                                <canvas id="doctorDonutChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="card" style="margin-bottom: 0; padding: 1.75rem;">
+                            <h3 style="margin: 0 0 1rem 0; border: none; padding: 0; font-size: 1.05rem; color: var(--primary-blue);">
+                                <i class="fa-solid fa-ranking-star text-yellow-500 mr-1"></i> Resumen de Nóminas
+                            </h3>
+                            <div id="doctor-nominas-summary" style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 200px; overflow-y: auto;">
+                                {% if assigned_nominations %}
+                                    {% for nomina in assigned_nominations %}
+                                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.82rem;">
+                                        <span style="font-weight: 600; color: #2d3748; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;" title="{{ nomina.nombre_establecimiento }}">
+                                            <i class="fa-solid fa-hospital text-blue-400 mr-1"></i>{{ nomina.nombre_establecimiento }}
+                                        </span>
+                                        <span style="background: #e0f2fe; color: #0369a1; padding: 2px 10px; border-radius: 99px; font-weight: 700; white-space: nowrap;">
+                                            {{ nomina.tipo_nomina_display }}
+                                        </span>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <p style="color: #a0aec0; text-align: center; padding: 1rem;">Sin nóminas asignadas aún.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% else %}
+                    <div class="card" style="text-align: center; padding: 4rem 2rem;">
+                        <i class="fa-solid fa-chart-simple" style="font-size: 3.5rem; color: #cbd5e0; margin-bottom: 1rem; display: block;"></i>
+                        <h3 style="color: #718096; margin-bottom: 0.5rem; font-size: 1.3rem;">Sin datos de rendimiento</h3>
+                        <p style="color: #a0aec0;">Los datos aparecerán aquí cuando tengas nóminas asignadas con formularios completados.</p>
+                    </div>
+                    {% endif %}
                 </div>
 
+                <!-- ══════════════════════════════════════════════
+                     SECCIÓN: MIS PRÓXIMAS VISITAS — CALENDARIO PREMIUM
+                     ══════════════════════════════════════════════ -->
                 <div id="doctor-visits" class="content-section">
-                    <div class="card">
-                        <h3><i class="fa-solid fa-calendar-days"></i> Mis Próximas Visitas</h3>
+
+                    <!-- Encabezado -->
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <div>
+                            <h2 class="text-3xl font-extrabold text-gray-800 font-['Montserrat'] m-0">Mis Próximas Visitas</h2>
+                            <p class="text-gray-500 text-sm mt-1">Calendario de visitas asignadas — vista mensual y detalle por evento.</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <button onclick="cambiarVistaCal('calendar')" id="btn-vista-cal" class="px-4 py-2 rounded-xl font-bold text-sm border-2 border-blue-600 bg-blue-600 text-white flex items-center gap-2 transition-all">
+                                <i class="fa-solid fa-calendar-days"></i> Calendario
+                            </button>
+                            <button onclick="cambiarVistaCal('list')" id="btn-vista-list" class="px-4 py-2 rounded-xl font-bold text-sm border-2 border-blue-600 bg-white text-blue-600 flex items-center gap-2 transition-all hover:bg-blue-600 hover:text-white">
+                                <i class="fa-solid fa-list"></i> Lista
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ── VISTA CALENDARIO ── -->
+                    <div id="cal-view-calendar">
+                        <div class="card" style="margin-bottom: 1.5rem; padding: 0; overflow: hidden;">
+
+                            <!-- Cabecera del calendario con navegación -->
+                            <div style="background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%); padding: 1.25rem 1.75rem; display: flex; align-items: center; justify-content: space-between;">
+                                <button onclick="calNav(-1)" style="background: rgba(255,255,255,0.15); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+                                    <i class="fa-solid fa-chevron-left"></i>
+                                </button>
+                                <div style="text-align: center;">
+                                    <div id="cal-month-title" style="font-family: 'Montserrat', sans-serif; font-size: 1.35rem; font-weight: 800; color: white; letter-spacing: -0.02em;"></div>
+                                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.65); margin-top: 2px;" id="cal-events-count"></div>
+                                </div>
+                                <button onclick="calNav(1)" style="background: rgba(255,255,255,0.15); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
+
+                            <!-- Días de la semana -->
+                            <div style="display: grid; grid-template-columns: repeat(7, 1fr); background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                                {% for day in ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'] %}
+                                <div style="text-align: center; padding: 0.6rem 0; font-size: 0.72rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em;">{{ day }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Grilla de días -->
+                            <div id="cal-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; background: #e2e8f0;"></div>
+                        </div>
+
+                        <!-- Panel de detalle del día seleccionado -->
+                        <div id="cal-day-detail" style="display: none;">
+                            <div class="card" style="margin-bottom: 0; padding: 1.5rem; border-left: 4px solid var(--secondary-blue);">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                                    <h3 style="margin: 0; border: none; padding: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; color: var(--primary-blue);">
+                                        <i class="fa-solid fa-calendar-day text-blue-500"></i>
+                                        <span id="cal-detail-title">Detalle del día</span>
+                                    </h3>
+                                    <button onclick="document.getElementById('cal-day-detail').style.display='none'" style="background: #f1f5f9; border: none; color: #94a3b8; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                </div>
+                                <div id="cal-detail-body"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── VISTA LISTA (oculta por defecto) ── -->
+                    <div id="cal-view-list" style="display: none;">
                         <div class="filter-container">
-                            <input type="text" id="doctorVisitSearch" placeholder="Buscar por nombre o descripción..." class="form-input" onkeyup="filterVisits('doctor')" />
-                            <button onclick="clearVisitFilters('doctor')" class="action-button blue filter-button">
-                                <i class="fas fa-filter-circle-xmark"></i> Limpiar Filtros
+                            <input type="text" id="doctorVisitSearch" placeholder="Buscar por nombre o descripción..." class="form-input" oninput="filterVisitsList()" />
+                            <button onclick="filterVisitsList()" class="action-button blue filter-button">
+                                <i class="fas fa-search"></i> Buscar
                             </button>
                         </div>
                         <div id="doctorVisitsContainer">
@@ -1864,8 +2211,8 @@
                                                                 </a>
                                                             {% endif %}
                                                             <form action="{{ url_for('evaluados', establecimiento=evento.id) }}" method="POST" class="flex items-center space-x-2">
-                                                                <input type="number" name="alumnos" min="0" placeholder="N° de alumnos evaluados" required class="form-input w-40" />
-                                                                <button type="submit" class="action-button green"><i class="fa-solid fa-check"></i> Registrar Evaluados</button>
+                                                                <input type="number" name="alumnos" min="0" placeholder="N° evaluados" required class="form-input w-36" />
+                                                                <button type="submit" class="action-button green"><i class="fa-solid fa-check"></i> Registrar</button>
                                                             </form>
                                                         </div>
                                                     </li>
@@ -1875,7 +2222,7 @@
                                     </div>
                                 {% endfor %}
                             {% else %}
-                                <p id="doctorVisitNoResults" style="text-align: center; color: #777;">No tienes visitas programadas.</p>
+                                <p id="doctorVisitNoResults" style="text-align: center; color: #777; padding: 3rem;">No tienes visitas programadas.</p>
                             {% endif %}
                         </div>
                     </div>
@@ -3068,6 +3415,338 @@ document.querySelectorAll('.nav-link').forEach(link => {
             setTimeout(updateProyectosStats, 300);
         }
     });
+});
+</script>
+
+
+<script>
+/* ══════════════════════════════════════════════
+   JAVASCRIPT: PERFIL DOCTORA — GRÁFICOS Y CALENDARIO
+   ══════════════════════════════════════════════ */
+
+// ─── Gráficos de Rendimiento Doctora ───────────────────────────────────────
+let doctorBarChart = null;
+let doctorDonutChart = null;
+
+function initDoctorCharts() {
+    // Obtener datos desde el template Jinja
+    const perf = window.__doctorPerfData;
+    if (!perf) return;
+
+    // Gráfico de barras: completados vs total por nómina
+    const barCanvas = document.getElementById('doctorPerformanceChart');
+    if (barCanvas) {
+        if (doctorBarChart) doctorBarChart.destroy();
+        const labels = perf.nomina_labels || ['Mis Nóminas'];
+        const completados = perf.nomina_completed || [perf.completed || 0];
+        const totales = perf.nomina_totals || [perf.total || 0];
+        const pendientes = totales.map((t, i) => t - (completados[i] || 0));
+
+        doctorBarChart = new Chart(barCanvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Completados',
+                        data: completados,
+                        backgroundColor: 'rgba(46,204,113,0.85)',
+                        borderRadius: 8,
+                        barThickness: 22,
+                    },
+                    {
+                        label: 'Pendientes',
+                        data: pendientes,
+                        backgroundColor: 'rgba(241,196,15,0.75)',
+                        borderRadius: 8,
+                        barThickness: 22,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { stacked: false, grid: { display: false }, ticks: { font: { size: 11, weight: '600' } } },
+                    y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: '#f1f5f9' } }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: { boxWidth: 12, font: { size: 11, weight: '600' }, padding: 16 }
+                    },
+                    tooltip: { backgroundColor: '#0A3D62', cornerRadius: 8, padding: 10 }
+                }
+            }
+        });
+    }
+
+    // Gráfico de dona: distribución global
+    const donutCanvas = document.getElementById('doctorDonutChart');
+    if (donutCanvas) {
+        if (doctorDonutChart) doctorDonutChart.destroy();
+        const completed = perf.completed || 0;
+        const pending = (perf.total || 0) - completed;
+        doctorDonutChart = new Chart(donutCanvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Completados', 'Pendientes'],
+                datasets: [{
+                    data: [completed, pending],
+                    backgroundColor: ['#2ECC71', '#F1C40F'],
+                    borderColor: ['#27AE60', '#D4A80F'],
+                    borderWidth: 2,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '68%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12, font: { size: 11, weight: '600' }, padding: 14 }
+                    },
+                    tooltip: { backgroundColor: '#0A3D62', cornerRadius: 8 }
+                }
+            }
+        });
+    }
+}
+
+// Exportar reporte de rendimiento doctora (PDF con html2pdf)
+function exportarRendimientoDoctora() {
+    const section = document.getElementById('doctor-performance');
+    if (!section) return;
+    Swal.fire({ title: 'Generando PDF...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    const opt = {
+        margin: 10,
+        filename: 'Mi_Rendimiento_CardioHome.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(section).save().then(() => Swal.close());
+}
+
+// ─── Calendario Premium ─────────────────────────────────────────────────────
+let calCurrentYear, calCurrentMonth;
+let calEvents = {}; // { 'YYYY-MM-DD': [{ nombre, horario, alumnos, obs, id, url }] }
+
+function initCalendar() {
+    // Cargar eventos desde datos Jinja embebidos
+    calEvents = window.__doctorEventos || {};
+    const today = new Date();
+    calCurrentYear = today.getFullYear();
+    calCurrentMonth = today.getMonth(); // 0-indexed
+    renderCalendar();
+}
+
+function calNav(dir) {
+    calCurrentMonth += dir;
+    if (calCurrentMonth > 11) { calCurrentMonth = 0; calCurrentYear++; }
+    if (calCurrentMonth < 0)  { calCurrentMonth = 11; calCurrentYear--; }
+    renderCalendar();
+    document.getElementById('cal-day-detail').style.display = 'none';
+}
+
+function renderCalendar() {
+    const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const title = document.getElementById('cal-month-title');
+    if (title) title.textContent = `${monthNames[calCurrentMonth]} ${calCurrentYear}`;
+
+    const grid = document.getElementById('cal-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const firstDay = new Date(calCurrentYear, calCurrentMonth, 1);
+    const lastDay  = new Date(calCurrentYear, calCurrentMonth + 1, 0);
+    const today    = new Date();
+
+    // Ajustar startDay: Lunes=0
+    let startDow = firstDay.getDay(); // 0=Dom
+    startDow = (startDow === 0) ? 6 : startDow - 1;
+
+    // Días del mes anterior
+    const prevLastDay = new Date(calCurrentYear, calCurrentMonth, 0).getDate();
+    for (let i = startDow - 1; i >= 0; i--) {
+        const d = prevLastDay - i;
+        grid.appendChild(makeCell(d, true, false, null));
+    }
+
+    // Días del mes actual
+    let evCount = 0;
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+        const dateStr = `${calCurrentYear}-${String(calCurrentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const dayEvents = calEvents[dateStr] || [];
+        if (dayEvents.length) evCount += dayEvents.length;
+        const isToday = (
+            today.getFullYear() === calCurrentYear &&
+            today.getMonth() === calCurrentMonth &&
+            today.getDate() === d
+        );
+        grid.appendChild(makeCell(d, false, isToday, dateStr, dayEvents));
+    }
+
+    // Completar fila final con días del mes siguiente
+    const totalCells = startDow + lastDay.getDate();
+    const remaining = (7 - (totalCells % 7)) % 7;
+    for (let d = 1; d <= remaining; d++) {
+        grid.appendChild(makeCell(d, true, false, null));
+    }
+
+    const countEl = document.getElementById('cal-events-count');
+    if (countEl) countEl.textContent = evCount > 0 ? `${evCount} visita${evCount > 1 ? 's' : ''} este mes` : 'Sin visitas este mes';
+}
+
+function makeCell(day, isOther, isToday, dateStr, events) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell' +
+        (isOther ? ' other-month' : '') +
+        (isToday ? ' today' : '') +
+        (events && events.length ? ' has-event' : '');
+
+    const numEl = document.createElement('div');
+    numEl.className = 'cal-day-num';
+    numEl.textContent = day;
+    cell.appendChild(numEl);
+
+    if (events && events.length) {
+        events.slice(0, 3).forEach((ev, idx) => {
+            const pill = document.createElement('div');
+            pill.className = 'cal-event-pill' + (idx >= 2 ? ' weekend' : '');
+            pill.textContent = ev.nombre;
+            pill.title = `${ev.nombre} · ${ev.horario}`;
+            cell.appendChild(pill);
+        });
+        if (events.length > 3) {
+            const more = document.createElement('div');
+            more.style.cssText = 'font-size:0.65rem;color:#1C67A3;font-weight:700;padding:1px 4px;';
+            more.textContent = `+${events.length - 3} más`;
+            cell.appendChild(more);
+        }
+        cell.addEventListener('click', () => showDayDetail(dateStr, events));
+    }
+    return cell;
+}
+
+function showDayDetail(dateStr, events) {
+    const detailPanel = document.getElementById('cal-day-detail');
+    const titleEl = document.getElementById('cal-detail-title');
+    const bodyEl = document.getElementById('cal-detail-body');
+    if (!detailPanel || !titleEl || !bodyEl) return;
+
+    // Formatear fecha legible
+    const [y, m, d] = dateStr.split('-');
+    const monthNames = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    titleEl.textContent = `${parseInt(d)} de ${monthNames[parseInt(m)-1]} de ${y}`;
+
+    bodyEl.innerHTML = events.map(ev => `
+        <div class="visit-detail-card">
+            <div class="vd-header">
+                <i class="fa-solid fa-building text-blue-500"></i>
+                ${ev.nombre}
+            </div>
+            <div class="vd-meta">
+                <span><i class="fa-solid fa-clock mr-1"></i>${ev.horario || 'Sin horario'}</span>
+                <span><i class="fa-solid fa-users mr-1"></i>${ev.alumnos || 'N/A'} alumnos</span>
+                ${ev.obs ? `<span><i class="fa-solid fa-note-sticky mr-1"></i>${ev.obs}</span>` : ''}
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                ${ev.url ? `<a href="${ev.url}" target="_blank" class="vd-badge blue"><i class="fa-solid fa-file-arrow-down"></i> Formulario Base</a>` : ''}
+                <span class="vd-badge green"><i class="fa-solid fa-calendar-check"></i> Programada</span>
+            </div>
+        </div>
+    `).join('');
+
+    detailPanel.style.display = 'block';
+    detailPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Marcar celda seleccionada
+    document.querySelectorAll('.cal-cell.selected').forEach(c => c.classList.remove('selected'));
+}
+
+function cambiarVistaCal(vista) {
+    const calView = document.getElementById('cal-view-calendar');
+    const listView = document.getElementById('cal-view-list');
+    const btnCal  = document.getElementById('btn-vista-cal');
+    const btnList = document.getElementById('btn-vista-list');
+    if (vista === 'calendar') {
+        if (calView) calView.style.display = 'block';
+        if (listView) listView.style.display = 'none';
+        btnCal.classList.remove('bg-white','text-blue-600');
+        btnCal.classList.add('bg-blue-600','text-white');
+        btnList.classList.remove('bg-blue-600','text-white');
+        btnList.classList.add('bg-white','text-blue-600');
+    } else {
+        if (calView) calView.style.display = 'none';
+        if (listView) listView.style.display = 'block';
+        btnList.classList.remove('bg-white','text-blue-600');
+        btnList.classList.add('bg-blue-600','text-white');
+        btnCal.classList.remove('bg-blue-600','text-white');
+        btnCal.classList.add('bg-white','text-blue-600');
+    }
+}
+
+function filterVisitsList() {
+    const term = (document.getElementById('doctorVisitSearch').value || '').toLowerCase();
+    document.querySelectorAll('#doctorVisitsContainer .item-card').forEach(card => {
+        const name = (card.getAttribute('data-name') || '');
+        const obs  = (card.getAttribute('data-obs') || '');
+        card.style.display = (name.includes(term) || obs.includes(term)) ? '' : 'none';
+    });
+}
+
+// ─── Inyectar datos del servidor al cliente (Jinja → JS) ───────────────────
+(function() {
+    // Datos de rendimiento
+    window.__doctorPerfData = {{ doctor_performance_data_single_doctor | tojson if doctor_performance_data_single_doctor else 'null' }};
+
+    // Eventos del calendario: convertir lista de eventos a dict por fecha
+    const rawEventos = {{ eventos | tojson if eventos else '[]' }};
+    const evMap = {};
+    rawEventos.forEach(ev => {
+        const key = ev.fecha; // espera formato 'YYYY-MM-DD'
+        if (!evMap[key]) evMap[key] = [];
+        evMap[key].push({
+            nombre: ev.nombre || '',
+            horario: ev.horario || '',
+            alumnos: ev.cantidad_alumnos || '',
+            obs: ev.observaciones || '',
+            id: ev.id || '',
+            url: ev.url_archivo || ''
+        });
+    });
+    window.__doctorEventos = evMap;
+})();
+
+// ─── Inicializar al mostrar las secciones ──────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar calendaro y gráficos cuando se hace clic en los ítems de nav
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', function() {
+            const section = this.getAttribute('data-section');
+            if (section === 'doctor-performance') {
+                setTimeout(initDoctorCharts, 280);
+            }
+            if (section === 'doctor-visits') {
+                setTimeout(initCalendar, 150);
+            }
+        });
+    });
+
+    // Auto-init si doctor-performance es la sección activa al cargar
+    if (document.getElementById('doctor-performance') &&
+        document.getElementById('doctor-performance').classList.contains('active')) {
+        setTimeout(initDoctorCharts, 300);
+    }
+    // Auto-init calendario si doctor-visits activa
+    if (document.getElementById('doctor-visits') &&
+        document.getElementById('doctor-visits').classList.contains('active')) {
+        setTimeout(initCalendar, 200);
+    }
 });
 </script>
 

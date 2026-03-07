@@ -1833,24 +1833,40 @@
                 <!-- Panel real -->
                 <div id="coord-content" style="display:none;">
 
-                    <!-- KPI Cards: 4 tarjetas globales -->
-                    <div class="summary" style="margin-bottom:2rem;">
-                        <div class="summary-card-v2" style="background:linear-gradient(145deg,#0A3D62,#1C67A3);">
-                            <div class="summary-card-header"><span>ESTUDIANTES<br>TOTALES</span><i class="fa-solid fa-users"></i></div>
-                            <p class="count" id="coord-stat-total">0</p>
+                    <!-- KPI Cards Premium -->
+                    <div class="adm-kpi-grid-premium" style="margin-bottom:1.5rem;">
+                      <div class="kpi-glass kpi-blue">
+                        <div class="kpi-g-label">Total Alumnos</div>
+                        <div class="kpi-g-val" id="coord-stat-total">—</div>
+                        <div class="kpi-g-footer"><span class="kpi-g-sub">Estudiantes registrados</span><i class="fa-solid fa-users kpi-g-icon"></i></div>
+                      </div>
+                      <div class="kpi-glass kpi-green">
+                        <div class="kpi-g-label">Evaluaciones Completadas</div>
+                        <div class="kpi-g-val" id="coord-stat-completed">—</div>
+                        <div class="kpi-g-footer"><span class="kpi-g-sub">Formularios cerrados</span><i class="fa-solid fa-circle-check kpi-g-icon"></i></div>
+                      </div>
+                      <div class="kpi-glass kpi-amber">
+                        <div class="kpi-g-label">Pendientes de Evaluar</div>
+                        <div class="kpi-g-val" id="coord-stat-pending">—</div>
+                        <div class="kpi-g-footer"><span class="kpi-g-sub">En espera</span><i class="fa-solid fa-hourglass-half kpi-g-icon"></i></div>
+                      </div>
+                      <div class="kpi-glass kpi-violet">
+                        <div class="kpi-g-label">Avance Global</div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;">
+                          <div class="kpi-g-val" id="coord-stat-percent">—</div>
+                          <div class="kpi-ring-wrap" id="coord-kpi-ring-wrap" style="display:none;">
+                            <svg width="56" height="56" viewBox="0 0 56 56">
+                              <circle cx="28" cy="28" r="22" stroke="rgba(255,255,255,.2)" stroke-width="5" fill="none"/>
+                              <circle cx="28" cy="28" r="22" id="coord-kpi-ring"
+                                stroke="white" stroke-width="5" fill="none"
+                                stroke-dasharray="138.23" stroke-dashoffset="138.23"
+                                stroke-linecap="round"
+                                style="transition:stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1);"/>
+                            </svg>
+                          </div>
                         </div>
-                        <div class="summary-card-v2 bg-green-600">
-                            <div class="summary-card-header"><span>EVALUACIONES<br>COMPLETADAS</span><i class="fa-solid fa-circle-check"></i></div>
-                            <p class="count" id="coord-stat-completed">0</p>
-                        </div>
-                        <div class="summary-card-v2 bg-yellow-500">
-                            <div class="summary-card-header"><span>PENDIENTES<br>DE EVALUAR</span><i class="fa-solid fa-clock-rotate-left"></i></div>
-                            <p class="count" id="coord-stat-pending">0</p>
-                        </div>
-                        <div class="summary-card-v2 bg-red-600">
-                            <div class="summary-card-header"><span>AVANCE<br>GLOBAL</span><i class="fa-solid fa-chart-line"></i></div>
-                            <p class="count" id="coord-stat-percent">0%</p>
-                        </div>
+                        <div class="kpi-g-footer"><span class="kpi-g-sub">Del total asignado</span><i class="fa-solid fa-chart-pie kpi-g-icon"></i></div>
+                      </div>
                     </div>
 
                     <!-- Fila: Anillos neuro/familiar + barra de progreso global -->
@@ -2172,24 +2188,40 @@
                     <!-- Panel real (oculto hasta cargar) -->
                     <div id="dp-content" style="display:none;">
 
-                        <!-- KPI Cards -->
-                        <div class="summary" style="margin-bottom:2rem;">
-                            <div class="summary-card-v2" style="background:linear-gradient(145deg,#0A3D62,#1C67A3);">
-                                <div class="summary-card-header"><span>FORMULARIOS<br>ASIGNADOS</span><i class="fa-solid fa-file-medical"></i></div>
-                                <p class="count" id="dp-total">0</p>
+                        <!-- KPI Cards Premium -->
+                        <div class="adm-kpi-grid-premium" style="margin-bottom:1.5rem;">
+                          <div class="kpi-glass kpi-blue">
+                            <div class="kpi-g-label">Formularios Asignados</div>
+                            <div class="kpi-g-val" id="dp-total">—</div>
+                            <div class="kpi-g-footer"><span class="kpi-g-sub">Total asignados</span><i class="fa-solid fa-file-medical kpi-g-icon"></i></div>
+                          </div>
+                          <div class="kpi-glass kpi-green">
+                            <div class="kpi-g-label">Evaluaciones Completadas</div>
+                            <div class="kpi-g-val" id="dp-completed">—</div>
+                            <div class="kpi-g-footer"><span class="kpi-g-sub">Formularios cerrados</span><i class="fa-solid fa-circle-check kpi-g-icon"></i></div>
+                          </div>
+                          <div class="kpi-glass kpi-amber">
+                            <div class="kpi-g-label">Pendientes de Evaluar</div>
+                            <div class="kpi-g-val" id="dp-pending">—</div>
+                            <div class="kpi-g-footer"><span class="kpi-g-sub">En espera</span><i class="fa-solid fa-hourglass-half kpi-g-icon"></i></div>
+                          </div>
+                          <div class="kpi-glass kpi-violet">
+                            <div class="kpi-g-label">Avance Porcentual</div>
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;">
+                              <div class="kpi-g-val" id="dp-percent">—</div>
+                              <div class="kpi-ring-wrap" id="dp-kpi-ring-wrap" style="display:none;">
+                                <svg width="56" height="56" viewBox="0 0 56 56">
+                                  <circle cx="28" cy="28" r="22" stroke="rgba(255,255,255,.2)" stroke-width="5" fill="none"/>
+                                  <circle cx="28" cy="28" r="22" id="dp-kpi-ring"
+                                    stroke="white" stroke-width="5" fill="none"
+                                    stroke-dasharray="138.23" stroke-dashoffset="138.23"
+                                    stroke-linecap="round"
+                                    style="transition:stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1);"/>
+                                </svg>
+                              </div>
                             </div>
-                            <div class="summary-card-v2 bg-green-600">
-                                <div class="summary-card-header"><span>EVALUACIONES<br>COMPLETADAS</span><i class="fa-solid fa-circle-check"></i></div>
-                                <p class="count" id="dp-completed">0</p>
-                            </div>
-                            <div class="summary-card-v2 bg-yellow-500">
-                                <div class="summary-card-header"><span>PENDIENTES<br>DE EVALUAR</span><i class="fa-solid fa-hourglass-half"></i></div>
-                                <p class="count" id="dp-pending">0</p>
-                            </div>
-                            <div class="summary-card-v2 bg-red-600">
-                                <div class="summary-card-header"><span>AVANCE<br>PORCENTUAL</span><i class="fa-solid fa-chart-pie"></i></div>
-                                <p class="count" id="dp-percent">0%</p>
-                            </div>
+                            <div class="kpi-g-footer"><span class="kpi-g-sub">Del total asignado</span><i class="fa-solid fa-chart-pie kpi-g-icon"></i></div>
+                          </div>
                         </div>
 
                         <!-- Fila: Barras + Anillo + Mini-stats -->
@@ -3317,107 +3349,123 @@ function renderAdminTrendChart(trend) {
 // Usa html2pdf.js para descarga directa (sin ventana de impresión)
 // ══════════════════════════════════════════════════════════════════
 
-function chPdfHeader(titulo, subtitulo, proyecto, fecha, hora) {
-    return '<div style="background:linear-gradient(135deg,#0A3D62 0%,#1C67A3 100%);padding:24px 32px 20px;border-radius:0;">'
-        + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">'
-        + '<div>'
-        + '<div style="background:white;display:inline-block;padding:4px 12px;border-radius:6px;margin-bottom:10px;">'
-        + '<span style="font-size:15px;font-weight:900;color:#0A3D62;font-family:Arial,sans-serif;">CARDIO</span>'
-        + '<span style="font-size:15px;font-weight:900;color:#1C67A3;font-family:Arial,sans-serif;">HOME</span>'
-        + '<span style="font-size:7px;font-weight:600;color:#64748b;display:block;letter-spacing:1px;font-family:Arial,sans-serif;">GESTIÓN OPERATIVA MÉDICA · SpA</span>'
-        + '</div>'
-        + '<div style="font-size:18px;font-weight:900;color:white;font-family:Arial,sans-serif;">' + titulo + '</div>'
-        + '<div style="font-size:9px;color:rgba(255,255,255,.7);margin-top:3px;font-family:Arial,sans-serif;">' + subtitulo + '</div>'
-        + '</div>'
-        + '<div style="text-align:right;background:rgba(255,255,255,.1);border-radius:8px;padding:10px 14px;min-width:120px;">'
-        + '<div style="font-size:7px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:1px;text-transform:uppercase;font-family:Arial,sans-serif;">Proyecto</div>'
-        + '<div style="font-size:11px;font-weight:900;color:white;margin-top:2px;font-family:Arial,sans-serif;">' + proyecto + '</div>'
-        + '<div style="font-size:7px;color:rgba(255,255,255,.5);margin-top:6px;font-family:Arial,sans-serif;">' + fecha + ' · ' + hora + '</div>'
-        + '</div>'
-        + '</div>'
-        + '</div>';
+// ══════════════════════════════════════════════════════════════════
+// PDF ENGINE v2 — Cardiohome SpA
+// Sin template literals anidados — solo concatenación de strings
+// page-break-inside:avoid en cada sección de tabla
+// ══════════════════════════════════════════════════════════════════
+
+function chHdr(titulo, sub, proyecto, fecha, hora) {
+    return '<div style="background:linear-gradient(135deg,#0A3D62 0%,#1C67A3 100%);padding:22px 30px 18px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">'
+     + '<table style="width:100%;border-collapse:collapse;"><tr>'
+     + '<td style="vertical-align:top;">'
+     + '<div style="background:white;display:inline-block;padding:4px 10px;border-radius:5px;margin-bottom:8px;">'
+     + '<span style="font-size:14px;font-weight:900;color:#0A3D62;font-family:Arial,sans-serif;letter-spacing:-0.3px;">CARDIO</span>'
+     + '<span style="font-size:14px;font-weight:900;color:#1C67A3;font-family:Arial,sans-serif;letter-spacing:-0.3px;">HOME</span>'
+     + '<div style="font-size:6.5px;font-weight:600;color:#64748b;letter-spacing:0.8px;font-family:Arial,sans-serif;">GESTIÓN OPERATIVA MÉDICA · SpA</div>'
+     + '</div>'
+     + '<div style="font-size:17px;font-weight:900;color:white;font-family:Arial,sans-serif;letter-spacing:-0.3px;">' + titulo + '</div>'
+     + '<div style="font-size:8.5px;color:rgba(255,255,255,.7);margin-top:2px;font-family:Arial,sans-serif;">' + sub + '</div>'
+     + '</td>'
+     + '<td style="vertical-align:top;text-align:right;min-width:130px;">'
+     + '<div style="background:rgba(255,255,255,.13);border-radius:7px;padding:8px 12px;display:inline-block;">'
+     + '<div style="font-size:6.5px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:0.8px;text-transform:uppercase;font-family:Arial,sans-serif;">Proyecto</div>'
+     + '<div style="font-size:11px;font-weight:900;color:white;margin-top:2px;font-family:Arial,sans-serif;">' + proyecto + '</div>'
+     + '<div style="font-size:7px;color:rgba(255,255,255,.5);margin-top:5px;font-family:Arial,sans-serif;">' + fecha + ' · ' + hora + '</div>'
+     + '</div>'
+     + '</td>'
+     + '</tr></table>'
+     + '</div>';
 }
 
-function chPdfKpis(items) {
-    // items = [{label, val, bg}]
-    var cells = items.map(function(k) {
-        return '<td style="padding:10px 6px;text-align:center;background:' + k.bg + ';border-radius:8px;border:1px solid rgba(0,0,0,.06);">'
-            + '<div style="font-size:6.5px;font-weight:800;color:#64748b;letter-spacing:.8px;text-transform:uppercase;font-family:Arial,sans-serif;">' + k.label + '</div>'
-            + '<div style="font-size:18px;font-weight:900;color:' + k.color + ';margin-top:2px;font-family:Arial,sans-serif;">' + k.val + '</div>'
-            + '</td>';
-    }).join('<td style="width:6px;"></td>');
-    return '<div style="background:#f8fafc;padding:12px 32px;border-bottom:1px solid #e2e8f0;">'
-        + '<table style="width:100%;border-collapse:separate;border-spacing:0;"><tr>' + cells + '</tr></table>'
-        + '</div>';
-}
-
-function chPdfSection(title, color, body) {
-    return '<div style="margin-bottom:16px;">'
-        + '<div style="font-size:9px;font-weight:800;color:' + color + ';letter-spacing:1px;text-transform:uppercase;'
-        + 'border-left:4px solid ' + color + ';padding:0 0 0 8px;margin-bottom:8px;font-family:Arial,sans-serif;">' + title + '</div>'
-        + body
-        + '</div>';
-}
-
-function chPdfTable(headers, rows, headerBg) {
-    var hCols = headers.map(function(h) {
-        return '<th style="padding:6px 8px;text-align:left;color:white;font-size:8px;font-weight:700;'
-            + 'letter-spacing:.5px;text-transform:uppercase;font-family:Arial,sans-serif;'
-            + 'border-bottom:1px solid rgba(255,255,255,.2);">' + h + '</th>';
+function chKpis(items) {
+    var cols = items.map(function(k) {
+        return '<td style="padding:3px;">'
+         + '<div style="background:' + k.bg + ';border-radius:7px;padding:9px 10px;text-align:center;border:1px solid ' + k.border + ';-webkit-print-color-adjust:exact;print-color-adjust:exact;">'
+         + '<div style="font-size:6px;font-weight:800;color:#64748b;letter-spacing:.7px;text-transform:uppercase;font-family:Arial,sans-serif;">' + k.label + '</div>'
+         + '<div style="font-size:16px;font-weight:900;color:' + k.color + ';margin-top:2px;font-family:Arial,sans-serif;letter-spacing:-0.5px;">' + k.val + '</div>'
+         + '</div>'
+         + '</td>';
     }).join('');
-    var rRows = rows.map(function(row, idx) {
+    return '<div style="background:#f8fafc;padding:10px 30px;border-bottom:1px solid #e2e8f0;">'
+     + '<table style="width:100%;border-collapse:collapse;"><tr>' + cols + '</tr></table>'
+     + '</div>';
+}
+
+function chSecTitle(icon, text, color) {
+    return '<div style="font-size:8.5px;font-weight:800;color:' + color + ';letter-spacing:.8px;text-transform:uppercase;'
+     + 'border-left:3px solid ' + color + ';padding:1px 0 1px 7px;margin-bottom:6px;font-family:Arial,sans-serif;">'
+     + icon + ' ' + text + '</div>';
+}
+
+function chTable(headers, rows, hBg) {
+    var hcols = headers.map(function(h) {
+        return '<th style="padding:5px 7px;text-align:left;color:white;font-size:7.5px;font-weight:700;'
+         + 'letter-spacing:.4px;text-transform:uppercase;font-family:Arial,sans-serif;white-space:nowrap;">' + h + '</th>';
+    }).join('');
+    var rrows = rows.map(function(row, idx) {
         var bg = idx % 2 === 0 ? '#f8fafc' : '#ffffff';
         var tds = row.map(function(cell) {
-            return '<td style="padding:5px 8px;font-size:9px;color:#374151;font-family:Arial,sans-serif;'
-                + 'border-bottom:1px solid #f1f5f9;">' + cell + '</td>';
+            return '<td style="padding:4px 7px;font-size:8.5px;color:#374151;font-family:Arial,sans-serif;'
+             + 'border-bottom:1px solid #f1f5f9;vertical-align:top;">' + (cell||'—') + '</td>';
         }).join('');
         return '<tr style="background:' + bg + ';">' + tds + '</tr>';
     }).join('');
-    return '<table style="width:100%;border-collapse:collapse;border-radius:8px;overflow:hidden;">'
-        + '<thead><tr style="background:' + headerBg + ';">' + hCols + '</tr></thead>'
-        + '<tbody>' + rRows + '</tbody>'
-        + '</table>';
+    return '<div style="page-break-inside:avoid;">'
+     + '<table style="width:100%;border-collapse:collapse;margin-bottom:0;">'
+     + '<thead><tr style="background:' + hBg + ';-webkit-print-color-adjust:exact;print-color-adjust:exact;">' + hcols + '</tr></thead>'
+     + '<tbody>' + rrows + '</tbody>'
+     + '</table></div>';
 }
 
-function chPdfFirma(fecha, hora) {
-    return '<div style="display:flex;justify-content:space-between;align-items:flex-end;'
-        + 'border-top:1px solid #e2e8f0;padding-top:14px;margin-top:20px;">'
-        + '<div style="font-size:7px;color:#94a3b8;line-height:1.8;font-family:Arial,sans-serif;">'
-        + '<div style="font-weight:700;color:#64748b;">Cardiohome SpA — Gestión Operativa Médica</div>'
-        + '<div>Documento generado automáticamente · ' + fecha + ' ' + hora + '</div>'
-        + '<div>Uso interno · Confidencial</div>'
-        + '</div>'
-        + '<div style="text-align:center;">'
-        + '<div style="width:140px;border-top:2px solid #0A3D62;padding-top:6px;">'
-        + '<div style="font-size:9px;font-weight:900;color:#0A3D62;font-family:Arial,sans-serif;">Jorge E. Miranda Kirk</div>'
-        + '<div style="font-size:7.5px;color:#64748b;font-family:Arial,sans-serif;">Gerente General · Cardiohome SpA</div>'
-        + '</div>'
-        + '</div>'
-        + '</div>';
+function chBar(pct, color) {
+    var w = Math.min(pct, 100);
+    return '<div style="display:flex;align-items:center;gap:4px;">'
+     + '<div style="flex:1;height:5px;background:#e2e8f0;border-radius:99px;overflow:hidden;">'
+     + '<div style="width:' + w + '%;height:100%;background:' + color + ';border-radius:99px;-webkit-print-color-adjust:exact;print-color-adjust:exact;"></div>'
+     + '</div>'
+     + '<span style="font-size:8px;font-weight:800;color:' + color + ';min-width:28px;">' + pct + '%</span>'
+     + '</div>';
 }
 
-function chPdfGenerate(htmlContent, filename) {
+function chFirma(fecha, hora) {
+    return '<div style="display:table;width:100%;border-top:1px solid #e2e8f0;padding-top:12px;margin-top:16px;">'
+     + '<div style="display:table-cell;vertical-align:bottom;">'
+     + '<div style="font-size:6.5px;color:#94a3b8;line-height:1.8;font-family:Arial,sans-serif;">'
+     + '<div style="font-weight:700;color:#64748b;">Cardiohome SpA — Gestión Operativa Médica</div>'
+     + '<div>Documento generado automáticamente · ' + fecha + ' · ' + hora + '</div>'
+     + '<div>Uso interno · Confidencial</div>'
+     + '</div>'
+     + '</div>'
+     + '<div style="display:table-cell;vertical-align:bottom;text-align:right;">'
+     + '<div style="display:inline-block;text-align:center;">'
+     + '<div style="width:130px;border-top:2px solid #0A3D62;padding-top:5px;">'
+     + '<div style="font-size:8.5px;font-weight:900;color:#0A3D62;font-family:Arial,sans-serif;">Jorge E. Miranda Kirk</div>'
+     + '<div style="font-size:7px;color:#64748b;font-family:Arial,sans-serif;">Gerente General · Cardiohome SpA</div>'
+     + '</div></div></div>'
+     + '</div>';
+}
+
+function chGenerate(htmlContent, filename) {
     var wrapper = document.createElement('div');
-    wrapper.style.cssText = 'width:794px;background:white;font-family:Arial,sans-serif;';
+    wrapper.style.cssText = 'width:740px;background:white;font-family:Arial,sans-serif;';
     wrapper.innerHTML = htmlContent;
     var opt = {
-        margin:      [0, 0, 0, 0],
-        filename:    filename,
+        margin: [8, 8, 8, 8],
+        filename: filename,
         html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
-        jsPDF:       { unit: 'px', format: [794, 1123], orientation: 'portrait', hotfixes: ['px_scaling'] }
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
     return html2pdf().set(opt).from(wrapper).save();
 }
 
 // ── REPORTE ADMIN ─────────────────────────────────────────────────
 async function exportarReporteAdmin() {
-    var projectId   = document.getElementById('admin-project-filter').value;
     var filterEl    = document.getElementById('admin-project-filter');
+    var projectId   = filterEl ? filterEl.value : 'all';
     var projectName = filterEl ? filterEl.options[filterEl.selectedIndex].text : 'Global';
-    var doctorEl    = document.getElementById('admin-doctor-filter');
-    var doctorName2 = doctorEl ? doctorEl.options[doctorEl.selectedIndex].text : 'Todas';
 
-    Swal.fire({ title: 'Generando Reporte…', html: 'Preparando informe Cardiohome…', allowOutsideClick: false, didOpen: function(){ Swal.showLoading(); } });
+    Swal.fire({ title: 'Generando Reporte…', html: 'Preparando informe…', allowOutsideClick: false, didOpen: function(){ Swal.showLoading(); } });
     try {
         var res  = await fetch('/api/admin/reporte_proyecto/' + projectId);
         var data = await res.json();
@@ -3425,211 +3473,243 @@ async function exportarReporteAdmin() {
 
         var fecha = new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'});
         var hora  = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
-        var ranking        = (_adminData && _adminData.ranking)         || [];
-        var establecimientos = (_adminData && _adminData.establecimientos) || [];
+        var ranking = (_adminData && _adminData.ranking) || [];
+        var ests    = (_adminData && _adminData.establecimientos) || [];
 
-        // KPIs
-        var kpiHtml = chPdfKpis([
-            {label:'Total Alumnos',  val: data.resumen.total,      color:'#0A3D62', bg:'#eff6ff'},
-            {label:'Completados',    val: data.resumen.evaluados,   color:'#059669', bg:'#f0fdf4'},
-            {label:'Pendientes',     val: data.resumen.pendientes,  color:'#D97706', bg:'#fffbeb'},
-            {label:'% Avance',       val: data.resumen.porcentaje,  color:'#7C3AED', bg:'#f5f3ff'}
+        var kpis = chKpis([
+            {label:'Total Alumnos',  val:data.resumen.total,     color:'#0A3D62', bg:'#eff6ff', border:'#bfdbfe'},
+            {label:'Completados',    val:data.resumen.evaluados, color:'#059669', bg:'#f0fdf4', border:'#bbf7d0'},
+            {label:'Pendientes',     val:data.resumen.pendientes,color:'#D97706', bg:'#fffbeb', border:'#fde68a'},
+            {label:'% Avance',       val:data.resumen.porcentaje,color:'#7C3AED', bg:'#f5f3ff', border:'#ddd6fe'}
         ]);
 
-        // Ranking table
-        var rkRows = ranking.slice(0,10).map(function(d,i){
-            var medals = ['🥇','🥈','🥉'];
-            var m = i < 3 ? medals[i] : (i+1);
-            var c = (d.percent||0) >= 80 ? '#059669' : (d.percent||0) >= 50 ? '#D97706' : '#DC2626';
-            return [String(m), d.nombre||'—', String(d.completed||0), String(d.total||0),
-                '<span style="font-weight:800;color:'+c+';">'+String(d.percent||0)+'%</span>'];
+        // Ranking
+        var rkRows = ranking.slice(0,12).map(function(d,i){
+            var medals=['🥇','🥈','🥉'];
+            var m = i<3 ? medals[i] : String(i+1);
+            var p = d.percent||0;
+            var c = p>=80?'#059669':p>=50?'#D97706':'#DC2626';
+            return [m, d.nombre||'—', String(d.completed||0), String(d.total||0), chBar(p,c)];
         });
-        var rkHtml = ranking.length ? chPdfSection('🏆 Ranking de Doctoras', '#B45309',
-            chPdfTable(['#','Profesional','Completadas','Total','Avance'], rkRows, '#0A3D62')) : '';
+        var rkHtml = ranking.length
+            ? '<div style="margin-bottom:14px;page-break-inside:avoid;">'
+              + chSecTitle('🏆','Ranking de Doctoras','#B45309')
+              + chTable(['#','Profesional','Completadas','Total','Avance'], rkRows, '#0A3D62')
+              + '</div>' : '';
 
-        // Establecimientos table
-        var estRows = establecimientos.slice(0,12).map(function(e,i){
-            var c = (e.percent||0) >= 80 ? '#059669' : (e.percent||0) >= 50 ? '#D97706' : '#DC2626';
-            return [e.nombre, String(e.completed||0), String(e.total||0),
-                '<span style="font-weight:800;color:'+c+';">'+String(e.percent||0)+'%</span>'];
+        // Establecimientos
+        var estRows = ests.slice(0,15).map(function(e,i){
+            var p=e.percent||0; var c=p>=80?'#059669':p>=50?'#D97706':'#DC2626';
+            return [e.nombre, String(e.completed||0), String(e.total||0), chBar(p,c)];
         });
-        var estHtml = establecimientos.length ? chPdfSection('🏫 Top Establecimientos', '#065f46',
-            chPdfTable(['Establecimiento','Completados','Total','Avance'], estRows, '#059669')) : '';
+        var estHtml = ests.length
+            ? '<div style="margin-bottom:14px;page-break-inside:avoid;">'
+              + chSecTitle('🏫','Top Establecimientos','#065f46')
+              + chTable(['Establecimiento','Completados','Total','Avance'], estRows, '#059669')
+              + '</div>' : '';
 
-        // Nóminas
-        var nomRows = (data.data||[]).map(function(n){
-            var p = n.total > 0 ? Math.round(n.evaluados/n.total*100) : 0;
-            var c = p >= 80 ? '#059669' : p >= 50 ? '#D97706' : '#DC2626';
-            return [n.colegio||'—', String(n.total||0), String(n.evaluados||0), String(n.total-(n.evaluados||0)),
-                '<span style="font-weight:800;color:'+c+';">'+p+'%</span>'];
-        });
-        var nomHtml = data.data && data.data.length ? chPdfSection('📋 Detalle por Nómina / Colegio', '#4c1d95',
-            chPdfTable(['Colegio / Nómina','Total','Evaluados','Pendientes','Avance'], nomRows, '#7C3AED')) : '';
+        // Nóminas detalle — cada colegio como bloque separado con page-break-avoid
+        var nomHtml = '';
+        if (data.data && data.data.length) {
+            nomHtml += '<div style="margin-bottom:14px;">'
+                + chSecTitle('📋','Detalle por Nómina / Colegio','#4c1d95');
+            var nomRows = data.data.map(function(n){
+                var p = n.total>0 ? Math.round(n.evaluados/n.total*100) : 0;
+                var c = p>=80?'#059669':p>=50?'#D97706':'#DC2626';
+                return [n.colegio||'—', String(n.total||0), String(n.evaluados||0), String((n.total||0)-(n.evaluados||0)), chBar(p,c)];
+            });
+            nomHtml += chTable(['Colegio / Nómina','Total','Evaluados','Pendientes','Avance'], nomRows, '#7C3AED')
+                + '</div>';
+        }
 
-        var html = chPdfHeader('Reporte de Rendimiento Operativo',
+        var html = chHdr('Reporte de Rendimiento Operativo',
             'Evaluaciones médicas · Neurología y Medicina Familiar', projectName, fecha, hora)
-            + kpiHtml
-            + '<div style="padding:20px 32px;">'
+            + kpis
+            + '<div style="padding:16px 30px;">'
             + rkHtml + estHtml + nomHtml
-            + chPdfFirma(fecha, hora)
+            + chFirma(fecha,hora)
             + '</div>';
 
-        await chPdfGenerate(html, 'REPORTE_ADMIN_CARDIOHOME_' + projectName.replace(/\s+/g,'_') + '_' + fecha.replace(/ /g,'_') + '.pdf');
+        await chGenerate(html, 'REPORTE_ADMIN_' + projectName.replace(/\s+/g,'_') + '_' + fecha.replace(/ /g,'_') + '.pdf');
         Swal.close();
     } catch(e) {
-        Swal.fire('Error', 'No se pudo generar el reporte: ' + e.message, 'error');
+        Swal.fire('Error','No se pudo generar el reporte: '+e.message,'error');
     }
 }
-const exportarReporteProyecto = exportarReporteAdmin;
+var exportarReporteProyecto = exportarReporteAdmin;
 
-// ── REPORTE DOCTORA ───────────────────────────────────────────────
+// ── REPORTE DOCTORA (con alumnos por proyecto/colegio) ────────────
 function exportarPDFDoctora() {
-    var total     = (document.getElementById('dp-total')?.textContent     || '0').trim();
-    var completed = (document.getElementById('dp-completed')?.textContent || '0').trim();
-    var pending   = (document.getElementById('dp-pending')?.textContent   || '0').trim();
-    var percent   = (document.getElementById('dp-percent')?.textContent   || '0%').trim();
-    var neuro     = (document.getElementById('dp-neuro')?.textContent     || '—').trim();
-    var familiar  = (document.getElementById('dp-familiar')?.textContent  || '—').trim();
-    var nominasN  = (document.getElementById('dp-nominas')?.textContent   || '0').trim();
-    var fecha = new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'});
-    var hora  = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+    var total    = (document.getElementById('dp-total')?.textContent    ||'0').trim();
+    var completed= (document.getElementById('dp-completed')?.textContent||'0').trim();
+    var pending  = (document.getElementById('dp-pending')?.textContent  ||'0').trim();
+    var percent  = (document.getElementById('dp-percent')?.textContent  ||'0%').trim();
+    var neuro    = (document.getElementById('dp-neuro')?.textContent    ||'—').trim();
+    var familiar = (document.getElementById('dp-familiar')?.textContent ||'—').trim();
+    var nominasN = (document.getElementById('dp-nominas')?.textContent  ||'0').trim();
+    var fecha= new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'});
+    var hora = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
 
-    Swal.fire({ title: 'Generando Reporte…', html: 'Preparando informe de rendimiento…', allowOutsideClick: false, didOpen: function(){ Swal.showLoading(); } });
+    Swal.fire({ title: 'Generando Reporte…', html: 'Preparando informe…', allowOutsideClick: false, didOpen: function(){ Swal.showLoading(); } });
 
-    var kpiHtml = chPdfKpis([
-        {label:'Asignados',   val: total,     color:'#0A3D62', bg:'#eff6ff'},
-        {label:'Completados', val: completed, color:'#059669', bg:'#f0fdf4'},
-        {label:'Pendientes',  val: pending,   color:'#D97706', bg:'#fffbeb'},
-        {label:'% Avance',    val: percent,   color:'#7C3AED', bg:'#f5f3ff'}
+    var kpis = chKpis([
+        {label:'Asignados',   val:total,     color:'#0A3D62', bg:'#eff6ff', border:'#bfdbfe'},
+        {label:'Completados', val:completed, color:'#059669', bg:'#f0fdf4', border:'#bbf7d0'},
+        {label:'Pendientes',  val:pending,   color:'#D97706', bg:'#fffbeb', border:'#fde68a'},
+        {label:'% Avance',    val:percent,   color:'#7C3AED', bg:'#f5f3ff', border:'#ddd6fe'}
     ]);
 
-    var especBody = '<table style="width:100%;border-collapse:separate;border-spacing:8px 0;">'
-        + '<tr>'
-        + '<td style="background:#eff6ff;border-radius:10px;padding:12px;text-align:center;border:1px solid #bfdbfe;">'
-        + '<div style="font-size:7px;font-weight:800;color:#4f46e5;letter-spacing:.8px;text-transform:uppercase;font-family:Arial,sans-serif;">🧠 Neurología</div>'
-        + '<div style="font-size:22px;font-weight:900;color:#3730a3;font-family:Arial,sans-serif;">' + neuro + '</div>'
-        + '<div style="font-size:7px;color:#818cf8;font-family:Arial,sans-serif;">evaluaciones</div>'
-        + '</td>'
-        + '<td style="background:#fff7ed;border-radius:10px;padding:12px;text-align:center;border:1px solid #fed7aa;">'
-        + '<div style="font-size:7px;font-weight:800;color:#ea580c;letter-spacing:.8px;text-transform:uppercase;font-family:Arial,sans-serif;">👨‍⚕️ Med. Familiar</div>'
-        + '<div style="font-size:22px;font-weight:900;color:#c2410c;font-family:Arial,sans-serif;">' + familiar + '</div>'
-        + '<div style="font-size:7px;color:#f97316;font-family:Arial,sans-serif;">evaluaciones</div>'
-        + '</td>'
-        + '<td style="background:#f0fdf4;border-radius:10px;padding:12px;text-align:center;border:1px solid #bbf7d0;">'
-        + '<div style="font-size:7px;font-weight:800;color:#059669;letter-spacing:.8px;text-transform:uppercase;font-family:Arial,sans-serif;">📋 Nóminas</div>'
-        + '<div style="font-size:22px;font-weight:900;color:#065f46;font-family:Arial,sans-serif;">' + nominasN + '</div>'
-        + '<div style="font-size:7px;color:#10b981;font-family:Arial,sans-serif;">asignadas</div>'
-        + '</td>'
-        + '</tr></table>';
+    // Especialidades
+    var especBody = '<table style="width:100%;border-collapse:separate;border-spacing:6px 0;">'
+     + '<tr>'
+     + '<td style="background:#eff6ff;border-radius:8px;padding:10px;text-align:center;border:1px solid #bfdbfe;-webkit-print-color-adjust:exact;print-color-adjust:exact;">'
+     + '<div style="font-size:6.5px;font-weight:800;color:#4f46e5;letter-spacing:.7px;text-transform:uppercase;font-family:Arial,sans-serif;">🧠 Neurología</div>'
+     + '<div style="font-size:20px;font-weight:900;color:#3730a3;font-family:Arial,sans-serif;">' + neuro + '</div>'
+     + '<div style="font-size:7px;color:#818cf8;font-family:Arial,sans-serif;">evaluaciones</div>'
+     + '</td>'
+     + '<td style="background:#fff7ed;border-radius:8px;padding:10px;text-align:center;border:1px solid #fed7aa;-webkit-print-color-adjust:exact;print-color-adjust:exact;">'
+     + '<div style="font-size:6.5px;font-weight:800;color:#ea580c;letter-spacing:.7px;text-transform:uppercase;font-family:Arial,sans-serif;">👨‍⚕️ Med. Familiar</div>'
+     + '<div style="font-size:20px;font-weight:900;color:#c2410c;font-family:Arial,sans-serif;">' + familiar + '</div>'
+     + '<div style="font-size:7px;color:#f97316;font-family:Arial,sans-serif;">evaluaciones</div>'
+     + '</td>'
+     + '<td style="background:#f0fdf4;border-radius:8px;padding:10px;text-align:center;border:1px solid #bbf7d0;-webkit-print-color-adjust:exact;print-color-adjust:exact;">'
+     + '<div style="font-size:6.5px;font-weight:800;color:#059669;letter-spacing:.7px;text-transform:uppercase;font-family:Arial,sans-serif;">📋 Nóminas Activas</div>'
+     + '<div style="font-size:20px;font-weight:900;color:#065f46;font-family:Arial,sans-serif;">' + nominasN + '</div>'
+     + '<div style="font-size:7px;color:#10b981;font-family:Arial,sans-serif;">asignadas</div>'
+     + '</td>'
+     + '</tr></table>';
+    var especSec = '<div style="margin-bottom:14px;page-break-inside:avoid;">'
+     + chSecTitle('📊','Desglose por Especialidad','#1C67A3')
+     + especBody + '</div>';
 
-    var especSection = chPdfSection('Desglose por Especialidad', '#1C67A3', especBody);
-
-    // Nóminas list from DOM
+    // Nóminas con barra de progreso desde DOM
+    var nomRows = [];
     var nominasListEl = document.getElementById('dp-nominas-list');
-    var nominasRows2  = [];
     if (nominasListEl) {
-        nominasListEl.querySelectorAll('.dp-nom-row, [data-nom-name]').forEach(function(el) {
-            var name  = (el.querySelector('.dp-nom-name, [data-nom-name]') || el).textContent.trim();
-            var pct   = (el.querySelector('.dp-nom-pct, [data-nom-pct]')  || {}).textContent || '';
-            var state = (el.querySelector('.dp-nom-state, [data-nom-state]') || {}).textContent || '';
-            if (name) nominasRows2.push([name, pct, state]);
+        nominasListEl.querySelectorAll('[style*="flex"]').forEach(function(row) {
+            var nameEl = row.querySelector('[title]');
+            var pctEl  = row.querySelector('[style*="font-weight:800"]');
+            if (nameEl) {
+                var name = nameEl.getAttribute('title') || nameEl.textContent.trim();
+                var pct  = pctEl ? pctEl.textContent.trim().replace('%','') : '0';
+                var p    = parseInt(pct)||0;
+                var c    = p>=80?'#059669':p>=50?'#D97706':'#DC2626';
+                nomRows.push([name, chBar(p,c)]);
+            }
         });
     }
-    var nominasSection = nominasRows2.length
-        ? chPdfSection('Nóminas Asignadas', '#059669',
-            chPdfTable(['Nómina / Colegio','Avance','Estado'], nominasRows2, '#059669'))
+    var nomSec = nomRows.length
+        ? '<div style="margin-bottom:14px;page-break-inside:avoid;">'
+          + chSecTitle('📁','Nóminas Asignadas (Avance por Colegio)','#059669')
+          + chTable(['Colegio / Nómina','Avance'], nomRows, '#059669')
+          + '</div>'
         : '';
 
-    var html = chPdfHeader('Informe de Rendimiento Profesional',
-        'Evaluaciones médicas · Datos en tiempo real', '—', fecha, hora)
-        + kpiHtml
-        + '<div style="padding:20px 32px;">'
-        + especSection + nominasSection
-        + chPdfFirma(fecha, hora)
+    // Proyectos desde DOM (si existe la sección)
+    var proyRows = [];
+    document.querySelectorAll('#doctor-proyectos [data-proyecto]').forEach(function(el){
+        var n = el.dataset.proyecto || '';
+        var desc = el.dataset.desc || '';
+        if (n) proyRows.push([n, desc]);
+    });
+    var proyHtml = proyRows.length
+        ? '<div style="margin-bottom:14px;page-break-inside:avoid;">'
+          + chSecTitle('📂','Proyectos Asignados','#4c1d95')
+          + chTable(['Proyecto','Descripción'], proyRows, '#7C3AED')
+          + '</div>'
+        : '';
+
+    var html = chHdr('Informe de Rendimiento Profesional',
+        'Evaluaciones médicas · Datos en tiempo real','—',fecha,hora)
+        + kpis
+        + '<div style="padding:16px 30px;">'
+        + especSec + nomSec + proyHtml
+        + chFirma(fecha,hora)
         + '</div>';
 
-    chPdfGenerate(html, 'INFORME_DOCTORA_CARDIOHOME_' + fecha.replace(/ /g,'_') + '.pdf')
+    chGenerate(html, 'INFORME_DOCTORA_CARDIOHOME_' + fecha.replace(/ /g,'_') + '.pdf')
         .then(function(){ Swal.close(); });
 }
 
 // ── REPORTE COORDINADORA ──────────────────────────────────────────
 function exportarPDFCoordinadora() {
-    if (!_coordData) {
-        Swal.fire('Sin datos', 'Haz clic en Actualizar primero.', 'warning');
-        return;
-    }
+    if (!_coordData) { Swal.fire('Sin datos','Haz clic en Actualizar primero.','warning'); return; }
     var d    = _coordData;
-    var pct  = typeof d.percent === 'number' ? d.percent : (parseFloat(d.percent)||0);
-    var fecha = new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'});
-    var hora  = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+    var pct  = parseFloat(d.percent)||0;
+    var fecha= new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'});
+    var hora = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
 
-    Swal.fire({ title: 'Generando Reporte…', html: 'Preparando informe de coordinación…', allowOutsideClick: false, didOpen: function(){ Swal.showLoading(); } });
+    Swal.fire({ title: 'Generando Reporte…', html: 'Preparando informe…', allowOutsideClick: false, didOpen: function(){ Swal.showLoading(); } });
 
-    var kpiHtml = chPdfKpis([
-        {label:'Total Alumnos', val: d.total,     color:'#0A3D62', bg:'#eff6ff'},
-        {label:'Completados',   val: d.completed, color:'#059669', bg:'#f0fdf4'},
-        {label:'Pendientes',    val: d.pending,   color:'#D97706', bg:'#fffbeb'},
-        {label:'% Avance',      val: pct+'%',     color:'#7C3AED', bg:'#f5f3ff'}
+    var kpis = chKpis([
+        {label:'Total Alumnos', val:d.total,     color:'#0A3D62', bg:'#eff6ff', border:'#bfdbfe'},
+        {label:'Completados',   val:d.completed, color:'#059669', bg:'#f0fdf4', border:'#bbf7d0'},
+        {label:'Pendientes',    val:d.pending,   color:'#D97706', bg:'#fffbeb', border:'#fde68a'},
+        {label:'% Avance',      val:pct+'%',     color:'#7C3AED', bg:'#f5f3ff', border:'#ddd6fe'}
     ]);
 
-    var neuroP  = d.neuro_total   > 0 ? Math.round(d.neuro_completed   / d.neuro_total   * 100) : 0;
-    var familP  = d.familiar_total > 0 ? Math.round(d.familiar_completed / d.familiar_total * 100) : 0;
-    var nc = neuroP >= 80 ? '#059669' : neuroP >= 50 ? '#D97706' : '#DC2626';
-    var fc = familP >= 80 ? '#059669' : familP >= 50 ? '#D97706' : '#DC2626';
+    var neuroP = d.neuro_total>0   ? Math.round(d.neuro_completed/d.neuro_total*100)     : 0;
+    var familP = d.familiar_total>0? Math.round(d.familiar_completed/d.familiar_total*100): 0;
+    var nc = neuroP>=80?'#059669':neuroP>=50?'#D97706':'#DC2626';
+    var fc = familP>=80?'#059669':familP>=50?'#D97706':'#DC2626';
 
-    var especBody = '<table style="width:100%;border-collapse:separate;border-spacing:8px 0;"><tr>'
-        + '<td style="background:#eff6ff;border-radius:10px;padding:12px 14px;border:1px solid #bfdbfe;vertical-align:top;">'
-        + '<div style="font-size:7px;font-weight:800;color:#4f46e5;letter-spacing:.8px;text-transform:uppercase;font-family:Arial,sans-serif;">🧠 Neurología</div>'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">'
-        + '<div style="font-size:20px;font-weight:900;color:#3730a3;font-family:Arial,sans-serif;">' + (d.neuro_completed||0) + '<span style="font-size:10px;color:#818cf8;"> / ' + (d.neuro_total||0) + '</span></div>'
-        + '<div style="font-size:18px;font-weight:900;color:'+nc+';font-family:Arial,sans-serif;">' + neuroP + '%</div>'
-        + '</div>'
-        + '<div style="height:5px;background:#ddd5fe;border-radius:99px;margin-top:6px;overflow:hidden;">'
-        + '<div style="height:100%;width:'+neuroP+'%;background:#4f46e5;border-radius:99px;"></div></div>'
-        + '</td>'
-        + '<td style="background:#fff7ed;border-radius:10px;padding:12px 14px;border:1px solid #fed7aa;vertical-align:top;">'
-        + '<div style="font-size:7px;font-weight:800;color:#ea580c;letter-spacing:.8px;text-transform:uppercase;font-family:Arial,sans-serif;">👨‍⚕️ Med. Familiar</div>'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">'
-        + '<div style="font-size:20px;font-weight:900;color:#c2410c;font-family:Arial,sans-serif;">' + (d.familiar_completed||0) + '<span style="font-size:10px;color:#f97316;"> / ' + (d.familiar_total||0) + '</span></div>'
-        + '<div style="font-size:18px;font-weight:900;color:'+fc+';font-family:Arial,sans-serif;">' + familP + '%</div>'
-        + '</div>'
-        + '<div style="height:5px;background:#fed7aa;border-radius:99px;margin-top:6px;overflow:hidden;">'
-        + '<div style="height:100%;width:'+familP+'%;background:#f97316;border-radius:99px;"></div></div>'
-        + '</td>'
-        + '</tr></table>';
-    var especSection = chPdfSection('Desglose por Especialidad', '#1C67A3', especBody);
+    var especBody = '<table style="width:100%;border-collapse:separate;border-spacing:6px 0;">'
+     + '<tr>'
+     + '<td style="background:#eff6ff;border-radius:8px;padding:10px 12px;border:1px solid #bfdbfe;-webkit-print-color-adjust:exact;print-color-adjust:exact;">'
+     + '<div style="font-size:6.5px;font-weight:800;color:#4f46e5;letter-spacing:.7px;text-transform:uppercase;font-family:Arial,sans-serif;">🧠 Neurología</div>'
+     + '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:3px;">'
+     + '<div style="font-size:18px;font-weight:900;color:#3730a3;font-family:Arial,sans-serif;">'+(d.neuro_completed||0)+'<span style="font-size:9px;color:#818cf8;"> / '+(d.neuro_total||0)+'</span></div>'
+     + '<div style="font-size:16px;font-weight:900;color:'+nc+';font-family:Arial,sans-serif;">'+neuroP+'%</div>'
+     + '</div>'
+     + '<div style="height:4px;background:#ddd5fe;border-radius:99px;margin-top:5px;overflow:hidden;">'
+     + '<div style="width:'+neuroP+'%;height:100%;background:#4f46e5;-webkit-print-color-adjust:exact;print-color-adjust:exact;"></div></div>'
+     + '</td>'
+     + '<td style="background:#fff7ed;border-radius:8px;padding:10px 12px;border:1px solid #fed7aa;-webkit-print-color-adjust:exact;print-color-adjust:exact;">'
+     + '<div style="font-size:6.5px;font-weight:800;color:#ea580c;letter-spacing:.7px;text-transform:uppercase;font-family:Arial,sans-serif;">👨‍⚕️ Med. Familiar</div>'
+     + '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:3px;">'
+     + '<div style="font-size:18px;font-weight:900;color:#c2410c;font-family:Arial,sans-serif;">'+(d.familiar_completed||0)+'<span style="font-size:9px;color:#f97316;"> / '+(d.familiar_total||0)+'</span></div>'
+     + '<div style="font-size:16px;font-weight:900;color:'+fc+';font-family:Arial,sans-serif;">'+familP+'%</div>'
+     + '</div>'
+     + '<div style="height:4px;background:#fed7aa;border-radius:99px;margin-top:5px;overflow:hidden;">'
+     + '<div style="width:'+familP+'%;height:100%;background:#f97316;-webkit-print-color-adjust:exact;print-color-adjust:exact;"></div></div>'
+     + '</td>'
+     + '</tr></table>';
 
-    // Ranking
-    var rkRows2 = (d.doctoras_ranking||[]).slice(0,10).map(function(doc,i){
-        var medals = ['🥇','🥈','🥉'];
-        var m = i < 3 ? medals[i] : String(i+1);
-        var c = (doc.percent||0) >= 80 ? '#059669' : (doc.percent||0) >= 50 ? '#D97706' : '#DC2626';
-        return [m, doc.nombre||'—', String(doc.completed||0), String(doc.total||0),
-            '<span style="font-weight:800;color:'+c+';">'+String(doc.percent||0)+'%</span>'];
+    var especSec = '<div style="margin-bottom:14px;page-break-inside:avoid;">'
+     + chSecTitle('📊','Desglose por Especialidad','#1C67A3') + especBody + '</div>';
+
+    var rkRows = (d.doctoras_ranking||[]).slice(0,12).map(function(doc,i){
+        var medals=['🥇','🥈','🥉'];
+        var m=i<3?medals[i]:String(i+1);
+        var p=doc.percent||0; var c=p>=80?'#059669':p>=50?'#D97706':'#DC2626';
+        return [m, doc.nombre||'—', String(doc.completed||0), String(doc.total||0), chBar(p,c)];
     });
-    var rkHtml2 = rkRows2.length ? chPdfSection('🏆 Ranking de Doctoras', '#B45309',
-        chPdfTable(['#','Profesional','Completadas','Total','Avance'], rkRows2, '#0A3D62')) : '';
+    var rkHtml = rkRows.length
+        ? '<div style="margin-bottom:14px;page-break-inside:avoid;">'
+          + chSecTitle('🏆','Ranking de Doctoras','#B45309')
+          + chTable(['#','Profesional','Completadas','Total','Avance'], rkRows, '#0A3D62') + '</div>' : '';
 
-    // Establecimientos
-    var estRows2 = (d.establecimientos||[]).slice(0,12).map(function(e,i){
-        var c = (e.percent||0) >= 80 ? '#059669' : (e.percent||0) >= 50 ? '#D97706' : '#DC2626';
-        return [e.nombre||'—', String(e.completed||0), String(e.total||0),
-            '<span style="font-weight:800;color:'+c+';">'+String(e.percent||0)+'%</span>'];
+    var estRows = (d.establecimientos||[]).slice(0,15).map(function(e,i){
+        var p=e.percent||0; var c=p>=80?'#059669':p>=50?'#D97706':'#DC2626';
+        return [e.nombre||'—', String(e.completed||0), String(e.total||0), chBar(p,c)];
     });
-    var estHtml2 = estRows2.length ? chPdfSection('🏫 Top Establecimientos', '#065f46',
-        chPdfTable(['Establecimiento','Completados','Total','Avance'], estRows2, '#059669')) : '';
+    var estHtml = estRows.length
+        ? '<div style="margin-bottom:14px;page-break-inside:avoid;">'
+          + chSecTitle('🏫','Top Establecimientos','#065f46')
+          + chTable(['Establecimiento','Completados','Total','Avance'], estRows, '#059669') + '</div>' : '';
 
-    var html = chPdfHeader('Informe de Coordinación General',
-        'Neurología y Medicina Familiar · Todas las doctoras', 'General', fecha, hora)
-        + kpiHtml
-        + '<div style="padding:20px 32px;">'
-        + especSection + rkHtml2 + estHtml2
-        + chPdfFirma(fecha, hora)
+    var html = chHdr('Informe de Coordinación General',
+        'Neurología y Medicina Familiar · Todas las doctoras','General',fecha,hora)
+        + kpis
+        + '<div style="padding:16px 30px;">'
+        + especSec + rkHtml + estHtml
+        + chFirma(fecha,hora)
         + '</div>';
 
-    chPdfGenerate(html, 'INFORME_COORDINACION_CARDIOHOME_' + fecha.replace(/ /g,'_') + '.pdf')
+    chGenerate(html, 'INFORME_COORDINACION_' + fecha.replace(/ /g,'_') + '.pdf')
         .then(function(){ Swal.close(); });
 }
+
 
 
 // Keep old name as alias for backward compat
@@ -3761,6 +3841,13 @@ async function loadDoctorPerformance() {
         const pct = data.total > 0 ? (data.completed / data.total * 100) : 0;
         updateRing('doctor-ring-main', pct);
         setText('dp-ring-pct',  `${Math.round(pct)}%`);
+        // KPI ring card
+        const dpRingWrap = document.getElementById('dp-kpi-ring-wrap');
+        const dpRingCirc = document.getElementById('dp-kpi-ring');
+        if (dpRingWrap && dpRingCirc) {
+            dpRingWrap.style.display = 'block';
+            setTimeout(() => { dpRingCirc.style.strokeDashoffset = 138.23 - (pct/100)*138.23; }, 100);
+        }
         setText('dp-ring-comp', data.completed);
         setText('dp-ring-pend', data.pending);
 
@@ -4133,6 +4220,14 @@ async function loadCoordStats() {
         setText('coord-stat-completed', data.completed);
         setText('coord-stat-pending',   data.pending);
         setText('coord-stat-percent',   `${data.percent}%`);
+        // KPI ring card
+        const cRingWrap = document.getElementById('coord-kpi-ring-wrap');
+        const cRingCirc = document.getElementById('coord-kpi-ring');
+        if (cRingWrap && cRingCirc) {
+            cRingWrap.style.display = 'block';
+            const cPct = parseFloat(data.percent) || 0;
+            setTimeout(() => { cRingCirc.style.strokeDashoffset = 138.23 - (cPct/100)*138.23; }, 100);
+        }
 
         // Anillos neuro y familiar
         const neuroP = data.neuro_total > 0 ? (data.neuro_completed / data.neuro_total * 100) : 0;

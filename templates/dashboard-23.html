@@ -246,10 +246,50 @@
     /* Secciones de Contenido (Mantenido) */
     .content-section {
         display: none;
-        animation: fadeIn 0.6s ease-out forwards;
+        animation: fadeIn 0.4s ease-out forwards;
     }
     .content-section.active {
         display: block;
+    }
+    /* Barra de título de sección con botón volver */
+    .section-topbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 1.4rem;
+        padding-bottom: 0.9rem;
+        border-bottom: 2px solid #e8edf5;
+    }
+    .section-topbar .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #f0f4ff;
+        color: #1C67A3;
+        border: 1.5px solid #c7d8f0;
+        border-radius: 8px;
+        padding: 5px 13px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.18s;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+    .section-topbar .back-btn:hover {
+        background: #1C67A3;
+        color: white;
+        border-color: #1C67A3;
+    }
+    .section-topbar .section-title {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #0f3460;
+        margin: 0;
+    }
+    .section-topbar .section-icon {
+        color: #1C67A3;
+        font-size: 1rem;
     }
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(20px); }
@@ -1052,6 +1092,11 @@
             {% if usuario == 'admin' %}
             
 <div id="admin-performance" class="content-section">
+            <div class="section-topbar">
+                <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                <i class="fa-solid fa-chart-simple section-icon"></i>
+                <h2 class="section-title">Rendimiento General</h2>
+            </div>
 
 <!-- ══ STYLES: Admin Performance Premium ══ -->
 <style>
@@ -1342,6 +1387,11 @@
 </div>
             
                 <div id="admin-add-visit" class="content-section">
+            <div class="section-topbar">
+                <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                <i class="fa-solid fa-calendar-days section-icon"></i>
+                <h2 class="section-title">Programar Visita</h2>
+            </div>
                     <div class="card admin-form">
                         <h3><i class="fa-solid fa-calendar-days"></i> Agregar Visita Programada</h3>
                         <form action="{{ url_for('admin_agregar') }}" method="POST">
@@ -1374,6 +1424,11 @@
                 </div>
 
                 <div id="admin-upload-nomina" class="content-section">
+            <div class="section-topbar">
+                <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                <i class="fa-solid fa-file-excel section-icon"></i>
+                <h2 class="section-title">Cargar Nómina</h2>
+            </div>
                     <div class="card admin-form">
                         <h3><i class="fa-solid fa-file-excel"></i> Cargar Nómina Médica (Excel/CSV)</h3>
                         <form action="{{ url_for('admin_cargar_nomina') }}" method="POST" enctype="multipart/form-data">
@@ -1388,7 +1443,11 @@
 
                             
                             <label for="tipo_nomina">Tipo de Nómina:</label>
-                            <input type="text" id="tipo_nomina" name="tipo_nomina" placeholder="Ej: General, Dental, Oftalmológica" required class="form-input" />
+                            <select id="tipo_nomina" name="tipo_nomina" required class="form-input">
+                                <option value="">Selecciona el tipo de nómina</option>
+                                <option value="Medicina Familiar">Medicina Familiar</option>
+                                <option value="Neurologia">Neurologia</option>
+                            </select>
 
                             <label for="nombre_especifico">Nombre Específico (Ej: Liceo X - Nómina Mayo):</label>
                             <input type="text" id="nombre_especifico" name="nombre_especifico" placeholder="Nombre único para esta nómina" required class="form-input" />
@@ -1445,6 +1504,11 @@
                 </div>
 
                 <div id="admin-visits-list" class="content-section">
+            <div class="section-topbar">
+                <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                <i class="fa-solid fa-list section-icon"></i>
+                <h2 class="section-title">Lista de Visitas</h2>
+            </div>
                     <div class="card admin-list">
                         <h3><i class="fa-solid fa-calendar-alt"></i> Todas las Visitas Programadas</h3>
                         <div class="filter-container">
@@ -1505,6 +1569,11 @@
                 </div>
 
                 <div id="admin-nominas-list" class="content-section">
+            <div class="section-topbar">
+                <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                <i class="fa-solid fa-file-invoice-dollar section-icon"></i>
+                <h2 class="section-title">Gestión de Nóminas</h2>
+            </div>
                     <div class="card admin-list">
                         <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas Médicas Cargadas</h3>
                         <div class="filter-container">
@@ -1566,6 +1635,11 @@
                 </div>
 
                 <div id="admin-uploaded-forms-all" class="content-section">
+            <div class="section-topbar">
+                <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                <i class="fa-solid fa-box-archive section-icon"></i>
+                <h2 class="section-title">Archivos Subidos</h2>
+            </div>
                     <div class="card">
                         <h3><i class="fa-solid fa-box-archive"></i> Todos los Formularios Subidos</h3>
                         <ul class="lista-items">
@@ -1597,6 +1671,11 @@
                 
                 {# NUEVA SECCIÓN: SOLICITUDES DE CORRECCIÓN PARA EL ADMINISTRADOR #}
                 <div id="admin-correction-requests" class="content-section">
+            <div class="section-topbar">
+                <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                <i class="fa-solid fa-bell-concierge section-icon"></i>
+                <h2 class="section-title">Solicitudes de Corrección</h2>
+            </div>
                     <div class="card admin-list">
                         <h3><i class="fa-solid fa-bell-concierge"></i> Solicitudes de Corrección Pendientes <span class="status-badge pending" id="admin-pending-count-badge">0</span></h3>
                         <p class="text-gray-600 mb-6">Lista de solicitudes enviadas por Coordinadores de Escuela o Doctoras. La acción aquí es revisar y cambiar el estado.</p>
@@ -1612,6 +1691,11 @@
                 </div>
 
                 <div id="crear_proyecto" class="content-section">
+            <div class="section-topbar">
+                <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                <i class="fa-solid fa-folder-plus section-icon"></i>
+                <h2 class="section-title">Crear Proyecto</h2>
+            </div>
                     <div class="card admin-form">
                         <h3><i class="fa-solid fa-folder-plus"></i> Crear Nuevo Proyecto</h3>
                         <form action="{{ url_for('crear_proyecto') }}" method="POST">
@@ -1627,6 +1711,11 @@
                 </div>
 
 <div id="gestionar-proyectos" class="content-section">
+            <div class="section-topbar">
+                <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                <i class="fa-solid fa-list-check section-icon"></i>
+                <h2 class="section-title">Gestionar Proyectos</h2>
+            </div>
     <!-- Encabezado de la Sección -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
         <div>
@@ -1784,6 +1873,11 @@
 </style>
             
                 <div id="admin-contact" class="content-section">
+            <div class="section-topbar">
+                <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                <i class="fa-solid fa-envelope section-icon"></i>
+                <h2 class="section-title">Contacto</h2>
+            </div>
                     <div class="card">
                         <h3><i class="fa-solid fa-envelope-open-text"></i> Contacto</h3>
                         <p class="text-gray-600 mb-6">Si tienes alguna duda o necesitas ayuda, por favor, rellena el siguiente formulario y nos pondremos en contacto contigo lo antes posible.</p>
@@ -1984,6 +2078,11 @@
             </div>
             
             <div id="coord-evaluaciones" class="content-section">
+            <div class="section-topbar">
+                <button class="back-btn" onclick="showSection('coord-performance')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                <i class="fa-solid fa-sitemap section-icon"></i>
+                <h2 class="section-title">Evaluaciones por Establecimiento</h2>
+            </div>
                 <div class="card">
                     <h3><i class="fa-solid fa-sitemap"></i> Evaluaciones por Establecimiento</h3>
                     <p class="text-gray-600 mb-6">Selecciona un proyecto para ver y descargar los formularios completados.</p>
@@ -2044,6 +2143,11 @@
             </div>
             
             <div id="coord-nominas" class="content-section">
+            <div class="section-topbar">
+                <button class="back-btn" onclick="showSection('coord-performance')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                <i class="fa-solid fa-file-invoice-dollar section-icon"></i>
+                <h2 class="section-title">Gestión de Nóminas</h2>
+            </div>
                 <div class="card">
                     <h3><i class="fa-solid fa-file-invoice-dollar"></i> Nóminas de <span id="nombreEstablecimiento"></span></h3>
                     <p class="text-gray-600 mb-6">Aquí puedes ver y descargar los formularios de la nómina.</p>
@@ -2054,6 +2158,11 @@
             </div>
 
             <div id="coord-contact" class="content-section">
+            <div class="section-topbar">
+                <button class="back-btn" onclick="showSection('coord-performance')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                <i class="fa-solid fa-envelope section-icon"></i>
+                <h2 class="section-title">Solicitudes</h2>
+            </div>
                 <div class="card">
                     <h3><i class="fa-solid fa-envelope-open-text"></i> Solicitudes</h3>
                     <p class="text-gray-600 mb-6">Si tienes alguna duda o necesitas ayuda, por favor, rellena el siguiente formulario y nos pondremos en contacto contigo lo antes posible.</p>
@@ -2139,6 +2248,11 @@
                 </div>
 
                 <div id="school-contact" class="content-section">
+            <div class="section-topbar">
+                <button class="back-btn" onclick="showSection('school-dashboard')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                <i class="fa-solid fa-envelope section-icon"></i>
+                <h2 class="section-title">Contacto / Soporte</h2>
+            </div>
                     <div class="card">
                         <h3><i class="fa-solid fa-envelope-open-text"></i> Contacto de Soporte</h3>
                         <p class="text-gray-600 mb-6">Si tiene problemas con su acceso o la nómina, utilice este formulario para crear una solicitud de soporte.</p>
@@ -2159,6 +2273,11 @@
                      PERFIL DOCTORA — MI RENDIMIENTO (API)
                      ══════════════════════════════════════ -->
                 <div id="doctor-performance" class="content-section">
+            <div class="section-topbar">
+                <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                <i class="fa-solid fa-chart-simple section-icon"></i>
+                <h2 class="section-title">Mi Rendimiento</h2>
+            </div>
 
                     <!-- Encabezado -->
                     <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; margin-bottom:2rem; gap:1rem;">
@@ -2317,6 +2436,11 @@
                      PERFIL DOCTORA — CALENDARIO DE VISITAS
                      ══════════════════════════════════════ -->
                 <div id="doctor-visits" class="content-section">
+            <div class="section-topbar">
+                <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                <i class="fa-solid fa-calendar-days section-icon"></i>
+                <h2 class="section-title">Mis Próximas Visitas</h2>
+            </div>
 
                     <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; margin-bottom:1.5rem; gap:1rem;">
                         <div>
@@ -2429,6 +2553,11 @@
                 
                 <!-- NUEVA SECCIÓN: PROYECTOS ASIGNADOS -->
                 <div id="doctor-proyectos" class="content-section">
+            <div class="section-topbar">
+                <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                <i class="fa-solid fa-folder-tree section-icon"></i>
+                <h2 class="section-title">Proyectos Asignados</h2>
+            </div>
                     <div class="card">
                         <h3><i class="fa-solid fa-folder-tree"></i> Mis Proyectos Asignados</h3>
                         
@@ -2642,6 +2771,11 @@
                 </div>
 
                 <div id="doctor-contact" class="content-section">
+            <div class="section-topbar">
+                <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                <i class="fa-solid fa-envelope section-icon"></i>
+                <h2 class="section-title">Contacto</h2>
+            </div>
                     <div class="card">
                         <h3><i class="fa-solid fa-envelope-open-text"></i> Contacto</h3>
                         <p class="text-gray-600 mb-6">Si tienes alguna duda o necesitas ayuda, por favor, rellena el siguiente formulario y nos pondremos en contacto contigo lo antes posible.</p>

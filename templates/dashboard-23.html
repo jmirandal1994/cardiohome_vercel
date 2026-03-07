@@ -2459,25 +2459,23 @@
             if (coordinatorPollingInterval && sectionId !== 'coord-performance') {
                 clearInterval(coordinatorPollingInterval);
                 coordinatorPollingInterval = null;
-                console.log("Polling detenido.");
             }
-
 
             if (activeSection) {
                 activeSection.classList.add('active');
                 activeSection.style.display = 'block';  
                 
-                // Lógica específica para iniciar gráficos/polling
+                // Lógica específica para iniciar gráficos por sección
                 if (sectionId === 'admin-performance') {
-                    // renderAdminPerformanceChart(); // Lógica de gráficos de Admin
+                    setTimeout(updateAdminStats, 250);
                 } else if (sectionId === 'coord-performance') {
-                    // INICIO DE POLLING PARA COORDINADORA GENERAL
-                    syncCoordinatorCounts();  
-                    coordinatorPollingInterval = setInterval(syncCoordinatorCounts, 5000);  
-                    // renderCoordinadoraPerformanceChart(); // Lógica de gráficos de Coordinadora
-                }
-                // 🚨 NUEVA LÓGICA DE CARGA PARA EL ADMIN
-                else if (sectionId === 'admin-correction-requests') {
+                    // Usar la nueva función de API real
+                    if (typeof loadCoordStats === 'function') loadCoordStats();
+                } else if (sectionId === 'doctor-performance') {
+                    if (typeof loadDoctorPerformance === 'function') loadDoctorPerformance();
+                } else if (sectionId === 'doctor-visits') {
+                    if (typeof initCalendar === 'function') initCalendar();
+                } else if (sectionId === 'admin-correction-requests') {
                     loadCorrectionRequests();  
                 }
             }
@@ -3963,26 +3961,15 @@ function updateRing(id, pct) {
 }
 
 // ── Auto-init según perfil ────────────────────────────────────────────
+// Los nav-link ya tienen sus listeners en el DOMContentLoaded principal (showSection).
+// Solo hacemos la pre-carga inicial según perfil al abrir el dashboard.
 document.addEventListener('DOMContentLoaded', function() {
     const usuario = '{{ usuario }}';
-
-    // Attach nav listeners
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', function() {
-            const sec = this.dataset.section;
-            if (sec === 'doctor-performance') setTimeout(loadDoctorPerformance, 200);
-            if (sec === 'doctor-visits')      setTimeout(initCalendar, 150);
-            if (sec === 'coord-performance')  setTimeout(loadCoordStats, 200);
-        });
-    });
-
-    // Auto-load si la sección ya está activa al cargar
-    if (usuario !== 'admin' && usuario !== 'coordinadora' && usuario !== 'coordinador_escuela') {
-        // perfil doctora: la sección welcome está activa, pero pre-cargamos rendimiento
-        loadDoctorPerformance();
+    if (usuario === 'doctora') {
+        setTimeout(loadDoctorPerformance, 400);
     }
     if (usuario === 'coordinadora') {
-        setTimeout(loadCoordStats, 300);
+        setTimeout(loadCoordStats, 400);
     }
 });
 </script>

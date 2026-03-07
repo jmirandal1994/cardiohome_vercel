@@ -33,32 +33,33 @@
         --card-red: #E74C3C;
     }
 
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden; /* Evita scroll global - solo el main hace scroll */
+    }
     body {
         font-family: 'Inter', sans-serif;
         background-color: #F4F7F9;
         color: var(--text-dark);
-        min-height: 100vh;
         display: flex;
         flex-direction: column;
-        overflow-x: hidden;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-    }
-    
-    html, body {
-        height: 100%;
     }
 
     /* Header (Mantenido) */
     header {
         background: white;
-        padding: 1rem 2rem;
+        padding: 0.75rem 2rem;
+        height: 58px;
+        box-sizing: border-box;
         display: flex;
         justify-content: space-between;
         align-items: center;
         box-shadow: 0 4px 15px var(--shadow-subtle);
-        position: sticky;
-        top: 0;
+        flex-shrink: 0;
         z-index: 20;
     }
     header .logo-title {
@@ -114,43 +115,53 @@
     }
     .menu-toggle-btn { display: none; }
 
-    /* Dashboard Wrapper y Main Content (Mantenido) */
+    /* Dashboard Wrapper y Main Content */
     .dashboard-wrapper {
         display: flex;
-        flex: 1;
         flex-direction: row;
-        padding: 0;
-        gap: 0;
+        flex: 1;
         min-height: 0;
-        overflow: hidden;
-        justify-content: flex-start;
+        height: calc(100vh - 58px); /* exacto al header */
+        overflow: hidden; /* el scroll lo maneja .main-content */
+        gap: 16px;
+        padding: 16px;
+        box-sizing: border-box;
     }
     .main-content {
-        max-width: 1100px;
+        flex: 1;
+        min-width: 0;
+        overflow-y: auto;   /* ← SOLO el main hace scroll */
+        overflow-x: hidden;
+        padding: 1.5rem 2rem;
+        background: #f4f7f9;
+        border-radius: 16px;
+        max-width: 100%;
     }
     .dashboard-content {
         flex-grow: 1;
     }
 
-    /* --- Sidebar (AJUSTE DE ESTILOS PROFESIONALES) --- */
+    /* --- Sidebar --- */
     .sidebar {
-        width: 260px;
-        background: var(--primary-blue); /* Fondo azul oscuro */
+        width: 250px;
+        min-width: 250px;
+        background: var(--primary-blue);
         color: var(--text-light);
-        padding: 1.5rem 1rem;
-        border-radius: 20px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-        position: sticky;
-        top: 1.5rem;
-        height: calc(100vh - 3rem);
+        padding: 1.2rem 0.9rem;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        height: 100%;           /* ← Ocupa toda la altura del wrapper */
         overflow-y: auto;
-        transition: all 0.35s ease-in-out;
+        overflow-x: hidden;
+        flex-shrink: 0;
+        box-sizing: border-box;
+        transition: width 0.3s ease, padding 0.3s ease;
     }
 
     .sidebar.collapsed {
         width: 0;
+        min-width: 0;
         padding: 0;
-        transform: translateX(-100%);
         overflow: hidden;
     }
 
@@ -254,6 +265,7 @@
     }
     .content-section.active {
         display: block;
+        min-height: 0;
     }
     /* Barra de título de sección con botón volver */
     .section-topbar {
@@ -602,12 +614,8 @@
     }
 
     /* Responsive Design (Mantenido) */
-    @media (max-width: 1024px) {
-        .dashboard-wrapper {
-            flex-direction: column;
-            padding: 1rem;
-            gap: 1rem;
-        }
+    @media (max-width: 768px) {
+        /* En móvil, el sidebar se oculta y el main ocupa todo */
         .sidebar {
             position: fixed;
             left: 0;
@@ -616,18 +624,23 @@
             z-index: 99;
             transform: translateX(-100%);
             width: 250px;
-            padding: 1.5rem;
-            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
             height: 100vh;
+            border-radius: 0;
         }
         .sidebar.active {
             transform: translateX(0);
         }
+        .dashboard-wrapper {
+            height: calc(100vh - 58px);
+            padding: 8px;
+            gap: 0;
+        }
         .main-content {
-            margin-left: 0;
+            border-radius: 10px;
+            padding: 1rem;
         }
         header {
-            padding: 1rem;
+            padding: 0.5rem 1rem;
         }
     }
     @media (max-width: 768px) {
@@ -1070,7 +1083,7 @@
             </nav>
         </aside>
 
-        <main class="flex-1 bg-gray-50 main-content" style="overflow-y:auto;padding:1.5rem 2rem;min-width:0;max-width:1100px;">
+        <main class="main-content" id="mainContent">
             
             {# NUEVA SECCIÓN DE BIENVENIDA (Reemplaza el antiguo resumen del proyecto) #}
             {% if usuario != 'coordinadora' and usuario != 'coordinador_escuela' %}

@@ -3654,6 +3654,46 @@ def api_coordinadora_stats():
 
 
 # ─────────────────────────────────────────────────────────────
+# RUTA: Visitas de una doctora específica (para calendario admin)
+#  GET /api/admin/visitas_doctora/<doctor_id>
+# ─────────────────────────────────────────────────────────────
+@app.route('/api/admin/visitas_doctora/<doctor_id>', methods=['GET'])
+def api_admin_visitas_doctora(doctor_id):
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        url = (
+            f"{SUPABASE_URL}/rest/v1/establecimientos"
+            f"?doctora_id=eq.{doctor_id}"
+            f"&select=id,nombre,fecha,horario,cantidad_alumnos,observaciones"
+            f"&order=fecha.asc"
+        )
+        res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS)
+        eventos_raw = res.json() if res.ok else []
+
+        eventos = []
+        for ev in eventos_raw:
+            fecha_raw = ev.get('fecha', '') or ''
+            if fecha_raw and '/' in fecha_raw:
+                try:
+                    fecha_raw = datetime.strptime(fecha_raw, '%d/%m/%Y').strftime('%Y-%m-%d')
+                except ValueError:
+                    pass
+            eventos.append({
+                "id":               ev.get('id', ''),
+                "nombre":           ev.get('nombre', ''),
+                "fecha":            fecha_raw,
+                "horario":          ev.get('horario', ''),
+                "cantidad_alumnos": ev.get('cantidad_alumnos'),
+                "observaciones":    ev.get('observaciones', '')
+            })
+
+        return jsonify({"success": True, "eventos": eventos})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+# ─────────────────────────────────────────────────────────────
 # RUTA: Reporte detallado doctora (alumnos por nomina)
 #  GET /api/doctor/reporte_detalle
 # ─────────────────────────────────────────────────────────────

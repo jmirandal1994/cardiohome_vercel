@@ -1318,57 +1318,154 @@ def get_admin_stats(project_id):
         return jsonify({"success": False, "message": "No autorizado"}), 403
 
     try:
-        # 1. Obtener las nóminas que pertenecen al proyecto
-        if project_id == 'all':
-            url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id,tipo_nomina"
-        else:
-            url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?proyecto_id=eq.{project_id}&select=id,tipo_nomina"
-        
+        from collections import defaultdict
+
+        # Filtro opcional por doctora (query param)
+        doctor_filter = request.args.get('doctor_id', 'all')
+
+        # ── 1. Obtener nóminas filtradas ────────────────────────────────
+        params = "select=id,tipo_nomina,doctora_id,nombre_colegio,nombre_nomina"
+        if project_id != 'all':
+            params += f"&proyecto_id=eq.{project_id}"
+        if doctor_filter != 'all':
+            params += f"&doctora_id=eq.{doctor_filter}"
+
+        url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?{params}"
         res_n = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
         nominas = res_n.json() if res_n.ok else []
 
-        # Inicializamos contadores exactos como los de tu perfil de coordinadora
-        total_evaluados = 0
+        # ── 2. Obtener lista de doctoras para lookup ────────────────────
+        url_docs = f"{SUPABASE_URL}/rest/v1/doctoras?select=id,nombre,usuario&rol=eq.doctora"
+        res_docs = requests.get(url_docs, headers=SUPABASE_SERVICE_HEADERS)
+        doctoras_map = {}
+        if res_docs.ok:
+            for d in res_docs.json():
+                doctoras_map[str(d['id'])] = d.get('nombre') or d.get('usuario', 'Desconocida')
+
+        # ── 3. Contadores globales + por doctora + por establecimiento ──
+        total_evaluados  = 0
         total_pendientes = 0
-        neuro_count = 0
-        familiar_count = 0
-        doctor_stats = {}
+        neuro_count      = 0
+        familiar_count   = 0
+        doctor_stats     = defaultdict(lambda: {'completed': 0, 'total': 0, 'nombre': ''})
+        est_stats        = defaultdict(lambda: {'completed': 0, 'total': 0, 'nombre': ''})
+        # Tendencia: acumular fechas de evaluacion
+        daily_counts     = defaultdict(int)
+        weekly_counts    = defaultdict(int)
+        hoy              = date.today()
 
-        # 2. Recorrer cada nómina para contar usando tu lógica de flags
         for nom in nominas:
-            nom_id = nom.get("id")
-            tipo = (nom.get("tipo_nomina") or "").lower().strip()
-            
-            # Usamos tu misma lógica de get_supabase_count
-            evaluados = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.true")
-            pendientes = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.false")
+            nom_id    = str(nom.get("id"))
+            tipo      = (nom.get("tipo_nomina") or "").lower().strip()
+            doc_id    = str(nom.get("doctora_id") or "")
+            est_nombre = nom.get("nombre_colegio") or nom.get("nombre_nomina") or "Sin nombre"
 
-            total_evaluados += evaluados
+            evaluados  = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.true")
+            pendientes = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.false")
+            subtotal   = evaluados + pendientes
+
+            total_evaluados  += evaluados
             total_pendientes += pendientes
 
-            # Conteo por especialidad (Neurología vs Familiar/Medicina)
+            # Especialidad
             if "neuro" in tipo:
                 neuro_count += evaluados
             elif "familiar" in tipo or "medicina" in tipo:
                 familiar_count += evaluados
 
-        # 3. Calcular porcentaje
+            # Por doctora
+            if doc_id:
+                doctor_stats[doc_id]['completed'] += evaluados
+                doctor_stats[doc_id]['total']     += subtotal
+                doctor_stats[doc_id]['nombre']     = doctoras_map.get(doc_id, 'Desconocida')
+
+            # Por establecimiento
+            est_stats[est_nombre]['completed'] += evaluados
+            est_stats[est_nombre]['total']     += subtotal
+            est_stats[est_nombre]['nombre']     = est_nombre
+
+            # Tendencia: obtener fechas de evaluaciones de esta nómina
+            try:
+                url_fechas = (
+                    f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                    f"?nomina_id=eq.{nom_id}&evaluado_flag=eq.true"
+                    f"&select=fecha_evaluacion"
+                )
+                res_f = requests.get(url_fechas, headers=SUPABASE_SERVICE_HEADERS)
+                if res_f.ok:
+                    for row in res_f.json():
+                        fe = row.get('fecha_evaluacion')
+                        if fe:
+                            try:
+                                fe_date = datetime.strptime(str(fe)[:10], '%Y-%m-%d').date()
+                                delta = (hoy - fe_date).days
+                                if 0 <= delta <= 30:
+                                    daily_counts[str(fe_date)] += 1
+                                delta_w = (hoy - fe_date).days // 7
+                                if 0 <= delta_w < 12:
+                                    iso_w = fe_date.isocalendar()
+                                    wk_key = f"{iso_w[0]}-W{iso_w[1]:02d}"
+                                    weekly_counts[wk_key] += 1
+                            except Exception:
+                                pass
+            except Exception:
+                pass
+
+        # ── 4. Construir ranking de doctoras (top 10) ──────────────────
+        ranking = []
+        for did, stats in doctor_stats.items():
+            t = stats['total'] or 1
+            pct = round(stats['completed'] / t * 100, 1)
+            ranking.append({
+                'id':        did,
+                'nombre':    stats['nombre'],
+                'completed': stats['completed'],
+                'total':     stats['total'],
+                'percent':   pct
+            })
+        ranking.sort(key=lambda x: x['percent'], reverse=True)
+        ranking = ranking[:10]
+
+        # ── 5. Top establecimientos (top 10) ───────────────────────────
+        establecimientos = []
+        for ename, stats in est_stats.items():
+            t = stats['total'] or 1
+            pct = round(stats['completed'] / t * 100, 1)
+            establecimientos.append({
+                'nombre':    ename,
+                'completed': stats['completed'],
+                'total':     stats['total'],
+                'percent':   pct
+            })
+        establecimientos.sort(key=lambda x: x['completed'], reverse=True)
+        establecimientos = establecimientos[:10]
+
+        # ── 6. Totales globales ────────────────────────────────────────
         total_alumnos = total_evaluados + total_pendientes
         percent = round((total_evaluados / total_alumnos * 100), 1) if total_alumnos > 0 else 0
 
         return jsonify({
-            "success": True,
-            "total": total_alumnos,
-            "completed": total_evaluados,
-            "pending": total_pendientes,
-            "percent": f"{percent}%",
-            "neuro": neuro_count,
-            "familiar": familiar_count,
-            # Por ahora enviamos un objeto vacío para el gráfico si no quieres complicarlo
-            "chart_data": {} 
+            "success":         True,
+            "total":           total_alumnos,
+            "completed":       total_evaluados,
+            "pending":         total_pendientes,
+            "percent":         f"{percent}%",
+            "neuro":           neuro_count,
+            "familiar":        familiar_count,
+            "ranking":         ranking,
+            "establecimientos": establecimientos,
+            "trend": {
+                "daily":   dict(sorted(daily_counts.items())),
+                "weekly":  dict(sorted(weekly_counts.items()))
+            },
+            # backward compat
+            "chart_data": {r['id']: r['completed'] for r in ranking}
         })
+
     except Exception as e:
-        print(f"❌ Error en stats premium: {e}")
+        import traceback
+        print(f"❌ Error en get_admin_stats: {e}")
+        traceback.print_exc()
         return jsonify({"success": False, "error": str(e)})
         
 # app-30.py (Reemplaza la función dashboard completa)

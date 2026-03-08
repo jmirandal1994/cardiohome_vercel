@@ -1042,6 +1042,222 @@
                 margin: 0 !important;
             }
         }
+
+        /* ─── ESTADOS DE AUSENCIA ─────────────────────────────── */
+        .estudiante[data-estado="no_asiste_reemplazado"] {
+            opacity: 0.55;
+        }
+        .estudiante[data-estado="no_asiste_sin_reemplazo"] {
+            opacity: 0.45;
+        }
+        .estudiante[data-estado="extra"] summary {
+            border-left: 4px solid #6c5ce7;
+        }
+        .status-badge.ausente-reemplazado {
+            background: rgba(253,126,20,0.1);
+            color: #d35400;
+            border: 1.5px solid rgba(253,126,20,0.3);
+        }
+        .status-badge.ausente-sin-reemplazo {
+            background: rgba(99,110,114,0.1);
+            color: #636e72;
+            border: 1.5px solid rgba(99,110,114,0.3);
+        }
+        .status-badge.extra-badge {
+            background: rgba(108,92,231,0.1);
+            color: #6c5ce7;
+            border: 1.5px solid rgba(108,92,231,0.3);
+        }
+        /* Botón de estado dentro del summary */
+        .btn-estado-ausencia {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 11px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            background: rgba(225,112,85,0.08);
+            color: #c0392b;
+            border: 1.5px solid rgba(225,112,85,0.25);
+            cursor: pointer;
+            transition: all 0.18s;
+            flex-shrink: 0;
+            margin-right: 4px;
+        }
+        .btn-estado-ausencia:hover {
+            background: rgba(225,112,85,0.18);
+        }
+        /* Modal ausencia */
+        .modal-ausencia-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(10,20,40,0.55);
+            z-index: 9000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-ausencia-backdrop.open {
+            display: flex;
+        }
+        .modal-ausencia {
+            background: white;
+            border-radius: 18px;
+            padding: 28px 30px 24px;
+            max-width: 480px;
+            width: 94%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            position: relative;
+            animation: fadeInUp 0.25s ease;
+        }
+        @keyframes fadeInUp {
+            from { opacity:0; transform:translateY(16px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        .modal-ausencia h3 {
+            margin: 0 0 6px;
+            font-size: 1.05rem;
+            color: #0f3460;
+        }
+        .modal-ausencia .alumno-label {
+            font-size: 0.82rem;
+            color: #636e72;
+            margin-bottom: 18px;
+        }
+        .modal-ausencia label {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1.5px solid #e2e8f4;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+            font-size: 0.85rem;
+            color: #334155;
+        }
+        .modal-ausencia label input[type="radio"] { margin-top: 2px; flex-shrink:0; }
+        .modal-ausencia label:has(input:checked) {
+            border-color: #1b6ca8;
+            background: rgba(27,108,168,0.05);
+        }
+        .modal-ausencia label .opt-title { font-weight: 700; display:block; margin-bottom:2px; }
+        .modal-ausencia label .opt-desc  { font-size: 0.75rem; color: #94a3b8; }
+        .modal-ausencia textarea {
+            width: 100%;
+            border: 1.5px solid #e2e8f4;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 0.83rem;
+            resize: vertical;
+            min-height: 70px;
+            box-sizing: border-box;
+            font-family: inherit;
+            margin-top: 4px;
+            color: #334155;
+        }
+        .modal-ausencia textarea:focus { outline: none; border-color: #1b6ca8; }
+        .modal-ausencia .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 18px;
+        }
+        .modal-ausencia .btn-cancelar {
+            padding: 9px 20px;
+            border-radius: 10px;
+            border: 1.5px solid #e2e8f4;
+            background: white;
+            color: #64748b;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.83rem;
+        }
+        .modal-ausencia .btn-confirmar {
+            padding: 9px 20px;
+            border-radius: 10px;
+            border: none;
+            background: #c0392b;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.83rem;
+        }
+        .modal-ausencia .btn-confirmar:hover { background: #a93226; }
+        /* Modal agregar alumno */
+        .modal-agregar {
+            background: white;
+            border-radius: 18px;
+            padding: 28px 30px 24px;
+            max-width: 440px;
+            width: 94%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            animation: fadeInUp 0.25s ease;
+        }
+        .modal-agregar h3 { margin:0 0 18px; font-size:1.05rem; color:#0f3460; }
+        .modal-agregar .field-group { margin-bottom: 13px; }
+        .modal-agregar .field-group label {
+            display:block; font-size:0.8rem; font-weight:700;
+            color:#475569; margin-bottom:5px;
+        }
+        .modal-agregar .field-group input {
+            width:100%; padding:9px 12px; border-radius:10px;
+            border:1.5px solid #e2e8f4; font-size:0.85rem;
+            box-sizing:border-box; color:#334155; font-family:inherit;
+        }
+        .modal-agregar .field-group input:focus { outline:none; border-color:#1b6ca8; }
+        .modal-agregar .btn-tipo { display:flex; gap:8px; margin-bottom:16px; }
+        .modal-agregar .btn-tipo button {
+            flex:1; padding:9px; border-radius:10px; font-size:0.8rem;
+            font-weight:700; cursor:pointer; border:1.5px solid #e2e8f4;
+            background:white; color:#64748b; transition:all 0.15s;
+        }
+        .modal-agregar .btn-tipo button.active {
+            border-color:#1b6ca8; background:rgba(27,108,168,0.08); color:#1b6ca8;
+        }
+        /* Botón flotante agregar alumno */
+        .fab-agregar {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            background: linear-gradient(135deg, #1b6ca8, #00b894);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 13px 22px;
+            font-size: 0.88rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(27,108,168,0.35);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 100;
+            transition: transform 0.18s, box-shadow 0.18s;
+        }
+        .fab-agregar:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 28px rgba(27,108,168,0.45);
+        }
+        /* Alumno excluido del conteo visual */
+        .estudiante[data-excluido="true"] {
+            position: relative;
+        }
+        .estudiante[data-excluido="true"]::after {
+            content: 'No cuenta en conteo';
+            position: absolute;
+            top: 14px;
+            right: 60px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #94a3b8;
+            background: #f1f5f9;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
     </style>
 </head>
 <body>
@@ -1162,17 +1378,52 @@
 
         {% if estudiantes %}
             {% for est in estudiantes %}
-            <details class="estudiante" data-nombre="{{ est.nombre | lower }}" data-estudiante-id="{{ est.id }}" data-nomina-id="{{ session['current_nomina_id'] }}" data-evaluated-status="{{ 'true' if est.fecha_relleno is not none else 'false' }}">
+            {% set est_estado = est.estado_asistencia if est.estado_asistencia else 'activo' %}
+            {% set est_excluido = 'true' if est_estado in ['no_asiste_reemplazado','no_asiste_sin_reemplazo'] else 'false' %}
+            <details class="estudiante"
+                data-nombre="{{ est.nombre | lower }}"
+                data-estudiante-id="{{ est.id }}"
+                data-nomina-id="{{ session['current_nomina_id'] }}"
+                data-evaluated-status="{{ 'true' if est.fecha_relleno is not none else 'false' }}"
+                data-estado="{{ est_estado }}"
+                data-excluido="{{ est_excluido }}">
                 <summary>
-                    <div class="student-avatar"><i class="fas fa-user"></i></div>
-                    <div class="student-info">
-                        <div class="student-name">{{ est.nombre }}</div>
-                        <div class="student-meta">RUT: {{ est.rut }} &nbsp;·&nbsp; Edad: {{ est.edad }}</div>
+                    <div class="student-avatar">
+                        {% if est_estado == 'extra' %}<i class="fas fa-user-plus"></i>
+                        {% elif est_estado in ['no_asiste_reemplazado','no_asiste_sin_reemplazo'] %}<i class="fas fa-user-slash"></i>
+                        {% else %}<i class="fas fa-user"></i>{% endif %}
                     </div>
-                    {% if est.fecha_relleno is not none %}
+                    <div class="student-info">
+                        <div class="student-name">{{ est.nombre }}
+                            {% if est_estado == 'extra' %}<span style="font-size:.68rem;color:#6c5ce7;font-weight:700;margin-left:6px;">EXTRA</span>{% endif %}
+                        </div>
+                        <div class="student-meta">RUT: {{ est.rut }} &nbsp;·&nbsp; Edad: {{ est.edad }}
+                            {% if est.motivo_ausencia %}&nbsp;·&nbsp; <span style="color:#e17055;">{{ est.motivo_ausencia }}</span>{% endif %}
+                        </div>
+                    </div>
+                    {% if est_estado == 'no_asiste_reemplazado' %}
+                        <span class="status-badge ausente-reemplazado"><i class="fas fa-exchange-alt"></i> Reemplazado</span>
+                    {% elif est_estado == 'no_asiste_sin_reemplazo' %}
+                        <span class="status-badge ausente-sin-reemplazo"><i class="fas fa-user-slash"></i> No asiste</span>
+                    {% elif est_estado == 'extra' %}
+                        <span class="status-badge extra-badge"><i class="fas fa-plus-circle"></i> Extra</span>
+                    {% elif est.fecha_relleno is not none %}
                         <span class="status-badge evaluated"><i class="fas fa-check-circle"></i> Evaluado</span>
                     {% else %}
                         <span class="status-badge pending"><i class="fas fa-clock"></i> Pendiente</span>
+                    {% endif %}
+                    {% if est_estado == 'activo' or est_estado == 'extra' %}
+                    <button type="button" class="btn-estado-ausencia"
+                            onclick="event.preventDefault(); event.stopPropagation(); abrirModalAusencia('{{ est.id }}','{{ est.nombre | replace("'","\'") }}')"
+                            title="Marcar como no asiste">
+                        <i class="fas fa-user-times"></i> No asiste
+                    </button>
+                    {% else %}
+                    <button type="button" class="btn-estado-ausencia" style="background:rgba(99,110,114,0.08);color:#636e72;border-color:rgba(99,110,114,0.2);"
+                            onclick="event.preventDefault(); event.stopPropagation(); reactivarEstudiante('{{ est.id }}','{{ est.nombre | replace("'","\'") }}')"
+                            title="Reactivar estudiante">
+                        <i class="fas fa-undo"></i> Reactivar
+                    </button>
                     {% endif %}
                     <i class="fas fa-chevron-right chevron-icon"></i>
                 </summary>
@@ -2632,13 +2883,19 @@
 
         // Función para actualizar el contador de formularios completados en la interfaz
         function updateCompletedCount() {
-            const total = document.querySelectorAll('details.estudiante').length;
-            const completedCount = document.querySelectorAll('details.estudiante[data-evaluated-status="true"]').length;
+            // Excluir alumnos marcados como no_asiste (reemplazado o sin reemplazo) del conteo
+            const todosEstudiantes = document.querySelectorAll('details.estudiante');
+            const activos = Array.from(todosEstudiantes).filter(d => d.getAttribute('data-excluido') !== 'true');
+            const total = activos.length;
+            const completedCount = activos.filter(d => d.getAttribute('data-evaluated-status') === 'true').length;
             const pending = total - completedCount;
             const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0;
 
             const el = document.getElementById('completed-forms-count');
             if (el) el.textContent = completedCount;
+
+            const statTotal = document.getElementById('stat-total');
+            if (statTotal) statTotal.textContent = total;
 
             const statPending = document.getElementById('stat-pending');
             if (statPending) statPending.textContent = pending;
@@ -2737,6 +2994,294 @@
 
         // Llamar a updateCompletedCount cuando la página se carga para asegurar que el contador sea preciso
         document.addEventListener('DOMContentLoaded', updateCompletedCount);
+
+        // ═══════════════════════════════════════════════════════════
+        //  SISTEMA DE AUSENCIAS Y ALUMNOS EXTRA
+        // ═══════════════════════════════════════════════════════════
+        let _ausenciaEstudianteId   = null;
+        let _tipoAgregar            = 'reemplazo'; // 'reemplazo' | 'extra'
+
+        // ── Modal Ausencia ───────────────────────────────────────
+        function abrirModalAusencia(estudianteId, nombre) {
+            _ausenciaEstudianteId = estudianteId;
+            document.getElementById('modal-ausencia-nombre').textContent = nombre;
+            document.getElementById('radio-reemplazado').checked = true;
+            document.getElementById('input-motivo-ausencia').value = '';
+            document.getElementById('modal-ausencia').classList.add('open');
+        }
+        function cerrarModalAusencia() {
+            document.getElementById('modal-ausencia').classList.remove('open');
+            _ausenciaEstudianteId = null;
+        }
+
+        async function confirmarAusencia() {
+            if (!_ausenciaEstudianteId) return;
+            const tipo   = document.querySelector('input[name="tipo_ausencia"]:checked')?.value;
+            const motivo = document.getElementById('input-motivo-ausencia').value.trim();
+            if (!tipo) { alert('Selecciona un tipo de ausencia'); return; }
+
+            try {
+                const res = await fetch('/api/estudiante/estado_ausencia', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({
+                        estudiante_id:      _ausenciaEstudianteId,
+                        estado_asistencia:  tipo,
+                        motivo_ausencia:    motivo || null
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // Actualizar la card en el DOM
+                    const card = document.querySelector(`details[data-estudiante-id="${_ausenciaEstudianteId}"]`);
+                    if (card) {
+                        card.setAttribute('data-estado', tipo);
+                        card.setAttribute('data-excluido', 'true');
+                        // Actualizar badge de estado
+                        const badge = card.querySelector('.status-badge');
+                        if (badge) {
+                            if (tipo === 'no_asiste_reemplazado') {
+                                badge.className = 'status-badge ausente-reemplazado';
+                                badge.innerHTML = '<i class="fas fa-exchange-alt"></i> Reemplazado';
+                            } else {
+                                badge.className = 'status-badge ausente-sin-reemplazo';
+                                badge.innerHTML = '<i class="fas fa-user-slash"></i> No asiste';
+                            }
+                        }
+                        // Actualizar meta text
+                        const meta = card.querySelector('.student-meta');
+                        if (meta && motivo) {
+                            meta.innerHTML = meta.innerHTML + ` &nbsp;·&nbsp; <span style="color:#e17055;">${motivo}</span>`;
+                        }
+                        // Cambiar avatar
+                        const avatar = card.querySelector('.student-avatar i');
+                        if (avatar) avatar.className = 'fas fa-user-slash';
+                        // Cambiar botón a "Reactivar"
+                        const btnAus = card.querySelector('.btn-estado-ausencia');
+                        if (btnAus) {
+                            btnAus.innerHTML = '<i class="fas fa-undo"></i> Reactivar';
+                            btnAus.style.background = 'rgba(99,110,114,0.08)';
+                            btnAus.style.color = '#636e72';
+                            btnAus.setAttribute('onclick',
+                                `event.preventDefault();event.stopPropagation();reactivarEstudiante('${_ausenciaEstudianteId}','${card.querySelector('.student-name').textContent.trim()}')`);
+                        }
+                    }
+                    updateCompletedCount();
+                    cerrarModalAusencia();
+
+                    // Si es reemplazo, ofrecer agregar reemplazo
+                    if (tipo === 'no_asiste_reemplazado') {
+                        setTimeout(() => {
+                            if (confirm('¿Deseas agregar el alumno de reemplazo ahora?')) {
+                                abrirModalAgregar();
+                            }
+                        }, 300);
+                    }
+                } else {
+                    alert('Error al actualizar estado: ' + (data.error || 'Inténtalo de nuevo'));
+                }
+            } catch(e) {
+                alert('Error de conexión: ' + e.message);
+            }
+        }
+
+        async function reactivarEstudiante(estudianteId, nombre) {
+            if (!confirm(`¿Reactivar a ${nombre} en el conteo?`)) return;
+            try {
+                const res = await fetch('/api/estudiante/estado_ausencia', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({
+                        estudiante_id:     estudianteId,
+                        estado_asistencia: 'activo',
+                        motivo_ausencia:   null
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const card = document.querySelector(`details[data-estudiante-id="${estudianteId}"]`);
+                    if (card) {
+                        card.setAttribute('data-estado', 'activo');
+                        card.setAttribute('data-excluido', 'false');
+                        const isEval = card.getAttribute('data-evaluated-status') === 'true';
+                        const badge = card.querySelector('.status-badge');
+                        if (badge) {
+                            badge.className = isEval ? 'status-badge evaluated' : 'status-badge pending';
+                            badge.innerHTML = isEval
+                                ? '<i class="fas fa-check-circle"></i> Evaluado'
+                                : '<i class="fas fa-clock"></i> Pendiente';
+                        }
+                        const avatar = card.querySelector('.student-avatar i');
+                        if (avatar) avatar.className = 'fas fa-user';
+                        const btnAus = card.querySelector('.btn-estado-ausencia');
+                        if (btnAus) {
+                            btnAus.innerHTML = '<i class="fas fa-user-times"></i> No asiste';
+                            btnAus.style.background = '';
+                            btnAus.style.color = '';
+                            btnAus.setAttribute('onclick',
+                                `event.preventDefault();event.stopPropagation();abrirModalAusencia('${estudianteId}','${nombre}')`);
+                        }
+                    }
+                    updateCompletedCount();
+                } else {
+                    alert('Error al reactivar: ' + (data.error || 'Error'));
+                }
+            } catch(e) { alert('Error: ' + e.message); }
+        }
+
+        // ── Modal Agregar Alumno ─────────────────────────────────
+        function abrirModalAgregar(tipo) {
+            _tipoAgregar = tipo || 'reemplazo';
+            setTipoAgregar(_tipoAgregar);
+            document.getElementById('nuevo-nombre').value    = '';
+            document.getElementById('nuevo-rut').value      = '';
+            document.getElementById('nuevo-fecha-nac').value = '';
+            document.getElementById('nuevo-sexo').value     = '';
+            document.getElementById('modal-agregar').classList.add('open');
+            setTimeout(() => document.getElementById('nuevo-nombre').focus(), 100);
+        }
+        function cerrarModalAgregar() {
+            document.getElementById('modal-agregar').classList.remove('open');
+        }
+        function setTipoAgregar(tipo) {
+            _tipoAgregar = tipo;
+            document.getElementById('tipo-btn-reemplazo').classList.toggle('active', tipo === 'reemplazo');
+            document.getElementById('tipo-btn-extra').classList.toggle('active', tipo === 'extra');
+            const desc = document.getElementById('desc-tipo-agregar');
+            desc.textContent = tipo === 'reemplazo'
+                ? 'Reemplazo: sustituye a un alumno que no asiste. Se suma al conteo activo.'
+                : 'Extra: alumno adicional no contemplado en la nómina original. Se suma al conteo activo.';
+        }
+
+        async function confirmarAgregarAlumno() {
+            const nombre    = document.getElementById('nuevo-nombre').value.trim();
+            const rut       = document.getElementById('nuevo-rut').value.trim();
+            const fechaNac  = document.getElementById('nuevo-fecha-nac').value;
+            const sexo      = document.getElementById('nuevo-sexo').value;
+            const nominaId  = document.querySelector('input[name="nomina_id"]')?.value
+                            || document.querySelector('[data-nomina-id]')?.getAttribute('data-nomina-id')
+                            || '{{ session["current_nomina_id"] }}';
+
+            if (!nombre || !rut) { alert('Nombre y RUT son obligatorios'); return; }
+
+            try {
+                const res = await fetch('/api/estudiante/agregar', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({
+                        nomina_id:         nominaId,
+                        nombre:            nombre,
+                        rut:               rut,
+                        fecha_nacimiento:  fechaNac || null,
+                        sexo:              sexo || null,
+                        estado_asistencia: _tipoAgregar === 'extra' ? 'extra' : 'activo'
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    cerrarModalAgregar();
+                    // Recargar la página para mostrar el nuevo alumno con su formulario
+                    location.reload();
+                } else {
+                    alert('Error al agregar alumno: ' + (data.error || 'Error'));
+                }
+            } catch(e) { alert('Error de conexión: ' + e.message); }
+        }
+
     </script>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         MODAL: MARCAR AUSENCIA
+    ═══════════════════════════════════════════════════════════ -->
+    <div id="modal-ausencia" class="modal-ausencia-backdrop" onclick="if(event.target===this)cerrarModalAusencia()">
+        <div class="modal-ausencia">
+            <h3><i class="fas fa-user-times" style="color:#c0392b;margin-right:8px;"></i>Marcar como No Asiste</h3>
+            <div class="alumno-label" id="modal-ausencia-nombre"></div>
+
+            <label>
+                <input type="radio" name="tipo_ausencia" value="no_asiste_reemplazado" id="radio-reemplazado">
+                <div>
+                    <span class="opt-title">No asiste — Se reemplaza</span>
+                    <span class="opt-desc">El alumno no asiste y será reemplazado por otro. Se podrá agregar el reemplazo.</span>
+                </div>
+            </label>
+            <label>
+                <input type="radio" name="tipo_ausencia" value="no_asiste_sin_reemplazo" id="radio-sin-reemplazo">
+                <div>
+                    <span class="opt-title">No asiste — Sin reemplazo</span>
+                    <span class="opt-desc">El alumno no asiste y no habrá reemplazo. Se excluye del conteo.</span>
+                </div>
+            </label>
+
+            <div style="margin-top:12px;">
+                <div style="font-size:.8rem;font-weight:700;color:#475569;margin-bottom:6px;">Motivo / Observación (opcional)</div>
+                <textarea id="input-motivo-ausencia" placeholder="Ej: El alumno cambió de establecimiento..."></textarea>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-cancelar" onclick="cerrarModalAusencia()">Cancelar</button>
+                <button class="btn-confirmar" onclick="confirmarAusencia()">
+                    <i class="fas fa-check"></i> Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         MODAL: AGREGAR ALUMNO (reemplazo o extra)
+    ═══════════════════════════════════════════════════════════ -->
+    <div id="modal-agregar" class="modal-ausencia-backdrop" onclick="if(event.target===this)cerrarModalAgregar()">
+        <div class="modal-agregar">
+            <h3><i class="fas fa-user-plus" style="color:#1b6ca8;margin-right:8px;"></i>Agregar Alumno</h3>
+
+            <div class="btn-tipo">
+                <button id="tipo-btn-reemplazo" class="active" onclick="setTipoAgregar('reemplazo')">
+                    <i class="fas fa-exchange-alt"></i> Reemplazo
+                </button>
+                <button id="tipo-btn-extra" onclick="setTipoAgregar('extra')">
+                    <i class="fas fa-plus-circle"></i> Extra
+                </button>
+            </div>
+            <div id="desc-tipo-agregar" style="font-size:.75rem;color:#94a3b8;margin-bottom:14px;padding:8px 12px;background:#f8faff;border-radius:8px;">
+                Reemplazo: sustituye a un alumno que no asiste (excluido del conteo original).
+            </div>
+
+            <div class="field-group">
+                <label>Nombre Completo *</label>
+                <input type="text" id="nuevo-nombre" placeholder="Nombre y apellidos">
+            </div>
+            <div class="field-group">
+                <label>RUN (RUT) *</label>
+                <input type="text" id="nuevo-rut" placeholder="12.345.678-9">
+            </div>
+            <div class="field-group" style="display:flex;gap:10px;">
+                <div style="flex:1;">
+                    <label>Fecha Nacimiento</label>
+                    <input type="date" id="nuevo-fecha-nac">
+                </div>
+                <div style="flex:1;">
+                    <label>Sexo</label>
+                    <select id="nuevo-sexo" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid #e2e8f4;font-size:.85rem;color:#334155;">
+                        <option value="">—</option>
+                        <option value="F">Femenino</option>
+                        <option value="M">Masculino</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-cancelar" onclick="cerrarModalAgregar()">Cancelar</button>
+                <button class="btn-confirmar" style="background:#1b6ca8;" onclick="confirmarAgregarAlumno()">
+                    <i class="fas fa-plus"></i> Agregar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAB: Agregar alumno -->
+    <button class="fab-agregar" onclick="abrirModalAgregar()" title="Agregar alumno extra o reemplazo">
+        <i class="fas fa-user-plus"></i> Agregar Alumno
+    </button>
+
 </body>
 </html>

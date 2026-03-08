@@ -4252,5 +4252,112 @@ def api_correcciones_resueltas_escuela(school_id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RUTA: Marcar ausencia / reactivar alumno
+#  POST /api/estudiante/estado_ausencia
+#  Body JSON: { estudiante_id, estado_asistencia, motivo_ausencia }
+#  estados válidos: 'activo' | 'no_asiste_reemplazado' | 'no_asiste_sin_reemplazo'
+# ─────────────────────────────────────────────────────────────────────────────
+@app.route('/api/estudiante/estado_ausencia', methods=['POST'])
+def api_estudiante_estado_ausencia():
+    if 'usuario' not in session:
+        return jsonify({"success": False, "message": "No autorizado"}), 401
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "message": "Body JSON requerido"}), 400
+
+        estudiante_id    = data.get('estudiante_id', '').strip()
+        estado           = data.get('estado_asistencia', '').strip()
+        motivo           = data.get('motivo_ausencia')
+
+        estados_validos = {'activo', 'no_asiste_reemplazado', 'no_asiste_sin_reemplazo', 'extra'}
+        if not estudiante_id or estado not in estados_validos:
+            return jsonify({"success": False,
+                            "message": f"Parámetros inválidos. estado='{estado}', id='{estudiante_id}'"}), 400
+
+        # Validar formato UUID
+        try:
+            uuid.UUID(estudiante_id)
+        except ValueError:
+            return jsonify({"success": False,
+                            "message": f"ID de estudiante no es UUID válido: '{estudiante_id}'"}), 400
+
+        payload = {"estado_asistencia": estado}
+        if motivo is not None:
+            payload["motivo_ausencia"] = motivo if motivo else None
+
+        res = requests.patch(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}",
+            headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=representation"},
+            json=payload)
+
+        if res.status_code in (200, 204):
+            return jsonify({"success": True, "message": "Estado actualizado correctamente"})
+        else:
+            return jsonify({"success": False,
+                            "message": f"Error Supabase: {res.status_code} — {res.text}"}), 500
+
+    except Exception as e:
+        print(f"ERROR api_estudiante_estado_ausencia: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RUTA: Agregar alumno extra / de reemplazo
+#  POST /api/estudiante/agregar
+#  Body JSON: { nomina_id, nombre, rut, fecha_nacimiento, sexo, motivo_ingreso }
+# ─────────────────────────────────────────────────────────────────────────────
+@app.route('/api/estudiante/agregar', methods=['POST'])
+def api_estudiante_agregar():
+    if 'usuario' not in session:
+        return jsonify({"success": False, "message": "No autorizado"}), 401
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "message": "Body JSON requerido"}), 400
+
+        nomina_id      = data.get('nomina_id', '').strip()
+        nombre         = data.get('nombre', '').strip()
+        rut            = data.get('rut', '').strip()
+        fecha_nac      = data.get('fecha_nacimiento') or None
+        sexo           = data.get('sexo') or None
+        motivo_ingreso = data.get('motivo_ingreso') or 'extra'
+
+        if not nomina_id or not nombre:
+            return jsonify({"success": False, "message": "nomina_id y nombre son requeridos"}), 400
+
+        new_id = str(uuid.uuid4())
+        payload = {
+            "id":                new_id,
+            "nomina_id":         nomina_id,
+            "nombre":            nombre,
+            "rut":               rut or None,
+            "fecha_nacimiento":  fecha_nac,
+            "sexo":              sexo,
+            "estado_asistencia": "extra",
+            "motivo_ausencia":   motivo_ingreso,
+            "evaluado_flag":     False
+        }
+
+        res = requests.post(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina",
+            headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=representation"},
+            json=payload)
+
+        if res.status_code == 201:
+            nuevo = res.json()[0] if res.json() else {}
+            return jsonify({"success": True, "id": nuevo.get('id', new_id),
+                            "message": "Alumno agregado correctamente"})
+        else:
+            return jsonify({"success": False,
+                            "message": f"Error Supabase: {res.status_code} — {res.text}"}), 500
+
+    except Exception as e:
+        print(f"ERROR api_estudiante_agregar: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))

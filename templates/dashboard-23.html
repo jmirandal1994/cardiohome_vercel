@@ -1870,18 +1870,135 @@
                 <i class="fa-solid fa-bell-concierge section-icon"></i>
                 <h2 class="section-title">Solicitudes de Corrección</h2>
             </div>
-                    <div class="card admin-list">
-                        <h3><i class="fa-solid fa-bell-concierge"></i> Solicitudes de Corrección Pendientes <span class="status-badge pending" id="admin-pending-count-badge">0</span></h3>
-                        <p class="text-gray-600 mb-6">Lista de solicitudes enviadas por Coordinadores de Escuela o Doctoras. La acción aquí es revisar y cambiar el estado.</p>
-                        
-                        <ul class="lista-items" id="correction-requests-list">
-                            <p class="text-center text-gray-500 my-8"><i class="fa-solid fa-spinner fa-spin fa-2x"></i> Cargando solicitudes...</p>
-                            {# El contenido real se cargará vía JavaScript #}
-                        </ul>
-                        
-                        <p id="no-corrections-message" class="text-center text-gray-500 mt-4 hidden">No hay solicitudes de corrección pendientes en este momento.</p>
-                        
+            <style>
+            /* ── CORRECCIONES MEJORADAS ── */
+            .corr-grid { display: flex; flex-direction: column; gap: 14px; }
+            .corr-card {
+                background: white; border-radius: 16px;
+                border: 1.5px solid #e2e8f4;
+                box-shadow: 0 3px 12px rgba(15,52,96,.07);
+                overflow: hidden; transition: box-shadow .2s, transform .2s;
+            }
+            .corr-card:hover { box-shadow: 0 8px 24px rgba(15,52,96,.12); transform: translateY(-2px); }
+            .corr-card-stripe {
+                height: 5px;
+                background: linear-gradient(90deg,#e74c3c,#c0392b);
+            }
+            .corr-card-stripe.resolved { background: linear-gradient(90deg,#00b894,#00cec9); }
+            .corr-card-stripe.rejected { background: linear-gradient(90deg,#94a3b8,#64748b); }
+            .corr-card-body { padding: 18px 20px; }
+            .corr-card-header {
+                display: flex; justify-content: space-between;
+                align-items: flex-start; gap: 12px; margin-bottom: 14px;
+            }
+            .corr-alumno-block { display: flex; align-items: center; gap: 12px; }
+            .corr-avatar {
+                width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+                background: linear-gradient(135deg,#e74c3c,#c0392b);
+                display: flex; align-items: center; justify-content: center;
+                color: white; font-size: 1.1rem;
+            }
+            .corr-alumno-name { font-family:'Montserrat',sans-serif; font-size:.95rem; font-weight:800; color:#0f2030; }
+            .corr-alumno-rut  { font-size:.75rem; color:#94a3b8; margin-top:2px; }
+            .corr-status-badge {
+                display:inline-flex; align-items:center; gap:5px;
+                padding:5px 12px; border-radius:99px; font-size:.72rem; font-weight:800;
+                flex-shrink:0;
+            }
+            .corr-status-badge.pending  { background:rgba(231,76,60,.1);  color:#c0392b; border:1.5px solid rgba(231,76,60,.25); }
+            .corr-status-badge.resolved { background:rgba(0,184,148,.1);  color:#00a381; border:1.5px solid rgba(0,184,148,.25); }
+            .corr-status-badge.rejected { background:rgba(100,116,139,.1);color:#475569; border:1.5px solid rgba(100,116,139,.25); }
+
+            .corr-meta-row {
+                display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
+            }
+            .corr-meta-chip {
+                display: inline-flex; align-items: center; gap: 5px;
+                padding: 4px 10px; border-radius: 8px; font-size: .74rem; font-weight: 600;
+                background: #f0f6ff; color: #0A4D68; border: 1px solid #d4e5f5;
+            }
+            .corr-meta-chip.project { background: #fdf4ff; color: #7c3aed; border-color: #e9d5ff; }
+            .corr-meta-chip.date    { background: #f0fdf8; color: #059669; border-color: #a7f3d0; }
+            .corr-meta-chip.person  { background: #fff7ed; color: #d97706; border-color: #fed7aa; }
+
+            .corr-obs-box {
+                background: #fff5f5; border: 1.5px solid rgba(231,76,60,.2);
+                border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;
+            }
+            .corr-obs-label {
+                font-size: .68rem; font-weight: 800; text-transform: uppercase;
+                letter-spacing: .5px; color: #c0392b; margin-bottom: 5px;
+                display: flex; align-items: center; gap: 5px;
+            }
+            .corr-obs-text { font-size: .84rem; color: #334155; line-height: 1.5; }
+
+            /* Doc re-upload area */
+            .corr-upload-area {
+                border: 2px dashed #dde6f0; border-radius: 10px;
+                padding: 12px 16px; margin-bottom: 14px;
+                display: flex; align-items: center; gap: 12px; cursor: pointer;
+                transition: all .18s; background: #f8faff;
+            }
+            .corr-upload-area:hover { border-color: #0A4D68; background: #eef4ff; }
+            .corr-upload-icon {
+                width: 38px; height: 38px; border-radius: 10px;
+                background: linear-gradient(135deg,#0A4D68,#088395);
+                display: flex; align-items: center; justify-content: center;
+                color: white; font-size: .9rem; flex-shrink: 0;
+            }
+            .corr-upload-text { font-size: .8rem; color: #64748b; }
+            .corr-upload-text strong { display: block; color: #0A4D68; font-size: .82rem; margin-bottom: 1px; }
+            .corr-upload-badge {
+                margin-left: auto; padding: 4px 10px; border-radius: 8px;
+                font-size: .7rem; font-weight: 700; flex-shrink: 0;
+            }
+            .corr-upload-badge.new { background: rgba(0,184,148,.1); color: #00a381; border: 1px solid rgba(0,184,148,.25); }
+            .corr-upload-badge.none { background: #f1f5f9; color: #94a3b8; }
+
+            .corr-actions {
+                display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;
+                padding-top: 12px; border-top: 1px solid #f1f5f9;
+            }
+            .corr-btn {
+                display: inline-flex; align-items: center; gap: 6px;
+                padding: 8px 16px; border-radius: 10px; font-size: .78rem;
+                font-weight: 700; cursor: pointer; border: none; transition: all .18s;
+                font-family: inherit;
+            }
+            .corr-btn.resolve { background: linear-gradient(135deg,#00b894,#00cec9); color: white; box-shadow: 0 3px 10px rgba(0,184,148,.3); }
+            .corr-btn.resolve:hover { opacity: .9; transform: translateY(-1px); }
+            .corr-btn.reject  { background: #f1f5f9; color: #64748b; border: 1.5px solid #e2e8f0; }
+            .corr-btn.reject:hover  { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+            .corr-btn.upload  { background: #0A4D68; color: white; box-shadow: 0 3px 10px rgba(10,77,104,.25); }
+            .corr-btn.upload:hover  { opacity: .9; }
+
+            .corr-no-results {
+                text-align: center; padding: 60px 20px;
+                background: white; border-radius: 16px; border: 2px dashed #e2e8f0;
+            }
+            .corr-no-results i { font-size: 2.5rem; color: #cbd5e0; margin-bottom: 12px; display: block; }
+            .corr-no-results p { color: #94a3b8; font-size: .9rem; }
+            </style>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="background:rgba(231,76,60,.1);border:1.5px solid rgba(231,76,60,.25);padding:8px 16px;border-radius:10px;font-size:.82rem;font-weight:700;color:#c0392b;">
+                        <i class="fa-solid fa-clock"></i> Pendientes: <span id="admin-pending-count-badge">0</span>
                     </div>
+                </div>
+                <button onclick="loadCorrectionRequests()" style="background:#f0f6ff;color:#0A4D68;border:1.5px solid #d4e5f5;padding:8px 14px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:inherit;">
+                    <i class="fa-solid fa-rotate-right"></i> Actualizar
+                </button>
+            </div>
+
+            <div class="corr-grid" id="correction-requests-list">
+                <div style="text-align:center;padding:40px;color:#94a3b8;">
+                    <i class="fa-solid fa-spinner fa-spin fa-2x" style="margin-bottom:10px;display:block;"></i>
+                    Cargando solicitudes…
+                </div>
+            </div>
+            <p id="no-corrections-message" class="hidden" style="text-align:center;color:#94a3b8;margin-top:16px;">No hay solicitudes de corrección pendientes.</p>
+
                 </div>
 
                 <div id="crear_proyecto" class="content-section">
@@ -2026,10 +2143,17 @@
                                 </div>
                             </td>
                             <td style="padding:10px 12px;text-align:center;">
+                                <div style="display:flex;gap:5px;justify-content:center;align-items:center;flex-wrap:wrap;">
                                 <a href="{{ url_for('relleno_formulario', nomina_id=nomina.id) }}"
-                                   style="background:#0f3460;color:white;padding:5px 12px;border-radius:7px;font-size:.73rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:5px;">
+                                   style="background:#0f3460;color:white;padding:5px 10px;border-radius:7px;font-size:.73rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
                                     <i class="fa-solid fa-arrow-right"></i> Ver
                                 </a>
+                                <button onclick="descargarListadoAlumnos('{{ nomina.id }}', '{{ nomina.nombre_nomina | replace("'","\\'") }}')"
+                                   style="background:white;color:#0f3460;padding:5px 10px;border-radius:7px;font-size:.73rem;font-weight:700;border:1.5px solid #0f3460;cursor:pointer;display:inline-flex;align-items:center;gap:4px;"
+                                   title="Descargar listado de alumnos">
+                                    <i class="fa-solid fa-download"></i> Listado
+                                </button>
+                                </div>
                             </td>
                         </tr>
                     {% endfor %}
@@ -2112,10 +2236,43 @@
             } catch(e) { console.warn('Stats error proyecto', pid, e); }
         }
     }
+    // Descargar listado de alumnos por nómina
+    async function descargarListadoAlumnos(nominaId, nominaNombre) {
+        const { value: formato } = await Swal.fire({
+            title: 'Descargar Listado de Alumnos',
+            html: `<div style="font-size:.9rem;color:#475569;margin-bottom:12px;">Nómina: <strong>${nominaNombre}</strong></div>
+                   <div style="font-size:.85rem;color:#64748b;">¿En qué formato deseas el listado actual?</div>`,
+            showDenyButton: true,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-file-excel"></i> Excel',
+            denyButtonText: '<i class="fas fa-file-pdf"></i> PDF',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#059669',
+            denyButtonColor: '#dc2626',
+        });
+        if (formato === undefined) return; // cancelado
+        const esExcel = formato === true;
+        const endpoint = esExcel ? '/api/admin/listado_alumnos_excel' : '/api/admin/listado_alumnos_pdf';
+        Swal.fire({ title: esExcel ? 'Generando Excel…' : 'Generando PDF…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+            const res  = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nomina_id: nominaId })
+            });
+            if (!res.ok) throw new Error('Error al generar el archivo');
+            const blob = await res.blob();
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href = url;
+            a.download = `Listado_${nominaNombre.replace(/[^a-zA-Z0-9]/g,'_')}_${new Date().toISOString().slice(0,10)}.${esExcel ? 'xlsx' : 'pdf'}`;
+            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+            Swal.fire({ icon: 'success', title: '¡Descargado!', timer: 2000, showConfirmButton: false });
+        } catch(e) {
+            Swal.fire({ icon: 'error', title: 'Error', text: e.message });
+        }
+    }
     </script>
-</div>
-            
-                <div id="admin-contact" class="content-section">
             <div class="section-topbar">
                 <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
                 <i class="fa-solid fa-envelope section-icon"></i>
@@ -2425,66 +2582,460 @@
             </div>
 
             {% elif usuario == 'coordinador_escuela' %}
-                {# MODIFICACIÓN: Esta es la sección activa por defecto para 'coordinador_escuela' #}
+                {# Perfil Coordinador Escuela — Diseño premium #}
                 <div id="school-dashboard" class="content-section active">
-                    <h2 class="text-3xl font-extrabold text-gray-800 mb-8 font-['Montserrat']">
-                        <i class="fa-solid fa-building-columns text-secondary-blue mr-2"></i> Establecimientos Asignados
-                    </h2>
 
-                    <div id="school-list-container" class="card">
+                <style>
+                /* ── ESTABLECIMIENTOS GRID ── */
+                .escuela-hero {
+                    background: linear-gradient(135deg, #0f3460 0%, #1c67a3 60%, #0A4D68 100%);
+                    border-radius: 20px; padding: 28px 32px; margin-bottom: 24px;
+                    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+                    box-shadow: 0 8px 32px rgba(15,52,96,.2); position: relative; overflow: hidden;
+                }
+                .escuela-hero::before {
+                    content: ''; position: absolute; top: -40px; right: -40px;
+                    width: 200px; height: 200px; border-radius: 50%;
+                    background: rgba(255,255,255,.04);
+                }
+                .escuela-hero::after {
+                    content: ''; position: absolute; bottom: -60px; right: 80px;
+                    width: 140px; height: 140px; border-radius: 50%;
+                    background: rgba(255,255,255,.03);
+                }
+                .escuela-hero-icon {
+                    width: 64px; height: 64px; border-radius: 18px;
+                    background: rgba(255,255,255,.15); border: 2px solid rgba(255,255,255,.2);
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: 1.8rem; color: white; flex-shrink: 0;
+                }
+                .escuela-hero-text h2 { color: white; font-family: 'Montserrat',sans-serif; font-size: 1.4rem; font-weight: 800; margin: 0 0 4px; }
+                .escuela-hero-text p  { color: rgba(255,255,255,.7); font-size: .83rem; margin: 0; }
+                .escuela-hero-badge {
+                    margin-left: auto; background: rgba(255,255,255,.12);
+                    border: 1.5px solid rgba(255,255,255,.2); border-radius: 12px;
+                    padding: 10px 16px; text-align: center; flex-shrink: 0;
+                }
+                .escuela-hero-badge .n { font-size: 1.6rem; font-weight: 900; color: white; line-height: 1; }
+                .escuela-hero-badge .l { font-size: .68rem; color: rgba(255,255,255,.65); font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
+
+                /* ── GRID TARJETAS ── */
+                .colegios-premium-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                    gap: 18px; margin-bottom: 28px;
+                }
+
+                /* ── TARJETA COLEGIO ── */
+                .col-card {
+                    background: white; border-radius: 20px;
+                    border: 1.5px solid #e8f0f6;
+                    box-shadow: 0 3px 14px rgba(15,52,96,.07);
+                    cursor: pointer; overflow: hidden;
+                    transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s;
+                    position: relative;
+                }
+                .col-card:hover { transform: translateY(-6px) scale(1.015); box-shadow: 0 16px 40px rgba(15,52,96,.14); }
+                .col-card:hover .col-lock-anim { animation: lockShake .4s ease; }
+
+                @keyframes lockShake {
+                    0%,100% { transform: rotate(0deg); }
+                    20% { transform: rotate(-8deg); }
+                    40% { transform: rotate(8deg); }
+                    60% { transform: rotate(-5deg); }
+                    80% { transform: rotate(5deg); }
+                }
+
+                /* Barra superior de color */
+                .col-card-bar { height: 6px; background: linear-gradient(90deg, #0f3460, #1c67a3); }
+
+                .col-card-body { padding: 22px 20px 18px; }
+
+                /* Icono edificio */
+                .col-building-wrap {
+                    width: 60px; height: 60px; margin: 0 auto 14px;
+                    background: linear-gradient(135deg, #f0f6ff, #e0ecff);
+                    border-radius: 18px; display: flex; align-items: center; justify-content: center;
+                    position: relative; transition: all .25s;
+                }
+                .col-card:hover .col-building-wrap { background: linear-gradient(135deg, #0f3460, #1c67a3); }
+                .col-building-icon { font-size: 1.6rem; color: #0f3460; transition: color .25s; }
+                .col-card:hover .col-building-icon { color: white; }
+
+                /* Candado flotante */
+                .col-lock-anim {
+                    position: absolute; top: -8px; right: -8px;
+                    width: 26px; height: 26px; border-radius: 50%;
+                    background: #e74c3c; color: white;
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: .7rem; box-shadow: 0 2px 8px rgba(231,76,60,.4);
+                    transition: background .25s;
+                }
+                .col-card:hover .col-lock-anim { background: #0f3460; }
+
+                .col-nombre {
+                    font-family: 'Montserrat', sans-serif; font-size: .92rem;
+                    font-weight: 800; color: #0f2030; text-align: center; margin-bottom: 6px;
+                    line-height: 1.3;
+                }
+                .col-sub { font-size: .75rem; color: #94a3b8; text-align: center; margin-bottom: 14px; }
+
+                .col-access-hint {
+                    display: flex; align-items: center; justify-content: center; gap: 6px;
+                    padding: 9px 14px; border-radius: 10px;
+                    border: 1.5px dashed #d4e5f5; background: #f7faff;
+                    font-size: .76rem; font-weight: 700; color: #0A4D68;
+                    transition: all .2s;
+                }
+                .col-card:hover .col-access-hint {
+                    background: linear-gradient(135deg, #0f3460, #1c67a3);
+                    border-color: transparent; color: white;
+                }
+
+                /* ── PANEL TOKEN ── */
+                .token-panel {
+                    background: white; border-radius: 20px;
+                    border: 1.5px solid #e8f0f6;
+                    box-shadow: 0 4px 20px rgba(15,52,96,.1);
+                    overflow: hidden; display: none;
+                    animation: slideDown .3s ease;
+                }
+                @keyframes slideDown { from { opacity:0; transform:translateY(-16px); } to { opacity:1; transform:translateY(0); } }
+
+                .token-panel-header {
+                    background: linear-gradient(135deg, #0f3460, #1c67a3);
+                    padding: 20px 24px; display: flex; align-items: center;
+                    justify-content: space-between; gap: 12px;
+                }
+                .token-panel-title {
+                    display: flex; align-items: center; gap: 12px;
+                }
+                .token-panel-title-icon {
+                    width: 42px; height: 42px; border-radius: 12px;
+                    background: rgba(255,255,255,.15); display: flex;
+                    align-items: center; justify-content: center;
+                    color: white; font-size: 1.1rem; flex-shrink: 0;
+                }
+                .token-panel-title h3 { color: white; font-family:'Montserrat',sans-serif; font-size:.95rem; font-weight:800; margin:0; }
+                .token-panel-title span { color:rgba(255,255,255,.65); font-size:.75rem; }
+                .token-back-btn {
+                    background: rgba(255,255,255,.15); border: 1.5px solid rgba(255,255,255,.25);
+                    color: white; border-radius: 10px; padding: 8px 14px;
+                    font-size: .78rem; font-weight: 700; cursor: pointer;
+                    display: flex; align-items: center; gap: 6px; font-family: inherit;
+                    transition: background .18s;
+                }
+                .token-back-btn:hover { background: rgba(255,255,255,.25); }
+
+                .token-form-area {
+                    padding: 28px 28px 24px;
+                    display: flex; flex-direction: column; align-items: center; gap: 20px;
+                }
+
+                /* Cerradura animada */
+                .lock-visual {
+                    width: 80px; height: 80px; border-radius: 24px;
+                    background: linear-gradient(135deg, #f0f6ff, #dbeafe);
+                    border: 2px solid #d4e5f5;
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: 2.2rem; color: #0f3460;
+                    transition: all .4s cubic-bezier(.34,1.56,.64,1);
+                    position: relative;
+                }
+                .lock-visual.unlocked {
+                    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+                    border-color: #6ee7b7; color: #059669;
+                    transform: scale(1.1) rotate(-5deg);
+                }
+                .lock-visual-glow {
+                    position: absolute; inset: -6px; border-radius: 28px;
+                    background: transparent; border: 2px solid transparent;
+                    transition: all .3s;
+                }
+                .lock-visual:hover .lock-visual-glow {
+                    border-color: rgba(15,52,96,.15);
+                    animation: pulse-ring 1.5s ease infinite;
+                }
+                @keyframes pulse-ring {
+                    0%   { transform:scale(1);   opacity:1; }
+                    100% { transform:scale(1.2); opacity:0; }
+                }
+
+                .token-input-wrap {
+                    width: 100%; max-width: 400px; position: relative;
+                }
+                .token-input-label {
+                    font-size: .78rem; font-weight: 800; color: #475569;
+                    text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px;
+                    display: flex; align-items: center; gap: 6px;
+                }
+                .token-input {
+                    width: 100%; padding: 14px 48px 14px 18px;
+                    border-radius: 14px; border: 2px solid #dde6f0;
+                    font-size: 1rem; font-weight: 700; letter-spacing: .15em;
+                    font-family: 'Courier New', monospace;
+                    outline: none; transition: border-color .2s, box-shadow .2s;
+                    background: #f8faff; color: #0f2030;
+                    text-align: center;
+                }
+                .token-input:focus {
+                    border-color: #0f3460;
+                    box-shadow: 0 0 0 4px rgba(15,52,96,.1);
+                    background: white;
+                }
+                .token-toggle-btn {
+                    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+                    background: none; border: none; cursor: pointer;
+                    color: #94a3b8; font-size: .9rem; padding: 4px;
+                }
+                .token-toggle-btn:hover { color: #0f3460; }
+                .token-dots {
+                    display: flex; gap: 6px; justify-content: center; margin-top: 8px;
+                }
+                .token-dot {
+                    width: 8px; height: 8px; border-radius: 50%;
+                    background: #e2e8f0; transition: background .2s;
+                }
+                .token-dot.filled { background: #0f3460; }
+
+                .token-submit-btn {
+                    width: 100%; max-width: 400px; padding: 14px 24px;
+                    border-radius: 14px; border: none;
+                    background: linear-gradient(135deg, #0f3460, #1c67a3);
+                    color: white; font-size: .9rem; font-weight: 800;
+                    cursor: pointer; display: flex; align-items: center;
+                    justify-content: center; gap: 10px; font-family: inherit;
+                    box-shadow: 0 4px 16px rgba(15,52,96,.3);
+                    transition: transform .18s, box-shadow .18s;
+                    letter-spacing: .02em;
+                }
+                .token-submit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(15,52,96,.38); }
+
+                .token-hint {
+                    font-size: .75rem; color: #94a3b8; text-align: center;
+                    display: flex; align-items: center; gap: 5px;
+                }
+
+                /* ── NÓMINA DESBLOQUADA ── */
+                .nomina-desbloqueada { padding: 0 28px 28px; }
+                .nomina-desbloqueada h4 {
+                    font-family: 'Montserrat',sans-serif; font-size:.95rem; font-weight:800;
+                    color:#0f2030; display:flex; align-items:center; gap:8px; margin-bottom:16px;
+                }
+                .alumno-row {
+                    background: white; border-radius: 14px;
+                    border: 1.5px solid #e8f0f6;
+                    padding: 14px 16px; margin-bottom: 10px;
+                    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+                    transition: border-color .18s, box-shadow .18s;
+                }
+                .alumno-row:hover { border-color: #bee3f8; box-shadow: 0 4px 12px rgba(15,52,96,.07); }
+                .alumno-avatar {
+                    width: 40px; height: 40px; border-radius: 11px; flex-shrink: 0;
+                    background: linear-gradient(135deg, #0f3460, #1c67a3);
+                    display: flex; align-items: center; justify-content: center;
+                    color: white; font-size: .95rem;
+                }
+                .alumno-info { flex: 1; min-width: 0; }
+                .alumno-nombre { font-weight: 700; color: #0f2030; font-size: .88rem; }
+                .alumno-meta   { font-size: .73rem; color: #94a3b8; margin-top: 2px; }
+                .alumno-estado {
+                    padding: 4px 10px; border-radius: 8px; font-size: .72rem; font-weight: 700; flex-shrink: 0;
+                }
+                .alumno-estado.eval   { background: rgba(5,150,105,.1); color: #059669; border: 1px solid rgba(5,150,105,.2); }
+                .alumno-estado.pend   { background: rgba(231,76,60,.1); color: #c0392b; border: 1px solid rgba(231,76,60,.2); }
+                .alumno-acciones { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
+                .al-btn {
+                    display: inline-flex; align-items: center; gap: 5px;
+                    padding: 6px 12px; border-radius: 9px; font-size: .72rem;
+                    font-weight: 700; cursor: pointer; border: none;
+                    transition: all .18s; font-family: inherit; text-decoration: none;
+                }
+                .al-btn.pdf     { background: #0f3460; color: white; }
+                .al-btn.pdf:hover { opacity: .85; }
+                .al-btn.pdf.disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
+                .al-btn.corr    { background: white; color: #c0392b; border: 1.5px solid rgba(231,76,60,.3); }
+                .al-btn.corr:hover { background: #fee2e2; }
+                .al-btn.corr.locked { background: #f8faff; color: #94a3b8; border-color: #e2e8f0; cursor: not-allowed; }
+
+                /* Bloqueo 5 días hábiles */
+                .corr-lock-banner {
+                    display: flex; align-items: center; gap: 10px;
+                    padding: 10px 14px; background: rgba(251,191,36,.08);
+                    border: 1.5px solid rgba(251,191,36,.3); border-radius: 10px;
+                    margin-bottom: 14px; font-size: .78rem; color: #92400e;
+                }
+                .corr-lock-banner i { color: #d97706; flex-shrink: 0; }
+
+                /* Resubir documento */
+                .resubir-wrap {
+                    margin-top: 20px; padding-top: 16px;
+                    border-top: 1.5px dashed #e2e8f0;
+                }
+                .resubir-wrap h5 {
+                    font-size: .8rem; font-weight: 800; color: #475569;
+                    text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px;
+                    display: flex; align-items: center; gap: 6px;
+                }
+                .resubir-drop {
+                    border: 2px dashed #d4e5f5; border-radius: 12px;
+                    padding: 20px; text-align: center; cursor: pointer;
+                    transition: all .2s; background: #f8faff;
+                }
+                .resubir-drop:hover { border-color: #0f3460; background: #eef4ff; }
+                .resubir-drop i   { font-size: 1.5rem; color: #94a3b8; margin-bottom: 6px; display: block; }
+                .resubir-drop p   { font-size: .78rem; color: #94a3b8; margin: 0; }
+                .resubir-drop strong { display: block; font-size: .82rem; color: #0f3460; margin-bottom: 2px; }
+                .resubir-uploaded {
+                    display: flex; align-items: center; gap: 10px;
+                    padding: 10px 14px; background: rgba(5,150,105,.07);
+                    border: 1.5px solid rgba(5,150,105,.2); border-radius: 10px;
+                    font-size: .8rem; color: #059669; font-weight: 700; margin-top: 8px;
+                }
+
+                @media(max-width:640px){
+                    .colegios-premium-grid { grid-template-columns: 1fr; }
+                }
+                </style>
+
+                    <!-- Hero header -->
+                    <div class="escuela-hero">
+                        <div class="escuela-hero-icon"><i class="fa-solid fa-building-columns"></i></div>
+                        <div class="escuela-hero-text">
+                            <h2>Establecimientos Asignados</h2>
+                            <p>Selecciona un establecimiento para acceder a la nómina de valoraciones</p>
+                        </div>
+                        <div class="escuela-hero-badge">
+                            <div class="n">{{ colegios_asignados | length if colegios_asignados else 0 }}</div>
+                            <div class="l">Establec.</div>
+                        </div>
+                    </div>
+
+                    <!-- Grid establecimientos -->
+                    <div id="school-list-container">
                         {% if colegios_asignados %}
-                            <p class="text-lg text-gray-600 mb-4">Seleccione un establecimiento para desbloquear su nómina de valoraciones:</p>
-                            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 colegios-grid">
-                                {% for colegio in colegios_asignados %}
-                                    <div class="colegio-card-small" 
-                                        onclick="showAccessForm('{{ colegio.id }}', '{{ colegio.nombre_colegio }}')">
-                                        <div class="info">
-                                            <i class="fa-solid fa-folder-closed text-xl text-primary-blue"></i>
-                                            <span>{{ colegio.nombre_colegio }}</span>
+                        <div class="colegios-premium-grid">
+                            {% for colegio in colegios_asignados %}
+                            <div class="col-card" onclick="showAccessForm('{{ colegio.id }}', '{{ colegio.nombre_colegio }}')">
+                                <div class="col-card-bar"></div>
+                                <div class="col-card-body">
+                                    <div class="col-building-wrap">
+                                        <i class="fa-solid fa-school col-building-icon"></i>
+                                        <div class="col-lock-anim">
+                                            <i class="fa-solid fa-lock"></i>
                                         </div>
-                                        <i class="fa-solid fa-lock icon-lock"></i>
                                     </div>
-                                {% endfor %}
+                                    <div class="col-nombre">{{ colegio.nombre_colegio }}</div>
+                                    <div class="col-sub">Nómina de valoraciones</div>
+                                    <div class="col-access-hint">
+                                        <i class="fa-solid fa-key"></i>
+                                        Ingresar token de acceso
+                                    </div>
+                                </div>
                             </div>
+                            {% endfor %}
+                        </div>
                         {% else %}
-                            <p class="text-center text-red-500 font-medium">No tiene establecimientos asignados. Contacte a su Coordinadora General.</p>
+                        <div style="text-align:center;padding:60px 20px;background:white;border-radius:20px;border:2px dashed #e2e8f0;">
+                            <i class="fa-solid fa-building-circle-exclamation" style="font-size:2.5rem;color:#cbd5e0;margin-bottom:14px;display:block;"></i>
+                            <p style="color:#94a3b8;font-size:.9rem;">No tiene establecimientos asignados.<br>Contacte a su Coordinadora General.</p>
+                        </div>
                         {% endif %}
                     </div>
 
-                    <div id="access-modal-container" style="display:none;" class="mt-8">
-                        <div class="card">
-                            <div class="flex justify-between items-center border-b pb-4 mb-4">
-                                <h3 class="text-2xl font-bold flex items-center gap-2 m-0 border-none pb-0">
-                                    <i class="fa-solid fa-unlock-keyhole text-highlight-green"></i>
-                                    Acceso a la Nómina: <span id="access-school-name" class="text-secondary-blue"></span>
-                                </h3>
-                                <button onclick="backToSchoolList()" class="action-button red text-sm">
-                                    <i class="fa-solid fa-arrow-left"></i> Volver al Listado
-                                </button>
+                    <!-- Panel token + nómina -->
+                    <div id="access-modal-container" class="token-panel" style="margin-top:20px;">
+                        <!-- Header -->
+                        <div class="token-panel-header">
+                            <div class="token-panel-title">
+                                <div class="token-panel-title-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                                <div>
+                                    <h3 id="access-school-name-title">Acceso Seguro</h3>
+                                    <span id="access-school-name">Establecimiento</span>
+                                </div>
                             </div>
-                            
-                            <div id="password-form-container" class="p-4 bg-light-blue rounded-lg">
-                                <p class="text-lg font-medium text-text-dark mb-4">
-                                    <i class="fa-solid fa-triangle-exclamation text-danger-red mr-2"></i> **Token de Acceso Requerido**
-                                </p>
-                                <form id="access-password-form" onsubmit="return handleAccessPassword(event)">
-                                    <input type="hidden" id="current-school-id" value=""> 
+                            <button class="token-back-btn" onclick="backToSchoolList()">
+                                <i class="fa-solid fa-arrow-left"></i> Volver
+                            </button>
+                        </div>
 
-                                    <label for="school_password" class="font-bold block mb-2">Token Secreto:</label>
-                                    <input type="password" id="school_password" name="school_password" required class="form-input" placeholder="Ingrese el token secreto de acceso..." />
-                                    <button type="submit" class="form-button mt-4 w-full justify-center">
-                                        <i class="fa-solid fa-unlock"></i> Desbloquear Nómina
-                                    </button>
-                                </form>
+                        <!-- Formulario token -->
+                        <div id="password-form-container" class="token-form-area">
+                            <!-- Cerradura animada -->
+                            <div class="lock-visual" id="lock-visual-icon">
+                                <div class="lock-visual-glow"></div>
+                                <i class="fa-solid fa-lock-keyhole" id="lock-icon-i"></i>
                             </div>
-                            
-                            <div id="nomina-content-locked" class="mt-8" style="display: none;">
-                                <h4><i class="fa-solid fa-list-ul"></i> Nómina de Valoraciones Evaluadas</h4>
-                                <p class="text-gray-600 mb-6">Lista de alumnos evaluados. Puede descargar su valoración individual o solicitar correcciones específicas.</p>
-                                
-                                <ul class="lista-items" id="alumnos-nomina-list">
-                                    </ul>
-                                <p id="nomina-no-results-message" class="text-center text-gray-500 mt-4" style="display:none;">No hay alumnos evaluados para este colegio.</p>
+                            <div style="text-align:center;">
+                                <div style="font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:800;color:#0f2030;margin-bottom:4px;">Token de Acceso Requerido</div>
+                                <div style="font-size:.78rem;color:#94a3b8;">Ingresa el token secreto para desbloquear la nómina</div>
+                            </div>
+
+                            <form id="access-password-form" onsubmit="return handleAccessPassword(event)" style="width:100%;max-width:400px;display:flex;flex-direction:column;gap:14px;">
+                                <input type="hidden" id="current-school-id" value="">
+                                <div class="token-input-wrap">
+                                    <div class="token-input-label"><i class="fas fa-key"></i> Token Secreto</div>
+                                    <input type="password" id="school_password" name="school_password" required
+                                        class="token-input" placeholder="• • • • • • • •"
+                                        oninput="updateTokenDots(this.value)">
+                                    <button type="button" class="token-toggle-btn" onclick="toggleTokenVisibility()">
+                                        <i class="fa-solid fa-eye" id="token-eye-icon"></i>
+                                    </button>
+                                </div>
+                                <!-- Puntos indicadores -->
+                                <div class="token-dots" id="token-dots">
+                                    <div class="token-dot" id="td-1"></div>
+                                    <div class="token-dot" id="td-2"></div>
+                                    <div class="token-dot" id="td-3"></div>
+                                    <div class="token-dot" id="td-4"></div>
+                                    <div class="token-dot" id="td-5"></div>
+                                    <div class="token-dot" id="td-6"></div>
+                                    <div class="token-dot" id="td-7"></div>
+                                    <div class="token-dot" id="td-8"></div>
+                                </div>
+                                <button type="submit" class="token-submit-btn">
+                                    <i class="fa-solid fa-unlock-keyhole"></i>
+                                    Desbloquear Nómina
+                                </button>
+                                <div class="token-hint">
+                                    <i class="fa-solid fa-circle-info"></i>
+                                    El token es proporcionado por la Coordinadora General
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Contenido nómina (después de desbloquear) -->
+                        <div id="nomina-content-locked" style="display:none;">
+                            <div class="nomina-desbloqueada">
+                                <h4><i class="fa-solid fa-unlock-keyhole" style="color:#059669;"></i> Nómina Desbloqueada</h4>
+
+                                <!-- Banner bloqueo correcciones (se muestra dinámicamente) -->
+                                <div id="corr-lock-banner" class="corr-lock-banner" style="display:none;">
+                                    <i class="fa-solid fa-clock"></i>
+                                    <span id="corr-lock-msg">El plazo de 5 días hábiles para solicitar correcciones ha vencido.</span>
+                                </div>
+
+                                <ul class="lista-items" id="alumnos-nomina-list" style="padding:0;list-style:none;"></ul>
+                                <p id="nomina-no-results-message" style="display:none;text-align:center;color:#94a3b8;margin-top:16px;">No hay alumnos evaluados para este colegio.</p>
+
+                                <!-- Resubir documento corregido -->
+                                <div class="resubir-wrap" id="resubir-section">
+                                    <h5><i class="fa-solid fa-file-arrow-up"></i> Resubir Documento Corregido</h5>
+                                    <div class="resubir-drop" id="resubir-drop-area"
+                                        onclick="document.getElementById('resubir-file-input').click()"
+                                        ondragover="event.preventDefault();this.style.borderColor='#0f3460'"
+                                        ondragleave="this.style.borderColor=''"
+                                        ondrop="handleResubirDrop(event)">
+                                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                                        <strong>Subir documento corregido</strong>
+                                        <p>Arrastra aquí o haz clic · PDF, DOC, DOCX, JPG</p>
+                                    </div>
+                                    <input type="file" id="resubir-file-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none;" onchange="handleResubirFile(this)">
+                                    <div id="resubir-success-msg" class="resubir-uploaded" style="display:none;">
+                                        <i class="fa-solid fa-circle-check"></i>
+                                        <span>Documento resubido correctamente. La coordinadora general será notificada.</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -3194,23 +3745,37 @@
                                 </div>
                             </div>
 
-                            <!-- Nominas expandible -->
+                            <!-- Nominas expandible con barra de progreso -->
                             <div class="nominas-lista">
                                 {% for nomina in nominas_proyecto %}
-                                <div class="nomina-item">
-                                    <div class="nomina-item-icon">
-                                        <i class="fa-solid fa-{% if 'Neurolog' in nomina.tipo_nomina_display %}brain{% else %}stethoscope{% endif %}"></i>
-                                    </div>
-                                    <div class="nomina-item-info">
-                                        <div class="nomina-item-name">{{ nomina.nombre_establecimiento }}</div>
-                                        <div class="nomina-item-sub">
-                                            {% if nomina.nombre_colegio %}<i class="fa-solid fa-school"></i> {{ nomina.nombre_colegio }}{% endif %}
+                                <div class="nomina-item" style="flex-direction:column;align-items:stretch;gap:10px;" data-nomina-doc-id="{{ nomina.id }}">
+                                    <!-- Row principal -->
+                                    <div style="display:flex;align-items:center;gap:12px;">
+                                        <div class="nomina-item-icon">
+                                            <i class="fa-solid fa-{% if 'Neurolog' in nomina.tipo_nomina_display %}brain{% else %}stethoscope{% endif %}"></i>
                                         </div>
+                                        <div class="nomina-item-info">
+                                            <div class="nomina-item-name">{{ nomina.nombre_establecimiento }}</div>
+                                            <div class="nomina-item-sub">
+                                                {% if nomina.nombre_colegio %}<i class="fa-solid fa-school"></i> {{ nomina.nombre_colegio }}{% endif %}
+                                            </div>
+                                        </div>
+                                        <span class="nomina-tipo-badge">{{ nomina.tipo_nomina_display }}</span>
+                                        <a href="{{ url_for('relleno_formulario', nomina_id=nomina.id) }}" class="nomina-action-link">
+                                            <i class="fa-solid fa-pen-to-square"></i> Rellenar
+                                        </a>
                                     </div>
-                                    <span class="nomina-tipo-badge">{{ nomina.tipo_nomina_display }}</span>
-                                    <a href="{{ url_for('relleno_formulario', nomina_id=nomina.id) }}" class="nomina-action-link">
-                                        <i class="fa-solid fa-pen-to-square"></i> Rellenar
-                                    </a>
+                                    <!-- Barra de progreso por nómina -->
+                                    <div style="padding:0 4px;" id="nom-progress-wrap-{{ nomina.id }}">
+                                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                                            <span style="font-size:.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.4px;">Avance evaluaciones</span>
+                                            <span id="nom-pct-{{ nomina.id }}" style="font-size:.75rem;font-weight:800;color:#0A4D68;">—</span>
+                                        </div>
+                                        <div style="height:6px;background:#eef2f7;border-radius:99px;overflow:hidden;">
+                                            <div id="nom-bar-{{ nomina.id }}" style="height:100%;border-radius:99px;width:0%;background:linear-gradient(90deg,#0A4D68,#05BFDB);transition:width .6s ease;"></div>
+                                        </div>
+                                        <div id="nom-count-{{ nomina.id }}" style="font-size:.68rem;color:#94a3b8;margin-top:3px;">cargando…</div>
+                                    </div>
                                 </div>
                                 {% endfor %}
                             </div>
@@ -3487,83 +4052,143 @@
             noResults.classList.add('hidden');
         }
 
+        // ── MODAL CORRECCIÓN ─────────────────────────────────────────────
         function showCorrectionModal(alumnoId, alumnoNombre) {
             const modal = document.getElementById('correction-modal');
             document.getElementById('correction-alumno-name').textContent = alumnoNombre;
             document.getElementById('correction-alumno-id').value = alumnoId;
-            document.getElementById('correction_details').value = '';  
+            document.getElementById('correction_details').value = '';
             modal.style.display = 'flex';
         }
-        
+
+        // ── TOKEN DOTS ────────────────────────────────────────────────────
+        function updateTokenDots(val) {
+            for (let i = 1; i <= 8; i++) {
+                const dot = document.getElementById('td-' + i);
+                if (dot) dot.classList.toggle('filled', i <= Math.min(val.length, 8));
+            }
+        }
+        function toggleTokenVisibility() {
+            const inp = document.getElementById('school_password');
+            const ico = document.getElementById('token-eye-icon');
+            if (inp.type === 'password') { inp.type='text'; ico.className='fa-solid fa-eye-slash'; }
+            else { inp.type='password'; ico.className='fa-solid fa-eye'; }
+        }
+
+        // ── SHOW ACCESS FORM ──────────────────────────────────────────────
         function showAccessForm(schoolId, schoolName) {
-            const accessModal = document.getElementById('access-modal-container');
-            const schoolList = document.getElementById('school-list-container');
-            const accessSchoolName = document.getElementById('access-school-name');
-            const currentSchoolId = document.getElementById('current-school-id');
-            const contentLocked = document.getElementById('nomina-content-locked');
-            const formContainer = document.getElementById('password-form-container');
-
-            schoolList.style.display = 'none';
-            accessModal.style.display = 'block';
-
+            const schoolList  = document.getElementById('school-list-container');
+            const accessPanel = document.getElementById('access-modal-container');
+            const titleEl     = document.getElementById('access-school-name-title');
+            const nameEl      = document.getElementById('access-school-name');
+            const formArea    = document.getElementById('password-form-container');
+            const contentLock = document.getElementById('nomina-content-locked');
+            const lockIcon    = document.getElementById('lock-visual-icon');
+            const lockI       = document.getElementById('lock-icon-i');
             document.getElementById('school_password').value = '';
-            contentLocked.style.display = 'none';
-            formContainer.style.display = 'block';
-            
-            accessSchoolName.textContent = schoolName;
-            currentSchoolId.value = schoolId;
+            updateTokenDots('');
+            contentLock.style.display = 'none';
+            formArea.style.display    = 'flex';
+            if (lockIcon) lockIcon.classList.remove('unlocked');
+            if (lockI)    lockI.className = 'fa-solid fa-lock-keyhole';
+            if (titleEl)  titleEl.textContent = schoolName;
+            if (nameEl)   nameEl.textContent  = schoolName;
+            document.getElementById('current-school-id').value = schoolId;
+            schoolList.style.display  = 'none';
+            accessPanel.style.display = 'block';
+            accessPanel.scrollIntoView({ behavior:'smooth', block:'start' });
         }
 
         function backToSchoolList() {
-            const accessModal = document.getElementById('access-modal-container');
-            const schoolList = document.getElementById('school-list-container');
-
-            accessModal.style.display = 'none';
-            schoolList.style.display = 'block';
+            document.getElementById('access-modal-container').style.display = 'none';
+            document.getElementById('school-list-container').style.display  = '';
         }
 
+        // ── RENDER NOMINAS — 5 días hábiles para correcciones ─────────────
+        function esLaborable(d){ const w=d.getDay(); return w!==0&&w!==6; }
+        function diasHabilesDesde(str) {
+            if(!str) return null;
+            const inicio=new Date(str+'T00:00:00');
+            const hoy=new Date(); hoy.setHours(0,0,0,0);
+            let n=0, c=new Date(inicio);
+            while(c<hoy){ c.setDate(c.getDate()+1); if(esLaborable(c)) n++; }
+            return n;
+        }
 
         function renderNominas(nominas, containerElement, noResultsMsg) {
-            containerElement.innerHTML = '';  
+            containerElement.innerHTML = '';
             if (!nominas || nominas.length === 0) {
-                noResultsMsg.textContent = "No hay alumnos en esta nómina."; // Modificar mensaje
+                noResultsMsg.textContent = 'No hay alumnos evaluados para este establecimiento.';
                 noResultsMsg.style.display = 'block';
                 return;
             }
-
             noResultsMsg.style.display = 'none';
 
-            nominas.forEach(alumno => {
-                const downloadUrl = `/descargar_pdf_alumno/${alumno.id}`;
-                
-                // Determina la clase CSS y si el botón debe ser un <a> o un <button> deshabilitado
-                const downloadButtonHtml = alumno.descarga_habilitada ?  
-                    `<a href="${downloadUrl}" target="_blank" class="action-button blue">
-                        <i class="fa-solid fa-file-pdf"></i> Descargar Valoración (PDF)
-                    </a>` : 
-                    `<button class="action-button red opacity-50 cursor-not-allowed" disabled title="No disponible hasta ser evaluado">
-                        <i class="fa-solid fa-lock"></i> Pendiente (PDF)
-                    </button>`;
-
-                const itemCard = `
-                    <li class="item-card flex justify-between items-center flex-wrap" style="border-left-color: ${alumno.descarga_habilitada ? 'var(--highlight-green)' : 'var(--danger-red)'};">
-                        <div class="alumno-item-info flex-grow">
-                            <i class="fa-solid fa-user-graduate mr-2 text-primary-blue"></i>
-                            <span class="font-bold">${alumno.nombre_alumno}</span> | RUT: ${alumno.rut_alumno || 'N/A'}
-                            <span class="text-sm text-gray-500 block md:inline-block md:ml-4">
-                                Nomina: ${alumno.nombre_nomina || 'N/A'} | Estado: <strong>${alumno.estado}</strong>
-                            </span>
-                        </div>
-                        <div class="item-card-actions mt-3 md:mt-0 flex flex-wrap justify-end gap-3">
-                            ${downloadButtonHtml}
-                            <button class="action-button red" onclick="showCorrectionModal('${alumno.id}', '${alumno.nombre_alumno}')">
-                                <i class="fa-solid fa-triangle-exclamation"></i> Solicitar Corrección
-                            </button>
-                        </div>
-                    </li>
-                `;
-                containerElement.innerHTML += itemCard;
+            let fechaRef = null;
+            nominas.forEach(a => {
+                const f = a.fecha_relleno || a.fecha_evaluacion;
+                if(f && (!fechaRef||f>fechaRef)) fechaRef=f;
             });
+            const diasPasados    = diasHabilesDesde(fechaRef);
+            const corrBloqueado  = diasPasados!==null && diasPasados>=5;
+            const diasRestantes  = corrBloqueado ? 0 : (fechaRef ? Math.max(0,5-diasPasados) : null);
+
+            const banner=document.getElementById('corr-lock-banner');
+            const bannerMsg=document.getElementById('corr-lock-msg');
+            if(banner){
+                if(corrBloqueado){
+                    if(bannerMsg) bannerMsg.textContent=`El plazo de 5 días hábiles para solicitar correcciones ha vencido (${diasPasados} días hábiles transcurridos).`;
+                    banner.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(251,191,36,.08);border:1.5px solid rgba(251,191,36,.3);border-radius:10px;margin-bottom:14px;font-size:.78rem;color:#92400e;';
+                    banner.querySelector('i').style.color='#d97706';
+                } else if(fechaRef&&diasRestantes!==null){
+                    if(bannerMsg) bannerMsg.innerHTML=`<strong>Atención:</strong> Tienes <strong>${diasRestantes}</strong> día${diasRestantes!==1?'s':''} hábil${diasRestantes!==1?'es':''} restante${diasRestantes!==1?'s':''} para solicitar correcciones.`;
+                    banner.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(5,150,105,.07);border:1.5px solid rgba(5,150,105,.2);border-radius:10px;margin-bottom:14px;font-size:.78rem;';
+                    banner.querySelector('i').style.color='#059669';
+                    if(bannerMsg) bannerMsg.style.color='#065f46';
+                } else { banner.style.display='none'; }
+            }
+
+            nominas.forEach(alumno => {
+                const isEval=alumno.descarga_habilitada;
+                const pdfBtn=isEval
+                    ?`<a href="/descargar_pdf_alumno/${alumno.id}" target="_blank" class="al-btn pdf"><i class="fas fa-file-pdf"></i> PDF</a>`
+                    :`<button class="al-btn pdf disabled" disabled><i class="fas fa-lock"></i> Pendiente</button>`;
+                const corrBtn=corrBloqueado
+                    ?`<button class="al-btn corr locked" disabled><i class="fas fa-lock"></i> Bloqueado</button>`
+                    :`<button class="al-btn corr" onclick="showCorrectionModal('${alumno.id}','${(alumno.nombre_alumno||'').replace(/'/g,String.fromCharCode(92)+"'")}')"><i class="fas fa-triangle-exclamation"></i> Solicitar corrección</button>`;
+                const estadoHtml=isEval
+                    ?`<span class="alumno-estado eval"><i class="fas fa-check-circle"></i> Evaluado</span>`
+                    :`<span class="alumno-estado pend"><i class="fas fa-clock"></i> Pendiente</span>`;
+                containerElement.innerHTML+=`<li class="alumno-row">
+                    <div class="alumno-avatar"><i class="fas fa-user-graduate"></i></div>
+                    <div class="alumno-info">
+                        <div class="alumno-nombre">${alumno.nombre_alumno||'N/A'}</div>
+                        <div class="alumno-meta">RUT: ${alumno.rut_alumno||'N/A'} · ${alumno.nombre_nomina||''}</div>
+                    </div>
+                    ${estadoHtml}
+                    <div class="alumno-acciones">${pdfBtn}${corrBtn}</div>
+                </li>`;
+            });
+        }
+
+        // ── RESUBIR DOCUMENTO ─────────────────────────────────────────────
+        function handleResubirDrop(e){ e.preventDefault(); const f=e.dataTransfer.files[0]; if(f) subirDocumentoCorregido(f); }
+        function handleResubirFile(input){ const f=input.files[0]; if(f) subirDocumentoCorregido(f); }
+        async function subirDocumentoCorregido(file){
+            const sid=document.getElementById('current-school-id').value;
+            const fd=new FormData(); fd.append('file',file); fd.append('school_id',sid);
+            Swal.fire({title:'Subiendo documento…',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+            try{
+                const res=await fetch('/api/coordinador_escuela/resubir_documento',{method:'POST',body:fd});
+                const data=await res.json();
+                if(data.success){
+                    Swal.fire({icon:'success',title:'¡Documento resubido!',text:'La coordinadora general será notificada.',timer:2500,showConfirmButton:false});
+                    const drop=document.getElementById('resubir-drop-area');
+                    const suc=document.getElementById('resubir-success-msg');
+                    if(drop) drop.style.display='none';
+                    if(suc)  suc.style.display='flex';
+                } else { Swal.fire({icon:'error',title:'Error',text:data.message||'No se pudo subir.'}); }
+            } catch(e){ Swal.fire({icon:'error',title:'Error de Conexión',text:e.message}); }
         }
 
 
@@ -3598,8 +4223,20 @@
                         showConfirmButton: false
                     });
                     
-                    formContainer.style.display = 'none';  
-                    contentLocked.style.display = 'block';  
+                    formContainer.style.display = 'none';
+                    contentLocked.style.display = 'block';
+                    // Animar cerradura a desbloqueado
+                    const lv = document.getElementById('lock-visual-icon');
+                    const li = document.getElementById('lock-icon-i');
+                    if (lv) lv.classList.add('unlocked');
+                    if (li) li.className = 'fa-solid fa-lock-open';
+                    // Reset resubir section
+                    const drop = document.getElementById('resubir-drop-area');
+                    const suc  = document.getElementById('resubir-success-msg');
+                    const fi   = document.getElementById('resubir-file-input');
+                    if (drop) drop.style.display = '';
+                    if (suc)  suc.style.display  = 'none';
+                    if (fi)   fi.value = '';
                     
                     renderNominas(data.nominas, nominasContainer, noResultsMsg);
                     
@@ -3714,63 +4351,78 @@
         // --- FUNCIÓN PARA CARGAR Y RENDERIZAR SOLICITUDES EN LA SECCIÓN ADMIN (NUEVA) ---
         async function loadCorrectionRequests() {
             if ('{{ usuario }}' !== 'admin') return;
-            
             const listContainer = document.getElementById('correction-requests-list');
-            const noResults = document.getElementById('no-corrections-message');
-            const pendingCountBadge = document.getElementById('admin-pending-count-badge');
-            
-            listContainer.innerHTML = '<p class="text-center text-gray-500 my-8"><i class="fa-solid fa-spinner fa-spin fa-2x"></i> Cargando solicitudes...</p>';
-            noResults.classList.add('hidden');
-
+            const noResults     = document.getElementById('no-corrections-message');
+            const countBadge    = document.getElementById('admin-pending-count-badge');
+            listContainer.innerHTML = `<div style="text-align:center;padding:40px;color:#94a3b8;"><i class="fa-solid fa-spinner fa-spin fa-2x" style="margin-bottom:10px;display:block;"></i>Cargando solicitudes…</div>`;
+            if (noResults) noResults.classList.add('hidden');
             try {
                 const response = await fetch('/api/correcciones/pendientes_detalle');
-                const data = await response.json();
-
+                const data     = await response.json();
                 if (data.success && data.data.length > 0) {
                     listContainer.innerHTML = '';
-                    
-                    // Actualizar el badge de conteo en la sección (para que coincida con el menú)
-                    pendingCountBadge.textContent = data.data.length;
-
+                    if (countBadge) countBadge.textContent = data.data.length;
                     data.data.forEach(req => {
-                        const card = `
-                            <li class="correction-request-card" data-request-id="${req.id}">
-                                <div class="correction-request-card-header">
-                                    <span>Solicitud de Corrección: ${req.alumno_nombre}</span>
-                                    <span class="status-badge pending">${req.estado}</span>
+                        const estado  = req.estado || 'Pendiente';
+                        const isPend  = estado.toLowerCase().includes('pendiente');
+                        const isRes   = estado.toLowerCase().includes('aprobada') || estado.toLowerCase().includes('resuelta');
+                        const stripeC = isPend ? '' : isRes ? ' resolved' : ' rejected';
+                        const badgeC  = isPend ? 'pending' : isRes ? 'resolved' : 'rejected';
+                        const badgeTx = isPend ? 'Pendiente' : isRes ? 'Resuelta' : 'Rechazada';
+                        const badgeIc = isPend ? 'fa-clock' : isRes ? 'fa-check-circle' : 'fa-xmark-circle';
+                        const hasDoc  = req.url_documento_corregido ? true : false;
+                        const docBadge = hasDoc ? `<span class="corr-upload-badge new"><i class="fas fa-check"></i> Doc. resubido</span>` : `<span class="corr-upload-badge none">Sin doc. adjunto</span>`;
+                        const card = `<div class="corr-card" data-request-id="${req.id}">
+                            <div class="corr-card-stripe${stripeC}"></div>
+                            <div class="corr-card-body">
+                                <div class="corr-card-header">
+                                    <div class="corr-alumno-block">
+                                        <div class="corr-avatar"><i class="fas fa-user-graduate"></i></div>
+                                        <div>
+                                            <div class="corr-alumno-name">${req.alumno_nombre || 'Alumno N/A'}</div>
+                                            <div class="corr-alumno-rut">RUT: ${req.alumno_rut || 'N/A'}</div>
+                                        </div>
+                                    </div>
+                                    <span class="corr-status-badge ${badgeC}"><i class="fas ${badgeIc}"></i> ${badgeTx}</span>
                                 </div>
-                                <div class="correction-request-card-meta">
-                                    <span><i class="fa-solid fa-user-graduate"></i> RUT Alumno: ${req.alumno_rut}</span>
-                                    <span><i class="fa-solid fa-user-tag"></i> Solicitante: ${req.solicitante}</span>
-                                    <span><i class="fa-solid fa-calendar-day"></i> Fecha: ${req.fecha}</span>
+                                <div class="corr-meta-row">
+                                    ${req.proyecto_nombre ? `<span class="corr-meta-chip project"><i class="fas fa-folder-open"></i> ${req.proyecto_nombre}</span>` : ''}
+                                    ${req.nombre_establecimiento ? `<span class="corr-meta-chip"><i class="fas fa-building"></i> ${req.nombre_establecimiento}</span>` : ''}
+                                    ${req.nombre_colegio ? `<span class="corr-meta-chip"><i class="fas fa-school"></i> ${req.nombre_colegio}</span>` : ''}
+                                    <span class="corr-meta-chip date"><i class="fas fa-calendar-day"></i> ${req.fecha || '—'}</span>
+                                    <span class="corr-meta-chip person"><i class="fas fa-user-tag"></i> ${req.solicitante || '—'}</span>
                                 </div>
-                                <div class="correction-request-card-body">
-                                    <strong>Detalle Solicitado:</strong> ${req.detalles}
+                                <div class="corr-obs-box">
+                                    <div class="corr-obs-label"><i class="fas fa-triangle-exclamation"></i> Corrección Solicitada</div>
+                                    <div class="corr-obs-text">${req.detalles || 'Sin detalle especificado.'}</div>
                                 </div>
-                                <div class="item-card-actions justify-content-end">
-                                    <button class="action-button green" onclick="handleCorrectionAction('${req.id}', 'Aprobada')">
-                                        <i class="fa-solid fa-check"></i> Marcar como Resuelta
-                                    </button>
-                                    <button class="action-button red" onclick="handleCorrectionAction('${req.id}', 'Rechazada')">
-                                        <i class="fa-solid fa-xmark"></i> Rechazar
-                                    </button>
+                                <div class="corr-upload-area" ${hasDoc ? `onclick="window.open('${req.url_documento_corregido}','_blank')"` : ''} style="${hasDoc ? 'border-color:#00b894;background:#f0fdf8;cursor:pointer;' : 'cursor:default;'}">
+                                    <div class="corr-upload-icon" style="${hasDoc ? 'background:linear-gradient(135deg,#00b894,#00cec9);' : ''}">
+                                        <i class="fas fa-file-${hasDoc ? 'check' : 'upload'}"></i>
+                                    </div>
+                                    <div class="corr-upload-text">
+                                        <strong>${hasDoc ? 'Documento Corregido' : 'Documento Adjunto'}</strong>
+                                        ${hasDoc ? 'La coordinadora resubió el documento. Haz clic para ver.' : 'La coordinadora aún no ha subido el documento corregido.'}
+                                    </div>
+                                    ${docBadge}
                                 </div>
-                            </li>
-                        `;
+                                ${isPend ? `<div class="corr-actions">
+                                    <button class="corr-btn reject" onclick="handleCorrectionAction('${req.id}', 'Rechazada')"><i class="fas fa-xmark"></i> Rechazar</button>
+                                    <button class="corr-btn resolve" onclick="handleCorrectionAction('${req.id}', 'Aprobada')"><i class="fas fa-check"></i> Marcar Resuelta</button>
+                                </div>` : ''}
+                            </div>
+                        </div>`;
                         listContainer.innerHTML += card;
                     });
-                    
                 } else if (data.success) {
-                    listContainer.innerHTML = '';
-                    pendingCountBadge.textContent = '0';
-                    noResults.classList.remove('hidden');
+                    listContainer.innerHTML = `<div class="corr-no-results"><i class="fa-solid fa-bell-slash"></i><p>No hay solicitudes de corrección pendientes.</p></div>`;
+                    if (countBadge) countBadge.textContent = '0';
                 } else {
-                    listContainer.innerHTML = '<p class="text-center text-danger-red my-8">Error al cargar solicitudes: ' + (data.message || 'Error desconocido') + '</p>';
+                    listContainer.innerHTML = `<p style="text-align:center;color:#e74c3c;padding:30px;">Error: ${data.message || 'Error desconocido'}</p>`;
                 }
-
             } catch (error) {
-                listContainer.innerHTML = '<p class="text-center text-danger-red my-8">Error de conexión con el servidor (API detalle).</p>';
-                console.error("Error al cargar solicitudes de corrección:", error);
+                listContainer.innerHTML = `<p style="text-align:center;color:#e74c3c;padding:30px;">Error de conexión con el servidor.</p>`;
+                console.error("Error correcciones:", error);
             }
         }
 
@@ -4785,33 +5437,52 @@ function downloadProjectReport(projectName) {
 }
 
 // ── PROYECTOS: estadísticas y barras de progreso ────────────────────
-function updateProyectosStats() {
+async function updateProyectosStats() {
     const wrappers = document.querySelectorAll('.proyecto-wrapper');
     const total    = wrappers.length;
-
-    // Contar nóminas totales
     let totalNominas = 0;
-    wrappers.forEach(w => {
-        totalNominas += w.querySelectorAll('.nomina-item').length;
-    });
+    wrappers.forEach(w => { totalNominas += w.querySelectorAll('.nomina-item').length; });
 
-    const elemT = document.getElementById('total-proyectos');
-    const elemN = document.getElementById('nominas-completadas');
-    const elemP = document.getElementById('nominas-pendientes');
-    if (elemT) elemT.textContent = total;
-    if (elemN) elemN.textContent = totalNominas;
-    if (elemP) elemP.textContent = '—';
+    const si = id => document.getElementById(id);
+    if (si('total-proyectos'))    si('total-proyectos').textContent    = total;
+    if (si('nominas-completadas'))si('nominas-completadas').textContent = totalNominas;
+    if (si('nominas-pendientes')) si('nominas-pendientes').textContent  = '—';
 
-    // Animar aparición de las cards con stagger
+    // Animar entrada con stagger
     wrappers.forEach((w, i) => {
-        w.style.opacity    = '0';
-        w.style.transform  = 'translateY(18px)';
-        w.style.transition = 'opacity .35s ease, transform .35s ease';
-        setTimeout(() => {
-            w.style.opacity   = '1';
-            w.style.transform = 'translateY(0)';
-        }, 60 * i);
+        w.style.opacity='0'; w.style.transform='translateY(18px)';
+        w.style.transition='opacity .35s ease, transform .35s ease';
+        setTimeout(()=>{ w.style.opacity='1'; w.style.transform='translateY(0)'; }, 60*i);
     });
+
+    // Cargar progress bars de cada nómina de la doctora via API
+    const nomItems = document.querySelectorAll('[data-nomina-doc-id]');
+    for (const item of nomItems) {
+        const nid = item.getAttribute('data-nomina-doc-id');
+        if (!nid) continue;
+        try {
+            const res  = await fetch('/api/admin/proyecto_stats_nomina/' + nid);
+            // Usar la API de stats existente por nómina individual si existe,
+            // o parsear desde el conteo de alumnos disponible
+            // Fallback: intentar obtener desde el endpoint de performance de doctora
+            if (!res.ok) continue;
+            const data = await res.json();
+            if (!data.success) continue;
+            const tot   = data.total || 0;
+            const ev    = data.evaluados || 0;
+            const pct   = tot > 0 ? Math.round(ev/tot*100) : 0;
+            const color = pct>=80?'#10b981':pct>=50?'#f59e0b':'#ef4444';
+            const pEl   = document.getElementById('nom-pct-' + nid);
+            const bEl   = document.getElementById('nom-bar-' + nid);
+            const cEl   = document.getElementById('nom-count-' + nid);
+            if (pEl) { pEl.textContent = pct+'%'; pEl.style.color = color; }
+            if (bEl) { bEl.style.width = pct+'%'; bEl.style.background = `linear-gradient(90deg,${color},${color}99)`; }
+            if (cEl) cEl.textContent = ev + ' / ' + tot + ' evaluados';
+        } catch(e) {
+            const cEl = document.getElementById('nom-count-' + nid);
+            if (cEl) cEl.textContent = 'Sin datos';
+        }
+    }
 }
 
 // Inicializar al cargar

@@ -2801,142 +2801,431 @@
                 <i class="fa-solid fa-folder-tree section-icon"></i>
                 <h2 class="section-title">Proyectos Asignados</h2>
             </div>
-                    <div class="card">
-                        <h3><i class="fa-solid fa-folder-tree"></i> Mis Proyectos Asignados</h3>
-                        
-                        <!-- Estadísticas -->
-                        <div class="summary" style="margin-bottom: 2rem;">
-                            <div class="summary-card-v2 bg-blue-600">
-                                <div class="summary-card-header">
-                                    <div class="summary-card-icon">
-                                        <i class="fa-solid fa-briefcase-medical"></i>
-                                    </div>
-                                    <h4>Proyectos</h4>
-                                </div>
-                                <p class="summary-card-number" id="total-proyectos">0</p>
-                                <p class="summary-card-label">Activos</p>
-                            </div>
-                            
-                            <div class="summary-card-v2 bg-green-600">
-                                <div class="summary-card-header">
-                                    <div class="summary-card-icon">
-                                        <i class="fa-solid fa-check-double"></i>
-                                    </div>
-                                    <h4>Completadas</h4>
-                                </div>
-                                <p class="summary-card-number" id="nominas-completadas">0</p>
-                                <p class="summary-card-label">Nóminas</p>
-                            </div>
-                            
-                            <div class="summary-card-v2 bg-yellow-500">
-                                <div class="summary-card-header">
-                                    <div class="summary-card-icon">
-                                        <i class="fa-solid fa-hourglass-half"></i>
-                                    </div>
-                                    <h4>Pendientes</h4>
-                                </div>
-                                <p class="summary-card-number" id="nominas-pendientes">0</p>
-                                <p class="summary-card-label">Nóminas</p>
-                            </div>
-                        </div>
 
-                        <!-- Buscador -->
-                        <div class="filter-container" style="margin-bottom: 2rem;">
-                            <input type="text" id="proyectos-search" placeholder="Buscar proyectos..." class="form-input" oninput="filterProyectos()" />
-                        </div>
+            <!-- ── ESTILOS SECCIÓN PROYECTOS ───────────────────── -->
+            <style>
+            .proy-kpi-row {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 14px;
+                margin-bottom: 22px;
+            }
+            .proy-kpi {
+                background: white;
+                border-radius: 16px;
+                padding: 18px 20px;
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                box-shadow: 0 2px 10px rgba(10,77,104,.07);
+                border: 1.5px solid #e8f0f6;
+                transition: transform .2s, box-shadow .2s;
+            }
+            .proy-kpi:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(10,77,104,.12); }
+            .proy-kpi-icon {
+                width: 48px; height: 48px; border-radius: 14px;
+                display: flex; align-items: center; justify-content: center;
+                font-size: 1.2rem; flex-shrink: 0;
+            }
+            .proy-kpi-icon.blue   { background: linear-gradient(135deg,#0A4D68,#088395); color: white; }
+            .proy-kpi-icon.green  { background: linear-gradient(135deg,#00b894,#55efc4); color: white; }
+            .proy-kpi-icon.amber  { background: linear-gradient(135deg,#e67e22,#f39c12); color: white; }
+            .proy-kpi-body { display: flex; flex-direction: column; }
+            .proy-kpi-num  { font-size: 1.7rem; font-weight: 800; color: #0f2030; line-height: 1; }
+            .proy-kpi-lbl  { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #94a3b8; margin-top: 3px; }
 
-                        <!-- Lista de Proyectos -->
-                        <div id="proyectos-container">
-                            {% if assigned_nominations %}
-                                {% set proyectos_dict = {} %}
-                                {% for nomina in assigned_nominations %}
-                                    {% set proyecto_nombre = nomina.proyecto_nombre if nomina.proyecto_nombre else 'Sin Proyecto Asignado' %}
-                                    {% if proyecto_nombre not in proyectos_dict %}
-                                        {% set _ = proyectos_dict.__setitem__(proyecto_nombre, []) %}
-                                    {% endif %}
-                                    {% set _ = proyectos_dict[proyecto_nombre].append(nomina) %}
-                                {% endfor %}
+            .proy-toolbar {
+                display: flex; align-items: center; gap: 10px;
+                margin-bottom: 20px; flex-wrap: wrap;
+            }
+            .proy-search {
+                flex: 1; min-width: 200px;
+                position: relative;
+            }
+            .proy-search i {
+                position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+                color: #94a3b8; font-size: .82rem;
+            }
+            .proy-search input {
+                width: 100%; padding: 9px 14px 9px 34px;
+                border-radius: 10px; border: 1.5px solid #dde6f0;
+                font-size: .85rem; color: #1a202c; background: #f7faff;
+                outline: none; transition: border-color .2s;
+            }
+            .proy-search input:focus { border-color: #0A4D68; background: white; }
+            .proy-view-btns { display: flex; gap: 4px; }
+            .proy-view-btn {
+                width: 36px; height: 36px; border-radius: 9px;
+                border: 1.5px solid #dde6f0; background: white;
+                display: flex; align-items: center; justify-content: center;
+                cursor: pointer; font-size: .85rem; color: #94a3b8;
+                transition: all .18s;
+            }
+            .proy-view-btn.active, .proy-view-btn:hover { background: #0A4D68; color: white; border-color: #0A4D68; }
 
-                                {% for proyecto_nombre, nominas_proyecto in proyectos_dict.items() %}
-                                <div class="proyecto-wrapper" data-project-name="{{ proyecto_nombre | lower }}" style="margin-bottom: 2rem; padding: 1.5rem; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 2px solid #e2e8f0;">
-                                    <!-- Header del Proyecto -->
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid #e2e8f0;">
-                                        <div style="display: flex; align-items: center; gap: 1rem;">
-                                            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #0A4D68 0%, #088395 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem;">
-                                                <i class="fa-solid fa-folder-open"></i>
-                                            </div>
-                                            <div>
-                                                <h4 style="font-size: 1.3rem; font-weight: 700; color: #0A4D68; margin: 0;">{{ proyecto_nombre }}</h4>
-                                                <p style="margin: 0.25rem 0 0 0; color: #718096; font-size: 0.9rem;">
-                                                    <i class="fa-solid fa-clipboard-list"></i> {{ nominas_proyecto | length }} nóminas
-                                                    <span style="margin-left: 1rem;"><i class="fa-solid fa-building"></i> {{ nominas_proyecto | map(attribute='nombre_establecimiento') | unique | list | length }} establecimientos</span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <span style="padding: 0.5rem 1rem; background: #e6f7f0; color: #00b894; border-radius: 20px; font-weight: 700; font-size: 0.85rem;">
-                                            <i class="fa-solid fa-circle-check"></i> Activo
-                                        </span>
-                                    </div>
-                                    
-                                    <!-- Barra de Progreso -->
-                                    <div style="margin-bottom: 1.5rem;">
-                                        {% set completadas = 0 %}
-                                        {% set total = nominas_proyecto | length %}
-                                        {% set porcentaje = (completadas / total * 100) | int if total > 0 else 0 %}
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 600;">
-                                            <span style="color: #4A5568;">Progreso General</span>
-                                            <span style="color: #0A4D68;">{{ porcentaje }}%</span>
-                                        </div>
-                                        <div style="height: 8px; background: #e2e8f0; border-radius: 10px; overflow: hidden;">
-                                            <div style="width: {{ porcentaje }}%; height: 100%; background: linear-gradient(90deg, #0A4D68 0%, #05BFDB 100%); transition: width 0.5s ease;"></div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Lista de Nóminas (colapsable) -->
-                                    <div class="nominas-lista" style="display: none; margin-bottom: 1rem;">
-                                        {% for nomina in nominas_proyecto %}
-                                        <div style="padding: 1rem; background: #f7fafc; border-left: 3px solid #05BFDB; border-radius: 8px; margin-bottom: 0.75rem;">
-                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                                <span style="font-weight: 600; color: #2d3748;">
-                                                    <i class="fa-solid fa-hospital"></i> {{ nomina.nombre_establecimiento }}
-                                                </span>
-                                                <span style="background: #0A4D68; color: white; padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600;">
-                                                    {{ nomina.tipo_nomina_display }}
-                                                </span>
-                                            </div>
-                                            {% if nomina.nombre_colegio %}
-                                            <p style="margin: 0.5rem 0; font-size: 0.85rem; color: #718096;">
-                                                <i class="fa-solid fa-school"></i> {{ nomina.nombre_colegio }}
-                                            </p>
-                                            {% endif %}
-                                            <a href="{{ url_for('relleno_formulario', nomina_id=nomina.id) }}" class="action-button green" style="margin-top: 0.5rem; display: inline-flex;">
-                                                <i class="fa-solid fa-pen-to-square"></i> Rellenar Formulario
-                                            </a>
-                                        </div>
-                                        {% endfor %}
-                                    </div>
-                                    
-                                    <!-- Botones de Acción -->
-                                    <div style="display: flex; gap: 0.75rem;">
-                                        <button class="action-button blue" onclick="toggleNominasProyecto(this)" style="flex: 1;">
-                                            <i class="fa-solid fa-eye"></i> <span class="toggle-text">Ver Nóminas</span>
-                                        </button>
-                                        <button class="action-button green" onclick="downloadProjectReport('{{ proyecto_nombre }}')">
-                                            <i class="fa-solid fa-download"></i> Reporte
-                                        </button>
-                                    </div>
-                                </div>
-                                {% endfor %}
+            /* ── FOLDER GRID ── */
+            #proyectos-container.view-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 18px;
+            }
+            #proyectos-container.view-list {
+                display: flex; flex-direction: column; gap: 12px;
+            }
 
-                            {% else %}
-                                <div style="text-align: center; padding: 3rem; background: #f7fafc; border-radius: 12px;">
-                                    <i class="fa-solid fa-folder-open" style="font-size: 4rem; color: #cbd5e0; margin-bottom: 1rem;"></i>
-                                    <h3 style="color: #718096; margin-bottom: 0.5rem;">No tienes proyectos asignados</h3>
-                                    <p style="color: #a0aec0;">Los proyectos aparecerán aquí cuando el administrador te los asigne</p>
-                                </div>
-                            {% endif %}
+            /* ── FOLDER CARD ── */
+            .proyecto-wrapper {
+                background: white;
+                border-radius: 18px;
+                border: 1.5px solid #e8f0f6;
+                box-shadow: 0 3px 14px rgba(10,77,104,.07);
+                overflow: hidden;
+                transition: transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .22s;
+                cursor: pointer;
+            }
+            .proyecto-wrapper:hover {
+                transform: translateY(-5px) scale(1.01);
+                box-shadow: 0 14px 36px rgba(10,77,104,.15);
+            }
+
+            /* Folder tab at top */
+            .proy-folder-tab {
+                height: 10px;
+                background: linear-gradient(90deg, #0A4D68 0%, #05BFDB 100%);
+                border-radius: 18px 18px 0 0;
+                position: relative;
+            }
+            .proy-folder-tab::before {
+                content: '';
+                position: absolute;
+                top: 0; left: 18px;
+                width: 60px; height: 10px;
+                background: rgba(255,255,255,.25);
+                border-radius: 6px 6px 0 0;
+            }
+
+            .proy-card-body { padding: 20px 20px 16px; }
+
+            .proy-card-header {
+                display: flex; align-items: flex-start;
+                justify-content: space-between; gap: 12px;
+                margin-bottom: 14px;
+            }
+            .proy-icon-wrap {
+                width: 50px; height: 50px; flex-shrink: 0;
+                background: linear-gradient(135deg, #0d5a7b, #088395);
+                border-radius: 14px;
+                display: flex; align-items: center; justify-content: center;
+                color: white; font-size: 1.3rem;
+                box-shadow: 0 4px 12px rgba(10,77,104,.22);
+                transition: transform .2s;
+            }
+            .proyecto-wrapper:hover .proy-icon-wrap { transform: rotate(-5deg) scale(1.08); }
+
+            .proy-title-block { flex: 1; min-width: 0; }
+            .proy-nombre {
+                font-size: 1rem; font-weight: 800; color: #0f2030;
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                margin-bottom: 4px;
+            }
+            .proy-meta {
+                font-size: .75rem; color: #94a3b8; display: flex; gap: 10px; flex-wrap: wrap;
+            }
+            .proy-meta span { display: flex; align-items: center; gap: 4px; }
+
+            .proy-status-badge {
+                display: inline-flex; align-items: center; gap: 5px;
+                padding: 4px 10px; border-radius: 20px; font-size: .7rem;
+                font-weight: 700; flex-shrink: 0;
+                background: rgba(0,184,148,.1); color: #00a381;
+                border: 1.5px solid rgba(0,184,148,.25);
+            }
+            .proy-status-dot {
+                width: 7px; height: 7px; border-radius: 50%;
+                background: #00b894; display: inline-block;
+                animation: pulseDot 1.8s ease-in-out infinite;
+            }
+            @keyframes pulseDot {
+                0%,100% { opacity: 1; transform: scale(1); }
+                50% { opacity: .5; transform: scale(.7); }
+            }
+
+            /* Progress bar */
+            .proy-progress { margin: 14px 0 16px; }
+            .proy-progress-head {
+                display: flex; justify-content: space-between;
+                font-size: .75rem; font-weight: 700; color: #64748b; margin-bottom: 6px;
+            }
+            .proy-progress-head span:last-child { color: #0A4D68; }
+            .proy-progress-track {
+                height: 7px; background: #eef2f7; border-radius: 99px; overflow: hidden;
+            }
+            .proy-progress-fill {
+                height: 100%; border-radius: 99px;
+                background: linear-gradient(90deg, #0A4D68 0%, #05BFDB 100%);
+                transition: width .6s ease;
+            }
+
+            /* Nominas counter chips */
+            .proy-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+            .proy-chip {
+                display: inline-flex; align-items: center; gap: 5px;
+                padding: 4px 10px; border-radius: 8px;
+                font-size: .72rem; font-weight: 700;
+                background: #f0f6ff; color: #0A4D68; border: 1px solid #d4e5f5;
+            }
+            .proy-chip.green { background: #f0fdf8; color: #059669; border-color: #a7f3d0; }
+            .proy-chip.orange { background: #fff7ed; color: #d97706; border-color: #fed7aa; }
+
+            /* Actions row */
+            .proy-actions {
+                display: flex; gap: 8px;
+                padding-top: 14px;
+                border-top: 1px solid #eef2f7;
+            }
+            .proy-btn {
+                display: inline-flex; align-items: center; gap: 6px;
+                padding: 8px 14px; border-radius: 10px; border: none;
+                font-size: .78rem; font-weight: 700; cursor: pointer;
+                transition: all .18s; text-decoration: none;
+            }
+            .proy-btn.primary {
+                flex: 1; justify-content: center;
+                background: linear-gradient(135deg, #0A4D68, #088395);
+                color: white; box-shadow: 0 3px 10px rgba(10,77,104,.25);
+            }
+            .proy-btn.primary:hover { opacity: .9; transform: translateY(-1px); }
+            .proy-btn.ghost {
+                background: #f0f6ff; color: #0A4D68;
+                border: 1.5px solid #d4e5f5;
+            }
+            .proy-btn.ghost:hover { background: #dbeafe; }
+
+            /* Nominas expandible */
+            .nominas-lista {
+                display: none;
+                border-top: 1.5px solid #eef2f7;
+                background: #f7faff;
+                padding: 0;
+            }
+            .nominas-lista.open { display: block; }
+            .nomina-item {
+                padding: 13px 20px;
+                border-bottom: 1px solid #e8f0f6;
+                display: flex; align-items: center;
+                gap: 12px; transition: background .15s;
+            }
+            .nomina-item:last-child { border-bottom: none; }
+            .nomina-item:hover { background: #eef4ff; }
+            .nomina-item-icon {
+                width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+                background: linear-gradient(135deg, #0A4D68, #05BFDB);
+                display: flex; align-items: center; justify-content: center;
+                color: white; font-size: .8rem;
+            }
+            .nomina-item-info { flex: 1; min-width: 0; }
+            .nomina-item-name {
+                font-size: .85rem; font-weight: 700; color: #0f2030;
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            }
+            .nomina-item-sub { font-size: .72rem; color: #94a3b8; margin-top: 2px; }
+            .nomina-tipo-badge {
+                display: inline-flex; padding: 3px 9px; border-radius: 6px;
+                font-size: .7rem; font-weight: 700; flex-shrink: 0;
+                background: #e8f4fd; color: #0A4D68; border: 1px solid #bee3f8;
+            }
+            .nomina-action-link {
+                display: inline-flex; align-items: center; gap: 5px;
+                padding: 6px 12px; border-radius: 8px;
+                background: #0A4D68; color: white;
+                font-size: .72rem; font-weight: 700;
+                text-decoration: none; flex-shrink: 0;
+                transition: opacity .15s;
+            }
+            .nomina-action-link:hover { opacity: .85; }
+
+            /* Empty state */
+            .proy-empty {
+                text-align: center; padding: 60px 30px;
+                background: white; border-radius: 18px;
+                border: 2px dashed #dde6f0;
+            }
+            .proy-empty-icon {
+                width: 80px; height: 80px; margin: 0 auto 18px;
+                background: linear-gradient(135deg, #f0f6ff, #e0eeff);
+                border-radius: 24px;
+                display: flex; align-items: center; justify-content: center;
+                font-size: 2rem; color: #94a3b8;
+            }
+            .proy-empty h3 { color: #64748b; font-size: 1.05rem; margin-bottom: 6px; }
+            .proy-empty p  { color: #94a3b8; font-size: .85rem; }
+
+            /* List view overrides */
+            #proyectos-container.view-list .proyecto-wrapper {
+                border-radius: 14px;
+            }
+            #proyectos-container.view-list .proy-folder-tab { height: 6px; }
+            #proyectos-container.view-list .proy-card-body {
+                display: flex; gap: 16px; align-items: center; padding: 14px 18px;
+            }
+            #proyectos-container.view-list .proy-card-header {
+                flex: 1; margin-bottom: 0;
+            }
+            #proyectos-container.view-list .proy-progress { display: none; }
+            #proyectos-container.view-list .proy-chips { display: none; }
+            #proyectos-container.view-list .proy-actions {
+                border-top: none; padding-top: 0; flex-shrink: 0;
+            }
+            #proyectos-container.view-list .nominas-lista {
+                border-top: 1.5px solid #eef2f7;
+            }
+
+            @media (max-width: 640px) {
+                .proy-kpi-row { grid-template-columns: 1fr 1fr; }
+                #proyectos-container.view-grid { grid-template-columns: 1fr; }
+            }
+            </style>
+
+            <div class="card" style="background: #f4f7fb; box-shadow: none; border: none; padding: 0;">
+
+                <!-- KPIs -->
+                <div class="proy-kpi-row">
+                    <div class="proy-kpi">
+                        <div class="proy-kpi-icon blue"><i class="fa-solid fa-folder-open"></i></div>
+                        <div class="proy-kpi-body">
+                            <span class="proy-kpi-num" id="total-proyectos">0</span>
+                            <span class="proy-kpi-lbl">Proyectos</span>
                         </div>
                     </div>
+                    <div class="proy-kpi">
+                        <div class="proy-kpi-icon green"><i class="fa-solid fa-clipboard-list"></i></div>
+                        <div class="proy-kpi-body">
+                            <span class="proy-kpi-num" id="nominas-completadas">0</span>
+                            <span class="proy-kpi-lbl">Nóminas</span>
+                        </div>
+                    </div>
+                    <div class="proy-kpi">
+                        <div class="proy-kpi-icon amber"><i class="fa-solid fa-hourglass-half"></i></div>
+                        <div class="proy-kpi-body">
+                            <span class="proy-kpi-num" id="nominas-pendientes">0</span>
+                            <span class="proy-kpi-lbl">Pendientes</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Toolbar -->
+                <div class="proy-toolbar">
+                    <div class="proy-search">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="proyectos-search" placeholder="Buscar proyecto..." oninput="filterProyectos()">
+                    </div>
+                    <div class="proy-view-btns">
+                        <button class="proy-view-btn active" id="btn-view-grid" onclick="setProyView('grid')" title="Vista cuadrícula">
+                            <i class="fa-solid fa-grip"></i>
+                        </button>
+                        <button class="proy-view-btn" id="btn-view-list" onclick="setProyView('list')" title="Vista lista">
+                            <i class="fa-solid fa-list"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Proyecto Cards -->
+                <div id="proyectos-container" class="view-grid">
+                    {% if assigned_nominations %}
+                        {% set proyectos_dict = {} %}
+                        {% for nomina in assigned_nominations %}
+                            {% set proyecto_nombre = nomina.proyecto_nombre if nomina.proyecto_nombre else 'Sin Proyecto Asignado' %}
+                            {% if proyecto_nombre not in proyectos_dict %}
+                                {% set _ = proyectos_dict.__setitem__(proyecto_nombre, []) %}
+                            {% endif %}
+                            {% set _ = proyectos_dict[proyecto_nombre].append(nomina) %}
+                        {% endfor %}
+
+                        {% for proyecto_nombre, nominas_proyecto in proyectos_dict.items() %}
+                        {% set total_nom = nominas_proyecto | length %}
+                        {% set establecimientos = nominas_proyecto | map(attribute='nombre_establecimiento') | unique | list | length %}
+                        <div class="proyecto-wrapper" data-project-name="{{ proyecto_nombre | lower }}">
+                            <!-- Folder tab -->
+                            <div class="proy-folder-tab"></div>
+
+                            <div class="proy-card-body">
+                                <div class="proy-card-header">
+                                    <div class="proy-icon-wrap">
+                                        <i class="fa-solid fa-folder-open"></i>
+                                    </div>
+                                    <div class="proy-title-block">
+                                        <div class="proy-nombre" title="{{ proyecto_nombre }}">{{ proyecto_nombre }}</div>
+                                        <div class="proy-meta">
+                                            <span><i class="fa-solid fa-clipboard-list"></i> {{ total_nom }} nómina{{ 's' if total_nom != 1 else '' }}</span>
+                                            <span><i class="fa-solid fa-building"></i> {{ establecimientos }} establecimiento{{ 's' if establecimientos != 1 else '' }}</span>
+                                        </div>
+                                    </div>
+                                    <span class="proy-status-badge">
+                                        <span class="proy-status-dot"></span> Activo
+                                    </span>
+                                </div>
+
+                                <!-- Chips -->
+                                <div class="proy-chips">
+                                    <span class="proy-chip"><i class="fa-solid fa-file-medical"></i> {{ total_nom }} nóminas</span>
+                                    <span class="proy-chip green"><i class="fa-solid fa-hospital"></i> {{ establecimientos }} establec.</span>
+                                </div>
+
+                                <!-- Progress -->
+                                <div class="proy-progress">
+                                    <div class="proy-progress-head">
+                                        <span>Progreso</span>
+                                        <span id="pct-{{ loop.index }}">—</span>
+                                    </div>
+                                    <div class="proy-progress-track">
+                                        <div class="proy-progress-fill" id="bar-{{ loop.index }}" style="width:0%"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Actions -->
+                                <div class="proy-actions">
+                                    <button class="proy-btn ghost" onclick="toggleNominasProyecto(this)">
+                                        <i class="fa-solid fa-eye"></i>
+                                        <span class="toggle-text">Ver nóminas</span>
+                                    </button>
+                                    <button class="proy-btn primary" onclick="downloadProjectReport('{{ proyecto_nombre }}')">
+                                        <i class="fa-solid fa-arrow-down-to-bracket"></i> Reporte
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Nominas expandible -->
+                            <div class="nominas-lista">
+                                {% for nomina in nominas_proyecto %}
+                                <div class="nomina-item">
+                                    <div class="nomina-item-icon">
+                                        <i class="fa-solid fa-{% if 'Neurolog' in nomina.tipo_nomina_display %}brain{% else %}stethoscope{% endif %}"></i>
+                                    </div>
+                                    <div class="nomina-item-info">
+                                        <div class="nomina-item-name">{{ nomina.nombre_establecimiento }}</div>
+                                        <div class="nomina-item-sub">
+                                            {% if nomina.nombre_colegio %}<i class="fa-solid fa-school"></i> {{ nomina.nombre_colegio }}{% endif %}
+                                        </div>
+                                    </div>
+                                    <span class="nomina-tipo-badge">{{ nomina.tipo_nomina_display }}</span>
+                                    <a href="{{ url_for('relleno_formulario', nomina_id=nomina.id) }}" class="nomina-action-link">
+                                        <i class="fa-solid fa-pen-to-square"></i> Rellenar
+                                    </a>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                    {% else %}
+                        <div class="proy-empty">
+                            <div class="proy-empty-icon"><i class="fa-solid fa-folder-open"></i></div>
+                            <h3>Sin proyectos asignados</h3>
+                            <p>Cuando el administrador te asigne proyectos, aparecerán aquí.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
                 </div>
 
 <div id="doctor-nominas" class="content-section">
@@ -4451,39 +4740,39 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 // Toggle para mostrar/ocultar nóminas del proyecto
+// ── PROYECTOS: toggle nóminas ──────────────────────────────────────
 function toggleNominasProyecto(btn) {
-    const wrapper = btn.closest('.proyecto-wrapper');
-    const nominasLista = wrapper.querySelector('.nominas-lista');
-    const toggleText = btn.querySelector('.toggle-text');
-    const icon = btn.querySelector('i');
-    
-    if (nominasLista.style.display === 'none') {
-        nominasLista.style.display = 'block';
-        toggleText.textContent = 'Ocultar Nóminas';
-        icon.className = 'fa-solid fa-eye-slash';
-    } else {
-        nominasLista.style.display = 'none';
-        toggleText.textContent = 'Ver Nóminas';
-        icon.className = 'fa-solid fa-eye';
-    }
+    const wrapper     = btn.closest('.proyecto-wrapper');
+    const lista       = wrapper.querySelector('.nominas-lista');
+    const toggleText  = btn.querySelector('.toggle-text');
+    const icon        = btn.querySelector('i');
+    const isOpen      = lista.classList.contains('open');
+
+    lista.classList.toggle('open', !isOpen);
+    toggleText.textContent  = isOpen ? 'Ver nóminas'    : 'Ocultar';
+    icon.className          = isOpen ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash';
 }
 
-// Filtrar proyectos
+// ── PROYECTOS: cambio de vista grid / list ──────────────────────────
+function setProyView(mode) {
+    const container = document.getElementById('proyectos-container');
+    if (!container) return;
+    container.classList.toggle('view-grid', mode === 'grid');
+    container.classList.toggle('view-list', mode === 'list');
+    document.getElementById('btn-view-grid').classList.toggle('active', mode === 'grid');
+    document.getElementById('btn-view-list').classList.toggle('active', mode === 'list');
+}
+
+// ── PROYECTOS: filtrar por nombre ───────────────────────────────────
 function filterProyectos() {
-    const searchTerm = document.getElementById('proyectos-search').value.toLowerCase();
-    const proyectos = document.querySelectorAll('.proyecto-wrapper');
-    
-    proyectos.forEach(proyecto => {
-        const nombre = proyecto.getAttribute('data-project-name');
-        if (nombre && nombre.includes(searchTerm)) {
-            proyecto.style.display = 'block';
-        } else {
-            proyecto.style.display = 'none';
-        }
+    const q = (document.getElementById('proyectos-search')?.value || '').toLowerCase();
+    document.querySelectorAll('.proyecto-wrapper').forEach(p => {
+        const nombre = p.getAttribute('data-project-name') || '';
+        p.style.display = nombre.includes(q) ? '' : 'none';
     });
 }
 
-// Descargar reporte del proyecto
+// ── PROYECTOS: reporte ──────────────────────────────────────────────
 function downloadProjectReport(projectName) {
     Swal.fire({
         title: 'Generando Reporte',
@@ -4495,17 +4784,34 @@ function downloadProjectReport(projectName) {
     });
 }
 
-// Actualizar estadísticas
+// ── PROYECTOS: estadísticas y barras de progreso ────────────────────
 function updateProyectosStats() {
-    const totalProyectos = document.querySelectorAll('.proyecto-wrapper').length;
-    const elem = document.getElementById('total-proyectos');
-    if (elem) elem.textContent = totalProyectos;
-    
-    const completadas = document.querySelectorAll('.nominas-lista .action-button').length;
-    const elemComp = document.getElementById('nominas-completadas');
-    const elemPend = document.getElementById('nominas-pendientes');
-    if (elemComp) elemComp.textContent = '0';
-    if (elemPend) elemPend.textContent = completadas;
+    const wrappers = document.querySelectorAll('.proyecto-wrapper');
+    const total    = wrappers.length;
+
+    // Contar nóminas totales
+    let totalNominas = 0;
+    wrappers.forEach(w => {
+        totalNominas += w.querySelectorAll('.nomina-item').length;
+    });
+
+    const elemT = document.getElementById('total-proyectos');
+    const elemN = document.getElementById('nominas-completadas');
+    const elemP = document.getElementById('nominas-pendientes');
+    if (elemT) elemT.textContent = total;
+    if (elemN) elemN.textContent = totalNominas;
+    if (elemP) elemP.textContent = '—';
+
+    // Animar aparición de las cards con stagger
+    wrappers.forEach((w, i) => {
+        w.style.opacity    = '0';
+        w.style.transform  = 'translateY(18px)';
+        w.style.transition = 'opacity .35s ease, transform .35s ease';
+        setTimeout(() => {
+            w.style.opacity   = '1';
+            w.style.transform = 'translateY(0)';
+        }, 60 * i);
+    });
 }
 
 // Inicializar al cargar

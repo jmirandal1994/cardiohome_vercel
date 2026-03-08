@@ -523,7 +523,7 @@ def relleno_formulario(nomina_id):
     url_estudiantes = (
         f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
         f"?nomina_id=eq.{nomina_id}"
-        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,si_2,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,fecha_reevaluacion_select,motivo_consulta,observacion_neurologia,observaciones,diagnostico_sospecha,diagnostico_definitivo" 
+        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,estado_asistencia,motivo_ausencia,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,si_2,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,fecha_reevaluacion_select,motivo_consulta,observacion_neurologia,observaciones,diagnostico_sospecha,diagnostico_definitivo" 
         f"&order=nombre.asc"
     )
 
@@ -1275,11 +1275,11 @@ def reporte_proyecto_detalle(project_id):
         # 3. Recorrer nóminas para traer alumnos y contar estados
         for nom in nominas:
             # Traer lista de alumnos por nómina
-            url_e = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nom['id']}&select=nombre,rut,evaluado_flag&order=nombre.asc"
+            url_e = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nom['id']}&select=nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia&order=nombre.asc"
             res_e = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS)
             alumnos = res_e.json() if res_e.ok else []
             
-            ev_count = len([a for a in alumnos if a.get('evaluado_flag') is True])
+            ev_count = len([a for a in alumnos if a.get('evaluado_flag') is True and a.get('estado_asistencia','activo') in ('activo','extra')])
             total_count = len(alumnos)
             
             global_total += total_count
@@ -1360,8 +1360,8 @@ def get_admin_stats(project_id):
             doc_id    = str(nom.get("doctora_id") or "")
             est_nombre = nom.get("nombre_colegio") or nom.get("nombre_nomina") or "Sin nombre"
 
-            evaluados  = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.true")
-            pendientes = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.false")
+            evaluados  = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
+            pendientes = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.false&estado_asistencia=in.(activo,extra)")
             subtotal   = evaluados + pendientes
 
             total_evaluados  += evaluados
@@ -2722,11 +2722,11 @@ def dashboard_counts():
             continue
 
         evaluados = get_supabase_count(
-            f"nomina_id=eq.{nom_id}&evaluado_flag=eq.true"
+            f"nomina_id=eq.{nom_id}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)"
         )
 
         pendientes = get_supabase_count(
-            f"nomina_id=eq.{nom_id}&evaluado_flag=eq.false"
+            f"nomina_id=eq.{nom_id}&evaluado_flag=eq.false&estado_asistencia=in.(activo,extra)"
         )
 
         print(f"DEBUG NOMINA {nom_id} → {tipo} | Evaluados={evaluados}, Pendientes={pendientes}")
@@ -3329,8 +3329,8 @@ def api_doctor_performance():
             ftype = nomina.get('form_type', '')
 
             # Usar get_supabase_count exactamente como hace el resto del app
-            total_n = get_supabase_count(f"nomina_id=eq.{nid}")
-            comp_n  = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true")
+            total_n = get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)")
+            comp_n  = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
 
             nomina_labels.append(label)
             nomina_totals.append(total_n)
@@ -3496,8 +3496,8 @@ def api_coordinadora_stats():
             ftype = nomina.get('form_type', '') or ''
             tipo  = (nomina.get('tipo_nomina') or '').lower()
 
-            t = get_supabase_count(f"nomina_id=eq.{nid}")
-            c = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true")
+            t = get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)")
+            c = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
 
             total_global     += t
             completed_global += c
@@ -3590,8 +3590,8 @@ def api_coordinadora_stats():
             doctoras_info = {d['id']: d for d in (res_docs.json() if res_docs.ok else [])}
 
             for did, nids in doctoras_nominas.items():
-                doc_total = sum(get_supabase_count(f"nomina_id=eq.{nid}") for nid in nids)
-                doc_comp  = sum(get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true") for nid in nids)
+                doc_total = sum(get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)") for nid in nids)
+                doc_comp  = sum(get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)") for nid in nids)
                 doc_pct   = round((doc_comp / doc_total * 100), 1) if doc_total > 0 else 0
                 # Usar 'usuario' o 'nombre' para mostrar
                 doc_info  = doctoras_info.get(did, {})
@@ -3611,8 +3611,8 @@ def api_coordinadora_stats():
         for nomina in nominas:
             nid   = nomina['id']
             ename = nomina.get('nombre_colegio') or nomina.get('nombre_nomina') or 'Sin nombre'
-            t = get_supabase_count(f"nomina_id=eq.{nid}")
-            c = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true")
+            t = get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)")
+            c = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
             est_data[ename]["total"]     += t
             est_data[ename]["completed"] += c
 
@@ -3653,6 +3653,109 @@ def api_coordinadora_stats():
         return jsonify({"success": False, "message": f"Error interno: {str(e)}"}), 500
 
 
+# ═══════════════════════════════════════════════════════════════════
+# RUTAS: Sistema de Ausencias y Alumnos Extra/Reemplazo
+#   Requiere columnas en estudiantes_nomina:
+#     estado_asistencia TEXT DEFAULT 'activo'
+#     motivo_ausencia   TEXT
+# ═══════════════════════════════════════════════════════════════════
+
+@app.route('/api/estudiante/estado_ausencia', methods=['POST'])
+def api_estado_ausencia():
+    """
+    Marca a un estudiante como no_asiste_reemplazado, no_asiste_sin_reemplazo, extra o activo.
+    El alumno no se borra — queda como registro con estado diferente.
+    Los conteos del admin/coordinadora filtran por estado_asistencia IN ('activo','extra').
+    """
+    if session.get('usuario') not in ('admin', 'doctora', 'coordinadora'):
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+
+    data = request.get_json()
+    estudiante_id     = data.get('estudiante_id')
+    estado_asistencia = data.get('estado_asistencia', 'activo')
+    motivo_ausencia   = data.get('motivo_ausencia')
+
+    if not estudiante_id:
+        return jsonify({"success": False, "error": "estudiante_id requerido"}), 400
+
+    estados_validos = ('activo', 'no_asiste_reemplazado', 'no_asiste_sin_reemplazo', 'extra')
+    if estado_asistencia not in estados_validos:
+        return jsonify({"success": False, "error": "Estado inválido"}), 400
+
+    try:
+        payload = {"estado_asistencia": estado_asistencia}
+        if motivo_ausencia is not None:
+            payload["motivo_ausencia"] = motivo_ausencia
+
+        # Si se marca como ausente → evaluado_flag = False para excluirlo del conteo
+        if estado_asistencia in ('no_asiste_reemplazado', 'no_asiste_sin_reemplazo'):
+            payload["evaluado_flag"] = False
+
+        url = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}"
+        res = requests.patch(url, json=payload, headers={
+            **SUPABASE_SERVICE_HEADERS,
+            "Prefer": "return=minimal"
+        })
+
+        if res.ok:
+            return jsonify({"success": True, "estado": estado_asistencia})
+        else:
+            return jsonify({"success": False, "error": res.text}), 500
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/estudiante/agregar', methods=['POST'])
+def api_agregar_estudiante():
+    """
+    Agrega un alumno extra o de reemplazo a una nómina existente.
+    estado_asistencia = 'activo'  (reemplazo) o 'extra'
+    """
+    if session.get('usuario') not in ('admin', 'doctora', 'coordinadora'):
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+
+    data = request.get_json()
+    nomina_id         = data.get('nomina_id')
+    nombre            = data.get('nombre', '').strip()
+    rut               = data.get('rut', '').strip()
+    fecha_nacimiento  = data.get('fecha_nacimiento')
+    sexo              = data.get('sexo')
+    estado_asistencia = data.get('estado_asistencia', 'activo')  # 'activo' o 'extra'
+
+    if not nomina_id or not nombre or not rut:
+        return jsonify({"success": False, "error": "nomina_id, nombre y rut son requeridos"}), 400
+
+    try:
+        nuevo_alumno = {
+            "nomina_id":         nomina_id,
+            "nombre":            nombre,
+            "rut":               rut,
+            "evaluado_flag":     False,
+            "estado_asistencia": estado_asistencia,
+        }
+        if fecha_nacimiento:
+            nuevo_alumno["fecha_nacimiento"] = fecha_nacimiento
+        if sexo:
+            nuevo_alumno["sexo"] = sexo
+
+        url = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+        res = requests.post(url, json=nuevo_alumno, headers={
+            **SUPABASE_SERVICE_HEADERS,
+            "Prefer": "return=representation"
+        })
+
+        if res.ok:
+            inserted = res.json()
+            new_id = inserted[0].get('id') if inserted else None
+            return jsonify({"success": True, "id": new_id, "nombre": nombre})
+        else:
+            return jsonify({"success": False, "error": res.text}), 500
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 # ─────────────────────────────────────────────────────────────
 # RUTA: Stats de todas las nóminas de un proyecto
 #  GET /api/admin/proyecto_stats/<project_id>
@@ -3675,8 +3778,8 @@ def api_admin_proyecto_stats(project_id):
 
         for nom in nominas:
             nid   = nom['id']
-            total = get_supabase_count(f"nomina_id=eq.{nid}")
-            eval_ = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true")
+            total = get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)")
+            eval_ = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
             pct   = round(eval_ / total * 100, 1) if total > 0 else 0
             proj_total += total
             proj_eval  += eval_

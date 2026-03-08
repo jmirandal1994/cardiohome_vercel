@@ -523,7 +523,7 @@ def relleno_formulario(nomina_id):
     url_estudiantes = (
         f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
         f"?nomina_id=eq.{nomina_id}"
-        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,si_2,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,fecha_reevaluacion_select,motivo_consulta,observacion_neurologia,observaciones,diagnostico_sospecha,diagnostico_definitivo" 
+        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,si_2,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,fecha_reevaluacion_select,motivo_consulta,observacion_neurologia,observaciones,diagnostico_sospecha,diagnostico_definitivo,estado_asistencia,motivo_ausencia" 
         f"&order=nombre.asc"
     )
 
@@ -575,7 +575,8 @@ def relleno_formulario(nomina_id):
         doctora_nombre = res_doctora.json()[0]['nombre'] if res_doctora.ok and res_doctora.json() else 'Doctora Asignada'
         
         # Total de formularios completados
-        total_forms_completed_for_nomina = sum(1 for est in estudiantes if est.get('fecha_relleno') is not None)
+        # Solo contar evaluados que están activos o son extra (excluir no_asiste)
+        total_forms_completed_for_nomina = sum(1 for est in estudiantes if est.get('fecha_relleno') is not None and est.get('estado_asistencia') in ('activo','extra',None,''))
 
 
         # 5. LÓGICA DE REDIRECCIÓN CLAVE (UNIFICADA POR form_type)
@@ -1360,8 +1361,8 @@ def get_admin_stats(project_id):
             doc_id    = str(nom.get("doctora_id") or "")
             est_nombre = nom.get("nombre_colegio") or nom.get("nombre_nomina") or "Sin nombre"
 
-            evaluados  = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.true")
-            pendientes = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.false")
+            evaluados  = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
+            pendientes = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.false&estado_asistencia=in.(activo,extra)")
             subtotal   = evaluados + pendientes
 
             total_evaluados  += evaluados
@@ -2407,7 +2408,7 @@ def descargar_pdf_alumno(alumno_id):
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,check_cirugiasi,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,check_caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,doctora_evaluadora_id,nomina_id,clasificacion_imc,motivo_consulta,observaciones,observacion_neurologia" 
+            f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,check_cirugiasi,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,check_caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,doctora_evaluadora_id,nomina_id,clasificacion_imc,motivo_consulta,observaciones,observacion_neurologia,estado_asistencia,motivo_ausencia" 
         )
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
         res_student.raise_for_status() 
@@ -2722,11 +2723,11 @@ def dashboard_counts():
             continue
 
         evaluados = get_supabase_count(
-            f"nomina_id=eq.{nom_id}&evaluado_flag=eq.true"
+            f"nomina_id=eq.{nom_id}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)"
         )
 
         pendientes = get_supabase_count(
-            f"nomina_id=eq.{nom_id}&evaluado_flag=eq.false"
+            f"nomina_id=eq.{nom_id}&evaluado_flag=eq.false&estado_asistencia=in.(activo,extra)"
         )
 
         print(f"DEBUG NOMINA {nom_id} → {tipo} | Evaluados={evaluados}, Pendientes={pendientes}")
@@ -3329,8 +3330,8 @@ def api_doctor_performance():
             ftype = nomina.get('form_type', '')
 
             # Usar get_supabase_count exactamente como hace el resto del app
-            total_n = get_supabase_count(f"nomina_id=eq.{nid}")
-            comp_n  = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true")
+            total_n = get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)")
+            comp_n  = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
 
             nomina_labels.append(label)
             nomina_totals.append(total_n)
@@ -3496,8 +3497,8 @@ def api_coordinadora_stats():
             ftype = nomina.get('form_type', '') or ''
             tipo  = (nomina.get('tipo_nomina') or '').lower()
 
-            t = get_supabase_count(f"nomina_id=eq.{nid}")
-            c = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true")
+            t = get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)")
+            c = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
 
             total_global     += t
             completed_global += c
@@ -3590,8 +3591,8 @@ def api_coordinadora_stats():
             doctoras_info = {d['id']: d for d in (res_docs.json() if res_docs.ok else [])}
 
             for did, nids in doctoras_nominas.items():
-                doc_total = sum(get_supabase_count(f"nomina_id=eq.{nid}") for nid in nids)
-                doc_comp  = sum(get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true") for nid in nids)
+                doc_total = sum(get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)") for nid in nids)
+                doc_comp  = sum(get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)") for nid in nids)
                 doc_pct   = round((doc_comp / doc_total * 100), 1) if doc_total > 0 else 0
                 # Usar 'usuario' o 'nombre' para mostrar
                 doc_info  = doctoras_info.get(did, {})
@@ -3611,8 +3612,8 @@ def api_coordinadora_stats():
         for nomina in nominas:
             nid   = nomina['id']
             ename = nomina.get('nombre_colegio') or nomina.get('nombre_nomina') or 'Sin nombre'
-            t = get_supabase_count(f"nomina_id=eq.{nid}")
-            c = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true")
+            t = get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)")
+            c = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
             est_data[ename]["total"]     += t
             est_data[ename]["completed"] += c
 
@@ -3675,8 +3676,8 @@ def api_admin_proyecto_stats(project_id):
 
         for nom in nominas:
             nid   = nom['id']
-            total = get_supabase_count(f"nomina_id=eq.{nid}")
-            eval_ = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true")
+            total = get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)")
+            eval_ = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
             pct   = round(eval_ / total * 100, 1) if total > 0 else 0
             proj_total += total
             proj_eval  += eval_

@@ -8,203 +8,294 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
     <style>
-        /* ─── VARIABLES ─────────────────────────────────────────── */
+        /* ─── VARIABLES — igual que familiar pero acento violeta neurología ─── */
         :root {
-            --primary:          #0f3460;
-            --primary-mid:      #1b6ca8;
-            --accent:           #6c5ce7;        /* Neurología → violeta */
-            --accent-dark:      #5a4fd6;
-            --accent-gradient:  linear-gradient(135deg,#6c5ce7,#a29bfe);
-            --primary-gradient: linear-gradient(135deg,#0f3460,#1b6ca8);
-            --danger:           #e17055;
-            --success:          #00b894;
-            --bg:               #f4f7fb;
-            --surface:          #ffffff;
-            --border:           #e2e8f4;
-            --text-dark:        #1a202c;
-            --text-secondary:   #64748b;
-            --text-muted:       #94a3b8;
-            --shadow-sm:        0 2px 8px rgba(15,52,96,.08);
-            --shadow-md:        0 8px 24px rgba(15,52,96,.12);
-            --shadow-lg:        0 16px 40px rgba(15,52,96,.15);
-            --radius:           16px;
-            --radius-sm:        10px;
+            --primary: #0f4c75;
+            --primary-mid: #1b6ca8;
+            --primary-light: #2196f3;
+            --primary-gradient: linear-gradient(135deg, #0f4c75 0%, #1b6ca8 100%);
+            /* Neurología → violeta en lugar de verde */
+            --accent: #7c3aed;
+            --accent-dark: #6d28d9;
+            --accent-gradient: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+            --danger: #e17055;
+            --danger-gradient: linear-gradient(135deg, #e17055 0%, #d63031 100%);
+            --warning: #fdcb6e;
+            --warning-dark: #e6b800;
+
+            --bg-page: #f0f4f8;
+            --bg-white: #ffffff;
+            --bg-card: #ffffff;
+            --bg-section: #f8fafc;
+            --bg-input: #f8fafc;
+
+            --text-dark: #1a2332;
+            --text-primary: #2c3e50;
+            --text-secondary: #5f6b7a;
+            --text-muted: #94a3b8;
+            --text-white: #ffffff;
+
+            --border: #dde3ec;
+            --border-focus: #7c3aed;
+            --border-radius-sm: 6px;
+            --border-radius-md: 10px;
+            --border-radius-lg: 14px;
+            --border-radius-xl: 20px;
             --border-radius-full: 999px;
-            --font-body:        'DM Sans', sans-serif;
-            --font-display:     'Sora', sans-serif;
-            --transition:       0.2s ease;
+
+            --shadow-xs: 0 1px 3px rgba(15,76,117,0.07);
+            --shadow-sm: 0 2px 8px rgba(15,76,117,0.09);
+            --shadow-md: 0 4px 16px rgba(15,76,117,0.12);
+            --shadow-lg: 0 8px 32px rgba(15,76,117,0.16);
+            --shadow-xl: 0 20px 60px rgba(15,76,117,0.18);
+
+            --font-display: 'Sora', sans-serif;
+            --font-body: 'DM Sans', sans-serif;
+            --ease: cubic-bezier(0.4, 0, 0.2, 1);
+            --transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        html { scroll-behavior: smooth; }
+        *, *::before, *::after { box-sizing: border-box; }
 
         body {
             font-family: var(--font-body);
-            background: var(--bg);
+            background: var(--bg-page);
+            background-image:
+                radial-gradient(ellipse at 10% 0%, rgba(124,58,237,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 90% 100%, rgba(167,139,250,0.05) 0%, transparent 50%);
             color: var(--text-dark);
             line-height: 1.6;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
+            padding: 0; margin: 0;
         }
 
-        /* ─── HEADER ────────────────────────────────────────────── */
+        .main-content-wrapper {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 24px 28px 48px;
+            flex-grow: 1;
+        }
+
+        /* ─── HEADER ─── */
         header {
             background: var(--primary-gradient);
-            padding: 0 2rem;
-            height: 66px;
+            padding: 18px 32px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 4px 20px rgba(15,52,96,.25);
+            gap: 16px;
             position: sticky;
             top: 0;
-            z-index: 50;
-            flex-shrink: 0;
+            z-index: 100;
+            box-shadow: 0 2px 20px rgba(15,76,117,0.3);
         }
-        .header-left { display: flex; align-items: center; gap: 14px; }
-        header img { width: 40px; height: 40px; border-radius: 10px; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,.2)); }
-        .header-title { font-family: var(--font-display); font-size: .95rem; font-weight: 700; color: white; line-height: 1.2; }
-        .header-title span { display: block; font-size: .72rem; font-weight: 400; opacity: .75; margin-top: 1px; }
+        .header-left, .header-right {
+            display: flex; align-items: center; gap: 12px; min-width: 200px;
+        }
+        .header-right { justify-content: flex-end; }
+        .header-center {
+            display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 1;
+        }
+        header img {
+            max-width: 48px; height: 48px; object-fit: contain;
+            filter: brightness(0) invert(1); opacity: 0.95;
+        }
+        header h1 {
+            font-family: var(--font-display);
+            font-size: 1.05rem; font-weight: 700; color: white;
+            margin: 0; letter-spacing: -0.01em; text-align: center;
+        }
+        .header-subtitle {
+            font-size: 0.75rem; color: rgba(255,255,255,0.65); font-weight: 400;
+        }
         .neuro-badge {
-            background: rgba(108,92,231,.25);
-            border: 1.5px solid rgba(162,155,254,.4);
+            background: rgba(124,58,237,0.25);
+            border: 1.5px solid rgba(167,139,250,0.4);
             color: #c4b5fd;
-            font-size: .7rem; font-weight: 700;
+            font-size: 0.68rem; font-weight: 800;
             padding: 3px 10px; border-radius: var(--border-radius-full);
-            letter-spacing: .5px;
+            letter-spacing: 0.6px; text-transform: uppercase;
         }
-        .header-right { display: flex; align-items: center; gap: 10px; }
         .header-btn {
+            padding: 9px 16px; border-radius: var(--border-radius-full);
+            font-family: var(--font-body); font-weight: 600; font-size: 0.82rem;
+            cursor: pointer; text-decoration: none;
             display: inline-flex; align-items: center; gap: 7px;
-            padding: 7px 16px; border-radius: var(--border-radius-full);
-            font-size: .78rem; font-weight: 700; cursor: pointer;
-            border: none; text-decoration: none; transition: all var(--transition);
+            transition: all var(--transition); border: none; white-space: nowrap;
         }
-        .btn-back    { background: rgba(255,255,255,.15); color: white; }
-        .btn-back:hover { background: rgba(255,255,255,.25); }
-        .btn-logout  { background: rgba(225,112,85,.25); color: #fca5a5; }
-        .btn-logout:hover { background: rgba(225,112,85,.4); }
+        .back-to-dashboard-btn {
+            background: rgba(255,255,255,0.15); color: white;
+            border: 1.5px solid rgba(255,255,255,0.25);
+        }
+        .back-to-dashboard-btn:hover { background: rgba(255,255,255,0.25); }
+        .logout-btn { background: rgba(225,112,85,0.85); color: white; }
+        .logout-btn:hover { background: #e17055; }
 
-        /* ─── STATS BAR ─────────────────────────────────────────── */
+        /* ─── FLASH ─── */
+        .flash-messages { list-style: none; padding: 0; margin: 0 0 16px; }
+        .flash-messages li {
+            padding: 12px 18px; border-radius: var(--border-radius-md);
+            font-size: 0.88rem; font-weight: 600; margin-bottom: 8px;
+        }
+        .flash-messages li.success { background: rgba(0,184,148,0.1); color: #00a381; border: 1px solid rgba(0,184,148,0.25); }
+        .flash-messages li.error   { background: rgba(225,112,85,0.1); color: var(--danger); border: 1px solid rgba(225,112,85,0.25); }
+
+        /* ─── STATS BAR ─── */
         .stats-bar {
-            background: white;
-            border-bottom: 1px solid var(--border);
-            padding: 0 2rem;
-            display: flex;
-            align-items: center;
-            gap: 0;
-            flex-wrap: wrap;
-            box-shadow: 0 2px 8px rgba(15,52,96,.05);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px; margin: 28px 0 20px;
         }
-        .stat-item {
-            display: flex; align-items: center; gap: 10px;
-            padding: 14px 24px;
-            border-right: 1px solid var(--border);
+        .stat-card {
+            background: var(--bg-white); border-radius: var(--border-radius-lg);
+            padding: 20px 22px; display: flex; align-items: center; gap: 16px;
+            box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+            transition: all var(--transition);
         }
-        .stat-item:last-of-type { border-right: none; }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
         .stat-icon {
-            width: 38px; height: 38px; border-radius: 10px;
+            width: 48px; height: 48px; border-radius: var(--border-radius-md);
             display: flex; align-items: center; justify-content: center;
-            font-size: .95rem; flex-shrink: 0;
+            font-size: 1.3rem; flex-shrink: 0;
         }
-        .stat-icon.purple { background: rgba(108,92,231,.1); color: var(--accent); }
-        .stat-icon.green  { background: rgba(0,184,148,.1);  color: var(--success); }
-        .stat-icon.orange { background: rgba(225,112,85,.1); color: var(--danger); }
-        .stat-icon.blue   { background: rgba(27,108,168,.1); color: var(--primary-mid); }
-        .stat-text { display: flex; flex-direction: column; }
-        .stat-value { font-family: var(--font-display); font-size: 1.3rem; font-weight: 800; color: var(--text-dark); line-height: 1; }
-        .stat-label { font-size: .7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
-
-        /* Progress bar inside stats-bar */
-        .progress-wrap {
-            flex: 1; min-width: 200px;
-            padding: 14px 24px;
-            display: flex; flex-direction: column; gap: 6px;
+        .stat-icon.blue   { background: rgba(27,108,168,0.1); color: var(--primary-mid); }
+        .stat-icon.violet { background: rgba(124,58,237,0.1); color: var(--accent); }
+        .stat-icon.orange { background: rgba(225,112,85,0.1); color: var(--danger); }
+        .stat-icon.teal   { background: rgba(0,206,201,0.1); color: #00cec9; }
+        .stat-info { line-height: 1.3; }
+        .stat-value {
+            font-family: var(--font-display); font-size: 1.7rem; font-weight: 800;
+            color: var(--text-dark);
         }
-        .progress-meta { display: flex; justify-content: space-between; align-items: center; }
-        .progress-label { font-size: .75rem; font-weight: 700; color: var(--text-secondary); }
-        .progress-pct   { font-size: .75rem; font-weight: 800; color: var(--accent); }
-        .progress-bar-bg { height: 8px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }
-        .progress-bar-fill { height: 100%; background: var(--accent-gradient); border-radius: 99px; transition: width .5s ease; }
-        .progress-text { font-size: .72rem; color: var(--text-muted); }
+        .stat-label { font-size: 0.78rem; color: var(--text-secondary); font-weight: 500; }
 
-        /* ─── TOOLBAR ───────────────────────────────────────────── */
+        /* ─── REPORT PANEL ─── */
+        .report-panel {
+            background: white; border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+            margin-bottom: 20px; overflow: hidden;
+        }
+        .report-panel-header {
+            padding: 16px 22px;
+            background: linear-gradient(to right, rgba(124,58,237,0.05), transparent);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center;
+            justify-content: space-between; gap: 12px; flex-wrap: wrap;
+        }
+        .report-panel-header h2 {
+            font-family: var(--font-display); font-size: 0.88rem; font-weight: 700;
+            color: var(--text-dark); display: flex; align-items: center; gap: 8px;
+        }
+        .report-panel-header h2 i { color: var(--accent); }
+        .report-panel-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        /* ─── BARRA DE HERRAMIENTAS ─── */
         .toolbar {
-            background: white;
-            padding: 12px 2rem;
-            border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            background: var(--bg-white); border-radius: var(--border-radius-lg);
+            padding: 16px 20px; margin-bottom: 20px;
+            box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+            display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
         }
-        .toolbar-section { display: flex; align-items: center; gap: 8px; }
-        .toolbar-label { font-size: .72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
-        .toolbar-divider { width: 1px; height: 28px; background: var(--border); margin: 0 4px; }
-        .filter-group { display: flex; gap: 4px; }
+        .toolbar-section { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .toolbar-divider { width: 1px; height: 32px; background: var(--border); flex-shrink: 0; }
+        .toolbar-label {
+            font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap;
+        }
+
+        /* ─── BOTONES ─── */
+        .btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 9px 18px; border-radius: var(--border-radius-full);
+            font-family: var(--font-body); font-size: 0.85rem; font-weight: 600;
+            border: none; cursor: pointer; transition: all var(--transition);
+            text-decoration: none; white-space: nowrap; letter-spacing: 0.01em;
+        }
+        .btn-primary {
+            background: var(--primary-gradient); color: white;
+            box-shadow: 0 3px 12px rgba(15,76,117,0.3);
+        }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 5px 18px rgba(15,76,117,0.38); }
+        .btn-success {
+            background: var(--accent-gradient); color: white;
+            box-shadow: 0 3px 12px rgba(124,58,237,0.3);
+        }
+        .btn-success:hover { transform: translateY(-1px); }
+        .btn-outline {
+            background: white; color: var(--primary-mid);
+            border: 1.5px solid rgba(27,108,168,0.3);
+        }
+        .btn-outline:hover { background: rgba(27,108,168,0.05); }
+        .btn-ghost {
+            background: var(--bg-section); color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        .btn-ghost:hover { background: var(--border); }
+        .btn-sm { padding: 7px 14px; font-size: 0.8rem; }
+
+        /* ─── FILTROS ─── */
+        .filter-group { display: flex; gap: 6px; flex-wrap: wrap; }
         .filter-group label {
-            display: inline-flex; align-items: center; gap: 5px;
-            padding: 5px 12px; border-radius: var(--border-radius-full);
-            border: 1.5px solid var(--border); font-size: .78rem; font-weight: 600;
-            color: var(--text-secondary); cursor: pointer; transition: all var(--transition);
+            padding: 7px 14px; background: var(--bg-section);
+            border: 1.5px solid var(--border); border-radius: var(--border-radius-full);
+            cursor: pointer; transition: all var(--transition);
+            font-family: var(--font-body); font-weight: 500; font-size: 0.82rem;
+            display: flex; align-items: center; gap: 7px; color: var(--text-secondary);
         }
-        .filter-group label:has(input:checked) { background: var(--accent); color: white; border-color: var(--accent); }
-        .filter-group input[type="radio"] { display: none; }
+        .filter-group label:hover { border-color: var(--accent); color: var(--accent); }
+        .filter-group input[type="radio"] { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; }
+        .filter-group label:has(input:checked) { background: rgba(124,58,237,0.08); border-color: var(--accent); color: var(--accent); }
+
+        /* Buscador */
         .search-wrap { position: relative; }
-        .search-wrap i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: .82rem; }
+        .search-wrap i { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.82rem; }
         .search-wrap input {
-            padding: 7px 12px 7px 32px; border-radius: var(--border-radius-full);
-            border: 1.5px solid var(--border); font-size: .82rem; width: 220px;
-            color: var(--text-dark); background: #f8faff; outline: none; font-family: var(--font-body);
-            transition: border-color var(--transition);
+            padding: 8px 14px 8px 36px; border-radius: var(--border-radius-full);
+            border: 1.5px solid var(--border); font-size: 0.85rem;
+            color: var(--text-dark); background: var(--bg-section);
+            outline: none; font-family: var(--font-body);
+            transition: border-color var(--transition); min-width: 220px;
         }
-        .search-wrap input:focus { border-color: var(--accent); }
+        .search-wrap input:focus { border-color: var(--accent); background: white; }
 
-        /* Action buttons row */
-        .action-row {
-            background: white;
-            padding: 10px 2rem;
-            border-bottom: 1px solid var(--border);
-            display: flex; gap: 8px; flex-wrap: wrap;
+        /* Barra de progreso */
+        .progress-wrap {
+            flex: 1; min-width: 220px;
+            background: white; padding: 14px 18px;
+            border-radius: var(--border-radius-lg); border: 1px solid var(--border);
+            box-shadow: var(--shadow-xs);
         }
-        .action-btn {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 7px 15px; border-radius: var(--radius-sm);
-            font-size: .76rem; font-weight: 700; cursor: pointer;
-            border: 1.5px solid var(--border); background: white;
-            color: var(--text-secondary); transition: all var(--transition);
-        }
-        .action-btn:hover { background: #f0f4ff; border-color: var(--accent); color: var(--accent); }
+        .progress-meta { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .progress-label { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); }
+        .progress-pct   { font-size: 0.78rem; font-weight: 800; color: var(--accent); }
+        .progress-bar-bg { height: 8px; background: #f1f5f9; border-radius: 99px; overflow: hidden; margin-bottom: 4px; }
+        .progress-bar-fill { height: 100%; background: var(--accent-gradient); border-radius: 99px; transition: width 0.5s ease; }
+        .progress-text { font-size: 0.72rem; color: var(--text-muted); }
 
-        /* ─── MAIN CONTENT ──────────────────────────────────────── */
-        .main-wrap {
-            flex: 1; max-width: 1100px; width: 100%;
-            margin: 0 auto; padding: 24px 2rem;
-        }
-
-        /* ─── STUDENT CARD ──────────────────────────────────────── */
+        /* ─── TARJETAS ESTUDIANTE ─── */
         .estudiante {
-            background: var(--surface);
-            border-radius: var(--radius);
-            border: 1.5px solid var(--border);
-            margin-bottom: 12px;
-            box-shadow: var(--shadow-sm);
-            overflow: hidden;
-            transition: box-shadow var(--transition), border-color var(--transition);
+            background: var(--bg-card); border-radius: var(--border-radius-xl);
+            margin-bottom: 14px; box-shadow: var(--shadow-xs);
+            border: 1.5px solid var(--border); transition: all var(--transition); overflow: hidden;
         }
-        .estudiante:hover { box-shadow: var(--shadow-md); border-color: #c7d4e8; }
-        .estudiante[open] { border-color: var(--accent); box-shadow: var(--shadow-md); }
-        .estudiante[data-evaluated-status="true"] { border-left: 4px solid var(--success); }
-        .estudiante[data-evaluated-status="true"] .student-avatar { background: linear-gradient(135deg,#00b894,#55efc4); }
+        .estudiante:hover { border-color: rgba(124,58,237,0.3); box-shadow: var(--shadow-md); }
+        .estudiante[open] { border-color: rgba(124,58,237,0.4); box-shadow: var(--shadow-md); }
+        .estudiante[data-evaluated-status="true"] { border-left: 4px solid var(--accent); }
+        .estudiante[data-evaluated-status="true"] .student-avatar { background: var(--accent-gradient); }
 
         .estudiante summary {
             padding: 16px 22px; cursor: pointer;
             display: flex; align-items: center; gap: 14px;
-            list-style: none; background: white; transition: background var(--transition);
+            list-style: none; position: relative; background: white;
+            transition: background var(--transition);
         }
         .estudiante summary:hover { background: #f8fafc; }
         .estudiante[open] summary {
-            background: linear-gradient(to right, rgba(108,92,231,.04), rgba(162,155,254,.02));
+            background: linear-gradient(to right, rgba(124,58,237,0.04), rgba(167,139,250,0.02));
             border-bottom: 1.5px solid var(--border);
         }
         .estudiante summary::-webkit-details-marker { display: none; }
@@ -213,277 +304,280 @@
             width: 46px; height: 46px; border-radius: 12px;
             background: var(--primary-gradient);
             display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 1.1rem; flex-shrink: 0;
-            box-shadow: var(--shadow-sm);
+            color: white; font-size: 1.2rem; flex-shrink: 0; box-shadow: var(--shadow-sm);
         }
         .student-info { flex: 1; min-width: 0; }
         .student-name {
-            font-family: var(--font-display); font-size: .95rem; font-weight: 700;
+            font-family: var(--font-display); font-size: 0.98rem; font-weight: 700;
             color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .student-meta { font-size: .78rem; color: var(--text-secondary); margin-top: 2px; }
+        .student-meta { font-size: 0.78rem; color: var(--text-secondary); margin-top: 1px; }
 
         .status-badge {
             display: inline-flex; align-items: center; gap: 5px;
             padding: 5px 12px; border-radius: var(--border-radius-full);
-            font-size: .74rem; font-weight: 700; flex-shrink: 0;
+            font-size: 0.75rem; font-weight: 700; letter-spacing: 0.02em; flex-shrink: 0;
         }
-        .status-badge.evaluated { background: rgba(0,184,148,.1); color: #00a381; border: 1.5px solid rgba(0,184,148,.25); }
-        .status-badge.pending   { background: rgba(225,112,85,.1); color: var(--danger); border: 1.5px solid rgba(225,112,85,.25); }
+        .status-badge.evaluated { background: rgba(124,58,237,0.1); color: var(--accent-dark); border: 1.5px solid rgba(124,58,237,0.25); }
+        .status-badge.pending   { background: rgba(225,112,85,0.1); color: var(--danger); border: 1.5px solid rgba(225,112,85,0.25); }
+        .status-badge.ausente-reemplazado { background: rgba(253,126,20,0.1); color: #d35400; border: 1.5px solid rgba(253,126,20,0.3); }
+        .status-badge.ausente-sin-reemplazo { background: rgba(99,110,114,0.1); color: #636e72; border: 1.5px solid rgba(99,110,114,0.2); }
+        .status-badge.extra-badge { background: rgba(124,58,237,0.1); color: var(--accent); border: 1.5px solid rgba(124,58,237,0.3); }
 
-        .chevron-icon { font-size: .75rem; color: var(--text-muted); transition: transform var(--transition); flex-shrink: 0; }
+        .chevron-icon { font-size: 0.75rem; color: var(--text-muted); transition: transform var(--transition); flex-shrink: 0; }
         .estudiante[open] .chevron-icon { transform: rotate(90deg); }
 
-        /* ─── BADGE ─────────────────────────────────────────────── */
+        /* Badge modificando */
         .badge {
             position: absolute; top: 10px; right: 10px;
             padding: 4px 10px; border-radius: var(--border-radius-full);
-            font-size: .72rem; font-weight: 700; opacity: 0;
+            font-size: 0.72rem; font-weight: 700; opacity: 0;
             transition: opacity var(--transition); z-index: 10;
         }
-        .badge.show { opacity: 1; background: rgba(108,92,231,.1); color: var(--accent); border: 1.5px solid rgba(108,92,231,.25); }
+        .badge.show { opacity: 1; background: rgba(124,58,237,0.12); color: var(--accent-dark); border: 1.5px solid rgba(124,58,237,0.3); }
 
-        /* ─── FORM CONTAINER ────────────────────────────────────── */
-        .container {
-            display: flex; gap: 24px; padding: 24px; background: #fafbff;
-        }
+        /* ─── LAYOUT FORMULARIO ─── */
+        .container { display: flex; gap: 24px; padding: 24px; background: var(--bg-section); }
         .formulario {
-            flex: 1; position: relative; background: white;
-            border-radius: var(--radius-sm); padding: 24px;
-            border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+            flex: 1; background: white; padding: 28px;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-xs); border: 1px solid var(--border); position: relative;
         }
         .preview {
-            width: 280px; flex-shrink: 0; background: white;
-            border-radius: var(--radius-sm); padding: 20px;
-            border: 1px solid var(--border); position: sticky; top: 90px;
-            height: fit-content; box-shadow: var(--shadow-sm);
+            width: 340px; flex-shrink: 0; background: white; padding: 24px;
+            border-radius: var(--border-radius-lg); box-shadow: var(--shadow-xs);
+            border: 1px solid var(--border); position: sticky; top: 80px;
+            max-height: calc(100vh - 100px); overflow-y: auto;
         }
 
-        /* ─── SECTION TITLE ─────────────────────────────────────── */
-        .section-title {
-            font-family: var(--font-display); font-size: .78rem; font-weight: 800;
-            text-transform: uppercase; letter-spacing: 1px; color: var(--accent);
-            margin: 22px 0 14px; padding-bottom: 8px;
-            border-bottom: 2px solid rgba(108,92,231,.15);
+        /* Sección header dentro del form */
+        .form-section-title {
+            font-family: var(--font-display); font-size: 0.75rem; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent);
+            padding: 0 0 8px; margin: 22px 0 14px;
+            border-bottom: 2px solid rgba(124,58,237,0.12);
             display: flex; align-items: center; gap: 8px;
         }
-        .section-title:first-child { margin-top: 0; }
+        .form-section-title:first-child { margin-top: 0; }
 
-        /* ─── FORM FIELDS ───────────────────────────────────────── */
+        /* Labels e inputs */
         label {
-            display: block; font-size: .78rem; font-weight: 700;
+            display: block; font-size: 0.8rem; font-weight: 600;
             color: var(--text-secondary); margin-bottom: 5px; margin-top: 14px;
         }
         label:first-of-type { margin-top: 0; }
-        input[type="text"], input[type="date"], select, textarea {
-            width: 100%; padding: 9px 13px; border-radius: var(--radius-sm);
-            border: 1.5px solid var(--border); font-size: .85rem;
-            color: var(--text-dark); font-family: var(--font-body);
-            background: #f8faff; transition: border-color var(--transition), box-shadow var(--transition);
-            outline: none;
-        }
-        input[type="text"]:focus, input[type="date"]:focus, select:focus, textarea:focus {
-            border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,92,231,.1);
-            background: white;
-        }
-        input[readonly] { background: #f1f5fb; color: var(--text-secondary); cursor: default; }
-        textarea { resize: vertical; min-height: 80px; }
-        .info { font-size: .8rem; color: var(--text-secondary); padding: 8px 12px; background: #f8faff; border-radius: 8px; margin-top: 8px; }
 
-        /* ─── BUTTON GROUP ──────────────────────────────────────── */
-        .button-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+        input[type="text"], input[type="date"], select, textarea {
+            width: 100%; padding: 10px 14px; border-radius: var(--border-radius-md);
+            border: 1.5px solid var(--border); font-size: 0.88rem;
+            color: var(--text-dark); background: var(--bg-input);
+            font-family: var(--font-body); transition: border-color var(--transition), box-shadow var(--transition); outline: none;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--accent); background: white;
+            box-shadow: 0 0 0 3px rgba(124,58,237,0.1);
+        }
+        input[readonly] { background: #eef2f7; cursor: not-allowed; color: var(--text-secondary); font-weight: 600; }
+        textarea { min-height: 80px; resize: vertical; }
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237c3aed' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 14px center; background-size: 12px; padding-right: 38px; cursor: pointer;
+        }
+
+        /* Info pill */
+        .info-pill {
+            display: flex; gap: 16px; flex-wrap: wrap;
+            background: rgba(124,58,237,0.04); border: 1px solid rgba(124,58,237,0.12);
+            border-radius: var(--border-radius-md); padding: 10px 14px;
+            font-size: 0.82rem; color: var(--text-secondary); margin-top: 8px;
+        }
+        .info-pill strong { color: var(--text-dark); font-weight: 700; }
+
+        /* Button group */
+        .button-group {
+            display: flex; gap: 10px; margin-top: 28px; flex-wrap: wrap;
+            padding-top: 20px; border-top: 1.5px solid var(--border);
+        }
         .button-group button {
-            display: inline-flex; align-items: center; gap: 7px;
-            padding: 9px 18px; border-radius: var(--radius-sm);
-            font-size: .8rem; font-weight: 700; cursor: pointer;
-            border: none; font-family: var(--font-body); transition: all var(--transition);
+            flex: 1; min-width: 140px; padding: 12px 20px;
+            border: none; border-radius: var(--border-radius-full);
+            font-family: var(--font-body); font-size: 0.88rem; font-weight: 700;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            gap: 8px; transition: all var(--transition); letter-spacing: 0.01em;
         }
         .button-group button[type="submit"] {
             background: var(--primary-gradient); color: white;
-            box-shadow: 0 4px 14px rgba(15,52,96,.25);
+            box-shadow: 0 4px 15px rgba(15,76,117,0.3);
         }
-        .button-group button[type="submit"]:hover { opacity: .9; transform: translateY(-1px); }
-        .button-group button.secondary {
-            background: #f0f4ff; color: var(--primary-mid);
-            border: 1.5px solid rgba(27,108,168,.2);
+        .button-group button[type="submit"]:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(15,76,117,0.38); }
+        .button-group button.mark-evaluated-btn {
+            background: var(--accent-gradient); color: white;
+            box-shadow: 0 4px 15px rgba(124,58,237,0.3);
         }
-        .button-group button.secondary:hover { background: #e0e8ff; }
-        .mark-evaluated-btn {
-            background: var(--accent-gradient) !important;
-            color: white !important;
-            box-shadow: 0 4px 14px rgba(108,92,231,.3) !important;
-        }
-        .mark-evaluated-btn:hover { opacity: .9 !important; transform: translateY(-1px) !important; }
-        .mark-evaluated-btn:disabled { opacity: .5 !important; cursor: not-allowed !important; transform: none !important; }
+        .button-group button.mark-evaluated-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(124,58,237,0.38); }
+        .button-group button:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
 
-        /* ─── PREVIEW PANEL ─────────────────────────────────────── */
+        /* Preview panel */
         .preview h3 {
-            font-family: var(--font-display); font-size: .82rem; font-weight: 800;
-            text-transform: uppercase; letter-spacing: .5px; color: var(--accent);
-            margin-bottom: 14px; padding-bottom: 10px; border-bottom: 2px solid rgba(108,92,231,.15);
+            font-family: var(--font-display); font-size: 0.88rem; font-weight: 700;
+            color: var(--text-dark); margin-bottom: 16px; padding-bottom: 10px;
+            border-bottom: 2px solid var(--accent);
+            text-transform: uppercase; letter-spacing: 0.06em;
         }
-        .preview p { font-size: .8rem; color: var(--text-secondary); margin-bottom: 8px; display: flex; flex-direction: column; }
-        .preview p strong { font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; color: var(--text-muted); margin-bottom: 1px; }
+        .preview p { margin-bottom: 7px; font-size: 0.82rem; display: flex; gap: 6px; flex-direction: column; }
+        .preview p strong { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); }
         .preview p span { color: var(--text-dark); font-weight: 500; }
-        .preview-img { width: 100%; border-radius: var(--radius-sm); margin-top: 14px; opacity: .8; }
-        .preview button {
-            width: 100%; margin-top: 14px; padding: 9px;
-            border-radius: var(--radius-sm); border: 1.5px solid var(--border);
-            background: #f8faff; color: var(--text-secondary); font-size: .78rem;
-            font-weight: 700; cursor: pointer; display: flex; align-items: center;
-            justify-content: center; gap: 7px; transition: all var(--transition);
+        .preview-img { width: 100%; border-radius: var(--border-radius-md); margin-top: 14px; opacity: 0.75; }
+        .preview-print-btn {
+            width: 100%; margin-top: 14px; padding: 10px;
+            border-radius: var(--border-radius-md); border: 1.5px solid var(--border);
+            background: var(--bg-section); color: var(--text-secondary);
+            font-size: 0.8rem; font-weight: 700; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 7px;
+            transition: all var(--transition); font-family: var(--font-body);
         }
-        .preview button:hover { background: #eef2ff; color: var(--accent); border-color: var(--accent); }
+        .preview-print-btn:hover { background: rgba(124,58,237,0.06); color: var(--accent); border-color: var(--accent); }
 
-        /* ─── EMPTY STATE ───────────────────────────────────────── */
-        .empty-state {
-            text-align: center; padding: 60px 20px; background: white;
-            border-radius: var(--radius); border: 2px dashed var(--border);
-        }
-        .empty-state i { font-size: 3rem; color: var(--text-muted); margin-bottom: 14px; display: block; }
-        .empty-state p { color: var(--text-secondary); font-size: .9rem; }
-
-        /* ─── FOOTER ────────────────────────────────────────────── */
-        footer {
-            text-align: center; padding: 18px;
-            font-size: .75rem; color: var(--text-muted);
-            border-top: 1px solid var(--border); background: white; margin-top: auto;
-        }
-
-        /* ─── ABSENCE STATES (igual que familiar) ───────────────── */
-        .estudiante[data-estado="no_asiste_reemplazado"] { opacity: .55; }
-        .estudiante[data-estado="no_asiste_sin_reemplazo"] { opacity: .45; }
-        .estudiante[data-estado="extra"] summary { border-left: 4px solid var(--accent); }
-        .status-badge.ausente-reemplazado { background: rgba(253,126,20,.1); color: #d35400; border: 1.5px solid rgba(253,126,20,.3); }
-        .status-badge.ausente-sin-reemplazo { background: rgba(99,110,114,.1); color: #636e72; border: 1.5px solid rgba(99,110,114,.2); }
-        .status-badge.extra-badge { background: rgba(108,92,231,.1); color: var(--accent); border: 1.5px solid rgba(108,92,231,.3); }
+        /* Ausencias */
         .btn-estado-ausencia {
             display: inline-flex; align-items: center; gap: 5px;
-            padding: 5px 11px; border-radius: 20px; font-size: .72rem; font-weight: 700;
-            background: rgba(225,112,85,.08); color: #c0392b;
-            border: 1.5px solid rgba(225,112,85,.25); cursor: pointer; transition: all .18s; flex-shrink: 0;
+            padding: 5px 11px; border-radius: var(--border-radius-full);
+            font-size: 0.72rem; font-weight: 700; cursor: pointer;
+            background: rgba(225,112,85,0.08); color: #c0392b;
+            border: 1.5px solid rgba(225,112,85,0.25); transition: all 0.18s; flex-shrink: 0;
         }
-        .btn-estado-ausencia:hover { background: rgba(225,112,85,.18); }
+        .btn-estado-ausencia:hover { background: rgba(225,112,85,0.18); }
+        .estudiante[data-estado="no_asiste_reemplazado"] { opacity: 0.55; }
+        .estudiante[data-estado="no_asiste_sin_reemplazo"] { opacity: 0.45; }
+
         /* FAB */
         .fab-agregar {
             position: fixed; bottom: 28px; right: 28px;
             background: var(--accent-gradient); color: white;
             border: none; border-radius: 50px; padding: 13px 22px;
-            font-size: .88rem; font-weight: 800; cursor: pointer;
-            box-shadow: 0 6px 20px rgba(108,92,231,.35);
+            font-size: 0.88rem; font-weight: 800; cursor: pointer;
+            box-shadow: 0 6px 20px rgba(124,58,237,0.35);
             display: flex; align-items: center; gap: 8px; z-index: 100;
-            transition: transform .18s, box-shadow .18s;
+            transition: transform 0.18s, box-shadow 0.18s; font-family: var(--font-body);
         }
-        .fab-agregar:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(108,92,231,.45); }
+        .fab-agregar:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(124,58,237,0.45); }
 
-        /* ─── RESPONSIVE ────────────────────────────────────────── */
-        @media (max-width: 768px) {
-            header { padding: 0 1rem; }
-            .main-wrap { padding: 16px 1rem; }
-            .container { flex-direction: column; padding: 16px; }
-            .preview { width: 100%; position: static; }
-            .toolbar, .action-row, .stats-bar { padding-left: 1rem; padding-right: 1rem; }
-            .stat-item { padding: 10px 14px; }
+        /* Footer */
+        footer {
+            text-align: center; padding: 18px;
+            font-size: 0.75rem; color: var(--text-muted);
+            border-top: 1px solid var(--border); background: white; margin-top: auto;
+        }
+
+        @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+        @media (max-width: 900px) {
+            .container { flex-direction: column; }
+            .preview { width: 100%; position: static; max-height: none; }
+            .main-content-wrapper { padding: 16px; }
+            header { padding: 14px 18px; }
+            .header-left, .header-right { min-width: auto; }
         }
     </style>
 </head>
 <body>
 
-    <!-- ─── HEADER ─────────────────────────────────────────────── -->
-    <header>
-        <div class="header-left">
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="CardioHome">
-            <div class="header-title">
-                {{ establecimiento_nombre }}
-                <span>Formulario Neurológico</span>
-            </div>
-            <span class="neuro-badge">NEUROLOGÍA</span>
-        </div>
-        <div class="header-right">
-            <a href="{{ url_for('dashboard') }}" class="header-btn btn-back">
-                <i class="fas fa-arrow-left"></i> Dashboard
-            </a>
-            <button class="header-btn btn-logout" onclick="cerrarSesion()">
-                <i class="fas fa-sign-out-alt"></i> Salir
-            </button>
-        </div>
-    </header>
+<!-- ─── HEADER ─── -->
+<header>
+    <div class="header-left">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="CardioHome">
+        <span class="neuro-badge">Neurología</span>
+    </div>
+    <div class="header-center">
+        <h1>{{ establecimiento_nombre }}</h1>
+        <span class="header-subtitle">Formulario de Evaluación Neurológica</span>
+    </div>
+    <div class="header-right">
+        <a href="{{ url_for('dashboard') }}" class="header-btn back-to-dashboard-btn">
+            <i class="fas fa-arrow-left"></i> Dashboard
+        </a>
+        <button class="header-btn logout-btn" onclick="cerrarSesion()">
+            <i class="fas fa-sign-out-alt"></i> Salir
+        </button>
+    </div>
+</header>
 
-    <!-- ─── FLASH MESSAGES ─────────────────────────────────────── -->
+<div class="main-content-wrapper">
+
+    <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <div style="padding:12px 2rem;background:#fff7ed;border-bottom:1px solid #fed7aa;">
-                {% for category, message in messages %}
-                    <div style="font-size:.85rem;color:#92400e;display:flex;align-items:center;gap:8px;">
-                        <i class="fas fa-exclamation-circle"></i> {{ message }}
-                    </div>
-                {% endfor %}
-            </div>
+            <ul class="flash-messages">
+                {% for category, message in messages %}<li class="{{ category }}">{{ message }}</li>{% endfor %}
+            </ul>
         {% endif %}
     {% endwith %}
 
-    <!-- ─── STATS BAR ───────────────────────────────────────────── -->
+    <!-- Estadísticas -->
     <div class="stats-bar">
-        <div class="stat-item">
-            <div class="stat-icon purple"><i class="fas fa-users"></i></div>
-            <div class="stat-text">
+        <div class="stat-card">
+            <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+            <div class="stat-info">
                 <div class="stat-value" id="stat-total">{{ estudiantes | length if estudiantes else 0 }}</div>
-                <div class="stat-label">Total</div>
+                <div class="stat-label">Total estudiantes</div>
             </div>
         </div>
-        <div class="stat-item">
-            <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
-            <div class="stat-text">
-                <div class="stat-value" id="stat-evaluated">{{ total_forms_completed_for_nomina }}</div>
+        <div class="stat-card">
+            <div class="stat-icon violet"><i class="fas fa-brain"></i></div>
+            <div class="stat-info">
+                <div class="stat-value" id="completed-forms-count">{{ total_forms_completed_for_nomina }}</div>
                 <div class="stat-label">Evaluados</div>
             </div>
         </div>
-        <div class="stat-item">
-            <div class="stat-icon orange"><i class="fas fa-clock"></i></div>
-            <div class="stat-text">
+        <div class="stat-card">
+            <div class="stat-icon orange"><i class="fas fa-hourglass-half"></i></div>
+            <div class="stat-info">
                 <div class="stat-value" id="stat-pending">{{ (estudiantes | length - total_forms_completed_for_nomina) if estudiantes else 0 }}</div>
                 <div class="stat-label">Pendientes</div>
             </div>
         </div>
-        <div class="stat-item">
-            <div class="stat-icon blue"><i class="fas fa-percent"></i></div>
-            <div class="stat-text">
+        <div class="stat-card">
+            <div class="stat-icon teal"><i class="fas fa-chart-pie"></i></div>
+            <div class="stat-info">
                 <div class="stat-value" id="stat-pct">{% if estudiantes and estudiantes | length > 0 %}{{ ((total_forms_completed_for_nomina / (estudiantes | length)) * 100) | round(0) | int }}%{% else %}0%{% endif %}</div>
-                <div class="stat-label">Avance</div>
+                <div class="stat-label">Completado</div>
             </div>
-        </div>
-        <div class="progress-wrap">
-            <div class="progress-meta">
-                <span class="progress-label">Progreso de Evaluación</span>
-                <span class="progress-pct" id="progress-pct-label">{% if estudiantes and estudiantes | length > 0 %}{{ ((total_forms_completed_for_nomina / (estudiantes | length)) * 100) | round(1) }}%{% else %}0%{% endif %}</span>
-            </div>
-            <div class="progress-bar-bg">
-                <div class="progress-bar-fill" id="progress-bar" style="width: {% if estudiantes and estudiantes | length > 0 %}{{ ((total_forms_completed_for_nomina / (estudiantes | length)) * 100) | round(1) }}{% else %}0{% endif %}%"></div>
-            </div>
-            <div class="progress-text" id="progress-text">{{ total_forms_completed_for_nomina }} / {{ estudiantes | length if estudiantes else 0 }} evaluaciones</div>
         </div>
     </div>
 
-    <!-- ─── ACTION BUTTONS ─────────────────────────────────────── -->
-    <div class="action-row">
-        <button class="action-btn" onclick="imprimirTodosLosFormularios()">
-            <i class="fas fa-print"></i> Imprimir Formularios
-        </button>
-        <button class="action-btn" onclick="descargarExcelCompletados('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
-            <i class="fas fa-file-excel"></i> Descargar Excel
-        </button>
-        <button class="action-btn" onclick="generarEImprimirPDFsVisibles('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
-            <i class="fas fa-file-pdf"></i> Generar PDFs
-        </button>
-        <button class="action-btn" onclick="descargarPDFsVisiblesComoZip('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
-            <i class="fas fa-file-archive"></i> Descargar ZIP
-        </button>
-        <button class="action-btn" onclick="updateCompletedCount()" style="margin-left:auto;">
-            <i class="fas fa-sync-alt"></i> Actualizar Conteo
-        </button>
+    <!-- Panel acciones + progreso -->
+    <div class="report-panel">
+        <div class="report-panel-header">
+            <h2><i class="fas fa-brain"></i> Evaluaciones Neurológicas — {{ establecimiento_nombre }}</h2>
+            <div class="report-panel-actions">
+                <button class="btn btn-success btn-sm" onclick="generarEImprimirPDFsVisibles('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
+                    <i class="fas fa-file-pdf"></i> Generar PDFs
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="descargarExcelCompletados('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
+                    <i class="fas fa-file-excel"></i> Exportar Excel
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="window.location.reload()">
+                    <i class="fas fa-sync-alt"></i> Actualizar
+                </button>
+            </div>
+        </div>
+        <!-- Barra de progreso -->
+        <div style="padding:14px 22px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+            <div class="progress-wrap">
+                <div class="progress-meta">
+                    <span class="progress-label">Progreso de Evaluación</span>
+                    <span class="progress-pct" id="progress-pct-label">{% if estudiantes and estudiantes | length > 0 %}{{ ((total_forms_completed_for_nomina / (estudiantes | length)) * 100) | round(1) }}%{% else %}0%{% endif %}</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progress-bar" style="width:{% if estudiantes and estudiantes | length > 0 %}{{ ((total_forms_completed_for_nomina / (estudiantes | length)) * 100) | round(1) }}{% else %}0{% endif %}%"></div>
+                </div>
+                <div class="progress-text" id="progress-text">{{ total_forms_completed_for_nomina }} / {{ estudiantes | length if estudiantes else 0 }} evaluaciones completadas</div>
+            </div>
+        </div>
     </div>
 
-    <!-- ─── TOOLBAR (filtros + búsqueda) ───────────────────────── -->
+    <!-- Toolbar filtros -->
     <div class="toolbar">
         <div class="toolbar-section">
             <span class="toolbar-label">Filtrar</span>
@@ -502,597 +596,504 @@
         </div>
     </div>
 
-    <!-- ─── STUDENT LIST ────────────────────────────────────────── -->
-    <div class="main-wrap">
+    <!-- LISTA ESTUDIANTES -->
+    {% if estudiantes %}
+        {% for est in estudiantes %}
+        {% set est_estado = est.estado_asistencia if est.estado_asistencia else 'activo' %}
+        {% set est_excluido = 'true' if est_estado in ['no_asiste_reemplazado','no_asiste_sin_reemplazo'] else 'false' %}
+        <details class="estudiante"
+            data-nombre="{{ est.nombre | lower }}"
+            data-estudiante-id="{{ est.id }}"
+            data-nomina-id="{{ session['current_nomina_id'] }}"
+            data-evaluated-status="{{ 'true' if est.fecha_relleno is not none else 'false' }}"
+            data-estado="{{ est_estado }}"
+            data-excluido="{{ est_excluido }}">
 
-        {% if estudiantes %}
-            {% for est in estudiantes %}
-            {% set est_estado = est.estado_asistencia if est.estado_asistencia else 'activo' %}
-            {% set est_excluido = 'true' if est_estado in ['no_asiste_reemplazado','no_asiste_sin_reemplazo'] else 'false' %}
-            <details class="estudiante"
-                data-nombre="{{ est.nombre | lower }}"
-                data-estudiante-id="{{ est.id }}"
-                data-nomina-id="{{ session['current_nomina_id'] }}"
-                data-evaluated-status="{{ 'true' if est.fecha_relleno is not none else 'false' }}"
-                data-estado="{{ est_estado }}"
-                data-excluido="{{ est_excluido }}">
-
-                <summary>
-                    <div class="student-avatar">
-                        {% if est_estado == 'extra' %}<i class="fas fa-user-plus"></i>
-                        {% elif est_estado in ['no_asiste_reemplazado','no_asiste_sin_reemplazo'] %}<i class="fas fa-user-slash"></i>
-                        {% else %}<i class="fas fa-brain"></i>{% endif %}
+            <summary>
+                <div class="student-avatar">
+                    {% if est_estado == 'extra' %}<i class="fas fa-user-plus"></i>
+                    {% elif est_estado in ['no_asiste_reemplazado','no_asiste_sin_reemplazo'] %}<i class="fas fa-user-slash"></i>
+                    {% else %}<i class="fas fa-brain"></i>{% endif %}
+                </div>
+                <div class="student-info">
+                    <div class="student-name">{{ est.nombre }}
+                        {% if est_estado == 'extra' %}<span style="font-size:.68rem;color:var(--accent);font-weight:700;margin-left:6px;background:rgba(124,58,237,.08);padding:2px 7px;border-radius:99px;">EXTRA</span>{% endif %}
                     </div>
-                    <div class="student-info">
-                        <div class="student-name">{{ est.nombre }}
-                            {% if est_estado == 'extra' %}<span style="font-size:.68rem;color:var(--accent);font-weight:700;margin-left:6px;">EXTRA</span>{% endif %}
-                        </div>
-                        <div class="student-meta">RUT: {{ est.rut }} &nbsp;·&nbsp; Edad: {{ est.edad }}
-                            {% if est.motivo_ausencia %}&nbsp;·&nbsp; <span style="color:#e17055;">{{ est.motivo_ausencia }}</span>{% endif %}
-                        </div>
-                    </div>
-                    {% if est_estado == 'no_asiste_reemplazado' %}
-                        <span class="status-badge ausente-reemplazado"><i class="fas fa-exchange-alt"></i> Reemplazado</span>
-                    {% elif est_estado == 'no_asiste_sin_reemplazo' %}
-                        <span class="status-badge ausente-sin-reemplazo"><i class="fas fa-user-slash"></i> No asiste</span>
-                    {% elif est_estado == 'extra' %}
-                        <span class="status-badge extra-badge"><i class="fas fa-plus-circle"></i> Extra</span>
-                    {% elif est.fecha_relleno is not none %}
-                        <span class="status-badge evaluated"><i class="fas fa-check-circle"></i> Evaluado</span>
-                    {% else %}
-                        <span class="status-badge pending"><i class="fas fa-clock"></i> Pendiente</span>
-                    {% endif %}
-                    {% if est_estado in ['activo', 'extra'] %}
-                    <button type="button" class="btn-estado-ausencia"
-                            onclick="event.preventDefault();event.stopPropagation();abrirModalAusencia('{{ est.id }}','{{ est.nombre | replace("'","\\'") }}')"
-                            title="Marcar como no asiste">
-                        <i class="fas fa-user-times"></i> No asiste
-                    </button>
-                    {% else %}
-                    <button type="button" class="btn-estado-ausencia" style="background:rgba(99,110,114,.08);color:#636e72;border-color:rgba(99,110,114,.2);"
-                            onclick="event.preventDefault();event.stopPropagation();reactivarEstudiante('{{ est.id }}','{{ est.nombre | replace("'","\\'") }}')"
-                            title="Reactivar">
-                        <i class="fas fa-undo"></i> Reactivar
-                    </button>
-                    {% endif %}
-                    <i class="fas fa-chevron-right chevron-icon"></i>
-                </summary>
-
-                <div class="container">
-                    <div class="formulario">
-                        <span class="badge">Guardado</span>
-                        <form id="form-estudiante-{{ est.id }}" onsubmit="event.preventDefault(); submitForm(this);">
-                            <input type="hidden" name="estudiante_id" value="{{ est.id }}">
-                            <input type="hidden" name="nomina_id"    value="{{ session['current_nomina_id'] }}">
-                            <input type="hidden" name="fecha_nacimiento_original" value="{{ est.fecha_nacimiento if est.fecha_nacimiento is not none else '' }}">
-                            <input type="hidden" name="edad"         value="{{ est.edad }}">
-                            <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
-
-                            <h3 class="section-title"><i class="fas fa-id-card"></i> Identificación</h3>
-
-                            <label for="nombre_{{ est.id }}">Nombre</label>
-                            <input type="text" name="nombre" id="nombre_{{ est.id }}" value="{{ est.nombre }}" required readonly>
-
-                            <label for="rut_{{ est.id }}">RUT</label>
-                            <input type="text" name="rut" id="rut_{{ est.id }}" value="{{ est.rut }}" required readonly>
-
-                            <label for="sexo_{{ est.id }}">Sexo</label>
-                            <select name="sexo" id="sexo_{{ est.id }}" required onchange="updatePreview(this.form)">
-                                <option value="">Seleccionar</option>
-                                <option value="M" {% if est.sexo == 'M' %}selected{% endif %}>Masculino</option>
-                                <option value="F" {% if est.sexo == 'F' %}selected{% endif %}>Femenino</option>
-                            </select>
-
-                            <p class="info">
-                                <strong>Fecha de nacimiento:</strong> {{ est.fecha_nacimiento_formato }} &nbsp;·&nbsp;
-                                <strong>Edad:</strong> {{ est.edad }} &nbsp;·&nbsp;
-                                <strong>Nacionalidad:</strong> {{ est.nacionalidad }}
-                            </p>
-
-                            <h3 class="section-title"><i class="fas fa-stethoscope"></i> Evaluación Neurológica</h3>
-
-                            <label for="fecha_evaluacion_{{ est.id }}">Fecha Evaluación</label>
-                            <input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}"
-                                value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}"
-                                required onchange="setFechaReevaluacion(this.form.querySelector('select[name=\'plazo\']'))">
-
-                            <label for="estado_{{ est.id }}">Estado general del alumno</label>
-                            <textarea name="estado" id="estado_{{ est.id }}" rows="3"
-                                placeholder="Observaciones del estado general..." required
-                                onchange="updatePreview(this.form)">{{ est.estado_general if est.estado_general is not none else '' }}</textarea>
-
-                            <label for="diagnostico_{{ est.id }}">Diagnóstico</label>
-                            <select name="diagnostico" id="diagnostico_{{ est.id }}" required onchange="updatePreview(this.form)">
-                                <option value="">Seleccionar diagnóstico</option>
-                                <option value="Trastorno Del Espectro Autista"      {% if est.diagnostico == 'Trastorno Del Espectro Autista' %}selected{% endif %}>Trastorno Del Espectro Autista</option>
-                                <option value="Trastorno Por Deficit de Atención"   {% if est.diagnostico == 'Trastorno Por Deficit de Atención' %}selected{% endif %}>Trastorno Por Déficit de Atención</option>
-                                <option value="TDAH"                                 {% if est.diagnostico == 'TDAH' %}selected{% endif %}>TDAH</option>
-                                <option value="Trastorno del Aprendizaje"           {% if est.diagnostico == 'Trastorno del Aprendizaje' %}selected{% endif %}>Trastorno del Aprendizaje</option>
-                                <option value="GARC"                                 {% if est.diagnostico == 'GARC' %}selected{% endif %}>GARC</option>
-                                <option value="Trastorno Motor Moderado"            {% if est.diagnostico == 'Trastorno Motor Moderado' %}selected{% endif %}>Trastorno Motor Moderado</option>
-                                <option value="Hipoacusia"                           {% if est.diagnostico == 'Hipoacusia' %}selected{% endif %}>Hipoacusia</option>
-                                <option value="Sin Diagnostico para ingreso PIE"    {% if est.diagnostico == 'Sin Diagnostico para ingreso PIE' %}selected{% endif %}>Sin Diagnóstico para ingreso PIE</option>
-                                <option value="FIL"                                  {% if est.diagnostico == 'FIL' %}selected{% endif %}>FIL</option>
-                                <option value="DIL"                                  {% if est.diagnostico == 'DIL' %}selected{% endif %}>DIL</option>
-                                <option value="Discapacidad Intelectual"            {% if est.diagnostico == 'Discapacidad Intelectual' %}selected{% endif %}>Discapacidad Intelectual</option>
-                                <option value="Sindrome de Down"                    {% if est.diagnostico == 'Sindrome de Down' %}selected{% endif %}>Síndrome de Down</option>
-                            </select>
-
-                            <h3 class="section-title"><i class="fas fa-calendar-check"></i> Reevaluación</h3>
-
-                            <label for="plazo_{{ est.id }}">Plazo de reevaluación</label>
-                            <select name="plazo" id="plazo_{{ est.id }}" onchange="setFechaReevaluacion(this)">
-                                <option value="">Seleccionar plazo</option>
-                                <option value="1" {% if est.plazo == '1' %}selected{% endif %}>1 año</option>
-                                <option value="2" {% if est.plazo == '2' %}selected{% endif %}>2 años</option>
-                                <option value="3" {% if est.plazo == '3' %}selected{% endif %}>3 años</option>
-                                <option value="4" {% if est.plazo == '4' %}selected{% endif %}>4 años</option>
-                                <option value="5" {% if est.plazo == '5' %}selected{% endif %}>5 años</option>
-                            </select>
-
-                            <label for="fecha_reevaluacion_{{ est.id }}">Fecha de reevaluación</label>
-                            <input type="date" name="fecha_reevaluacion" id="fecha_reevaluacion_{{ est.id }}"
-                                value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}"
-                                required onchange="updatePreview(this.form)">
-
-                            <label for="derivaciones_{{ est.id }}">Indicaciones / Derivaciones</label>
-                            <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="2"
-                                placeholder="Detalles de derivaciones..."
-                                onchange="updatePreview(this.form)">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
-
-                            <div class="button-group">
-                                <button type="submit">
-                                    <i class="fas fa-file-pdf"></i> Guardar y Generar PDF
-                                </button>
-                                <button type="button" class="secondary" onclick="enviarADrive(this.form)">
-                                    <i class="fab fa-google-drive"></i> Enviar a Drive
-                                </button>
-                                <button type="button" class="secondary" onclick="insertarFirma()">
-                                    <i class="fas fa-signature"></i> Insertar Firma
-                                </button>
-                                <button type="button" class="mark-evaluated-btn"
-                                    data-estudiante-id="{{ est.id }}"
-                                    {% if est.fecha_relleno is not none %}disabled{% endif %}
-                                    onclick="marcarComoEvaluado(this)">
-                                    <i class="fas fa-check-circle"></i>
-                                    {% if est.fecha_relleno is not none %}Evaluado{% else %}Marcar como Evaluado{% endif %}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- PREVIEW -->
-                    <div class="preview">
-                        <h3><i class="fas fa-eye" style="margin-right:6px;"></i>Vista Previa</h3>
-                        <p><strong>Nombre</strong><span class="prev-nombre">{{ est.nombre }}</span></p>
-                        <p><strong>RUT</strong><span class="prev-rut">{{ est.rut }}</span></p>
-                        <p><strong>Fecha Nacimiento</strong><span class="prev-fecha-nacimiento-info">{{ est.fecha_nacimiento_formato }}</span></p>
-                        <p><strong>Edad</strong><span class="prev-edad-info">{{ est.edad }}</span></p>
-                        <p><strong>Nacionalidad</strong><span class="prev-nacionalidad-info">{{ est.nacionalidad }}</span></p>
-                        <p><strong>Sexo</strong><span class="prev-sexo-info">{{ 'Masculino' if est.sexo == 'M' else 'Femenino' if est.sexo == 'F' else 'N/A' }}</span></p>
-                        <p><strong>Fecha Evaluación</strong><span class="prev-fecha-evaluacion">
-                            {% if est.fecha_evaluacion %}{% set d=est.fecha_evaluacion.split('-') %}{{ d[2] }}/{{ d[1] }}/{{ d[0] }}{% else %}-{% endif %}
-                        </span></p>
-                        <p><strong>Estado</strong><span class="prev-estado">{{ est.estado_general if est.estado_general is not none else '-' }}</span></p>
-                        <p><strong>Diagnóstico</strong><span class="prev-diagnostico">{{ est.diagnostico if est.diagnostico is not none else '-' }}</span></p>
-                        <p><strong>Fecha Reevaluación</strong><span class="prev-reevaluacion">
-                            {% if est.fecha_reevaluacion %}{% set d=est.fecha_reevaluacion.split('-') %}{{ d[2] }}/{{ d[1] }}/{{ d[0] }}{% else %}-{% endif %}
-                        </span></p>
-                        <p><strong>Derivaciones</strong><span class="prev-derivaciones">{{ est.derivaciones if est.derivaciones is not none else '-' }}</span></p>
-
-                        <img src="/static/formulario_muestra.png" alt="Ejemplo Formulario" class="preview-img"
-                            onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=Vista+Previa';" />
-                        <button onclick="window.print()"><i class="fas fa-print"></i> Imprimir Vista Previa</button>
+                    <div class="student-meta">
+                        RUT: {{ est.rut }} &nbsp;·&nbsp; Edad: {{ est.edad }}
+                        {% if est.motivo_ausencia %}&nbsp;·&nbsp; <span style="color:var(--danger);">{{ est.motivo_ausencia }}</span>{% endif %}
                     </div>
                 </div>
-            </details>
-            {% endfor %}
-        {% else %}
-            <div class="empty-state">
-                <i class="fas fa-brain"></i>
-                <p>No hay estudiantes en esta nómina o ha ocurrido un error al cargarlos.</p>
-            </div>
-        {% endif %}
+                {% if est_estado == 'no_asiste_reemplazado' %}
+                    <span class="status-badge ausente-reemplazado"><i class="fas fa-exchange-alt"></i> Reemplazado</span>
+                {% elif est_estado == 'no_asiste_sin_reemplazo' %}
+                    <span class="status-badge ausente-sin-reemplazo"><i class="fas fa-user-slash"></i> No asiste</span>
+                {% elif est_estado == 'extra' %}
+                    <span class="status-badge extra-badge"><i class="fas fa-plus-circle"></i> Extra</span>
+                {% elif est.fecha_relleno is not none %}
+                    <span class="status-badge evaluated"><i class="fas fa-check-circle"></i> Evaluado</span>
+                {% else %}
+                    <span class="status-badge pending"><i class="fas fa-clock"></i> Pendiente</span>
+                {% endif %}
+                {% if est_estado in ['activo','extra'] %}
+                <button type="button" class="btn-estado-ausencia"
+                        onclick="event.preventDefault();event.stopPropagation();abrirModalAusencia('{{ est.id }}','{{ est.nombre | replace("'","\\'") }}')"
+                        title="Marcar como no asiste">
+                    <i class="fas fa-user-times"></i> No asiste
+                </button>
+                {% else %}
+                <button type="button" class="btn-estado-ausencia" style="background:rgba(99,110,114,.08);color:#636e72;border-color:rgba(99,110,114,.2);"
+                        onclick="event.preventDefault();event.stopPropagation();reactivarEstudiante('{{ est.id }}','{{ est.nombre | replace("'","\\'") }}')"
+                        title="Reactivar">
+                    <i class="fas fa-undo"></i> Reactivar
+                </button>
+                {% endif %}
+                <i class="fas fa-chevron-right chevron-icon"></i>
+            </summary>
 
-    </div><!-- /main-wrap -->
+            <div class="container">
+                <div class="formulario">
+                    <span class="badge">Guardado</span>
+                    <form id="form-estudiante-{{ est.id }}" onsubmit="event.preventDefault(); submitForm(this);">
+                        <input type="hidden" name="estudiante_id" value="{{ est.id }}">
+                        <input type="hidden" name="nomina_id"     value="{{ session['current_nomina_id'] }}">
+                        <input type="hidden" name="fecha_nacimiento_original" value="{{ est.fecha_nacimiento if est.fecha_nacimiento is not none else '' }}">
+                        <input type="hidden" name="edad"        value="{{ est.edad }}">
+                        <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
 
-    <footer>© 2025 CardioHome · Todos los derechos reservados.</footer>
+                        <div class="form-section-title"><i class="fas fa-id-card"></i> Identificación del Alumno</div>
 
-    <!-- ─── MODAL AUSENCIA ──────────────────────────────────────── -->
-    <div id="modal-ausencia" style="display:none;position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:9000;align-items:center;justify-content:center;" onclick="if(event.target===this)cerrarModalAusencia()">
-        <div style="background:white;border-radius:18px;padding:28px 30px 24px;max-width:480px;width:94%;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:fadeUp .25s ease;">
-            <h3 style="margin:0 0 6px;font-size:1.05rem;color:#0f3460;font-family:'Sora',sans-serif;"><i class="fas fa-user-times" style="color:#c0392b;margin-right:8px;"></i>Marcar como No Asiste</h3>
-            <div style="font-size:.82rem;color:#636e72;margin-bottom:18px;" id="modal-ausencia-nombre"></div>
-            <label style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:10px;border:1.5px solid #e2e8f4;margin-bottom:10px;cursor:pointer;font-size:.85rem;color:#334155;">
-                <input type="radio" name="tipo_ausencia" value="no_asiste_reemplazado" id="radio-reemplazado" style="margin-top:2px;">
-                <div><span style="font-weight:700;display:block;margin-bottom:2px;">No asiste — Se reemplaza</span><span style="font-size:.75rem;color:#94a3b8;">El alumno será reemplazado por otro.</span></div>
-            </label>
-            <label style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:10px;border:1.5px solid #e2e8f4;margin-bottom:10px;cursor:pointer;font-size:.85rem;color:#334155;">
-                <input type="radio" name="tipo_ausencia" value="no_asiste_sin_reemplazo" id="radio-sin-reemplazo" style="margin-top:2px;">
-                <div><span style="font-weight:700;display:block;margin-bottom:2px;">No asiste — Sin reemplazo</span><span style="font-size:.75rem;color:#94a3b8;">Se excluye del conteo.</span></div>
-            </label>
-            <div style="margin-top:12px;"><div style="font-size:.8rem;font-weight:700;color:#475569;margin-bottom:6px;">Motivo (opcional)</div>
-                <textarea id="input-motivo-ausencia" placeholder="Ej: Cambió de establecimiento..." style="width:100%;border:1.5px solid #e2e8f4;border-radius:10px;padding:10px 12px;font-size:.83rem;resize:vertical;min-height:70px;box-sizing:border-box;font-family:inherit;color:#334155;"></textarea>
+                        <label for="nombre_{{ est.id }}">Nombre</label>
+                        <input type="text" name="nombre" id="nombre_{{ est.id }}" value="{{ est.nombre }}" required readonly>
+
+                        <label for="rut_{{ est.id }}">RUT</label>
+                        <input type="text" name="rut" id="rut_{{ est.id }}" value="{{ est.rut }}" required readonly>
+
+                        <label for="sexo_{{ est.id }}">Sexo</label>
+                        <select name="sexo" id="sexo_{{ est.id }}" required onchange="updatePreview(this.form)">
+                            <option value="">Seleccionar</option>
+                            <option value="M" {% if est.sexo == 'M' %}selected{% endif %}>Masculino</option>
+                            <option value="F" {% if est.sexo == 'F' %}selected{% endif %}>Femenino</option>
+                        </select>
+
+                        <div class="info-pill">
+                            <span><strong>Nacimiento:</strong> {{ est.fecha_nacimiento_formato }}</span>
+                            <span><strong>Edad:</strong> {{ est.edad }}</span>
+                            <span><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</span>
+                        </div>
+
+                        <div class="form-section-title" style="margin-top:22px;"><i class="fas fa-stethoscope"></i> Evaluación Neurológica</div>
+
+                        <label for="fecha_evaluacion_{{ est.id }}">Fecha de Evaluación</label>
+                        <input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}"
+                            value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}"
+                            required onchange="setFechaReevaluacion(this.form.querySelector('select[name=\'plazo\']'))">
+
+                        <label for="estado_{{ est.id }}">Estado general del alumno</label>
+                        <textarea name="estado" id="estado_{{ est.id }}" rows="3"
+                            placeholder="Observaciones del estado general del paciente..." required
+                            onchange="updatePreview(this.form)">{{ est.estado_general if est.estado_general is not none else '' }}</textarea>
+
+                        <label for="diagnostico_{{ est.id }}">Diagnóstico</label>
+                        <select name="diagnostico" id="diagnostico_{{ est.id }}" required onchange="updatePreview(this.form)">
+                            <option value="">Seleccionar diagnóstico</option>
+                            <option value="Trastorno Del Espectro Autista"      {% if est.diagnostico == 'Trastorno Del Espectro Autista' %}selected{% endif %}>Trastorno Del Espectro Autista</option>
+                            <option value="Trastorno Por Deficit de Atención"   {% if est.diagnostico == 'Trastorno Por Deficit de Atención' %}selected{% endif %}>Trastorno Por Déficit de Atención</option>
+                            <option value="TDAH"                                 {% if est.diagnostico == 'TDAH' %}selected{% endif %}>TDAH</option>
+                            <option value="Trastorno del Aprendizaje"           {% if est.diagnostico == 'Trastorno del Aprendizaje' %}selected{% endif %}>Trastorno del Aprendizaje</option>
+                            <option value="GARC"                                 {% if est.diagnostico == 'GARC' %}selected{% endif %}>GARC</option>
+                            <option value="Trastorno Motor Moderado"            {% if est.diagnostico == 'Trastorno Motor Moderado' %}selected{% endif %}>Trastorno Motor Moderado</option>
+                            <option value="Hipoacusia"                           {% if est.diagnostico == 'Hipoacusia' %}selected{% endif %}>Hipoacusia</option>
+                            <option value="Sin Diagnostico para ingreso PIE"    {% if est.diagnostico == 'Sin Diagnostico para ingreso PIE' %}selected{% endif %}>Sin Diagnóstico para ingreso PIE</option>
+                            <option value="FIL"                                  {% if est.diagnostico == 'FIL' %}selected{% endif %}>FIL</option>
+                            <option value="DIL"                                  {% if est.diagnostico == 'DIL' %}selected{% endif %}>DIL</option>
+                            <option value="Discapacidad Intelectual"            {% if est.diagnostico == 'Discapacidad Intelectual' %}selected{% endif %}>Discapacidad Intelectual</option>
+                            <option value="Sindrome de Down"                    {% if est.diagnostico == 'Sindrome de Down' %}selected{% endif %}>Síndrome de Down</option>
+                        </select>
+
+                        <div class="form-section-title" style="margin-top:22px;"><i class="fas fa-calendar-check"></i> Reevaluación</div>
+
+                        <label for="plazo_{{ est.id }}">Plazo de reevaluación</label>
+                        <select name="plazo" id="plazo_{{ est.id }}" onchange="setFechaReevaluacion(this)">
+                            <option value="">Seleccionar plazo</option>
+                            <option value="1" {% if est.plazo == '1' %}selected{% endif %}>1 año</option>
+                            <option value="2" {% if est.plazo == '2' %}selected{% endif %}>2 años</option>
+                            <option value="3" {% if est.plazo == '3' %}selected{% endif %}>3 años</option>
+                            <option value="4" {% if est.plazo == '4' %}selected{% endif %}>4 años</option>
+                            <option value="5" {% if est.plazo == '5' %}selected{% endif %}>5 años</option>
+                        </select>
+
+                        <label for="fecha_reevaluacion_{{ est.id }}">Fecha de reevaluación</label>
+                        <input type="date" name="fecha_reevaluacion" id="fecha_reevaluacion_{{ est.id }}"
+                            value="{{ est.fecha_reevaluacion if est.fecha_reevaluacion is not none else '' }}"
+                            required onchange="updatePreview(this.form)">
+
+                        <label for="derivaciones_{{ est.id }}">Indicaciones / Derivaciones</label>
+                        <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="2"
+                            placeholder="Detalles de derivaciones y recomendaciones..."
+                            onchange="updatePreview(this.form)">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
+
+                        <div class="button-group">
+                            <button type="submit">
+                                <i class="fas fa-file-pdf"></i> Guardar y Generar PDF
+                            </button>
+                            <button type="button" class="mark-evaluated-btn"
+                                data-estudiante-id="{{ est.id }}"
+                                {% if est.fecha_relleno is not none %}disabled{% endif %}
+                                onclick="marcarComoEvaluado(this)">
+                                <i class="fas fa-check-circle"></i>
+                                {% if est.fecha_relleno is not none %}Evaluado{% else %}Marcar como Evaluado{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- PREVIEW -->
+                <div class="preview">
+                    <h3><i class="fas fa-eye" style="color:var(--accent);margin-right:6px;"></i>Vista Previa</h3>
+                    <p><strong>Nombre</strong><span class="prev-nombre">{{ est.nombre }}</span></p>
+                    <p><strong>RUT</strong><span class="prev-rut">{{ est.rut }}</span></p>
+                    <p><strong>Fecha Nacimiento</strong><span class="prev-fecha-nacimiento-info">{{ est.fecha_nacimiento_formato }}</span></p>
+                    <p><strong>Edad</strong><span class="prev-edad-info">{{ est.edad }}</span></p>
+                    <p><strong>Nacionalidad</strong><span class="prev-nacionalidad-info">{{ est.nacionalidad }}</span></p>
+                    <p><strong>Sexo</strong><span class="prev-sexo-info">{{ 'Masculino' if est.sexo == 'M' else 'Femenino' if est.sexo == 'F' else 'N/A' }}</span></p>
+                    <p><strong>Fecha Evaluación</strong><span class="prev-fecha-evaluacion">
+                        {% if est.fecha_evaluacion %}{% set d=est.fecha_evaluacion.split('-') %}{{ d[2] }}/{{ d[1] }}/{{ d[0] }}{% else %}—{% endif %}
+                    </span></p>
+                    <p><strong>Estado</strong><span class="prev-estado">{{ est.estado_general if est.estado_general is not none else '—' }}</span></p>
+                    <p><strong>Diagnóstico</strong><span class="prev-diagnostico">{{ est.diagnostico if est.diagnostico is not none else '—' }}</span></p>
+                    <p><strong>Fecha Reevaluación</strong><span class="prev-reevaluacion">
+                        {% if est.fecha_reevaluacion %}{% set d=est.fecha_reevaluacion.split('-') %}{{ d[2] }}/{{ d[1] }}/{{ d[0] }}{% else %}—{% endif %}
+                    </span></p>
+                    <p><strong>Derivaciones</strong><span class="prev-derivaciones">{{ est.derivaciones if est.derivaciones is not none else '—' }}</span></p>
+
+                    <img src="/static/formulario_muestra.png" alt="Ejemplo Formulario" class="preview-img"
+                        onerror="this.onerror=null;this.src='https://placehold.co/300x200/ede9fe/7c3aed?text=Vista+Previa';" />
+                    <button class="preview-print-btn" onclick="window.print()"><i class="fas fa-print"></i> Imprimir Vista Previa</button>
+                </div>
             </div>
-            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
-                <button onclick="cerrarModalAusencia()" style="padding:9px 20px;border-radius:10px;border:1.5px solid #e2e8f4;background:white;color:#64748b;font-weight:700;cursor:pointer;">Cancelar</button>
-                <button onclick="confirmarAusencia()" style="padding:9px 20px;border-radius:10px;border:none;background:#c0392b;color:white;font-weight:700;cursor:pointer;"><i class="fas fa-check"></i> Confirmar</button>
-            </div>
+        </details>
+        {% endfor %}
+    {% else %}
+        <div style="text-align:center;padding:60px 20px;background:white;border-radius:20px;border:2px dashed var(--border);">
+            <i class="fas fa-brain" style="font-size:3rem;color:var(--text-muted);margin-bottom:14px;display:block;"></i>
+            <p style="color:var(--text-secondary);font-size:.9rem;">No hay estudiantes en esta nómina o ha ocurrido un error al cargarlos.</p>
+        </div>
+    {% endif %}
+
+</div><!-- /main-content-wrapper -->
+
+<footer>© 2025 CardioHome · Todos los derechos reservados · Formulario Neurológico</footer>
+
+<!-- ─── MODAL AUSENCIA ─── -->
+<div id="modal-ausencia" style="display:none;position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:9000;align-items:center;justify-content:center;" onclick="if(event.target===this)cerrarModalAusencia()">
+    <div style="background:white;border-radius:20px;padding:28px 30px 24px;max-width:480px;width:94%;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:fadeUp .25s ease;">
+        <h3 style="margin:0 0 6px;font-size:1.05rem;color:#0f4c75;font-family:'Sora',sans-serif;"><i class="fas fa-user-times" style="color:var(--danger);margin-right:8px;"></i>Marcar como No Asiste</h3>
+        <div style="font-size:.82rem;color:#636e72;margin-bottom:18px;" id="modal-ausencia-nombre"></div>
+        <label style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);margin-bottom:10px;cursor:pointer;font-size:.85rem;color:#334155;">
+            <input type="radio" name="tipo_ausencia" value="no_asiste_reemplazado" id="radio-reemplazado" style="margin-top:2px;">
+            <div><span style="font-weight:700;display:block;margin-bottom:2px;">No asiste — Se reemplaza</span><span style="font-size:.75rem;color:#94a3b8;">El alumno será reemplazado por otro.</span></div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);margin-bottom:10px;cursor:pointer;font-size:.85rem;color:#334155;">
+            <input type="radio" name="tipo_ausencia" value="no_asiste_sin_reemplazo" id="radio-sin-reemplazo" style="margin-top:2px;">
+            <div><span style="font-weight:700;display:block;margin-bottom:2px;">No asiste — Sin reemplazo</span><span style="font-size:.75rem;color:#94a3b8;">Se excluye del conteo.</span></div>
+        </label>
+        <div style="margin-top:12px;"><div style="font-size:.8rem;font-weight:700;color:#475569;margin-bottom:6px;">Motivo (opcional)</div>
+            <textarea id="input-motivo-ausencia" placeholder="Ej: Cambió de establecimiento..." style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:.83rem;resize:vertical;min-height:70px;box-sizing:border-box;font-family:inherit;color:#334155;outline:none;"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+            <button onclick="cerrarModalAusencia()" style="padding:9px 20px;border-radius:99px;border:1.5px solid var(--border);background:white;color:#64748b;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>
+            <button onclick="confirmarAusencia()" style="padding:9px 20px;border-radius:99px;border:none;background:var(--danger);color:white;font-weight:700;cursor:pointer;font-family:inherit;"><i class="fas fa-check"></i> Confirmar</button>
         </div>
     </div>
+</div>
 
-    <!-- ─── FAB ─────────────────────────────────────────────────── -->
-    <button class="fab-agregar" onclick="abrirModalAgregar()" title="Agregar alumno extra o de reemplazo">
-        <i class="fas fa-user-plus"></i> Agregar Alumno
-    </button>
+<!-- ─── FAB ─── -->
+<button class="fab-agregar" onclick="abrirModalAgregar()">
+    <i class="fas fa-user-plus"></i> Agregar Alumno
+</button>
 
-    <!-- ─── MODAL AGREGAR ───────────────────────────────────────── -->
-    <div id="modal-agregar" style="display:none;position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:9000;align-items:center;justify-content:center;" onclick="if(event.target===this)cerrarModalAgregar()">
-        <div style="background:white;border-radius:18px;padding:28px 30px 24px;max-width:440px;width:94%;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:fadeUp .25s ease;">
-            <h3 style="margin:0 0 18px;font-size:1.05rem;color:#0f3460;font-family:'Sora',sans-serif;"><i class="fas fa-user-plus" style="color:#6c5ce7;margin-right:8px;"></i>Agregar Alumno</h3>
-            <div style="display:flex;gap:8px;margin-bottom:14px;">
-                <button id="tipo-btn-reemplazo" onclick="setTipoAgregar('reemplazo')" style="flex:1;padding:9px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;border:1.5px solid #6c5ce7;background:rgba(108,92,231,.08);color:#6c5ce7;">Reemplazo</button>
-                <button id="tipo-btn-extra" onclick="setTipoAgregar('extra')" style="flex:1;padding:9px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;border:1.5px solid #e2e8f4;background:white;color:#64748b;">Extra</button>
-            </div>
-            <div style="margin-bottom:14px;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">Nombre Completo *</label><input type="text" id="nuevo-nombre" placeholder="Nombre y apellidos" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid #e2e8f4;font-size:.85rem;color:#334155;font-family:inherit;box-sizing:border-box;"></div>
-            <div style="margin-bottom:14px;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">RUN (RUT) *</label><input type="text" id="nuevo-rut" placeholder="12.345.678-9" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid #e2e8f4;font-size:.85rem;color:#334155;font-family:inherit;box-sizing:border-box;"></div>
-            <div style="display:flex;gap:10px;margin-bottom:14px;">
-                <div style="flex:1;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">Fecha Nacimiento</label><input type="date" id="nuevo-fecha-nac" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid #e2e8f4;font-size:.85rem;color:#334155;box-sizing:border-box;"></div>
-                <div style="flex:1;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">Sexo</label><select id="nuevo-sexo" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid #e2e8f4;font-size:.85rem;color:#334155;box-sizing:border-box;"><option value="">—</option><option value="F">Femenino</option><option value="M">Masculino</option></select></div>
-            </div>
-            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
-                <button onclick="cerrarModalAgregar()" style="padding:9px 20px;border-radius:10px;border:1.5px solid #e2e8f4;background:white;color:#64748b;font-weight:700;cursor:pointer;">Cancelar</button>
-                <button onclick="confirmarAgregarAlumno()" style="padding:9px 20px;border-radius:10px;border:none;background:#6c5ce7;color:white;font-weight:700;cursor:pointer;"><i class="fas fa-plus"></i> Agregar</button>
-            </div>
+<!-- ─── MODAL AGREGAR ─── -->
+<div id="modal-agregar" style="display:none;position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:9000;align-items:center;justify-content:center;" onclick="if(event.target===this)cerrarModalAgregar()">
+    <div style="background:white;border-radius:20px;padding:28px 30px 24px;max-width:440px;width:94%;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:fadeUp .25s ease;">
+        <h3 style="margin:0 0 18px;font-size:1.05rem;color:#0f4c75;font-family:'Sora',sans-serif;"><i class="fas fa-user-plus" style="color:var(--accent);margin-right:8px;"></i>Agregar Alumno</h3>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <button id="tipo-btn-reemplazo" onclick="setTipoAgregar('reemplazo')" style="flex:1;padding:9px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;border:1.5px solid var(--accent);background:rgba(124,58,237,.08);color:var(--accent);font-family:inherit;">Reemplazo</button>
+            <button id="tipo-btn-extra" onclick="setTipoAgregar('extra')" style="flex:1;padding:9px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:white;color:#64748b;font-family:inherit;">Extra</button>
+        </div>
+        <div style="margin-bottom:12px;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">Nombre Completo *</label><input type="text" id="nuevo-nombre" placeholder="Nombre y apellidos" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;color:#334155;font-family:inherit;box-sizing:border-box;outline:none;"></div>
+        <div style="margin-bottom:12px;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">RUN (RUT) *</label><input type="text" id="nuevo-rut" placeholder="12.345.678-9" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;color:#334155;font-family:inherit;box-sizing:border-box;outline:none;"></div>
+        <div style="display:flex;gap:10px;margin-bottom:12px;">
+            <div style="flex:1;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">Fecha Nacimiento</label><input type="date" id="nuevo-fecha-nac" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;color:#334155;box-sizing:border-box;outline:none;"></div>
+            <div style="flex:1;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">Sexo</label><select id="nuevo-sexo" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;color:#334155;box-sizing:border-box;outline:none;"><option value="">—</option><option value="F">Femenino</option><option value="M">Masculino</option></select></div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+            <button onclick="cerrarModalAgregar()" style="padding:9px 20px;border-radius:99px;border:1.5px solid var(--border);background:white;color:#64748b;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>
+            <button onclick="confirmarAgregarAlumno()" style="padding:9px 20px;border-radius:99px;border:none;background:var(--accent);color:white;font-weight:700;cursor:pointer;font-family:inherit;"><i class="fas fa-plus"></i> Agregar</button>
         </div>
     </div>
+</div>
 
-    <style>
-        @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-    </style>
-
-    <script>
-        // ──────────────────────────────────────────────────────────
-        //  INIT
-        // ──────────────────────────────────────────────────────────
-        document.addEventListener('DOMContentLoaded', function() {
-            aplicarFiltros();
-            document.querySelectorAll('.formulario form').forEach(form => {
-                const fechaEv = form.querySelector('input[name="fecha_evaluacion"]');
-                if (fechaEv && (!fechaEv.value || !fechaEv.value.trim())) {
-                    const today = new Date();
-                    fechaEv.value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-                }
-                updatePreview(form);
-                const sel = form.querySelector('select[name="plazo"]');
-                const fr  = form.querySelector('input[name="fecha_reevaluacion"]');
-                if (sel && sel.value && (!fr.value || !fr.value.trim())) setFechaReevaluacion(sel);
-            });
-            updateCompletedCount();
-        });
-
-        // ──────────────────────────────────────────────────────────
-        //  FILTROS Y BÚSQUEDA
-        // ──────────────────────────────────────────────────────────
-        function aplicarFiltros() {
-            const q   = (document.getElementById('buscador').value || '').toLowerCase().trim();
-            const fil = document.querySelector('input[name="evaluation_filter"]:checked').value;
-            document.querySelectorAll('details.estudiante').forEach(d => {
-                const nombre    = d.getAttribute('data-nombre') || '';
-                const isEval    = d.getAttribute('data-evaluated-status') === 'true';
-                const matchSearch = nombre.includes(q);
-                const matchFilter = fil === 'all' || (fil === 'evaluated' && isEval) || (fil === 'not_evaluated' && !isEval);
-                d.style.display = (matchSearch && matchFilter) ? '' : 'none';
-            });
-        }
-
-        // ──────────────────────────────────────────────────────────
-        //  CONTADORES
-        // ──────────────────────────────────────────────────────────
-        function updateCompletedCount() {
-            const todos   = document.querySelectorAll('details.estudiante');
-            const activos = Array.from(todos).filter(d => d.getAttribute('data-excluido') !== 'true');
-            const total   = activos.length;
-            const done    = activos.filter(d => d.getAttribute('data-evaluated-status') === 'true').length;
-            const pct     = total > 0 ? Math.round(done / total * 100) : 0;
-
-            const si = id => document.getElementById(id);
-            if (si('stat-total'))    si('stat-total').textContent    = total;
-            if (si('stat-evaluated'))si('stat-evaluated').textContent = done;
-            if (si('stat-pending'))  si('stat-pending').textContent   = total - done;
-            if (si('stat-pct'))      si('stat-pct').textContent       = pct + '%';
-            if (si('progress-bar'))  si('progress-bar').style.width   = pct + '%';
-            if (si('progress-text')) si('progress-text').textContent  = done + ' / ' + total + ' evaluaciones';
-            if (si('progress-pct-label')) si('progress-pct-label').textContent = pct + '%';
-        }
-
-        // ──────────────────────────────────────────────────────────
-        //  PREVIEW Y CAMPOS
-        // ──────────────────────────────────────────────────────────
-        function updatePreview(form) {
-            const c = form.closest('.container');
-            if (!c) return;
-            c.querySelector('.prev-nombre').textContent      = form.nombre?.value || '-';
-            c.querySelector('.prev-rut').textContent         = form.rut?.value    || '-';
-            c.querySelector('.prev-estado').textContent      = form.estado?.value  || '-';
-            c.querySelector('.prev-diagnostico').textContent = form.diagnostico?.value || '-';
-            c.querySelector('.prev-derivaciones').textContent= form.derivaciones?.value || '-';
-
-            const fnInput = form.querySelector('input[name="fecha_nacimiento_original"]');
-            if (fnInput?.value) { try { const [y,m,d]=fnInput.value.split('-'); c.querySelector('.prev-fecha-nacimiento-info').textContent=`${d}/${m}/${y}`; } catch{} }
-
-            const edadInp = form.querySelector('input[name="edad"]');
-            if (edadInp) c.querySelector('.prev-edad-info').textContent = edadInp.value || 'N/A';
-
-            const nacInp = form.querySelector('input[name="nacionalidad"]');
-            if (nacInp)  c.querySelector('.prev-nacionalidad-info').textContent = nacInp.value || 'N/A';
-
-            const sexoSel = form.querySelector('select[name="sexo"]');
-            if (sexoSel) c.querySelector('.prev-sexo-info').textContent = sexoSel.value === 'M' ? 'Masculino' : sexoSel.value === 'F' ? 'Femenino' : 'N/A';
-
-            const feInp = form.querySelector('input[name="fecha_evaluacion"]');
-            if (feInp?.value) { const [y,m,d]=feInp.value.split('-'); c.querySelector('.prev-fecha-evaluacion').textContent=`${d}/${m}/${y}`; }
-            else c.querySelector('.prev-fecha-evaluacion').textContent = '-';
-
-            const frInp = form.querySelector('input[name="fecha_reevaluacion"]');
-            if (frInp?.value) { const [y,m,d]=frInp.value.split('-'); c.querySelector('.prev-reevaluacion').textContent=`${d}/${m}/${y}`; }
-            else c.querySelector('.prev-reevaluacion').textContent = '-';
-
-            const badge = form.closest('.formulario')?.querySelector('.badge');
-            if (badge) { badge.classList.add('show'); badge.textContent='Modificando…'; clearTimeout(badge._t); badge._t=setTimeout(()=>{badge.textContent='Guardado';},800); }
-        }
-
-        function setFechaReevaluacion(select) {
-            const anos = parseInt(select.value);
-            const form = select.closest('form');
-            const fr   = form.querySelector('input[name="fecha_reevaluacion"]');
-            const fe   = form.querySelector('input[name="fecha_evaluacion"]');
-            if (!fe?.value) {
-                Swal.fire({ icon:'warning', title:'Fecha de Evaluación requerida', text:'Ingresa la fecha de evaluación primero.', confirmButtonText:'Ok' });
-                fr.value=''; updatePreview(form); return;
+<script>
+    // ── INIT ──────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+        aplicarFiltros();
+        document.querySelectorAll('.formulario form').forEach(form => {
+            const fe = form.querySelector('input[name="fecha_evaluacion"]');
+            if (fe && (!fe.value || !fe.value.trim())) {
+                const t = new Date();
+                fe.value = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
             }
-            if (!isNaN(anos) && anos > 0) {
-                const d = new Date(fe.value + 'T00:00:00');
-                const fut = new Date(d.getFullYear()+anos, d.getMonth(), d.getDate());
-                fr.value = `${fut.getFullYear()}-${String(fut.getMonth()+1).padStart(2,'0')}-${String(fut.getDate()).padStart(2,'0')}`;
-            } else { fr.value=''; }
             updatePreview(form);
+            const sel = form.querySelector('select[name="plazo"]');
+            const fr  = form.querySelector('input[name="fecha_reevaluacion"]');
+            if (sel && sel.value && (!fr.value || !fr.value.trim())) setFechaReevaluacion(sel);
+        });
+        updateCompletedCount();
+    });
+
+    // ── FILTROS ───────────────────────────────────────────────────────
+    function aplicarFiltros() {
+        const q   = (document.getElementById('buscador').value || '').toLowerCase().trim();
+        const fil = document.querySelector('input[name="evaluation_filter"]:checked').value;
+        document.querySelectorAll('details.estudiante').forEach(d => {
+            const nombre   = d.getAttribute('data-nombre') || '';
+            const isEval   = d.getAttribute('data-evaluated-status') === 'true';
+            const matchS   = nombre.includes(q);
+            const matchF   = fil === 'all' || (fil === 'evaluated' && isEval) || (fil === 'not_evaluated' && !isEval);
+            d.style.display = (matchS && matchF) ? '' : 'none';
+        });
+    }
+
+    // ── CONTADORES ────────────────────────────────────────────────────
+    function updateCompletedCount() {
+        const todos   = document.querySelectorAll('details.estudiante');
+        const activos = Array.from(todos).filter(d => d.getAttribute('data-excluido') !== 'true');
+        const total   = activos.length;
+        const done    = activos.filter(d => d.getAttribute('data-evaluated-status') === 'true').length;
+        const pct     = total > 0 ? Math.round(done / total * 100) : 0;
+        const si = id => document.getElementById(id);
+        if (si('stat-total'))        si('stat-total').textContent        = total;
+        if (si('completed-forms-count')) si('completed-forms-count').textContent = done;
+        if (si('stat-pending'))      si('stat-pending').textContent      = total - done;
+        if (si('stat-pct'))          si('stat-pct').textContent          = pct + '%';
+        if (si('progress-bar'))      si('progress-bar').style.width      = pct + '%';
+        if (si('progress-text'))     si('progress-text').textContent     = done + ' / ' + total + ' evaluaciones completadas';
+        if (si('progress-pct-label'))si('progress-pct-label').textContent = pct + '%';
+    }
+
+    // ── PREVIEW ───────────────────────────────────────────────────────
+    function updatePreview(form) {
+        const c = form.closest('.container'); if (!c) return;
+        c.querySelector('.prev-nombre').textContent       = form.nombre?.value || '—';
+        c.querySelector('.prev-rut').textContent          = form.rut?.value    || '—';
+        c.querySelector('.prev-estado').textContent       = form.estado?.value  || '—';
+        c.querySelector('.prev-diagnostico').textContent  = form.diagnostico?.value || '—';
+        c.querySelector('.prev-derivaciones').textContent = form.derivaciones?.value || '—';
+
+        const fn = form.querySelector('input[name="fecha_nacimiento_original"]');
+        if (fn?.value) { try { const [y,m,d]=fn.value.split('-'); c.querySelector('.prev-fecha-nacimiento-info').textContent=`${d}/${m}/${y}`; } catch{} }
+
+        const ei = form.querySelector('input[name="edad"]');
+        if (ei) c.querySelector('.prev-edad-info').textContent = ei.value || 'N/A';
+        const ni = form.querySelector('input[name="nacionalidad"]');
+        if (ni) c.querySelector('.prev-nacionalidad-info').textContent = ni.value || 'N/A';
+
+        const sx = form.querySelector('select[name="sexo"]');
+        if (sx) c.querySelector('.prev-sexo-info').textContent = sx.value === 'M' ? 'Masculino' : sx.value === 'F' ? 'Femenino' : 'N/A';
+
+        const fe = form.querySelector('input[name="fecha_evaluacion"]');
+        if (fe?.value) { const [y,m,d]=fe.value.split('-'); c.querySelector('.prev-fecha-evaluacion').textContent=`${d}/${m}/${y}`; }
+        else c.querySelector('.prev-fecha-evaluacion').textContent = '—';
+
+        const fr = form.querySelector('input[name="fecha_reevaluacion"]');
+        if (fr?.value) { const [y,m,d]=fr.value.split('-'); c.querySelector('.prev-reevaluacion').textContent=`${d}/${m}/${y}`; }
+        else c.querySelector('.prev-reevaluacion').textContent = '—';
+
+        const badge = form.closest('.formulario')?.querySelector('.badge');
+        if (badge) { badge.classList.add('show'); badge.textContent='Modificando…'; clearTimeout(badge._t); badge._t=setTimeout(()=>{badge.textContent='Guardado';},800); }
+    }
+
+    function setFechaReevaluacion(select) {
+        const anos = parseInt(select.value); const form = select.closest('form');
+        const fr = form.querySelector('input[name="fecha_reevaluacion"]');
+        const fe = form.querySelector('input[name="fecha_evaluacion"]');
+        if (!fe?.value) {
+            Swal.fire({icon:'warning',title:'Fecha de Evaluación requerida',text:'Ingresa primero la fecha de evaluación.',confirmButtonText:'Ok'});
+            fr.value=''; updatePreview(form); return;
         }
+        if (!isNaN(anos) && anos > 0) {
+            const d = new Date(fe.value + 'T00:00:00');
+            const f = new Date(d.getFullYear()+anos, d.getMonth(), d.getDate());
+            fr.value = `${f.getFullYear()}-${String(f.getMonth()+1).padStart(2,'0')}-${String(f.getDate()).padStart(2,'0')}`;
+        } else { fr.value=''; }
+        updatePreview(form);
+    }
 
-        function updateStudentUI(estudianteId, isEvaluated) {
-            const det = document.querySelector(`details.estudiante[data-estudiante-id="${estudianteId}"]`);
-            if (!det) return;
-            det.setAttribute('data-evaluated-status', isEvaluated ? 'true' : 'false');
-            const btn = det.querySelector('.mark-evaluated-btn');
-            if (btn) { btn.disabled = isEvaluated; btn.innerHTML = isEvaluated ? '<i class="fas fa-check-circle"></i> Evaluado' : '<i class="fas fa-check-circle"></i> Marcar como Evaluado'; }
-            // Update badge in summary
-            const badge = det.querySelector('.status-badge');
-            if (badge && isEvaluated) { badge.className='status-badge evaluated'; badge.innerHTML='<i class="fas fa-check-circle"></i> Evaluado'; }
-            updateCompletedCount();
-        }
+    function updateStudentUI(id, isEval) {
+        const det = document.querySelector(`details.estudiante[data-estudiante-id="${id}"]`); if (!det) return;
+        det.setAttribute('data-evaluated-status', isEval ? 'true' : 'false');
+        const btn = det.querySelector('.mark-evaluated-btn');
+        if (btn) { btn.disabled = isEval; btn.innerHTML = isEval ? '<i class="fas fa-check-circle"></i> Evaluado' : '<i class="fas fa-check-circle"></i> Marcar como Evaluado'; }
+        const badge = det.querySelector('.status-badge');
+        if (badge && isEval) { badge.className='status-badge evaluated'; badge.innerHTML='<i class="fas fa-check-circle"></i> Evaluado'; }
+        updateCompletedCount();
+    }
 
-        // ──────────────────────────────────────────────────────────
-        //  SUBMIT FORM (Guardar + PDF)
-        // ──────────────────────────────────────────────────────────
-        async function submitForm(form) {
-            const formData      = new FormData(form);
-            const estudianteId  = form.querySelector('input[name="estudiante_id"]').value;
-            Swal.fire({ title:'Guardando y Generando PDF…', text:'Por favor, espera.', didOpen:()=>Swal.showLoading(), allowOutsideClick:false, allowEscapeKey:false });
-            try {
-                const saveRes  = await fetch('/marcar_evaluado', { method:'POST', body:formData });
-                const saveData = await saveRes.json();
-                if (saveData.success) {
-                    updateStudentUI(estudianteId, true);
-                    const pdfRes = await fetch('/generar_pdf', { method:'POST', body:formData });
-                    if (pdfRes.ok) {
-                        const blob = await pdfRes.blob();
-                        const url  = window.URL.createObjectURL(blob);
-                        const a    = document.createElement('a');
-                        a.href = url;
-                        const cd = pdfRes.headers.get('Content-Disposition');
-                        a.download = cd && cd.includes('filename') ? decodeURIComponent(cd.split('filename=')[1].replace(/['"]/g,'')) : 'formulario.pdf';
-                        document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
-                        Swal.fire({ icon:'success', title:'¡Guardado y PDF Generado!', timer:2000, showConfirmButton:false });
-                    } else {
-                        Swal.fire({ icon:'error', title:'Error al generar PDF', text:'Los datos se guardaron pero el PDF falló.' });
-                    }
-                } else {
-                    Swal.fire({ icon:'error', title:'Error al guardar', text:saveData.message });
-                }
-            } catch(e) {
-                Swal.fire({ icon:'error', title:'Error de Conexión', text:e.message });
-            }
-        }
+    // ── SUBMIT (Guardar + PDF) ────────────────────────────────────────
+    async function submitForm(form) {
+        const fd = new FormData(form);
+        const eid = form.querySelector('input[name="estudiante_id"]').value;
+        Swal.fire({title:'Guardando y Generando PDF…',text:'Por favor, espera.',didOpen:()=>Swal.showLoading(),allowOutsideClick:false,allowEscapeKey:false});
+        try {
+            const sr = await fetch('/marcar_evaluado', {method:'POST',body:fd});
+            const sd = await sr.json();
+            if (sd.success) {
+                updateStudentUI(eid, true);
+                const pr = await fetch('/generar_pdf', {method:'POST',body:fd});
+                if (pr.ok) {
+                    const blob = await pr.blob(); const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a'); a.href=url;
+                    const cd = pr.headers.get('Content-Disposition');
+                    a.download = cd && cd.includes('filename') ? decodeURIComponent(cd.split('filename=')[1].replace(/['"]/g,'')) : 'formulario_neurologico.pdf';
+                    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+                    Swal.fire({icon:'success',title:'¡Guardado y PDF Generado!',timer:2000,showConfirmButton:false});
+                } else { Swal.fire({icon:'error',title:'Error al generar PDF',text:'Los datos se guardaron pero el PDF falló.'}); }
+            } else { Swal.fire({icon:'error',title:'Error al guardar',text:sd.message}); }
+        } catch(e) { Swal.fire({icon:'error',title:'Error de Conexión',text:e.message}); }
+    }
 
-        // ──────────────────────────────────────────────────────────
-        //  MARCAR EVALUADO (botón independiente)
-        // ──────────────────────────────────────────────────────────
-        async function marcarComoEvaluado(btn) {
-            const form         = btn.closest('form');
-            const estudianteId = btn.getAttribute('data-estudiante-id');
-            let allFilled = true;
-            form.querySelectorAll('input[required],select[required],textarea[required]').forEach(inp => {
-                if (!inp.value.trim()) { allFilled=false; inp.style.borderColor='var(--danger)'; }
-                else inp.style.borderColor='';
-            });
-            if (!allFilled) { Swal.fire({ icon:'error', title:'Faltan datos', text:'Completa todos los campos obligatorios.', confirmButtonText:'Entendido' }); return; }
+    // ── MARCAR EVALUADO ───────────────────────────────────────────────
+    async function marcarComoEvaluado(btn) {
+        const form = btn.closest('form'); const eid = btn.getAttribute('data-estudiante-id');
+        let ok = true;
+        form.querySelectorAll('input[required],select[required],textarea[required]').forEach(i => {
+            if (!i.value.trim()) { ok=false; i.style.borderColor='var(--danger)'; } else i.style.borderColor='';
+        });
+        if (!ok) { Swal.fire({icon:'error',title:'Faltan datos',text:'Completa todos los campos obligatorios.',confirmButtonText:'Entendido'}); return; }
+        const res = await Swal.fire({title:'¿Marcar como Evaluado?',text:'Se registrará la evaluación del alumno.',icon:'question',showCancelButton:true,confirmButtonColor:'var(--accent)',cancelButtonColor:'#d33',confirmButtonText:'Sí, marcar',cancelButtonText:'Cancelar'});
+        if (!res.isConfirmed) return;
+        try {
+            const fd = new FormData(form);
+            Swal.fire({title:'Guardando…',didOpen:()=>Swal.showLoading(),allowOutsideClick:false});
+            const r = await fetch('/marcar_evaluado', {method:'POST',body:fd}); const d = await r.json();
+            if (d.success) { updateStudentUI(eid, true); Swal.fire({icon:'success',title:'¡Evaluado!',timer:1800,showConfirmButton:false}); }
+            else Swal.fire({icon:'error',title:'Error',text:d.message});
+        } catch(e) { Swal.fire({icon:'error',title:'Error de Conexión',text:e.message}); }
+    }
 
-            const res = await Swal.fire({ title:'¿Marcar como Evaluado?', text:'Se registrará la evaluación del alumno.', icon:'question', showCancelButton:true, confirmButtonColor:'#6c5ce7', cancelButtonColor:'#d33', confirmButtonText:'Sí, marcar', cancelButtonText:'Cancelar' });
-            if (!res.isConfirmed) return;
-            try {
-                const fd = new FormData(form);
-                Swal.fire({ title:'Guardando…', didOpen:()=>Swal.showLoading(), allowOutsideClick:false });
-                const r = await fetch('/marcar_evaluado', { method:'POST', body:fd });
-                const d = await r.json();
-                if (d.success) {
-                    updateStudentUI(estudianteId, true);
-                    Swal.fire({ icon:'success', title:'¡Evaluado!', timer:1800, showConfirmButton:false });
-                } else {
-                    Swal.fire({ icon:'error', title:'Error', text:d.message });
-                }
-            } catch(e) {
-                Swal.fire({ icon:'error', title:'Error de Conexión', text:e.message });
-            }
-        }
+    // ── ACCIONES GENERALES ────────────────────────────────────────────
+    function cerrarSesion() { window.location.href = '/logout'; }
 
-        // ──────────────────────────────────────────────────────────
-        //  ACCIONES (print, excel, pdf, drive, firma)
-        // ──────────────────────────────────────────────────────────
-        function cerrarSesion() { window.location.href = '/logout'; }
+    async function descargarExcelCompletados(nominaId, nombre) {
+        Swal.fire({title:'Preparando Excel…',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+        try {
+            const res = await fetch('/descargar_excel_evaluados',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nomina_id:nominaId})});
+            if (!res.ok) throw new Error('Error al generar Excel');
+            const blob=await res.blob(); const url=URL.createObjectURL(blob);
+            const a=document.createElement('a'); a.href=url; a.download=`Evaluados_Neuro_${nombre}_${new Date().toISOString().slice(0,10)}.xlsx`;
+            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+            Swal.fire({icon:'success',title:'¡Descargado!',timer:2000,showConfirmButton:false});
+        } catch(e) { Swal.fire({icon:'error',title:'Error',text:e.message}); }
+    }
 
-        function imprimirTodosLosFormularios() {
-            Swal.fire({ title:'Preparando impresión…', allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
-            setTimeout(() => {
-                const pw = window.open('','_blank');
-                pw.document.write('<html><head><title>Imprimir Formularios</title>');
-                pw.document.write('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">');
-                pw.document.write('<style>body{font-family:sans-serif;margin:20px;}.print-form{margin-bottom:25px;border:1px solid #ccc;padding:15px;border-radius:8px;page-break-inside:avoid;}.print-form h3{color:#6c5ce7;border-bottom:2px solid #6c5ce7;padding-bottom:8px;margin-bottom:12px;}.print-form p{margin:6px 0;}</style>');
-                pw.document.write('</head><body>');
-                const visible = document.querySelectorAll('details.estudiante:not([style*="display: none"])');
-                if (!visible.length) { Swal.fire({icon:'info',title:'Sin formularios visibles'}); pw.close(); return; }
-                visible.forEach(d => {
-                    const name = d.querySelector('.student-name')?.textContent || '';
-                    const prev = d.querySelector('.preview')?.cloneNode(true);
-                    if (prev) { prev.querySelectorAll('button,.preview-img').forEach(e=>e.remove()); }
-                    pw.document.write(`<div class="print-form"><h3>Formulario Neurológico — ${name}</h3>${prev ? prev.innerHTML : ''}</div>`);
-                });
-                pw.document.write('</body></html>'); pw.document.close(); pw.focus(); pw.print();
-                pw.onafterprint = () => { pw.close(); Swal.close(); };
-            }, 500);
-        }
+    async function generarEImprimirPDFsVisibles(nominaId, nombre) {
+        const visible = Array.from(document.querySelectorAll('details.estudiante:not([style*="display: none"])')).map(d=>d.getAttribute('data-estudiante-id'));
+        if (!visible.length) { Swal.fire({icon:'info',title:'Sin formularios visibles'}); return; }
+        Swal.fire({title:'Generando PDFs…',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+        try {
+            const res = await fetch('/generar_pdfs_visibles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nomina_id:nominaId,student_ids:visible})});
+            if (!res.ok) throw new Error((await res.json()).message || 'Error');
+            const blob=await res.blob(); const url=URL.createObjectURL(blob);
+            window.open(url,'_blank'); URL.revokeObjectURL(url); Swal.close();
+        } catch(e) { Swal.fire({icon:'error',title:'Error',text:e.message}); }
+    }
 
-        async function descargarExcelCompletados(nominaId, nombre) {
-            Swal.fire({ title:'Preparando Excel…', allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
-            try {
-                const res = await fetch('/descargar_excel_evaluados', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({nomina_id:nominaId}) });
-                if (!res.ok) throw new Error('Error al generar Excel');
-                const blob = await res.blob(); const url=URL.createObjectURL(blob);
-                const a=document.createElement('a'); a.href=url; a.download=`Evaluados_${nombre}_${new Date().toISOString().slice(0,10)}.xlsx`;
-                document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-                Swal.fire({ icon:'success', title:'¡Descargado!', timer:2000, showConfirmButton:false });
-            } catch(e) { Swal.fire({ icon:'error', title:'Error', text:e.message }); }
-        }
+    // ── AUSENCIAS ─────────────────────────────────────────────────────
+    let _ausenciaId = null, _tipoAgregar = 'reemplazo';
 
-        async function generarEImprimirPDFsVisibles(nominaId, nombre) {
-            const visible = Array.from(document.querySelectorAll('details.estudiante:not([style*="display: none"])')).map(d=>d.getAttribute('data-estudiante-id'));
-            if (!visible.length) { Swal.fire({icon:'info',title:'Sin formularios visibles'}); return; }
-            Swal.fire({ title:'Generando PDFs…', allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
-            try {
-                const res = await fetch('/generar_pdfs_visibles', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({nomina_id:nominaId,student_ids:visible}) });
-                if (!res.ok) throw new Error((await res.json()).message || 'Error');
-                const blob=await res.blob(); const url=URL.createObjectURL(blob);
-                window.open(url,'_blank'); URL.revokeObjectURL(url); Swal.close();
-            } catch(e) { Swal.fire({ icon:'error', title:'Error', text:e.message }); }
-        }
+    function abrirModalAusencia(id, nombre) {
+        _ausenciaId = id;
+        document.getElementById('modal-ausencia-nombre').textContent = nombre;
+        document.getElementById('radio-reemplazado').checked = true;
+        document.getElementById('input-motivo-ausencia').value = '';
+        document.getElementById('modal-ausencia').style.display='flex';
+    }
+    function cerrarModalAusencia() { document.getElementById('modal-ausencia').style.display='none'; _ausenciaId=null; }
 
-        async function descargarPDFsVisiblesComoZip(nominaId, nombre) {
-            const visible = Array.from(document.querySelectorAll('details.estudiante:not([style*="display: none"])')).map(d=>d.getAttribute('data-estudiante-id'));
-            if (!visible.length) { Swal.fire({icon:'info',title:'Sin formularios visibles'}); return; }
-            Swal.fire({ title:'Preparando ZIP…', allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
-            try {
-                const res = await fetch('/descargar_pdfs_zip', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({nomina_id:nominaId,student_ids:visible}) });
-                if (!res.ok) throw new Error((await res.json()).message || 'Error');
-                const blob=await res.blob(); const url=URL.createObjectURL(blob);
-                const a=document.createElement('a'); a.href=url; a.download=`PDFs_${nombre.replace(/[^a-zA-Z0-9]/g,'_')}_${new Date().toISOString().slice(0,10)}.zip`;
-                document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-                Swal.fire({ icon:'success', title:'¡Descargado!', timer:2000, showConfirmButton:false });
-            } catch(e) { Swal.fire({ icon:'error', title:'Error', text:e.message }); }
-        }
-
-        function enviarADrive(form) {
-            Swal.fire({ title:'Enviando a Drive…', html:'<i class="fas fa-spinner fa-spin"></i>', allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
-            fetch('/enviar_formulario_a_drive', { method:'POST', body:new FormData(form) })
-                .then(r=>r.json()).then(d => {
-                    if (d.success) Swal.fire({icon:'success',title:'¡Enviado!',text:d.message,timer:2000,showConfirmButton:false});
-                    else Swal.fire({icon:'error',title:'Error',text:d.message});
-                }).catch(()=>Swal.fire({icon:'error',title:'Error de Conexión'}));
-        }
-        function insertarFirma() { Swal.fire({icon:'info',title:'Próximamente',text:'Se insertará la firma de la doctora.'}); }
-
-        // ──────────────────────────────────────────────────────────
-        //  SISTEMA DE AUSENCIAS (igual que familiar)
-        // ──────────────────────────────────────────────────────────
-        let _ausenciaId = null, _tipoAgregar = 'reemplazo';
-
-        function abrirModalAusencia(id, nombre) {
-            _ausenciaId = id;
-            document.getElementById('modal-ausencia-nombre').textContent = nombre;
-            document.getElementById('radio-reemplazado').checked = true;
-            document.getElementById('input-motivo-ausencia').value = '';
-            const m = document.getElementById('modal-ausencia');
-            m.style.display='flex';
-        }
-        function cerrarModalAusencia() { document.getElementById('modal-ausencia').style.display='none'; _ausenciaId=null; }
-
-        async function confirmarAusencia() {
-            if (!_ausenciaId) return;
-            const tipo   = document.querySelector('input[name="tipo_ausencia"]:checked')?.value;
-            const motivo = document.getElementById('input-motivo-ausencia').value.trim();
-            if (!tipo) { alert('Selecciona un tipo'); return; }
-            try {
-                const res = await fetch('/api/estudiante/estado_ausencia', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({estudiante_id:_ausenciaId,estado_asistencia:tipo,motivo_ausencia:motivo||null}) });
-                const data = await res.json();
-                if (data.success) {
-                    const card = document.querySelector(`details[data-estudiante-id="${_ausenciaId}"]`);
-                    if (card) {
-                        card.setAttribute('data-estado',tipo); card.setAttribute('data-excluido','true');
-                        const badge=card.querySelector('.status-badge');
-                        if (badge) { badge.className=tipo==='no_asiste_reemplazado'?'status-badge ausente-reemplazado':'status-badge ausente-sin-reemplazo'; badge.innerHTML=tipo==='no_asiste_reemplazado'?'<i class="fas fa-exchange-alt"></i> Reemplazado':'<i class="fas fa-user-slash"></i> No asiste'; }
-                        const btnAus=card.querySelector('.btn-estado-ausencia');
-                        if (btnAus) { btnAus.innerHTML='<i class="fas fa-undo"></i> Reactivar'; btnAus.style.cssText='background:rgba(99,110,114,.08);color:#636e72;border-color:rgba(99,110,114,.2);'; btnAus.setAttribute('onclick',`event.preventDefault();event.stopPropagation();reactivarEstudiante('${_ausenciaId}','${card.querySelector('.student-name').textContent.trim()}')`); }
-                    }
-                    updateCompletedCount(); cerrarModalAusencia();
-                    if (tipo==='no_asiste_reemplazado') setTimeout(()=>{ if(confirm('¿Agregar alumno de reemplazo ahora?')) abrirModalAgregar(); },300);
-                } else alert('Error: '+(data.error||'Inténtalo de nuevo'));
-            } catch(e) { alert('Error: '+e.message); }
-        }
-
-        async function reactivarEstudiante(id, nombre) {
-            if (!confirm(`¿Reactivar a ${nombre} en el conteo?`)) return;
-            const res  = await fetch('/api/estudiante/estado_ausencia',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({estudiante_id:id,estado_asistencia:'activo',motivo_ausencia:null})});
+    async function confirmarAusencia() {
+        if (!_ausenciaId) return;
+        const tipo   = document.querySelector('input[name="tipo_ausencia"]:checked')?.value;
+        const motivo = document.getElementById('input-motivo-ausencia').value.trim();
+        if (!tipo) { alert('Selecciona un tipo'); return; }
+        try {
+            const res  = await fetch('/api/estudiante/estado_ausencia',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({estudiante_id:_ausenciaId,estado_asistencia:tipo,motivo_ausencia:motivo||null})});
             const data = await res.json();
             if (data.success) {
-                const card=document.querySelector(`details[data-estudiante-id="${id}"]`);
+                const card = document.querySelector(`details[data-estudiante-id="${_ausenciaId}"]`);
                 if (card) {
-                    card.setAttribute('data-estado','activo'); card.setAttribute('data-excluido','false');
-                    const isEval=card.getAttribute('data-evaluated-status')==='true';
+                    card.setAttribute('data-estado',tipo); card.setAttribute('data-excluido','true');
                     const badge=card.querySelector('.status-badge');
-                    if (badge) { badge.className=isEval?'status-badge evaluated':'status-badge pending'; badge.innerHTML=isEval?'<i class="fas fa-check-circle"></i> Evaluado':'<i class="fas fa-clock"></i> Pendiente'; }
+                    if (badge) { badge.className=tipo==='no_asiste_reemplazado'?'status-badge ausente-reemplazado':'status-badge ausente-sin-reemplazo'; badge.innerHTML=tipo==='no_asiste_reemplazado'?'<i class="fas fa-exchange-alt"></i> Reemplazado':'<i class="fas fa-user-slash"></i> No asiste'; }
                     const btnAus=card.querySelector('.btn-estado-ausencia');
-                    if (btnAus) { btnAus.innerHTML='<i class="fas fa-user-times"></i> No asiste'; btnAus.style.cssText=''; btnAus.setAttribute('onclick',`event.preventDefault();event.stopPropagation();abrirModalAusencia('${id}','${nombre}')`); }
+                    if (btnAus) { btnAus.innerHTML='<i class="fas fa-undo"></i> Reactivar'; btnAus.style.cssText='background:rgba(99,110,114,.08);color:#636e72;border-color:rgba(99,110,114,.2);'; btnAus.setAttribute('onclick',`event.preventDefault();event.stopPropagation();reactivarEstudiante('${_ausenciaId}','${card.querySelector('.student-name').textContent.trim()}')`); }
                 }
-                updateCompletedCount();
-            } else alert('Error al reactivar');
-        }
+                updateCompletedCount(); cerrarModalAusencia();
+                if (tipo==='no_asiste_reemplazado') setTimeout(()=>{ if(confirm('¿Agregar alumno de reemplazo ahora?')) abrirModalAgregar(); },300);
+            } else alert('Error: '+(data.error||'Inténtalo de nuevo'));
+        } catch(e) { alert('Error: '+e.message); }
+    }
 
-        function abrirModalAgregar() {
-            setTipoAgregar('reemplazo');
-            ['nuevo-nombre','nuevo-rut','nuevo-fecha-nac'].forEach(id=>document.getElementById(id).value='');
-            document.getElementById('nuevo-sexo').value='';
-            const m=document.getElementById('modal-agregar'); m.style.display='flex';
-            setTimeout(()=>document.getElementById('nuevo-nombre').focus(),100);
-        }
-        function cerrarModalAgregar() { document.getElementById('modal-agregar').style.display='none'; }
-        function setTipoAgregar(tipo) {
-            _tipoAgregar=tipo;
-            const br=document.getElementById('tipo-btn-reemplazo'), be=document.getElementById('tipo-btn-extra');
-            if (tipo==='reemplazo') { br.style.cssText='flex:1;padding:9px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;border:1.5px solid #6c5ce7;background:rgba(108,92,231,.08);color:#6c5ce7;'; be.style.cssText='flex:1;padding:9px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;border:1.5px solid #e2e8f4;background:white;color:#64748b;'; }
-            else { be.style.cssText='flex:1;padding:9px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;border:1.5px solid #6c5ce7;background:rgba(108,92,231,.08);color:#6c5ce7;'; br.style.cssText='flex:1;padding:9px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;border:1.5px solid #e2e8f4;background:white;color:#64748b;'; }
-        }
-        async function confirmarAgregarAlumno() {
-            const nombre=document.getElementById('nuevo-nombre').value.trim();
-            const rut=document.getElementById('nuevo-rut').value.trim();
-            const fn=document.getElementById('nuevo-fecha-nac').value;
-            const sexo=document.getElementById('nuevo-sexo').value;
-            const nominaId=document.querySelector('[data-nomina-id]')?.getAttribute('data-nomina-id')||'';
-            if (!nombre||!rut) { alert('Nombre y RUT son obligatorios'); return; }
-            try {
-                const res=await fetch('/api/estudiante/agregar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nomina_id:nominaId,nombre,rut,fecha_nacimiento:fn||null,sexo:sexo||null,estado_asistencia:_tipoAgregar==='extra'?'extra':'activo'})});
-                const data=await res.json();
-                if (data.success) { cerrarModalAgregar(); location.reload(); }
-                else alert('Error: '+(data.error||'Error'));
-            } catch(e) { alert('Error: '+e.message); }
-        }
-    </script>
+    async function reactivarEstudiante(id, nombre) {
+        if (!confirm(`¿Reactivar a ${nombre} en el conteo?`)) return;
+        const res  = await fetch('/api/estudiante/estado_ausencia',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({estudiante_id:id,estado_asistencia:'activo',motivo_ausencia:null})});
+        const data = await res.json();
+        if (data.success) {
+            const card=document.querySelector(`details[data-estudiante-id="${id}"]`);
+            if (card) {
+                card.setAttribute('data-estado','activo'); card.setAttribute('data-excluido','false');
+                const isEval=card.getAttribute('data-evaluated-status')==='true';
+                const badge=card.querySelector('.status-badge');
+                if (badge) { badge.className=isEval?'status-badge evaluated':'status-badge pending'; badge.innerHTML=isEval?'<i class="fas fa-check-circle"></i> Evaluado':'<i class="fas fa-clock"></i> Pendiente'; }
+                const btnAus=card.querySelector('.btn-estado-ausencia');
+                if (btnAus) { btnAus.innerHTML='<i class="fas fa-user-times"></i> No asiste'; btnAus.style.cssText=''; btnAus.setAttribute('onclick',`event.preventDefault();event.stopPropagation();abrirModalAusencia('${id}','${nombre}')`); }
+            }
+            updateCompletedCount();
+        } else alert('Error al reactivar');
+    }
+
+    function abrirModalAgregar() {
+        setTipoAgregar('reemplazo');
+        ['nuevo-nombre','nuevo-rut','nuevo-fecha-nac'].forEach(id=>document.getElementById(id).value='');
+        document.getElementById('nuevo-sexo').value='';
+        document.getElementById('modal-agregar').style.display='flex';
+        setTimeout(()=>document.getElementById('nuevo-nombre').focus(),100);
+    }
+    function cerrarModalAgregar() { document.getElementById('modal-agregar').style.display='none'; }
+
+    function setTipoAgregar(tipo) {
+        _tipoAgregar=tipo;
+        const br=document.getElementById('tipo-btn-reemplazo'), be=document.getElementById('tipo-btn-extra');
+        const activo  = 'flex:1;padding:9px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;border:1.5px solid var(--accent);background:rgba(124,58,237,.08);color:var(--accent);font-family:inherit;';
+        const inactivo= 'flex:1;padding:9px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:white;color:#64748b;font-family:inherit;';
+        br.style.cssText = tipo==='reemplazo' ? activo : inactivo;
+        be.style.cssText = tipo==='extra'     ? activo : inactivo;
+    }
+
+    async function confirmarAgregarAlumno() {
+        const nombre=document.getElementById('nuevo-nombre').value.trim();
+        const rut=document.getElementById('nuevo-rut').value.trim();
+        const fn=document.getElementById('nuevo-fecha-nac').value;
+        const sexo=document.getElementById('nuevo-sexo').value;
+        const nominaId=document.querySelector('[data-nomina-id]')?.getAttribute('data-nomina-id')||'';
+        if (!nombre||!rut) { alert('Nombre y RUT son obligatorios'); return; }
+        try {
+            const res=await fetch('/api/estudiante/agregar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nomina_id:nominaId,nombre,rut,fecha_nacimiento:fn||null,sexo:sexo||null,estado_asistencia:_tipoAgregar==='extra'?'extra':'activo'})});
+            const data=await res.json();
+            if (data.success) { cerrarModalAgregar(); location.reload(); }
+            else alert('Error: '+(data.error||'Error'));
+        } catch(e) { alert('Error: '+e.message); }
+    }
+</script>
 </body>
 </html>

@@ -3030,7 +3030,8 @@
                         motivo_ausencia:    motivo || null
                     })
                 });
-                const data = await res.json();
+                let data;
+                try { data = await res.json(); } catch(e) { throw new Error('Respuesta inválida del servidor (HTTP '+res.status+')'); }
                 if (data.success) {
                     // Actualizar la card en el DOM
                     const card = document.querySelector(`details[data-estudiante-id="${_ausenciaEstudianteId}"]`);

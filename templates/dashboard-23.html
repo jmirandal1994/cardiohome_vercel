@@ -2245,29 +2245,39 @@
             showDenyButton: true,
             showCancelButton: true,
             confirmButtonText: '<i class="fas fa-file-excel"></i> Excel',
-            denyButtonText: '<i class="fas fa-file-pdf"></i> PDF',
+            denyButtonText: '<i class="fas fa-file-pdf"></i> PDF (imprimir)',
             cancelButtonText: 'Cancelar',
             confirmButtonColor: '#059669',
             denyButtonColor: '#dc2626',
         });
-        if (formato === undefined) return; // cancelado
+        if (formato === undefined) return;
         const esExcel = formato === true;
         const endpoint = esExcel ? '/api/admin/listado_alumnos_excel' : '/api/admin/listado_alumnos_pdf';
-        Swal.fire({ title: esExcel ? 'Generando Excel…' : 'Generando PDF…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: esExcel ? 'Generando Excel…' : 'Generando listado…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         try {
-            const res  = await fetch(endpoint, {
+            const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nomina_id: nominaId })
             });
-            if (!res.ok) throw new Error('Error al generar el archivo');
-            const blob = await res.blob();
-            const url  = URL.createObjectURL(blob);
-            const a    = document.createElement('a');
-            a.href = url;
-            a.download = `Listado_${nominaNombre.replace(/[^a-zA-Z0-9]/g,'_')}_${new Date().toISOString().slice(0,10)}.${esExcel ? 'xlsx' : 'pdf'}`;
-            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-            Swal.fire({ icon: 'success', title: '¡Descargado!', timer: 2000, showConfirmButton: false });
+            if (!res.ok) throw new Error('Error HTTP ' + res.status);
+            if (esExcel) {
+                // Descargar como archivo .xlsx
+                const blob = await res.blob();
+                const url  = URL.createObjectURL(blob);
+                const a    = document.createElement('a');
+                a.href = url;
+                a.download = `Listado_${nominaNombre.replace(/[^a-zA-Z0-9]/g,'_')}_${new Date().toISOString().slice(0,10)}.xlsx`;
+                document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+                Swal.fire({ icon: 'success', title: '¡Descargado!', timer: 2000, showConfirmButton: false });
+            } else {
+                // PDF: abrir HTML en nueva pestaña para imprimir / guardar como PDF
+                const html = await res.text();
+                const blob = new Blob([html], { type: 'text/html' });
+                const url  = URL.createObjectURL(blob);
+                Swal.close();
+                window.open(url, '_blank');
+            }
         } catch(e) {
             Swal.fire({ icon: 'error', title: 'Error', text: e.message });
         }
@@ -3018,22 +3028,14 @@
                                 <ul class="lista-items" id="alumnos-nomina-list" style="padding:0;list-style:none;"></ul>
                                 <p id="nomina-no-results-message" style="display:none;text-align:center;color:#94a3b8;margin-top:16px;">No hay alumnos evaluados para este colegio.</p>
 
-                                <!-- Resubir documento corregido -->
+                                <!-- Correcciones resueltas por el admin -->
                                 <div class="resubir-wrap" id="resubir-section">
-                                    <h5><i class="fa-solid fa-file-arrow-up"></i> Resubir Documento Corregido</h5>
-                                    <div class="resubir-drop" id="resubir-drop-area"
-                                        onclick="document.getElementById('resubir-file-input').click()"
-                                        ondragover="event.preventDefault();this.style.borderColor='#0f3460'"
-                                        ondragleave="this.style.borderColor=''"
-                                        ondrop="handleResubirDrop(event)">
-                                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                                        <strong>Subir documento corregido</strong>
-                                        <p>Arrastra aquí o haz clic · PDF, DOC, DOCX, JPG</p>
-                                    </div>
-                                    <input type="file" id="resubir-file-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none;" onchange="handleResubirFile(this)">
-                                    <div id="resubir-success-msg" class="resubir-uploaded" style="display:none;">
-                                        <i class="fa-solid fa-circle-check"></i>
-                                        <span>Documento resubido correctamente. La coordinadora general será notificada.</span>
+                                    <h5><i class="fa-solid fa-circle-check" style="color:#059669;"></i> Correcciones Resueltas</h5>
+                                    <div id="correcciones-resueltas-list">
+                                        <div style="text-align:center;padding:20px;color:#94a3b8;font-size:.8rem;">
+                                            <i class="fas fa-spinner fa-spin" style="display:block;margin-bottom:6px;"></i>
+                                            Cargando correcciones…
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -4041,17 +4043,6 @@
         });
         
         // --- FUNCIÓN PARA CARGAR Y RENDERIZAR SOLICITUDES EN LA SECCIÓN ADMIN (NUEVA) ---
-        async function loadCorrectionRequests() {
-            if ('{{ usuario }}' !== 'admin') return;
-            
-            const listContainer = document.getElementById('correction-requests-list');
-            const noResults = document.getElementById('no-corrections-message');
-            const pendingCountBadge = document.getElementById('admin-pending-count-badge');
-            
-            listContainer.innerHTML = '<p class="text-center text-gray-500 my-8"><i class="fa-solid fa-spinner fa-spin fa-2x"></i> Cargando solicitudes...</p>';
-            noResults.classList.add('hidden');
-        }
-
         // ── MODAL CORRECCIÓN ─────────────────────────────────────────────
         function showCorrectionModal(alumnoId, alumnoNombre) {
             const modal = document.getElementById('correction-modal');
@@ -4171,24 +4162,43 @@
             });
         }
 
-        // ── RESUBIR DOCUMENTO ─────────────────────────────────────────────
-        function handleResubirDrop(e){ e.preventDefault(); const f=e.dataTransfer.files[0]; if(f) subirDocumentoCorregido(f); }
-        function handleResubirFile(input){ const f=input.files[0]; if(f) subirDocumentoCorregido(f); }
-        async function subirDocumentoCorregido(file){
-            const sid=document.getElementById('current-school-id').value;
-            const fd=new FormData(); fd.append('file',file); fd.append('school_id',sid);
-            Swal.fire({title:'Subiendo documento…',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
-            try{
-                const res=await fetch('/api/coordinador_escuela/resubir_documento',{method:'POST',body:fd});
-                const data=await res.json();
-                if(data.success){
-                    Swal.fire({icon:'success',title:'¡Documento resubido!',text:'La coordinadora general será notificada.',timer:2500,showConfirmButton:false});
-                    const drop=document.getElementById('resubir-drop-area');
-                    const suc=document.getElementById('resubir-success-msg');
-                    if(drop) drop.style.display='none';
-                    if(suc)  suc.style.display='flex';
-                } else { Swal.fire({icon:'error',title:'Error',text:data.message||'No se pudo subir.'}); }
-            } catch(e){ Swal.fire({icon:'error',title:'Error de Conexión',text:e.message}); }
+        // ── CARGAR CORRECCIONES RESUELTAS (coordinador_escuela) ────────────
+        async function cargarCorreccionesResueltas(schoolId) {
+            const list = document.getElementById('correcciones-resueltas-list');
+            if (!list) return;
+            try {
+                const res  = await fetch('/api/coordinador_escuela/correcciones_resueltas/' + encodeURIComponent(schoolId));
+                const data = await res.json();
+                if (!data.success || !data.data || data.data.length === 0) {
+                    list.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;font-size:.8rem;">
+                        <i class="fas fa-inbox" style="display:block;font-size:1.5rem;margin-bottom:6px;"></i>
+                        No hay correcciones resueltas aún.
+                    </div>`;
+                    return;
+                }
+                list.innerHTML = data.data.map(c => `
+                    <div style="background:white;border:1.5px solid rgba(5,150,105,.2);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+                        <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#d1fae5,#a7f3d0);display:flex;align-items:center;justify-content:center;font-size:1rem;color:#059669;flex-shrink:0;">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:700;font-size:.85rem;color:#0f2030;">${c.alumno_nombre}</div>
+                            <div style="font-size:.73rem;color:#94a3b8;">RUT: ${c.alumno_rut} · Resuelto el ${c.fecha_resolucion || '—'}</div>
+                            <div style="font-size:.75rem;color:#475569;margin-top:3px;">Corrección: ${c.detalles || ''}</div>
+                        </div>
+                        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+                            <span style="background:rgba(5,150,105,.1);color:#059669;border:1px solid rgba(5,150,105,.2);border-radius:8px;padding:3px 10px;font-size:.72rem;font-weight:700;">
+                                <i class="fas fa-check"></i> Corregido
+                            </span>
+                            ${c.url_documento ? `<a href="${c.url_documento}" target="_blank"
+                                style="background:#0f3460;color:white;border-radius:9px;padding:6px 12px;font-size:.72rem;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:5px;">
+                                <i class="fas fa-file-pdf"></i> Descargar
+                            </a>` : ''}
+                        </div>
+                    </div>`).join('');
+            } catch(e) {
+                list.innerHTML = `<div style="color:#e74c3c;font-size:.8rem;text-align:center;padding:14px;">Error al cargar correcciones.</div>`;
+            }
         }
 
 
@@ -4239,6 +4249,9 @@
                     if (fi)   fi.value = '';
                     
                     renderNominas(data.nominas, nominasContainer, noResultsMsg);
+                    // Cargar correcciones resueltas para este colegio
+                    const schoolId = document.getElementById('current-school-id').value;
+                    if (typeof cargarCorreccionesResueltas === 'function') cargarCorreccionesResueltas(schoolId);
                     
                 } else {
                     Swal.fire({
@@ -4396,20 +4409,25 @@
                                     <div class="corr-obs-label"><i class="fas fa-triangle-exclamation"></i> Corrección Solicitada</div>
                                     <div class="corr-obs-text">${req.detalles || 'Sin detalle especificado.'}</div>
                                 </div>
-                                <div class="corr-upload-area" ${hasDoc ? `onclick="window.open('${req.url_documento_corregido}','_blank')"` : ''} style="${hasDoc ? 'border-color:#00b894;background:#f0fdf8;cursor:pointer;' : 'cursor:default;'}">
-                                    <div class="corr-upload-icon" style="${hasDoc ? 'background:linear-gradient(135deg,#00b894,#00cec9);' : ''}">
-                                        <i class="fas fa-file-${hasDoc ? 'check' : 'upload'}"></i>
-                                    </div>
-                                    <div class="corr-upload-text">
-                                        <strong>${hasDoc ? 'Documento Corregido' : 'Documento Adjunto'}</strong>
-                                        ${hasDoc ? 'La coordinadora resubió el documento. Haz clic para ver.' : 'La coordinadora aún no ha subido el documento corregido.'}
-                                    </div>
-                                    ${docBadge}
+                                ${hasDoc
+  ? `<div class="corr-upload-area" onclick="window.open('${req.url_documento_corregido}','_blank')" style="border-color:#00b894;background:#f0fdf8;cursor:pointer;">
+        <div class="corr-upload-icon" style="background:linear-gradient(135deg,#00b894,#00cec9);"><i class="fas fa-file-check"></i></div>
+        <div class="corr-upload-text"><strong>Formulario Corregido Subido</strong>Clic para ver el documento. La coordinadora podrá descargarlo.</div>
+        <span class="corr-upload-badge new"><i class="fas fa-check"></i> Subido</span>
+     </div>`
+  : `<div class="corr-upload-area" style="cursor:default;">
+        <div class="corr-upload-icon"><i class="fas fa-file-arrow-up"></i></div>
+        <div class="corr-upload-text"><strong>Subir Formulario Corregido</strong>Sube el formulario corregido del alumno para notificar a la coordinadora.</div>
+        <label for="upload-corr-${req.id}" class="corr-upload-badge none" style="cursor:pointer;background:#0f3460;color:white;border:none;padding:5px 12px;border-radius:7px;">
+          <i class="fas fa-upload"></i> Subir
+        </label>
+        <input type="file" id="upload-corr-${req.id}" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none;" onchange="adminSubirCorregido(this,'${req.id}','${req.alumno_id||''}')">
+     </div>`}
+                                <div class="corr-actions">
+                                    ${isPend ? `<button class="corr-btn reject" onclick="handleCorrectionAction('${req.id}', 'Rechazada')"><i class="fas fa-xmark"></i> Rechazar</button>` : ''}
+                                    ${!hasDoc && isPend ? `<button class="corr-btn resolve" onclick="document.getElementById('upload-corr-${req.id}').click()"><i class="fas fa-file-arrow-up"></i> Subir y Resolver</button>` : ''}
+                                    ${hasDoc ? `<span style="color:#059669;font-weight:700;font-size:.8rem;display:flex;align-items:center;gap:5px;"><i class="fas fa-circle-check"></i> Resuelto — coordinadora notificada</span>` : ''}
                                 </div>
-                                ${isPend ? `<div class="corr-actions">
-                                    <button class="corr-btn reject" onclick="handleCorrectionAction('${req.id}', 'Rechazada')"><i class="fas fa-xmark"></i> Rechazar</button>
-                                    <button class="corr-btn resolve" onclick="handleCorrectionAction('${req.id}', 'Aprobada')"><i class="fas fa-check"></i> Marcar Resuelta</button>
-                                </div>` : ''}
                             </div>
                         </div>`;
                         listContainer.innerHTML += card;
@@ -4460,6 +4478,34 @@
             });
         }
         
+        // --- ADMIN SUBE FORMULARIO CORREGIDO ---
+        async function adminSubirCorregido(input, solicitudId, alumnoId) {
+            const file = input.files[0];
+            if (!file) return;
+            Swal.fire({ title: 'Subiendo formulario corregido…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                const fd = new FormData();
+                fd.append('file', file);
+                fd.append('solicitud_id', solicitudId);
+                fd.append('alumno_id', alumnoId);
+                const res  = await fetch('/api/admin/subir_documento_corregido', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success', title: '¡Formulario subido!',
+                        text: 'La solicitud quedó marcada como Aprobada. La coordinadora verá el documento actualizado.',
+                        timer: 3000, showConfirmButton: false
+                    });
+                    loadCorrectionRequests();
+                    fetchCorrectionAlert();
+                } else {
+                    Swal.fire('Error', data.message || 'No se pudo subir el documento.', 'error');
+                }
+            } catch(e) {
+                Swal.fire('Error de Conexión', e.message, 'error');
+            }
+        }
+
         // Asegurar que el polling se ejecuta al cargar la página (MANTENIDO)
         document.addEventListener('DOMContentLoaded', function() {
             const badge = document.getElementById('correction-alert-badge');
@@ -5461,14 +5507,11 @@ async function updateProyectosStats() {
         const nid = item.getAttribute('data-nomina-doc-id');
         if (!nid) continue;
         try {
-            const res  = await fetch('/api/admin/proyecto_stats_nomina/' + nid);
-            // Usar la API de stats existente por nómina individual si existe,
-            // o parsear desde el conteo de alumnos disponible
-            // Fallback: intentar obtener desde el endpoint de performance de doctora
-            if (!res.ok) continue;
+            const res  = await fetch('/api/doctor/nomina_stats/' + nid);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
-            if (!data.success) continue;
-            const tot   = data.total || 0;
+            if (!data.success) throw new Error(data.error || 'error');
+            const tot   = data.total    || 0;
             const ev    = data.evaluados || 0;
             const pct   = tot > 0 ? Math.round(ev/tot*100) : 0;
             const color = pct>=80?'#10b981':pct>=50?'#f59e0b':'#ef4444';

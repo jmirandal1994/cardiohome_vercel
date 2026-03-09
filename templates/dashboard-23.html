@@ -3896,6 +3896,126 @@
         </main>
     </div>
 
+    <!-- ══════════════════════════════════════════════════════════════
+         MODAL: ADMIN CORRIGE FORMULARIO EN PLATAFORMA
+    ═══════════════════════════════════════════════════════════════ -->
+    <div id="admin-edit-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,20,40,.65);backdrop-filter:blur(4px);overflow-y:auto;padding:24px 16px;">
+      <div style="max-width:780px;margin:0 auto;background:#fff;border-radius:20px;box-shadow:0 24px 64px rgba(0,0,0,.28);overflow:hidden;">
+
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,#0f3460,#1a5276);padding:22px 28px;display:flex;align-items:center;gap:14px;">
+          <div style="width:46px;height:46px;background:rgba(255,255,255,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fas fa-pen-to-square" style="color:#fff;font-size:1.25rem;"></i>
+          </div>
+          <div style="flex:1;">
+            <div style="color:#fff;font-weight:800;font-size:1.05rem;" id="aem-titulo">Corregir Formulario</div>
+            <div style="color:rgba(255,255,255,.7);font-size:.8rem;margin-top:2px;" id="aem-subtitulo">Cargando datos…</div>
+          </div>
+          <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:5px 14px;border-radius:99px;font-size:.75rem;font-weight:700;" id="aem-form-type-badge"></div>
+          <button onclick="cerrarAdminEditModal()" style="width:34px;height:34px;background:rgba(255,255,255,.15);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:1.1rem;margin-left:8px;">✕</button>
+        </div>
+
+        <!-- Observación solicitada -->
+        <div id="aem-obs-box" style="margin:20px 28px 0;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:12px;padding:14px 16px;display:none;">
+          <div style="font-size:.72rem;font-weight:800;color:#92400e;letter-spacing:.06em;margin-bottom:4px;"><i class="fas fa-triangle-exclamation"></i> CORRECCIÓN SOLICITADA</div>
+          <div id="aem-obs-text" style="color:#78350f;font-size:.88rem;line-height:1.5;"></div>
+        </div>
+
+        <!-- Loading spinner -->
+        <div id="aem-loading" style="padding:60px;text-align:center;">
+          <div style="width:42px;height:42px;border:4px solid #e2e8f0;border-top-color:#0f3460;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;"></div>
+          <div style="color:#64748b;font-size:.88rem;">Cargando datos del alumno…</div>
+        </div>
+
+        <!-- Formulario de edición -->
+        <div id="aem-form-container" style="display:none;padding:24px 28px;">
+
+          <!-- Datos personales -->
+          <div style="background:#f8faff;border:1px solid #e2e8f0;border-radius:14px;padding:18px 20px;margin-bottom:18px;">
+            <div style="font-size:.72rem;font-weight:800;color:#0f3460;letter-spacing:.08em;margin-bottom:14px;"><i class="fas fa-id-card"></i> DATOS PERSONALES</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Nombre completo</label>
+                <input id="aem-nombre" type="text" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+              <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">RUT</label>
+                <input id="aem-rut" type="text" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+              <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Fecha de Nacimiento</label>
+                <input id="aem-fecha-nac" type="date" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+              <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Fecha Evaluación</label>
+                <input id="aem-fecha-eval" type="date" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+              <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Sexo</label>
+                <select id="aem-sexo" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
+                  <option value="">— Sin especificar —</option>
+                  <option value="M">Masculino</option>
+                  <option value="F">Femenino</option>
+                </select></div>
+              <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Nacionalidad</label>
+                <input id="aem-nacionalidad" type="text" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+            </div>
+          </div>
+
+          <!-- Campos clínicos — se muestran según form_type -->
+          <div id="aem-campos-clinicos" style="background:#f8faff;border:1px solid #e2e8f0;border-radius:14px;padding:18px 20px;margin-bottom:18px;">
+            <div style="font-size:.72rem;font-weight:800;color:#0f3460;letter-spacing:.08em;margin-bottom:14px;" id="aem-clinico-titulo"><i class="fas fa-stethoscope"></i> EVALUACIÓN CLÍNICA</div>
+            <div id="aem-campos-neuro" style="display:none;">
+              <div style="display:grid;gap:12px;">
+                <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Motivo de Consulta</label>
+                  <textarea id="aem-motivo" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+                <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Diagnóstico</label>
+                  <textarea id="aem-diagnostico" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+                <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Observaciones</label>
+                  <textarea id="aem-observaciones" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+                <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Indicaciones</label>
+                  <textarea id="aem-indicaciones" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+                <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Derivaciones</label>
+                  <textarea id="aem-derivaciones" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+              </div>
+            </div>
+            <div id="aem-campos-familiar" style="display:none;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div style="grid-column:1/-1;"><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Diagnóstico</label>
+                  <textarea id="aem-diag1" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+                <div style="grid-column:1/-1;"><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Diagnóstico Complementario</label>
+                  <textarea id="aem-diag-comp" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+                <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Altura (cm)</label>
+                  <input id="aem-altura" type="number" step="0.1" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+                <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Peso (kg)</label>
+                  <input id="aem-peso" type="number" step="0.1" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+                <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">IMC</label>
+                  <input id="aem-imc" type="number" step="0.01" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+                <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Clasificación IMC</label>
+                  <input id="aem-clasif-imc" type="text" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+                <div style="grid-column:1/-1;"><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Derivaciones</label>
+                  <textarea id="aem-deriv-fam" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+                <div style="grid-column:1/-1;">
+                  <label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:8px;">Observaciones (1-7)</label>
+                  <div style="display:grid;gap:8px;">
+                    <input id="aem-obs1" type="text" placeholder="Observación 1" style="width:100%;padding:8px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.85rem;font-family:inherit;box-sizing:border-box;">
+                    <input id="aem-obs2" type="text" placeholder="Observación 2" style="width:100%;padding:8px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.85rem;font-family:inherit;box-sizing:border-box;">
+                    <input id="aem-obs3" type="text" placeholder="Observación 3" style="width:100%;padding:8px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.85rem;font-family:inherit;box-sizing:border-box;">
+                    <input id="aem-obs4" type="text" placeholder="Observación 4" style="width:100%;padding:8px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.85rem;font-family:inherit;box-sizing:border-box;">
+                    <input id="aem-obs5" type="text" placeholder="Observación 5" style="width:100%;padding:8px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.85rem;font-family:inherit;box-sizing:border-box;">
+                    <input id="aem-obs6" type="text" placeholder="Observación 6" style="width:100%;padding:8px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.85rem;font-family:inherit;box-sizing:border-box;">
+                    <input id="aem-obs7" type="text" placeholder="Observación 7" style="width:100%;padding:8px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.85rem;font-family:inherit;box-sizing:border-box;">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botones acción -->
+          <div style="display:flex;gap:12px;justify-content:flex-end;padding-top:4px;">
+            <button onclick="cerrarAdminEditModal()" style="padding:11px 22px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:10px;font-weight:700;font-size:.88rem;cursor:pointer;font-family:inherit;color:#374151;">
+              <i class="fas fa-xmark"></i> Cancelar
+            </button>
+            <button onclick="guardarCorreccionAdmin()" id="aem-guardar-btn" style="padding:11px 28px;background:linear-gradient(135deg,#0f3460,#1a5276);border:none;border-radius:10px;color:#fff;font-weight:800;font-size:.88rem;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px;box-shadow:0 4px 12px rgba(15,52,96,.3);">
+              <i class="fas fa-floppy-disk"></i> Guardar Correcciones
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <div id="correction-modal" class="modal-backdrop">
         <div class="modal-content relative">
             <span class="modal-close-btn" onclick="document.getElementById('correction-modal').style.display='none'">&times;</span>
@@ -4185,15 +4305,18 @@
                             <div style="font-weight:700;font-size:.85rem;color:#0f2030;">${c.alumno_nombre}</div>
                             <div style="font-size:.73rem;color:#94a3b8;">RUT: ${c.alumno_rut} · Resuelto el ${c.fecha_resolucion || '—'}</div>
                             <div style="font-size:.75rem;color:#475569;margin-top:3px;">Corrección: ${c.detalles || ''}</div>
+                            <div style="font-size:.72rem;color:#059669;margin-top:4px;display:flex;align-items:center;gap:4px;">
+                                <i class="fas fa-pen-to-square"></i> Corregido en plataforma por el administrador
+                            </div>
                         </div>
                         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
                             <span style="background:rgba(5,150,105,.1);color:#059669;border:1px solid rgba(5,150,105,.2);border-radius:8px;padding:3px 10px;font-size:.72rem;font-weight:700;">
                                 <i class="fas fa-check"></i> Corregido
                             </span>
-                            ${c.url_documento ? `<a href="${c.url_documento}" target="_blank"
-                                style="background:#0f3460;color:white;border-radius:9px;padding:6px 12px;font-size:.72rem;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:5px;">
-                                <i class="fas fa-file-pdf"></i> Descargar
-                            </a>` : ''}
+                            <a href="/descargar_pdf_alumno/${c.alumno_id}" target="_blank"
+                                style="background:linear-gradient(135deg,#0f3460,#1a5276);color:white;border-radius:9px;padding:7px 14px;font-size:.78rem;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(15,52,96,.2);">
+                                <i class="fas fa-file-pdf"></i> Descargar PDF corregido
+                            </a>
                         </div>
                     </div>`).join('');
             } catch(e) {
@@ -4410,22 +4533,17 @@
                                     <div class="corr-obs-text">${req.detalles || 'Sin detalle especificado.'}</div>
                                 </div>
                                 ${hasDoc
-  ? `<div class="corr-upload-area" onclick="window.open('${req.url_documento_corregido}','_blank')" style="border-color:#00b894;background:#f0fdf8;cursor:pointer;">
-        <div class="corr-upload-icon" style="background:linear-gradient(135deg,#00b894,#00cec9);"><i class="fas fa-file-check"></i></div>
-        <div class="corr-upload-text"><strong>Formulario Corregido Subido</strong>Clic para ver el documento. La coordinadora podrá descargarlo.</div>
-        <span class="corr-upload-badge new"><i class="fas fa-check"></i> Subido</span>
+  ? `<div style="background:#f0fdf8;border:1.5px solid #6ee7b7;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="window.open('${req.url_documento_corregido}','_blank')">
+        <div style="width:38px;height:38px;background:linear-gradient(135deg,#00b894,#00cec9);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-file-check" style="color:#fff;"></i></div>
+        <div><strong style="color:#065f46;font-size:.85rem;">Corrección guardada</strong><div style="color:#059669;font-size:.78rem;margin-top:2px;">La coordinadora ya puede descargar el formulario actualizado</div></div>
      </div>`
-  : `<div class="corr-upload-area" style="cursor:default;">
-        <div class="corr-upload-icon"><i class="fas fa-file-arrow-up"></i></div>
-        <div class="corr-upload-text"><strong>Subir Formulario Corregido</strong>Sube el formulario corregido del alumno para notificar a la coordinadora.</div>
-        <label for="upload-corr-${req.id}" class="corr-upload-badge none" style="cursor:pointer;background:#0f3460;color:white;border:none;padding:5px 12px;border-radius:7px;">
-          <i class="fas fa-upload"></i> Subir
-        </label>
-        <input type="file" id="upload-corr-${req.id}" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none;" onchange="adminSubirCorregido(this,'${req.id}','${req.alumno_id||''}')">
+  : `<div style="background:#f8faff;border:1.5px dashed #94b4d6;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;">
+        <div style="width:38px;height:38px;background:linear-gradient(135deg,#0f3460,#1a5276);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-pen-to-square" style="color:#fff;"></i></div>
+        <div style="flex:1;"><strong style="color:#0f3460;font-size:.85rem;">Corrección pendiente</strong><div style="color:#64748b;font-size:.78rem;margin-top:2px;">Usa el botón para abrir y editar el formulario directamente aquí.</div></div>
      </div>`}
                                 <div class="corr-actions">
                                     ${isPend ? `<button class="corr-btn reject" onclick="handleCorrectionAction('${req.id}', 'Rechazada')"><i class="fas fa-xmark"></i> Rechazar</button>` : ''}
-                                    ${!hasDoc && isPend ? `<button class="corr-btn resolve" onclick="document.getElementById('upload-corr-${req.id}').click()"><i class="fas fa-file-arrow-up"></i> Subir y Resolver</button>` : ''}
+                                    ${isPend ? `<button class="corr-btn resolve" onclick="abrirAdminEditModal('${req.alumno_id||''}','${req.solicitud_id||req.id}','${(req.detalles||'').replace(/'/g,\"\\\\'\")}')" style="background:linear-gradient(135deg,#0f3460,#1a5276);"><i class="fas fa-pen-to-square"></i> Corregir en Plataforma</button>` : ''}
                                     ${hasDoc ? `<span style="color:#059669;font-weight:700;font-size:.8rem;display:flex;align-items:center;gap:5px;"><i class="fas fa-circle-check"></i> Resuelto — coordinadora notificada</span>` : ''}
                                 </div>
                             </div>
@@ -4445,6 +4563,175 @@
         }
 
         // --- FUNCIÓN PARA MARCAR ACCIÓN (ASUME RUTA EN PYTHON) ---
+        // ══════════════════════════════════════════════════════
+        //  ADMIN — CORREGIR FORMULARIO EN PLATAFORMA
+        // ══════════════════════════════════════════════════════
+        let _aemAlumnoId    = null;
+        let _aemSolicitudId = null;
+        let _aemFormType    = null;
+
+        async function abrirAdminEditModal(alumnoId, solicitudId, detalles) {
+            _aemAlumnoId    = alumnoId;
+            _aemSolicitudId = solicitudId;
+            const modal = document.getElementById('admin-edit-modal');
+            modal.style.display = 'block';
+            // Reset UI
+            document.getElementById('aem-loading').style.display = 'block';
+            document.getElementById('aem-form-container').style.display = 'none';
+            document.getElementById('aem-obs-box').style.display = 'none';
+            document.getElementById('aem-subtitulo').textContent = 'Cargando datos…';
+
+            // Mostrar observación solicitada
+            if (detalles && detalles.trim()) {
+                document.getElementById('aem-obs-text').textContent = detalles;
+                document.getElementById('aem-obs-box').style.display = 'block';
+            }
+
+            try {
+                const res  = await fetch(`/api/admin/alumno_datos/${alumnoId}`);
+                const data = await res.json();
+                if (!data.success) throw new Error(data.message || 'Error al cargar');
+
+                const a   = data.alumno;
+                const ft  = data.form_type || '';
+                _aemFormType = ft;
+
+                // Actualizar header
+                document.getElementById('aem-titulo').textContent    = `Corrigiendo: ${a.nombre || 'Alumno'}`;
+                document.getElementById('aem-subtitulo').textContent = data.nom_nombre || '';
+                const ftLabel = ft === 'medicina_familiar' ? 'Medicina Familiar'
+                              : ft === 'informe_neurologico' ? 'Informe Neurológico'
+                              : ft === 'neurologia' ? 'Neurología' : ft;
+                document.getElementById('aem-form-type-badge').textContent = ftLabel;
+
+                // Poblar datos personales
+                document.getElementById('aem-nombre').value       = a.nombre       || '';
+                document.getElementById('aem-rut').value          = a.rut          || '';
+                document.getElementById('aem-fecha-nac').value    = a.fecha_nacimiento  || '';
+                document.getElementById('aem-fecha-eval').value   = a.fecha_evaluacion  || '';
+                document.getElementById('aem-sexo').value         = a.sexo         || '';
+                document.getElementById('aem-nacionalidad').value = a.nacionalidad  || '';
+
+                // Mostrar campos según form_type
+                document.getElementById('aem-campos-neuro').style.display    = 'none';
+                document.getElementById('aem-campos-familiar').style.display = 'none';
+
+                if (ft === 'neurologia' || ft === 'informe_neurologico') {
+                    document.getElementById('aem-campos-neuro').style.display = 'grid';
+                    document.getElementById('aem-motivo').value       = a.motivo_consulta       || '';
+                    document.getElementById('aem-diagnostico').value  = a.diagnostico           || '';
+                    document.getElementById('aem-observaciones').value= a.observaciones         || '';
+                    document.getElementById('aem-indicaciones').value = a.indicaciones          || '';
+                    document.getElementById('aem-derivaciones').value = a.derivaciones          || '';
+                } else if (ft === 'medicina_familiar') {
+                    document.getElementById('aem-campos-familiar').style.display = 'grid';
+                    document.getElementById('aem-diag1').value       = a.diagnostico_1          || '';
+                    document.getElementById('aem-diag-comp').value   = a.diagnostico_complementario || '';
+                    document.getElementById('aem-altura').value      = a.altura                 || '';
+                    document.getElementById('aem-peso').value        = a.peso                   || '';
+                    document.getElementById('aem-imc').value         = a.imc                    || '';
+                    document.getElementById('aem-clasif-imc').value  = a.clasificacion_imc || a.clasificacion || '';
+                    document.getElementById('aem-deriv-fam').value   = a.derivaciones           || '';
+                    document.getElementById('aem-obs1').value = a.observacion_1 || '';
+                    document.getElementById('aem-obs2').value = a.observacion_2 || '';
+                    document.getElementById('aem-obs3').value = a.observacion_3 || '';
+                    document.getElementById('aem-obs4').value = a.observacion_4 || '';
+                    document.getElementById('aem-obs5').value = a.observacion_5 || '';
+                    document.getElementById('aem-obs6').value = a.observacion_6 || '';
+                    document.getElementById('aem-obs7').value = a.observacion_7 || '';
+                }
+
+                document.getElementById('aem-loading').style.display       = 'none';
+                document.getElementById('aem-form-container').style.display = 'block';
+
+            } catch(e) {
+                document.getElementById('aem-loading').innerHTML =
+                    `<div style="color:#dc2626;padding:20px;"><i class="fas fa-circle-exclamation"></i> ${e.message}</div>`;
+            }
+        }
+
+        function cerrarAdminEditModal() {
+            document.getElementById('admin-edit-modal').style.display = 'none';
+            _aemAlumnoId = _aemSolicitudId = _aemFormType = null;
+        }
+
+        async function guardarCorreccionAdmin() {
+            if (!_aemAlumnoId) return;
+            const btn = document.getElementById('aem-guardar-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando…';
+
+            // Recoger todos los campos según form_type
+            const campos = {
+                nombre:          document.getElementById('aem-nombre').value.trim(),
+                rut:             document.getElementById('aem-rut').value.trim(),
+                fecha_nacimiento:document.getElementById('aem-fecha-nac').value   || null,
+                fecha_evaluacion:document.getElementById('aem-fecha-eval').value  || null,
+                sexo:            document.getElementById('aem-sexo').value         || null,
+                nacionalidad:    document.getElementById('aem-nacionalidad').value.trim() || null,
+            };
+
+            if (_aemFormType === 'neurologia' || _aemFormType === 'informe_neurologico') {
+                Object.assign(campos, {
+                    motivo_consulta:      document.getElementById('aem-motivo').value.trim()       || null,
+                    diagnostico:          document.getElementById('aem-diagnostico').value.trim()  || null,
+                    observaciones:        document.getElementById('aem-observaciones').value.trim()|| null,
+                    indicaciones:         document.getElementById('aem-indicaciones').value.trim() || null,
+                    derivaciones:         document.getElementById('aem-derivaciones').value.trim() || null,
+                });
+            } else if (_aemFormType === 'medicina_familiar') {
+                const diag = document.getElementById('aem-diag1').value.trim();
+                Object.assign(campos, {
+                    diagnostico_1:               diag || null,
+                    diagnostico_2:               diag || null,
+                    diagnostico_complementario:  document.getElementById('aem-diag-comp').value.trim() || null,
+                    altura:                      document.getElementById('aem-altura').value   || null,
+                    peso:                        document.getElementById('aem-peso').value     || null,
+                    imc:                         document.getElementById('aem-imc').value      || null,
+                    clasificacion_imc:           document.getElementById('aem-clasif-imc').value.trim() || null,
+                    derivaciones:                document.getElementById('aem-deriv-fam').value.trim()  || null,
+                    observacion_1:               document.getElementById('aem-obs1').value.trim() || null,
+                    observacion_2:               document.getElementById('aem-obs2').value.trim() || null,
+                    observacion_3:               document.getElementById('aem-obs3').value.trim() || null,
+                    observacion_4:               document.getElementById('aem-obs4').value.trim() || null,
+                    observacion_5:               document.getElementById('aem-obs5').value.trim() || null,
+                    observacion_6:               document.getElementById('aem-obs6').value.trim() || null,
+                    observacion_7:               document.getElementById('aem-obs7').value.trim() || null,
+                });
+            }
+
+            try {
+                const res  = await fetch('/api/admin/corregir_alumno', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ alumno_id: _aemAlumnoId,
+                                          solicitud_id: _aemSolicitudId,
+                                          campos })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    cerrarAdminEditModal();
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Corrección guardada!',
+                        html: 'Los cambios quedaron registrados en la plataforma.<br><span style="color:#059669;font-size:.9rem;">La coordinadora de escuela ya puede ver y descargar el formulario actualizado.</span>',
+                        confirmButtonColor: '#0f3460',
+                        confirmButtonText: 'Entendido'
+                    }).then(() => {
+                        loadCorrectionRequests();
+                        fetchCorrectionAlert();
+                    });
+                } else {
+                    throw new Error(data.message || 'Error al guardar');
+                }
+            } catch(e) {
+                Swal.fire('Error', e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-floppy-disk"></i> Guardar Correcciones';
+            }
+        }
+
         function handleCorrectionAction(requestId, newStatus) {
             Swal.fire({
                 title: `¿Marcar solicitud ${requestId} como ${newStatus}?`,
@@ -5000,31 +5287,37 @@ function _drawChart(doc, y, nominas) {
 }
 
 // ── Bloque colegio (header oscuro + tabla alumnos) ───────────────────────
+function _badgeEstado(a) {
+    var est = a.estado_asistencia || 'activo';
+    if (est === 'extra')
+        return { badge:true, text:'Extra', r:237,g:233,b:254, tr:109,tg:40,tb:217 };
+    if (a.evaluado_flag)
+        return { badge:true, text:'Evaluado', r:220,g:252,b:231, tr:21,tg:128,tb:61 };
+    return { badge:true, text:'Pendiente', r:254,g:243,b:199, tr:146,tg:64,tb:14 };
+}
+
 function _drawColegioBlock(doc, y, nom) {
-    var alumnos = nom.alumnos || [];
-    var ev      = nom.evaluados || 0;
-    var tot     = nom.total     || 0;
-    var pct     = tot > 0 ? Math.round(ev / tot * 100) : 0;
+    var alumnos  = (nom.alumnos  || []).filter(function(a){
+        var e = a.estado_asistencia || 'activo';
+        return e === 'activo' || e === 'extra';
+    });
+    var ausentes = nom.ausentes  || [];
+    var ev       = alumnos.filter(function(a){ return a.evaluado_flag; }).length;
+    var tot      = alumnos.length;
+    var pct      = tot > 0 ? Math.round(ev / tot * 100) : 0;
 
-    // Estimar altura bloque para evitar orfandad: header(7) + thead(5.5) + rows(alumnos*5) + gap(3)
-    var blockH = 7 + 5.5 + alumnos.length * 5 + 3;
-    // Si el bloque cabe en lo que queda, bien; si no y ya hay algo en página, nueva página
-    if (blockH > 40) {
-        // Bloque grande: solo saltar si queda muy poco (menos de 40mm)
-        y = _needPage(doc, y, 40);
-    } else {
-        y = _needPage(doc, y, blockH);
-    }
+    // Estimar altura total del bloque
+    var blockH = 7 + 5.5 + tot * 5 + (ausentes.length > 0 ? 5 + ausentes.length * 4.5 + 4 : 0) + 3;
+    y = _needPage(doc, y, Math.min(blockH, 40));
 
-    // Header colegio
-    var cr = pct >= 80 ? 16  : pct >= 50 ? 180 : 200;
-    var cg = pct >= 80 ? 185 : pct >= 50 ? 115 : 30;
-    var cb = pct >= 80 ? 129 : pct >= 50 ? 20  : 30;
+    // ── Header colegio ───────────────────────────────────────────────────
+    var cr = pct >= 80 ? 16 : pct >= 50 ? 180 : 200;
+    var cg = pct >= 80 ? 185: pct >= 50 ? 115 : 30;
+    var cb = pct >= 80 ? 129: pct >= 50 ? 20  : 30;
 
     doc.setFillColor(28, 41, 64);
     doc.roundedRect(PDF_M, y, PDF_INN, 7, 1.5, 1.5, 'F');
 
-    // Nombre
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.5);
     doc.setTextColor(255, 255, 255);
@@ -5032,16 +5325,16 @@ function _drawColegioBlock(doc, y, nom) {
     if (nombre.length > 52) nombre = nombre.substring(0, 51) + '…';
     doc.text(nombre, PDF_M + 3, y + 4.7);
 
-    // Badge porcentaje
+    // Badge conteo
     doc.setFillColor(cr, cg, cb);
-    doc.roundedRect(PDF_W - PDF_M - 31, y + 1.5, 29, 4, 1.2, 1.2, 'F');
+    doc.roundedRect(PDF_W - PDF_M - 38, y + 1.5, 36, 4, 1.2, 1.2, 'F');
     doc.setFontSize(6.5);
     doc.setTextColor(255, 255, 255);
-    doc.text(ev + ' / ' + tot + '  ·  ' + pct + '%', PDF_W - PDF_M - 16.5, y + 4.5, { align: 'center' });
-
+    var badge_txt = ev + ' / ' + tot + ' evaluados  ·  ' + pct + '%';
+    doc.text(badge_txt, PDF_W - PDF_M - 20, y + 4.5, { align: 'center' });
     y += 7;
 
-    if (!alumnos.length) {
+    if (!alumnos.length && !ausentes.length) {
         y = _needPage(doc, y, 6);
         doc.setFillColor(250, 250, 252);
         doc.rect(PDF_M, y, PDF_INN, 6, 'F');
@@ -5052,18 +5345,51 @@ function _drawColegioBlock(doc, y, nom) {
         return y + 8;
     }
 
-    // Columnas alumnos
-    var cols = [
-        { lbl: 'Nombre del Alumno', x: PDF_M,        w: 98 },
-        { lbl: 'RUT',               x: PDF_M + 98,   w: 44 },
-        { lbl: 'Estado',            x: PDF_M + 142,  w: 42 }
-    ];
+    // ── Tabla alumnos activos / extra ────────────────────────────────────
+    if (alumnos.length > 0) {
+        var cols = [
+            { lbl: 'Nombre del Alumno', x: PDF_M,       w: 93 },
+            { lbl: 'RUT',               x: PDF_M + 93,  w: 38 },
+            { lbl: 'Tipo',              x: PDF_M + 131, w: 22 },
+            { lbl: 'Estado',            x: PDF_M + 153, w: 31 }
+        ];
+        y = _drawTHead(doc, y, cols, 71, 85, 105);
+        alumnos.forEach(function(a, ri) {
+            var tipoBadge = (a.estado_asistencia === 'extra')
+                ? { badge:true, text:'Reemplazo', r:237,g:233,b:254, tr:109,tg:40,tb:217 }
+                : { badge:true, text:'Titular',   r:224,g:234,b:252, tr:30, tg:66, tb:159 };
+            y = _drawTRow(doc, y,
+                [a.nombre || '—', a.rut || '—', tipoBadge, _badge(a.evaluado_flag)],
+                cols, ri % 2 === 0);
+        });
+    }
 
-    y = _drawTHead(doc, y, cols, 71, 85, 105);
+    // ── Sección alumnos anulados / no asisten ────────────────────────────
+    if (ausentes.length > 0) {
+        y = _needPage(doc, y, 5 + ausentes.length * 4.5);
+        y += 2;
 
-    alumnos.forEach(function(a, ri) {
-        y = _drawTRow(doc, y, [a.nombre || '—', a.rut || '—', _badge(a.evaluado_flag)], cols, ri % 2 === 0);
-    });
+        // Sub-header anulados
+        doc.setFillColor(254, 242, 242);
+        doc.roundedRect(PDF_M, y, PDF_INN, 5, 1, 1, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(6.5);
+        doc.setTextColor(185, 28, 28);
+        doc.text('⚠  Alumnos Anulados / No Asisten (' + ausentes.length + ')', PDF_M + 3, y + 3.5);
+        y += 5;
+
+        var ausCol = [
+            { lbl: 'Nombre',          x: PDF_M,       w: 88 },
+            { lbl: 'RUT',             x: PDF_M + 88,  w: 36 },
+            { lbl: 'Motivo Anulación',x: PDF_M + 124, w: 60 }
+        ];
+        y = _drawTHead(doc, y, ausCol, 180, 60, 60);
+        ausentes.forEach(function(a, ri) {
+            var motivo = a.motivo_ausencia || (a.estado_asistencia === 'no_asiste_reemplazado' ? 'Reemplazado' : 'Sin reemplazo');
+            y = _drawTRow(doc, y, [a.nombre || '—', a.rut || '—', motivo], ausCol, ri % 2 === 0);
+        });
+        y += 2;
+    }
 
     return y + 3;
 }

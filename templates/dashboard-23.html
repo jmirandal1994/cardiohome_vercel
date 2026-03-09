@@ -4490,7 +4490,7 @@
             const listContainer = document.getElementById('correction-requests-list');
             const noResults     = document.getElementById('no-corrections-message');
             const countBadge    = document.getElementById('admin-pending-count-badge');
-            listContainer.innerHTML = `<div style="text-align:center;padding:40px;color:#94a3b8;"><i class="fa-solid fa-spinner fa-spin fa-2x" style="margin-bottom:10px;display:block;"></i>Cargando solicitudes…</div>`;
+            listContainer.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;"><i class="fa-solid fa-spinner fa-spin fa-2x" style="margin-bottom:10px;display:block;"></i>Cargando solicitudes...</div>';
             if (noResults) noResults.classList.add('hidden');
             try {
                 const response = await fetch('/api/correcciones/pendientes_detalle');
@@ -4498,67 +4498,89 @@
                 if (data.success && data.data.length > 0) {
                     listContainer.innerHTML = '';
                     if (countBadge) countBadge.textContent = data.data.length;
-                    data.data.forEach(req => {
-                        const estado  = req.estado || 'Pendiente';
-                        const isPend  = estado.toLowerCase().includes('pendiente');
-                        const isRes   = estado.toLowerCase().includes('aprobada') || estado.toLowerCase().includes('resuelta');
-                        const stripeC = isPend ? '' : isRes ? ' resolved' : ' rejected';
-                        const badgeC  = isPend ? 'pending' : isRes ? 'resolved' : 'rejected';
-                        const badgeTx = isPend ? 'Pendiente' : isRes ? 'Resuelta' : 'Rechazada';
-                        const badgeIc = isPend ? 'fa-clock' : isRes ? 'fa-check-circle' : 'fa-xmark-circle';
-                        const hasDoc  = req.url_documento_corregido ? true : false;
-                        const docBadge = hasDoc ? `<span class="corr-upload-badge new"><i class="fas fa-check"></i> Doc. resubido</span>` : `<span class="corr-upload-badge none">Sin doc. adjunto</span>`;
-                        const card = `<div class="corr-card" data-request-id="${req.id}">
-                            <div class="corr-card-stripe${stripeC}"></div>
-                            <div class="corr-card-body">
-                                <div class="corr-card-header">
-                                    <div class="corr-alumno-block">
-                                        <div class="corr-avatar"><i class="fas fa-user-graduate"></i></div>
-                                        <div>
-                                            <div class="corr-alumno-name">${req.alumno_nombre || 'Alumno N/A'}</div>
-                                            <div class="corr-alumno-rut">RUT: ${req.alumno_rut || 'N/A'}</div>
-                                        </div>
-                                    </div>
-                                    <span class="corr-status-badge ${badgeC}"><i class="fas ${badgeIc}"></i> ${badgeTx}</span>
-                                </div>
-                                <div class="corr-meta-row">
-                                    ${req.proyecto_nombre ? `<span class="corr-meta-chip project"><i class="fas fa-folder-open"></i> ${req.proyecto_nombre}</span>` : ''}
-                                    ${req.nombre_establecimiento ? `<span class="corr-meta-chip"><i class="fas fa-building"></i> ${req.nombre_establecimiento}</span>` : ''}
-                                    ${req.nombre_colegio ? `<span class="corr-meta-chip"><i class="fas fa-school"></i> ${req.nombre_colegio}</span>` : ''}
-                                    <span class="corr-meta-chip date"><i class="fas fa-calendar-day"></i> ${req.fecha || '—'}</span>
-                                    <span class="corr-meta-chip person"><i class="fas fa-user-tag"></i> ${req.solicitante || '—'}</span>
-                                </div>
-                                <div class="corr-obs-box">
-                                    <div class="corr-obs-label"><i class="fas fa-triangle-exclamation"></i> Corrección Solicitada</div>
-                                    <div class="corr-obs-text">${req.detalles || 'Sin detalle especificado.'}</div>
-                                </div>
-                                ${hasDoc
-  ? `<div style="background:#f0fdf8;border:1.5px solid #6ee7b7;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="window.open('${req.url_documento_corregido}','_blank')">
-        <div style="width:38px;height:38px;background:linear-gradient(135deg,#00b894,#00cec9);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-file-check" style="color:#fff;"></i></div>
-        <div><strong style="color:#065f46;font-size:.85rem;">Corrección guardada</strong><div style="color:#059669;font-size:.78rem;margin-top:2px;">La coordinadora ya puede descargar el formulario actualizado</div></div>
-     </div>`
-  : `<div style="background:#f8faff;border:1.5px dashed #94b4d6;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;">
-        <div style="width:38px;height:38px;background:linear-gradient(135deg,#0f3460,#1a5276);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-pen-to-square" style="color:#fff;"></i></div>
-        <div style="flex:1;"><strong style="color:#0f3460;font-size:.85rem;">Corrección pendiente</strong><div style="color:#64748b;font-size:.78rem;margin-top:2px;">Usa el botón para abrir y editar el formulario directamente aquí.</div></div>
-     </div>`}
-                                <div class="corr-actions">
-                                    ${isPend ? `<button class="corr-btn reject" onclick="handleCorrectionAction('${req.id}', 'Rechazada')"><i class="fas fa-xmark"></i> Rechazar</button>` : ''}
-                                    ${isPend ? `<button class="corr-btn resolve" onclick="abrirAdminEditModal('${req.alumno_id||''}','${req.solicitud_id||req.id}','${(req.detalles||'').replace(/'/g,\"\\\\'\")}')" style="background:linear-gradient(135deg,#0f3460,#1a5276);"><i class="fas fa-pen-to-square"></i> Corregir en Plataforma</button>` : ''}
-                                    ${hasDoc ? `<span style="color:#059669;font-weight:700;font-size:.8rem;display:flex;align-items:center;gap:5px;"><i class="fas fa-circle-check"></i> Resuelto — coordinadora notificada</span>` : ''}
-                                </div>
-                            </div>
-                        </div>`;
-                        listContainer.innerHTML += card;
+                    data.data.forEach(function(req) {
+                        var estado  = req.estado || 'Pendiente';
+                        var isPend  = estado.toLowerCase().includes('pendiente');
+                        var isRes   = estado.toLowerCase().includes('aprobada') || estado.toLowerCase().includes('resuelta');
+                        var stripeC = isPend ? '' : (isRes ? ' resolved' : ' rejected');
+                        var badgeC  = isPend ? 'pending' : (isRes ? 'resolved' : 'rejected');
+                        var badgeTx = isPend ? 'Pendiente' : (isRes ? 'Resuelta' : 'Rechazada');
+                        var badgeIc = isPend ? 'fa-clock' : (isRes ? 'fa-check-circle' : 'fa-xmark-circle');
+                        var hasDoc  = req.url_documento_corregido ? true : false;
+
+                        var div = document.createElement('div');
+                        div.className = 'corr-card';
+
+                        var metaHtml = '';
+                        if (req.proyecto_nombre) metaHtml += '<span class="corr-meta-chip project"><i class="fas fa-folder-open"></i> ' + req.proyecto_nombre + '</span>';
+                        if (req.nombre_establecimiento) metaHtml += '<span class="corr-meta-chip"><i class="fas fa-building"></i> ' + req.nombre_establecimiento + '</span>';
+                        if (req.nombre_colegio) metaHtml += '<span class="corr-meta-chip"><i class="fas fa-school"></i> ' + req.nombre_colegio + '</span>';
+                        metaHtml += '<span class="corr-meta-chip date"><i class="fas fa-calendar-day"></i> ' + (req.fecha || '-') + '</span>';
+                        metaHtml += '<span class="corr-meta-chip person"><i class="fas fa-user-tag"></i> ' + (req.solicitante || '-') + '</span>';
+
+                        var estadoArea = hasDoc
+                            ? '<div style="background:#f0fdf8;border:1.5px solid #6ee7b7;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:10px;">'
+                              + '<div style="width:38px;height:38px;background:linear-gradient(135deg,#00b894,#00cec9);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-file-check" style="color:#fff;"></i></div>'
+                              + '<div><strong style="color:#065f46;font-size:.85rem;">Correccion guardada</strong><div style="color:#059669;font-size:.78rem;margin-top:2px;">La coordinadora ya puede descargar el formulario actualizado</div></div>'
+                              + '</div>'
+                            : '<div style="background:#f8faff;border:1.5px dashed #94b4d6;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:10px;">'
+                              + '<div style="width:38px;height:38px;background:linear-gradient(135deg,#0f3460,#1a5276);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-pen-to-square" style="color:#fff;"></i></div>'
+                              + '<div style="flex:1;"><strong style="color:#0f3460;font-size:.85rem;">Correccion pendiente</strong><div style="color:#64748b;font-size:.78rem;margin-top:2px;">Usa el boton para abrir y editar el formulario directamente aqui.</div></div>'
+                              + '</div>';
+
+                        div.innerHTML = '<div class="corr-card-stripe' + stripeC + '"></div>'
+                            + '<div class="corr-card-body">'
+                            + '<div class="corr-card-header">'
+                            + '<div class="corr-alumno-block"><div class="corr-avatar"><i class="fas fa-user-graduate"></i></div>'
+                            + '<div><div class="corr-alumno-name">' + (req.alumno_nombre || 'Alumno N/A') + '</div>'
+                            + '<div class="corr-alumno-rut">RUT: ' + (req.alumno_rut || 'N/A') + '</div></div></div>'
+                            + '<span class="corr-status-badge ' + badgeC + '"><i class="fas ' + badgeIc + '"></i> ' + badgeTx + '</span>'
+                            + '</div>'
+                            + '<div class="corr-meta-row">' + metaHtml + '</div>'
+                            + '<div class="corr-obs-box"><div class="corr-obs-label"><i class="fas fa-triangle-exclamation"></i> Correccion Solicitada</div>'
+                            + '<div class="corr-obs-text">' + (req.detalles || 'Sin detalle especificado.') + '</div></div>'
+                            + estadoArea
+                            + '<div class="corr-actions" id="corr-actions-' + req.id + '"></div>'
+                            + '</div>';
+
+                        // Agregar botones con addEventListener (sin inline onclick)
+                        var actionsDiv = div.querySelector('#corr-actions-' + req.id);
+                        if (isPend) {
+                            var btnRechazar = document.createElement('button');
+                            btnRechazar.className = 'corr-btn reject';
+                            btnRechazar.innerHTML = '<i class="fas fa-xmark"></i> Rechazar';
+                            btnRechazar.addEventListener('click', (function(rid) {
+                                return function() { handleCorrectionAction(rid, 'Rechazada'); };
+                            })(req.id));
+                            actionsDiv.appendChild(btnRechazar);
+
+                            var btnEditar = document.createElement('button');
+                            btnEditar.className = 'corr-btn resolve';
+                            btnEditar.style.background = 'linear-gradient(135deg,#0f3460,#1a5276)';
+                            btnEditar.innerHTML = '<i class="fas fa-pen-to-square"></i> Corregir en Plataforma';
+                            btnEditar.addEventListener('click', (function(aid, rid, det) {
+                                return function() { abrirAdminEditModal(aid, rid, det); };
+                            })(req.alumno_id || '', req.id, req.detalles || ''));
+                            actionsDiv.appendChild(btnEditar);
+                        }
+                        if (hasDoc) {
+                            var span = document.createElement('span');
+                            span.style.cssText = 'color:#059669;font-weight:700;font-size:.8rem;display:flex;align-items:center;gap:5px;';
+                            span.innerHTML = '<i class="fas fa-circle-check"></i> Resuelto - coordinadora notificada';
+                            actionsDiv.appendChild(span);
+                        }
+
+                        listContainer.appendChild(div);
                     });
                 } else if (data.success) {
-                    listContainer.innerHTML = `<div class="corr-no-results"><i class="fa-solid fa-bell-slash"></i><p>No hay solicitudes de corrección pendientes.</p></div>`;
+                    listContainer.innerHTML = '<div class="corr-no-results"><i class="fa-solid fa-bell-slash"></i><p>No hay solicitudes de correccion pendientes.</p></div>';
                     if (countBadge) countBadge.textContent = '0';
                 } else {
-                    listContainer.innerHTML = `<p style="text-align:center;color:#e74c3c;padding:30px;">Error: ${data.message || 'Error desconocido'}</p>`;
+                    listContainer.innerHTML = '<p style="text-align:center;color:#e74c3c;padding:30px;">Error: ' + (data.message || 'Error desconocido') + '</p>';
                 }
             } catch (error) {
-                listContainer.innerHTML = `<p style="text-align:center;color:#e74c3c;padding:30px;">Error de conexión con el servidor.</p>`;
-                console.error("Error correcciones:", error);
+                listContainer.innerHTML = '<p style="text-align:center;color:#e74c3c;padding:30px;">Error de conexion con el servidor.</p>';
+                console.error('Error correcciones:', error);
             }
         }
 

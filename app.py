@@ -829,6 +829,119 @@ def generar_pdf():
         return redirect(url_for('dashboard'))
         
 
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  CORRECCIÓN EN PLATAFORMA (Admin)
+#  GET  /api/admin/alumno_datos/<alumno_id>   — carga datos del alumno para editar
+#  POST /api/admin/corregir_alumno            — guarda cambios y marca solicitud resuelta
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route('/api/admin/alumno_datos/<alumno_id>', methods=['GET'])
+def api_admin_alumno_datos(alumno_id):
+    """Devuelve todos los campos editables del alumno + form_type de su nómina."""
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        url = (f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+               f"?id=eq.{alumno_id}"
+               f"&select=*")
+        res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS)
+        if not res.ok or not res.json():
+            return jsonify({"success": False, "message": "Alumno no encontrado"}), 404
+        alumno = res.json()[0]
+
+        # Obtener form_type y nombre de la nómina
+        nomina_id = alumno.get('nomina_id')
+        form_type = None
+        nom_nombre = None
+        if nomina_id:
+            r_n = requests.get(
+                f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}&select=form_type,nombre_nomina,nombre_colegio",
+                headers=SUPABASE_SERVICE_HEADERS)
+            if r_n.ok and r_n.json():
+                nd = r_n.json()[0]
+                form_type  = nd.get('form_type')
+                nom_nombre = nd.get('nombre_colegio') or nd.get('nombre_nomina')
+
+        return jsonify({"success": True, "alumno": alumno,
+                        "form_type": form_type, "nom_nombre": nom_nombre})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/admin/corregir_alumno', methods=['POST'])
+def api_admin_corregir_alumno():
+    """
+    Guarda las correcciones de un alumno hechas por el admin en el dashboard.
+    Marca la solicitud de corrección como Aprobada.
+    No genera PDF aquí — el coordinador descargará desde /descargar_pdf_alumno/<id>.
+    """
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        data        = request.get_json()
+        alumno_id   = data.get('alumno_id')
+        solicitud_id = data.get('solicitud_id')
+        campos      = data.get('campos', {})   # dict con los campos a actualizar
+
+        if not alumno_id or not campos:
+            return jsonify({"success": False, "message": "Faltan datos"}), 400
+
+        # Campos permitidos para edición por admin (todos los editables del formulario)
+        CAMPOS_PERMITIDOS = {
+            # Datos personales
+            'nombre','rut','fecha_nacimiento','fecha_evaluacion','fecha_reevaluacion',
+            'nacionalidad','sexo','edad',
+            # Neurología / Informe neurológico
+            'estado_general','diagnostico','derivaciones',
+            'motivo_consulta','observaciones','observacion_neurologia','indicaciones',
+            'diagnostico_sospecha','diagnostico_definitivo',
+            # Medicina familiar — diagnósticos
+            'diagnostico_1','diagnostico_2','diagnostico_complementario',
+            'clasificacion','observacion_1','observacion_2','observacion_3',
+            'observacion_4','observacion_5','observacion_6','observacion_7',
+            # Medicina familiar — checkboxes
+            'check_cesarea','check_atermino','check_vaginal','check_prematuro',
+            'check_acorde','check_retrasogeneralizado','check_esquemac','check_esquemai',
+            'check_alergiano','check_alergiasi','check_cirugiano','check_cirugiasi',
+            'check_visionsinalteracion','check_visionrefraccion','check_audicionnormal',
+            'check_hipoacusia','check_tapondecerumen','check_sinhallazgos',
+            'caries','check_apinamientodental','check_retenciondental',
+            'check_frenillolingual','check_hipertrofia',
+            # Medicina familiar — medidas
+            'altura','peso','imc','clasificacion_imc',
+            'fecha_reevaluacion_select','motivo_consulta',
+        }
+
+        payload = {k: v for k, v in campos.items() if k in CAMPOS_PERMITIDOS}
+        if not payload:
+            return jsonify({"success": False, "message": "No hay campos válidos para actualizar"}), 400
+
+        # PATCH en estudiantes_nomina
+        r_patch = requests.patch(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{alumno_id}",
+            headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=minimal"},
+            json=payload)
+        if not r_patch.ok:
+            return jsonify({"success": False,
+                            "message": f"Error al guardar: {r_patch.text}"}), 500
+
+        # Marcar solicitud como Aprobada si se pasó el ID
+        if solicitud_id:
+            requests.patch(
+                f"{SUPABASE_URL}/rest/v1/solicitudes_correccion?id=eq.{solicitud_id}",
+                headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=minimal"},
+                json={"estado": "Aprobada", "fecha_resolucion": str(date.today()),
+                      "admin_comentario": "Corregido en plataforma por administrador"})
+
+        return jsonify({"success": True,
+                        "message": "Corrección guardada. La coordinadora ya puede ver los cambios."})
+
+    except Exception as e:
+        print(f"ERROR api_admin_corregir_alumno: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route('/marcar_evaluado', methods=['POST'])
 def marcar_evaluado():
     if 'usuario' not in session:
@@ -1275,21 +1388,39 @@ def reporte_proyecto_detalle(project_id):
         
         # 3. Recorrer nóminas para traer alumnos y contar estados
         for nom in nominas:
-            # Traer lista de alumnos por nómina
-            url_e = f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nom['id']}&select=nombre,rut,evaluado_flag&order=nombre.asc"
+            # Traer lista de alumnos activos/extra (excluir no_asiste)
+            url_e = (
+                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                f"?nomina_id=eq.{nom['id']}"
+                f"&estado_asistencia=in.(activo,extra)"
+                f"&select=nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia"
+                f"&order=nombre.asc"
+            )
             res_e = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS)
             alumnos = res_e.json() if res_e.ok else []
-            
-            ev_count = len([a for a in alumnos if a.get('evaluado_flag') is True])
+
+            # También traer los no_asiste para mostrarlos aparte en el reporte
+            url_ausentes = (
+                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                f"?nomina_id=eq.{nom['id']}"
+                f"&estado_asistencia=in.(no_asiste_reemplazado,no_asiste_sin_reemplazo)"
+                f"&select=nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia"
+                f"&order=nombre.asc"
+            )
+            res_aus = requests.get(url_ausentes, headers=SUPABASE_SERVICE_HEADERS)
+            ausentes = res_aus.json() if res_aus.ok else []
+
+            ev_count    = len([a for a in alumnos if a.get('evaluado_flag') is True])
             total_count = len(alumnos)
-            
-            global_total += total_count
+
+            global_total     += total_count
             global_evaluados += ev_count
-            
+
             detalles_completos.append({
-                "colegio": nom['nombre_nomina'],
-                "alumnos": alumnos,
-                "total": total_count,
+                "colegio":   nom['nombre_nomina'],
+                "alumnos":   alumnos,
+                "ausentes":  ausentes,
+                "total":     total_count,
                 "evaluados": ev_count
             })
 
@@ -1676,7 +1807,7 @@ def get_correcciones_detalle():
         # CONSULTA: Obtener todas las solicitudes pendientes, incluyendo datos del alumno y solicitante
         url_requests = (
             f"{SUPABASE_URL}/rest/v1/solicitudes_correccion"
-            f"?select=*,estudiantes_nomina(nombre,rut),doctoras(usuario)" # Asume que 'solicitante_id' es la FK a 'doctoras'
+            f"?select=*,estudiantes_nomina(nombre,rut,nomina_id),doctoras(usuario)"
             f"&estado=eq.Pendiente"
             f"&order=fecha_solicitud.desc"
         )
@@ -1688,20 +1819,49 @@ def get_correcciones_detalle():
         # Procesamiento de datos para el frontend
         processed_requests = []
         for req in solicitudes:
-            
-            # Nota: Si usas una FK en solicitante_id a doctoras, Supabase lo une automáticamente.
             solicitante_usuario = req.get('doctoras', {}).get('usuario') if req.get('doctoras') else 'N/A'
-            alumno_nombre = req.get('estudiantes_nomina', {}).get('nombre') if req.get('estudiantes_nomina') else 'Alumno Desconocido'
-            alumno_rut = format_rut_python(req.get('estudiantes_nomina', {}).get('rut')) if req.get('estudiantes_nomina') else 'N/A'
-            
+            est_data  = req.get('estudiantes_nomina') or {}
+            alumno_nombre = est_data.get('nombre', 'Alumno Desconocido')
+            alumno_rut    = format_rut_python(est_data.get('rut', ''))
+            alumno_id     = req.get('alumno_id')
+
+            # Obtener nomina_id y form_type del alumno para poder abrir el formulario
+            nomina_id  = est_data.get('nomina_id')
+            form_type  = None
+            nom_nombre = None
+            nom_colegio = None
+            proyecto_nombre = None
+            if nomina_id:
+                url_nom = (f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+                           f"?id=eq.{nomina_id}&select=form_type,nombre_nomina,nombre_colegio,proyecto_id")
+                r_nom = requests.get(url_nom, headers=SUPABASE_SERVICE_HEADERS)
+                if r_nom.ok and r_nom.json():
+                    nd = r_nom.json()[0]
+                    form_type   = nd.get('form_type')
+                    nom_nombre  = nd.get('nombre_nomina')
+                    nom_colegio = nd.get('nombre_colegio') or nd.get('nombre_nomina')
+                    pid = nd.get('proyecto_id')
+                    if pid:
+                        r_p = requests.get(f"{SUPABASE_URL}/rest/v1/proyectos?id=eq.{pid}&select=nombre_proyecto",
+                                           headers=SUPABASE_SERVICE_HEADERS)
+                        if r_p.ok and r_p.json():
+                            proyecto_nombre = r_p.json()[0].get('nombre_proyecto')
+
             processed_requests.append({
-                'id': req['id'],
-                'alumno_nombre': alumno_nombre,
-                'alumno_rut': alumno_rut,
-                'detalles': req['detalles'],
-                'solicitante': solicitante_usuario,
-                'fecha': req['fecha_solicitud'].split('T')[0] if req.get('fecha_solicitud') else 'N/A', # Formato YYYY-MM-DD
-                'estado': req['estado']
+                'id':               req['id'],
+                'alumno_id':        str(alumno_id) if alumno_id else None,
+                'alumno_nombre':    alumno_nombre,
+                'alumno_rut':       alumno_rut,
+                'detalles':         req.get('detalles', ''),
+                'solicitante':      solicitante_usuario,
+                'fecha':            req['fecha_solicitud'].split('T')[0] if req.get('fecha_solicitud') else 'N/A',
+                'estado':           req['estado'],
+                'nomina_id':        str(nomina_id) if nomina_id else None,
+                'form_type':        form_type,
+                'nombre_establecimiento': nom_nombre,
+                'nombre_colegio':   nom_colegio,
+                'proyecto_nombre':  proyecto_nombre,
+                'url_documento_corregido': req.get('url_documento_corregido'),
             })
             
         return jsonify({"success": True, "data": processed_requests})
@@ -3764,11 +3924,22 @@ def api_doctor_reporte_detalle():
             url_e = (
                 f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
                 f"?nomina_id=eq.{nom['id']}"
-                f"&select=nombre,rut,evaluado_flag"
+                f"&estado_asistencia=in.(activo,extra)"
+                f"&select=nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia"
                 f"&order=nombre.asc"
             )
             res_e = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS)
             alumnos = res_e.json() if res_e.ok else []
+
+            url_aus = (
+                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                f"?nomina_id=eq.{nom['id']}"
+                f"&estado_asistencia=in.(no_asiste_reemplazado,no_asiste_sin_reemplazo)"
+                f"&select=nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia"
+                f"&order=nombre.asc"
+            )
+            res_aus = requests.get(url_aus, headers=SUPABASE_SERVICE_HEADERS)
+            ausentes = res_aus.json() if res_aus.ok else []
 
             ev_count    = len([a for a in alumnos if a.get('evaluado_flag') is True])
             total_count = len(alumnos)
@@ -3779,6 +3950,7 @@ def api_doctor_reporte_detalle():
             detalles.append({
                 "colegio":   colegio,
                 "alumnos":   alumnos,
+                "ausentes":  ausentes,
                 "total":     total_count,
                 "evaluados": ev_count
             })
@@ -3847,28 +4019,37 @@ def api_coordinadora_reporte_detalle():
             url_e = (
                 f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
                 f"?nomina_id=eq.{nom['id']}"
-                f"&select=nombre,rut,evaluado_flag"
+                f"&estado_asistencia=in.(activo,extra)"
+                f"&select=nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia"
                 f"&order=nombre.asc"
             )
             res_e = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS)
             alumnos = res_e.json() if res_e.ok else []
+
+            url_aus = (
+                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                f"?nomina_id=eq.{nom['id']}"
+                f"&estado_asistencia=in.(no_asiste_reemplazado,no_asiste_sin_reemplazo)"
+                f"&select=nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia"
+                f"&order=nombre.asc"
+            )
+            res_aus = requests.get(url_aus, headers=SUPABASE_SERVICE_HEADERS)
+            ausentes = res_aus.json() if res_aus.ok else []
 
             ev_count    = len([a for a in alumnos if a.get('evaluado_flag') is True])
             total_count = len(alumnos)
             global_total     += total_count
             global_evaluados += ev_count
 
-            colegio   = nom.get('nombre_colegio') or nom.get('nombre_nomina') or 'Sin nombre'
-            doc_id    = str(nom.get('doctora_id') or '')
+            colegio    = nom.get('nombre_colegio') or nom.get('nombre_nomina') or 'Sin nombre'
+            doc_id     = str(nom.get('doctora_id') or '')
             doc_nombre = doctoras_map.get(doc_id, '')
-            # Agregar nombre doctora al nombre del establecimiento si hay varios
-            label = colegio
-            if doc_nombre:
-                label = colegio + '  (' + doc_nombre + ')'
+            label = colegio + ('  (' + doc_nombre + ')' if doc_nombre else '')
 
             detalles.append({
                 "colegio":   label,
                 "alumnos":   alumnos,
+                "ausentes":  ausentes,
                 "total":     total_count,
                 "evaluados": ev_count
             })
@@ -3973,9 +4154,9 @@ def api_admin_listado_excel():
         ws['A2'].font = Font(name="Calibri", size=9, color="888888", italic=True)
         ws['A2'].alignment = center_align
 
-        # Encabezados
-        headers = ['#', 'Nombre', 'RUT', 'Fecha Nacimiento', 'Sexo', 'Fecha Evaluación', 'Estado']
-        col_widths = [5, 35, 14, 16, 8, 16, 14]
+        # Encabezados — agregada columna Tipo
+        headers    = ['#', 'Nombre', 'RUT', 'Fecha Nacimiento', 'Sexo', 'Tipo', 'Fecha Evaluación', 'Estado']
+        col_widths = [5,   35,       14,    16,                 8,     14,     16,                  14    ]
         for col_idx, (h, w) in enumerate(zip(headers, col_widths), 1):
             cell = ws.cell(row=4, column=col_idx, value=h)
             cell.font = hdr_font
@@ -3985,16 +4166,18 @@ def api_admin_listado_excel():
             ws.column_dimensions[cell.column_letter].width = w
         ws.row_dimensions[4].height = 20
 
-        # Datos
+        # Datos activos + extra
         for i, alumno in enumerate(alumnos):
-            row = i + 5
+            row  = i + 5
             fill = alt_fill if i % 2 == 0 else PatternFill()
+            tipo = 'Reemplazo' if alumno.get('estado_asistencia') == 'extra' else 'Titular'
             values = [
                 i + 1,
                 alumno.get('nombre', ''),
                 alumno.get('rut', ''),
                 alumno.get('fecha_nacimiento', '') or '',
                 'M' if alumno.get('sexo') == 'M' else 'F' if alumno.get('sexo') == 'F' else '',
+                tipo,
                 alumno.get('fecha_evaluacion', '') or '',
                 'Evaluado' if alumno.get('evaluado_flag') else 'Pendiente'
             ]
@@ -4002,8 +4185,15 @@ def api_admin_listado_excel():
                 cell = ws.cell(row=row, column=col_idx, value=val)
                 cell.font = body_font
                 cell.fill = fill
-                cell.alignment = center_align if col_idx in [1, 3, 4, 5, 6, 7] else Alignment(vertical='center')
+                cell.alignment = center_align if col_idx in [1,3,4,5,6,7,8] else Alignment(vertical='center')
                 cell.border = border
+                # Color especial para reemplazo
+                if col_idx == 6 and tipo == 'Reemplazo':
+                    cell.font = Font(name="Calibri", size=10, color="7C3AED", bold=True)
+                # Color verde/naranja para estado
+                if col_idx == 8:
+                    cell.font = Font(name="Calibri", size=10, bold=True,
+                                     color="059669" if alumno.get('evaluado_flag') else "D97706")
             ws.row_dimensions[row].height = 16
 
         # Fila totales
@@ -4011,7 +4201,48 @@ def api_admin_listado_excel():
         ws.cell(row=total_row, column=1, value="TOTAL").font = Font(bold=True, name="Calibri", size=10)
         ws.cell(row=total_row, column=2, value=len(alumnos)).font = Font(bold=True, name="Calibri", size=10)
         evaluated = sum(1 for a in alumnos if a.get('evaluado_flag'))
-        ws.cell(row=total_row, column=7, value=f"{evaluated}/{len(alumnos)} evaluados").font = Font(bold=True, name="Calibri", size=10, color="059669")
+        ws.cell(row=total_row, column=8, value=f"{evaluated}/{len(alumnos)} evaluados").font = Font(bold=True, name="Calibri", size=10, color="059669")
+
+        # ── Hoja 2: Alumnos Anulados ──────────────────────────────────────
+        res_ausentes = requests.get(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            f"?nomina_id=eq.{nomina_id}"
+            f"&estado_asistencia=in.(no_asiste_reemplazado,no_asiste_sin_reemplazo)"
+            f"&select=nombre,rut,fecha_nacimiento,sexo,estado_asistencia,motivo_ausencia"
+            f"&order=nombre.asc",
+            headers=SUPABASE_SERVICE_HEADERS)
+        ausentes = res_ausentes.json() if res_ausentes.ok else []
+
+        if ausentes:
+            ws2 = wb.create_sheet(title="Anulados")
+            ws2.merge_cells('A1:F1')
+            ws2['A1'] = f"Alumnos Anulados — {nombre_nomina}"
+            ws2['A1'].font = Font(name="Calibri", bold=True, size=13, color="B91C1C")
+            ws2['A1'].alignment = center_align
+
+            aus_hdr_fill = PatternFill("solid", fgColor="B91C1C")
+            aus_headers  = ['#', 'Nombre', 'RUT', 'Fecha Nacimiento', 'Tipo Anulación', 'Motivo']
+            aus_widths   = [5,   35,       14,    16,                  20,               40     ]
+            for ci, (h, w) in enumerate(zip(aus_headers, aus_widths), 1):
+                c = ws2.cell(row=3, column=ci, value=h)
+                c.font = Font(name="Calibri", bold=True, color="FFFFFF", size=10)
+                c.fill = aus_hdr_fill
+                c.alignment = center_align
+                c.border = border
+                ws2.column_dimensions[c.column_letter].width = w
+
+            for i, a in enumerate(ausentes):
+                r = i + 4
+                tipo_an = 'Reemplazado' if a.get('estado_asistencia') == 'no_asiste_reemplazado' else 'Sin reemplazo'
+                vals = [i+1, a.get('nombre',''), a.get('rut',''),
+                        a.get('fecha_nacimiento','') or '', tipo_an, a.get('motivo_ausencia','') or '']
+                for ci, v in enumerate(vals, 1):
+                    c = ws2.cell(row=r, column=ci, value=v)
+                    c.font = body_font
+                    c.fill = alt_fill if i % 2 == 0 else PatternFill()
+                    c.alignment = center_align if ci in [1,3,4,5] else Alignment(vertical='center')
+                    c.border = border
+                ws2.row_dimensions[r].height = 16
 
         output = BytesIO()
         wb.save(output)
@@ -4238,12 +4469,13 @@ def api_correcciones_resueltas_escuela(school_id):
             est = s.get('estudiantes_nomina') or {}
             if est.get('nomina_id') in nomina_ids:
                 result.append({
-                    'id':             s['id'],
-                    'alumno_nombre':  est.get('nombre', 'N/A'),
-                    'alumno_rut':     est.get('rut', 'N/A'),
-                    'detalles':       s.get('detalles', ''),
+                    'id':               s['id'],
+                    'alumno_id':        str(s.get('alumno_id', '')),
+                    'alumno_nombre':    est.get('nombre', 'N/A'),
+                    'alumno_rut':       est.get('rut', 'N/A'),
+                    'detalles':         s.get('detalles', ''),
                     'fecha_resolucion': s.get('fecha_resolucion', ''),
-                    'url_documento':  s.get('url_documento_corregido', '')
+                    'url_documento':    s.get('url_documento_corregido', '')
                 })
 
         return jsonify({"success": True, "data": result})

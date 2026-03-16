@@ -1733,10 +1733,13 @@
                             {# NUEVO CAMPO: Indicaciones (Nombre HTML: indicaciones) #}
                             <label for="indicaciones_{{ est.id }}">Indicaciones:</label>
                             <div class="indicaciones-quick-bar">
-                                <span class="indicaciones-quick-label">Incluye siempre:</span>
-                                <div style="width:100%;margin-top:4px;padding:8px 12px;background:rgba(15,76,117,0.08);border-radius:8px;border-left:3px solid var(--primary-mid);display:flex;align-items:center;gap:8px;">
-                                    <i class="fas fa-school" style="color:var(--primary-mid);"></i>
-                                    <span style="font-size:0.82rem;font-weight:700;color:var(--primary-dark);">REQUIERE RECIBIR APOYO DEL PROGRAMA DE INTEGRACIÓN ESCOLAR</span>
+                                <span class="indicaciones-quick-label">Incluye por defecto (editable):</span>
+                                <div style="width:100%;margin-top:4px;padding:7px 12px;background:rgba(15,76,117,0.07);border-radius:8px;border-left:3px solid var(--primary-mid);display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                                    <span style="font-size:0.8rem;font-weight:700;color:var(--primary-dark);display:flex;align-items:center;gap:7px;">
+                                        <i class="fas fa-school" style="color:var(--primary-mid);"></i>
+                                        REQUIERE RECIBIR APOYO DEL PROGRAMA DE INTEGRACIÓN ESCOLAR
+                                    </span>
+                                    <span style="font-size:0.7rem;color:#94a3b8;white-space:nowrap;font-style:italic;">Puedes editar o borrar abajo ↓</span>
                                 </div>
                                 <span class="indicaciones-quick-label" style="margin-top:6px;width:100%;">Agregar si corresponde:</span>
                                 <div class="ind-btn-group" style="width:100%;">
@@ -1948,23 +1951,23 @@
             }
         }
 
-        // Toggle adicional: agrega o quita indicación al texto existente, manteniendo PIE fijo
+        // Toggle adicional: agrega o quita indicación al texto existente
+        // PIE ya NO se fuerza como base — el textarea es libre, el banner es solo visual
         function toggleIndicacion(btn, texto, estId) {
             const textarea = document.getElementById('indicaciones_' + estId);
             if (!textarea) return;
-            const BASE = 'REQUIERE RECIBIR APOYO DEL PROGRAMA DE INTEGRACIÓN ESCOLAR';
-            let val = textarea.value.trim();
-            // Asegurar que PIE siempre esté presente
-            if (!val.includes(BASE)) val = BASE;
             const isActive = btn.classList.contains('active');
+            let val = textarea.value.trim();
             if (isActive) {
-                // Quitar este texto
-                val = val.replace('\n' + texto, '').replace(texto, '').trim();
-                if (!val) val = BASE;
+                // Quitar línea
+                val = val.split('\n').map(l => l.trim()).filter(l => l.toUpperCase() !== texto.toUpperCase()).join('\n');
                 btn.classList.remove('active');
             } else {
-                // Agregar este texto
-                val = val + '\n' + texto;
+                // Agregar si no está ya
+                const lineas = val.split('\n').map(l => l.trim());
+                if (!lineas.map(l => l.toUpperCase()).includes(texto.toUpperCase())) {
+                    val = val ? val + '\n' + texto : texto;
+                }
                 btn.classList.add('active');
             }
             textarea.value = val;
@@ -1972,24 +1975,41 @@
         }
 
         // Toggle derivación: agrega o quita especialista del textarea
+        // Separador usado para unir derivaciones en una sola línea
+        const DERIV_SEP = ' - ';
+
         function toggleDerivacion(btn, especialista, estId) {
             const textarea = document.getElementById('derivaciones_' + estId);
             if (!textarea) return;
             const isActive = btn.classList.contains('active');
-            let lineas = textarea.value ? textarea.value.split('\n').map(l => l.trim()).filter(l => l) : [];
+            // Parsear el valor actual: puede contener " - " (chips) y texto libre (líneas)
+            // Los chips los manejamos separados del texto libre
+            let items = parseDeriv(textarea.value);
             if (isActive) {
-                // Quitar
-                lineas = lineas.filter(l => l.toUpperCase() !== especialista.toUpperCase());
+                items = items.filter(l => l.toUpperCase() !== especialista.toUpperCase());
                 btn.classList.remove('active');
             } else {
-                // Agregar (evitar duplicado)
-                if (!lineas.map(l => l.toUpperCase()).includes(especialista.toUpperCase())) {
-                    lineas.push(especialista);
+                if (!items.map(l => l.toUpperCase()).includes(especialista.toUpperCase())) {
+                    items.push(especialista);
                 }
                 btn.classList.add('active');
             }
-            textarea.value = lineas.join('\n');
+            textarea.value = serializeDeriv(items);
             updatePreview(textarea.form);
+        }
+
+        // Parsea el texto del textarea en array de ítems (chips y texto libre juntos)
+        function parseDeriv(val) {
+            if (!val || !val.trim()) return [];
+            // Acepta tanto ' - ' como '\n' como separadores
+            return val.split(/\s*-\s*|\n/)
+                      .map(s => s.trim())
+                      .filter(s => s.length > 0);
+        }
+
+        // Une los ítems con ' - ' (formato horizontal)
+        function serializeDeriv(items) {
+            return items.join(DERIV_SEP);
         }
 
         // Sincronizar chips de derivación según el contenido actual del textarea
@@ -1997,12 +2017,12 @@
             const textarea = document.getElementById('derivaciones_' + estId);
             const bar = document.getElementById('deriv-bar-' + estId);
             if (!textarea || !bar) return;
-            const val = textarea.value.toUpperCase();
+            const items = parseDeriv(textarea.value).map(l => l.toUpperCase());
             bar.querySelectorAll('.deriv-chip').forEach(function(chip) {
                 const onclick = chip.getAttribute('onclick') || '';
                 const m = onclick.match(/'([^']+)'/);
                 if (m) {
-                    if (val.includes(m[1].toUpperCase())) chip.classList.add('active');
+                    if (items.includes(m[1].toUpperCase())) chip.classList.add('active');
                     else chip.classList.remove('active');
                 }
             });

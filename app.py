@@ -2661,77 +2661,79 @@ def descargar_pdf_alumno(alumno_id):
         campos = {}
         
         if form_type == 'neurologia':
-            # Mapeo COMPLETO de campos de Neurología (Antigua)
             campos = {
-                "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato, 
-                "nacionalidad": est.get('nacionalidad', ''), "edad": edad, 
-                "diagnostico_1": est.get('diagnostico', ''), "diagnostico_2": est.get('diagnostico', ''), 
+                "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato,
+                "nacionalidad": est.get('nacionalidad', ''), "edad": edad,
+                "diagnostico_1": est.get('diagnostico', ''), "diagnostico_2": est.get('diagnostico', ''),
                 "estado_general": est.get('estado_general', ''), "derivaciones": est.get('derivaciones', ''),
                 "fecha_evaluacion": fecha_evaluacion_formatted, "fecha_reevaluacion": fecha_reeval_pdf,
-                "sexo_f": "X" if est.get('sexo') == "F" else "", "sexo_m": "X" if est.get('sexo') == "M" else "",
+                "sexo_f": "X" if est.get('sexo') == "F" else "",
+                "sexo_m": "X" if est.get('sexo') == "M" else "",
             }
-        
+
         elif form_type == 'informe_neurologico':
-            # 🟢 Mapeo Informe Neurológico (USANDO NOMBRES EXACTOS DE LAS COLUMNAS DE TU DB)
             campos = {
-                "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato, 
-                "edad": edad, "nacionalidad": est.get('nacionalidad', ''), 
-                "genero_m": "X" if est.get('sexo') == "M" else "", "genero_f": "X" if est.get('sexo') == "F" else "",
-                
-                # CAMPOS CRÍTICOS DE TEXTO - Mapeo Directo 
+                "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato,
+                "edad": edad, "nacionalidad": est.get('nacionalidad', ''),
+                "genero_m": "X" if est.get('sexo') == "M" else "",
+                "genero_f": "X" if est.get('sexo') == "F" else "",
                 "motivo_consulta": est.get('motivo_consulta', ''),
-                "observaciones": est.get('observaciones', ''),      
-                "observacion_neurologia": est.get('observacion_neurologia', ''), 
-                
+                "observaciones": est.get('observaciones', ''),
+                "observacion_neurologia": est.get('observacion_neurologia', ''),
                 "diagnostico": est.get('diagnostico', ''),
                 "indicaciones": est.get('indicaciones', ''),
-                "derivaciones": est.get('derivaciones', ''), 
+                "derivaciones": est.get('derivaciones', ''),
                 "fecha_evaluacion": fecha_evaluacion_formatted,
-                "fecha_reevaluacion": fecha_reeval_pdf, 
+                "fecha_reevaluacion": fecha_reeval_pdf,
             }
         
         elif form_type == 'medicina_familiar':
-            # 🟢 MAPEO COMPLETO DE MEDICINA FAMILIAR - RESTAURADO A MÁXIMA EXTENSIÓN
-             campos = {
+            # Los campos check_ son campos de TEXTO en el PDF base — usan "X", no "/Yes"
+            def map_check_db(val):
+                if val is True or (isinstance(val, str) and val.strip() and val.strip().lower() not in ('false','0','no','')):
+                    return "X"
+                return ""
+
+            campos = {
                 "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato, "edad": edad, "nacionalidad": est.get('nacionalidad', ''),
                 "sexo_f": "X" if est.get('sexo') == "F" else "", "sexo_m": "X" if est.get('sexo') == "M" else "",
-                
+
                 "diagnostico_1": est.get('diagnostico_1', ''), "diagnostico_2": est.get('diagnostico_2', ''),
                 "diagnostico_complementario": est.get('diagnostico_complementario', ''), "clasificacion": est.get('clasificacion_imc', ''),
                 "indicaciones": est.get('indicaciones', ''), "derivaciones": est.get('derivaciones', ''),
                 "fecha_evaluacion": fecha_evaluacion_formatted, "fecha_reevaluacion": fecha_reeval_pdf,
-                
-                "altura": est.get('altura', ''), "peso": est.get('peso', ''), "I.M.C": est.get('imc', ''),
+
+                "altura": str(est.get('altura', '') or ''), "peso": str(est.get('peso', '') or ''), "I.M.C": str(est.get('imc', '') or ''),
                 "observacion_1": est.get('observacion_1', ''), "observacion_2": est.get('observacion_2', ''),
                 "observacion_3": est.get('observacion_3', ''), "observacion_4": est.get('observacion_4', ''),
                 "observacion_5": est.get('observacion_5', ''), "observacion_6": est.get('observacion_6', ''),
                 "observacion_7": est.get('observacion_7', ''),
-                
-                # Checkboxes mapeados a /Yes (Incluyendo todos los de tu SELECT)
-                "check_cesarea": map_db_value_to_yes_pdf(est.get('check_cesarea')), 
-                "check_atermino": map_db_value_to_yes_pdf(est.get('check_atermino')),
-                "check_vaginal": map_db_value_to_yes_pdf(est.get('check_vaginal')), 
-                "check_prematuro": map_db_value_to_yes_pdf(est.get('check_prematuro')),
-                "check_acorde": map_db_value_to_yes_pdf(est.get('check_acorde')), 
-                "check_retraso": map_db_value_to_yes_pdf(est.get('check_retraso')),
-                "check_retrasogeneralizado": map_db_value_to_yes_pdf(est.get('check_retrasogeneralizado')), 
-                "check_esquemac": map_db_value_to_yes_pdf(est.get('check_esquemac')), 
-                "check_esquemai": map_db_value_to_yes_pdf(est.get('check_esquemai')), 
-                "check_alergiano": map_db_value_to_yes_pdf(est.get('check_alergiano')), 
-                "check_alergiasi": map_db_value_to_yes_pdf(est.get('check_alergiasi')), 
-                "check_cirugiano": map_db_value_to_yes_pdf(est.get('check_cirugiano')), 
-                "check_cirugiasi": map_db_value_to_yes_pdf(est.get('check_cirugiasi')), 
-                "check_visionsinalteracion": map_db_value_to_yes_pdf(est.get('check_visionsinalteracion')), 
-                "check_visionrefraccion": map_db_value_to_yes_pdf(est.get('check_visionrefraccion')),
-                "check_audicionnormal": map_db_value_to_yes_pdf(est.get('check_audicionnormal')), 
-                "check_hipoacusia": map_db_value_to_yes_pdf(est.get('check_hipoacusia')), 
-                "check_tapondecerumen": map_db_value_to_yes_pdf(est.get('check_tapondecerumen')), 
-                "check_sinhallazgos": map_db_value_to_yes_pdf(est.get('check_sinhallazgos')), 
-                "check_caries": map_db_value_to_yes_pdf(est.get('check_caries')), 
-                "check_apinamientodental": map_db_value_to_yes_pdf(est.get('check_apinamientodental')), 
-                "check_retenciondental": map_db_value_to_yes_pdf(est.get('check_retenciondental')), 
-                "check_frenillolingual": map_db_value_to_yes_pdf(est.get('check_frenillolingual')), 
-                "check_hipertrofia": map_db_value_to_yes_pdf(est.get('check_hipertrofia')),
+
+                # Campos de texto que muestran "X" — misma lógica que generar_pdf (doctora)
+                "check_cesarea":             map_check_db(est.get('check_cesarea')),
+                "check_atermino":            map_check_db(est.get('check_atermino')),
+                "check_vaginal":             map_check_db(est.get('check_vaginal')),
+                "check_prematuro":           map_check_db(est.get('check_prematuro')),
+                "check_acorde":              map_check_db(est.get('check_acorde')),
+                "check_retraso":             map_check_db(est.get('check_retraso')),
+                "check_retrasogeneralizado": map_check_db(est.get('check_retrasogeneralizado')),
+                "check_esquemac":            map_check_db(est.get('check_esquemac')),
+                "check_esquemai":            map_check_db(est.get('check_esquemai')),
+                "check_alergiano":           map_check_db(est.get('check_alergiano')),
+                "check_alergiasi":           map_check_db(est.get('check_alergiasi')),
+                "check_cirugiano":           map_check_db(est.get('check_cirugiano')),
+                "check_cirugiasi":           map_check_db(est.get('check_cirugiasi')),
+                "check_visionsinalteracion": map_check_db(est.get('check_visionsinalteracion')),
+                "check_visionrefraccion":    map_check_db(est.get('check_visionrefraccion')),
+                "check_audicionnormal":      map_check_db(est.get('check_audicionnormal')),
+                "check_hipoacusia":          map_check_db(est.get('check_hipoacusia')),
+                "check_tapondecerumen":      map_check_db(est.get('check_tapondecerumen')),
+                "check_sinhallazgos":        map_check_db(est.get('check_sinhallazgos')),
+                "check_caries":              map_check_db(est.get('check_caries')),
+                "check_apinamientodental":   map_check_db(est.get('check_apinamientodental')),
+                "check_retenciondental":     map_check_db(est.get('check_retenciondental')),
+                "check_frenillolingual":     map_check_db(est.get('check_frenillolingual')),
+                "check_hipertrofia":         map_check_db(est.get('check_hipertrofia')),
             }
 
 

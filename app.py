@@ -4104,6 +4104,7 @@ def api_admin_listado_excel():
 
         data = request.get_json()
         nomina_id = data.get('nomina_id')
+        filtro    = data.get('filtro', 'todos')
         if not nomina_id:
             return jsonify({"success": False, "message": "nomina_id requerido"}), 400
 
@@ -4122,7 +4123,18 @@ def api_admin_listado_excel():
             f"&select=nombre,rut,fecha_nacimiento,sexo,fecha_evaluacion,evaluado_flag,estado_asistencia"
             f"&order=nombre.asc",
             headers=SUPABASE_SERVICE_HEADERS)
-        alumnos = res_alumnos.json() if res_alumnos.ok else []
+        todos_alumnos = res_alumnos.json() if res_alumnos.ok else []
+
+        # Aplicar filtro
+        if filtro == 'evaluados':
+            alumnos = [a for a in todos_alumnos if a.get('evaluado_flag')]
+            filtro_label = 'Solo evaluados'
+        elif filtro == 'pendientes':
+            alumnos = [a for a in todos_alumnos if not a.get('evaluado_flag')]
+            filtro_label = 'Solo pendientes'
+        else:
+            alumnos = todos_alumnos
+            filtro_label = 'Todos los alumnos'
 
         # Crear Excel
         wb = Workbook()
@@ -4148,9 +4160,9 @@ def api_admin_listado_excel():
         ws['A1'].alignment = center_align
         ws.row_dimensions[1].height = 26
 
-        ws.merge_cells('A2:G2')
+        ws.merge_cells('A2:H2')
         from datetime import datetime
-        ws['A2'] = f"Generado el {datetime.now().strftime('%d/%m/%Y %H:%M')} · CardioHome"
+        ws['A2'] = f"Generado el {datetime.now().strftime('%d/%m/%Y %H:%M')} · Filtro: {filtro_label} · CardioHome"
         ws['A2'].font = Font(name="Calibri", size=9, color="888888", italic=True)
         ws['A2'].alignment = center_align
 
@@ -4270,10 +4282,9 @@ def api_admin_listado_pdf():
     if session.get('usuario') != 'admin':
         return jsonify({"success": False, "message": "Acceso denegado"}), 403
     try:
-        from io import BytesIO
-
         data = request.get_json()
         nomina_id = data.get('nomina_id')
+        filtro    = data.get('filtro', 'todos')   # 'todos' | 'evaluados' | 'pendientes'
         if not nomina_id:
             return jsonify({"success": False, "message": "nomina_id requerido"}), 400
 
@@ -4292,13 +4303,23 @@ def api_admin_listado_pdf():
             f"&select=nombre,rut,fecha_nacimiento,sexo,fecha_evaluacion,evaluado_flag"
             f"&order=nombre.asc",
             headers=SUPABASE_SERVICE_HEADERS)
-        alumnos = res_alumnos.json() if res_alumnos.ok else []
+        todos_alumnos = res_alumnos.json() if res_alumnos.ok else []
+
+        # Aplicar filtro
+        if filtro == 'evaluados':
+            alumnos = [a for a in todos_alumnos if a.get('evaluado_flag')]
+            filtro_label = 'Solo evaluados'
+        elif filtro == 'pendientes':
+            alumnos = [a for a in todos_alumnos if not a.get('evaluado_flag')]
+            filtro_label = 'Solo pendientes'
+        else:
+            alumnos   = todos_alumnos
+            filtro_label = 'Todos los alumnos'
 
         from datetime import datetime
         fecha_gen = datetime.now().strftime('%d/%m/%Y %H:%M')
-        evaluados = sum(1 for a in alumnos if a.get('evaluado_flag'))
+        evaluados_total = sum(1 for a in todos_alumnos if a.get('evaluado_flag'))
 
-        # Generar HTML para PDF (convertido con weasyprint o retornado como HTML imprimible)
         rows_html = ''
         for i, alumno in enumerate(alumnos):
             bg = '#f0f6ff' if i % 2 == 0 else 'white'
@@ -4315,55 +4336,82 @@ def api_admin_listado_pdf():
                 <td style="text-align:center;color:{estado_color};font-weight:700;">{estado_text}</td>
             </tr>"""
 
+        pct = round(evaluados_total / len(todos_alumnos) * 100) if todos_alumnos else 0
+
         html = f"""<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Listado — {nombre_nomina}</title>
 <style>
-  body{{font-family:Arial,sans-serif;font-size:11px;color:#1a2332;margin:0;padding:20px;}}
-  .header{{background:#0f3460;color:white;padding:16px 20px;border-radius:8px;margin-bottom:16px;}}
-  .header h1{{margin:0;font-size:15px;}}
-  .header p{{margin:4px 0 0;font-size:10px;opacity:.75;}}
-  .kpis{{display:flex;gap:12px;margin-bottom:14px;}}
-  .kpi{{background:#f0f6ff;border:1px solid #d4e5f5;border-radius:8px;padding:10px 16px;flex:1;text-align:center;}}
-  .kpi .n{{font-size:20px;font-weight:900;color:#0f3460;}}
-  .kpi .l{{font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;}}
-  table{{width:100%;border-collapse:collapse;}}
-  th{{background:#0f3460;color:white;padding:8px 10px;font-size:10px;text-align:center;}}
-  td{{padding:7px 10px;border-bottom:1px solid #e8f0f6;font-size:10px;}}
-  .footer{{margin-top:16px;font-size:9px;color:#94a3b8;text-align:center;border-top:1px solid #e8f0f6;padding-top:10px;}}
+  /* Reset print conflicts — previene duplicación en Chrome */
+  *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  html, body {{ width: 100%; height: auto; overflow: visible; }}
+  body {{ font-family: Arial, sans-serif; font-size: 11px; color: #1a2332; padding: 20px; }}
+  .header {{ background: #0f3460; color: white; padding: 16px 20px; border-radius: 8px; margin-bottom: 16px; }}
+  .header h1 {{ font-size: 15px; margin-bottom: 4px; }}
+  .header p {{ font-size: 10px; opacity: .75; margin: 0; }}
+  .kpis {{ display: flex; gap: 12px; margin-bottom: 14px; }}
+  .kpi {{ background: #f0f6ff; border: 1px solid #d4e5f5; border-radius: 8px; padding: 10px 16px; flex: 1; text-align: center; }}
+  .kpi .n {{ font-size: 20px; font-weight: 900; color: #0f3460; }}
+  .kpi .l {{ font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; }}
+  .filtro-badge {{ display: inline-block; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;
+      border-radius: 20px; padding: 3px 10px; font-size: 9px; font-weight: 700; margin-bottom: 12px; }}
+  table {{ width: 100%; border-collapse: collapse; table-layout: fixed; }}
+  th {{ background: #0f3460; color: white; padding: 8px 10px; font-size: 10px; text-align: center; }}
+  td {{ padding: 7px 10px; border-bottom: 1px solid #e8f0f6; font-size: 10px; word-break: break-word; }}
+  .footer {{ margin-top: 16px; font-size: 9px; color: #94a3b8; text-align: center;
+      border-top: 1px solid #e8f0f6; padding-top: 10px; }}
+  @media print {{
+    html, body {{ height: auto !important; overflow: visible !important; }}
+    /* Evita que Chrome repita el body al imprimir */
+    body {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
+    .no-print {{ display: none !important; }}
+    table {{ page-break-inside: auto; }}
+    tr {{ page-break-inside: avoid; page-break-after: auto; }}
+    thead {{ display: table-header-group; }}
+    tfoot {{ display: table-footer-group; }}
+  }}
 </style></head><body>
 <div class="header">
   <h1>Listado de Alumnos — {nombre_nomina}</h1>
-  <p>Generado el {fecha_gen} · CardioHome</p>
+  <p>Generado el {fecha_gen} &nbsp;·&nbsp; CardioHome</p>
 </div>
+<div class="filtro-badge">Filtro: {filtro_label}</div>
 <div class="kpis">
-  <div class="kpi"><div class="n">{len(alumnos)}</div><div class="l">Total alumnos</div></div>
-  <div class="kpi"><div class="n" style="color:#059669">{evaluados}</div><div class="l">Evaluados</div></div>
-  <div class="kpi"><div class="n" style="color:#dc2626">{len(alumnos)-evaluados}</div><div class="l">Pendientes</div></div>
-  <div class="kpi"><div class="n" style="color:#7c3aed">{round(evaluados/len(alumnos)*100) if alumnos else 0}%</div><div class="l">Avance</div></div>
+  <div class="kpi"><div class="n">{len(todos_alumnos)}</div><div class="l">Total nómina</div></div>
+  <div class="kpi"><div class="n" style="color:#059669">{evaluados_total}</div><div class="l">Evaluados</div></div>
+  <div class="kpi"><div class="n" style="color:#dc2626">{len(todos_alumnos)-evaluados_total}</div><div class="l">Pendientes</div></div>
+  <div class="kpi"><div class="n" style="color:#7c3aed">{pct}%</div><div class="l">Avance</div></div>
+  <div class="kpi"><div class="n" style="color:#0369a1">{len(alumnos)}</div><div class="l">En este listado</div></div>
 </div>
 <table>
-  <thead><tr><th>#</th><th>Nombre</th><th>RUT</th><th>Fecha Nac.</th><th>Sexo</th><th>Fecha Eval.</th><th>Estado</th></tr></thead>
+  <thead><tr>
+    <th style="width:30px">#</th>
+    <th style="text-align:left">Nombre</th>
+    <th style="width:80px">RUT</th>
+    <th style="width:75px">Fecha Nac.</th>
+    <th style="width:35px">Sexo</th>
+    <th style="width:75px">Fecha Eval.</th>
+    <th style="width:70px">Estado</th>
+  </tr></thead>
   <tbody>{rows_html}</tbody>
 </table>
-<div class="footer">CardioHome SpA · Jorge Enrique Miranda Kirk · RUT 77.028.328-0</div>
+<div class="footer">CardioHome SpA &nbsp;·&nbsp; Jorge Enrique Miranda Kirk &nbsp;·&nbsp; RUT 77.028.328-0</div>
 </body></html>"""
 
         from flask import Response
         safe_name = nombre_nomina.replace(' ', '_').replace('/', '-')
-        response = Response(
+        return Response(
             html,
             content_type='text/html; charset=utf-8',
             headers={
                 'Content-Disposition': f'inline; filename="Listado_{safe_name}.html"',
-                'X-Filename': f'Listado_{safe_name}.pdf'
+                'Cache-Control': 'no-store'
             })
-        return response
 
     except Exception as e:
         print(f"ERROR listado_alumnos_pdf: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # RUTA: Admin sube el formulario corregido de un alumno específico

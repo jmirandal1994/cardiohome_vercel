@@ -371,6 +371,9 @@ def generate_and_upload_pdf(estudiante_id, nomina_id, doctora_id, form_type, dat
             else:
                 print("ADVERTENCIA: No se encontraron campos de formulario en el PDF.")
 
+            # Auto-size: evita que texto largo se corte o salga del campo
+            aplicar_autosize_campos(writer)
+
             # Crear un buffer en memoria para el PDF
             output_buffer = io.BytesIO()
             writer.write(output_buffer)
@@ -427,6 +430,64 @@ def get_form_field_value(field_name, form_data, return_none_if_empty=False):
     if not stripped_value: # If it's an empty string after stripping
         return None if return_none_if_empty else '' # Return None for dates/numeric, empty string for text/select
     return stripped_value
+
+
+def aplicar_autosize_campos(writer):
+    """
+    Recorre todos los campos de texto del PDF y les aplica tamaño de fuente
+    automático (DA con tamaño 0 = auto-fit). Evita que el texto se corte
+    o salga del campo cuando el contenido es largo.
+    Funciona con PyPDF2 y pypdf.
+    """
+    try:
+        if "/AcroForm" not in writer._root_object:
+            return
+
+        acroform = writer._root_object["/AcroForm"]
+        if "/Fields" not in acroform:
+            return
+
+        def _procesar_campo(field_ref):
+            try:
+                field = field_ref.get_object()
+                ft = field.get("/FT")
+
+                if ft == "/Tx":
+                    # Tamaño 0 = auto-size en lectores PDF compatibles
+                    # Intentar leer la fuente actual del DA para mantenerla
+                    da_actual = str(field.get("/DA", "/Helv 0 Tf 0 g"))
+                    import re
+                    # Reemplazar el tamaño numérico por 0 (auto)
+                    da_nuevo = re.sub(r'(\d+\.?\d*)\s+Tf', '0 Tf', da_actual)
+                    if "Tf" not in da_nuevo:
+                        da_nuevo = "/Helv 0 Tf 0 g"
+                    field.update({
+                        NameObject("/DA"): NameObject(da_nuevo),
+                    })
+                    # Quitar flag de tamaño fijo en DS si existe
+                    if "/DS" in field:
+                        del field[NameObject("/DS")]
+
+                # Procesar hijos (campos agrupados)
+                if "/Kids" in field:
+                    for kid in field["/Kids"]:
+                        _procesar_campo(kid)
+
+            except Exception as e:
+                print(f"  [autosize] Warning en campo: {e}")
+
+        fields = acroform["/Fields"]
+        for field_ref in fields:
+            _procesar_campo(field_ref)
+
+        # Forzar re-render de apariencias
+        writer._root_object["/AcroForm"].update({
+            NameObject("/NeedAppearances"): BooleanObject(True)
+        })
+        print("✅ aplicar_autosize_campos: auto-size aplicado correctamente.")
+
+    except Exception as e:
+        print(f"⚠️  aplicar_autosize_campos: error general — {e}")
 
 
 # Nuevo: Función para obtener el PDF de neurología específico para una doctora
@@ -815,6 +876,9 @@ def generar_pdf():
             writer.update_page_form_field_values(page, campos)
 
         writer._root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
+
+        # Auto-size: evita que texto largo se corte o salga del campo
+        aplicar_autosize_campos(writer)
         
         output = io.BytesIO()
         writer.write(output)
@@ -2750,6 +2814,9 @@ def descargar_pdf_alumno(alumno_id):
         writer._root_object["/AcroForm"].update({
             NameObject("/NeedAppearances"): BooleanObject(True)
         })
+
+        # Auto-size: evita que texto largo se corte o salga del campo
+        aplicar_autosize_campos(writer)
         
         output = io.BytesIO()
         writer.write(output)
@@ -3350,6 +3417,9 @@ def generar_pdfs_visibles():
             
             writer_single_pdf.update_page_form_field_values(writer_single_pdf.pages[0], campos)
             writer_single_pdf._root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
+
+            # Auto-size: evita que texto largo se corte o salga del campo
+            aplicar_autosize_campos(writer_single_pdf)
 
             temp_output = io.BytesIO()
             writer_single_pdf.write(temp_output)

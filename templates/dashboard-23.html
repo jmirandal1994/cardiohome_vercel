@@ -1058,10 +1058,10 @@
                         <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fa-solid fa-folder-plus"></i> Crear Proyecto</a></li>
                         <li><a href="#" class="nav-link" data-section="gestionar-proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-upload-nomina"><i class="fa-solid fa-file-excel"></i> Cargar Nómina</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-nominas-list"><i class="fa-solid fa-file-invoice-dollar"></i> Gestión de Nóminas</a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-uploaded-forms-all"><i class="fa-solid fa-box-archive"></i> Archivos Subidos</a></li>
+
+
                         <li><a href="#" class="nav-link relative" data-section="admin-correction-requests"><i class="fa-solid fa-bell-concierge"></i> Solicitudes Corrección<span id="correction-alert-badge" class="alert-badge hidden">0</span></a></li>
-                        <li><a href="#" class="nav-link" data-section="admin-contact"><i class="fa-solid fa-envelope"></i> Contacto</a></li>
+
 
                     {% elif usuario == 'coordinadora' %}
                         <li><a href="#" class="nav-link active" data-section="coord-performance"><i class="fa-solid fa-gauge-high"></i> Rendimiento en Vivo</a></li>
@@ -1595,14 +1595,18 @@
             var fecha = ev.fecha || '';
             var parts = fecha.split('-');
             var label = parts.length === 3 ? parts[2] + '/' + parts[1] : fecha;
-            html += '<div id="ev-' + fecha + '" style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;border:1px solid #e2e8f4;margin-bottom:6px;background:#f8faff;">' +
-                '<div style="background:#0f3460;color:white;border-radius:8px;padding:6px 10px;font-weight:800;font-size:.8rem;min-width:44px;text-align:center;">' + label + '</div>' +
+            var obs = ev.observaciones || '';
+            html += '<div id="ev-' + fecha + '" style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:10px;border:1px solid #e2e8f4;margin-bottom:8px;background:#f8faff;">' +
+                '<div style="background:#0f3460;color:white;border-radius:8px;padding:6px 10px;font-weight:800;font-size:.8rem;min-width:44px;text-align:center;flex-shrink:0;">' + label + '</div>' +
                 '<div style="flex:1;">' +
                     '<div style="font-weight:700;color:#1e293b;font-size:.85rem;">' + (ev.nombre||'Visita') + '</div>' +
                     '<div style="font-size:.75rem;color:#64748b;margin-top:2px;">' +
                         '<i class="fa-solid fa-clock" style="margin-right:4px;"></i>' + (ev.horario||'—') +
                         ' &nbsp;·&nbsp; <i class="fa-solid fa-users" style="margin-right:4px;"></i>' + (ev.cantidad_alumnos||'N/A') + ' alumnos' +
                     '</div>' +
+                    (obs ? '<div style="margin-top:7px;background:#eef4ff;border-left:3px solid #0f3460;border-radius:0 6px 6px 0;padding:7px 10px;font-size:.75rem;color:#334155;line-height:1.5;">' +
+                        '<i class="fa-solid fa-note-sticky" style="color:#0f3460;margin-right:5px;"></i>' + obs +
+                    '</div>' : '') +
                 '</div>' +
             '</div>';
         });
@@ -2238,10 +2242,19 @@
     }
     // Descargar listado de alumnos por nómina
     async function descargarListadoAlumnos(nominaId, nominaNombre) {
-        const { value: formato } = await Swal.fire({
+        const { value: opciones } = await Swal.fire({
             title: 'Descargar Listado de Alumnos',
-            html: `<div style="font-size:.9rem;color:#475569;margin-bottom:12px;">Nómina: <strong>${nominaNombre}</strong></div>
-                   <div style="font-size:.85rem;color:#64748b;">¿En qué formato deseas el listado actual?</div>`,
+            html: `
+                <div style="font-size:.9rem;color:#475569;margin-bottom:14px;">Nómina: <strong>${nominaNombre}</strong></div>
+                <div style="text-align:left;margin-bottom:12px;">
+                    <label style="font-size:.82rem;font-weight:700;color:#334155;display:block;margin-bottom:6px;">Filtrar alumnos:</label>
+                    <select id="swal-filtro" style="width:100%;padding:8px 10px;border:1.5px solid #dde6f0;border-radius:8px;font-size:.85rem;color:#1e293b;outline:none;">
+                        <option value="todos">Todos los alumnos</option>
+                        <option value="evaluados">Solo evaluados</option>
+                        <option value="pendientes">Solo pendientes</option>
+                    </select>
+                </div>
+                <div style="font-size:.85rem;color:#64748b;">¿En qué formato deseas el listado?</div>`,
             showDenyButton: true,
             showCancelButton: true,
             confirmButtonText: '<i class="fas fa-file-excel"></i> Excel',
@@ -2249,20 +2262,22 @@
             cancelButtonText: 'Cancelar',
             confirmButtonColor: '#059669',
             denyButtonColor: '#dc2626',
+            preConfirm: () => ({ formato: 'excel', filtro: document.getElementById('swal-filtro').value }),
+            preDeny:   () => ({ formato: 'pdf',   filtro: document.getElementById('swal-filtro').value }),
         });
-        if (formato === undefined) return;
-        const esExcel = formato === true;
+        if (!opciones) return;
+        const esExcel = opciones.formato === 'excel';
+        const filtro  = opciones.filtro || 'todos';
         const endpoint = esExcel ? '/api/admin/listado_alumnos_excel' : '/api/admin/listado_alumnos_pdf';
         Swal.fire({ title: esExcel ? 'Generando Excel…' : 'Generando listado…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         try {
             const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nomina_id: nominaId })
+                body: JSON.stringify({ nomina_id: nominaId, filtro: filtro })
             });
             if (!res.ok) throw new Error('Error HTTP ' + res.status);
             if (esExcel) {
-                // Descargar como archivo .xlsx
                 const blob = await res.blob();
                 const url  = URL.createObjectURL(blob);
                 const a    = document.createElement('a');
@@ -2271,39 +2286,31 @@
                 document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
                 Swal.fire({ icon: 'success', title: '¡Descargado!', timer: 2000, showConfirmButton: false });
             } else {
-                // PDF: abrir HTML en nueva pestaña para imprimir / guardar como PDF
+                // PDF: abrir HTML en nueva ventana e imprimir — compatible Chrome/Safari
                 const html = await res.text();
-                const blob = new Blob([html], { type: 'text/html' });
-                const url  = URL.createObjectURL(blob);
                 Swal.close();
-                window.open(url, '_blank');
+                const win = window.open('', '_blank');
+                if (win) {
+                    win.document.open();
+                    win.document.write(html);
+                    win.document.close();
+                    // Esperar que el DOM esté listo antes de imprimir
+                    win.addEventListener('load', function() {
+                        setTimeout(function() { win.print(); }, 300);
+                    });
+                } else {
+                    // Fallback: blob URL
+                    const blob = new Blob([html], { type: 'text/html; charset=utf-8' });
+                    const url  = URL.createObjectURL(blob);
+                    window.open(url, '_blank');
+                    setTimeout(() => URL.revokeObjectURL(url), 30000);
+                }
             }
         } catch(e) {
             Swal.fire({ icon: 'error', title: 'Error', text: e.message });
         }
     }
     </script>
-            <div class="section-topbar">
-                <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
-                <i class="fa-solid fa-envelope section-icon"></i>
-                <h2 class="section-title">Contacto</h2>
-            </div>
-                    <div class="card">
-                        <h3><i class="fa-solid fa-envelope-open-text"></i> Contacto</h3>
-                        <p class="text-gray-600 mb-6">Si tienes alguna duda o necesitas ayuda, por favor, rellena el siguiente formulario y nos pondremos en contacto contigo lo antes posible.</p>
-                        <form id="contact-form" action="https://formspree.io/f/your-form-id" method="POST">
-                            <label for="name">Tu Nombre:</label>
-                            <input type="text" id="name" name="name" required class="form-input" />
-                            
-                            <label for="email">Tu Correo Electrónico:</label>
-                            <input type="email" id="email" name="email" required class="form-input" />
-
-                            <label for="message">Mensaje:</label>
-                            <textarea id="message" name="message" rows="5" required class="form-input"></textarea>
-                            
-                            <button type="submit" class="form-button">Enviar Mensaje</button>
-                        </form>
-                    </div>
                 </div>
 
             {% elif usuario == 'coordinadora' %}
@@ -3578,22 +3585,23 @@
             }
             .nomina-item-info { flex: 1; min-width: 0; }
             .nomina-item-name {
-                font-size: .85rem; font-weight: 700; color: #0f2030;
-                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                font-size: .88rem; font-weight: 800; color: #0f2030;
+                white-space: normal; word-break: break-word; line-height: 1.35;
             }
-            .nomina-item-sub { font-size: .72rem; color: #94a3b8; margin-top: 2px; }
+            .nomina-item-sub { font-size: .73rem; color: #64748b; margin-top: 3px; font-weight: 600; }
             .nomina-tipo-badge {
-                display: inline-flex; padding: 3px 9px; border-radius: 6px;
+                display: inline-flex; padding: 4px 10px; border-radius: 6px;
                 font-size: .7rem; font-weight: 700; flex-shrink: 0;
                 background: #e8f4fd; color: #0A4D68; border: 1px solid #bee3f8;
+                white-space: nowrap;
             }
             .nomina-action-link {
                 display: inline-flex; align-items: center; gap: 5px;
-                padding: 6px 12px; border-radius: 8px;
+                padding: 7px 13px; border-radius: 8px;
                 background: #0A4D68; color: white;
                 font-size: .72rem; font-weight: 700;
                 text-decoration: none; flex-shrink: 0;
-                transition: opacity .15s;
+                transition: opacity .15s; white-space: nowrap;
             }
             .nomina-action-link:hover { opacity: .85; }
 
@@ -3752,18 +3760,22 @@
                                 {% for nomina in nominas_proyecto %}
                                 <div class="nomina-item" style="flex-direction:column;align-items:stretch;gap:10px;" data-nomina-doc-id="{{ nomina.id }}">
                                     <!-- Row principal -->
-                                    <div style="display:flex;align-items:center;gap:12px;">
-                                        <div class="nomina-item-icon">
+                                    <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+                                        <div class="nomina-item-icon" style="flex-shrink:0;margin-top:2px;">
                                             <i class="fa-solid fa-{% if 'Neurolog' in nomina.tipo_nomina_display %}brain{% else %}stethoscope{% endif %}"></i>
                                         </div>
-                                        <div class="nomina-item-info">
+                                        <div class="nomina-item-info" style="flex:1;min-width:140px;">
                                             <div class="nomina-item-name">{{ nomina.nombre_establecimiento }}</div>
+                                            {% if nomina.nombre_colegio %}
                                             <div class="nomina-item-sub">
-                                                {% if nomina.nombre_colegio %}<i class="fa-solid fa-school"></i> {{ nomina.nombre_colegio }}{% endif %}
+                                                <i class="fa-solid fa-school" style="color:#0A4D68;margin-right:4px;"></i>{{ nomina.nombre_colegio }}
+                                            </div>
+                                            {% endif %}
+                                            <div style="margin-top:5px;">
+                                                <span class="nomina-tipo-badge">{{ nomina.tipo_nomina_display }}</span>
                                             </div>
                                         </div>
-                                        <span class="nomina-tipo-badge">{{ nomina.tipo_nomina_display }}</span>
-                                        <a href="{{ url_for('relleno_formulario', nomina_id=nomina.id) }}" class="nomina-action-link">
+                                        <a href="{{ url_for('relleno_formulario', nomina_id=nomina.id) }}" class="nomina-action-link" style="align-self:center;">
                                             <i class="fa-solid fa-pen-to-square"></i> Rellenar
                                         </a>
                                     </div>

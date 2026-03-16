@@ -3455,16 +3455,26 @@ def api_doctor_performance():
     if not user_id:
         return jsonify({"success": False, "message": "ID de usuario no encontrado en sesión"}), 400
 
+    # Filtro de proyecto opcional (query param ?proyecto=NombreProyecto)
+    proyecto_filtro = request.args.get('proyecto', '').strip()
+
     try:
-        # 1. Obtener nóminas asignadas a esta doctora
+        # 1. Obtener nóminas asignadas a esta doctora (con proyecto_nombre si existe)
         url_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?doctora_id=eq.{user_id}"
-            f"&select=id,nombre_nomina,nombre_colegio,form_type,tipo_nomina"
+            f"&select=id,nombre_nomina,nombre_colegio,form_type,tipo_nomina,proyecto_nombre"
         )
         res_nominas = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
         res_nominas.raise_for_status()
-        nominas = res_nominas.json()
+        nominas_todas = res_nominas.json()
+
+        # Aplicar filtro de proyecto si se indicó
+        if proyecto_filtro:
+            nominas = [n for n in nominas_todas
+                       if (n.get('proyecto_nombre') or 'Sin Proyecto') == proyecto_filtro]
+        else:
+            nominas = nominas_todas
 
         if not nominas:
             return jsonify({

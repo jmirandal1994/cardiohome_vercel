@@ -1038,11 +1038,65 @@
                 <h1 class="text-2xl font-bold text-gray-800 hidden sm:block">Dashboard</h1>
             </div>
         </div>
-        <div class="flex items-center space-x-4">
-            <span class="text-gray-600 hidden md:block">Hola, {{ session.get('usuario') | replace('_', ' ') | capitalize }}.</span>
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="User Avatar" class="rounded-full shadow-lg border-2 border-white">
+        <div style="display:flex;align-items:center;gap:14px;">
+
+            <!-- Saludo dinámico + fecha -->
+            <div class="hidden md:block" style="text-align:right;line-height:1.3;">
+                <div id="headerGreeting" style="font-size:.82rem;font-weight:700;color:#0A3D62;"></div>
+                <div id="headerDate" style="font-size:.72rem;color:#94a3b8;margin-top:1px;"></div>
+            </div>
+
+            <!-- Avatar con iniciales + rol -->
+            <div style="display:flex;align-items:center;gap:10px;background:#f0f6ff;border:1.5px solid #d4e5f5;border-radius:40px;padding:5px 14px 5px 5px;">
+                <!-- Círculo de iniciales -->
+                <div id="headerAvatar" style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.8rem;color:white;flex-shrink:0;"></div>
+                <!-- Nombre + rol -->
+                <div style="line-height:1.25;">
+                    <div id="headerName" style="font-size:.8rem;font-weight:700;color:#0A3D62;white-space:nowrap;"></div>
+                    <div id="headerRole" style="font-size:.68rem;font-weight:600;white-space:nowrap;"></div>
+                </div>
+                <!-- Punto online -->
+                <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;box-shadow:0 0 0 2px #dcfce7;"></div>
+            </div>
+
+            <!-- Botón cerrar sesión -->
             <button onclick="cerrarSesion()" class="bg-red-500 text-white px-4 py-2 rounded-full shadow-md hover:bg-red-600 transition duration-200 hidden sm:block">Cerrar sesión</button>
         </div>
+
+        <script>
+        (function(){
+            // ── Saludo según hora ──
+            var h = new Date().getHours();
+            var greet = h < 12 ? '☀️ Buenos días' : h < 19 ? '🌤 Buenas tardes' : '🌙 Buenas noches';
+            var days = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+            var months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+            var now = new Date();
+            var dateStr = days[now.getDay()] + ' ' + now.getDate() + ' de ' + months[now.getMonth()];
+
+            // ── Datos del usuario desde Jinja ──
+            var rawUser = "{{ session.get('usuario') | replace('_',' ') | capitalize }}";
+            var role = "{% if usuario == 'admin' %}Administrador{% elif usuario == 'coordinadora' %}Coordinadora General{% elif usuario == 'coordinador_escuela' %}Coordinador de Escuela{% else %}Médico / Evaluador{% endif %}";
+
+            // ── Color del avatar según rol ──
+            var avatarColor = "{% if usuario == 'admin' %}#0A3D62{% elif usuario == 'coordinadora' %}#1a6b4a{% elif usuario == 'coordinador_escuela' %}#7c3aed{% else %}#1C67A3{% endif %}";
+
+            // ── Color del texto del rol ──
+            var roleColor = "{% if usuario == 'admin' %}#0A3D62{% elif usuario == 'coordinadora' %}#1a6b4a{% elif usuario == 'coordinador_escuela' %}#7c3aed{% else %}#1C67A3{% endif %}";
+
+            // ── Iniciales ──
+            var parts = rawUser.trim().split(' ');
+            var initials = parts.length >= 2 ? parts[0][0] + parts[1][0] : rawUser.substring(0,2);
+
+            // ── Aplicar ──
+            document.getElementById('headerGreeting').textContent = greet + ', ' + rawUser;
+            document.getElementById('headerDate').textContent = dateStr;
+            document.getElementById('headerAvatar').textContent = initials.toUpperCase();
+            document.getElementById('headerAvatar').style.background = avatarColor;
+            document.getElementById('headerName').textContent = rawUser;
+            document.getElementById('headerRole').textContent = role;
+            document.getElementById('headerRole').style.color = roleColor;
+        })();
+        </script>
     </header>
 
     <div style="display:flex;flex-direction:row;flex:1;height:calc(100vh - 58px);overflow:hidden;padding:12px;gap:12px;box-sizing:border-box;">

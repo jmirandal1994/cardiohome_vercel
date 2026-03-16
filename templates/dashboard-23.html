@@ -1093,10 +1093,10 @@
 #welcome-section.active {
     display: flex !important;
     flex-direction: column;
-    min-height: 0;
     padding: 0;
     background: transparent;
-    overflow: visible;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 /* ── Layout dos columnas ── */
@@ -1104,7 +1104,6 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 28px;
-    flex: 1;
     padding: 8px 4px 16px;
     align-items: start;
 }
@@ -1327,6 +1326,7 @@
     position: relative;
     background: #0A3D62;
     aspect-ratio: 16/10;
+    max-height: 320px;
 }
 .wc-slides {
     display: flex;

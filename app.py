@@ -3459,20 +3459,41 @@ def api_doctor_performance():
     proyecto_filtro = request.args.get('proyecto', '').strip()
 
     try:
-        # 1. Obtener nóminas asignadas a esta doctora (con proyecto_nombre si existe)
+        # 1. Obtener nóminas asignadas a esta doctora con proyecto_id
         url_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?doctora_id=eq.{user_id}"
-            f"&select=id,nombre_nomina,nombre_colegio,form_type,tipo_nomina,proyecto_nombre"
+            f"&select=id,nombre_nomina,nombre_colegio,form_type,tipo_nomina,proyecto_id"
         )
         res_nominas = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
         res_nominas.raise_for_status()
-        nominas_todas = res_nominas.json()
+        nominas_raw = res_nominas.json()
 
-        # Aplicar filtro de proyecto si se indicó
+        # 2. Resolver nombres de proyectos en batch
+        proyecto_ids = list({n['proyecto_id'] for n in nominas_raw if n.get('proyecto_id')})
+        proyecto_map = {}  # id -> nombre_proyecto
+        if proyecto_ids:
+            ids_str = ','.join(str(pid) for pid in proyecto_ids)
+            url_proy = (
+                f"{SUPABASE_URL}/rest/v1/proyectos"
+                f"?id=in.({ids_str})"
+                f"&select=id,nombre_proyecto"
+            )
+            res_proy = requests.get(url_proy, headers=SUPABASE_SERVICE_HEADERS)
+            if res_proy.ok:
+                for p in res_proy.json():
+                    proyecto_map[str(p['id'])] = p['nombre_proyecto']
+
+        # 3. Enriquecer cada nómina con proyecto_nombre
+        for n in nominas_raw:
+            pid = n.get('proyecto_id')
+            n['proyecto_nombre'] = proyecto_map.get(str(pid), 'Sin Proyecto') if pid else 'Sin Proyecto'
+
+        nominas_todas = nominas_raw
+
+        # 4. Aplicar filtro de proyecto si se indicó
         if proyecto_filtro:
-            nominas = [n for n in nominas_todas
-                       if (n.get('proyecto_nombre') or 'Sin Proyecto') == proyecto_filtro]
+            nominas = [n for n in nominas_todas if n['proyecto_nombre'] == proyecto_filtro]
         else:
             nominas = nominas_todas
 
@@ -3488,6 +3509,7 @@ def api_doctor_performance():
         nomina_labels = []
         nomina_completed = []
         nomina_totals = []
+        nomina_proyectos = []
         total_global = 0
         completed_global = 0
         neuro_completed = 0
@@ -3495,17 +3517,16 @@ def api_doctor_performance():
 
         for nomina in nominas:
             nid   = nomina['id']
-            # Preferir nombre_colegio, si no, nombre_nomina (truncado a 30 chars para el gráfico)
             label = (nomina.get('nombre_colegio') or nomina.get('nombre_nomina') or 'Nómina')[:30]
             ftype = nomina.get('form_type', '')
 
-            # Usar get_supabase_count exactamente como hace el resto del app
             total_n = get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)")
             comp_n  = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
 
             nomina_labels.append(label)
             nomina_totals.append(total_n)
             nomina_completed.append(comp_n)
+            nomina_proyectos.append(nomina.get('proyecto_nombre', 'Sin Proyecto'))
             total_global     += total_n
             completed_global += comp_n
 
@@ -3517,7 +3538,10 @@ def api_doctor_performance():
         pending_global = total_global - completed_global
         percent = round((completed_global / total_global * 100), 1) if total_global > 0 else 0
 
-        print(f"DEBUG api_doctor_performance: total={total_global}, comp={completed_global}, pct={percent}%")
+        # Lista de proyectos únicos asignados a esta doctora (para poblar el select en el front)
+        proyectos_unicos = sorted(list({n['proyecto_nombre'] for n in nominas_todas}))
+
+        print(f"DEBUG api_doctor_performance: total={total_global}, comp={completed_global}, pct={percent}%, proyectos={proyectos_unicos}")
 
         return jsonify({
             "success": True,
@@ -3529,6 +3553,8 @@ def api_doctor_performance():
             "nomina_labels": nomina_labels,
             "nomina_completed": nomina_completed,
             "nomina_totals": nomina_totals,
+            "nomina_proyectos": nomina_proyectos,
+            "proyectos_list": proyectos_unicos,
             "by_type": {
                 "neurologia": neuro_completed,
                 "medicina_familiar": familiar_completed

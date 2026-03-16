@@ -907,6 +907,36 @@
             outline-offset: 2px;
         }
 
+        /* ─── CHIPS DERIVACIONES ─── */
+        .deriv-chip {
+            border: 1.5px solid rgba(27,108,168,0.35);
+            background: white;
+            color: var(--primary-mid);
+            padding: 6px 13px;
+            border-radius: var(--border-radius-full);
+            font-family: var(--font-body);
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all var(--transition);
+            white-space: nowrap;
+        }
+        .deriv-chip:hover {
+            background: rgba(27,108,168,0.08);
+            border-color: var(--primary-mid);
+            transform: translateY(-1px);
+        }
+        .deriv-chip.active {
+            background: var(--primary-gradient);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 2px 8px rgba(15,76,117,0.28);
+        }
+        .deriv-chip.active:hover { opacity: 0.9; }
+
         /* ─── EVALUATION COUNTER (reemplazado por stats-bar) ─── */
         .evaluation-counter { display: none; }
 
@@ -1703,24 +1733,36 @@
                             {# NUEVO CAMPO: Indicaciones (Nombre HTML: indicaciones) #}
                             <label for="indicaciones_{{ est.id }}">Indicaciones:</label>
                             <div class="indicaciones-quick-bar">
-                                <span class="indicaciones-quick-label">Completar rápido:</span>
-                                <button type="button" class="ind-btn ind-btn-pie" onclick="setIndicacion(this, 'REQUIERE RECIBIR APOYO DEL PROGRAMA DE INTEGRACIÓN ESCOLAR', '{{ est.id }}')">
-                                    <i class="fas fa-school"></i> PIE
-                                </button>
-                                <div class="ind-btn-group">
-                                    <button type="button" class="ind-btn ind-btn-alt" onclick="setIndicacion(this, 'REQUIERE RECIBIR APOYO DE ESCUELA ESPECIAL', '{{ est.id }}')">
+                                <span class="indicaciones-quick-label">Incluye siempre:</span>
+                                <div style="width:100%;margin-top:4px;padding:8px 12px;background:rgba(15,76,117,0.08);border-radius:8px;border-left:3px solid var(--primary-mid);display:flex;align-items:center;gap:8px;">
+                                    <i class="fas fa-school" style="color:var(--primary-mid);"></i>
+                                    <span style="font-size:0.82rem;font-weight:700;color:var(--primary-dark);">REQUIERE RECIBIR APOYO DEL PROGRAMA DE INTEGRACIÓN ESCOLAR</span>
+                                </div>
+                                <span class="indicaciones-quick-label" style="margin-top:6px;width:100%;">Agregar si corresponde:</span>
+                                <div class="ind-btn-group" style="width:100%;">
+                                    <button type="button" class="ind-btn ind-btn-alt" onclick="toggleIndicacion(this, 'REQUIERE RECIBIR APOYO DE ESCUELA ESPECIAL', '{{ est.id }}')">
                                         <i class="fas fa-building"></i> Escuela Especial
                                     </button>
-                                    <button type="button" class="ind-btn ind-btn-alt" onclick="setIndicacion(this, 'REQUIERE RECIBIR APOYO DE ESCUELA DE LENGUAJE', '{{ est.id }}')">
+                                    <button type="button" class="ind-btn ind-btn-alt" onclick="toggleIndicacion(this, 'REQUIERE RECIBIR APOYO DE ESCUELA DE LENGUAJE', '{{ est.id }}')">
                                         <i class="fas fa-comment-dots"></i> Escuela de Lenguaje
                                     </button>
                                 </div>
                             </div>
-                            <textarea name="indicaciones" id="indicaciones_{{ est.id }}" rows="2" placeholder="Detalles de indicaciones." oninput="updatePreview(this.form)">{{ est.indicaciones if est.indicaciones is not none else '' }}</textarea>
+                            <textarea name="indicaciones" id="indicaciones_{{ est.id }}" rows="2" placeholder="Detalles de indicaciones." oninput="updatePreview(this.form)">{{ est.indicaciones if est.indicaciones is not none else 'REQUIERE RECIBIR APOYO DEL PROGRAMA DE INTEGRACIÓN ESCOLAR' }}</textarea>
                             
                             {# CAMPO ORIGINAL: Derivaciones (Nombre HTML: derivaciones) #}
                             <label for="derivaciones_{{ est.id }}">Derivaciones:</label>
-                            <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="2" placeholder="Detalles de derivaciones a especialistas.">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
+                            <!-- Chips de derivaciones -->
+                            <div class="deriv-chips-bar" id="deriv-bar-{{ est.id }}" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px;padding:10px 14px;background:rgba(27,108,168,0.04);border:1.5px solid rgba(27,108,168,0.15);border-radius:var(--border-radius-md);">
+                                <span style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;width:100%;margin-bottom:4px;">Pincha para agregar especialista:</span>
+                                <button type="button" class="deriv-chip" onclick="toggleDerivacion(this, 'DENTISTA', '{{ est.id }}')"><i class="fas fa-tooth"></i> Dentista</button>
+                                <button type="button" class="deriv-chip" onclick="toggleDerivacion(this, 'OFTALMÓLOGO', '{{ est.id }}')"><i class="fas fa-eye"></i> Oftalmólogo</button>
+                                <button type="button" class="deriv-chip" onclick="toggleDerivacion(this, 'NUTRICIONISTA', '{{ est.id }}')"><i class="fas fa-apple-alt"></i> Nutricionista</button>
+                                <button type="button" class="deriv-chip" onclick="toggleDerivacion(this, 'OTORRINO', '{{ est.id }}')"><i class="fas fa-ear-listen"></i> Otorrino</button>
+                                <button type="button" class="deriv-chip" onclick="toggleDerivacion(this, 'NEURÓLOGO', '{{ est.id }}')"><i class="fas fa-brain"></i> Neurólogo</button>
+                                <button type="button" class="deriv-chip" onclick="toggleDerivacion(this, 'PEDIATRA', '{{ est.id }}')"><i class="fas fa-user-doctor"></i> Pediatra</button>
+                            </div>
+                            <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="2" placeholder="Detalles de derivaciones a especialistas. Puedes también escribir otras derivaciones aquí." oninput="syncDerivChips('{{ est.id }}'); updatePreview(this.form)">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
         
                             <div class="button-group">
                                 <button type="submit">
@@ -1872,6 +1914,14 @@
                 form.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(checkbox => {
                     updateCheckboxStyle(checkbox);
                 });
+
+                // Sincronizar chips de derivaciones y botones de indicaciones con valores guardados
+                const derivTA = form.querySelector('textarea[name="derivaciones"]');
+                if (derivTA) {
+                    const estId = derivTA.id.replace('derivaciones_', '');
+                    syncDerivChips(estId);
+                    syncIndicacionButtons(estId);
+                }
             });
 
             // Event listener para el buscador
@@ -1891,12 +1941,86 @@
             const textarea = document.getElementById('indicaciones_' + estId);
             if (textarea) {
                 textarea.value = texto;
-                // Marcar botón activo visualmente
                 const allBtns = btn.closest('.indicaciones-quick-bar').querySelectorAll('.ind-btn');
                 allBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 updatePreview(textarea.form);
             }
+        }
+
+        // Toggle adicional: agrega o quita indicación al texto existente, manteniendo PIE fijo
+        function toggleIndicacion(btn, texto, estId) {
+            const textarea = document.getElementById('indicaciones_' + estId);
+            if (!textarea) return;
+            const BASE = 'REQUIERE RECIBIR APOYO DEL PROGRAMA DE INTEGRACIÓN ESCOLAR';
+            let val = textarea.value.trim();
+            // Asegurar que PIE siempre esté presente
+            if (!val.includes(BASE)) val = BASE;
+            const isActive = btn.classList.contains('active');
+            if (isActive) {
+                // Quitar este texto
+                val = val.replace('\n' + texto, '').replace(texto, '').trim();
+                if (!val) val = BASE;
+                btn.classList.remove('active');
+            } else {
+                // Agregar este texto
+                val = val + '\n' + texto;
+                btn.classList.add('active');
+            }
+            textarea.value = val;
+            updatePreview(textarea.form);
+        }
+
+        // Toggle derivación: agrega o quita especialista del textarea
+        function toggleDerivacion(btn, especialista, estId) {
+            const textarea = document.getElementById('derivaciones_' + estId);
+            if (!textarea) return;
+            const isActive = btn.classList.contains('active');
+            let lineas = textarea.value ? textarea.value.split('\n').map(l => l.trim()).filter(l => l) : [];
+            if (isActive) {
+                // Quitar
+                lineas = lineas.filter(l => l.toUpperCase() !== especialista.toUpperCase());
+                btn.classList.remove('active');
+            } else {
+                // Agregar (evitar duplicado)
+                if (!lineas.map(l => l.toUpperCase()).includes(especialista.toUpperCase())) {
+                    lineas.push(especialista);
+                }
+                btn.classList.add('active');
+            }
+            textarea.value = lineas.join('\n');
+            updatePreview(textarea.form);
+        }
+
+        // Sincronizar chips de derivación según el contenido actual del textarea
+        function syncDerivChips(estId) {
+            const textarea = document.getElementById('derivaciones_' + estId);
+            const bar = document.getElementById('deriv-bar-' + estId);
+            if (!textarea || !bar) return;
+            const val = textarea.value.toUpperCase();
+            bar.querySelectorAll('.deriv-chip').forEach(function(chip) {
+                const onclick = chip.getAttribute('onclick') || '';
+                const m = onclick.match(/'([^']+)'/);
+                if (m) {
+                    if (val.includes(m[1].toUpperCase())) chip.classList.add('active');
+                    else chip.classList.remove('active');
+                }
+            });
+        }
+
+        // Al cargar, marcar botones activos según el valor guardado y sincronizar estado
+        function syncIndicacionButtons(estId) {
+            const textarea = document.getElementById('indicaciones_' + estId);
+            if (!textarea) return;
+            const val = textarea.value || '';
+            const bar = textarea.closest('form') ? textarea.closest('form').querySelector('.indicaciones-quick-bar') : null;
+            if (!bar) return;
+            bar.querySelectorAll('.ind-btn-alt').forEach(function(btn) {
+                const text = btn.getAttribute('onclick') || '';
+                // Extract the text from onclick
+                const m = text.match(/'([^']+)'/);
+                if (m && val.includes(m[1])) btn.classList.add('active');
+            });
         }
 
         // Función para insertar NO INFORMADO en el textarea correspondiente

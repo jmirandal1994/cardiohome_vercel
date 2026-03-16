@@ -1506,7 +1506,35 @@ def reporte_proyecto_detalle(project_id):
     except Exception as e:
         print(f"Error generando reporte: {str(e)}")
         return jsonify({"success": False, "error": str(e)})
-        
+
+# ─── GET /api/admin/stats_global — KPIs para welcome screen ───
+@app.route('/api/admin/stats_global', methods=['GET'])
+def api_admin_stats_global():
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        total_alumnos  = get_supabase_count("estado_asistencia=in.(activo,extra)")
+        total_evaluados = get_supabase_count("estado_asistencia=in.(activo,extra)&evaluado_flag=eq.true")
+        total_pendientes = total_alumnos - total_evaluados
+
+        # Contar nóminas activas
+        res_nom = requests.get(
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas?select=id",
+            headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "count=exact", "Range": "0-0"}
+        )
+        total_nominas = int(res_nom.headers.get("Content-Range", "0/0").split("/")[-1]) if res_nom.ok else 0
+
+        return jsonify({
+            "success": True,
+            "total_evaluados":  total_evaluados,
+            "total_pendientes": total_pendientes,
+            "total_alumnos":    total_alumnos,
+            "total_nominas":    total_nominas,
+        })
+    except Exception as e:
+        print(f"ERROR api_admin_stats_global: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
 # - Ruta 
 @app.route('/api/admin/stats/<project_id>')
 def get_admin_stats(project_id):

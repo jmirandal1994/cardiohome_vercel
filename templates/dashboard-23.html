@@ -1088,628 +1088,685 @@
             {# NUEVA SECCIÓN DE BIENVENIDA (Reemplaza el antiguo resumen del proyecto) #}
             {% if usuario != 'coordinadora' and usuario != 'coordinador_escuela' %}
             <div id="welcome-section" class="content-section active">
-
-<!-- ══════════════════════════════════════════════
-     WELCOME SCREEN — CardioHome Premium
-══════════════════════════════════════════════ -->
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap');
-
+/* ══ WELCOME REDESIGN — CardioHome Corporate ══ */
 #welcome-section {
-    min-height: calc(100vh - 120px);
+    min-height: calc(100vh - 130px);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    background: transparent;
+    overflow: hidden;
+}
+
+/* ── Layout dos columnas ── */
+.wc-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    flex: 1;
+    padding: 8px 4px 16px;
+    align-items: start;
+}
+@media (max-width: 860px) {
+    .wc-layout { grid-template-columns: 1fr; }
+    .wc-right { order: -1; }
+}
+
+/* ══ COLUMNA IZQUIERDA ══ */
+.wc-left {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ── Card de bienvenida ── */
+.wc-brand-card {
+    background: white;
+    border-radius: 20px;
+    padding: 28px 28px 24px;
+    border: 1px solid #e2e8f4;
+    box-shadow: 0 4px 20px rgba(10,61,98,.07);
+    opacity: 0;
+    transform: translateY(20px);
+    animation: wcUp .55s ease forwards;
+    animation-delay: .15s;
+}
+.wc-brand-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #f1f5f9;
+}
+.wc-logo-wrap {
+    width: 62px; height: 62px;
+    border-radius: 16px;
+    background: #f0f6ff;
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
+    flex-shrink: 0;
+    border: 1.5px solid #d4e5f5;
     overflow: hidden;
-    background: transparent;
 }
-
-/* ── Canvas de partículas ── */
-#welcome-canvas {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 0;
+.wc-logo-wrap img {
+    width: 48px; height: 48px;
+    object-fit: contain;
 }
-
-/* ── Orbes de fondo ── */
-.wc-orb {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0;
-    animation: orbFloat 3s ease-out forwards;
-    pointer-events: none;
-    z-index: 0;
+.wc-brand-info h2 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: #0A3D62;
+    margin: 0 0 3px 0;
+    line-height: 1.2;
 }
-.wc-orb-1 {
-    width: 420px; height: 420px;
-    background: radial-gradient(circle, rgba(28,103,163,0.18) 0%, transparent 70%);
-    top: -80px; right: -60px;
-    animation-delay: 0.2s;
+.wc-brand-info p {
+    font-size: .78rem;
+    color: #64748b;
+    margin: 0;
+    font-weight: 500;
 }
-.wc-orb-2 {
-    width: 320px; height: 320px;
-    background: radial-gradient(circle, rgba(46,204,113,0.12) 0%, transparent 70%);
-    bottom: -40px; left: 5%;
-    animation-delay: 0.5s;
-}
-.wc-orb-3 {
-    width: 200px; height: 200px;
-    background: radial-gradient(circle, rgba(10,61,98,0.15) 0%, transparent 70%);
-    top: 40%; left: 40%;
-    animation-delay: 0.8s;
-}
-@keyframes orbFloat {
-    0% { opacity: 0; transform: scale(0.7); }
-    100% { opacity: 1; transform: scale(1); }
-}
-
-/* ── Contenedor principal ── */
-.wc-main {
-    position: relative;
-    z-index: 2;
-    width: 100%;
-    max-width: 880px;
-    padding: 0 1.5rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 0;
-}
-
-/* ── Badge de rol ── */
-.wc-role-badge {
+.wc-online-badge {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    background: rgba(28,103,163,0.1);
-    border: 1px solid rgba(28,103,163,0.25);
-    color: #1C67A3;
-    padding: 6px 16px;
+    gap: 6px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #16a34a;
+    padding: 4px 12px;
     border-radius: 99px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: .78rem;
-    font-weight: 500;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    opacity: 0;
-    transform: translateY(12px);
-    animation: wcFadeUp .6s ease forwards;
-    animation-delay: .3s;
-    margin-bottom: 1.4rem;
+    font-size: .72rem;
+    font-weight: 700;
+    margin-top: 2px;
 }
-.wc-role-badge .badge-dot {
-    width: 7px; height: 7px;
+.wc-online-dot {
+    width: 6px; height: 6px;
     border-radius: 50%;
-    background: #2ECC71;
-    animation: pulse 2s ease-in-out infinite;
+    background: #22c55e;
+    animation: wcPulse 2s ease-in-out infinite;
 }
-@keyframes pulse {
-    0%,100% { transform: scale(1); opacity:1; }
-    50% { transform: scale(1.4); opacity:.6; }
-}
-
-/* ── Saludo ── */
-.wc-greeting {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 1.05rem;
-    font-weight: 300;
-    color: #64748b;
-    letter-spacing: .02em;
-    opacity: 0;
-    transform: translateY(14px);
-    animation: wcFadeUp .6s ease forwards;
-    animation-delay: .45s;
-    margin-bottom: .4rem;
+@keyframes wcPulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50% { opacity:.4; transform:scale(.65); }
 }
 
-/* ── Título principal ── */
-.wc-title {
-    font-family: 'Syne', sans-serif;
-    font-size: clamp(2.2rem, 4.5vw, 3.6rem);
+/* ── Saludo personalizado ── */
+.wc-greeting-block {
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #0A3D62 0%, #1C67A3 100%);
+    border-radius: 14px;
+    color: white;
+}
+.wc-greeting-block .wc-rol {
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: rgba(255,255,255,.6);
+    margin-bottom: 4px;
+}
+.wc-greeting-block h3 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.15rem;
     font-weight: 800;
-    color: #0A3D62;
-    line-height: 1.08;
-    letter-spacing: -.03em;
-    opacity: 0;
-    transform: translateY(18px);
-    animation: wcFadeUp .7s ease forwards;
-    animation-delay: .6s;
-    margin-bottom: 1.2rem;
+    margin: 0 0 8px 0;
+    color: white;
 }
-.wc-title .highlight {
-    background: linear-gradient(135deg, #1C67A3 0%, #2ECC71 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-/* ── Descripción ── */
-.wc-desc {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 1.05rem;
-    font-weight: 400;
-    color: #475569;
-    max-width: 560px;
-    line-height: 1.65;
-    opacity: 0;
-    transform: translateY(14px);
-    animation: wcFadeUp .6s ease forwards;
-    animation-delay: .8s;
-    margin-bottom: 2.4rem;
-}
-
-/* ── Divisor animado ── */
-.wc-divider {
-    width: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, #1C67A3, #2ECC71, transparent);
-    border-radius: 99px;
-    animation: wcLine 1s ease forwards;
-    animation-delay: 1s;
-    margin-bottom: 2.4rem;
-}
-@keyframes wcLine {
-    to { width: 200px; }
+.wc-greeting-block p {
+    font-size: .82rem;
+    color: rgba(255,255,255,.8);
+    margin: 0;
+    line-height: 1.5;
 }
 
 /* ── KPI pills ── */
-.wc-stats {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-    justify-content: center;
+.wc-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
     opacity: 0;
-    transform: translateY(14px);
-    animation: wcFadeUp .6s ease forwards;
-    animation-delay: 1.1s;
-    margin-bottom: 2.8rem;
+    transform: translateY(16px);
+    animation: wcUp .55s ease forwards;
+    animation-delay: .4s;
 }
-.wc-stat-pill {
+.wc-kpi {
     background: white;
-    border: 1.5px solid #e2e8f4;
-    border-radius: 16px;
-    padding: 14px 22px;
+    border: 1px solid #e2e8f4;
+    border-radius: 14px;
+    padding: 14px 10px;
     text-align: center;
-    box-shadow: 0 4px 20px rgba(10,61,98,.07);
-    min-width: 110px;
+    box-shadow: 0 2px 10px rgba(10,61,98,.05);
     transition: transform .2s, box-shadow .2s;
 }
-.wc-stat-pill:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(10,61,98,.13);
+.wc-kpi:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(10,61,98,.11);
 }
-.wc-stat-num {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.7rem;
-    font-weight: 800;
+.wc-kpi-n {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.55rem;
+    font-weight: 900;
     color: #0A3D62;
     line-height: 1;
     display: block;
 }
-.wc-stat-lbl {
-    font-family: 'DM Sans', sans-serif;
-    font-size: .7rem;
-    font-weight: 500;
+.wc-kpi-l {
+    font-size: .65rem;
+    font-weight: 600;
     color: #94a3b8;
     text-transform: uppercase;
-    letter-spacing: .07em;
-    margin-top: 4px;
+    letter-spacing: .06em;
+    margin-top: 5px;
     display: block;
 }
 
-/* ── Botón CTA ── */
-.wc-cta {
-    opacity: 0;
-    transform: translateY(14px);
-    animation: wcFadeUp .6s ease forwards;
-    animation-delay: 1.3s;
+/* ── Botones CTA ── */
+.wc-actions {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
-    justify-content: center;
+    opacity: 0;
+    transform: translateY(16px);
+    animation: wcUp .55s ease forwards;
+    animation-delay: .55s;
 }
-.wc-btn {
+.wc-action-btn {
+    flex: 1;
+    min-width: 120px;
     display: inline-flex;
     align-items: center;
-    gap: 9px;
-    padding: 13px 28px;
-    border-radius: 14px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: .9rem;
-    font-weight: 500;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 16px;
+    border-radius: 12px;
+    font-size: .82rem;
+    font-weight: 700;
     cursor: pointer;
     border: none;
-    transition: all .25s cubic-bezier(.34,1.56,.64,1);
-    text-decoration: none;
+    transition: all .22s cubic-bezier(.34,1.56,.64,1);
+    font-family: 'Inter', sans-serif;
 }
-.wc-btn-primary {
-    background: linear-gradient(135deg, #0A3D62 0%, #1C67A3 100%);
+.wc-action-btn.primary {
+    background: linear-gradient(135deg, #0A3D62, #1C67A3);
     color: white;
-    box-shadow: 0 6px 24px rgba(10,61,98,.3);
+    box-shadow: 0 4px 16px rgba(10,61,98,.25);
 }
-.wc-btn-primary:hover {
+.wc-action-btn.primary:hover {
     transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 12px 32px rgba(10,61,98,.38);
+    box-shadow: 0 10px 28px rgba(10,61,98,.32);
 }
-.wc-btn-secondary {
+.wc-action-btn.ghost {
     background: white;
     color: #0A3D62;
     border: 1.5px solid #d4e5f5;
-    box-shadow: 0 2px 10px rgba(10,61,98,.07);
 }
-.wc-btn-secondary:hover {
-    transform: translateY(-2px) scale(1.02);
+.wc-action-btn.ghost:hover {
     background: #f0f6ff;
-    box-shadow: 0 8px 20px rgba(10,61,98,.12);
+    transform: translateY(-2px);
 }
 
-/* ── Línea de estado inferior ── */
-.wc-status-bar {
-    position: absolute;
-    bottom: 1.5rem;
-    left: 0; right: 0;
-    display: flex;
-    justify-content: center;
-    gap: 2rem;
+/* ══ COLUMNA DERECHA — SLIDER ══ */
+.wc-right {
     opacity: 0;
-    animation: wcFadeUp .6s ease forwards;
-    animation-delay: 1.6s;
-    z-index: 2;
+    transform: translateY(20px);
+    animation: wcUp .6s ease forwards;
+    animation-delay: .25s;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
-.wc-status-item {
+
+/* ── Slider ── */
+.wc-slider-wrap {
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(10,61,98,.14);
+    position: relative;
+    background: #0A3D62;
+    aspect-ratio: 16/10;
+}
+.wc-slides {
+    display: flex;
+    height: 100%;
+    transition: transform .65s cubic-bezier(.77,0,.175,1);
+}
+.wc-slide {
+    min-width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+.wc-slide img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+}
+/* Overlay degradado sobre cada slide */
+.wc-slide-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        to top,
+        rgba(10,30,60,.75) 0%,
+        rgba(10,30,60,.15) 50%,
+        transparent 100%
+    );
+}
+.wc-slide-caption {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 20px 22px 18px;
+    color: white;
+}
+.wc-slide-caption .wc-sc-label {
+    font-size: .65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: rgba(255,255,255,.6);
+    margin-bottom: 4px;
+}
+.wc-slide-caption h4 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: .95rem;
+    font-weight: 800;
+    margin: 0 0 3px 0;
+    color: white;
+}
+.wc-slide-caption p {
+    font-size: .72rem;
+    color: rgba(255,255,255,.75);
+    margin: 0;
+}
+
+/* Controles slider */
+.wc-slider-controls {
+    position: absolute;
+    bottom: 14px;
+    right: 16px;
+    display: flex;
+    gap: 6px;
+    z-index: 5;
+}
+.wc-slider-dot {
+    width: 6px; height: 6px;
+    border-radius: 99px;
+    background: rgba(255,255,255,.35);
+    cursor: pointer;
+    transition: all .3s;
+    border: none;
+    padding: 0;
+}
+.wc-slider-dot.active {
+    width: 20px;
+    background: white;
+}
+.wc-slider-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,.18);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,.25);
+    color: white;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: .72rem;
-    color: #94a3b8;
-    font-weight: 500;
+    justify-content: center;
+    font-size: .8rem;
+    transition: background .2s;
+    z-index: 5;
 }
-.wc-status-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: #2ECC71;
+.wc-slider-arrow:hover { background: rgba(255,255,255,.32); }
+.wc-slider-arrow.prev { left: 12px; }
+.wc-slider-arrow.next { right: 12px; }
+
+/* ── Tarjeta misión ── */
+.wc-mission {
+    background: white;
+    border: 1px solid #e2e8f4;
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: 0 2px 12px rgba(10,61,98,.05);
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+.wc-mission-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, #0A3D62, #1C67A3);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: .9rem;
+    flex-shrink: 0;
+}
+.wc-mission-text h5 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: .85rem;
+    font-weight: 800;
+    color: #0A3D62;
+    margin: 0 0 4px 0;
+}
+.wc-mission-text p {
+    font-size: .75rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.55;
 }
 
 /* ── Animación base ── */
-@keyframes wcFadeUp {
+@keyframes wcUp {
     to { opacity: 1; transform: translateY(0); }
 }
-
-/* ── Grid decorativo esquina ── */
-.wc-grid-deco {
-    position: absolute;
-    bottom: 0; right: 0;
-    width: 260px; height: 260px;
-    opacity: .04;
-    background-image:
-        linear-gradient(#0A3D62 1px, transparent 1px),
-        linear-gradient(90deg, #0A3D62 1px, transparent 1px);
-    background-size: 28px 28px;
-    pointer-events: none;
-    z-index: 0;
-}
-
-/* ── Cruz decorativa ── */
-.wc-cross {
-    position: absolute;
-    opacity: 0;
-    animation: wcFadeUp .8s ease forwards;
-    pointer-events: none;
-    z-index: 1;
-}
-.wc-cross-1 { top: 12%; left: 6%; animation-delay: 1.8s; }
-.wc-cross-2 { bottom: 20%; right: 8%; animation-delay: 2s; }
-.wc-cross svg { color: rgba(28,103,163,0.2); }
 </style>
 
-<!-- Canvas partículas -->
-<canvas id="welcome-canvas"></canvas>
+<div class="wc-layout">
 
-<!-- Orbes -->
-<div class="wc-orb wc-orb-1"></div>
-<div class="wc-orb wc-orb-2"></div>
-<div class="wc-orb wc-orb-3"></div>
+    <!-- ══ COLUMNA IZQUIERDA ══ -->
+    <div class="wc-left">
 
-<!-- Grid deco -->
-<div class="wc-grid-deco"></div>
+        <!-- Brand card -->
+        <div class="wc-brand-card">
+            <div class="wc-brand-header">
+                <div class="wc-logo-wrap">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="CardioHome">
+                </div>
+                <div class="wc-brand-info">
+                    <h2>CardioHome</h2>
+                    <p>Plataforma de Evaluaciones Médicas PIE</p>
+                    <div class="wc-online-badge">
+                        <span class="wc-online-dot"></span>
+                        Sistema en línea
+                    </div>
+                </div>
+            </div>
 
-<!-- Cruces decorativas -->
-<div class="wc-cross wc-cross-1">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M12 2v20M2 12h20"/>
-    </svg>
-</div>
-<div class="wc-cross wc-cross-2">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M12 2v20M2 12h20"/>
-    </svg>
-</div>
-
-<!-- Contenido principal -->
-<div class="wc-main">
-
-    <!-- Badge rol -->
-    <div class="wc-role-badge">
-        <span class="badge-dot"></span>
-        {% if usuario == 'admin' %}Administrador del Sistema
-        {% elif usuario == 'coordinadora' %}Coordinadora General
-        {% elif usuario == 'coordinador_escuela' %}Coordinador de Escuela
-        {% else %}Médico Evaluador{% endif %}
-        &nbsp;·&nbsp; En línea
-    </div>
-
-    <!-- Saludo -->
-    <p class="wc-greeting">
-        {% set hora = now().hour if now is defined else 12 %}
-        Bienvenido/a de vuelta —
-    </p>
-
-    <!-- Título -->
-    <h1 class="wc-title">
-        {% if usuario == 'admin' %}
-            Panel de <span class="highlight">Control</span><br>CardioHome
-        {% elif usuario == 'coordinadora' %}
-            Centro de <span class="highlight">Coordinación</span><br>General
-        {% elif usuario == 'coordinador_escuela' %}
-            Panel de <span class="highlight">Gestión</span><br>Escolar
-        {% else %}
-            Plataforma de <span class="highlight">Evaluaciones</span><br>Médicas
-        {% endif %}
-    </h1>
-
-    <!-- Descripción -->
-    <p class="wc-desc">
-        {% if usuario == 'admin' %}
-            Gestión integral de proyectos, nóminas y evaluaciones del Programa de Integración Escolar. Todos los datos en tiempo real.
-        {% elif usuario == 'coordinadora' %}
-            Supervisión en tiempo real del avance de todas las doctoras y establecimientos del programa.
-        {% elif usuario == 'coordinador_escuela' %}
-            Accede al estado actualizado de las evaluaciones de tus establecimientos asignados.
-        {% else %}
-            Gestiona tus nóminas asignadas, registra evaluaciones y accede a tu calendario de visitas.
-        {% endif %}
-    </p>
-
-    <!-- Divisor -->
-    <div class="wc-divider"></div>
-
-    <!-- KPI pills dinámicos -->
-    <div class="wc-stats" id="wc-stats-row">
-        <!-- Se rellenan por JS -->
-        <div class="wc-stat-pill">
-            <span class="wc-stat-num" id="wc-kpi-1">—</span>
-            <span class="wc-stat-lbl" id="wc-kpi-1-lbl">Cargando…</span>
+            <!-- Saludo por rol -->
+            <div class="wc-greeting-block">
+                <div class="wc-rol">
+                    {% if usuario == 'admin' %}Administrador
+                    {% elif usuario == 'coordinadora' %}Coordinadora General
+                    {% elif usuario == 'coordinador_escuela' %}Coordinador de Escuela
+                    {% else %}Médico Evaluador{% endif %}
+                </div>
+                <h3>
+                    {% if usuario == 'admin' %}Panel de Control General
+                    {% elif usuario == 'coordinadora' %}Centro de Coordinación
+                    {% elif usuario == 'coordinador_escuela' %}Panel de Gestión Escolar
+                    {% else %}Bienvenida, Doctora{% endif %}
+                </h3>
+                <p>
+                    {% if usuario == 'admin' %}Gestiona proyectos, nóminas y el avance de todas las evaluaciones del Programa de Integración Escolar.
+                    {% elif usuario == 'coordinadora' %}Supervisa en tiempo real el rendimiento de todas las doctoras y establecimientos del programa.
+                    {% elif usuario == 'coordinador_escuela' %}Accede al estado actualizado de las evaluaciones de tus establecimientos asignados.
+                    {% else %}Gestiona tus nóminas, registra evaluaciones médicas y revisa tu calendario de visitas a terreno.{% endif %}
+                </p>
+            </div>
         </div>
-        <div class="wc-stat-pill">
-            <span class="wc-stat-num" id="wc-kpi-2">—</span>
-            <span class="wc-stat-lbl" id="wc-kpi-2-lbl">Cargando…</span>
+
+        <!-- KPIs -->
+        <div class="wc-kpis">
+            <div class="wc-kpi">
+                <span class="wc-kpi-n" id="wc-kpi-1">—</span>
+                <span class="wc-kpi-l" id="wc-kpi-1-lbl">Cargando</span>
+            </div>
+            <div class="wc-kpi">
+                <span class="wc-kpi-n" id="wc-kpi-2">—</span>
+                <span class="wc-kpi-l" id="wc-kpi-2-lbl">Cargando</span>
+            </div>
+            <div class="wc-kpi">
+                <span class="wc-kpi-n" id="wc-kpi-3">—</span>
+                <span class="wc-kpi-l" id="wc-kpi-3-lbl">Cargando</span>
+            </div>
         </div>
-        <div class="wc-stat-pill">
-            <span class="wc-stat-num" id="wc-kpi-3">—</span>
-            <span class="wc-stat-lbl" id="wc-kpi-3-lbl">Cargando…</span>
+
+        <!-- Acciones -->
+        <div class="wc-actions">
+            {% if usuario == 'admin' %}
+                <button class="wc-action-btn primary" onclick="showSection('admin-performance')">
+                    <i class="fa-solid fa-chart-simple"></i> Rendimiento General
+                </button>
+                <button class="wc-action-btn ghost" onclick="showSection('gestionar-proyectos')">
+                    <i class="fa-solid fa-folder-open"></i> Proyectos
+                </button>
+            {% elif usuario == 'coordinadora' %}
+                <button class="wc-action-btn primary" onclick="showSection('coord-performance')">
+                    <i class="fa-solid fa-gauge-high"></i> Ver Rendimiento en Vivo
+                </button>
+            {% elif usuario == 'coordinador_escuela' %}
+                <button class="wc-action-btn primary" onclick="showSection('school-dashboard')">
+                    <i class="fa-solid fa-building-columns"></i> Mis Establecimientos
+                </button>
+            {% else %}
+                <button class="wc-action-btn primary" onclick="showSection('doctor-performance')">
+                    <i class="fa-solid fa-chart-simple"></i> Mi Rendimiento
+                </button>
+                <button class="wc-action-btn ghost" onclick="showSection('doctor-proyectos')">
+                    <i class="fa-solid fa-folder-tree"></i> Proyectos
+                </button>
+            {% endif %}
         </div>
-    </div>
 
-    <!-- CTAs -->
-    <div class="wc-cta">
-        {% if usuario == 'admin' %}
-            <button class="wc-btn wc-btn-primary" onclick="showSection('admin-performance')">
-                <i class="fa-solid fa-chart-simple"></i> Ver Rendimiento General
-            </button>
-            <button class="wc-btn wc-btn-secondary" onclick="showSection('gestionar-proyectos')">
-                <i class="fa-solid fa-folder-open"></i> Gestionar Proyectos
-            </button>
-        {% elif usuario == 'coordinadora' %}
-            <button class="wc-btn wc-btn-primary" onclick="showSection('coord-performance')">
-                <i class="fa-solid fa-gauge-high"></i> Ver Rendimiento en Vivo
-            </button>
-        {% elif usuario == 'coordinador_escuela' %}
-            <button class="wc-btn wc-btn-primary" onclick="showSection('school-dashboard')">
-                <i class="fa-solid fa-building-columns"></i> Mis Establecimientos
-            </button>
-        {% else %}
-            <button class="wc-btn wc-btn-primary" onclick="showSection('doctor-performance')">
-                <i class="fa-solid fa-chart-simple"></i> Mi Rendimiento
-            </button>
-            <button class="wc-btn wc-btn-secondary" onclick="showSection('doctor-proyectos')">
-                <i class="fa-solid fa-folder-tree"></i> Mis Proyectos
-            </button>
-        {% endif %}
-    </div>
+        <!-- Misión -->
+        <div class="wc-mission" style="opacity:0;transform:translateY(16px);animation:wcUp .55s ease forwards;animation-delay:.7s;">
+            <div class="wc-mission-icon">
+                <i class="fa-solid fa-heart-pulse"></i>
+            </div>
+            <div class="wc-mission-text">
+                <h5>Nuestra Misión</h5>
+                <p>Optimizar los flujos de trabajo de evaluación médica escolar, asegurando precisión diagnóstica y cumplimiento del Programa de Integración Escolar en toda la comunidad educativa.</p>
+            </div>
+        </div>
 
-</div>
+    </div><!-- /wc-left -->
 
-<!-- Barra de estado inferior -->
-<div class="wc-status-bar">
-    <div class="wc-status-item">
-        <span class="wc-status-dot"></span>
-        Supabase conectado
-    </div>
-    <div class="wc-status-item">
-        <span class="wc-status-dot"></span>
-        Datos sincronizados
-    </div>
-    <div class="wc-status-item">
-        <span class="wc-status-dot" style="background:#1C67A3;"></span>
-        CardioHome v2.0
-    </div>
-</div>
+    <!-- ══ COLUMNA DERECHA — SLIDER ══ -->
+    <div class="wc-right">
+
+        <div class="wc-slider-wrap" id="wcSliderWrap">
+            <div class="wc-slides" id="wcSlides">
+
+                <!-- Slide 1 — placeholder operativo -->
+                <div class="wc-slide">
+                    <div style="width:100%;height:100%;background:linear-gradient(135deg,#0A3D62 0%,#1C67A3 55%,#2ECC71 100%);display:flex;align-items:center;justify-content:center;">
+                        <div style="text-align:center;color:white;padding:30px;">
+                            <i class="fa-solid fa-stethoscope" style="font-size:3.5rem;opacity:.35;margin-bottom:16px;display:block;"></i>
+                            <div style="font-family:'Montserrat',sans-serif;font-size:1.1rem;font-weight:800;opacity:.9;">Operativo en Terreno</div>
+                            <div style="font-size:.8rem;opacity:.6;margin-top:6px;">Evaluaciones Medicina Familiar</div>
+                        </div>
+                    </div>
+                    <div class="wc-slide-overlay"></div>
+                    <div class="wc-slide-caption">
+                        <div class="wc-sc-label">Operativo</div>
+                        <h4>Evaluaciones en Establecimiento</h4>
+                        <p>Programa de Integración Escolar · CardioHome</p>
+                    </div>
+                </div>
+
+                <!-- Slide 2 -->
+                <div class="wc-slide">
+                    <div style="width:100%;height:100%;background:linear-gradient(135deg,#064e3b 0%,#065f46 50%,#0A3D62 100%);display:flex;align-items:center;justify-content:center;">
+                        <div style="text-align:center;color:white;padding:30px;">
+                            <i class="fa-solid fa-brain" style="font-size:3.5rem;opacity:.35;margin-bottom:16px;display:block;"></i>
+                            <div style="font-family:'Montserrat',sans-serif;font-size:1.1rem;font-weight:800;opacity:.9;">Valoración Neurológica</div>
+                            <div style="font-size:.8rem;opacity:.6;margin-top:6px;">Especialistas en terreno</div>
+                        </div>
+                    </div>
+                    <div class="wc-slide-overlay"></div>
+                    <div class="wc-slide-caption">
+                        <div class="wc-sc-label">Especialidad</div>
+                        <h4>Neurología Pediátrica</h4>
+                        <p>Detección temprana · Programa PIE</p>
+                    </div>
+                </div>
+
+                <!-- Slide 3 -->
+                <div class="wc-slide">
+                    <div style="width:100%;height:100%;background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#1C67A3 100%);display:flex;align-items:center;justify-content:center;">
+                        <div style="text-align:center;color:white;padding:30px;">
+                            <i class="fa-solid fa-school" style="font-size:3.5rem;opacity:.35;margin-bottom:16px;display:block;"></i>
+                            <div style="font-family:'Montserrat',sans-serif;font-size:1.1rem;font-weight:800;opacity:.9;">Cobertura Nacional</div>
+                            <div style="font-size:.8rem;opacity:.6;margin-top:6px;">Establecimientos educacionales</div>
+                        </div>
+                    </div>
+                    <div class="wc-slide-overlay"></div>
+                    <div class="wc-slide-caption">
+                        <div class="wc-sc-label">Alcance</div>
+                        <h4>Red de Establecimientos PIE</h4>
+                        <p>Cobertura integral · Comunidad escolar</p>
+                    </div>
+                </div>
+
+            </div><!-- /wc-slides -->
+
+            <!-- Flechas -->
+            <button class="wc-slider-arrow prev" onclick="wcSlide(-1)">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <button class="wc-slider-arrow next" onclick="wcSlide(1)">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+
+            <!-- Dots -->
+            <div class="wc-slider-controls" id="wcDots"></div>
+
+        </div><!-- /slider-wrap -->
+
+        <!-- Info adicional debajo del slider -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;opacity:0;transform:translateY(16px);animation:wcUp .55s ease forwards;animation-delay:.5s;">
+            <div style="background:white;border:1px solid #e2e8f4;border-radius:14px;padding:14px 16px;box-shadow:0 2px 10px rgba(10,61,98,.05);">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:36px;height:36px;background:#f0fdf4;border-radius:10px;display:flex;align-items:center;justify-content:center;border:1px solid #bbf7d0;">
+                        <i class="fa-solid fa-shield-halved" style="color:#16a34a;font-size:.85rem;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:.78rem;font-weight:700;color:#0A3D62;">Datos Seguros</div>
+                        <div style="font-size:.68rem;color:#94a3b8;">Cifrado Supabase</div>
+                    </div>
+                </div>
+            </div>
+            <div style="background:white;border:1px solid #e2e8f4;border-radius:14px;padding:14px 16px;box-shadow:0 2px 10px rgba(10,61,98,.05);">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:36px;height:36px;background:#eff6ff;border-radius:10px;display:flex;align-items:center;justify-content:center;border:1px solid #bfdbfe;">
+                        <i class="fa-solid fa-bolt" style="color:#2563eb;font-size:.85rem;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:.78rem;font-weight:700;color:#0A3D62;">Tiempo Real</div>
+                        <div style="font-size:.68rem;color:#94a3b8;">Sincronización live</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /wc-right -->
+
+</div><!-- /wc-layout -->
 
 <script>
-// ── Partículas flotantes ──────────────────────────────────────
+// ── Slider logic ──────────────────────────────────────────────
 (function() {
-    const canvas = document.getElementById('welcome-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let particles = [];
-    let raf;
+    var current = 0;
+    var slides  = document.querySelectorAll('.wc-slide');
+    var track   = document.getElementById('wcSlides');
+    var dotsWrap = document.getElementById('wcDots');
+    var timer;
 
-    function resize() {
-        const parent = canvas.parentElement;
-        canvas.width  = parent.offsetWidth;
-        canvas.height = parent.offsetHeight;
-    }
+    if (!track || !slides.length) return;
 
-    function createParticles() {
-        particles = [];
-        const count = Math.floor((canvas.width * canvas.height) / 18000);
-        for (let i = 0; i < count; i++) {
-            particles.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                r: Math.random() * 1.8 + 0.4,
-                dx: (Math.random() - 0.5) * 0.35,
-                dy: (Math.random() - 0.5) * 0.35,
-                alpha: Math.random() * 0.35 + 0.08,
-                color: Math.random() > 0.5 ? '28,103,163' : '46,204,113'
-            });
-        }
-    }
-
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // Líneas de conexión
-        for (let i = 0; i < particles.length; i++) {
-            for (let j = i + 1; j < particles.length; j++) {
-                const dx = particles[i].x - particles[j].x;
-                const dy = particles[i].y - particles[j].y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist < 100) {
-                    ctx.beginPath();
-                    ctx.strokeStyle = `rgba(28,103,163,${0.06 * (1 - dist/100)})`;
-                    ctx.lineWidth = 0.6;
-                    ctx.moveTo(particles[i].x, particles[i].y);
-                    ctx.lineTo(particles[j].x, particles[j].y);
-                    ctx.stroke();
-                }
-            }
-        }
-        // Puntos
-        particles.forEach(p => {
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(${p.color},${p.alpha})`;
-            ctx.fill();
-            p.x += p.dx;
-            p.y += p.dy;
-            if (p.x < 0 || p.x > canvas.width)  p.dx *= -1;
-            if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
-        });
-        raf = requestAnimationFrame(draw);
-    }
-
-    function init() {
-        resize();
-        createParticles();
-        if (raf) cancelAnimationFrame(raf);
-        draw();
-    }
-
-    // Solo animar cuando la sección esté visible
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(m) {
-            const ws = document.getElementById('welcome-section');
-            if (!ws) return;
-            if (ws.style.display !== 'none' && ws.classList.contains('active')) {
-                init();
-            } else {
-                if (raf) { cancelAnimationFrame(raf); raf = null; }
-            }
-        });
+    // Crear dots
+    slides.forEach(function(_, i) {
+        var d = document.createElement('button');
+        d.className = 'wc-slider-dot' + (i === 0 ? ' active' : '');
+        d.onclick = function() { goTo(i); };
+        dotsWrap.appendChild(d);
     });
-    const ws = document.getElementById('welcome-section');
-    if (ws) {
-        observer.observe(ws, { attributes: true, attributeFilter: ['class','style'] });
-        // Arrancar si ya está activo
-        if (ws.classList.contains('active')) {
-            setTimeout(init, 100);
-        }
+
+    function goTo(idx) {
+        current = (idx + slides.length) % slides.length;
+        track.style.transform = 'translateX(-' + (current * 100) + '%)';
+        document.querySelectorAll('.wc-slider-dot').forEach(function(d, i) {
+            d.classList.toggle('active', i === current);
+        });
+        clearInterval(timer);
+        timer = setInterval(function() { goTo(current + 1); }, 4500);
     }
-    window.addEventListener('resize', function() {
-        resize(); createParticles();
+
+    window.wcSlide = function(dir) { goTo(current + dir); };
+
+    // Auto-play al entrar visible
+    var ws = document.getElementById('welcome-section');
+    var started = false;
+    function startSlider() {
+        if (started) return;
+        started = true;
+        timer = setInterval(function() { goTo(current + 1); }, 4500);
+    }
+    if (ws && ws.classList.contains('active')) {
+        setTimeout(startSlider, 800);
+    }
+    var obs = new MutationObserver(function() {
+        if (ws && ws.classList.contains('active')) startSlider();
     });
+    if (ws) obs.observe(ws, { attributes: true, attributeFilter: ['class'] });
 })();
 
-// ── KPI pills ─────────────────────────────────────────────────
+// ── KPI counter ───────────────────────────────────────────────
 (function() {
-    const usuario = '{{ usuario }}';
+    var usuario = '{{ usuario }}';
 
-    function animateNum(el, target) {
+    function animNum(id, target) {
+        var el = document.getElementById(id);
         if (!el || isNaN(target)) return;
-        let start = 0;
-        const duration = 1200;
-        const startTime = performance.now();
-        function step(now) {
-            const progress = Math.min((now - startTime) / duration, 1);
-            const ease = 1 - Math.pow(1 - progress, 3);
-            el.textContent = Math.round(start + (target - start) * ease);
-            if (progress < 1) requestAnimationFrame(step);
-        }
-        requestAnimationFrame(step);
+        var start = performance.now();
+        var dur = 1000;
+        (function step(now) {
+            var p = Math.min((now - start) / dur, 1);
+            var e = 1 - Math.pow(1 - p, 3);
+            el.textContent = Math.round(target * e);
+            if (p < 1) requestAnimationFrame(step);
+        })(start);
     }
+    function setT(id, v) { var e = document.getElementById(id); if (e) e.textContent = v; }
 
-    function setText(id, val) {
-        const el = document.getElementById(id);
-        if (el) el.textContent = val;
-    }
-
-    async function loadWcKpis() {
+    async function loadKpis() {
         try {
             if (usuario === 'admin') {
-                const res = await fetch('/api/admin/stats_global');
-                if (!res.ok) return;
-                const d = await res.json();
+                var r = await fetch('/api/admin/stats_global');
+                var d = await r.json();
                 if (!d.success) return;
-                animateNum(document.getElementById('wc-kpi-1'), d.total_evaluados || 0);
-                setText('wc-kpi-1-lbl', 'Evaluados');
-                animateNum(document.getElementById('wc-kpi-2'), d.total_pendientes || 0);
-                setText('wc-kpi-2-lbl', 'Pendientes');
-                animateNum(document.getElementById('wc-kpi-3'), d.total_nominas || 0);
-                setText('wc-kpi-3-lbl', 'Nóminas activas');
-
-            } else if (usuario === 'coordinadora') {
-                // No tiene endpoint propio de bienvenida — mostrar placeholder elegante
-                setText('wc-kpi-1', '—'); setText('wc-kpi-1-lbl', 'Rendimiento');
-                setText('wc-kpi-2', '—'); setText('wc-kpi-2-lbl', 'Doctoras');
-                setText('wc-kpi-3', '—'); setText('wc-kpi-3-lbl', 'Colegios');
-
+                animNum('wc-kpi-1', d.total_evaluados);  setT('wc-kpi-1-lbl','Evaluados');
+                animNum('wc-kpi-2', d.total_pendientes); setT('wc-kpi-2-lbl','Pendientes');
+                animNum('wc-kpi-3', d.total_nominas);    setT('wc-kpi-3-lbl','Nóminas');
+            } else if (usuario !== 'coordinadora' && usuario !== 'coordinador_escuela') {
+                var r = await fetch('/api/doctor/performance');
+                var d = await r.json();
+                if (!d.success) return;
+                animNum('wc-kpi-1', d.completed);  setT('wc-kpi-1-lbl','Evaluados');
+                animNum('wc-kpi-2', d.pending);    setT('wc-kpi-2-lbl','Pendientes');
+                setT('wc-kpi-3', d.percent);       setT('wc-kpi-3-lbl','Avance');
             } else {
-                // Doctora
-                const res = await fetch('/api/doctor/performance');
-                if (!res.ok) return;
-                const d = await res.json();
-                if (!d.success) return;
-                animateNum(document.getElementById('wc-kpi-1'), d.completed || 0);
-                setText('wc-kpi-1-lbl', 'Evaluados');
-                animateNum(document.getElementById('wc-kpi-2'), d.pending || 0);
-                setText('wc-kpi-2-lbl', 'Pendientes');
-                setText('wc-kpi-3', d.percent || '—');
-                setText('wc-kpi-3-lbl', 'Avance');
+                setT('wc-kpi-1','—'); setT('wc-kpi-1-lbl','Evaluados');
+                setT('wc-kpi-2','—'); setT('wc-kpi-2-lbl','Doctoras');
+                setT('wc-kpi-3','—'); setT('wc-kpi-3-lbl','Colegios');
             }
         } catch(e) {
-            console.warn('wc kpis:', e);
-            setText('wc-kpi-1', '—'); setText('wc-kpi-2', '—'); setText('wc-kpi-3', '—');
-            setText('wc-kpi-1-lbl', ''); setText('wc-kpi-2-lbl', ''); setText('wc-kpi-3-lbl', '');
+            setT('wc-kpi-1','—'); setT('wc-kpi-2','—'); setT('wc-kpi-3','—');
+            setT('wc-kpi-1-lbl',''); setT('wc-kpi-2-lbl',''); setT('wc-kpi-3-lbl','');
         }
     }
 
-    // Cargar al iniciar si la sección está activa
-    const ws = document.getElementById('welcome-section');
-    if (ws && ws.classList.contains('active')) {
-        setTimeout(loadWcKpis, 800);
-    }
-    // También recargar si se navega de vuelta al inicio
-    document.querySelectorAll('[data-section="welcome-section"]').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            setTimeout(loadWcKpis, 400);
-        });
+    var ws = document.getElementById('welcome-section');
+    if (ws && ws.classList.contains('active')) setTimeout(loadKpis, 600);
+    document.querySelectorAll('[data-section="welcome-section"]').forEach(function(b) {
+        b.addEventListener('click', function() { setTimeout(loadKpis, 400); });
     });
 })();
 </script>

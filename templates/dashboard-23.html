@@ -3089,22 +3089,12 @@
                             <p style="color:#64748b; font-size:.875rem; margin:.25rem 0 0 0;" id="dp-subtitle">Formularios completados · Datos en tiempo real desde Supabase</p>
                         </div>
                         <div style="display:flex; gap:.75rem; flex-wrap:wrap; align-items:center;">
-                            <!-- Filtro por proyecto -->
+                            <!-- Filtro por proyecto (poblado dinámicamente vía JS) -->
                             <div style="position:relative;">
                                 <i class="fa-solid fa-folder-open" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#1C67A3;font-size:.8rem;pointer-events:none;"></i>
                                 <select id="dp-project-filter" onchange="loadDoctorPerformance()"
                                     style="padding:.5rem 1rem .5rem 30px;border-radius:12px;font-weight:700;font-size:.8rem;border:2px solid #e2e8f0;background:#f8faff;color:#0A3D62;cursor:pointer;outline:none;appearance:none;min-width:180px;">
                                     <option value="all">Todos los proyectos</option>
-                                    {% if assigned_nominations %}
-                                        {% set proyectos_vistos = [] %}
-                                        {% for nomina in assigned_nominations %}
-                                            {% set pn = nomina.proyecto_nombre if nomina.proyecto_nombre else 'Sin Proyecto' %}
-                                            {% if pn not in proyectos_vistos %}
-                                                {% set _ = proyectos_vistos.append(pn) %}
-                                                <option value="{{ pn }}">{{ pn }}</option>
-                                            {% endif %}
-                                        {% endfor %}
-                                    {% endif %}
                                 </select>
                             </div>
                             <button onclick="loadDoctorPerformance()" style="background:#f1f5f9; color:#0A3D62; border:2px solid #e2e8f0; padding:.5rem 1rem; border-radius:12px; font-weight:700; font-size:.8rem; cursor:pointer; display:flex; align-items:center; gap:.5rem; transition:all .2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
@@ -5970,6 +5960,19 @@ async function loadDoctorPerformance() {
         // Ocultar skeleton, mostrar contenido
         skeleton.style.display = 'none';
         content.style.display  = 'block';
+
+        // Poblar el select de proyectos con los proyectos reales de la doctora
+        if (data.proyectos_list && filterSel) {
+            const currentVal = filterSel.value;
+            filterSel.innerHTML = '<option value="all">Todos los proyectos</option>';
+            data.proyectos_list.forEach(function(pn) {
+                const opt = document.createElement('option');
+                opt.value = pn;
+                opt.textContent = pn;
+                if (pn === currentVal) opt.selected = true;
+                filterSel.appendChild(opt);
+            });
+        }
 
         // KPI Cards
         setText('dp-total',     data.total);

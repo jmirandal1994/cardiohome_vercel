@@ -4663,9 +4663,15 @@
               <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">RUT</label>
                 <input id="aem-rut" type="text" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
               <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Fecha de Nacimiento</label>
-                <input id="aem-fecha-nac" type="date" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+                <input id="aem-fecha-nac" type="date" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;" oninput="aemRecalcularEdad()"></div>
               <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Fecha Evaluación</label>
-                <input id="aem-fecha-eval" type="date" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+                <input id="aem-fecha-eval" type="date" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;" oninput="aemRecalcularEdad()"></div>
+              <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Edad (calculada automáticamente)</label>
+                <div style="position:relative;">
+                  <input id="aem-edad" type="text" readonly placeholder="Se calcula con las fechas" style="width:100%;padding:9px 12px 9px 38px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;background:#f1f5f9;color:#374151;cursor:default;">
+                  <i class="fas fa-calculator" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.8rem;pointer-events:none;"></i>
+                </div>
+              </div>
               <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Sexo</label>
                 <select id="aem-sexo" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
                   <option value="">— Sin especificar —</option>
@@ -4673,7 +4679,22 @@
                   <option value="F">Femenino</option>
                 </select></div>
               <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Nacionalidad</label>
-                <input id="aem-nacionalidad" type="text" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+                <select id="aem-nacionalidad" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;background:#fff;">
+                  <option value="">— Sin especificar —</option>
+                  <option value="Chilena">Chilena</option>
+                  <option value="Venezolana">Venezolana</option>
+                  <option value="Peruana">Peruana</option>
+                  <option value="Colombiana">Colombiana</option>
+                  <option value="Boliviana">Boliviana</option>
+                  <option value="Argentina">Argentina</option>
+                  <option value="Ecuatoriana">Ecuatoriana</option>
+                  <option value="Haitiana">Haitiana</option>
+                  <option value="Brasileña">Brasileña</option>
+                  <option value="Dominicana">Dominicana</option>
+                  <option value="Cubana">Cubana</option>
+                  <option value="Española">Española</option>
+                  <option value="Otra">Otra</option>
+                </select></div>
             </div>
           </div>
 
@@ -5316,6 +5337,38 @@
         let _aemSolicitudId = null;
         let _aemFormType    = null;
 
+        // ── Recalcula la edad en el modal según fecha de nacimiento y fecha de evaluación ──
+        function aemRecalcularEdad() {
+            const nacInput  = document.getElementById('aem-fecha-nac');
+            const evalInput = document.getElementById('aem-fecha-eval');
+            const edadInput = document.getElementById('aem-edad');
+            if (!nacInput || !evalInput || !edadInput) return;
+            const nac  = nacInput.value;
+            const eval_ = evalInput.value;
+            if (!nac || !eval_) {
+                edadInput.value = '';
+                return;
+            }
+            const fechaNac  = new Date(nac  + 'T00:00:00');
+            const fechaEval = new Date(eval_ + 'T00:00:00');
+            if (isNaN(fechaNac) || isNaN(fechaEval) || fechaEval < fechaNac) {
+                edadInput.value = '';
+                return;
+            }
+            let años  = fechaEval.getFullYear() - fechaNac.getFullYear();
+            let meses = fechaEval.getMonth()    - fechaNac.getMonth();
+            let dias  = fechaEval.getDate()      - fechaNac.getDate();
+            if (dias  < 0) { meses--; }
+            if (meses < 0) { años--; meses += 12; }
+            if (años < 0)  { edadInput.value = ''; return; }
+            if (años >= 2) {
+                edadInput.value = años + ' año' + (años !== 1 ? 's' : '');
+            } else {
+                const totalMeses = años * 12 + (meses < 0 ? 0 : meses);
+                edadInput.value  = totalMeses + ' mes' + (totalMeses !== 1 ? 'es' : '');
+            }
+        }
+
         async function abrirAdminEditModal(alumnoId, solicitudId, detalles) {
             _aemAlumnoId    = alumnoId;
             _aemSolicitudId = solicitudId;
@@ -5356,7 +5409,13 @@
                 document.getElementById('aem-fecha-nac').value    = a.fecha_nacimiento  || '';
                 document.getElementById('aem-fecha-eval').value   = a.fecha_evaluacion  || '';
                 document.getElementById('aem-sexo').value         = a.sexo         || '';
-                document.getElementById('aem-nacionalidad').value = a.nacionalidad  || '';
+                // Poblar select de nacionalidad: si el valor existe como opción lo selecciona, si no pone "Otra"
+                const nacSelect = document.getElementById('aem-nacionalidad');
+                const nacVal    = a.nacionalidad || '';
+                const nacOpt    = Array.from(nacSelect.options).find(o => o.value === nacVal);
+                nacSelect.value = nacOpt ? nacVal : (nacVal ? 'Otra' : '');
+                // Calcular edad inicial
+                aemRecalcularEdad();
 
                 // Mostrar campos según form_type
                 document.getElementById('aem-campos-neuro').style.display    = 'none';
@@ -5414,7 +5473,8 @@
                 fecha_nacimiento:document.getElementById('aem-fecha-nac').value   || null,
                 fecha_evaluacion:document.getElementById('aem-fecha-eval').value  || null,
                 sexo:            document.getElementById('aem-sexo').value         || null,
-                nacionalidad:    document.getElementById('aem-nacionalidad').value.trim() || null,
+                nacionalidad:    document.getElementById('aem-nacionalidad').value || null,
+                edad:            document.getElementById('aem-edad').value         || null,
             };
 
             if (_aemFormType === 'neurologia' || _aemFormType === 'informe_neurologico') {

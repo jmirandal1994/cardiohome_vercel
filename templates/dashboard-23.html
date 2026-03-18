@@ -2992,14 +2992,22 @@
     }
     // ── DOCTOR PROYECTOS: colapso, búsqueda y stats ──────────────────
     function toggleDocProy(id, idx) {
-        var el   = document.getElementById(id);
-        var chev = document.querySelector('.doc-proy-chev-' + idx);
-        if (el.style.display === 'none') {
-            el.style.display = 'block';
-            if (chev) chev.style.transform = 'rotate(180deg)';
+        var body = document.getElementById(id);
+        if (!body) return;
+        var card   = body.parentElement;
+        var chev   = card ? card.querySelector('.doc-proy-chev') : null;
+        var header = card ? card.querySelector('[data-proy-header]') : null;
+        var isOpen = body.style.display !== 'none';
+        if (isOpen) {
+            body.style.display = 'none';
+            if (chev)   chev.style.transform = 'rotate(0deg)';
+            if (header) header.style.borderRadius = '16px';
+            card.style.borderRadius = '16px';
         } else {
-            el.style.display = 'none';
-            if (chev) chev.style.transform = 'rotate(0deg)';
+            body.style.display = 'block';
+            if (chev)   chev.style.transform = 'rotate(180deg)';
+            if (header) header.style.borderRadius = '16px 16px 0 0';
+            card.style.borderRadius = '16px';
         }
     }
     function filtrarProyectosDoctor() {
@@ -4479,8 +4487,10 @@
                          style="background:white;border-radius:16px;border:1px solid #e2e8f4;margin-bottom:1rem;overflow:visible;box-shadow:0 2px 8px rgba(15,52,96,.06);">
 
                         <!-- Header clickeable -->
-                        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:linear-gradient(90deg,#0f3460,#1c67a3);cursor:pointer;"
-                             onclick="toggleDocProy('docproy-{{ loop_idx }}', '{{ loop_idx }}')">
+                        <div data-proy-header style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:linear-gradient(90deg,#0f3460,#1c67a3);cursor:pointer;border-radius:16px;"
+                             onclick="toggleDocProy('docproy-{{ loop_idx }}', '{{ loop_idx }}')"
+                             onmouseover="this.style.filter='brightness(1.08)'" onmouseout="this.style.filter=''"
+                             >
                             <div style="display:flex;align-items:center;gap:12px;">
                                 <div style="background:rgba(255,255,255,.15);border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">
                                     <i class="fa-solid fa-notes-medical" style="color:white;font-size:1rem;"></i>
@@ -4507,12 +4517,12 @@
                                     </div>
                                     <div id="docprojcount-{{ loop_idx }}" style="color:#b8d4f0;font-size:.65rem;margin-top:3px;">cargando…</div>
                                 </div>
-                                <i class="fa-solid fa-chevron-down doc-proy-chev-{{ loop_idx }}" style="color:rgba(255,255,255,.6);transition:transform .25s;"></i>
+                                <i class="fa-solid fa-chevron-down doc-proy-chev" style="color:rgba(255,255,255,.6);transition:transform .25s;flex-shrink:0;"></i>
                             </div>
                         </div>
 
                         <!-- Cuerpo colapsable con tabla de nóminas -->
-                        <div id="docproy-{{ loop_idx }}" style="display:none;">
+                        <div id="docproy-{{ loop_idx }}" style="display:none;border-radius:0 0 16px 16px;overflow:hidden;">
                             <div style="padding:0 20px 16px;">
                                 <table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:.82rem;">
                                     <thead>

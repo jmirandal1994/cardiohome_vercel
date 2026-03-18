@@ -657,9 +657,6 @@
                     <form id="form-estudiante-{{ est.id }}" onsubmit="event.preventDefault(); submitForm(this);">
                         <input type="hidden" name="estudiante_id" value="{{ est.id }}">
                         <input type="hidden" name="nomina_id"     value="{{ session['current_nomina_id'] }}">
-                        <input type="hidden" name="fecha_nacimiento_original" value="{{ est.fecha_nacimiento if est.fecha_nacimiento is not none else '' }}">
-                        <input type="hidden" name="edad"        value="{{ est.edad }}">
-                        <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad }}">
 
                         <div class="form-section-title"><i class="fas fa-id-card"></i> Identificación del Alumno</div>
 
@@ -676,18 +673,31 @@
                             <option value="F" {% if est.sexo == 'F' %}selected{% endif %}>Femenino</option>
                         </select>
 
-                        <div class="info-pill">
-                            <span><strong>Nacimiento:</strong> {{ est.fecha_nacimiento_formato }}</span>
-                            <span><strong>Edad:</strong> {{ est.edad }}</span>
-                            <span><strong>Nacionalidad:</strong> {{ est.nacionalidad }}</span>
-                        </div>
+                        <label for="fecha_nac_edit_{{ est.id }}">Fecha de Nacimiento</label>
+                        <input type="date" name="fecha_nacimiento_original" id="fecha_nac_edit_{{ est.id }}"
+                            value="{{ est.fecha_nacimiento if est.fecha_nacimiento is not none else '' }}"
+                            oninput="recalcularEdad(this.form)">
+
+                        <label for="nacionalidad_edit_{{ est.id }}">Nacionalidad</label>
+                        <select name="nacionalidad" id="nacionalidad_edit_{{ est.id }}" onchange="updatePreview(this.form)">
+                            <option value="">— Sin especificar —</option>
+                            {% for nac in ['Chilena','Venezolana','Peruana','Colombiana','Boliviana','Argentina','Ecuatoriana','Haitiana','Brasileña','Dominicana','Cubana','Española','Otra'] %}
+                            <option value="{{ nac }}" {% if est.nacionalidad == nac %}selected{% endif %}>{{ nac }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <label>Edad</label>
+                        <input type="text" name="edad" id="edad_display_{{ est.id }}" readonly
+                            value="{{ est.edad }}"
+                            style="background:#eef2f7;cursor:not-allowed;color:var(--text-secondary);font-weight:600;"
+                            placeholder="Se calcula automáticamente">
 
                         <div class="form-section-title" style="margin-top:22px;"><i class="fas fa-stethoscope"></i> Evaluación Neurológica</div>
 
                         <label for="fecha_evaluacion_{{ est.id }}">Fecha de Evaluación</label>
                         <input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}"
                             value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}"
-                            required onchange="setFechaReevaluacion(this.form.querySelector('select[name=\'plazo\']'))">
+                            required onchange="recalcularEdad(this.form); setFechaReevaluacion(this.form.querySelector('select[name=\'plazo\']'))">
 
                         <label for="estado_{{ est.id }}">Estado general del alumno</label>
                         <textarea name="estado" id="estado_{{ est.id }}" rows="3"
@@ -824,8 +834,31 @@
         <div style="margin-bottom:12px;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">Nombre Completo *</label><input type="text" id="nuevo-nombre" placeholder="Nombre y apellidos" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;color:#334155;font-family:inherit;box-sizing:border-box;outline:none;"></div>
         <div style="margin-bottom:12px;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">RUN (RUT) *</label><input type="text" id="nuevo-rut" placeholder="12.345.678-9" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;color:#334155;font-family:inherit;box-sizing:border-box;outline:none;"></div>
         <div style="display:flex;gap:10px;margin-bottom:12px;">
-            <div style="flex:1;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">Fecha Nacimiento</label><input type="date" id="nuevo-fecha-nac" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;color:#334155;box-sizing:border-box;outline:none;"></div>
+            <div style="flex:1;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">Fecha Nacimiento</label><input type="date" id="nuevo-fecha-nac" oninput="recalcularEdadNuevo()" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;color:#334155;box-sizing:border-box;outline:none;"></div>
             <div style="flex:1;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">Sexo</label><select id="nuevo-sexo" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;color:#334155;box-sizing:border-box;outline:none;"><option value="">—</option><option value="F">Femenino</option><option value="M">Masculino</option></select></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:12px;">
+            <div style="flex:1;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">Nacionalidad</label>
+                <select id="nuevo-nacionalidad" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;color:#334155;box-sizing:border-box;outline:none;">
+                    <option value="">— Sin especificar —</option>
+                    <option value="Chilena">Chilena</option>
+                    <option value="Venezolana">Venezolana</option>
+                    <option value="Peruana">Peruana</option>
+                    <option value="Colombiana">Colombiana</option>
+                    <option value="Boliviana">Boliviana</option>
+                    <option value="Argentina">Argentina</option>
+                    <option value="Ecuatoriana">Ecuatoriana</option>
+                    <option value="Haitiana">Haitiana</option>
+                    <option value="Brasileña">Brasileña</option>
+                    <option value="Dominicana">Dominicana</option>
+                    <option value="Cubana">Cubana</option>
+                    <option value="Española">Española</option>
+                    <option value="Otra">Otra</option>
+                </select>
+            </div>
+            <div style="flex:1;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">Edad</label>
+                <input type="text" id="nuevo-edad-display" readonly placeholder="Auto" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;color:#334155;box-sizing:border-box;outline:none;background:#f1f5f9;cursor:default;">
+            </div>
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
             <button onclick="cerrarModalAgregar()" style="padding:9px 20px;border-radius:99px;border:1.5px solid var(--border);background:white;color:#64748b;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>
@@ -896,7 +929,7 @@
 
         const ei = form.querySelector('input[name="edad"]');
         if (ei) c.querySelector('.prev-edad-info').textContent = ei.value || 'N/A';
-        const ni = form.querySelector('input[name="nacionalidad"]');
+        const ni = form.querySelector('[name="nacionalidad"]');
         if (ni) c.querySelector('.prev-nacionalidad-info').textContent = ni.value || 'N/A';
 
         const sx = form.querySelector('select[name="sexo"]');
@@ -1065,8 +1098,9 @@
 
     function abrirModalAgregar() {
         setTipoAgregar('reemplazo');
-        ['nuevo-nombre','nuevo-rut','nuevo-fecha-nac'].forEach(id=>document.getElementById(id).value='');
+        ['nuevo-nombre','nuevo-rut','nuevo-fecha-nac','nuevo-edad-display'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
         document.getElementById('nuevo-sexo').value='';
+        document.getElementById('nuevo-nacionalidad').value='';
         document.getElementById('modal-agregar').style.display='flex';
         setTimeout(()=>document.getElementById('nuevo-nombre').focus(),100);
     }
@@ -1086,14 +1120,50 @@
         const rut=document.getElementById('nuevo-rut').value.trim();
         const fn=document.getElementById('nuevo-fecha-nac').value;
         const sexo=document.getElementById('nuevo-sexo').value;
+        const nacionalidad=document.getElementById('nuevo-nacionalidad').value;
         const nominaId=document.querySelector('[data-nomina-id]')?.getAttribute('data-nomina-id')||'';
         if (!nombre||!rut) { alert('Nombre y RUT son obligatorios'); return; }
         try {
-            const res=await fetch('/api/estudiante/agregar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nomina_id:nominaId,nombre,rut,fecha_nacimiento:fn||null,sexo:sexo||null,estado_asistencia:_tipoAgregar==='extra'?'extra':'activo'})});
+            const res=await fetch('/api/estudiante/agregar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nomina_id:nominaId,nombre,rut,fecha_nacimiento:fn||null,sexo:sexo||null,nacionalidad:nacionalidad||null,estado_asistencia:_tipoAgregar==='extra'?'extra':'activo'})});
             const data=await res.json();
             if (data.success) { cerrarModalAgregar(); location.reload(); }
             else alert('Error: '+(data.error||'Error'));
         } catch(e) { alert('Error: '+e.message); }
+    }
+
+    // ── CÁLCULO DE EDAD ───────────────────────────────────────────────
+    function calcularEdad(fechaNac, fechaRef) {
+        if (!fechaNac || !fechaRef) return '';
+        const nac  = new Date(fechaNac  + 'T00:00:00');
+        const ref  = new Date(fechaRef  + 'T00:00:00');
+        if (isNaN(nac) || isNaN(ref) || ref < nac) return '';
+        let años = ref.getFullYear() - nac.getFullYear();
+        let meses = ref.getMonth() - nac.getMonth();
+        if (ref.getDate() < nac.getDate()) meses--;
+        if (meses < 0) { años--; meses += 12; }
+        if (años < 0) return '';
+        if (años >= 2) return años + ' año' + (años !== 1 ? 's' : '');
+        const totalM = años * 12 + meses;
+        return totalM + ' mes' + (totalM !== 1 ? 'es' : '');
+    }
+
+    // Recalcula edad en formulario existente al cambiar fecha nacimiento o evaluación
+    function recalcularEdad(form) {
+        const fn  = form.querySelector('input[name="fecha_nacimiento_original"]');
+        const fe  = form.querySelector('input[name="fecha_evaluacion"]');
+        const ei  = form.querySelector('input[name="edad"]');
+        if (!fn || !fe || !ei) return;
+        ei.value = calcularEdad(fn.value, fe.value);
+        updatePreview(form);
+    }
+
+    // Recalcula edad en modal "Agregar Alumno" (usa fecha de hoy como referencia)
+    function recalcularEdadNuevo() {
+        const fn  = document.getElementById('nuevo-fecha-nac').value;
+        const hoy = new Date();
+        const ref = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+        const el  = document.getElementById('nuevo-edad-display');
+        if (el) el.value = calcularEdad(fn, ref);
     }
 </script>
 </body>

@@ -1134,17 +1134,20 @@
     // ── CÁLCULO DE EDAD ───────────────────────────────────────────────
     function calcularEdad(fechaNac, fechaRef) {
         if (!fechaNac || !fechaRef) return '';
-        const nac  = new Date(fechaNac  + 'T00:00:00');
-        const ref  = new Date(fechaRef  + 'T00:00:00');
+        const nac = new Date(fechaNac + 'T00:00:00');
+        const ref = new Date(fechaRef + 'T00:00:00');
         if (isNaN(nac) || isNaN(ref) || ref < nac) return '';
-        let años = ref.getFullYear() - nac.getFullYear();
-        let meses = ref.getMonth() - nac.getMonth();
+        let años  = ref.getFullYear() - nac.getFullYear();
+        let meses = ref.getMonth()    - nac.getMonth();
         if (ref.getDate() < nac.getDate()) meses--;
         if (meses < 0) { años--; meses += 12; }
-        if (años < 0) return '';
-        if (años >= 2) return años + ' año' + (años !== 1 ? 's' : '');
-        const totalM = años * 12 + meses;
-        return totalM + ' mes' + (totalM !== 1 ? 'es' : '');
+        if (años < 0)  return '';
+        const partAnios = años  > 0 ? años  + ' año'  + (años  !== 1 ? 's' : '') : '';
+        const partMeses = meses > 0 ? meses + ' mes'  + (meses !== 1 ? 'es' : '') : '';
+        if (partAnios && partMeses) return partAnios + ' y ' + partMeses;
+        if (partAnios) return partAnios;
+        if (partMeses) return partMeses;
+        return '0 meses';
     }
 
     // Recalcula edad en formulario existente al cambiar fecha nacimiento o evaluación

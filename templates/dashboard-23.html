@@ -2991,25 +2991,31 @@
         }
     }
     // ── DOCTOR PROYECTOS: colapso, búsqueda y stats ──────────────────
-    function toggleDocProy(id, idx) {
-        var body = document.getElementById(id);
+    // ── DOCTOR PROYECTOS: colapso por event delegation ───────────────
+    document.addEventListener('click', function(e) {
+        var header = e.target.closest('.doc-proy-header');
+        if (!header) return;
+        var targetId = header.getAttribute('data-target');
+        var body     = targetId ? document.getElementById(targetId) : null;
         if (!body) return;
-        var card   = body.parentElement;
-        var chev   = card ? card.querySelector('.doc-proy-chev') : null;
-        var header = card ? card.querySelector('[data-proy-header]') : null;
+        var chev   = header.querySelector('.doc-proy-chev');
+        var card   = header.parentElement;
         var isOpen = body.style.display !== 'none';
         if (isOpen) {
             body.style.display = 'none';
-            if (chev)   chev.style.transform = 'rotate(0deg)';
-            if (header) header.style.borderRadius = '16px';
-            card.style.borderRadius = '16px';
+            if (chev) chev.style.transform = 'rotate(0deg)';
+            if (card) card.style.borderRadius = '16px';
+            header.style.borderRadius = '16px';
         } else {
             body.style.display = 'block';
-            if (chev)   chev.style.transform = 'rotate(180deg)';
-            if (header) header.style.borderRadius = '16px 16px 0 0';
-            card.style.borderRadius = '16px';
+            if (chev) chev.style.transform = 'rotate(180deg)';
+            if (card) card.style.borderRadius = '16px';
+            header.style.borderRadius = '16px 16px 0 0';
         }
-    }
+    });
+
+    // Mantener función vacía por compatibilidad por si quedó alguna referencia
+    function toggleDocProy() {}
     function filtrarProyectosDoctor() {
         var q = (document.getElementById('doctorProySearch')?.value || '').toLowerCase();
         document.querySelectorAll('.doc-proy-card').forEach(function(c) {
@@ -4482,15 +4488,12 @@
                     {% for proyecto_nombre, nominas_proyecto in proyectos_dict.items() %}
                     {% set total_nom = nominas_proyecto | length %}
                     {% set establecimientos = nominas_proyecto | map(attribute='nombre_establecimiento') | unique | list | length %}
-                    {% set loop_idx = loop.index %}
                     <div class="doc-proy-card" data-nombre="{{ proyecto_nombre | lower }}"
                          style="background:white;border-radius:16px;border:1px solid #e2e8f4;margin-bottom:1rem;overflow:visible;box-shadow:0 2px 8px rgba(15,52,96,.06);">
 
                         <!-- Header clickeable -->
-                        <div data-proy-header style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:linear-gradient(90deg,#0f3460,#1c67a3);cursor:pointer;border-radius:16px;"
-                             onclick="toggleDocProy('docproy-{{ loop_idx }}', '{{ loop_idx }}')"
-                             onmouseover="this.style.filter='brightness(1.08)'" onmouseout="this.style.filter=''"
-                             >
+                        <div class="doc-proy-header" data-proy-header data-target="docproy-{{ loop.index }}"
+                             style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:linear-gradient(90deg,#0f3460,#1c67a3);cursor:pointer;border-radius:16px;user-select:none;">
                             <div style="display:flex;align-items:center;gap:12px;">
                                 <div style="background:rgba(255,255,255,.15);border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">
                                     <i class="fa-solid fa-notes-medical" style="color:white;font-size:1rem;"></i>
@@ -4507,22 +4510,22 @@
                                 </div>
                             </div>
                             <div style="display:flex;align-items:center;gap:16px;">
-                                <div id="docprojbar-{{ loop_idx }}" style="min-width:130px;">
+                                <div style="min-width:130px;">
                                     <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
                                         <span style="color:#b8d4f0;font-size:.68rem;">AVANCE</span>
-                                        <span id="docprojpct-{{ loop_idx }}" style="color:white;font-weight:800;font-size:.82rem;">—</span>
+                                        <span class="doc-pct-label" style="color:white;font-weight:800;font-size:.82rem;">—</span>
                                     </div>
                                     <div style="background:rgba(255,255,255,.2);border-radius:4px;height:7px;overflow:hidden;">
-                                        <div id="docprojfill-{{ loop_idx }}" style="height:100%;border-radius:4px;width:0%;background:#94a3b8;transition:width .4s ease;"></div>
+                                        <div class="doc-fill-bar" style="height:100%;border-radius:4px;width:0%;background:#94a3b8;transition:width .4s ease;"></div>
                                     </div>
-                                    <div id="docprojcount-{{ loop_idx }}" style="color:#b8d4f0;font-size:.65rem;margin-top:3px;">cargando…</div>
+                                    <div class="doc-count-label" style="color:#b8d4f0;font-size:.65rem;margin-top:3px;">cargando…</div>
                                 </div>
-                                <i class="fa-solid fa-chevron-down doc-proy-chev" style="color:rgba(255,255,255,.6);transition:transform .25s;flex-shrink:0;"></i>
+                                <i class="fa-solid fa-chevron-down doc-proy-chev" style="color:rgba(255,255,255,.6);transition:transform .3s;flex-shrink:0;font-size:1rem;"></i>
                             </div>
                         </div>
 
                         <!-- Cuerpo colapsable con tabla de nóminas -->
-                        <div id="docproy-{{ loop_idx }}" style="display:none;border-radius:0 0 16px 16px;overflow:hidden;">
+                        <div id="docproy-{{ loop.index }}" style="display:none;border-radius:0 0 16px 16px;overflow:hidden;">
                             <div style="padding:0 20px 16px;">
                                 <table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:.82rem;">
                                     <thead>

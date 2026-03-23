@@ -2298,6 +2298,7 @@ def admin_cargar_nomina():
         'rut': ['rut'],
         'fecha_nacimiento': ['fecha_nacimiento', 'fecha_de_nacimiento'],
         'nacionalidad': ['nacionalidad'],
+        'diagnostico_previo': ['diagnostico previo', 'diagnostico_previo', 'diagnóstico previo'],
     }
     
     col_map = {}
@@ -2327,6 +2328,7 @@ def admin_cargar_nomina():
             rut_raw = row.get(col_map.get('rut'))
             fecha_nacimiento_raw = row.get(col_map.get('fecha_nacimiento'))
             nacionalidad_raw = row.get(col_map.get('nacionalidad')) 
+            diagnostico_previo_raw = row.get(col_map.get('diagnostico_previo')) if col_map.get('diagnostico_previo') else None
 
             if pd.isna(nombre_completo_raw) or pd.isna(rut_raw) or pd.isna(fecha_nacimiento_raw):
                 continue
@@ -2365,6 +2367,7 @@ def admin_cargar_nomina():
                 "sexo": sexo_adivinado,
                 "edad": edad_calculada, # Añadir edad calculada
                 "fecha_relleno": None,
+                "diagnostico_sospecha": str(diagnostico_previo_raw).strip() if diagnostico_previo_raw and not pd.isna(diagnostico_previo_raw) else None,
             }
             # 🟢 Añadir flag específico si es el nuevo tipo de informe (para pre-relleno en DB)
             if form_type == 'informe_neurologico':

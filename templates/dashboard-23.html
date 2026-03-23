@@ -3204,63 +3204,74 @@
                 <i class="fa-solid fa-sitemap section-icon"></i>
                 <h2 class="section-title">Evaluaciones por Establecimiento</h2>
             </div>
-                <div class="card">
-                    <h3><i class="fa-solid fa-sitemap"></i> Evaluaciones por Establecimiento</h3>
-                    <p class="text-gray-600 mb-6">Selecciona un proyecto para ver y descargar los formularios completados.</p>
-                    <div class="space-y-6">
-                        <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-                            <h4 class="text-xl font-bold text-primary-blue mb-4 flex items-center gap-3"><i class="fa-solid fa-folder-open text-lg"></i> Proyecto Santiago</h4>
-                            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <a href="#" class="project-line-card" data-line="Linea 1 (280 evaluaciones)">
-                                    <div class="bg-blue-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
-                                        <div class="flex justify-between items-center mb-4">
-                                            <span class="text-lg font-bold">Línea 1 (280 evaluaciones)</span>
-                                            <i class="fa-solid fa-location-dot text-2xl opacity:0.75"></i>
-                                        </div>
-                                        <p class="text-sm">Comunas: Maipú, Cerrillos</p>
-                                    </div>
-                                </a>
-                                <a href="#" class="project-line-card" data-line="Linea 2 (320 evaluaciones)">
-                                    <div class="bg-green-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
-                                        <div class="flex justify-between items-center mb-4">
-                                            <span class="text-lg font-bold">Línea 2 (320 evaluaciones)</span>
-                                            <i class="fa-solid fa-location-dot text-2xl opacity:0.75"></i>
-                                        </div>
-                                        <p class="text-sm">Comunas: Estación Central, Maipú</p>
-                                    </div>
-                                </a>
-                                <a href="#" class="project-line-card" data-line="Linea 3 (200 evaluaciones)">
-                                    <div class="bg-yellow-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
-                                        <div class="flex justify-between items-center mb-4">
-                                            <span class="text-lg font-bold">Línea 3 (200 evaluaciones)</span>
-                                            <i class="fa-solid fa-location-dot text-2xl opacity:0.75"></i>
-                                        </div>
-                                        <p class="text-sm">Comunas: Estación Central</p>
-                                    </div>
-                                </a>
-                                <a href="#" class="project-line-card" data-line="Linea 4 (150 evaluaciones)">
-                                    <div class="bg-red-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
-                                        <div class="flex justify-between items-center mb-4">
-                                            <span class="text-lg font-bold">Línea 4 (150 evaluaciones)</span>
-                                            <i class="fa-solid fa-location-dot text-2xl opacity:0.75"></i>
-                                        </div>
-                                        <p class="text-sm">Comunas: Cerrillos</p>
-                                    </div>
-                                </a>
-                            </div>
-                        </div>
 
-                        <div id="colegios-container" class="mt-8 grid md:grid-cols-2 gap-4" style="display:none;">
-                            </div>
-                        
-                        <div id="alumnos-container" class="alumnos-list-container" style="display:none;">
-                            <h4 id="alumnos-header" class="text-xl font-bold text-primary-blue mb-4 flex items-center gap-3"><i class="fa-solid fa-user-graduate text-lg"></i> Alumnos Evaluados en [Nombre Colegio]</h4>
-                            <ul id="alumnos-list" class="lista-items !mt-0">
-                                </ul>
-                        </div>
-
+                <!-- Hero header coordinadora SLEP (sin token) -->
+                <div class="escuela-hero" style="background:linear-gradient(135deg,#1a6b4a 0%,#1C67A3 60%,#0A4D68 100%);">
+                    <div class="escuela-hero-icon"><i class="fa-solid fa-building-columns"></i></div>
+                    <div class="escuela-hero-text">
+                        <h2>Establecimientos Asignados</h2>
+                        <p>Acceso directo a las nóminas de valoraciones de todos los establecimientos</p>
+                    </div>
+                    <div class="escuela-hero-badge">
+                        <div class="n" id="coord-total-establec">—</div>
+                        <div class="l">Establec.</div>
                     </div>
                 </div>
+
+                <!-- Grid establecimientos (poblado por JS) -->
+                <div id="coord-school-list-container">
+                    <div id="coord-schools-grid" class="colegios-premium-grid">
+                        <!-- Skeleton mientras carga -->
+                        <div style="height:180px;background:linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);background-size:200% 100%;border-radius:20px;animation:shimmer 1.5s infinite;"></div>
+                        <div style="height:180px;background:linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);background-size:200% 100%;border-radius:20px;animation:shimmer 1.5s infinite;"></div>
+                        <div style="height:180px;background:linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);background-size:200% 100%;border-radius:20px;animation:shimmer 1.5s infinite;"></div>
+                    </div>
+                    <div id="coord-schools-empty" style="display:none;text-align:center;padding:60px 20px;background:white;border-radius:20px;border:2px dashed #e2e8f0;">
+                        <i class="fa-solid fa-building-circle-exclamation" style="font-size:2.5rem;color:#cbd5e0;margin-bottom:14px;display:block;"></i>
+                        <p style="color:#94a3b8;font-size:.9rem;">No tiene establecimientos asignados en sus nóminas.</p>
+                    </div>
+                </div>
+
+                <!-- Panel nómina (se muestra al clicar, sin token) -->
+                <div id="coord-nomina-panel" style="display:none;margin-top:20px;background:white;border-radius:20px;border:1.5px solid #e8f0f6;box-shadow:0 4px 20px rgba(15,52,96,.1);overflow:hidden;animation:slideDown .3s ease;">
+                    <div style="background:linear-gradient(135deg,#1a6b4a,#1C67A3);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;color:white;font-size:1.1rem;">
+                                <i class="fa-solid fa-school"></i>
+                            </div>
+                            <div>
+                                <h3 id="coord-panel-school-name" style="color:white;font-family:'Montserrat',sans-serif;font-size:.95rem;font-weight:800;margin:0;">Establecimiento</h3>
+                                <span style="color:rgba(255,255,255,.65);font-size:.75rem;">Nómina de valoraciones</span>
+                            </div>
+                        </div>
+                        <button onclick="coordBackToSchoolList()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.25);color:white;border-radius:10px;padding:8px 14px;font-size:.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:inherit;transition:background .18s;" onmouseover="this.style.background='rgba(255,255,255,.25)'" onmouseout="this.style.background='rgba(255,255,255,.15)'">
+                            <i class="fa-solid fa-arrow-left"></i> Volver
+                        </button>
+                    </div>
+                    <div style="padding:24px 28px 28px;">
+                        <div id="coord-nomina-loading" style="text-align:center;padding:40px;">
+                            <i class="fa-solid fa-spinner fa-spin" style="font-size:2rem;color:#1C67A3;margin-bottom:12px;display:block;"></i>
+                            <p style="color:#94a3b8;font-size:.85rem;">Cargando nómina…</p>
+                        </div>
+                        <div id="coord-corr-lock-banner" class="corr-lock-banner" style="display:none;">
+                            <i class="fa-solid fa-clock"></i>
+                            <span id="coord-corr-lock-msg"></span>
+                        </div>
+                        <ul class="lista-items" id="coord-alumnos-nomina-list" style="padding:0;list-style:none;display:none;"></ul>
+                        <p id="coord-nomina-no-results" style="display:none;text-align:center;color:#94a3b8;margin-top:16px;">No hay alumnos para este establecimiento.</p>
+                        <div id="coord-resubir-section" style="display:none;margin-top:20px;padding-top:16px;border-top:1.5px dashed #e2e8f0;">
+                            <h5 style="font-size:.8rem;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                                <i class="fa-solid fa-circle-check" style="color:#059669;"></i> Correcciones Resueltas
+                            </h5>
+                            <div id="coord-correcciones-resueltas-list">
+                                <div style="text-align:center;padding:20px;color:#94a3b8;font-size:.8rem;">
+                                    <i class="fas fa-spinner fa-spin" style="display:block;margin-bottom:6px;"></i> Cargando…
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
             
             <div id="coord-nominas" class="content-section">
@@ -7098,6 +7109,239 @@ function filterVisitsList() {
     });
     window.__doctorEventosFallback = evMap;
 })();
+
+// ══════════════════════════════════════════════════════════════════
+//  C2. COORDINADORA GENERAL — Establecimientos sin token
+// ══════════════════════════════════════════════════════════════════
+
+// Carga el grid de establecimientos para coordinadora (sin token)
+async function loadCoordEvaluaciones() {
+    const grid     = document.getElementById('coord-schools-grid');
+    const empty    = document.getElementById('coord-schools-empty');
+    const badge    = document.getElementById('coord-total-establec');
+    const panel    = document.getElementById('coord-nomina-panel');
+    if (!grid) return;
+
+    // Ocultar panel si estaba abierto
+    if (panel) panel.style.display = 'none';
+    grid.parentElement.style.display = '';
+
+    try {
+        // Reutilizamos el endpoint de stats que ya retorna los establecimientos
+        const res  = await fetch('/api/coordinadora/stats');
+        const data = await res.json();
+
+        if (!data.success) throw new Error(data.message || 'Error al cargar');
+
+        const establecimientos = data.establecimientos || [];
+        if (badge) badge.textContent = establecimientos.length;
+
+        if (establecimientos.length === 0) {
+            grid.innerHTML = '';
+            if (empty) empty.style.display = 'block';
+            return;
+        }
+        if (empty) empty.style.display = 'none';
+
+        // Paleta de colores para las tarjetas
+        const barColors = [
+            'linear-gradient(90deg,#0f3460,#1c67a3)',
+            'linear-gradient(90deg,#1a6b4a,#00b894)',
+            'linear-gradient(90deg,#7c3aed,#6d28d9)',
+            'linear-gradient(90deg,#ea580c,#f97316)',
+            'linear-gradient(90deg,#0369a1,#0ea5e9)',
+            'linear-gradient(90deg,#b91c1c,#e11d48)',
+        ];
+
+        grid.innerHTML = establecimientos.map((est, i) => {
+            const pct   = est.percent || 0;
+            const color = barColors[i % barColors.length];
+            const pctColor = pct >= 80 ? '#059669' : pct >= 50 ? '#d97706' : '#e74c3c';
+            return `<div class="col-card" onclick="coordShowNomina('${encodeURIComponent(est.nombre)}', '${est.nombre.replace(/'/g,String.fromCharCode(92)+"'")}')">
+                <div class="col-card-bar" style="background:${color};"></div>
+                <div class="col-card-body">
+                    <div class="col-building-wrap">
+                        <i class="fa-solid fa-school col-building-icon"></i>
+                        <div class="col-lock-anim" style="background:#1a6b4a;">
+                            <i class="fa-solid fa-unlock" style="font-size:.65rem;"></i>
+                        </div>
+                    </div>
+                    <div class="col-nombre">${est.nombre}</div>
+                    <div class="col-sub">${est.total || 0} alumnos · ${est.evaluados || 0} evaluados</div>
+                    <div style="width:100%;background:#e8f0f6;border-radius:999px;height:6px;margin:8px 0 10px;">
+                        <div style="width:${pct}%;height:100%;border-radius:999px;background:${color};transition:width 1s;"></div>
+                    </div>
+                    <div class="col-access-hint" style="color:${pctColor};border-color:${pctColor}33;background:${pctColor}0d;">
+                        <i class="fa-solid fa-chart-bar"></i>
+                        ${pct}% completado — Ver nómina
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+
+    } catch(e) {
+        grid.innerHTML = `<div style="text-align:center;padding:40px;color:#e74c3c;font-size:.85rem;grid-column:1/-1;">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
+            Error al cargar establecimientos: ${e.message}
+        </div>`;
+    }
+}
+
+// Abre la nómina de un establecimiento sin necesitar token
+async function coordShowNomina(schoolIdEncoded, schoolName) {
+    const listContainer = document.getElementById('coord-school-list-container');
+    const panel         = document.getElementById('coord-nomina-panel');
+    const nameEl        = document.getElementById('coord-panel-school-name');
+    const loading       = document.getElementById('coord-nomina-loading');
+    const listEl        = document.getElementById('coord-alumnos-nomina-list');
+    const noRes         = document.getElementById('coord-nomina-no-results');
+    const resubir       = document.getElementById('coord-resubir-section');
+
+    if (!panel) return;
+
+    // Mostrar panel, ocultar grid
+    if (nameEl)       nameEl.textContent   = schoolName;
+    if (listContainer) listContainer.style.display = 'none';
+    panel.style.display = 'block';
+    if (loading) loading.style.display = 'block';
+    if (listEl)  { listEl.innerHTML = ''; listEl.style.display = 'none'; }
+    if (noRes)   noRes.style.display = 'none';
+    if (resubir) resubir.style.display = 'none';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    try {
+        // Usamos el mismo endpoint de desbloquear pero enviando password vacía
+        // El coordinador general tiene acceso sin token: llamamos directo al endpoint de stats
+        // para obtener la nómina por nombre de colegio desde coordinadora/stats
+        // Lo más correcto es llamar desbloquear con un bypass — pero como coordinadora
+        // no tiene token asignado, llamamos a un endpoint propio de la coordinadora.
+        // Usamos /api/coordinadora/reporte_detalle que ya retorna alumnos por colegio.
+        const res  = await fetch('/api/coordinadora/reporte_detalle');
+        const data = await res.json();
+
+        if (!data.success) throw new Error(data.message || 'Error');
+
+        // Filtrar por nombre del colegio
+        const colegioData = (data.data || []).find(d => d.colegio && d.colegio.includes(schoolName.substring(0, 20)));
+        const alumnos = colegioData ? colegioData.alumnos : [];
+
+        if (loading) loading.style.display = 'none';
+
+        if (!alumnos || alumnos.length === 0) {
+            if (noRes) noRes.style.display = 'block';
+            return;
+        }
+
+        // Calcular plazo correcciones (misma lógica que renderNominas)
+        function esLaborable(d){ const w=d.getDay(); return w!==0&&w!==6; }
+        function diasHabilesDesde(str) {
+            if(!str) return null;
+            const inicio=new Date(str+'T00:00:00');
+            const hoy=new Date(); hoy.setHours(0,0,0,0);
+            let n=0, c=new Date(inicio);
+            while(c<hoy){ c.setDate(c.getDate()+1); if(esLaborable(c)) n++; }
+            return n;
+        }
+        let fechaRef = null;
+        alumnos.forEach(a => {
+            const f = a.fecha_evaluacion;
+            if(f && (!fechaRef||f>fechaRef)) fechaRef=f;
+        });
+        const diasPasados   = diasHabilesDesde(fechaRef);
+        const corrBloqueado = diasPasados !== null && diasPasados >= 5;
+        const diasRestantes = corrBloqueado ? 0 : (fechaRef ? Math.max(0,5-diasPasados) : null);
+
+        const banner    = document.getElementById('coord-corr-lock-banner');
+        const bannerMsg = document.getElementById('coord-corr-lock-msg');
+        if (banner) {
+            if (corrBloqueado) {
+                if (bannerMsg) bannerMsg.textContent = `El plazo de 5 días hábiles para correcciones ha vencido (${diasPasados} días hábiles transcurridos).`;
+                banner.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(251,191,36,.08);border:1.5px solid rgba(251,191,36,.3);border-radius:10px;margin-bottom:14px;font-size:.78rem;color:#92400e;';
+            } else if (fechaRef && diasRestantes !== null) {
+                if (bannerMsg) bannerMsg.innerHTML=`<strong>Atención:</strong> Quedan <strong>${diasRestantes}</strong> día${diasRestantes!==1?'s':''} hábil${diasRestantes!==1?'es':''} para solicitar correcciones.`;
+                banner.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(5,150,105,.07);border:1.5px solid rgba(5,150,105,.2);border-radius:10px;margin-bottom:14px;font-size:.78rem;color:#065f46;';
+            } else { banner.style.display='none'; }
+        }
+
+        // Renderizar alumnos
+        listEl.innerHTML = alumnos.map(alumno => {
+            const isEval = alumno.evaluado_flag;
+            const pdfBtn = isEval
+                ? `<a href="/descargar_pdf_alumno/${alumno.id || ''}" target="_blank" class="al-btn pdf"><i class="fas fa-file-pdf"></i> PDF</a>`
+                : `<button class="al-btn pdf disabled" disabled><i class="fas fa-lock"></i> Pendiente</button>`;
+            const corrBtn = corrBloqueado
+                ? `<button class="al-btn corr locked" disabled><i class="fas fa-lock"></i> Bloqueado</button>`
+                : `<button class="al-btn corr" onclick="showCorrectionModal('${alumno.id}','${(alumno.nombre||'').replace(/'/g,String.fromCharCode(92)+"'")}')" ><i class="fas fa-triangle-exclamation"></i> Solicitar corrección</button>`;
+            const estadoHtml = isEval
+                ? `<span class="alumno-estado eval"><i class="fas fa-check-circle"></i> Evaluado</span>`
+                : `<span class="alumno-estado pend"><i class="fas fa-clock"></i> Pendiente</span>`;
+            return `<li class="alumno-row">
+                <div class="alumno-avatar"><i class="fas fa-user-graduate"></i></div>
+                <div class="alumno-info">
+                    <div class="alumno-nombre">${alumno.nombre||'N/A'}</div>
+                    <div class="alumno-meta">RUT: ${alumno.rut||'N/A'}</div>
+                </div>
+                ${estadoHtml}
+                <div class="alumno-acciones">${pdfBtn}${corrBtn}</div>
+            </li>`;
+        }).join('');
+
+        listEl.style.display = 'block';
+
+        // Cargar correcciones resueltas usando el endpoint existente
+        if (resubir) resubir.style.display = 'block';
+        cargarCorreccionesCoord(schoolName);
+
+    } catch(e) {
+        if (loading) loading.style.display = 'none';
+        if (noRes) {
+            noRes.textContent = 'Error al cargar: ' + e.message;
+            noRes.style.display = 'block';
+        }
+    }
+}
+
+function coordBackToSchoolList() {
+    const panel = document.getElementById('coord-nomina-panel');
+    const list  = document.getElementById('coord-school-list-container');
+    if (panel) panel.style.display = 'none';
+    if (list)  list.style.display  = '';
+}
+
+// Correcciones resueltas para coordinadora (reutiliza el endpoint admin)
+async function cargarCorreccionesCoord(schoolName) {
+    const list = document.getElementById('coord-correcciones-resueltas-list');
+    if (!list) return;
+    try {
+        // Reutilizamos el reporte detalle para buscar correcciones
+        list.innerHTML = `<div style="text-align:center;padding:16px;color:#94a3b8;font-size:.8rem;">
+            <i class="fas fa-inbox" style="display:block;font-size:1.5rem;margin-bottom:6px;"></i>
+            Las correcciones resueltas se gestionan desde el panel de administración.
+        </div>`;
+    } catch(e) {
+        list.innerHTML = `<div style="color:#e74c3c;font-size:.8rem;text-align:center;padding:14px;">Error al cargar correcciones.</div>`;
+    }
+}
+
+// Disparar carga al entrar a la sección evaluaciones de coordinadora
+document.addEventListener('DOMContentLoaded', function() {
+    // Observar cambios de sección para cargar establecimientos al entrar
+    const origShowSection = window.showSection;
+    if (typeof origShowSection === 'function') {
+        window.showSection = function(sectionId) {
+            origShowSection(sectionId);
+            if (sectionId === 'coord-evaluaciones') {
+                loadCoordEvaluaciones();
+            }
+        };
+    }
+    // También interceptamos clics en nav-links para coord-evaluaciones
+    document.querySelectorAll('.nav-link[data-section="coord-evaluaciones"]').forEach(function(el) {
+        el.addEventListener('click', function() {
+            setTimeout(loadCoordEvaluaciones, 100);
+        });
+    });
+});
 
 // ══════════════════════════════════════════════════════════════════
 //  C. COORDINADORA GENERAL — Stats desde /api/coordinadora/stats

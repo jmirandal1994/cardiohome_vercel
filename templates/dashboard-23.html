@@ -2801,6 +2801,14 @@
                     <div id="projcount-{{proyecto.id}}" style="color:#b8d4f0;font-size:.65rem;margin-top:3px;">cargando…</div>
                 </div>
 
+                <button
+                    onclick="event.stopPropagation(); confirmarEliminarProyecto('{{ proyecto.id }}', '{{ proyecto.nombre_proyecto | replace("'", "\\'") }}')"
+                    title="Eliminar proyecto y todas sus nóminas"
+                    style="background:rgba(239,68,68,.2);border:1.5px solid rgba(239,68,68,.4);color:white;border-radius:9px;padding:6px 12px;font-size:.73rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .18s;white-space:nowrap;"
+                    onmouseover="this.style.background='rgba(239,68,68,.5)'"
+                    onmouseout="this.style.background='rgba(239,68,68,.2)'">
+                    <i class="fa-solid fa-trash-can"></i> Eliminar
+                </button>
                 <i class="fa-solid fa-chevron-down proy-chevron-{{ proyecto.id }}" style="color:rgba(255,255,255,.6);transition:transform .25s;"></i>
             </div>
         </div>
@@ -2860,6 +2868,13 @@
                                    style="background:white;color:#0f3460;padding:5px 10px;border-radius:7px;font-size:.73rem;font-weight:700;border:1.5px solid #0f3460;cursor:pointer;display:inline-flex;align-items:center;gap:4px;"
                                    title="Descargar listado de alumnos">
                                     <i class="fa-solid fa-download"></i> Listado
+                                </button>
+                                <button onclick="confirmarEliminarNomina('{{ nomina.id }}', '{{ nomina.nombre_nomina | replace("'","\\'") }}', '{{ proyecto.id }}')"
+                                   style="background:#fee2e2;color:#dc2626;padding:5px 10px;border-radius:7px;font-size:.73rem;font-weight:700;border:1.5px solid #fecaca;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .18s;"
+                                   onmouseover="this.style.background='#dc2626';this.style.color='white'"
+                                   onmouseout="this.style.background='#fee2e2';this.style.color='#dc2626'"
+                                   title="Eliminar nómina y todos sus alumnos">
+                                    <i class="fa-solid fa-trash-can"></i> Eliminar
                                 </button>
                                 </div>
                             </td>
@@ -7849,6 +7864,246 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(loadCoordStats, 400);
     }
 });
+</script>
+
+
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   ELIMINAR PROYECTOS Y NÓMINAS — Admin
+   Rutas backend:
+     DELETE /admin/eliminar_nomina/<id>      (ya existe en app.py)
+     DELETE /admin/eliminar_proyecto/<id>    (nueva ruta a agregar)
+   ══════════════════════════════════════════════════════════════════ */
+
+// ── Confirmar y eliminar NÓMINA ───────────────────────────────────────────────
+async function confirmarEliminarNomina(nominaId, nominaNombre, proyectoId) {
+    const result = await Swal.fire({
+        title: '¿Eliminar esta nómina?',
+        html: `
+            <div style="text-align:left;background:#fff5f5;border:1.5px solid #fecaca;border-radius:12px;padding:14px 16px;margin-bottom:4px;">
+                <div style="font-weight:800;color:#1e293b;font-size:.9rem;margin-bottom:6px;">
+                    <i class="fa-solid fa-file-medical" style="color:#dc2626;margin-right:6px;"></i>
+                    ${nominaNombre}
+                </div>
+                <div style="color:#dc2626;font-size:.78rem;font-weight:600;">
+                    <i class="fa-solid fa-triangle-exclamation" style="margin-right:4px;"></i>
+                    Se eliminarán <strong>todos los alumnos</strong> y sus evaluaciones de forma permanente.
+                </div>
+            </div>`,
+        icon: 'warning',
+        iconColor: '#dc2626',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-trash-can"></i>&nbsp; Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+        reverseButtons: true,
+        focusCancel: true,
+    });
+
+    if (!result.isConfirmed) return;
+
+    // Doble confirmación escribiendo el nombre
+    const { value: texto } = await Swal.fire({
+        title: 'Confirmación final',
+        html: `<div style="font-size:.85rem;color:#475569;margin-bottom:12px;">
+                    Escribe <strong style="color:#dc2626;">${nominaNombre}</strong> para confirmar:
+               </div>
+               <input id="swal-confirm-input" class="swal2-input" placeholder="Nombre de la nómina"
+                      style="font-size:.9rem;" autocomplete="off">`,
+        showCancelButton: true,
+        confirmButtonText: 'Eliminar definitivamente',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+        preConfirm: () => {
+            const val = document.getElementById('swal-confirm-input').value.trim();
+            if (val !== nominaNombre) {
+                Swal.showValidationMessage('El nombre no coincide. Escríbelo exactamente.');
+                return false;
+            }
+            return val;
+        }
+    });
+
+    if (!texto) return;
+
+    // Spinner mientras elimina
+    Swal.fire({
+        title: 'Eliminando…',
+        html: 'Eliminando nómina y todos sus alumnos.',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        const res = await fetch('/admin/eliminar_nomina/' + nominaId, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            await Swal.fire({
+                icon: 'success',
+                title: '¡Nómina eliminada!',
+                text: data.message || 'La nómina fue eliminada correctamente.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            // Eliminar la fila de la tabla sin recargar
+            const fila = document.querySelector(`button[onclick*="confirmarEliminarNomina('${nominaId}'"]`)?.closest('tr');
+            if (fila) {
+                fila.style.transition = 'opacity .4s, transform .4s';
+                fila.style.opacity = '0';
+                fila.style.transform = 'translateX(-20px)';
+                setTimeout(() => fila.remove(), 400);
+            } else {
+                location.reload();
+            }
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'No se pudo eliminar la nómina.' });
+        }
+    } catch(e) {
+        Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo contactar al servidor: ' + e.message });
+    }
+}
+
+// ── Confirmar y eliminar PROYECTO ────────────────────────────────────────────
+async function confirmarEliminarProyecto(proyectoId, proyectoNombre) {
+    const result = await Swal.fire({
+        title: '¿Eliminar este proyecto?',
+        html: `
+            <div style="text-align:left;background:#fff5f5;border:1.5px solid #fecaca;border-radius:12px;padding:14px 16px;margin-bottom:4px;">
+                <div style="font-weight:800;color:#1e293b;font-size:.9rem;margin-bottom:8px;">
+                    <i class="fa-solid fa-folder-open" style="color:#dc2626;margin-right:6px;"></i>
+                    ${proyectoNombre}
+                </div>
+                <div style="color:#dc2626;font-size:.78rem;font-weight:600;line-height:1.5;">
+                    <i class="fa-solid fa-triangle-exclamation" style="margin-right:4px;"></i>
+                    Se eliminarán <strong>todas las nóminas, alumnos y evaluaciones</strong> del proyecto de forma permanente.<br>
+                    <span style="color:#92400e;">Esta acción no se puede deshacer.</span>
+                </div>
+            </div>`,
+        icon: 'warning',
+        iconColor: '#dc2626',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-trash-can"></i>&nbsp; Sí, eliminar proyecto',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+        reverseButtons: true,
+        focusCancel: true,
+    });
+
+    if (!result.isConfirmed) return;
+
+    // Doble confirmación escribiendo el nombre
+    const { value: texto } = await Swal.fire({
+        title: 'Confirmación final',
+        html: `<div style="font-size:.85rem;color:#475569;margin-bottom:12px;">
+                    Escribe <strong style="color:#dc2626;">${proyectoNombre}</strong> para confirmar la eliminación:
+               </div>
+               <input id="swal-proj-input" class="swal2-input" placeholder="Nombre del proyecto"
+                      style="font-size:.9rem;" autocomplete="off">`,
+        showCancelButton: true,
+        confirmButtonText: 'Eliminar definitivamente',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+        preConfirm: () => {
+            const val = document.getElementById('swal-proj-input').value.trim();
+            if (val !== proyectoNombre) {
+                Swal.showValidationMessage('El nombre no coincide. Escríbelo exactamente.');
+                return false;
+            }
+            return val;
+        }
+    });
+
+    if (!texto) return;
+
+    // Spinner
+    Swal.fire({
+        title: 'Eliminando proyecto…',
+        html: 'Eliminando nóminas, alumnos y evaluaciones del proyecto.',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        const res = await fetch('/admin/eliminar_proyecto/' + proyectoId, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            await Swal.fire({
+                icon: 'success',
+                title: '¡Proyecto eliminado!',
+                text: data.message || 'El proyecto fue eliminado correctamente.',
+                timer: 2200,
+                showConfirmButton: false
+            });
+            // Animar salida de la tarjeta
+            const card = document.querySelector(`.proy-card[data-proyecto-id="${proyectoId}"]`);
+            if (card) {
+                card.style.transition = 'opacity .45s, transform .45s, max-height .45s';
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(-12px)';
+                setTimeout(() => card.remove(), 450);
+            } else {
+                location.reload();
+            }
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'No se pudo eliminar el proyecto.' });
+        }
+    } catch(e) {
+        Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo contactar al servidor: ' + e.message });
+    }
+}
+
+// ── Función legacy confirmDelete (usada en otras secciones del dashboard) ─────
+function confirmDelete(type, id, nombre) {
+    const labels = {
+        'establecimiento': { title: '¿Eliminar establecimiento?', url: '/admin/eliminar_establecimiento/' },
+        'nomina':          { title: '¿Eliminar nómina?',          url: '/admin/eliminar_nomina/' }
+    };
+    const cfg = labels[type];
+    if (!cfg) return;
+
+    Swal.fire({
+        title: cfg.title,
+        html: `<div style="padding:8px 0;color:#475569;">Se eliminará: <strong style="color:#dc2626;">${nombre}</strong><br>
+               <span style="font-size:.8rem;color:#94a3b8;">Esta acción no se puede deshacer.</span></div>`,
+        icon: 'warning',
+        iconColor: '#dc2626',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-trash-can"></i>&nbsp; Eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+        reverseButtons: true,
+    }).then(async result => {
+        if (!result.isConfirmed) return;
+
+        Swal.fire({ title: 'Eliminando…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        try {
+            const res  = await fetch(cfg.url + id, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+                await Swal.fire({ icon: 'success', title: '¡Eliminado!', text: data.message || 'Eliminado correctamente.', timer: 1800, showConfirmButton: false });
+                location.reload();
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'No se pudo eliminar.' });
+            }
+        } catch(e) {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Error de conexión: ' + e.message });
+        }
+    });
+}
 </script>
 
 </body>

@@ -7903,31 +7903,6 @@ async function confirmarEliminarNomina(nominaId, nominaNombre, proyectoId) {
 
     if (!result.isConfirmed) return;
 
-    // Doble confirmación escribiendo el nombre
-    const { value: texto } = await Swal.fire({
-        title: 'Confirmación final',
-        html: `<div style="font-size:.85rem;color:#475569;margin-bottom:12px;">
-                    Escribe <strong style="color:#dc2626;">${nominaNombre}</strong> para confirmar:
-               </div>
-               <input id="swal-confirm-input" class="swal2-input" placeholder="Nombre de la nómina"
-                      style="font-size:.9rem;" autocomplete="off">`,
-        showCancelButton: true,
-        confirmButtonText: 'Eliminar definitivamente',
-        cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#64748b',
-        preConfirm: () => {
-            const val = document.getElementById('swal-confirm-input').value.trim();
-            if (val !== nominaNombre) {
-                Swal.showValidationMessage('El nombre no coincide. Escríbelo exactamente.');
-                return false;
-            }
-            return val;
-        }
-    });
-
-    if (!texto) return;
-
     // Spinner mientras elimina
     Swal.fire({
         title: 'Eliminando…',

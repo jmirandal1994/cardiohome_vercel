@@ -2823,6 +2823,7 @@
                         <tr style="background:#f1f5fd;">
                             <th style="padding:9px 12px;text-align:left;color:#475569;font-weight:700;border-bottom:1px solid #e2e8f4;">Nómina</th>
                             <th style="padding:9px 12px;text-align:left;color:#475569;font-weight:700;border-bottom:1px solid #e2e8f4;">Tipo</th>
+                            <th style="padding:9px 12px;text-align:left;color:#475569;font-weight:700;border-bottom:1px solid #e2e8f4;">Doctora</th>
                             <th style="padding:9px 12px;text-align:center;color:#475569;font-weight:700;border-bottom:1px solid #e2e8f4;">Alumnos</th>
                             <th style="padding:9px 12px;text-align:center;color:#475569;font-weight:700;border-bottom:1px solid #e2e8f4;">Completados</th>
                             <th style="padding:9px 12px;min-width:130px;color:#475569;font-weight:700;border-bottom:1px solid #e2e8f4;">Avance</th>
@@ -2847,6 +2848,19 @@
                                 <span style="background:{{ badge_bg }};color:{{ badge_color }};padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:700;">
                                     {{ nomina.tipo_nomina|replace('_',' ') }}
                                 </span>
+                            </td>
+                            <td style="padding:10px 12px;">
+                                {% set doctora_obj = all_users_for_lookup | selectattr('id', 'equalto', nomina.doctora_id) | first %}
+                                {% if doctora_obj %}
+                                <div style="display:flex;align-items:center;gap:7px;">
+                                    <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#0f3460,#1c67a3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                        <i class="fa-solid fa-user-doctor" style="color:white;font-size:.6rem;"></i>
+                                    </div>
+                                    <span style="font-weight:600;color:#334155;font-size:.78rem;">{{ doctora_obj.nombre or doctora_obj.usuario }}</span>
+                                </div>
+                                {% else %}
+                                <span style="color:#94a3b8;font-size:.78rem;">—</span>
+                                {% endif %}
                             </td>
                             <td id="tot-{{nomina.id}}" style="padding:10px 12px;text-align:center;font-weight:700;color:#334155;">—</td>
                             <td id="ev-{{nomina.id}}" style="padding:10px 12px;text-align:center;font-weight:700;color:#059669;">—</td>

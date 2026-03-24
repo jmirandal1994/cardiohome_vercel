@@ -2013,7 +2013,66 @@ def get_correcciones_pendientes():
 # ==================================================================================
 # RUTA /api/correccion/solicitar (SOLUCIÓN FINAL CON COLUMNA SOLICITANTE_ID)
 # ==================================================================================
-@app.route('/api/correccion/solicitar', methods=['POST'])
+
+    @app.route('/admin/eliminar_proyecto/<proyecto_id>', methods=['DELETE'])
+def eliminar_proyecto(proyecto_id):
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "Acceso denegado. Solo administradores pueden eliminar."}), 403
+
+    print(f"DEBUG: Intentando eliminar proyecto con ID: {proyecto_id}")
+
+    try:
+        # 1. Obtener todas las nóminas del proyecto
+        res_nominas = requests.get(
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas?proyecto_id=eq.{proyecto_id}&select=id",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        res_nominas.raise_for_status()
+        nominas = res_nominas.json()
+        nomina_ids = [n['id'] for n in nominas]
+        print(f"DEBUG: Nóminas encontradas en proyecto {proyecto_id}: {len(nomina_ids)}")
+
+        # 2. Para cada nómina, eliminar sus alumnos
+        for nomina_id in nomina_ids:
+            res_del_alumnos = requests.delete(
+                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nomina_id}",
+                headers=SUPABASE_SERVICE_HEADERS
+            )
+            res_del_alumnos.raise_for_status()
+            print(f"DEBUG: Alumnos de nómina {nomina_id} eliminados. Status: {res_del_alumnos.status_code}")
+
+        # 3. Eliminar todas las nóminas del proyecto
+        if nomina_ids:
+            res_del_nominas = requests.delete(
+                f"{SUPABASE_URL}/rest/v1/nominas_medicas?proyecto_id=eq.{proyecto_id}",
+                headers=SUPABASE_SERVICE_HEADERS
+            )
+            res_del_nominas.raise_for_status()
+            print(f"DEBUG: Nóminas del proyecto eliminadas. Status: {res_del_nominas.status_code}")
+
+        # 4. Eliminar el proyecto
+        res_del_proy = requests.delete(
+            f"{SUPABASE_URL}/rest/v1/proyectos?id=eq.{proyecto_id}",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        res_del_proy.raise_for_status()
+        print(f"DEBUG: Proyecto {proyecto_id} eliminado. Status: {res_del_proy.status_code}")
+
+        return jsonify({
+            "success": True,
+            "message": f"Proyecto eliminado correctamente junto con {len(nomina_ids)} nómina(s) y sus alumnos."
+        })
+
+    except requests.exceptions.RequestException as e:
+        error_detail = e.response.text if hasattr(e, 'response') and e.response is not None else str(e)
+        print(f"❌ ERROR al eliminar proyecto {proyecto_id}: {error_detail}")
+        return jsonify({"success": False, "message": f"Error al eliminar el proyecto: {error_detail}"}), 500
+    except Exception as e:
+        print(f"❌ ERROR inesperado al eliminar proyecto: {e}")
+        return jsonify({"success": False, "message": f"Error inesperado: {str(e)}"}), 500
+     
+    
+    @app.route('/api/correccion/solicitar', methods=['POST'])
 def solicitar_correccion():
     # 1. Verificar sesión con la clave 'usuario_id'
     usuario_solicitante_id = session.get('usuario_id')

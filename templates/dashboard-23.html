@@ -3055,118 +3055,335 @@
                 </div>
 
                 <style>
-                /* ── ticker ── */
-                .pres-ticker { background:#0d3b5e; color:white; font-size:.72rem; font-weight:600; padding:6px 0; overflow:hidden; white-space:nowrap; border-radius:12px; margin-bottom:16px; }
-                .pres-ticker-inner { display:inline-block; animation:presTicker 22s linear infinite; }
-                .pres-ticker-inner span { margin:0 28px; opacity:.8; }
-                .pres-ticker-inner span.live { opacity:1; font-weight:700; }
-                .pres-ticker-inner span.live::before { content:''; display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981; margin-right:6px; vertical-align:middle; animation:pressPulse 1.6s infinite; }
+                /* ══ TICKER ══ */
+                .pres-ticker {
+                    position:relative; overflow:hidden; border-radius:14px;
+                    margin-bottom:20px; background:#0d3b5e;
+                    border:1px solid rgba(255,255,255,.08);
+                    padding:10px 0;
+                }
+                .pres-ticker-label {
+                    position:absolute; left:0; top:0; bottom:0; z-index:2;
+                    display:flex; align-items:center; gap:7px;
+                    padding:0 16px; background:#0a2e47;
+                    border-right:1px solid rgba(255,255,255,.1);
+                    font-size:.65rem; font-weight:800; color:rgba(255,255,255,.7);
+                    text-transform:uppercase; letter-spacing:.08em; white-space:nowrap;
+                }
+                .pres-ticker-live-dot {
+                    width:7px; height:7px; border-radius:50%; background:#10b981;
+                    flex-shrink:0;
+                }
+                .pres-ticker-scroll { margin-left:120px; white-space:nowrap; overflow:hidden; }
+                .pres-ticker-inner { display:inline-block; animation:presTicker 28s linear infinite; }
+                .pres-ticker-inner span { margin:0 36px; font-size:.78rem; font-weight:600; color:rgba(255,255,255,.75); }
+                .pres-ticker-inner span.live { color:white; font-weight:800; }
+                .pres-ticker-inner span.live::before {
+                    content:''; display:inline-block; width:7px; height:7px; border-radius:50%;
+                    background:#10b981; margin-right:8px; vertical-align:middle;
+                    animation:tickerDot 1.6s ease-in-out infinite;
+                }
                 @keyframes presTicker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-                /* ── KPIs ── */
-                .pres-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
-                .pres-kpi { background:#f8fafc; border:1.5px solid #e8f0f6; border-radius:12px; padding:12px 14px; text-align:center; }
-                .pres-kpi .n { font-size:1.5rem; font-weight:900; line-height:1; }
-                .pres-kpi .l { font-size:.62rem; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:.4px; margin-top:3px; }
-                /* ── filtros ── */
-                .pres-filters { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
-                .pres-filter { padding:5px 13px; border-radius:20px; font-size:.75rem; font-weight:700; border:1.5px solid #e2e8f0; cursor:pointer; background:#f8fafc; color:#64748b; transition:all .15s; }
-                .pres-filter.active { background:#0d3b5e; color:white; border-color:#0d3b5e; }
-                /* ── grid tarjetas ── */
-                .pres-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:12px; margin-bottom:20px; }
-                .pres-card { background:white; border-radius:16px; border-left:3.5px solid #e2e8f0; border-top:0.5px solid #e8f0f6; border-right:0.5px solid #e8f0f6; border-bottom:0.5px solid #e8f0f6; padding:16px 18px; display:flex; align-items:flex-start; gap:12px; transition:box-shadow .2s; }
-                .pres-card:hover { box-shadow:0 6px 20px rgba(15,52,96,.1); }
-                .pres-card.evaluando { border-left-color:#10b981; }
-                .pres-card.en_pausa  { border-left-color:#f59e0b; }
-                .pres-avatar { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:.82rem; font-weight:800; color:white; flex-shrink:0; position:relative; }
-                .pres-dot-wrap { position:absolute; bottom:-2px; right:-2px; width:15px; height:15px; display:flex; align-items:center; justify-content:center; background:white; border-radius:50%; }
-                .pres-dot { width:9px; height:9px; border-radius:50%; }
-                @keyframes pressPulse { 0%{box-shadow:0 0 0 0 rgba(16,185,129,.6)} 70%{box-shadow:0 0 0 7px rgba(16,185,129,0)} 100%{box-shadow:0 0 0 0 rgba(16,185,129,0)} }
-                @keyframes pauseBlink { 0%,100%{opacity:1} 50%{opacity:.35} }
-                .pres-dot.evaluando  { background:#10b981; animation:pressPulse 1.8s ease-in-out infinite; }
-                .pres-dot.en_pausa   { background:#f59e0b; animation:pauseBlink 1.5s ease-in-out infinite; }
-                .pres-name { font-weight:700; font-size:.87rem; color:#0f2030; margin:0 0 2px; }
-                .pres-est  { font-size:.72rem; color:#64748b; margin:0 0 7px; }
-                .pres-prog-wrap { display:flex; align-items:center; gap:6px; }
-                .pres-prog-bar { flex:1; height:5px; background:#f0f4f8; border-radius:3px; overflow:hidden; }
-                .pres-prog-fill { height:100%; border-radius:3px; transition:width .8s ease; }
-                .pres-prog-pct { font-size:.7rem; font-weight:700; color:#94a3b8; min-width:28px; }
-                .pres-time { font-size:.7rem; color:#94a3b8; margin-top:4px; }
-                .pres-badge { padding:3px 9px; border-radius:20px; font-size:.68rem; font-weight:700; white-space:nowrap; flex-shrink:0; }
+                @keyframes tickerDot  { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+
+                /* ══ HERO BANNER ══ */
+                .pres-hero {
+                    background:linear-gradient(135deg,#0d3b5e 0%,#1a6b4a 100%);
+                    border-radius:20px; padding:24px 28px; margin-bottom:20px;
+                    display:flex; align-items:center; gap:20px; flex-wrap:wrap;
+                    position:relative; overflow:hidden;
+                }
+                .pres-hero::after {
+                    content:''; position:absolute; right:-30px; top:-30px;
+                    width:160px; height:160px; border-radius:50%;
+                    background:rgba(255,255,255,.04);
+                }
+                .pres-hero-icon {
+                    width:56px; height:56px; border-radius:16px;
+                    background:rgba(255,255,255,.15); border:1.5px solid rgba(255,255,255,.2);
+                    display:flex; align-items:center; justify-content:center;
+                    font-size:1.5rem; flex-shrink:0; position:relative;
+                }
+                .pres-hero-live {
+                    position:absolute; top:-4px; right:-4px;
+                    width:14px; height:14px; border-radius:50%; background:#10b981;
+                    border:2px solid white;
+                }
+                .pres-hero-text h3 { color:white; font-family:'Montserrat',sans-serif; font-size:1.1rem; font-weight:900; margin:0 0 3px; }
+                .pres-hero-text p  { color:rgba(255,255,255,.65); font-size:.78rem; margin:0; }
+                .pres-hero-kpis { margin-left:auto; display:flex; gap:12px; flex-wrap:wrap; }
+                .pres-hero-kpi {
+                    background:rgba(255,255,255,.12); border:1.5px solid rgba(255,255,255,.18);
+                    border-radius:14px; padding:12px 20px; text-align:center; min-width:80px;
+                }
+                .pres-hero-kpi .n { font-size:1.6rem; font-weight:900; color:white; line-height:1; }
+                .pres-hero-kpi .l { font-size:.6rem; color:rgba(255,255,255,.6); font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-top:3px; }
+                .pres-hero-actions { display:flex; gap:8px; flex-wrap:wrap; }
+                .pres-refresh-btn {
+                    background:rgba(255,255,255,.15); border:1.5px solid rgba(255,255,255,.25);
+                    color:white; border-radius:10px; padding:8px 16px; font-weight:700;
+                    font-size:.8rem; cursor:pointer; display:flex; align-items:center; gap:7px;
+                    transition:background .18s; font-family:inherit;
+                }
+                .pres-refresh-btn:hover { background:rgba(255,255,255,.28); }
+
+                /* ══ TABS FILTRO ══ */
+                .pres-tabs {
+                    display:flex; gap:4px; background:#f1f5f9;
+                    border-radius:12px; padding:4px; margin-bottom:18px;
+                }
+                .pres-tab {
+                    flex:1; text-align:center; padding:8px 10px;
+                    border-radius:9px; font-size:.78rem; font-weight:700;
+                    cursor:pointer; transition:all .18s; color:#64748b;
+                    display:flex; align-items:center; justify-content:center; gap:6px;
+                }
+                .pres-tab.active { background:white; color:#0d3b5e; box-shadow:0 1px 4px rgba(15,52,96,.12); }
+                .pres-tab .tab-count {
+                    background:#e8f0f6; color:#64748b; border-radius:20px;
+                    padding:1px 7px; font-size:.68rem; font-weight:800; min-width:18px;
+                }
+                .pres-tab.active .tab-count { background:#0d3b5e; color:white; }
+                .pres-tab-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+
+                /* ══ TARJETAS ══ */
+                .pres-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; margin-bottom:24px; }
+                @keyframes presCardIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+                .pres-card {
+                    background:white; border-radius:18px; overflow:hidden;
+                    border:1px solid #e8f0f6;
+                    box-shadow:0 2px 10px rgba(15,52,96,.05);
+                    transition:transform .2s, box-shadow .2s;
+                    animation:presCardIn .35s ease both;
+                }
+                .pres-card:hover { transform:translateY(-4px); box-shadow:0 10px 28px rgba(15,52,96,.12); }
+                .pres-card-stripe { height:4px; }
+                .pres-card-stripe.evaluando { background:linear-gradient(90deg,#10b981,#34d399); }
+                .pres-card-stripe.en_pausa  { background:linear-gradient(90deg,#f59e0b,#fbbf24); }
+                .pres-card-body { padding:16px 18px; }
+                .pres-card-top { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+                .pres-avatar {
+                    width:46px; height:46px; border-radius:14px;
+                    display:flex; align-items:center; justify-content:center;
+                    font-size:.85rem; font-weight:800; color:white;
+                    flex-shrink:0; position:relative;
+                }
+                .pres-dot-wrap {
+                    position:absolute; bottom:-2px; right:-2px;
+                    width:16px; height:16px; border-radius:50%;
+                    background:white; display:flex; align-items:center; justify-content:center;
+                }
+                .pres-dot { width:10px; height:10px; border-radius:50%; }
+                @keyframes pressPulse { 0%{box-shadow:0 0 0 0 rgba(16,185,129,.7)} 70%{box-shadow:0 0 0 8px rgba(16,185,129,0)} 100%{box-shadow:0 0 0 0 rgba(16,185,129,0)} }
+                @keyframes pauseBlink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.75)} }
+                .pres-dot.evaluando { background:#10b981; animation:pressPulse 1.8s ease-in-out infinite; }
+                .pres-dot.en_pausa  { background:#f59e0b; animation:pauseBlink 1.5s ease-in-out infinite; }
+                .pres-card-info { flex:1; min-width:0; }
+                .pres-name { font-weight:800; font-size:.9rem; color:#0f2030; margin:0 0 2px; }
+                .pres-est  { font-size:.74rem; color:#64748b; margin:0; display:flex; align-items:center; gap:5px; }
+                .pres-badge {
+                    padding:4px 10px; border-radius:20px; font-size:.68rem;
+                    font-weight:700; white-space:nowrap; flex-shrink:0;
+                }
                 .pres-badge.evaluando { background:#d1fae5; color:#065f46; }
                 .pres-badge.en_pausa  { background:#fef3c7; color:#92400e; }
-                /* ── feed ── */
-                .pres-section-label { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#94a3b8; margin:0 0 8px; }
-                .pres-feed { display:flex; flex-direction:column; gap:6px; margin-bottom:18px; }
-                .pres-event { display:flex; align-items:center; gap:10px; background:#f8fafc; border-radius:10px; padding:8px 12px; font-size:.78rem; color:#475569; }
-                .pres-ev-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-                .pres-ev-time { margin-left:auto; font-size:.68rem; color:#94a3b8; white-space:nowrap; }
-                /* ── resumen hoy ── */
-                .pres-today { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-                .pres-today-card { border:0.5px solid #e8f0f6; border-radius:12px; padding:12px 14px; text-align:center; background:white; }
-                .pres-today-n { font-size:1.4rem; font-weight:900; line-height:1; }
-                .pres-today-l { font-size:.62rem; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-top:3px; }
-                /* ── skeleton / empty ── */
-                .pres-skeleton { height:88px; background:linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%); background-size:200% 100%; border-radius:16px; animation:shimmer 1.5s infinite; }
-                .pres-header-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
-                .pres-refresh-btn { background:#f1f5f9; color:#0A3D62; border:1.5px solid #e2e8f0; padding:7px 14px; border-radius:10px; font-weight:700; font-size:.8rem; cursor:pointer; display:flex; align-items:center; gap:7px; transition:background .18s; }
-                .pres-refresh-btn:hover { background:#e2e8f0; }
+                /* Barra progreso */
+                .pres-prog-section { border-top:1px solid #f1f5f9; padding-top:12px; margin-top:2px; }
+                .pres-prog-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+                .pres-prog-label { font-size:.68rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.04em; }
+                .pres-prog-val   { font-size:.78rem; font-weight:800; color:#0d3b5e; }
+                .pres-prog-bar   { height:8px; background:#f0f4f8; border-radius:999px; overflow:hidden; }
+                .pres-prog-fill  { height:100%; border-radius:999px; transition:width 1s cubic-bezier(.4,0,.2,1); }
+                .pres-prog-fill.evaluando { background:linear-gradient(90deg,#10b981,#34d399); }
+                .pres-prog-fill.en_pausa  { background:linear-gradient(90deg,#f59e0b,#fbbf24); }
+                .pres-card-footer {
+                    padding:8px 18px 12px; display:flex; align-items:center;
+                    justify-content:space-between; border-top:1px solid #f8fafc;
+                }
+                .pres-time-badge {
+                    display:flex; align-items:center; gap:5px;
+                    font-size:.7rem; color:#94a3b8; font-weight:600;
+                }
+
+                /* ══ FEED ══ */
+                .pres-feed-wrap {
+                    background:white; border-radius:18px; border:1px solid #e8f0f6;
+                    padding:18px 20px; margin-bottom:18px;
+                    box-shadow:0 2px 10px rgba(15,52,96,.04);
+                }
+                .pres-feed-title {
+                    display:flex; align-items:center; gap:8px; margin-bottom:14px;
+                    font-size:.82rem; font-weight:800; color:#0d3b5e;
+                }
+                .pres-feed { display:flex; flex-direction:column; gap:6px; }
+                .pres-event {
+                    display:flex; align-items:center; gap:10px;
+                    padding:9px 12px; border-radius:10px;
+                    border:1px solid #f1f5f9; font-size:.79rem; color:#475569;
+                    transition:background .15s;
+                }
+                .pres-event:hover { background:#f8fafc; }
+                .pres-ev-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+                .pres-ev-time { margin-left:auto; font-size:.7rem; color:#94a3b8; white-space:nowrap; padding-left:12px; }
+
+                /* ══ RESUMEN HOY ══ */
+                .pres-today-wrap {
+                    display:grid; grid-template-columns:repeat(3,1fr); gap:12px;
+                }
+                .pres-today-card {
+                    background:white; border-radius:16px;
+                    border:1px solid #e8f0f6; padding:16px;
+                    text-align:center; position:relative; overflow:hidden;
+                    box-shadow:0 2px 8px rgba(15,52,96,.04);
+                }
+                .pres-today-card::before {
+                    content:''; position:absolute; bottom:0; left:0; right:0;
+                    height:3px; border-radius:0 0 16px 16px;
+                }
+                .pres-today-card:nth-child(1)::before { background:linear-gradient(90deg,#0d3b5e,#1c67a3); }
+                .pres-today-card:nth-child(2)::before { background:linear-gradient(90deg,#1a6b4a,#10b981); }
+                .pres-today-card:nth-child(3)::before { background:linear-gradient(90deg,#b45309,#f59e0b); }
+                .pres-today-icon {
+                    width:36px; height:36px; border-radius:10px; margin:0 auto 10px;
+                    display:flex; align-items:center; justify-content:center; font-size:.9rem;
+                }
+                .pres-today-n { font-size:1.6rem; font-weight:900; line-height:1; margin-bottom:4px; }
+                .pres-today-l { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#94a3b8; }
+
+                /* ══ EMPTY / SKELETON ══ */
+                .pres-skeleton { background:linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%); background-size:200% 100%; border-radius:18px; animation:shimmer 1.5s infinite; }
+                .pres-empty-state { text-align:center; padding:56px 24px; background:white; border-radius:20px; border:2px dashed #e2e8f0; }
+                .pres-empty-state i { font-size:3rem; color:#d1fae5; display:block; margin-bottom:14px; }
+                .pres-empty-state p { color:#94a3b8; font-size:.88rem; margin:0; }
+
+                @media(max-width:640px){
+                    .pres-hero-kpis { display:none; }
+                    .pres-grid { grid-template-columns:1fr; }
+                    .pres-today-wrap { grid-template-columns:1fr; }
+                }
                 </style>
 
-                <!-- Ticker en vivo (solo evaluando + en pausa) -->
+                <!-- ① Ticker en vivo -->
                 <div class="pres-ticker">
-                    <div class="pres-ticker-inner" id="pres-ticker-inner">
-                        <span style="opacity:.6;">Cargando actividad…</span>
-                        <span style="opacity:.6;">Cargando actividad…</span>
+                    <div class="pres-ticker-label">
+                        <div class="pres-ticker-live-dot"></div>
+                        EN VIVO
+                    </div>
+                    <div class="pres-ticker-scroll">
+                        <div class="pres-ticker-inner" id="pres-ticker-inner">
+                            <span style="opacity:.5;">Cargando actividad en tiempo real…</span>
+                            <span style="opacity:.5;">Cargando actividad en tiempo real…</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- KPIs -->
-                <div class="pres-kpis">
-                    <div class="pres-kpi"><div class="n" id="pres-k-eval" style="color:#10b981;">—</div><div class="l">Evaluando</div></div>
-                    <div class="pres-kpi"><div class="n" id="pres-k-pausa" style="color:#f59e0b;">—</div><div class="l">En pausa</div></div>
-                    <div class="pres-kpi"><div class="n" id="pres-k-off" style="color:#94a3b8;">—</div><div class="l">Desconectadas</div></div>
-                    <div class="pres-kpi"><div class="n" id="pres-k-hoy" style="color:#0d3b5e;">—</div><div class="l">Evaluados hoy</div></div>
+                <!-- ② Hero banner con KPIs + botón actualizar -->
+                <div class="pres-hero">
+                    <div class="pres-hero-icon">
+                        <i class="fa-solid fa-tower-broadcast" style="color:white;"></i>
+                        <div class="pres-hero-live"></div>
+                    </div>
+                    <div class="pres-hero-text">
+                        <h3>Monitor de Doctoras</h3>
+                        <p>Estado en tiempo real · Auto-actualiza cada 30 s</p>
+                    </div>
+                    <div class="pres-hero-kpis">
+                        <div class="pres-hero-kpi">
+                            <div class="n" id="pres-k-eval">—</div>
+                            <div class="l">Evaluando</div>
+                        </div>
+                        <div class="pres-hero-kpi">
+                            <div class="n" id="pres-k-pausa">—</div>
+                            <div class="l">En pausa</div>
+                        </div>
+                        <div class="pres-hero-kpi">
+                            <div class="n" id="pres-k-off">—</div>
+                            <div class="l">Offline</div>
+                        </div>
+                    </div>
+                    <div class="pres-hero-actions">
+                        <button class="pres-refresh-btn" onclick="cargarPresencia()">
+                            <i class="fa-solid fa-rotate-right" id="pres-spin"></i> Actualizar
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Filtros -->
-                <div class="pres-filters">
-                    <span class="pres-filter active" onclick="presSetFiltro('todas', this)">Todas las activas</span>
-                    <span class="pres-filter" onclick="presSetFiltro('evaluando', this)">Evaluando</span>
-                    <span class="pres-filter" onclick="presSetFiltro('en_pausa', this)">En pausa</span>
+                <!-- ③ Tabs filtro con contadores -->
+                <div class="pres-tabs" id="pres-tabs">
+                    <div class="pres-tab active" onclick="presSetFiltro('todas',this)">
+                        <div class="pres-tab-dot" style="background:#0d3b5e;"></div>
+                        Todas las activas
+                        <span class="tab-count" id="tab-count-todas">—</span>
+                    </div>
+                    <div class="pres-tab" onclick="presSetFiltro('evaluando',this)">
+                        <div class="pres-tab-dot" style="background:#10b981;"></div>
+                        Evaluando
+                        <span class="tab-count" id="tab-count-eval">—</span>
+                    </div>
+                    <div class="pres-tab" onclick="presSetFiltro('en_pausa',this)">
+                        <div class="pres-tab-dot" style="background:#f59e0b;"></div>
+                        En pausa
+                        <span class="tab-count" id="tab-count-pausa">—</span>
+                    </div>
                 </div>
 
-                <!-- Header barra de actualizar -->
-                <div class="pres-header-bar">
-                    <span id="pres-ts" style="font-size:.72rem;color:#94a3b8;"></span>
-                    <button class="pres-refresh-btn" onclick="cargarPresencia()">
-                        <i class="fa-solid fa-rotate-right" id="pres-spin"></i> Actualizar
-                    </button>
+                <!-- Timestamp -->
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                    <span id="pres-ts" style="font-size:.72rem;color:#94a3b8;display:flex;align-items:center;gap:5px;">
+                        <i class="fa-solid fa-circle-check" style="color:#d1fae5;font-size:.7rem;"></i>
+                    </span>
                 </div>
 
-                <!-- Grid tarjetas (solo activas: evaluando + en_pausa) -->
+                <!-- ④ Grid de tarjetas -->
                 <div id="pres-grid" class="pres-grid">
-                    <div class="pres-skeleton"></div>
-                    <div class="pres-skeleton"></div>
-                    <div class="pres-skeleton"></div>
+                    <div class="pres-skeleton" style="height:160px;"></div>
+                    <div class="pres-skeleton" style="height:160px;"></div>
+                    <div class="pres-skeleton" style="height:160px;"></div>
                 </div>
-                <p id="pres-empty" style="display:none;text-align:center;padding:48px;color:#94a3b8;">
-                    <i class="fa-solid fa-circle-dot" style="font-size:2.5rem;display:block;margin-bottom:12px;color:#d1fae5;"></i>
-                    No hay doctoras activas en este momento.
-                </p>
-
-                <!-- Feed de actividad reciente -->
-                <p class="pres-section-label" style="margin-top:8px;">Actividad reciente</p>
-                <div class="pres-feed" id="pres-feed">
-                    <div class="pres-skeleton" style="height:36px;border-radius:10px;"></div>
-                    <div class="pres-skeleton" style="height:36px;border-radius:10px;"></div>
+                <div id="pres-empty" class="pres-empty-state" style="display:none;">
+                    <i class="fa-solid fa-circle-dot"></i>
+                    <p>No hay doctoras activas en este momento.</p>
                 </div>
 
-                <!-- Resumen del día -->
-                <p class="pres-section-label">Resumen de hoy</p>
-                <div class="pres-today">
-                    <div class="pres-today-card"><div class="pres-today-n" id="pres-hoy-eval" style="color:#0d3b5e;">—</div><div class="pres-today-l">Evaluaciones</div></div>
-                    <div class="pres-today-card"><div class="pres-today-n" id="pres-hoy-doc" style="color:#1a6b4a;">—</div><div class="pres-today-l">Doctoras activas</div></div>
-                    <div class="pres-today-card"><div class="pres-today-n" id="pres-hoy-est" style="color:#b45309;">—</div><div class="pres-today-l">Establecimientos</div></div>
+                <!-- ⑤ Feed actividad reciente -->
+                <div class="pres-feed-wrap">
+                    <div class="pres-feed-title">
+                        <i class="fa-solid fa-clock-rotate-left" style="color:#94a3b8;font-size:.85rem;"></i>
+                        Actividad reciente
+                    </div>
+                    <div class="pres-feed" id="pres-feed">
+                        <div class="pres-skeleton" style="height:38px;border-radius:10px;"></div>
+                        <div class="pres-skeleton" style="height:38px;border-radius:10px;margin-top:6px;"></div>
+                    </div>
+                </div>
+
+                <!-- ⑥ Resumen del día -->
+                <div class="pres-feed-title" style="margin-bottom:12px;">
+                    <i class="fa-solid fa-chart-simple" style="color:#94a3b8;font-size:.85rem;"></i>
+                    Resumen de hoy
+                </div>
+                <div class="pres-today-wrap">
+                    <div class="pres-today-card">
+                        <div class="pres-today-icon" style="background:#e0f2fe;">
+                            <i class="fa-solid fa-clipboard-check" style="color:#0369a1;font-size:.9rem;"></i>
+                        </div>
+                        <div class="pres-today-n" id="pres-hoy-eval" style="color:#0d3b5e;">—</div>
+                        <div class="pres-today-l">Evaluaciones</div>
+                    </div>
+                    <div class="pres-today-card">
+                        <div class="pres-today-icon" style="background:#d1fae5;">
+                            <i class="fa-solid fa-user-doctor" style="color:#065f46;font-size:.9rem;"></i>
+                        </div>
+                        <div class="pres-today-n" id="pres-hoy-doc" style="color:#1a6b4a;">—</div>
+                        <div class="pres-today-l">Doctoras activas</div>
+                    </div>
+                    <div class="pres-today-card">
+                        <div class="pres-today-icon" style="background:#fef3c7;">
+                            <i class="fa-solid fa-school" style="color:#b45309;font-size:.9rem;"></i>
+                        </div>
+                        <div class="pres-today-n" id="pres-hoy-est" style="color:#b45309;">—</div>
+                        <div class="pres-today-l">Establecimientos</div>
+                    </div>
                 </div>
 
             </div>
@@ -8267,10 +8484,18 @@ function presRenderGrid() {
     const empty = document.getElementById('pres-empty');
     if (!grid) return;
 
-    // Solo activas (evaluando + en_pausa) para la vista de tarjetas
-    let visibles = _presDatos.filter(d => d.estado !== 'desconectada');
-    if (_presFiltro === 'evaluando') visibles = visibles.filter(d => d.estado === 'evaluando');
-    if (_presFiltro === 'en_pausa')  visibles = visibles.filter(d => d.estado === 'en_pausa');
+    const activas = _presDatos.filter(d => d.estado !== 'desconectada');
+    let visibles = activas;
+    if (_presFiltro === 'evaluando') visibles = activas.filter(d => d.estado === 'evaluando');
+    if (_presFiltro === 'en_pausa')  visibles = activas.filter(d => d.estado === 'en_pausa');
+
+    // Actualizar contadores de tabs
+    const tcTodas = document.getElementById('tab-count-todas');
+    const tcEval  = document.getElementById('tab-count-eval');
+    const tcPausa = document.getElementById('tab-count-pausa');
+    if (tcTodas) tcTodas.textContent = activas.length;
+    if (tcEval)  tcEval.textContent  = activas.filter(d=>d.estado==='evaluando').length;
+    if (tcPausa) tcPausa.textContent = activas.filter(d=>d.estado==='en_pausa').length;
 
     if (!visibles.length) {
         grid.innerHTML = '';
@@ -8283,28 +8508,47 @@ function presRenderGrid() {
         const initials = (d.nombre||'?').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
         const color    = PRES_COLORS[i % PRES_COLORS.length];
         const label    = PRES_LABELS[d.estado] || d.estado;
-        const progColor= d.estado === 'evaluando' ? '#10b981' : '#f59e0b';
-        const pct      = d.pct_nomina !== undefined ? d.pct_nomina : 0;
-        const evalStr  = d.evaluados_nomina !== undefined
-            ? `${d.evaluados_nomina} / ${d.total_nomina} evaluados · hace ${d.minutos ?? '?'} min`
-            : (d.minutos !== null && d.minutos !== undefined ? `hace ${d.minutos} min` : 'activa');
-        return `<div class="pres-card ${d.estado}">
-            <div class="pres-avatar" style="background:${color};">
-                ${initials}
-                <div class="pres-dot-wrap"><div class="pres-dot ${d.estado}"></div></div>
-            </div>
-            <div style="min-width:0;flex:1;">
-                <p class="pres-name">${d.nombre}</p>
-                <p class="pres-est">${d.establecimiento || 'Sin establecimiento'}</p>
-                <div class="pres-prog-wrap">
-                    <div class="pres-prog-bar">
-                        <div class="pres-prog-fill" style="width:${pct}%;background:${progColor};"></div>
+        const pct      = d.pct_nomina !== undefined ? Math.round(d.pct_nomina) : 0;
+        const evalCount= d.evaluados_nomina !== undefined
+            ? `${d.evaluados_nomina} / ${d.total_nomina}`
+            : '—';
+        const timeStr  = d.minutos !== null && d.minutos !== undefined
+            ? (d.minutos === 0 ? 'justo ahora' : `hace ${d.minutos} min`)
+            : 'activa';
+        const delay = i * 60;
+        return `<div class="pres-card" style="animation-delay:${delay}ms;">
+            <div class="pres-card-stripe ${d.estado}"></div>
+            <div class="pres-card-body">
+                <div class="pres-card-top">
+                    <div class="pres-avatar" style="background:${color};">
+                        ${initials}
+                        <div class="pres-dot-wrap"><div class="pres-dot ${d.estado}"></div></div>
                     </div>
-                    <span class="pres-prog-pct">${pct}%</span>
+                    <div class="pres-card-info">
+                        <p class="pres-name">${d.nombre}</p>
+                        <p class="pres-est">
+                            <i class="fa-solid fa-school" style="font-size:.65rem;color:#94a3b8;"></i>
+                            ${d.establecimiento || 'Sin establecimiento'}
+                        </p>
+                    </div>
+                    <span class="pres-badge ${d.estado}">${label}</span>
                 </div>
-                <p class="pres-time">${evalStr}</p>
+                <div class="pres-prog-section">
+                    <div class="pres-prog-header">
+                        <span class="pres-prog-label">Avance nómina</span>
+                        <span class="pres-prog-val">${evalCount} · ${pct}%</span>
+                    </div>
+                    <div class="pres-prog-bar">
+                        <div class="pres-prog-fill ${d.estado}" style="width:${pct}%;"></div>
+                    </div>
+                </div>
             </div>
-            <span class="pres-badge ${d.estado}">${label}</span>
+            <div class="pres-card-footer">
+                <span class="pres-time-badge">
+                    <i class="fa-solid fa-clock" style="font-size:.65rem;"></i>
+                    ${timeStr}
+                </span>
+            </div>
         </div>`;
     }).join('');
 }
@@ -8333,11 +8577,8 @@ function presRenderHoy(activas, nOff) {
     if (hoyDoc) hoyDoc.textContent = activas.length;
     const establecs = new Set(activas.map(d => d.establecimiento).filter(Boolean));
     if (hoyEst) hoyEst.textContent = establecs.size;
-    // "Evaluados hoy" lo calculamos sumando evaluados_nomina de las activas
     const totalEvalHoy = activas.reduce((s, d) => s + (d.evaluados_nomina || 0), 0);
     if (hoyEval) hoyEval.textContent = totalEvalHoy || '—';
-    const kh = document.getElementById('pres-k-hoy');
-    if (kh) kh.textContent = totalEvalHoy || '—';
 }
 
 /* ── Carga principal desde API ── */

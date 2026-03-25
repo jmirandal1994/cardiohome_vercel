@@ -968,11 +968,11 @@ def api_admin_corregir_alumno():
             'observacion_4','observacion_5','observacion_6','observacion_7',
             # Medicina familiar — checkboxes
             'check_cesarea','check_atermino','check_vaginal','check_prematuro',
-            'check_acorde','check_retrasogeneralizado','check_esquemac','check_esquemai',
+            'check_acorde','check_retraso','check_retrasogeneralizado','check_esquemac','check_esquemai',
             'check_alergiano','check_alergiasi','check_cirugiano','check_cirugiasi',
             'check_visionsinalteracion','check_visionrefraccion','check_audicionnormal',
             'check_hipoacusia','check_tapondecerumen','check_sinhallazgos',
-            'caries','check_apinamientodental','check_retenciondental',
+            'check_caries','check_apinamientodental','check_retenciondental',
             'check_frenillolingual','check_hipertrofia',
             # Medicina familiar — medidas
             'altura','peso','imc','clasificacion_imc',
@@ -5040,6 +5040,7 @@ def guardar_evaluacion():
             'check_vaginal':              map_to_boolean_local('check_vaginal'),
             'check_prematuro':            map_to_boolean_local('check_prematuro'),
             'check_acorde':               map_to_boolean_local('check_acorde'),
+            'check_retraso':               map_to_boolean_local('check_retraso'),
             'check_retrasogeneralizado':  map_to_boolean_local('check_retrasogeneralizado'),
             'check_esquemac':             map_to_boolean_local('check_esquemac'),
             'check_esquemai':             map_to_boolean_local('check_esquemai'),

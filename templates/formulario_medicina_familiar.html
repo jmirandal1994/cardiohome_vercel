@@ -1471,6 +1471,14 @@
                         <i class="fas fa-undo"></i> Reactivar
                     </button>
                     {% endif %}
+                    <button type="button"
+                            onclick="event.preventDefault(); event.stopPropagation(); eliminarAlumno('{{ est.id }}','{{ est.nombre | replace("'","\'") }}')"
+                            title="Eliminar alumno permanentemente"
+                            style="background:rgba(220,38,38,.08);color:#dc2626;border:1.5px solid rgba(220,38,38,.2);border-radius:8px;padding:5px 11px;font-size:.75rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all .18s;"
+                            onmouseover="this.style.background='rgba(220,38,38,.18)'"
+                            onmouseout="this.style.background='rgba(220,38,38,.08)'">
+                        <i class="fas fa-trash-can"></i> Eliminar
+                    </button>
                     <i class="fas fa-chevron-right chevron-icon"></i>
                 </summary>
                 <div class="container">
@@ -3480,6 +3488,99 @@ function copiarToken(token) {
         }
     });
 }
+</script>
+
+<script>
+/* ── Eliminar alumno desde el formulario ── */
+async function eliminarAlumno(estudianteId, nombre) {
+    const result = await Swal.fire({
+        title: '¿Eliminar alumno?',
+        html: `<div style="text-align:left;background:#fff5f5;border:1.5px solid #fecaca;border-radius:12px;padding:12px 14px;">
+                 <div style="font-weight:700;color:#1e293b;font-size:.9rem;margin-bottom:6px;">
+                   <i class="fas fa-user-graduate" style="color:#dc2626;margin-right:6px;"></i>${nombre}
+                 </div>
+                 <div style="color:#dc2626;font-size:.78rem;font-weight:600;">
+                   <i class="fas fa-triangle-exclamation" style="margin-right:4px;"></i>
+                   Se eliminará permanentemente del conteo y de la nómina.
+                 </div>
+               </div>`,
+        icon: 'warning', iconColor: '#dc2626',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-trash-can"></i>&nbsp; Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b',
+        reverseButtons: true, focusCancel: true,
+    });
+    if (!result.isConfirmed) return;
+
+    Swal.fire({ title: 'Eliminando…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    try {
+        const res  = await fetch('/api/estudiante/eliminar/' + estudianteId, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            await Swal.fire({ icon: 'success', title: '¡Eliminado!',
+                text: data.message, timer: 1800, showConfirmButton: false });
+            // Animar y quitar la fila del DOM
+            const fila = document.querySelector(`[data-estudiante-id="${estudianteId}"]`);
+            if (fila) {
+                fila.style.transition = 'opacity .4s, transform .4s, max-height .4s';
+                fila.style.opacity = '0';
+                fila.style.transform = 'translateX(-18px)';
+                setTimeout(() => {
+                    fila.remove();
+                    actualizarContadoresFormulario();
+                }, 420);
+            } else { location.reload(); }
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'No se pudo eliminar.' });
+        }
+    } catch(e) {
+        Swal.fire({ icon: 'error', title: 'Error de conexión', text: e.message });
+    }
+}
+
+/* Recalcula los contadores de la barra superior tras eliminar un alumno */
+function actualizarContadoresFormulario() {
+    const filas      = document.querySelectorAll('.estudiante');
+    const total      = filas.length;
+    const evaluados  = document.querySelectorAll('.estudiante [data-evaluated-status="true"], .estudiante .evaluated').length;
+    const pendientes = total - evaluados;
+    const pct        = total > 0 ? Math.round(evaluados / total * 100) : 0;
+    const tEl = document.getElementById('stat-total');
+    const pEl = document.getElementById('stat-pending');
+    const rEl = document.getElementById('stat-pct');
+    const bEl = document.getElementById('progress-bar');
+    if (tEl) tEl.textContent = total;
+    if (pEl) pEl.textContent = pendientes;
+    if (rEl) rEl.textContent = pct + '%';
+    if (bEl) bEl.style.width = pct + '%';
+}
+
+/* ── Presencia: heartbeat cada 60 s mientras el formulario está abierto ── */
+(function() {
+    const nominaId      = document.querySelector('input[name="nomina_id"]')?.value || '';
+    const establec      = document.title || '';
+
+    function sendHeartbeat(accion) {
+        fetch('/api/presencia', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nomina_id: nominaId, establecimiento: establec, accion: accion })
+        }).catch(() => {});
+    }
+
+    // Primer ping inmediato
+    sendHeartbeat('heartbeat');
+    // Repetir cada 60 s
+    const timer = setInterval(() => sendHeartbeat('heartbeat'), 60000);
+
+    // Al cerrar la pestaña / navegar fuera → marcar desconectada
+    window.addEventListener('beforeunload', () => {
+        sendHeartbeat('logout');
+        clearInterval(timer);
+    });
+})();
 </script>
 </body>
 </html>

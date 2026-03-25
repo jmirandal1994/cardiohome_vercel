@@ -545,7 +545,7 @@ def relleno_formulario(nomina_id):
     url_nomina = (
         f"{SUPABASE_URL}/rest/v1/nominas_medicas"
         f"?id=eq.{nomina_id}"
-        f"&select=form_type,tipo_nomina,doctora_id,nombre_nomina,doctora_id_para_formulario"
+        f"&select=form_type,tipo_nomina,doctora_id,nombre_nomina,doctora_id_para_formulario,token_acceso"
     )
     
     try:
@@ -649,7 +649,8 @@ def relleno_formulario(nomina_id):
             'total_forms_completed_for_nomina': total_forms_completed_for_nomina,
             'doctora_asignada_id': doctora_asignada_id,
             'doctora_nombre': doctora_nombre,
-            'usuario': user_role
+            'usuario': user_role,
+            'token_acceso': nomina.get('token_acceso') or '',
         }
         
         # Redirección basada en la columna 'form_type'
@@ -705,15 +706,10 @@ def generar_pdf():
         return redirect(url_for('dashboard'))
 
     # --- 1. Obtener datos de la nómina para el ID de la Doctora Firmante ---
-    doctora_id_para_pdf = current_doctora_id
+    doctora_id_para_pdf = current_doctora_id 
     try:
-        res_nom = requests.get(
-            f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}&select=doctora_id_para_formulario",
-            headers=SUPABASE_SERVICE_HEADERS
-        )
-        if res_nom.ok and res_nom.json():
-            nomina_data = res_nom.json()[0]
-            doctora_id_para_pdf = nomina_data.get('doctora_id_para_formulario') or current_doctora_id
+        nomina_data = obtener_nomina_por_id(nomina_id)
+        doctora_id_para_pdf = nomina_data.get('doctora_id_para_formulario') if nomina_data.get('doctora_id_para_formulario') else current_doctora_id
     except Exception as e:
         print(f"ADVERTENCIA: No se pudo obtener el ID de la doctora firmante. Usando ID de sesión. {e}")
         
@@ -3541,64 +3537,6 @@ def eliminar_nomina(nomina_id):
     except Exception as e:
         print(f"ERROR: Error inesperado al eliminar nómina: {e}")
         return jsonify({"success": False, "message": f"Error interno del servidor al eliminar nómina: {str(e)}"}), 500
-
-
-@app.route('/admin/eliminar_proyecto/<proyecto_id>', methods=['DELETE'])
-def eliminar_proyecto(proyecto_id):
-    if session.get('usuario') != 'admin':
-        return jsonify({"success": False, "message": "Acceso denegado. Solo administradores pueden eliminar."}), 403
-
-    print(f"DEBUG: Intentando eliminar proyecto con ID: {proyecto_id}")
-
-    try:
-        # 1. Obtener todas las nominas del proyecto
-        res_nominas = requests.get(
-            f"{SUPABASE_URL}/rest/v1/nominas_medicas?proyecto_id=eq.{proyecto_id}&select=id",
-            headers=SUPABASE_SERVICE_HEADERS
-        )
-        res_nominas.raise_for_status()
-        nominas = res_nominas.json()
-        nomina_ids = [n['id'] for n in nominas]
-        print(f"DEBUG: Nominas encontradas en proyecto {proyecto_id}: {len(nomina_ids)}")
-
-        # 2. Para cada nomina, eliminar sus alumnos
-        for nomina_id in nomina_ids:
-            res_del_alumnos = requests.delete(
-                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nomina_id}",
-                headers=SUPABASE_SERVICE_HEADERS
-            )
-            res_del_alumnos.raise_for_status()
-            print(f"DEBUG: Alumnos de nomina {nomina_id} eliminados. Status: {res_del_alumnos.status_code}")
-
-        # 3. Eliminar todas las nominas del proyecto
-        if nomina_ids:
-            res_del_nominas = requests.delete(
-                f"{SUPABASE_URL}/rest/v1/nominas_medicas?proyecto_id=eq.{proyecto_id}",
-                headers=SUPABASE_SERVICE_HEADERS
-            )
-            res_del_nominas.raise_for_status()
-            print(f"DEBUG: Nominas del proyecto eliminadas. Status: {res_del_nominas.status_code}")
-
-        # 4. Eliminar el proyecto
-        res_del_proy = requests.delete(
-            f"{SUPABASE_URL}/rest/v1/proyectos?id=eq.{proyecto_id}",
-            headers=SUPABASE_SERVICE_HEADERS
-        )
-        res_del_proy.raise_for_status()
-        print(f"DEBUG: Proyecto {proyecto_id} eliminado. Status: {res_del_proy.status_code}")
-
-        return jsonify({
-            "success": True,
-            "message": f"Proyecto eliminado correctamente junto con {len(nomina_ids)} nomina(s) y sus alumnos."
-        })
-
-    except requests.exceptions.RequestException as e:
-        error_detail = e.response.text if hasattr(e, 'response') and e.response is not None else str(e)
-        print(f"ERROR al eliminar proyecto {proyecto_id}: {error_detail}")
-        return jsonify({"success": False, "message": f"Error al eliminar el proyecto: {error_detail}"}), 500
-    except Exception as e:
-        print(f"ERROR inesperado al eliminar proyecto: {e}")
-        return jsonify({"success": False, "message": f"Error inesperado: {str(e)}"}), 500
 
 
 # ============================================================

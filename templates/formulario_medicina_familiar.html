@@ -896,6 +896,20 @@
             box-shadow: 0 2px 8px rgba(15,76,117,0.25);
         }
         .ind-btn-pie:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(15,76,117,0.32); }
+        .ind-btn-pie.active {
+            background: var(--primary-gradient);
+            color: white;
+            outline: 2.5px solid var(--accent);
+            outline-offset: 2px;
+            box-shadow: 0 2px 8px rgba(15,76,117,0.25);
+        }
+        .ind-btn-pie:not(.active) {
+            background: white;
+            color: var(--primary-mid);
+            border: 1.5px solid rgba(27,108,168,0.3);
+            box-shadow: none;
+            opacity: .7;
+        }
         .ind-btn-alt {
             background: white;
             color: var(--primary-mid);
@@ -1763,16 +1777,12 @@
                             {# NUEVO CAMPO: Indicaciones (Nombre HTML: indicaciones) #}
                             <label for="indicaciones_{{ est.id }}">Indicaciones:</label>
                             <div class="indicaciones-quick-bar">
-                                <span class="indicaciones-quick-label">Incluye por defecto (editable):</span>
-                                <div style="width:100%;margin-top:4px;padding:7px 12px;background:rgba(15,76,117,0.07);border-radius:8px;border-left:3px solid var(--primary-mid);display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                                    <span style="font-size:0.8rem;font-weight:700;color:var(--primary-dark);display:flex;align-items:center;gap:7px;">
-                                        <i class="fas fa-school" style="color:var(--primary-mid);"></i>
-                                        REQUIERE RECIBIR APOYO DEL PROGRAMA DE INTEGRACIÓN ESCOLAR
-                                    </span>
-                                    <span style="font-size:0.7rem;color:#94a3b8;white-space:nowrap;font-style:italic;">Puedes editar o borrar abajo ↓</span>
-                                </div>
-                                <span class="indicaciones-quick-label" style="margin-top:6px;width:100%;">Agregar si corresponde:</span>
+                                <span class="indicaciones-quick-label" style="width:100%;">Pincha para activar o desactivar:</span>
                                 <div class="ind-btn-group" style="width:100%;">
+                                    <button type="button" class="ind-btn ind-btn-pie active" id="ind-pie-{{ est.id }}"
+                                            onclick="toggleIndicacion(this, 'REQUIERE RECIBIR APOYO DEL PROGRAMA DE INTEGRACIÓN ESCOLAR', '{{ est.id }}')">
+                                        <i class="fas fa-school"></i> Apoyo PIE
+                                    </button>
                                     <button type="button" class="ind-btn ind-btn-alt" onclick="toggleIndicacion(this, 'REQUIERE RECIBIR APOYO DE ESCUELA ESPECIAL', '{{ est.id }}')">
                                         <i class="fas fa-building"></i> Escuela Especial
                                     </button>
@@ -2065,11 +2075,21 @@
             const val = textarea.value || '';
             const bar = textarea.closest('form') ? textarea.closest('form').querySelector('.indicaciones-quick-bar') : null;
             if (!bar) return;
+            // Sincronizar botón PIE (ind-btn-pie)
+            const piéBtn = document.getElementById('ind-pie-' + estId);
+            if (piéBtn) {
+                const pieTxt = 'REQUIERE RECIBIR APOYO DEL PROGRAMA DE INTEGRACIÓN ESCOLAR';
+                if (val.toUpperCase().includes(pieTxt)) {
+                    piéBtn.classList.add('active');
+                } else {
+                    piéBtn.classList.remove('active');
+                }
+            }
+            // Sincronizar botones alternativos (ind-btn-alt)
             bar.querySelectorAll('.ind-btn-alt').forEach(function(btn) {
                 const text = btn.getAttribute('onclick') || '';
-                // Extract the text from onclick
                 const m = text.match(/'([^']+)'/);
-                if (m && val.includes(m[1])) btn.classList.add('active');
+                if (m && val.toUpperCase().includes(m[1].toUpperCase())) btn.classList.add('active');
             });
         }
 

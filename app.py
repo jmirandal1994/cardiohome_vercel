@@ -584,7 +584,7 @@ def relleno_formulario(nomina_id):
     url_estudiantes = (
         f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
         f"?nomina_id=eq.{nomina_id}"
-        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,si_2,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,fecha_reevaluacion_select,motivo_consulta,observacion_neurologia,observaciones,diagnostico_sospecha,diagnostico_definitivo,estado_asistencia,motivo_ausencia" 
+        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,si_2,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,check_caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,fecha_reevaluacion_select,motivo_consulta,observacion_neurologia,observaciones,diagnostico_sospecha,diagnostico_definitivo,estado_asistencia,motivo_ausencia" 
         f"&order=nombre.asc"
     )
 
@@ -4971,6 +4971,125 @@ def api_estudiante_eliminar(estudiante_id):
         return jsonify({"success": False, "message": f"Error de conexión: {detail}"}), 500
     except Exception as e:
         print(f"ERROR api_estudiante_eliminar: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  GUARDAR SIN PDF — permite guardar correcciones aunque ya esté evaluado
+#  POST /guardar_evaluacion
+# ─────────────────────────────────────────────────────────────────────────────
+@app.route('/guardar_evaluacion', methods=['POST'])
+def guardar_evaluacion():
+    """Guarda los datos del formulario SIN generar PDF y SIN cambiar evaluado_flag.
+       Permite corregir datos de alumnos ya evaluados."""
+    if 'usuario' not in session:
+        return jsonify({"success": False, "message": "No autorizado"}), 401
+
+    estudiante_id = request.form.get('estudiante_id')
+    nomina_id     = request.form.get('nomina_id') or session.get('current_nomina_id')
+    doctora_id    = session.get('usuario_id')
+    form_type     = session.get('current_form_type', 'medicina_familiar')
+
+    if not all([estudiante_id, nomina_id, doctora_id]):
+        return jsonify({"success": False, "message": "Faltan datos obligatorios"}), 400
+
+    # Reutiliza las mismas funciones auxiliares internas de marcar_evaluado
+    def map_to_boolean_local(field_name):
+        value = get_form_field_value(field_name, request.form)
+        if value and value.strip():
+            return True
+        return get_form_field_value(field_name, request.form, return_none_if_empty=True)
+
+    # Datos comunes
+    update_data = {
+        'nombre':           get_form_field_value('nombre', request.form),
+        'rut':              get_form_field_value('rut', request.form),
+        'fecha_nacimiento': get_form_field_value('fecha_nacimiento_original', request.form, return_none_if_empty=True),
+        'fecha_evaluacion': get_form_field_value('fecha_evaluacion', request.form, return_none_if_empty=True),
+        'fecha_reevaluacion': get_form_field_value('fecha_reevaluacion', request.form, return_none_if_empty=True),
+        'edad':             get_form_field_value('edad', request.form),
+        'nacionalidad':     get_form_field_value('nacionalidad', request.form),
+        'sexo':             get_form_field_value('sexo', request.form),
+        # NO tocamos evaluado_flag ni fecha_relleno → permite correcciones
+    }
+
+    if form_type == 'medicina_familiar':
+        diagnostico_unificado_valor = get_form_field_value('diagnostico_unificado', request.form)
+        genero_f = get_form_field_value('genero_f', request.form)
+        genero_m = get_form_field_value('genero_m', request.form)
+        if genero_f:   update_data['sexo'] = 'F'
+        elif genero_m: update_data['sexo'] = 'M'
+
+        update_data.update({
+            'diagnostico_1': diagnostico_unificado_valor,
+            'diagnostico_2': diagnostico_unificado_valor,
+            'diagnostico_complementario': get_form_field_value('diagnostico_complementario', request.form),
+            'clasificacion':  get_form_field_value('clasificacion_imc', request.form),
+            'derivaciones':   get_form_field_value('derivaciones', request.form),
+            'indicaciones':   get_form_field_value('indicaciones', request.form),
+            'fecha_reevaluacion_select': get_form_field_value('fecha_reevaluacion_select', request.form, return_none_if_empty=True),
+            'observacion_1':  get_form_field_value('observacion_1', request.form),
+            'observacion_2':  get_form_field_value('observacion_2', request.form),
+            'observacion_3':  get_form_field_value('observacion_3', request.form),
+            'observacion_4':  get_form_field_value('observacion_4', request.form),
+            'observacion_5':  get_form_field_value('observacion_5', request.form),
+            'observacion_6':  get_form_field_value('observacion_6', request.form),
+            'observacion_7':  get_form_field_value('observacion_7', request.form),
+            'check_cesarea':              map_to_boolean_local('check_cesarea'),
+            'check_atermino':             map_to_boolean_local('check_atermino'),
+            'check_vaginal':              map_to_boolean_local('check_vaginal'),
+            'check_prematuro':            map_to_boolean_local('check_prematuro'),
+            'check_acorde':               map_to_boolean_local('check_acorde'),
+            'check_retrasogeneralizado':  map_to_boolean_local('check_retrasogeneralizado'),
+            'check_esquemac':             map_to_boolean_local('check_esquemac'),
+            'check_esquemai':             map_to_boolean_local('check_esquemai'),
+            'check_alergiano':            map_to_boolean_local('check_alergiano'),
+            'check_alergiasi':            map_to_boolean_local('check_alergiasi'),
+            'check_cirugiano':            map_to_boolean_local('check_cirugiano'),
+            'check_cirugiasi':            map_to_boolean_local('check_cirugiasi'),
+            'check_visionsinalteracion':  map_to_boolean_local('check_visionsinalteracion'),
+            'check_visionrefraccion':     map_to_boolean_local('check_visionrefraccion'),
+            'check_audicionnormal':       map_to_boolean_local('check_audicionnormal'),
+            'check_hipoacusia':           map_to_boolean_local('check_hipoacusia'),
+            'check_tapondecerumen':       map_to_boolean_local('check_tapondecerumen'),
+            'check_sinhallazgos':         map_to_boolean_local('check_sinhallazgos'),
+            'check_caries':               map_to_boolean_local('check_caries'),
+            'check_apinamientodental':    map_to_boolean_local('check_apinamientodental'),
+            'check_retenciondental':      map_to_boolean_local('check_retenciondental'),
+            'check_frenillolingual':      map_to_boolean_local('check_frenillolingual'),
+            'check_hipertrofia':          map_to_boolean_local('check_hipertrofia'),
+            'altura':         get_form_field_value('altura', request.form, return_none_if_empty=True),
+            'peso':           get_form_field_value('peso', request.form, return_none_if_empty=True),
+            'imc':            get_form_field_value('imc', request.form, return_none_if_empty=True),
+            'clasificacion_imc': get_form_field_value('clasificacion_imc', request.form, return_none_if_empty=True),
+        })
+
+    elif form_type == 'neurologia':
+        update_data.update({
+            'estado_general': get_form_field_value('estado', request.form),
+            'diagnostico':    get_form_field_value('diagnostico', request.form),
+            'derivaciones':   get_form_field_value('derivaciones', request.form),
+        })
+
+    elif form_type == 'informe_neurologico':
+        update_data.update({
+            'motivo_consulta':       get_form_field_value('motivo_consulta', request.form),
+            'observaciones':         get_form_field_value('observaciones', request.form),
+            'observacion_neurologia': get_form_field_value('observacion_neurologia', request.form),
+            'diagnostico':           get_form_field_value('diagnostico', request.form),
+            'indicaciones':          get_form_field_value('indicaciones', request.form),
+        })
+
+    try:
+        res = requests.patch(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}",
+            headers=SUPABASE_SERVICE_HEADERS,
+            json=update_data
+        )
+        if res.status_code >= 400:
+            return jsonify({"success": False, "message": f"Error al guardar: {res.text}"}), 500
+        return jsonify({"success": True, "message": "Datos guardados correctamente."})
+    except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
 

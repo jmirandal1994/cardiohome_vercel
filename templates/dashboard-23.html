@@ -8095,5 +8095,143 @@ function confirmDelete(type, id, nombre) {
 }
 </script>
 
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   PRESENCIA EN TIEMPO REAL
+   ══════════════════════════════════════════════════════════ */
+let _presTimer = null;
+
+async function cargarPresencia() {
+    const grid  = document.getElementById('pres-grid');
+    const empty = document.getElementById('pres-empty');
+    const tsEl  = document.getElementById('pres-ts');
+    const spin  = document.getElementById('pres-spin');
+    if (!grid) return;
+
+    if (spin) {
+        spin.style.transform = 'rotate(360deg)';
+        spin.style.transition = 'transform .5s';
+        setTimeout(() => { spin.style.transform=''; spin.style.transition=''; }, 500);
+    }
+    try {
+        const res  = await fetch('/api/presencia');
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Error');
+
+        const doctoras = data.data || [];
+        if (doctoras.length === 0) {
+            grid.innerHTML = '';
+            if (empty) empty.style.display = 'block';
+            return;
+        }
+        if (empty) empty.style.display = 'none';
+
+        const nEval  = doctoras.filter(d => d.estado === 'evaluando').length;
+        const nPausa = doctoras.filter(d => d.estado === 'en_pausa').length;
+        const nOff   = doctoras.filter(d => d.estado === 'desconectada').length;
+        const ke = document.getElementById('pres-k-eval');
+        const kp = document.getElementById('pres-k-pausa');
+        const ko = document.getElementById('pres-k-off');
+        if (ke) ke.textContent = nEval;
+        if (kp) kp.textContent = nPausa;
+        if (ko) ko.textContent = nOff;
+
+        const COLORS = ['#0d3b5e','#1a6b4a','#7c3aed','#c2410c','#0369a1','#b91c1c','#0f766e'];
+        const LABELS = { evaluando:'Evaluando', en_pausa:'En pausa', desconectada:'Desconectada' };
+
+        grid.innerHTML = doctoras.map((d, i) => {
+            const initials = (d.nombre||'?').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+            const color    = COLORS[i % COLORS.length];
+            const label    = LABELS[d.estado] || d.estado;
+            let meta = d.establecimiento || 'Sin actividad registrada';
+            if (d.minutos !== null && d.minutos !== undefined && d.estado !== 'desconectada') {
+                meta = (d.establecimiento ? d.establecimiento + ' · ' : '') + 'hace ' + d.minutos + ' min';
+            }
+            return `<div class="pres-card">
+                <div class="pres-avatar" style="background:${color};">
+                    ${initials}
+                    <div class="pres-dot-wrap"><div class="pres-dot ${d.estado}"></div></div>
+                </div>
+                <div style="min-width:0;flex:1;">
+                    <p class="pres-name">${d.nombre}</p>
+                    <p class="pres-meta">${meta}</p>
+                </div>
+                <span class="pres-badge ${d.estado}">${label}</span>
+            </div>`;
+        }).join('');
+
+        if (tsEl) tsEl.textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-CL');
+    } catch(e) {
+        if (grid) grid.innerHTML = `<div style="text-align:center;padding:40px;color:#e74c3c;grid-column:1/-1;"><i class="fa-solid fa-triangle-exclamation" style="font-size:2rem;display:block;margin-bottom:8px;"></i>${e.message}</div>`;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const origShow = window.showSection;
+    if (typeof origShow === 'function' && !origShow._presPatched) {
+        window.showSection = function(id) {
+            origShow(id);
+            clearInterval(_presTimer);
+            if (id === 'admin-presencia') {
+                cargarPresencia();
+                _presTimer = setInterval(cargarPresencia, 30000);
+            }
+        };
+        window.showSection._presPatched = true;
+    }
+    document.querySelectorAll('.nav-link[data-section="admin-presencia"]').forEach(el => {
+        el.addEventListener('click', () => {
+            clearInterval(_presTimer);
+            setTimeout(cargarPresencia, 80);
+            _presTimer = setInterval(cargarPresencia, 30000);
+        });
+    });
+});
+
+/* ══════════════════════════════════════════════════════════
+   ELIMINAR ALUMNO INDIVIDUAL
+   ══════════════════════════════════════════════════════════ */
+async function confirmarEliminarAlumno(alumnoId, nombre, filaEl) {
+    const result = await Swal.fire({
+        title: '¿Eliminar alumno?',
+        html: `<div style="text-align:left;background:#fff5f5;border:1.5px solid #fecaca;border-radius:12px;padding:12px 14px;">
+                 <div style="font-weight:700;color:#1e293b;font-size:.9rem;margin-bottom:6px;">
+                   <i class="fas fa-user-graduate" style="color:#dc2626;margin-right:6px;"></i>${nombre}
+                 </div>
+                 <div style="color:#dc2626;font-size:.78rem;font-weight:600;">
+                   <i class="fas fa-triangle-exclamation" style="margin-right:4px;"></i>
+                   Se eliminará del conteo y de la nómina de forma permanente.
+                 </div>
+               </div>`,
+        icon: 'warning', iconColor: '#dc2626',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-trash-can"></i>&nbsp; Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b',
+        reverseButtons: true, focusCancel: true,
+    });
+    if (!result.isConfirmed) return;
+
+    Swal.fire({ title: 'Eliminando…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    try {
+        const res  = await fetch('/api/estudiante/eliminar/' + alumnoId, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            await Swal.fire({ icon:'success', title:'Eliminado', text:data.message, timer:1800, showConfirmButton:false });
+            const fila = filaEl || document.querySelector(`[data-alumno-id="${alumnoId}"]`);
+            if (fila) {
+                fila.style.transition = 'opacity .4s, transform .4s';
+                fila.style.opacity = '0'; fila.style.transform = 'translateX(-16px)';
+                setTimeout(() => fila.remove(), 420);
+            } else { location.reload(); }
+        } else {
+            Swal.fire({ icon:'error', title:'Error', text: data.message || 'No se pudo eliminar.' });
+        }
+    } catch(e) {
+        Swal.fire({ icon:'error', title:'Error de conexión', text: e.message });
+    }
+}
+</script>
 </body>
 </html>

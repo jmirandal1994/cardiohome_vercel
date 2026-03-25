@@ -2799,7 +2799,7 @@ def descargar_pdf_alumno(alumno_id):
                 "indicaciones": est.get('indicaciones', ''), "derivaciones": est.get('derivaciones', ''),
                 "fecha_evaluacion": fecha_evaluacion_formatted, "fecha_reevaluacion": fecha_reeval_pdf,
 
-                "altura": str(est.get('altura', '') or ''), "peso": str(est.get('peso', '') or ''), "I.M.C": str(est.get('imc', '') or ''),
+                "altura": str(est.get('altura', '') or ''), "peso": str(est.get('peso', '') or ''), "imc": str(est.get('imc', '') or ''),
                 "observacion_1": est.get('observacion_1', ''), "observacion_2": est.get('observacion_2', ''),
                 "observacion_3": est.get('observacion_3', ''), "observacion_4": est.get('observacion_4', ''),
                 "observacion_5": est.get('observacion_5', ''), "observacion_6": est.get('observacion_6', ''),
@@ -4790,6 +4790,9 @@ def api_presencia_post():
     """Recibe heartbeat de una doctora y upsert en presencia_doctoras."""
     if 'usuario' not in session:
         return jsonify({"success": False, "message": "No autorizado"}), 401
+    # Solo las doctoras registran presencia — admin y coordinadoras no aparecen en el panel
+    if session.get('usuario') != 'doctora':
+        return jsonify({"success": True, "skipped": True}), 200
     try:
         data          = request.get_json() or {}
         doctora_id    = session.get('usuario_id')
@@ -4885,6 +4888,9 @@ def api_presencia_get():
                 "minutos":         minutos,
                 "estado":          estado,
             })
+
+        # Solo incluir en resultado filas cuyo doctora_id esté en doctoras_map (rol=doctora)
+        resultado = [r for r in resultado if r['doctora_id'] in doctoras_map]
 
         # Agregar doctoras sin fila (nunca se conectaron)
         ids_con_fila = {r['doctora_id'] for r in resultado}

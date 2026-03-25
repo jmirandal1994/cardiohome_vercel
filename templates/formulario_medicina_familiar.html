@@ -1808,14 +1808,14 @@
                             <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="2" placeholder="Detalles de derivaciones a especialistas. Puedes también escribir otras derivaciones aquí." oninput="syncDerivChips('{{ est.id }}'); updatePreview(this.form)">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
         
                             <div class="button-group">
-                                <button type="submit">
-                                    <i class="fas fa-file-pdf"></i> Guardar y Generar PDF
+                                <button type="button"
+                                    onclick="guardarDatos(this)">
+                                    <i class="fas fa-floppy-disk"></i> Guardar correcciones
                                 </button>
-                                <button type="button" class="mark-evaluated-btn" 
-                                    {% if est.fecha_relleno is not none %}disabled{% endif %} 
+                                <button type="button" class="mark-evaluated-btn"
                                     onclick="marcarComoEvaluado(this)">
-                                    <i class="fas fa-check-circle"></i> 
-                                    {% if est.fecha_relleno is not none %}Evaluado{% else %}Marcar como Evaluado{% endif %}
+                                    <i class="fas fa-check-circle"></i>
+                                    {% if est.fecha_relleno is not none %}Evaluado{% else %}Marcar como evaluado{% endif %}
                                 </button>
                             </div>
                         </form>
@@ -2575,6 +2575,88 @@
         }
 
 
+        // ── Guardar sin PDF (permite correcciones) ──────────────────────────
+        async function guardarDatos(buttonElement) {
+            const form = buttonElement.closest('form');
+            const formData = new FormData(form);
+
+            // Incluir checkboxes desmarcados como vacío
+            form.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                if (!cb.checked) formData.set(cb.name, '');
+            });
+
+            const origHTML = buttonElement.innerHTML;
+            buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando…';
+            buttonElement.disabled = true;
+
+            try {
+                const res  = await fetch('/guardar_evaluacion', { method:'POST', body:formData });
+                const data = await res.json();
+
+                if (data.success) {
+                    await Swal.fire({
+                        icon:'success', title:'¡Guardado!',
+                        text:'Los datos han sido guardados correctamente.',
+                        timer:1800, showConfirmButton:false
+                    });
+                } else {
+                    Swal.fire({ icon:'error', title:'Error al guardar', text: data.message });
+                }
+            } catch(e) {
+                Swal.fire({ icon:'error', title:'Error de conexión', text: e.message });
+            } finally {
+                buttonElement.innerHTML = origHTML;
+                buttonElement.disabled = false;
+            }
+        }
+
+        // ── Generar PDF sin guardar ni marcar evaluado ───────────────────────
+        async function generarSoloPDF(buttonElement) {
+            const form = buttonElement.closest('form');
+            const formData = new FormData(form);
+            form.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                if (!cb.checked) formData.set(cb.name, '');
+            });
+
+            const origHTML = buttonElement.innerHTML;
+            buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando…';
+            buttonElement.disabled = true;
+
+            Swal.fire({
+                title: 'Generando PDF…', text: 'Por favor espera.',
+                didOpen: () => Swal.showLoading(),
+                allowOutsideClick: false
+            });
+
+            try {
+                const pdfRes = await fetch('/generar_pdf', { method:'POST', body:formData });
+                if (pdfRes.ok) {
+                    const blob = await pdfRes.blob();
+                    const url  = window.URL.createObjectURL(blob);
+                    const a    = document.createElement('a');
+                    a.href = url;
+                    const cd = pdfRes.headers.get('Content-Disposition');
+                    let filename = 'formulario.pdf';
+                    if (cd) {
+                        const m = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(cd);
+                        if (m && m[1]) filename = decodeURIComponent(m[1].replace(/['"]/g,''));
+                    }
+                    a.download = filename;
+                    document.body.appendChild(a); a.click(); a.remove();
+                    window.URL.revokeObjectURL(url);
+                    Swal.fire({ icon:'success', title:'PDF generado', timer:1600, showConfirmButton:false });
+                } else {
+                    const txt = await pdfRes.text();
+                    Swal.fire({ icon:'error', title:'Error al generar PDF', text: txt });
+                }
+            } catch(e) {
+                Swal.fire({ icon:'error', title:'Error de conexión', text: e.message });
+            } finally {
+                buttonElement.innerHTML = origHTML;
+                buttonElement.disabled = false;
+            }
+        }
+
         async function marcarComoEvaluado(buttonElement) {
             const form = buttonElement.closest('form');
             
@@ -2616,8 +2698,8 @@
             }
 
             Swal.fire({
-                title: '¿Marcar como Evaluado?',
-                text: 'Esta acción registrará la evaluación del alumno y guardará todos los datos rellenados.',
+                title: '¿Guardar y marcar como evaluado?',
+                text: 'Se guardará la evaluación del alumno. Si ya estaba evaluado, se actualizarán los datos.',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',

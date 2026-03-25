@@ -1812,8 +1812,12 @@
                                     onclick="guardarDatos(this)">
                                     <i class="fas fa-floppy-disk"></i> Guardar correcciones
                                 </button>
+                                <button type="submit">
+                                    <i class="fas fa-file-pdf"></i> Generar PDF
+                                </button>
                                 <button type="button" class="mark-evaluated-btn"
-                                    onclick="marcarComoEvaluado(this)">
+                                    onclick="marcarComoEvaluado(this)"
+                                    {% if est.fecha_relleno is not none %}disabled{% endif %}>
                                     <i class="fas fa-check-circle"></i>
                                     {% if est.fecha_relleno is not none %}Evaluado{% else %}Marcar como evaluado{% endif %}
                                 </button>

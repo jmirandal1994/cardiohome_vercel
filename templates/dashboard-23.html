@@ -1109,6 +1109,7 @@
                         <li><a href="#" class="nav-link" data-section="admin-performance"><i class="fa-solid fa-chart-simple"></i> Rendimiento General</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-add-visit"><i class="fa-solid fa-calendar-days"></i> Programar Visita</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-calendar-doctoras"><i class="fa-solid fa-calendar-week"></i> Calendario Doctoras</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-presencia"><i class="fa-solid fa-circle-dot" style="color:#10b981;"></i> Actividad en Tiempo Real</a></li>
                         <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fa-solid fa-folder-plus"></i> Crear Proyecto</a></li>
                         <li><a href="#" class="nav-link" data-section="gestionar-proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-upload-nomina"><i class="fa-solid fa-file-excel"></i> Cargar Nómina</a></li>
@@ -3045,6 +3046,73 @@
     }
     </script>
                 </div>
+
+            <div id="admin-presencia" class="content-section">
+                <div class="section-topbar">
+                    <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                    <i class="fa-solid fa-circle-dot section-icon" style="color:#10b981;"></i>
+                    <h2 class="section-title">Actividad en Tiempo Real</h2>
+                </div>
+
+                <style>
+                .pres-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; margin-top:8px; }
+                .pres-card { background:white; border-radius:18px; border:1.5px solid #e8f0f6; padding:18px 20px; display:flex; align-items:center; gap:14px; transition:box-shadow .2s; }
+                .pres-card:hover { box-shadow:0 6px 20px rgba(15,52,96,.1); }
+                .pres-avatar { width:46px; height:46px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:.85rem; font-weight:800; color:white; flex-shrink:0; position:relative; }
+                .pres-dot-wrap { position:absolute; bottom:-2px; right:-2px; width:16px; height:16px; display:flex; align-items:center; justify-content:center; background:white; border-radius:50%; }
+                .pres-dot { width:10px; height:10px; border-radius:50%; }
+                @keyframes pressPulse { 0%{box-shadow:0 0 0 0 rgba(16,185,129,.6)} 70%{box-shadow:0 0 0 7px rgba(16,185,129,0)} 100%{box-shadow:0 0 0 0 rgba(16,185,129,0)} }
+                .pres-dot.evaluando { background:#10b981; animation:pressPulse 1.8s ease-in-out infinite; }
+                .pres-dot.en_pausa  { background:#f59e0b; }
+                .pres-dot.desconectada { background:#94a3b8; }
+                .pres-name { font-weight:700; font-size:.88rem; color:#0f2030; margin:0 0 3px; }
+                .pres-meta { font-size:.73rem; color:#94a3b8; margin:0; }
+                .pres-badge { margin-left:auto; padding:4px 10px; border-radius:20px; font-size:.7rem; font-weight:700; white-space:nowrap; flex-shrink:0; }
+                .pres-badge.evaluando   { background:#d1fae5; color:#065f46; }
+                .pres-badge.en_pausa    { background:#fef3c7; color:#92400e; }
+                .pres-badge.desconectada{ background:#f1f5f9; color:#64748b; }
+                .pres-header-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:10px; }
+                .pres-kpis { display:flex; gap:10px; flex-wrap:wrap; }
+                .pres-kpi  { background:#f8fafc; border:1.5px solid #e8f0f6; border-radius:12px; padding:10px 18px; text-align:center; }
+                .pres-kpi .n { font-size:1.5rem; font-weight:900; line-height:1; }
+                .pres-kpi .l { font-size:.65rem; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:.4px; margin-top:3px; }
+                .pres-refresh-btn { background:#f1f5f9; color:#0A3D62; border:1.5px solid #e2e8f0; padding:8px 16px; border-radius:10px; font-weight:700; font-size:.82rem; cursor:pointer; display:flex; align-items:center; gap:7px; transition:background .18s; }
+                .pres-refresh-btn:hover { background:#e2e8f0; }
+                .pres-skeleton { height:80px; background:linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%); background-size:200% 100%; border-radius:18px; animation:shimmer 1.5s infinite; }
+                </style>
+
+                <div class="pres-header-bar">
+                    <div class="pres-kpis">
+                        <div class="pres-kpi">
+                            <div class="n" id="pres-k-eval" style="color:#10b981;">—</div>
+                            <div class="l">Evaluando</div>
+                        </div>
+                        <div class="pres-kpi">
+                            <div class="n" id="pres-k-pausa" style="color:#f59e0b;">—</div>
+                            <div class="l">En pausa</div>
+                        </div>
+                        <div class="pres-kpi">
+                            <div class="n" id="pres-k-off" style="color:#94a3b8;">—</div>
+                            <div class="l">Desconectadas</div>
+                        </div>
+                    </div>
+                    <button class="pres-refresh-btn" onclick="cargarPresencia()">
+                        <i class="fa-solid fa-rotate-right" id="pres-spin"></i> Actualizar
+                    </button>
+                </div>
+
+                <div id="pres-grid" class="pres-grid">
+                    <div class="pres-skeleton"></div>
+                    <div class="pres-skeleton"></div>
+                    <div class="pres-skeleton"></div>
+                    <div class="pres-skeleton"></div>
+                </div>
+                <p id="pres-empty" style="display:none;text-align:center;padding:48px;color:#94a3b8;">
+                    <i class="fa-solid fa-circle-dot" style="font-size:2.5rem;display:block;margin-bottom:12px;color:#d1fae5;"></i>
+                    Sin doctoras registradas aún. Se mostrarán aquí cuando inicien sesión.
+                </p>
+                <p id="pres-ts" style="text-align:right;font-size:.7rem;color:#94a3b8;margin-top:12px;"></p>
+            </div>
 
             {% elif usuario == 'coordinadora' %}
             {# MODIFICACIÓN: Esta es la sección activa por defecto para 'coordinadora' #}

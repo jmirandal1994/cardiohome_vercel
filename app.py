@@ -4780,5 +4780,193 @@ def api_estudiante_agregar():
         return jsonify({"success": False, "message": str(e)}), 500
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+#  PRESENCIA EN TIEMPO REAL
+#  POST /api/presencia   — heartbeat de la doctora mientras evalúa
+#  GET  /api/presencia   — lista para admin / coordinadora
+# ─────────────────────────────────────────────────────────────────────────────
+@app.route('/api/presencia', methods=['POST'])
+def api_presencia_post():
+    """Recibe heartbeat de una doctora y upsert en presencia_doctoras."""
+    if 'usuario' not in session:
+        return jsonify({"success": False, "message": "No autorizado"}), 401
+    try:
+        data          = request.get_json() or {}
+        doctora_id    = session.get('usuario_id')
+        nomina_id     = data.get('nomina_id') or session.get('current_nomina_id') or ''
+        establec      = data.get('establecimiento') or ''
+        accion        = data.get('accion', 'heartbeat')   # heartbeat | logout
+
+        if accion == 'logout':
+            estado = 'desconectada'
+        else:
+            estado = 'evaluando'
+
+        payload = {
+            "doctora_id":            doctora_id,
+            "nomina_id":             nomina_id or None,
+            "establecimiento":       establec,
+            "ultima_actividad":      "now()",
+            "estado":                estado,
+        }
+
+        # Upsert: si ya existe la fila para esta doctora la actualiza
+        res = requests.post(
+            f"{SUPABASE_URL}/rest/v1/presencia_doctoras",
+            headers={**SUPABASE_SERVICE_HEADERS,
+                     "Prefer": "resolution=merge-duplicates,return=minimal",
+                     "on_conflict": "doctora_id"},
+            json=payload
+        )
+        # Supabase devuelve 200/201/204 en upsert
+        return jsonify({"success": res.status_code in (200, 201, 204)})
+
+    except Exception as e:
+        print(f"ERROR api_presencia_post: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/presencia', methods=['GET'])
+def api_presencia_get():
+    """Devuelve la lista de presencia de todas las doctoras para admin / coordinadora."""
+    if 'usuario' not in session:
+        return jsonify({"success": False}), 401
+    if session.get('usuario') not in ('admin', 'coordinadora'):
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        # 1. Traer todas las filas de presencia
+        res_p = requests.get(
+            f"{SUPABASE_URL}/rest/v1/presencia_doctoras"
+            f"?select=doctora_id,establecimiento,ultima_actividad,estado",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        filas = res_p.json() if res_p.ok else []
+
+        # 2. Traer nombres de doctoras
+        res_d = requests.get(
+            f"{SUPABASE_URL}/rest/v1/doctoras?rol=eq.doctora&select=id,nombre,usuario",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        doctoras_map = {}
+        if res_d.ok:
+            for d in res_d.json():
+                doctoras_map[str(d['id'])] = d.get('nombre') or d.get('usuario', '—')
+
+        # 3. Calcular estado dinámico según última actividad
+        from datetime import timezone
+        ahora = datetime.now(timezone.utc)
+        resultado = []
+        for fila in filas:
+            did   = str(fila.get('doctora_id', ''))
+            ua    = fila.get('ultima_actividad', '')
+            estado = fila.get('estado', 'desconectada')
+
+            # Si tiene timestamp, recalcular
+            minutos = None
+            if ua and estado != 'desconectada':
+                try:
+                    # Supabase devuelve ISO con timezone
+                    ts = datetime.fromisoformat(ua.replace('Z', '+00:00'))
+                    minutos = int((ahora - ts).total_seconds() / 60)
+                    if minutos > 20:
+                        estado = 'desconectada'
+                    elif minutos > 8:
+                        estado = 'en_pausa'
+                    else:
+                        estado = 'evaluando'
+                except Exception:
+                    pass
+
+            resultado.append({
+                "doctora_id":      did,
+                "nombre":          doctoras_map.get(did, '—'),
+                "establecimiento": fila.get('establecimiento', ''),
+                "ultima_actividad": ua,
+                "minutos":         minutos,
+                "estado":          estado,
+            })
+
+        # Agregar doctoras sin fila (nunca se conectaron)
+        ids_con_fila = {r['doctora_id'] for r in resultado}
+        for did, nombre in doctoras_map.items():
+            if did not in ids_con_fila:
+                resultado.append({
+                    "doctora_id": did, "nombre": nombre,
+                    "establecimiento": "", "ultima_actividad": None,
+                    "minutos": None, "estado": "desconectada"
+                })
+
+        resultado.sort(key=lambda x: (
+            0 if x['estado'] == 'evaluando'
+            else 1 if x['estado'] == 'en_pausa'
+            else 2
+        ))
+        return jsonify({"success": True, "data": resultado})
+
+    except Exception as e:
+        print(f"ERROR api_presencia_get: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  ELIMINAR ALUMNO INDIVIDUAL
+#  DELETE /api/estudiante/eliminar/<estudiante_id>
+#  Accesible por admin y doctora (solo sus propias nóminas)
+# ─────────────────────────────────────────────────────────────────────────────
+@app.route('/api/estudiante/eliminar/<estudiante_id>', methods=['DELETE'])
+def api_estudiante_eliminar(estudiante_id):
+    if 'usuario' not in session:
+        return jsonify({"success": False, "message": "No autorizado"}), 401
+
+    user_role = session.get('usuario')
+    user_id   = session.get('usuario_id')
+
+    try:
+        # 1. Verificar que el alumno existe y obtener su nomina_id
+        res_est = requests.get(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            f"?id=eq.{estudiante_id}&select=id,nombre,nomina_id",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        if not res_est.ok or not res_est.json():
+            return jsonify({"success": False, "message": "Alumno no encontrado"}), 404
+
+        alumno    = res_est.json()[0]
+        nomina_id = alumno.get('nomina_id')
+
+        # 2. Si es doctora, verificar que la nómina le pertenece
+        if user_role == 'doctora':
+            res_nom = requests.get(
+                f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+                f"?id=eq.{nomina_id}&doctora_id=eq.{user_id}&select=id",
+                headers=SUPABASE_SERVICE_HEADERS
+            )
+            if not res_nom.ok or not res_nom.json():
+                return jsonify({"success": False,
+                                "message": "No tienes permiso para eliminar este alumno"}), 403
+
+        # 3. Eliminar
+        res_del = requests.delete(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        res_del.raise_for_status()
+
+        print(f"INFO: Alumno {estudiante_id} ({alumno.get('nombre')}) eliminado por {user_role} {user_id}")
+        return jsonify({
+            "success": True,
+            "message": f"Alumno '{alumno.get('nombre')}' eliminado correctamente.",
+            "alumno_id": estudiante_id,
+            "nomina_id": nomina_id
+        })
+
+    except requests.exceptions.RequestException as e:
+        detail = e.response.text if hasattr(e, 'response') and e.response else str(e)
+        return jsonify({"success": False, "message": f"Error de conexión: {detail}"}), 500
+    except Exception as e:
+        print(f"ERROR api_estudiante_eliminar: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))

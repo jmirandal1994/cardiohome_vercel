@@ -1359,7 +1359,7 @@
                 </div>
                 <div>
                     <div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.6);margin-bottom:3px;">CardioHome · Evaluaciones PIE</div>
-                    <div style="font-size:1.05rem;font-weight:900;color:white;font-family:'Montserrat',sans-serif;">Estimada Doctora, bienvenida</div>
+                    <div style="font-size:1.05rem;font-weight:900;color:white;font-family:'Montserrat',sans-serif;">Estimada Doctora, Bienvenida</div>
                     <div style="font-size:.78rem;color:rgba(255,255,255,.75);margin-top:2px;font-style:italic;">Que tenga una excelente jornada de evaluaciones</div>
                 </div>
                 <button onclick="document.getElementById('banner-bienvenida').style.display='none'"
@@ -1603,7 +1603,9 @@
     <option value="Discapacidad intelectual leve" {% if est.diagnostico_1 == 'Discapacidad intelectual leve' or est.diagnostico_2 == 'Discapacidad intelectual leve' %}selected{% endif %}>Discapacidad intelectual leve</option>
     <option value="Discapacidad intelectual moderada" {% if est.diagnostico_1 == 'Discapacidad intelectual moderada' or est.diagnostico_2 == 'Discapacidad intelectual moderada' %}selected{% endif %}>Discapacidad intelectual moderada</option>
     <option value="Discapacidad motora" {% if est.diagnostico_1 == 'Discapacidad motora' or est.diagnostico_2 == 'Discapacidad motora' %}selected{% endif %}>Discapacidad motora</option>
-    <option value="Discapacidad motora grave" {% if est.diagnostico_1 == 'Discapacidad motora grave' or est.diagnostico_2 == 'Discapacidad motora grave' %}selected{% endif %}>Discapacidad motora grave</option>
+    <option value="Trastorno Motor" {% if est.diagnostico_1 == 'Trastorno Motor' or est.diagnostico_2 == 'Trastorno Motor' %}selected{% endif %}>Trastorno Motor</option>
+    <option value="Hipoacusia" {% if est.diagnostico_1 == 'Hipoacusia' or est.diagnostico_2 == 'Hipoacusia' %}selected{% endif %}>Hipoacusia</option>   
+    <option value="Discapacidad Motora Grave" {% if est.diagnostico_1 == 'Discapacidad motora grave' or est.diagnostico_2 == 'Discapacidad motora grave' %}selected{% endif %}>Discapacidad motora grave</option>
     <option value="Discapacidad motora moderada" {% if est.diagnostico_1 == 'Discapacidad motora moderada' or est.diagnostico_2 == 'Discapacidad motora moderada' %}selected{% endif %}>Discapacidad motora moderada</option>
     <option value="Discapacidad múltiple" {% if est.diagnostico_1 == 'Discapacidad múltiple' or est.diagnostico_2 == 'Discapacidad múltiple' %}selected{% endif %}>Discapacidad múltiple</option>
     <option value="Discapacidad visual" {% if est.diagnostico_1 == 'Discapacidad visual' or est.diagnostico_2 == 'Discapacidad visual' %}selected{% endif %}>Discapacidad visual</option>

@@ -1350,6 +1350,53 @@
             {% endif %}
         {% endwith %}
 
+        <!-- Banner de bienvenida doctora -->
+        <div id="banner-bienvenida" style="margin-bottom:20px;border-radius:18px;overflow:hidden;border:1.5px solid #e0eaf6;box-shadow:0 4px 24px rgba(15,52,96,.10);">
+            <!-- Franja superior -->
+            <div style="background:linear-gradient(135deg,#0d3b5e 0%,#1c67a3 60%,#1a6b4a 100%);padding:20px 24px 16px;display:flex;align-items:center;gap:16px;">
+                <div style="width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="CardioHome" style="width:34px;height:34px;object-fit:contain;filter:brightness(0) invert(1);opacity:.95;">
+                </div>
+                <div>
+                    <div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.6);margin-bottom:3px;">CardioHome · Evaluaciones PIE</div>
+                    <div style="font-size:1.05rem;font-weight:900;color:white;font-family:'Montserrat',sans-serif;">Estimada Doctora, bienvenida</div>
+                    <div style="font-size:.78rem;color:rgba(255,255,255,.75);margin-top:2px;font-style:italic;">Que tenga una excelente jornada de evaluaciones</div>
+                </div>
+                <button onclick="document.getElementById('banner-bienvenida').style.display='none'"
+                    style="margin-left:auto;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);border-radius:8px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;transition:background .18s;"
+                    onmouseover="this.style.background='rgba(255,255,255,.25)'"
+                    onmouseout="this.style.background='rgba(255,255,255,.12)'"
+                    title="Cerrar aviso">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <!-- Cuerpo del mensaje -->
+            <div style="background:white;padding:18px 24px;">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
+                    <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:#f0f6ff;border-radius:10px;border-left:3px solid #1c67a3;">
+                        <i class="fas fa-magnifying-glass" style="color:#1c67a3;font-size:.85rem;margin-top:2px;flex-shrink:0;"></i>
+                        <span style="font-size:.78rem;color:#1e3a5f;font-weight:600;line-height:1.45;">Buscar el diagnóstico en el desplegable según su diagnóstico previo <strong>(FUNDAMENTAL)</strong></span>
+                    </div>
+                    <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:#f0fdf4;border-radius:10px;border-left:3px solid #1a6b4a;">
+                        <i class="fas fa-list-check" style="color:#1a6b4a;font-size:.85rem;margin-top:2px;flex-shrink:0;"></i>
+                        <span style="font-size:.78rem;color:#14532d;font-weight:600;line-height:1.45;">Verificar que los campos estén completos. Si no se completan: poner <strong>NO INFORMADO</strong></span>
+                    </div>
+                    <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:#fefce8;border-radius:10px;border-left:3px solid #ca8a04;">
+                        <i class="fas fa-file-medical" style="color:#ca8a04;font-size:.85rem;margin-top:2px;flex-shrink:0;"></i>
+                        <span style="font-size:.78rem;color:#713f12;font-weight:600;line-height:1.45;">Diagnóstico complementario: si no lo amerita, <strong>dejarlo vacío</strong></span>
+                    </div>
+                    <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:#fdf2f8;border-radius:10px;border-left:3px solid #9333ea;">
+                        <i class="fas fa-floppy-disk" style="color:#9333ea;font-size:.85rem;margin-top:2px;flex-shrink:0;"></i>
+                        <span style="font-size:.78rem;color:#581c87;font-weight:600;line-height:1.45;">Para corregir después de evaluado: usar el botón <strong>"Guardar correcciones"</strong></span>
+                    </div>
+                </div>
+                <div style="margin-top:14px;padding-top:12px;border-top:1px solid #e8f0f6;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                    <span style="font-size:.72rem;color:#94a3b8;font-style:italic;">Gracias por su dedicación y compromiso con los estudiantes PIE.</span>
+                    <span style="font-size:.7rem;font-weight:800;color:#0d3b5e;text-transform:uppercase;letter-spacing:.05em;">Administración CardioHome</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Estadísticas -->
         <div class="stats-bar">
             <div class="stat-card">
@@ -2458,6 +2505,8 @@
         }
 
         async function submitForm(form) {
+            // Forzar cálculo de IMC antes de capturar el formulario
+            calculateIMC(form);
             const formData = new FormData(form);
 
             // Manually set checkbox values if they are unchecked, as FormData doesn't include them
@@ -2582,6 +2631,8 @@
         // ── Guardar sin PDF (permite correcciones) ──────────────────────────
         async function guardarDatos(buttonElement) {
             const form = buttonElement.closest('form');
+            // Forzar cálculo de IMC antes de capturar el formulario
+            calculateIMC(form);
             const formData = new FormData(form);
 
             // Incluir checkboxes desmarcados como vacío
@@ -2617,6 +2668,8 @@
         // ── Generar PDF sin guardar ni marcar evaluado ───────────────────────
         async function generarSoloPDF(buttonElement) {
             const form = buttonElement.closest('form');
+            // Forzar cálculo de IMC antes de capturar el formulario
+            calculateIMC(form);
             const formData = new FormData(form);
             form.querySelectorAll('input[type="checkbox"]').forEach(cb => {
                 if (!cb.checked) formData.set(cb.name, '');
@@ -2713,6 +2766,7 @@
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     try {
+                        calculateIMC(form); // Forzar IMC antes de capturar
                         const formData = new FormData(form); 
                         
                         // Asegurarse de que los valores de los checkboxes se incluyan correctamente
@@ -3423,6 +3477,7 @@
         }
         function cerrarModalAgregar() {
             document.getElementById('modal-agregar').classList.remove('open');
+            document.getElementById('nuevo-nacionalidad').value = '';
         }
         function setTipoAgregar(tipo) {
             _tipoAgregar = tipo;
@@ -3455,6 +3510,7 @@
                         rut:               rut,
                         fecha_nacimiento:  fechaNac || null,
                         sexo:              sexo || null,
+                        nacionalidad:      document.getElementById('nuevo-nacionalidad').value.trim() || null,
                         estado_asistencia: _tipoAgregar === 'extra' ? 'extra' : 'activo'
                     })
                 });
@@ -3548,6 +3604,10 @@
                         <option value="M">Masculino</option>
                     </select>
                 </div>
+            </div>
+            <div class="field-group">
+                <label>Nacionalidad</label>
+                <input type="text" id="nuevo-nacionalidad" placeholder="Ej: Chilena, Venezolana…" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid #e2e8f4;font-size:.85rem;color:#334155;box-sizing:border-box;">
             </div>
 
             <div class="modal-footer">

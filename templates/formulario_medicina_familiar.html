@@ -1589,19 +1589,16 @@
 
                             {# CORRECCIÓN UNIFICADA: Desplegable de Diagnósticos PIE (Formato amigable) #}
 <label for="diagnostico_unificado_{{ est.id }}">Diagnóstico (Déficit/PIE):</label>
-{% if est.diagnostico_sospecha %}
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-    <input type="text"
-        id="dx-previo-input-{{ est.id }}"
-        value="{{ est.diagnostico_sospecha }}"
-        style="flex:1;padding:8px 12px;border-radius:10px;border:1.5px solid #bae6fd;background:#e0f2fe;color:#0369a1;font-size:.85rem;font-weight:600;box-sizing:border-box;"
-        placeholder="Diagnóstico previo"
-        oninput="syncDxPrevioToSelect(this, '{{ est.id }}')"
-        title="Diagnóstico previo cargado — editalo o usa el desplegable para cambiarlo">
+{% if est.diagnostico_sospecha and not est.diagnostico_1 %}
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;" id="dx-previo-row-{{ est.id }}">
+    <div style="flex:1;padding:8px 12px;border-radius:10px;border:1.5px solid #bae6fd;background:#e0f2fe;color:#0369a1;font-size:.85rem;font-weight:600;display:flex;align-items:center;gap:7px;">
+        <i class="fas fa-clipboard-list" style="font-size:.8rem;opacity:.7;"></i>
+        <span id="dx-previo-label-{{ est.id }}">{{ est.diagnostico_sospecha }}</span>
+    </div>
     <button type="button"
-        onclick="document.getElementById('diagnostico_unificado_{{ est.id }}').style.display='block';this.style.display='none';"
-        style="white-space:nowrap;padding:8px 12px;border-radius:10px;border:1.5px solid #bae6fd;background:white;color:#0369a1;font-size:.78rem;font-weight:700;cursor:pointer;">
-        <i class="fas fa-chevron-down"></i> Cambiar
+        onclick="mostrarSelectDx('{{ est.id }}')"
+        style="white-space:nowrap;padding:8px 12px;border-radius:10px;border:1.5px solid #bae6fd;background:white;color:#0369a1;font-size:.78rem;font-weight:700;cursor:pointer;flex-shrink:0;">
+        <i class="fas fa-pen"></i> Cambiar
     </button>
 </div>
 {% endif %}
@@ -2030,58 +2027,53 @@
                     syncIndicacionButtons(estId);
                 }
 
-                // Diagnóstico previo: si no hay diagnóstico guardado, pre-seleccionar desde Dx previo
+                // Diagnóstico previo: si no hay diagnóstico guardado, pre-cargar en el select
                 const selDx = form.querySelector('select[name="diagnostico_unificado"]');
-                if (selDx && !selDx.value && selDx.dataset.dxPrevio) {
+                if (selDx && selDx.dataset.dxPrevio) {
                     const previo = selDx.dataset.dxPrevio.toLowerCase().trim();
-                    for (const opt of selDx.options) {
-                        if (opt.value && opt.value.toLowerCase().includes(previo)) {
-                            selDx.value = opt.value;
-                            break;
+                    if (!selDx.value) {
+                        // Buscar coincidencia exacta o parcial en las opciones
+                        let matched = false;
+                        for (const opt of selDx.options) {
+                            if (opt.value && opt.value.toLowerCase() === previo) {
+                                selDx.value = opt.value; matched = true; break;
+                            }
+                        }
+                        if (!matched) {
+                            for (const opt of selDx.options) {
+                                if (opt.value && opt.value.toLowerCase().includes(previo)) {
+                                    selDx.value = opt.value; matched = true; break;
+                                }
+                            }
+                        }
+                        if (!matched) {
+                            // Crear opción dinámica con el valor exacto del dx previo
+                            const dynOpt = document.createElement('option');
+                            dynOpt.value = selDx.dataset.dxPrevio;
+                            dynOpt.textContent = selDx.dataset.dxPrevio;
+                            dynOpt.setAttribute('data-dynamic', '1');
+                            selDx.appendChild(dynOpt);
+                            selDx.value = selDx.dataset.dxPrevio;
                         }
                     }
                 }
 
-        // ── Sync dx previo input → hidden field para guardar ──────────────
-        function syncDxPrevioToSelect(inputEl, estId) {
-            // El input editable controla el valor enviado al servidor
-            // a través de un hidden field con el mismo name="diagnostico_unificado"
-            // Para esto usamos el select: si el user edita el input, vaciamos el select
-            // y setamos su valor (select acepta valores fuera de sus options via JS)
+        function mostrarSelectDx(estId) {
+            const row = document.getElementById('dx-previo-row-' + estId);
             const sel = document.getElementById('diagnostico_unificado_' + estId);
-            if (sel) {
-                // Forzar el select a tomar el valor del input libre
-                // (el form enviará el select.value al servidor)
-                sel.value = ''; // limpiar selección
-                // Guardar en un hidden si no hay opción que coincida
-                let matched = false;
-                for (const opt of sel.options) {
-                    if (opt.value && opt.value.toLowerCase() === inputEl.value.toLowerCase()) {
-                        sel.value = opt.value;
-                        matched = true;
-                        break;
-                    }
-                }
-                if (!matched) {
-                    // Crear opción dinámica temporal para enviar el valor libre
-                    let dynOpt = sel.querySelector('option[data-dynamic]');
-                    if (!dynOpt) {
-                        dynOpt = document.createElement('option');
-                        dynOpt.setAttribute('data-dynamic', '1');
-                        sel.appendChild(dynOpt);
-                    }
-                    dynOpt.value = inputEl.value;
-                    dynOpt.textContent = inputEl.value;
-                    sel.value = inputEl.value;
-                }
-                updatePreview(sel.closest('form'));
-            }
+            if (row) row.style.display = 'none';
+            if (sel) { sel.style.display = 'block'; sel.focus(); }
+        }
+
+        function syncDxPrevioToSelect(inputEl, estId) {
+            // Mantener por compatibilidad — ya no se usa el input libre
         }
 
         function onDxSelectChange(sel, estId) {
-            // Al elegir del desplegable, actualizar el input visible si existe
-            const inp = document.getElementById('dx-previo-input-' + estId);
-            if (inp && sel.value) inp.value = sel.value;
+            // Al seleccionar del desplegable: mostrar el select, ocultar el badge previo
+            const row = document.getElementById('dx-previo-row-' + estId);
+            if (row && sel.value) row.style.display = 'none';
+            if (sel.value) sel.style.display = 'block';
             updatePreview(sel.closest('form'));
         }
             });

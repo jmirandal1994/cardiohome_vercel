@@ -1359,7 +1359,7 @@
                 </div>
                 <div>
                     <div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.6);margin-bottom:3px;">CardioHome · Evaluaciones PIE</div>
-                    <div style="font-size:1.05rem;font-weight:900;color:white;font-family:'Montserrat',sans-serif;">Estimada Doctora, Bienvenida</div>
+                    <div style="font-size:1.05rem;font-weight:900;color:white;font-family:'Montserrat',sans-serif;">Estimada Doctora, bienvenida</div>
                     <div style="font-size:.78rem;color:rgba(255,255,255,.75);margin-top:2px;font-style:italic;">Que tenga una excelente jornada de evaluaciones</div>
                 </div>
                 <button onclick="document.getElementById('banner-bienvenida').style.display='none'"
@@ -1595,7 +1595,7 @@
     </span>
     {% endif %}
 </label>
-<select name="diagnostico_unificado" id="diagnostico_unificado_{{ est.id }}" onchange="updatePreview(this.form)">
+<select name="diagnostico_unificado" id="diagnostico_unificado_{{ est.id }}" onchange="updatePreview(this.form)" data-dx-previo="{{ est.diagnostico_sospecha if est.diagnostico_sospecha else '' }}">
     <option value="">Seleccione un diagnóstico</option>
     <option value="Dificultades específicas del aprendizaje" {% if est.diagnostico_1 == 'Dificultades específicas del aprendizaje' or est.diagnostico_2 == 'Dificultades específicas del aprendizaje' %}selected{% endif %}>Dificultades específicas del aprendizaje</option>
     <option value="Discapacidad auditiva" {% if est.diagnostico_1 == 'Discapacidad auditiva' or est.diagnostico_2 == 'Discapacidad auditiva' %}selected{% endif %}>Discapacidad auditiva</option>
@@ -1603,9 +1603,7 @@
     <option value="Discapacidad intelectual leve" {% if est.diagnostico_1 == 'Discapacidad intelectual leve' or est.diagnostico_2 == 'Discapacidad intelectual leve' %}selected{% endif %}>Discapacidad intelectual leve</option>
     <option value="Discapacidad intelectual moderada" {% if est.diagnostico_1 == 'Discapacidad intelectual moderada' or est.diagnostico_2 == 'Discapacidad intelectual moderada' %}selected{% endif %}>Discapacidad intelectual moderada</option>
     <option value="Discapacidad motora" {% if est.diagnostico_1 == 'Discapacidad motora' or est.diagnostico_2 == 'Discapacidad motora' %}selected{% endif %}>Discapacidad motora</option>
-    <option value="Trastorno Motor" {% if est.diagnostico_1 == 'Trastorno Motor' or est.diagnostico_2 == 'Trastorno Motor' %}selected{% endif %}>Trastorno Motor</option>
-    <option value="Hipoacusia" {% if est.diagnostico_1 == 'Hipoacusia' or est.diagnostico_2 == 'Hipoacusia' %}selected{% endif %}>Hipoacusia</option>   
-    <option value="Discapacidad Motora Grave" {% if est.diagnostico_1 == 'Discapacidad motora grave' or est.diagnostico_2 == 'Discapacidad motora grave' %}selected{% endif %}>Discapacidad motora grave</option>
+    <option value="Discapacidad motora grave" {% if est.diagnostico_1 == 'Discapacidad motora grave' or est.diagnostico_2 == 'Discapacidad motora grave' %}selected{% endif %}>Discapacidad motora grave</option>
     <option value="Discapacidad motora moderada" {% if est.diagnostico_1 == 'Discapacidad motora moderada' or est.diagnostico_2 == 'Discapacidad motora moderada' %}selected{% endif %}>Discapacidad motora moderada</option>
     <option value="Discapacidad múltiple" {% if est.diagnostico_1 == 'Discapacidad múltiple' or est.diagnostico_2 == 'Discapacidad múltiple' %}selected{% endif %}>Discapacidad múltiple</option>
     <option value="Discapacidad visual" {% if est.diagnostico_1 == 'Discapacidad visual' or est.diagnostico_2 == 'Discapacidad visual' %}selected{% endif %}>Discapacidad visual</option>
@@ -2018,6 +2016,18 @@
                     syncDerivChips(estId);
                     syncIndicacionButtons(estId);
                 }
+
+                // Diagnóstico previo: si no hay diagnóstico guardado, pre-seleccionar desde Dx previo
+                const selDx = form.querySelector('select[name="diagnostico_unificado"]');
+                if (selDx && !selDx.value && selDx.dataset.dxPrevio) {
+                    const previo = selDx.dataset.dxPrevio.toLowerCase().trim();
+                    for (const opt of selDx.options) {
+                        if (opt.value && opt.value.toLowerCase().includes(previo)) {
+                            selDx.value = opt.value;
+                            break;
+                        }
+                    }
+                }
             });
 
             // Event listener para el buscador
@@ -2229,6 +2239,9 @@
             } else {
                 checkbox.closest('.checkbox-item').classList.remove('checked');
             }
+            // Derivaciones automáticas
+            const form = checkbox.closest('form');
+            if (form) autoDeriv(form);
         }
 
         function setFechaReevaluacion(select) {
@@ -2309,6 +2322,74 @@
             updatePreview(form);
         }
 
+        function autoDeriv(form) {
+            const estId = form.querySelector('input[name="estudiante_id"]').value;
+            const ta    = document.getElementById('derivaciones_' + estId);
+            if (!ta) return;
+            const bar   = document.getElementById('deriv-bar-' + estId);
+            const RULES = [
+                ['check_visionrefraccion', 'OFTALMÓLOGO'],
+                ['check_hipoacusia',       'OTORRINO'],
+                ['check_tapondecerumen',   'OTORRINO'],
+                ['check_hipertrofia',      'OTORRINO'],
+                ['check_caries',           'DENTISTA'],
+                ['check_apinamientodental','DENTISTA'],
+                ['check_frenillolingual',  'DENTISTA'],
+            ];
+            RULES.forEach(([field, spec]) => {
+                const cb = form.querySelector('input[name="' + field + '"]');
+                if (!cb) return;
+                const chip = bar ? [...bar.querySelectorAll('.deriv-chip')]
+                    .find(c => (c.getAttribute('onclick') || '').includes("'" + spec + "'")) : null;
+                if (cb.checked) {
+                    let items = parseDeriv(ta.value);
+                    if (!items.map(l => l.toUpperCase()).includes(spec.toUpperCase())) {
+                        items.push(spec);
+                        ta.value = serializeDeriv(items);
+                    }
+                    if (chip) chip.classList.add('active');
+                } else {
+                    const sameSpec = RULES.filter(([f, s]) => s === spec && f !== field);
+                    const anyActive = sameSpec.some(([f]) => {
+                        const c2 = form.querySelector('input[name="' + f + '"]');
+                        return c2 && c2.checked;
+                    });
+                    if (!anyActive) {
+                        let items = parseDeriv(ta.value);
+                        const before = items.length;
+                        items = items.filter(l => l.toUpperCase() !== spec.toUpperCase());
+                        if (items.length !== before) ta.value = serializeDeriv(items);
+                        if (chip) chip.classList.remove('active');
+                    }
+                }
+            });
+            updatePreview(form);
+        }
+
+        function autoDerivIMC(clasificacion, form) {
+            const estId = form.querySelector('input[name="estudiante_id"]').value;
+            const ta    = document.getElementById('derivaciones_' + estId);
+            if (!ta) return;
+            const bar   = document.getElementById('deriv-bar-' + estId);
+            const SPEC  = 'NUTRICIONISTA';
+            const chip  = bar ? [...bar.querySelectorAll('.deriv-chip')]
+                .find(c => (c.getAttribute('onclick') || '').includes("'" + SPEC + "'")) : null;
+            const isObeso = clasificacion && clasificacion.toLowerCase().includes('obesidad');
+            let items = parseDeriv(ta.value);
+            if (isObeso) {
+                if (!items.map(l => l.toUpperCase()).includes(SPEC)) {
+                    items.push(SPEC);
+                    ta.value = serializeDeriv(items);
+                }
+                if (chip) chip.classList.add('active');
+            } else {
+                const before = items.length;
+                items = items.filter(l => l.toUpperCase() !== SPEC);
+                if (items.length !== before) ta.value = serializeDeriv(items);
+                if (chip) chip.classList.remove('active');
+            }
+        }
+
         function classifyIMC(imc, gender, clasificacionInput, form) {
             // Clasificación pediátrica basada en tablas OMS/MINSAL Chile
             // Usa percentiles por edad y sexo para niños 2-18 años
@@ -2333,6 +2414,7 @@
                 else if (imc < 40) classification = 'Obesidad grado II';
                 else classification = 'Obesidad grado III';
                 clasificacionInput.value = classification;
+                autoDerivIMC(classification, form);
                 return;
             }
 
@@ -2386,6 +2468,7 @@
                 classification = 'Obesidad';
             }
             clasificacionInput.value = classification;
+            autoDerivIMC(classification, form);
         }
 
         // NOTA: Función splitObservations modificada para ya no hacer nada, 

@@ -1588,14 +1588,27 @@
 <input type="hidden" name="nacionalidad_original" value="{{ est.nacionalidad }}">
 
                             {# CORRECCIÓN UNIFICADA: Desplegable de Diagnósticos PIE (Formato amigable) #}
-<label for="diagnostico_unificado_{{ est.id }}">Diagnóstico (Déficit/PIE):
-    {% if est.diagnostico_sospecha %}
-    <span style="display:inline-block; margin-left:8px; padding:2px 10px; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; border-radius:999px; font-size:0.78rem; font-weight:600; vertical-align:middle;">
-        📋 Dx previo: {{ est.diagnostico_sospecha }}
-    </span>
-    {% endif %}
-</label>
-<select name="diagnostico_unificado" id="diagnostico_unificado_{{ est.id }}" onchange="updatePreview(this.form)" data-dx-previo="{{ est.diagnostico_sospecha if est.diagnostico_sospecha else '' }}">
+<label for="diagnostico_unificado_{{ est.id }}">Diagnóstico (Déficit/PIE):</label>
+{% if est.diagnostico_sospecha %}
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+    <input type="text"
+        id="dx-previo-input-{{ est.id }}"
+        value="{{ est.diagnostico_sospecha }}"
+        style="flex:1;padding:8px 12px;border-radius:10px;border:1.5px solid #bae6fd;background:#e0f2fe;color:#0369a1;font-size:.85rem;font-weight:600;box-sizing:border-box;"
+        placeholder="Diagnóstico previo"
+        oninput="syncDxPrevioToSelect(this, '{{ est.id }}')"
+        title="Diagnóstico previo cargado — editalo o usa el desplegable para cambiarlo">
+    <button type="button"
+        onclick="document.getElementById('diagnostico_unificado_{{ est.id }}').style.display='block';this.style.display='none';"
+        style="white-space:nowrap;padding:8px 12px;border-radius:10px;border:1.5px solid #bae6fd;background:white;color:#0369a1;font-size:.78rem;font-weight:700;cursor:pointer;">
+        <i class="fas fa-chevron-down"></i> Cambiar
+    </button>
+</div>
+{% endif %}
+<select name="diagnostico_unificado" id="diagnostico_unificado_{{ est.id }}"
+    onchange="onDxSelectChange(this, '{{ est.id }}')"
+    data-dx-previo="{{ est.diagnostico_sospecha if est.diagnostico_sospecha else '' }}"
+    style="{% if est.diagnostico_sospecha and not est.diagnostico_1 %}display:none;{% endif %}">
     <option value="">Seleccione un diagnóstico</option>
     <option value="Dificultades específicas del aprendizaje" {% if est.diagnostico_1 == 'Dificultades específicas del aprendizaje' or est.diagnostico_2 == 'Dificultades específicas del aprendizaje' %}selected{% endif %}>Dificultades específicas del aprendizaje</option>
     <option value="Discapacidad auditiva" {% if est.diagnostico_1 == 'Discapacidad auditiva' or est.diagnostico_2 == 'Discapacidad auditiva' %}selected{% endif %}>Discapacidad auditiva</option>
@@ -2028,6 +2041,49 @@
                         }
                     }
                 }
+
+        // ── Sync dx previo input → hidden field para guardar ──────────────
+        function syncDxPrevioToSelect(inputEl, estId) {
+            // El input editable controla el valor enviado al servidor
+            // a través de un hidden field con el mismo name="diagnostico_unificado"
+            // Para esto usamos el select: si el user edita el input, vaciamos el select
+            // y setamos su valor (select acepta valores fuera de sus options via JS)
+            const sel = document.getElementById('diagnostico_unificado_' + estId);
+            if (sel) {
+                // Forzar el select a tomar el valor del input libre
+                // (el form enviará el select.value al servidor)
+                sel.value = ''; // limpiar selección
+                // Guardar en un hidden si no hay opción que coincida
+                let matched = false;
+                for (const opt of sel.options) {
+                    if (opt.value && opt.value.toLowerCase() === inputEl.value.toLowerCase()) {
+                        sel.value = opt.value;
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) {
+                    // Crear opción dinámica temporal para enviar el valor libre
+                    let dynOpt = sel.querySelector('option[data-dynamic]');
+                    if (!dynOpt) {
+                        dynOpt = document.createElement('option');
+                        dynOpt.setAttribute('data-dynamic', '1');
+                        sel.appendChild(dynOpt);
+                    }
+                    dynOpt.value = inputEl.value;
+                    dynOpt.textContent = inputEl.value;
+                    sel.value = inputEl.value;
+                }
+                updatePreview(sel.closest('form'));
+            }
+        }
+
+        function onDxSelectChange(sel, estId) {
+            // Al elegir del desplegable, actualizar el input visible si existe
+            const inp = document.getElementById('dx-previo-input-' + estId);
+            if (inp && sel.value) inp.value = sel.value;
+            updatePreview(sel.closest('form'));
+        }
             });
 
             // Event listener para el buscador
@@ -2410,9 +2466,7 @@
                 if (imc < 18.5) classification = 'Bajo peso';
                 else if (imc < 25) classification = 'Peso normal';
                 else if (imc < 30) classification = 'Sobrepeso';
-                else if (imc < 35) classification = 'Obesidad grado I';
-                else if (imc < 40) classification = 'Obesidad grado II';
-                else classification = 'Obesidad grado III';
+                else classification = 'Obesidad';
                 clasificacionInput.value = classification;
                 autoDerivIMC(classification, form);
                 return;
@@ -2427,24 +2481,26 @@
             // Tablas de percentil p3 y p85 y p97 de IMC por edad y sexo
             // Fuente: OMS / MINSAL Chile (tablas de referencia pediátrica 2-18 años)
             // Estructura: [edad_entera, [p3_F, p85_F, p97_F], [p3_M, p85_M, p97_M]]
+            // Tabla OMS 2007 IMC-para-edad: [p3(-2DE), p85(+1DE), p97(+2DE)]
+            // Fuente: WHO Growth Reference 2007 (de Onis et al.)
+            // p3=bajo peso, p3–p85=peso normal, p85–p97=sobrepeso, ≥p97=obesidad
             const imcPercentiles = {
-                // [p3, p85, p97] para F y M
-                2:  {F:[14.0,17.0,18.7], M:[13.9,17.2,18.9]},
-                3:  {F:[13.5,16.6,18.4], M:[13.4,16.8,18.6]},
-                4:  {F:[13.2,16.4,18.3], M:[13.1,16.6,18.4]},
-                5:  {F:[13.0,16.5,18.5], M:[13.0,16.6,18.6]},
-                6:  {F:[13.0,16.8,19.2], M:[13.0,16.9,19.3]},
-                7:  {F:[13.2,17.4,20.1], M:[13.1,17.4,20.2]},
-                8:  {F:[13.5,18.0,21.1], M:[13.4,18.1,21.2]},
-                9:  {F:[13.9,18.8,22.2], M:[13.7,18.8,22.3]},
-                10: {F:[14.3,19.6,23.2], M:[14.0,19.6,23.4]},
-                11: {F:[14.7,20.4,24.2], M:[14.4,20.5,24.5]},
-                12: {F:[15.2,21.1,25.0], M:[14.8,21.2,25.4]},
-                13: {F:[15.7,21.7,25.7], M:[15.3,21.9,26.2]},
-                14: {F:[16.2,22.3,26.4], M:[15.8,22.5,26.9]},
-                15: {F:[16.6,22.8,27.0], M:[16.4,23.2,27.6]},
-                16: {F:[17.1,23.3,27.6], M:[16.9,23.7,28.1]},
-                17: {F:[17.5,23.8,28.1], M:[17.4,24.2,28.6]},
+                2:  {F:[11.9,16.4,18.0], M:[12.0,16.6,18.3]},
+                3:  {F:[11.7,15.9,17.5], M:[11.8,16.1,17.7]},
+                4:  {F:[11.6,15.6,17.2], M:[11.7,15.8,17.4]},
+                5:  {F:[12.1,15.2,16.8], M:[12.1,15.3,17.0]},
+                6:  {F:[12.1,15.5,17.3], M:[12.1,15.5,17.4]},
+                7:  {F:[12.3,16.0,18.0], M:[12.3,16.0,18.1]},
+                8:  {F:[12.6,16.7,19.0], M:[12.5,16.6,18.9]},
+                9:  {F:[13.0,17.5,20.1], M:[12.8,17.2,19.8]},
+                10: {F:[13.4,18.3,21.1], M:[13.1,18.0,20.9]},
+                11: {F:[13.8,19.1,22.1], M:[13.5,18.8,22.0]},
+                12: {F:[14.3,19.9,23.1], M:[13.9,19.7,23.0]},
+                13: {F:[14.8,20.7,24.0], M:[14.4,20.5,24.0]},
+                14: {F:[15.3,21.4,24.9], M:[14.9,21.4,25.0]},
+                15: {F:[15.9,22.1,25.6], M:[15.5,22.2,25.9]},
+                16: {F:[16.4,22.8,26.3], M:[16.1,22.9,26.7]},
+                17: {F:[16.9,23.3,26.9], M:[16.7,23.6,27.4]},
             };
 
             const ageInt = Math.min(17, Math.max(2, Math.floor(ageYears)));
@@ -2452,8 +2508,10 @@
             const percEntry = imcPercentiles[ageInt];
 
             if (!percEntry || !percEntry[genderKey]) {
-                // Fallback adulto
-                clasificacionInput.value = imc < 18.5 ? 'Bajo peso' : imc < 25 ? 'Peso normal' : imc < 30 ? 'Sobrepeso' : 'Obesidad';
+                const fb = imc < 18.5 ? 'Bajo peso' : imc < 25 ? 'Peso normal' : imc < 30 ? 'Sobrepeso' : 'Obesidad';
+                clasificacionInput.value = fb;
+                autoDerivIMC(fb, form);
+                return;
             }
 
             const [p3, p85, p97] = percEntry[genderKey];
@@ -3563,6 +3621,7 @@
         function cerrarModalAgregar() {
             document.getElementById('modal-agregar').classList.remove('open');
             document.getElementById('nuevo-nacionalidad').value = '';
+            document.getElementById('nuevo-diagnostico').value = '';
         }
         function setTipoAgregar(tipo) {
             _tipoAgregar = tipo;
@@ -3590,13 +3649,14 @@
                     method: 'POST',
                     headers: {'Content-Type':'application/json'},
                     body: JSON.stringify({
-                        nomina_id:         nominaId,
-                        nombre:            nombre,
-                        rut:               rut,
-                        fecha_nacimiento:  fechaNac || null,
-                        sexo:              sexo || null,
-                        nacionalidad:      document.getElementById('nuevo-nacionalidad').value.trim() || null,
-                        estado_asistencia: _tipoAgregar === 'extra' ? 'extra' : 'activo'
+                        nomina_id:          nominaId,
+                        nombre:             nombre,
+                        rut:                rut,
+                        fecha_nacimiento:   fechaNac || null,
+                        sexo:               sexo || null,
+                        nacionalidad:       document.getElementById('nuevo-nacionalidad').value.trim() || null,
+                        diagnostico_previo: document.getElementById('nuevo-diagnostico').value || null,
+                        estado_asistencia:  _tipoAgregar === 'extra' ? 'extra' : 'activo'
                     })
                 });
                 const data = await res.json();
@@ -3693,6 +3753,36 @@
             <div class="field-group">
                 <label>Nacionalidad</label>
                 <input type="text" id="nuevo-nacionalidad" placeholder="Ej: Chilena, Venezolana…" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid #e2e8f4;font-size:.85rem;color:#334155;box-sizing:border-box;">
+            </div>
+            <div class="field-group">
+                <label>Diagnóstico Previo (PIE)</label>
+                <select id="nuevo-diagnostico" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid #e2e8f4;font-size:.85rem;color:#334155;box-sizing:border-box;">
+                    <option value="">— Sin diagnóstico previo —</option>
+                    <option value="Dificultades específicas del aprendizaje">Dificultades específicas del aprendizaje</option>
+                    <option value="Discapacidad auditiva">Discapacidad auditiva</option>
+                    <option value="Discapacidad intelectual">Discapacidad intelectual</option>
+                    <option value="Discapacidad intelectual leve">Discapacidad intelectual leve</option>
+                    <option value="Discapacidad intelectual moderada">Discapacidad intelectual moderada</option>
+                    <option value="Discapacidad motora">Discapacidad motora</option>
+                    <option value="Discapacidad motora grave">Discapacidad motora grave</option>
+                    <option value="Discapacidad múltiple">Discapacidad múltiple</option>
+                    <option value="Discapacidad visual">Discapacidad visual</option>
+                    <option value="Disfasia">Disfasia</option>
+                    <option value="Disfasia severa">Disfasia severa</option>
+                    <option value="Funcionamiento intelectual limítrofe">Funcionamiento intelectual limítrofe</option>
+                    <option value="GARC">GARC</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Rendimiento intelectual limítrofe">Rendimiento intelectual limítrofe</option>
+                    <option value="Retraso global del desarrollo">Retraso global del desarrollo</option>
+                    <option value="Síndrome de Down">Síndrome de Down</option>
+                    <option value="Trastorno de déficit atencional">Trastorno de déficit atencional</option>
+                    <option value="Trastorno de deficit atencional-H">Trastorno de deficit atencional-H</option>
+                    <option value="Trastorno del espectro autista">Trastorno del espectro autista</option>
+                    <option value="Trastorno del lenguaje">Trastorno del lenguaje</option>
+                    <option value="Trastorno específico de lenguaje expresivo">Trastorno específico de lenguaje expresivo</option>
+                    <option value="Trastorno específico de lenguaje mixto">Trastorno específico de lenguaje mixto</option>
+                    <option value="Otro">Otro</option>
+                </select>
             </div>
 
             <div class="modal-footer">

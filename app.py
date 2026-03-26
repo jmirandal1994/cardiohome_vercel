@@ -5024,7 +5024,7 @@ def guardar_evaluacion():
             'diagnostico_1': diagnostico_unificado_valor,
             'diagnostico_2': diagnostico_unificado_valor,
             'diagnostico_complementario': get_form_field_value('diagnostico_complementario', request.form),
-            'clasificacion':  get_form_field_value('clasificacion_imc', request.form),
+            'clasificacion':  get_form_field_value('clasificacion_imc', request.form) or None,
             'derivaciones':   get_form_field_value('derivaciones', request.form),
             'indicaciones':   get_form_field_value('indicaciones', request.form),
             'fecha_reevaluacion_select': get_form_field_value('fecha_reevaluacion_select', request.form, return_none_if_empty=True),
@@ -5061,8 +5061,8 @@ def guardar_evaluacion():
             'check_hipertrofia':          map_to_boolean_local('check_hipertrofia'),
             'altura':         get_form_field_value('altura', request.form, return_none_if_empty=True),
             'peso':           get_form_field_value('peso', request.form, return_none_if_empty=True),
-            'imc':            get_form_field_value('imc', request.form, return_none_if_empty=True),
-            'clasificacion_imc': get_form_field_value('clasificacion_imc', request.form, return_none_if_empty=True),
+            'imc':            get_form_field_value('imc', request.form, return_none_if_empty=True) or None,
+            'clasificacion_imc': get_form_field_value('clasificacion_imc', request.form, return_none_if_empty=True) or None,
         })
 
     elif form_type == 'neurologia':
@@ -5082,10 +5082,14 @@ def guardar_evaluacion():
         })
 
     try:
+        # No sobreescribir campos numéricos/clasificación con None si llegaron vacíos
+        SKIP_IF_NONE = {'imc', 'clasificacion_imc', 'clasificacion', 'altura', 'peso'}
+        clean_data = {k: v for k, v in update_data.items()
+                      if not (k in SKIP_IF_NONE and v is None)}
         res = requests.patch(
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}",
             headers=SUPABASE_SERVICE_HEADERS,
-            json=update_data
+            json=clean_data
         )
         if res.status_code >= 400:
             return jsonify({"success": False, "message": f"Error al guardar: {res.text}"}), 500

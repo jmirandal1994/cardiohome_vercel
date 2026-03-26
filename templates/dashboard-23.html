@@ -7936,9 +7936,10 @@ async function cslepAbrirNomina(idx) {
 
     // ── Renderizar alumnos ────────────────────────────────────────────────
     listEl.innerHTML = alumnos.map(a => {
-        const eval_ = a.evaluado_flag;
-        const pdfBtn = eval_
-            ? `<a href="/descargar_pdf_alumno/${a.id||''}" target="_blank" class="cslep-btn pdf">
+        const eval_ = a.evaluado_flag || a.fecha_relleno;
+        const alumnoId = a.id || '';
+        const pdfBtn = (eval_ && alumnoId)
+            ? `<a href="/descargar_pdf_alumno/${alumnoId}" target="_blank" class="cslep-btn pdf">
                    <i class="fas fa-file-pdf"></i> Descargar PDF
                </a>`
             : `<button class="cslep-btn pdf dis" disabled>

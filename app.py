@@ -4744,25 +4744,27 @@ def api_estudiante_agregar():
         rut            = data.get('rut', '').strip()
         fecha_nac      = data.get('fecha_nacimiento') or None
         sexo           = data.get('sexo') or None
-        nacionalidad   = data.get('nacionalidad') or None
-        motivo_ingreso = data.get('motivo_ingreso') or 'extra'
-        estado_asist   = data.get('estado_asistencia') or 'extra'
+        nacionalidad        = data.get('nacionalidad') or None
+        diagnostico_previo  = data.get('diagnostico_previo') or None
+        motivo_ingreso      = data.get('motivo_ingreso') or 'extra'
+        estado_asist        = data.get('estado_asistencia') or 'extra'
 
         if not nomina_id or not nombre:
             return jsonify({"success": False, "message": "nomina_id y nombre son requeridos"}), 400
 
         new_id = str(uuid.uuid4())
         payload = {
-            "id":                new_id,
-            "nomina_id":         nomina_id,
-            "nombre":            nombre,
-            "rut":               rut or None,
-            "fecha_nacimiento":  fecha_nac,
-            "sexo":              sexo,
-            "nacionalidad":      nacionalidad,
-            "estado_asistencia": estado_asist,
-            "motivo_ausencia":   motivo_ingreso,
-            "evaluado_flag":     False
+            "id":                  new_id,
+            "nomina_id":           nomina_id,
+            "nombre":              nombre,
+            "rut":                 rut or None,
+            "fecha_nacimiento":    fecha_nac,
+            "sexo":                sexo,
+            "nacionalidad":        nacionalidad,
+            "diagnostico_sospecha": diagnostico_previo,
+            "estado_asistencia":   estado_asist,
+            "motivo_ausencia":     motivo_ingreso,
+            "evaluado_flag":       False
         }
 
         res = requests.post(

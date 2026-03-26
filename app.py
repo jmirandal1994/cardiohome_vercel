@@ -1041,7 +1041,7 @@ def marcar_evaluado():
         'doctora_evaluadora_id': doctora_id, 
         'nombre': nombre,
         'rut': rut, 
-        'fecha_nacimiento': get_form_field_value('fecha_nacimiento_original', request.form, return_none_if_empty=True), 
+        'fecha_nacimiento': get_form_field_value('fecha_nacimiento', request.form, return_none_if_empty=True), 
         'fecha_evaluacion': get_form_field_value('fecha_evaluacion', request.form, return_none_if_empty=True),
         'fecha_reevaluacion': get_form_field_value('fecha_reevaluacion', request.form, return_none_if_empty=True),
         'edad': get_form_field_value('edad', request.form), 
@@ -1458,7 +1458,7 @@ def reporte_proyecto_detalle(project_id):
                 f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
                 f"?nomina_id=eq.{nom['id']}"
                 f"&estado_asistencia=in.(activo,extra)"
-                f"&select=nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia"
+                f"&select=id,nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia,fecha_relleno"
                 f"&order=nombre.asc"
             )
             res_e = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS)
@@ -2655,7 +2655,7 @@ def desbloquear_nomina():
 # --- NUEVA RUTA: DESCARGA DE PDF POR ALUMNO ID ---@app.route('/descargar_pdf_alumno/<alumno_id>', methods=['GET'])
 @app.route('/descargar_pdf_alumno/<alumno_id>', methods=['GET'])
 def descargar_pdf_alumno(alumno_id):
-    if session.get('usuario') != 'coordinador_escuela':
+    if session.get('usuario') not in ('coordinador_escuela', 'coordinadora', 'admin'):
         flash('Acceso denegado.', 'error')
         return redirect(url_for('dashboard'))
 
@@ -4065,7 +4065,7 @@ def api_doctor_reporte_detalle():
                 f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
                 f"?nomina_id=eq.{nom['id']}"
                 f"&estado_asistencia=in.(activo,extra)"
-                f"&select=nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia"
+                f"&select=id,nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia,fecha_relleno"
                 f"&order=nombre.asc"
             )
             res_e = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS)
@@ -4160,7 +4160,7 @@ def api_coordinadora_reporte_detalle():
                 f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
                 f"?nomina_id=eq.{nom['id']}"
                 f"&estado_asistencia=in.(activo,extra)"
-                f"&select=nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia"
+                f"&select=id,nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia,fecha_relleno"
                 f"&order=nombre.asc"
             )
             res_e = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS)
@@ -5007,7 +5007,7 @@ def guardar_evaluacion():
     update_data = {
         'nombre':           get_form_field_value('nombre', request.form),
         'rut':              get_form_field_value('rut', request.form),
-        'fecha_nacimiento': get_form_field_value('fecha_nacimiento_original', request.form, return_none_if_empty=True),
+        'fecha_nacimiento': get_form_field_value('fecha_nacimiento', request.form, return_none_if_empty=True),
         'fecha_evaluacion': get_form_field_value('fecha_evaluacion', request.form, return_none_if_empty=True),
         'fecha_reevaluacion': get_form_field_value('fecha_reevaluacion', request.form, return_none_if_empty=True),
         'edad':             get_form_field_value('edad', request.form),

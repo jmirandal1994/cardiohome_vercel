@@ -5730,8 +5730,8 @@
                         + ';border-radius:8px;padding:3px 10px;font-size:.72rem;font-weight:700;">'
                         + '<i class="fas ' + (aprobada ? 'fa-check' : 'fa-xmark') + '"></i> ' + badgeTxt + '</span>'
                         + pdfBtn
-                        + (esNueva ? '<button onclick="marcarCorrVista('' + c.id + '', this.closest('[data-corr-id]')'
-                          + ')" style="font-size:.7rem;color:#94a3b8;background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;">Marcar como visto</button>' : '')
+                        + (esNueva ? '<button data-vid="' + c.id + '" onclick="marcarCorrVista(this.dataset.vid, this.closest(\"[data-corr-id]\"))"'
+                          + ' style="font-size:.7rem;color:#94a3b8;background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;">Marcar como visto</button>' : '')
                         + '</div></div></div>';
                 }).join('');
             } catch(e) {

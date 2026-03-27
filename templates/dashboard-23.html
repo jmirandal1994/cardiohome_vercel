@@ -4361,25 +4361,25 @@
                                     <span id="corr-lock-msg">El plazo de 5 días hábiles para solicitar correcciones ha vencido.</span>
                                 </div>
 
-                                <ul class="lista-items" id="alumnos-nomina-list" style="padding:0;list-style:none;"></ul>
-                                <p id="nomina-no-results-message" style="display:none;text-align:center;color:#94a3b8;margin-top:16px;">No hay alumnos evaluados para este colegio.</p>
-
-                                <!-- Correcciones resueltas por el admin -->
-                                <div class="resubir-wrap" id="resubir-section">
-                                    <h5><i class="fa-solid fa-circle-check" style="color:#059669;"></i> Correcciones Resueltas</h5>
-                                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                                        <span style="font-size:.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Respuestas del administrador</span>
-                                        <span id="corr-notif-badge" style="display:none;background:#dc2626;color:white;border-radius:99px;padding:2px 8px;font-size:.68rem;font-weight:800;align-items:center;gap:3px;">
+                                <!-- Correcciones resueltas — aparecen PRIMERO -->
+                                <div class="resubir-wrap" id="resubir-section" style="margin-bottom:18px;">
+                                    <h5 style="display:flex;align-items:center;gap:8px;">
+                                        <i class="fa-solid fa-circle-check" style="color:#059669;"></i>
+                                        Correcciones Resueltas
+                                        <span id="corr-notif-badge" style="display:none;background:#dc2626;color:white;border-radius:99px;padding:2px 9px;font-size:.68rem;font-weight:800;align-items:center;gap:3px;">
                                             <i class="fas fa-bell"></i> <span>0</span>
                                         </span>
-                                    </div>
+                                    </h5>
                                     <div id="correcciones-resueltas-list">
-                                        <div style="text-align:center;padding:20px;color:#94a3b8;font-size:.8rem;">
-                                            <i class="fas fa-spinner fa-spin" style="display:block;margin-bottom:6px;"></i>
+                                        <div style="text-align:center;padding:14px;color:#94a3b8;font-size:.8rem;">
+                                            <i class="fas fa-spinner fa-spin" style="display:block;margin-bottom:4px;"></i>
                                             Cargando correcciones…
                                         </div>
                                     </div>
                                 </div>
+
+                                <ul class="lista-items" id="alumnos-nomina-list" style="padding:0;list-style:none;"></ul>
+                                <p id="nomina-no-results-message" style="display:none;text-align:center;color:#94a3b8;margin-top:16px;">No hay alumnos evaluados para este colegio.</p>
                             </div>
                         </div>
                     </div>

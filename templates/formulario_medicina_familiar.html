@@ -1353,44 +1353,124 @@
         {% endwith %}
 
         <!-- Banner de bienvenida doctora -->
-        <div id="banner-bienvenida" style="margin-bottom:20px;border-radius:18px;overflow:hidden;border:1.5px solid #e0eaf6;box-shadow:0 4px 24px rgba(15,52,96,.10);">
-            <!-- Franja superior -->
-            <div style="background:linear-gradient(135deg,#0d3b5e 0%,#1c67a3 60%,#1a6b4a 100%);padding:20px 24px 16px;display:flex;align-items:center;gap:16px;">
-                <div style="width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <img src="{{ url_for('static', filename='logo.png') }}" alt="CardioHome" style="width:34px;height:34px;object-fit:contain;filter:brightness(0) invert(1);opacity:.95;">
+        <style>
+        @keyframes bannerIn {
+            from { opacity:0; transform:translateY(-18px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        @keyframes logoFloat {
+            0%,100% { transform:translateY(0) scale(1); }
+            50%      { transform:translateY(-5px) scale(1.06); }
+        }
+        @keyframes logoPulseRing {
+            0%   { box-shadow:0 0 0 0 rgba(255,255,255,.45); }
+            70%  { box-shadow:0 0 0 14px rgba(255,255,255,0); }
+            100% { box-shadow:0 0 0 0 rgba(255,255,255,0); }
+        }
+        @keyframes shimmerBanner {
+            0%   { background-position:200% center; }
+            100% { background-position:-200% center; }
+        }
+        @keyframes cardIn {
+            from { opacity:0; transform:translateY(10px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        #banner-bienvenida { animation: bannerIn .55s cubic-bezier(.22,1,.36,1) both; }
+        .bv-logo-wrap {
+            width:62px; height:62px; border-radius:18px;
+            background:rgba(255,255,255,.18);
+            border:2px solid rgba(255,255,255,.35);
+            display:flex; align-items:center; justify-content:center;
+            flex-shrink:0;
+            animation: logoFloat 3.5s ease-in-out infinite, logoPulseRing 3.5s ease-in-out infinite;
+        }
+        .bv-header {
+            background: linear-gradient(120deg,#0a2e47 0%,#0d3b5e 35%,#1c67a3 70%,#1a6b4a 100%);
+            background-size: 300% 100%;
+            animation: shimmerBanner 8s linear infinite;
+            padding:22px 24px 18px;
+            display:flex; align-items:center; gap:18px; position:relative; overflow:hidden;
+        }
+        .bv-header::before {
+            content:''; position:absolute; top:-40px; right:-40px;
+            width:160px; height:160px; border-radius:50%;
+            background:rgba(255,255,255,.05);
+        }
+        .bv-header::after {
+            content:''; position:absolute; bottom:-30px; left:30%;
+            width:100px; height:100px; border-radius:50%;
+            background:rgba(255,255,255,.04);
+        }
+        .bv-card {
+            display:flex; align-items:flex-start; gap:10px;
+            padding:11px 14px; border-radius:12px; border:1px solid transparent;
+            animation: cardIn .4s ease both;
+        }
+        .bv-card:nth-child(1){ animation-delay:.1s; }
+        .bv-card:nth-child(2){ animation-delay:.2s; }
+        .bv-card:nth-child(3){ animation-delay:.3s; }
+        .bv-icon {
+            width:30px; height:30px; border-radius:8px;
+            display:flex; align-items:center; justify-content:center;
+            font-size:.82rem; flex-shrink:0; margin-top:1px;
+        }
+        .bv-close {
+            margin-left:auto; background:rgba(255,255,255,.1);
+            border:1px solid rgba(255,255,255,.2); color:rgba(255,255,255,.7);
+            border-radius:8px; width:30px; height:30px; cursor:pointer;
+            display:flex; align-items:center; justify-content:center;
+            font-size:.8rem; flex-shrink:0; transition:all .18s; z-index:1;
+        }
+        .bv-close:hover { background:rgba(255,255,255,.25); color:white; }
+        </style>
+
+        <div id="banner-bienvenida" style="margin-bottom:22px;border-radius:20px;overflow:hidden;border:1.5px solid #d4e5f5;box-shadow:0 8px 32px rgba(13,59,94,.15);">
+            <div class="bv-header">
+                <div class="bv-logo-wrap">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="CardioHome" style="width:38px;height:38px;object-fit:contain;filter:brightness(0) invert(1);opacity:.97;">
                 </div>
-                <div>
-                    <div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.6);margin-bottom:3px;">CardioHome · Evaluaciones PIE</div>
-                    <div style="font-size:1.05rem;font-weight:900;color:white;font-family:'Montserrat',sans-serif;">Estimada Doctora, bienvenida</div>
-                    <div style="font-size:.78rem;color:rgba(255,255,255,.75);margin-top:2px;font-style:italic;">Que tenga una excelente jornada de evaluaciones</div>
+                <div style="z-index:1;">
+                    <div style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.55);margin-bottom:4px;">CardioHome · Programa de Integración Escolar</div>
+                    <div style="font-size:1.1rem;font-weight:900;color:white;font-family:'Montserrat',sans-serif;letter-spacing:-.01em;">Estimada Doctora, bienvenida 👋</div>
+                    <div style="font-size:.8rem;color:rgba(255,255,255,.8);margin-top:3px;">Que tenga una excelente jornada de evaluaciones</div>
                 </div>
-                <button onclick="document.getElementById('banner-bienvenida').style.display='none'"
-                    style="margin-left:auto;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);border-radius:8px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;transition:background .18s;"
-                    onmouseover="this.style.background='rgba(255,255,255,.25)'"
-                    onmouseout="this.style.background='rgba(255,255,255,.12)'"
-                    title="Cerrar aviso">
+                <button class="bv-close" onclick="document.getElementById('banner-bienvenida').style.display='none'" title="Cerrar">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <!-- Cuerpo del mensaje -->
-            <div style="background:white;padding:18px 24px;">
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
-                    <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:#f0fdf4;border-radius:10px;border-left:3px solid #1a6b4a;">
-                        <i class="fas fa-list-check" style="color:#1a6b4a;font-size:.85rem;margin-top:2px;flex-shrink:0;"></i>
-                        <span style="font-size:.78rem;color:#14532d;font-weight:600;line-height:1.45;">Verificar que los campos estén completos. Si no se completan: poner <strong>NO INFORMADO</strong></span>
+            <div style="background:white;padding:18px 22px;">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;">
+                    <div class="bv-card" style="background:#f0fdf4;border-color:#bbf7d0;">
+                        <div class="bv-icon" style="background:#dcfce7;color:#16a34a;">
+                            <i class="fas fa-list-check"></i>
+                        </div>
+                        <div>
+                            <div style="font-size:.78rem;font-weight:700;color:#14532d;line-height:1.4;">Campos completos</div>
+                            <div style="font-size:.73rem;color:#166534;line-height:1.4;margin-top:2px;">Si algún campo no tiene información, escribir <strong>NO INFORMADO</strong></div>
+                        </div>
                     </div>
-                    <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:#fefce8;border-radius:10px;border-left:3px solid #ca8a04;">
-                        <i class="fas fa-file-medical" style="color:#ca8a04;font-size:.85rem;margin-top:2px;flex-shrink:0;"></i>
-                        <span style="font-size:.78rem;color:#713f12;font-weight:600;line-height:1.45;">Diagnóstico complementario: si no lo amerita, <strong>dejarlo vacío</strong></span>
+                    <div class="bv-card" style="background:#eff6ff;border-color:#bfdbfe;">
+                        <div class="bv-icon" style="background:#dbeafe;color:#1d4ed8;">
+                            <i class="fas fa-wand-magic-sparkles"></i>
+                        </div>
+                        <div>
+                            <div style="font-size:.78rem;font-weight:700;color:#1e3a8a;line-height:1.4;">Derivaciones automáticas</div>
+                            <div style="font-size:.73rem;color:#1e40af;line-height:1.4;margin-top:2px;">Al marcar hallazgos clínicos, las derivaciones se activan solas. Solo revise que sean correctas.</div>
+                        </div>
                     </div>
-                    <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:#fdf2f8;border-radius:10px;border-left:3px solid #9333ea;">
-                        <i class="fas fa-floppy-disk" style="color:#9333ea;font-size:.85rem;margin-top:2px;flex-shrink:0;"></i>
-                        <span style="font-size:.78rem;color:#581c87;font-weight:600;line-height:1.45;">Para corregir después de evaluado: usar el botón <strong>"Guardar correcciones"</strong></span>
+                    <div class="bv-card" style="background:#fdf4ff;border-color:#e9d5ff;">
+                        <div class="bv-icon" style="background:#f3e8ff;color:#9333ea;">
+                            <i class="fas fa-floppy-disk"></i>
+                        </div>
+                        <div>
+                            <div style="font-size:.78rem;font-weight:700;color:#581c87;line-height:1.4;">¿Necesita corregir?</div>
+                            <div style="font-size:.73rem;color:#6b21a8;line-height:1.4;margin-top:2px;">Use <strong>"Guardar correcciones"</strong> en cualquier momento, incluso después de evaluado.</div>
+                        </div>
                     </div>
                 </div>
-                <div style="margin-top:14px;padding-top:12px;border-top:1px solid #e8f0f6;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-                    <span style="font-size:.72rem;color:#94a3b8;font-style:italic;">Gracias por su dedicación y compromiso con los estudiantes PIE.</span>
-                    <span style="font-size:.7rem;font-weight:800;color:#0d3b5e;text-transform:uppercase;letter-spacing:.05em;">Administración CardioHome</span>
+                <div style="margin-top:14px;padding-top:12px;border-top:1px solid #f0f4f8;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                    <span style="font-size:.71rem;color:#94a3b8;font-style:italic;">Gracias por su dedicación y compromiso con los estudiantes PIE.</span>
+                    <span style="font-size:.68rem;font-weight:800;color:#0d3b5e;text-transform:uppercase;letter-spacing:.06em;">Administración CardioHome</span>
                 </div>
             </div>
         </div>

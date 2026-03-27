@@ -4665,10 +4665,8 @@ def api_correcciones_resueltas_escuela(school_id):
                 f"url_documento_corregido,respuesta_admin,notificacion_vista,estado"
                 f"&order=fecha_resolucion.desc"
             )
-            print(f"DEBUG URL solicitudes: {url_sol[:200]}")
             res_sol = requests.get(url_sol, headers=SUPABASE_SERVICE_HEADERS)
             solicitudes = res_sol.json() if res_sol.ok else []
-            print(f"DEBUG correcciones_resueltas: {len(solicitudes)} solicitudes, primera={solicitudes[0] if solicitudes else None}")
             for s in solicitudes:
                 aid  = str(s.get('alumno_id', ''))
                 info = alumno_info.get(aid, {})
@@ -5141,6 +5139,31 @@ def marcar_correccion_vista():
             headers=SUPABASE_SERVICE_HEADERS,
             json={"notificacion_vista": True}
         )
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Actualizar mensaje de respuesta en corrección ya resuelta
+#  POST /api/correcciones/actualizar_respuesta
+# ─────────────────────────────────────────────────────────────────────────────
+@app.route('/api/correcciones/actualizar_respuesta', methods=['POST'])
+def actualizar_respuesta_correccion():
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "Acceso denegado"}), 403
+    try:
+        data         = request.get_json() or {}
+        solicitud_id = data.get('solicitud_id')
+        respuesta    = (data.get('respuesta_admin') or '').strip() or None
+        if not solicitud_id:
+            return jsonify({"success": False, "message": "Falta solicitud_id"}), 400
+        res = requests.patch(
+            f"{SUPABASE_URL}/rest/v1/solicitudes_correccion?id=eq.{solicitud_id}",
+            headers=SUPABASE_SERVICE_HEADERS,
+            json={"respuesta_admin": respuesta, "notificacion_vista": False}
+        )
+        res.raise_for_status()
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500

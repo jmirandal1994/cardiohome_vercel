@@ -998,7 +998,7 @@ def api_admin_corregir_alumno():
                 f"{SUPABASE_URL}/rest/v1/solicitudes_correccion?id=eq.{solicitud_id}",
                 headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=minimal"},
                 json={"estado": "Aprobada", "fecha_resolucion": str(date.today()),
-                      "respuesta_admin": (data.get('respuesta_admin') or 'Corrección realizada en plataforma.').strip(),
+                      "respuesta_admin": (data.get('respuesta_admin') or '').strip() or None,
                       "notificacion_vista": False})
 
         return jsonify({"success": True,
@@ -4643,31 +4643,41 @@ def api_correcciones_resueltas_escuela(school_id):
         nomina_ids = [n['id'] for n in nominas]
         ids_str    = ','.join(str(i) for i in nomina_ids)
 
-        # Obtener solicitudes resueltas con documento
-        res_sol = requests.get(
-            f"{SUPABASE_URL}/rest/v1/solicitudes_correccion"
-            f"?estado=in.(Aprobada,Rechazada)"
-            f"&select=id,alumno_id,detalles,fecha_resolucion,url_documento_corregido,"
-            f"respuesta_admin,notificacion_vista,estado,"
-            f"estudiantes_nomina(nombre,rut,nomina_id)"
-            f"&order=fecha_resolucion.desc",
+        # Obtener TODOS los alumnos de estas nóminas para poder filtrar por alumno_id
+        res_alumnos = requests.get(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            f"?nomina_id=in.({ids_str})"
+            f"&select=id,nombre,rut",
             headers=SUPABASE_SERVICE_HEADERS)
-        solicitudes = res_sol.json() if res_sol.ok else []
+        alumnos_list = res_alumnos.json() if res_alumnos.ok else []
+        alumno_ids_set = {str(a['id']) for a in alumnos_list}
+        alumno_info    = {str(a['id']): a for a in alumnos_list}
 
-        # Filtrar solo las de las nóminas de este colegio
+        # Obtener solicitudes resueltas de estos alumnos
         result = []
-        for s in solicitudes:
-            est = s.get('estudiantes_nomina') or {}
-            if est.get('nomina_id') in nomina_ids:
+        if alumno_ids_set:
+            aid_str = ','.join(alumno_ids_set)
+            res_sol = requests.get(
+                f"{SUPABASE_URL}/rest/v1/solicitudes_correccion"
+                f"?estado=in.(Aprobada,Rechazada)"
+                f"&alumno_id=in.({aid_str})"
+                f"&select=id,alumno_id,detalles,fecha_resolucion,url_documento_corregido,"
+                f"respuesta_admin,notificacion_vista,estado"
+                f"&order=fecha_resolucion.desc",
+                headers=SUPABASE_SERVICE_HEADERS)
+            solicitudes = res_sol.json() if res_sol.ok else []
+            for s in solicitudes:
+                aid  = str(s.get('alumno_id', ''))
+                info = alumno_info.get(aid, {})
                 result.append({
                     'id':                 s['id'],
-                    'alumno_id':          str(s.get('alumno_id', '')),
-                    'alumno_nombre':      est.get('nombre', 'N/A'),
-                    'alumno_rut':         est.get('rut', 'N/A'),
+                    'alumno_id':          aid,
+                    'alumno_nombre':      info.get('nombre', 'N/A'),
+                    'alumno_rut':         info.get('rut', 'N/A'),
                     'detalles':           s.get('detalles', ''),
                     'fecha_resolucion':   s.get('fecha_resolucion', ''),
                     'url_documento':      s.get('url_documento_corregido', ''),
-                    'respuesta_admin':    s.get('respuesta_admin', ''),
+                    'respuesta_admin':    s.get('respuesta_admin') or '',
                     'notificacion_vista': s.get('notificacion_vista', True),
                     'estado':             s.get('estado', 'Aprobada'),
                 })

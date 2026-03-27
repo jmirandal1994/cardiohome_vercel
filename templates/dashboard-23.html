@@ -5953,10 +5953,15 @@
                         metaHtml += '<span class="corr-meta-chip date"><i class="fas fa-calendar-day"></i> ' + (req.fecha || '-') + '</span>';
                         metaHtml += '<span class="corr-meta-chip person"><i class="fas fa-user-tag"></i> ' + (req.solicitante || '-') + '</span>';
 
+                        var raPreview = req.respuesta_admin
+                            ? '<div style="margin-top:6px;padding:6px 10px;background:#eff6ff;border-left:3px solid #0d3b5e;border-radius:6px;font-size:.75rem;color:#1e3a8a;">'
+                              + '<i class="fas fa-comment-dots" style="margin-right:4px;"></i><strong>Mensaje enviado:</strong> ' + req.respuesta_admin + '</div>'
+                            : '<div style="margin-top:4px;font-size:.73rem;color:#94a3b8;font-style:italic;">Sin mensaje para la coordinadora</div>';
                         var estadoArea = hasDoc
-                            ? '<div style="background:#f0fdf8;border:1.5px solid #6ee7b7;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:10px;">'
+                            ? '<div style="background:#f0fdf8;border:1.5px solid #6ee7b7;border-radius:12px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;">'
                               + '<div style="width:38px;height:38px;background:linear-gradient(135deg,#00b894,#00cec9);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-file-check" style="color:#fff;"></i></div>'
-                              + '<div><strong style="color:#065f46;font-size:.85rem;">Correccion guardada</strong><div style="color:#059669;font-size:.78rem;margin-top:2px;">La coordinadora ya puede descargar el formulario actualizado</div></div>'
+                              + '<div><strong style="color:#065f46;font-size:.85rem;">Corrección guardada</strong><div style="color:#059669;font-size:.78rem;margin-top:2px;">La coordinadora puede descargar el formulario actualizado</div>'
+                              + raPreview + '</div>'
                               + '</div>'
                             : '<div style="background:#f8faff;border:1.5px dashed #94b4d6;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:10px;">'
                               + '<div style="width:38px;height:38px;background:linear-gradient(135deg,#0f3460,#1a5276);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-pen-to-square" style="color:#fff;"></i></div>'
@@ -6001,8 +6006,19 @@
                         if (hasDoc) {
                             var span = document.createElement('span');
                             span.style.cssText = 'color:#059669;font-weight:700;font-size:.8rem;display:flex;align-items:center;gap:5px;';
-                            span.innerHTML = '<i class="fas fa-circle-check"></i> Resuelto - coordinadora notificada';
+                            span.innerHTML = '<i class="fas fa-circle-check"></i> Resuelto';
                             actionsDiv.appendChild(span);
+                        }
+                        // Botón editar/añadir mensaje para cualquier corrección resuelta
+                        if (!isPend) {
+                            var btnResp = document.createElement('button');
+                            btnResp.className = 'corr-btn';
+                            btnResp.style.cssText = 'background:#f0f6ff;color:#0d3b5e;border:1.5px solid #d4e5f5;font-size:.75rem;padding:6px 12px;';
+                            btnResp.innerHTML = req.respuesta_admin ? '<i class="fas fa-pen"></i> Editar mensaje' : '<i class="fas fa-comment-dots"></i> Añadir mensaje';
+                            btnResp.addEventListener('click', (function(rid, ra) {
+                                return function() { editarRespuestaCorreccion(rid, ra); };
+                            })(req.id, req.respuesta_admin || ''));
+                            actionsDiv.appendChild(btnResp);
                         }
 
                         listContainer.appendChild(div);
@@ -6227,6 +6243,43 @@
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-floppy-disk"></i> Guardar Correcciones';
+            }
+        }
+
+        async function editarRespuestaCorreccion(solicitudId, respuestaActual) {
+            const { value: nueva, isConfirmed } = await Swal.fire({
+                title: 'Mensaje para la coordinadora',
+                html: '<p style="font-size:.85rem;color:#64748b;margin:0 0 10px;">'
+                    + 'Este mensaje aparecerá en el panel de la coordinadora junto a la corrección.</p>'
+                    + '<textarea id="swal-edit-resp" style="width:100%;height:90px;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px;font-size:.84rem;font-family:inherit;resize:vertical;box-sizing:border-box;">'
+                    + (respuestaActual || '') + '</textarea>',
+                showCancelButton: true,
+                confirmButtonColor: '#0d3b5e',
+                confirmButtonText: 'Guardar mensaje',
+                cancelButtonText: 'Cancelar',
+                didOpen: () => {
+                    const ta = document.getElementById('swal-edit-resp');
+                    if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+                },
+                preConfirm: () => document.getElementById('swal-edit-resp').value.trim()
+            });
+            if (!isConfirmed) return;
+            try {
+                const res  = await fetch('/api/correcciones/actualizar_respuesta', {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ solicitud_id: solicitudId, respuesta_admin: nueva })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    Swal.fire({ icon:'success', title:'Mensaje guardado',
+                        text: 'La coordinadora verá el mensaje al revisar sus correcciones.',
+                        timer: 2000, showConfirmButton: false });
+                    loadCorrectionRequests();
+                } else {
+                    Swal.fire('Error', data.message || 'No se pudo guardar.', 'error');
+                }
+            } catch(e) {
+                Swal.fire('Error de conexión', e.message, 'error');
             }
         }
 

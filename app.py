@@ -998,7 +998,8 @@ def api_admin_corregir_alumno():
                 f"{SUPABASE_URL}/rest/v1/solicitudes_correccion?id=eq.{solicitud_id}",
                 headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=minimal"},
                 json={"estado": "Aprobada", "fecha_resolucion": str(date.today()),
-                      "admin_comentario": "Corregido en plataforma por administrador"})
+                      "respuesta_admin": (data.get('respuesta_admin') or 'Corrección realizada en plataforma.').strip(),
+                      "notificacion_vista": False})
 
         return jsonify({"success": True,
                         "message": "Corrección guardada. La coordinadora ya puede ver los cambios."})
@@ -1957,6 +1958,7 @@ def get_correcciones_detalle():
                 'nombre_colegio':   nom_colegio,
                 'proyecto_nombre':  proyecto_nombre,
                 'url_documento_corregido': req.get('url_documento_corregido'),
+                'respuesta_admin':  req.get('respuesta_admin', ''),
             })
             
         return jsonify({"success": True, "data": processed_requests})
@@ -2082,20 +2084,19 @@ def actualizar_estado_correccion():
             return jsonify({"success": False, "message": "Datos de entrada inválidos"}), 400
 
         # 1. Preparar el payload de actualización
+        respuesta = (data.get('respuesta_admin') or '').strip() or None
         update_data = {
-            "estado": nuevo_estado,
-            "fecha_resolucion": str(date.today()), 
-            # Opcional: Podrías añadir un campo 'admin_id'
+            "estado":             nuevo_estado,
+            "fecha_resolucion":   str(date.today()),
+            "respuesta_admin":    respuesta,
+            "notificacion_vista": False,  # coordinadora aún no vio la respuesta
         }
-
-        # 2. Enviar la petición PATCH a Supabase
         response = requests.patch(
             f"{SUPABASE_URL}/rest/v1/solicitudes_correccion?id=eq.{request_id}",
-            headers=SUPABASE_SERVICE_HEADERS, 
+            headers=SUPABASE_SERVICE_HEADERS,
             json=update_data
         )
         response.raise_for_status()
-
         return jsonify({"success": True, "message": "Estado actualizado"})
 
     except requests.exceptions.RequestException as e:
@@ -4645,9 +4646,9 @@ def api_correcciones_resueltas_escuela(school_id):
         # Obtener solicitudes resueltas con documento
         res_sol = requests.get(
             f"{SUPABASE_URL}/rest/v1/solicitudes_correccion"
-            f"?estado=eq.Aprobada"
-            f"&url_documento_corregido=not.is.null"
+            f"?estado=in.(Aprobada,Rechazada)"
             f"&select=id,alumno_id,detalles,fecha_resolucion,url_documento_corregido,"
+            f"respuesta_admin,notificacion_vista,estado,"
             f"estudiantes_nomina(nombre,rut,nomina_id)"
             f"&order=fecha_resolucion.desc",
             headers=SUPABASE_SERVICE_HEADERS)
@@ -4659,13 +4660,16 @@ def api_correcciones_resueltas_escuela(school_id):
             est = s.get('estudiantes_nomina') or {}
             if est.get('nomina_id') in nomina_ids:
                 result.append({
-                    'id':               s['id'],
-                    'alumno_id':        str(s.get('alumno_id', '')),
-                    'alumno_nombre':    est.get('nombre', 'N/A'),
-                    'alumno_rut':       est.get('rut', 'N/A'),
-                    'detalles':         s.get('detalles', ''),
-                    'fecha_resolucion': s.get('fecha_resolucion', ''),
-                    'url_documento':    s.get('url_documento_corregido', '')
+                    'id':                 s['id'],
+                    'alumno_id':          str(s.get('alumno_id', '')),
+                    'alumno_nombre':      est.get('nombre', 'N/A'),
+                    'alumno_rut':         est.get('rut', 'N/A'),
+                    'detalles':           s.get('detalles', ''),
+                    'fecha_resolucion':   s.get('fecha_resolucion', ''),
+                    'url_documento':      s.get('url_documento_corregido', ''),
+                    'respuesta_admin':    s.get('respuesta_admin', ''),
+                    'notificacion_vista': s.get('notificacion_vista', True),
+                    'estado':             s.get('estado', 'Aprobada'),
                 })
 
         return jsonify({"success": True, "data": result})
@@ -5103,6 +5107,28 @@ def guardar_evaluacion():
         if res.status_code >= 400:
             return jsonify({"success": False, "message": f"Error al guardar: {res.text}"}), 500
         return jsonify({"success": True, "message": "Datos guardados correctamente."})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Marcar notificación de corrección como vista por la coordinadora
+#  POST /api/correcciones/marcar_vista
+# ─────────────────────────────────────────────────────────────────────────────
+@app.route('/api/correcciones/marcar_vista', methods=['POST'])
+def marcar_correccion_vista():
+    if 'usuario' not in session:
+        return jsonify({"success": False}), 401
+    try:
+        solicitud_id = (request.get_json() or {}).get('solicitud_id')
+        if not solicitud_id:
+            return jsonify({"success": False, "message": "Falta solicitud_id"}), 400
+        requests.patch(
+            f"{SUPABASE_URL}/rest/v1/solicitudes_correccion?id=eq.{solicitud_id}",
+            headers=SUPABASE_SERVICE_HEADERS,
+            json={"notificacion_vista": True}
+        )
+        return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 

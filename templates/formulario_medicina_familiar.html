@@ -2370,6 +2370,39 @@
             updatePreview(form);
         }
 
+        // ── Fuerza el valor dx_previo en el select antes de enviar el formulario ──
+        function ensureDxPrevioInSelect(form) {
+            const sel = form.querySelector('select[name="diagnostico_unificado"]');
+            if (!sel) return;
+            // Si ya tiene valor, no hacer nada
+            if (sel.value) return;
+            // Si tiene data-dx-previo, intentar setear el valor
+            const previo = (sel.dataset.dxPrevio || '').trim();
+            if (!previo) return;
+            // Buscar coincidencia exacta
+            for (const opt of sel.options) {
+                if (opt.value && opt.value.toLowerCase() === previo.toLowerCase()) {
+                    sel.value = opt.value; return;
+                }
+            }
+            // Buscar coincidencia parcial
+            for (const opt of sel.options) {
+                if (opt.value && opt.value.toLowerCase().includes(previo.toLowerCase())) {
+                    sel.value = opt.value; return;
+                }
+            }
+            // Crear opción dinámica con el valor exacto
+            let dynOpt = sel.querySelector('option[data-dynamic]');
+            if (!dynOpt) {
+                dynOpt = document.createElement('option');
+                dynOpt.setAttribute('data-dynamic', '1');
+                sel.appendChild(dynOpt);
+            }
+            dynOpt.value = previo;
+            dynOpt.textContent = previo;
+            sel.value = previo;
+        }
+
         function autoDeriv(form) {
             const estId = form.querySelector('input[name="estudiante_id"]').value;
             const ta    = document.getElementById('derivaciones_' + estId);
@@ -2422,7 +2455,10 @@
             const SPEC  = 'NUTRICIONISTA';
             const chip  = bar ? [...bar.querySelectorAll('.deriv-chip')]
                 .find(c => (c.getAttribute('onclick') || '').includes("'" + SPEC + "'")) : null;
-            const isObeso = clasificacion && clasificacion.toLowerCase().includes('obesidad');
+            const isObeso = clasificacion && (
+                clasificacion.toLowerCase().includes('obesidad') ||
+                clasificacion.toLowerCase().includes('bajo peso')
+            );
             let items = parseDeriv(ta.value);
             if (isObeso) {
                 if (!items.map(l => l.toUpperCase()).includes(SPEC)) {
@@ -2640,8 +2676,9 @@
         }
 
         async function submitForm(form) {
-            // Forzar cálculo de IMC antes de capturar el formulario
+            // Forzar cálculo de IMC y diagnóstico previo antes de capturar el formulario
             calculateIMC(form);
+            ensureDxPrevioInSelect(form);
             const formData = new FormData(form);
 
             // Manually set checkbox values if they are unchecked, as FormData doesn't include them
@@ -2766,8 +2803,8 @@
         // ── Guardar sin PDF (permite correcciones) ──────────────────────────
         async function guardarDatos(buttonElement) {
             const form = buttonElement.closest('form');
-            // Forzar cálculo de IMC antes de capturar el formulario
             calculateIMC(form);
+            ensureDxPrevioInSelect(form);
             const formData = new FormData(form);
 
             // Incluir checkboxes desmarcados como vacío
@@ -2803,8 +2840,8 @@
         // ── Generar PDF sin guardar ni marcar evaluado ───────────────────────
         async function generarSoloPDF(buttonElement) {
             const form = buttonElement.closest('form');
-            // Forzar cálculo de IMC antes de capturar el formulario
             calculateIMC(form);
+            ensureDxPrevioInSelect(form);
             const formData = new FormData(form);
             form.querySelectorAll('input[type="checkbox"]').forEach(cb => {
                 if (!cb.checked) formData.set(cb.name, '');
@@ -2901,7 +2938,8 @@
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     try {
-                        calculateIMC(form); // Forzar IMC antes de capturar
+                        calculateIMC(form);
+                        ensureDxPrevioInSelect(form);
                         const formData = new FormData(form); 
                         
                         // Asegurarse de que los valores de los checkboxes se incluyan correctamente

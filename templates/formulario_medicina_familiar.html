@@ -1589,16 +1589,16 @@
 
                             {# CORRECCIÓN UNIFICADA: Desplegable de Diagnósticos PIE (Formato amigable) #}
 <label for="diagnostico_unificado_{{ est.id }}">Diagnóstico (Déficit/PIE):</label>
-{% if est.diagnostico_sospecha and not est.diagnostico_1 %}
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;" id="dx-previo-row-{{ est.id }}">
-    <div style="flex:1;padding:8px 12px;border-radius:10px;border:1.5px solid #bae6fd;background:#e0f2fe;color:#0369a1;font-size:.85rem;font-weight:600;display:flex;align-items:center;gap:7px;">
-        <i class="fas fa-clipboard-list" style="font-size:.8rem;opacity:.7;"></i>
-        <span id="dx-previo-label-{{ est.id }}">{{ est.diagnostico_sospecha }}</span>
-    </div>
+{% if est.diagnostico_sospecha %}
+<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;" id="dx-previo-row-{{ est.id }}">
+    <span style="flex:1;padding:7px 11px;border-radius:9px;border:1.5px solid #bae6fd;background:#e0f2fe;color:#0369a1;font-size:.8rem;font-weight:600;display:flex;align-items:center;gap:6px;">
+        <i class="fas fa-clipboard-list" style="font-size:.75rem;opacity:.7;flex-shrink:0;"></i>
+        Dx previo: {{ est.diagnostico_sospecha }}
+    </span>
     <button type="button"
-        onclick="mostrarSelectDx('{{ est.id }}')"
-        style="white-space:nowrap;padding:8px 12px;border-radius:10px;border:1.5px solid #bae6fd;background:white;color:#0369a1;font-size:.78rem;font-weight:700;cursor:pointer;flex-shrink:0;">
-        <i class="fas fa-pen"></i> Cambiar
+        onclick="event.preventDefault();event.stopPropagation();mostrarSelectDx('{{ est.id }}')"
+        style="white-space:nowrap;padding:7px 11px;border-radius:9px;border:1.5px solid #93c5fd;background:#eff6ff;color:#1d4ed8;font-size:.78rem;font-weight:700;cursor:pointer;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;">
+        <i class="fas fa-chevron-down" style="font-size:.7rem;"></i> Cambiar
     </button>
 </div>
 {% endif %}
@@ -2059,10 +2059,14 @@
                 }
 
         function mostrarSelectDx(estId) {
-            const row = document.getElementById('dx-previo-row-' + estId);
             const sel = document.getElementById('diagnostico_unificado_' + estId);
-            if (row) row.style.display = 'none';
-            if (sel) { sel.style.display = 'block'; sel.focus(); }
+            if (!sel) return;
+            // Mostrar el select
+            sel.style.display = 'block';
+            sel.style.removeProperty('display');
+            sel.removeAttribute('style');
+            // Pequeño delay para asegurar que el DOM se actualizó antes de focus
+            setTimeout(() => { try { sel.focus(); } catch(e){} }, 50);
         }
 
         function syncDxPrevioToSelect(inputEl, estId) {
@@ -2070,10 +2074,15 @@
         }
 
         function onDxSelectChange(sel, estId) {
-            // Al seleccionar del desplegable: mostrar el select, ocultar el badge previo
+            // Al seleccionar una opción del desplegable: actualizar badge con el nuevo valor
             const row = document.getElementById('dx-previo-row-' + estId);
-            if (row && sel.value) row.style.display = 'none';
-            if (sel.value) sel.style.display = 'block';
+            if (sel.value && row) {
+                // Actualizar el texto del badge con el nuevo diagnóstico
+                const span = row.querySelector('span');
+                if (span) {
+                    span.innerHTML = '<i class="fas fa-clipboard-list" style="font-size:.75rem;opacity:.7;flex-shrink:0;"></i> Dx previo: ' + sel.value;
+                }
+            }
             updatePreview(sel.closest('form'));
         }
             });

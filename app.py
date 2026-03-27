@@ -4657,15 +4657,18 @@ def api_correcciones_resueltas_escuela(school_id):
         result = []
         if alumno_ids_set:
             aid_str = ','.join(alumno_ids_set)
-            res_sol = requests.get(
+            url_sol = (
                 f"{SUPABASE_URL}/rest/v1/solicitudes_correccion"
                 f"?estado=in.(Aprobada,Rechazada)"
                 f"&alumno_id=in.({aid_str})"
-                f"&select=id,alumno_id,detalles,fecha_resolucion,url_documento_corregido,"
-                f"respuesta_admin,notificacion_vista,estado"
-                f"&order=fecha_resolucion.desc",
-                headers=SUPABASE_SERVICE_HEADERS)
+                f"&select=id,alumno_id,detalles,fecha_resolucion,"
+                f"url_documento_corregido,respuesta_admin,notificacion_vista,estado"
+                f"&order=fecha_resolucion.desc"
+            )
+            print(f"DEBUG URL solicitudes: {url_sol[:200]}")
+            res_sol = requests.get(url_sol, headers=SUPABASE_SERVICE_HEADERS)
             solicitudes = res_sol.json() if res_sol.ok else []
+            print(f"DEBUG correcciones_resueltas: {len(solicitudes)} solicitudes, primera={solicitudes[0] if solicitudes else None}")
             for s in solicitudes:
                 aid  = str(s.get('alumno_id', ''))
                 info = alumno_info.get(aid, {})

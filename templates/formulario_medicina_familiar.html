@@ -1342,11 +1342,13 @@
     <div class="main-content-wrapper">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
+                {% for category, message in messages %}
+                    {% if category == 'error' %}
                 <ul class="flash-messages">
-                    {% for category, message in messages %}
                         <li class="{{ category }}">{{ message }}</li>
-                    {% endfor %}
                 </ul>
+                    {% endif %}
+                {% endfor %}
             {% endif %}
         {% endwith %}
 
@@ -1373,10 +1375,6 @@
             <!-- Cuerpo del mensaje -->
             <div style="background:white;padding:18px 24px;">
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
-                    <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:#f0f6ff;border-radius:10px;border-left:3px solid #1c67a3;">
-                        <i class="fas fa-magnifying-glass" style="color:#1c67a3;font-size:.85rem;margin-top:2px;flex-shrink:0;"></i>
-                        <span style="font-size:.78rem;color:#1e3a5f;font-weight:600;line-height:1.45;">Buscar el diagnóstico en el desplegable según su diagnóstico previo <strong>(FUNDAMENTAL)</strong></span>
-                    </div>
                     <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:#f0fdf4;border-radius:10px;border-left:3px solid #1a6b4a;">
                         <i class="fas fa-list-check" style="color:#1a6b4a;font-size:.85rem;margin-top:2px;flex-shrink:0;"></i>
                         <span style="font-size:.78rem;color:#14532d;font-weight:600;line-height:1.45;">Verificar que los campos estén completos. Si no se completan: poner <strong>NO INFORMADO</strong></span>
@@ -1621,8 +1619,6 @@
     <option value="Disfasia severa" {% if est.diagnostico_1 == 'Disfasia severa' or est.diagnostico_2 == 'Disfasia severa' %}selected{% endif %}>Disfasia severa</option>
     <option value="Funcionamiento intelectual limítrofe" {% if est.diagnostico_1 == 'Funcionamiento intelectual limítrofe' or est.diagnostico_2 == 'Funcionamiento intelectual limítrofe' %}selected{% endif %}>Funcionamiento intelectual limítrofe</option>
     <option value="GARC" {% if est.diagnostico_1 == 'GARC' or est.diagnostico_2 == 'GARC' %}selected{% endif %}>GARC</option>
-    <option value="HIPOACUSIA" {% if est.diagnostico_1 == 'HIPOACUSIA' or est.diagnostico_2 == 'HIPOACUSIA' %}selected{% endif %}>HIPOACUSIA</option>
-    <option value="Trastorno Motor" {% if est.diagnostico_1 == 'Trastorno Motor' or est.diagnostico_2 == 'Trastorno Motor' %}selected{% endif %}>Trastorno Motor</option>
     <option value="Pendiente" {% if est.diagnostico_1 == 'Pendiente' or est.diagnostico_2 == 'Pendiente' %}selected{% endif %}>Pendiente</option>
     <option value="Rendimiento intelectual limítrofe" {% if est.diagnostico_1 == 'Rendimiento intelectual limítrofe' or est.diagnostico_2 == 'Rendimiento intelectual limítrofe' %}selected{% endif %}>Rendimiento intelectual limítrofe</option>
     <option value="Retraso global del desarrollo" {% if est.diagnostico_1 == 'Retraso global del desarrollo' or est.diagnostico_2 == 'Retraso global del desarrollo' %}selected{% endif %}>Retraso global del desarrollo</option>
@@ -1634,6 +1630,8 @@
     <option value="Trastorno específico de lenguaje expresivo" {% if est.diagnostico_1 == 'Trastorno específico de lenguaje expresivo' or est.diagnostico_2 == 'Trastorno específico de lenguaje expresivo' %}selected{% endif %}>Trastorno específico de lenguaje expresivo</option>
     <option value="Trastorno específico de lenguaje mixto" {% if est.diagnostico_1 == 'Trastorno específico de lenguaje mixto' or est.diagnostico_2 == 'Trastorno específico de lenguaje mixto' %}selected{% endif %}>Trastorno específico de lenguaje mixto</option>
     <option value="Otro" {% if est.diagnostico_1 == 'Otro' or est.diagnostico_2 == 'Otro' %}selected{% endif %}>Otro</option>
+    <option value="Hipoacusia" {% if est.diagnostico_1 == 'Hipoacusia' or est.diagnostico_2 == 'Hipoacusia' %}selected{% endif %}>Hipoacusia</option>
+    <option value="Trastorno Motor" {% if est.diagnostico_1 == 'Trastorno Motor' or est.diagnostico_2 == 'Trastorno Motor' %}selected{% endif %}>Trastorno Motor</option>
 </select>
                             
 {# NOMBRE DE CAMPO: Fecha evaluación (PDF) -> fecha_evaluacion (HTML) #}
@@ -2365,7 +2363,8 @@
             'Rendimiento intelectual limítrofe','Retraso global del desarrollo','Síndrome de Down',
             'Trastorno de déficit atencional','Trastorno de deficit atencional-H',
             'Trastorno del espectro autista','Trastorno del lenguaje',
-            'Trastorno específico de lenguaje expresivo','Trastorno específico de lenguaje mixto','Otro'
+            'Trastorno específico de lenguaje expresivo','Trastorno específico de lenguaje mixto','Otro',
+            'Hipoacusia','Trastorno Motor'
         ];
 
         // Diccionario de siglas y abreviaciones comunes usadas en Excel → valor oficial del select
@@ -2489,6 +2488,7 @@
                 ['check_caries',           'DENTISTA'],
                 ['check_apinamientodental','DENTISTA'],
                 ['check_frenillolingual',  'DENTISTA'],
+                // check_retenciondental no tiene derivación automática
             ];
             RULES.forEach(([field, spec]) => {
                 const cb = form.querySelector('input[name="' + field + '"]');
@@ -3899,6 +3899,8 @@
                     <option value="Trastorno específico de lenguaje expresivo">Trastorno específico de lenguaje expresivo</option>
                     <option value="Trastorno específico de lenguaje mixto">Trastorno específico de lenguaje mixto</option>
                     <option value="Otro">Otro</option>
+                    <option value="Hipoacusia">Hipoacusia</option>
+                    <option value="Trastorno Motor">Trastorno Motor</option>
                 </select>
             </div>
 

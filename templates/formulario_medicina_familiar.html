@@ -2027,36 +2027,9 @@
                     syncIndicacionButtons(estId);
                 }
 
-                // Diagnóstico previo: si no hay diagnóstico guardado, pre-cargar en el select
+                // Diagnóstico previo: pre-cargar en el select usando la misma lógica que ensureDxPrevioInSelect
                 const selDx = form.querySelector('select[name="diagnostico_unificado"]');
-                if (selDx && selDx.dataset.dxPrevio) {
-                    const previo = selDx.dataset.dxPrevio.toLowerCase().trim();
-                    if (!selDx.value) {
-                        // Buscar coincidencia exacta o parcial en las opciones
-                        let matched = false;
-                        for (const opt of selDx.options) {
-                            if (opt.value && opt.value.toLowerCase() === previo) {
-                                selDx.value = opt.value; matched = true; break;
-                            }
-                        }
-                        if (!matched) {
-                            for (const opt of selDx.options) {
-                                if (opt.value && opt.value.toLowerCase().includes(previo)) {
-                                    selDx.value = opt.value; matched = true; break;
-                                }
-                            }
-                        }
-                        if (!matched) {
-                            // Crear opción dinámica con el valor exacto del dx previo
-                            const dynOpt = document.createElement('option');
-                            dynOpt.value = selDx.dataset.dxPrevio;
-                            dynOpt.textContent = selDx.dataset.dxPrevio;
-                            dynOpt.setAttribute('data-dynamic', '1');
-                            selDx.appendChild(dynOpt);
-                            selDx.value = selDx.dataset.dxPrevio;
-                        }
-                    }
-                }
+                if (selDx) ensureDxPrevioInSelect(form);
 
         function mostrarSelectDx(estId) {
             const sel = document.getElementById('diagnostico_unificado_' + estId);
@@ -2380,36 +2353,125 @@
         }
 
         // ── Fuerza el valor dx_previo en el select antes de enviar el formulario ──
+        // Lista de valores válidos del select de diagnóstico
+        const DX_VALIDOS = [
+            'Dificultades específicas del aprendizaje','Discapacidad auditiva',
+            'Discapacidad intelectual','Discapacidad intelectual leve','Discapacidad intelectual moderada',
+            'Discapacidad motora','Discapacidad motora grave','Discapacidad motora moderada',
+            'Discapacidad múltiple','Discapacidad visual','Disfasia','Disfasia severa',
+            'Funcionamiento intelectual limítrofe','GARC','Pendiente',
+            'Rendimiento intelectual limítrofe','Retraso global del desarrollo','Síndrome de Down',
+            'Trastorno de déficit atencional','Trastorno de deficit atencional-H',
+            'Trastorno del espectro autista','Trastorno del lenguaje',
+            'Trastorno específico de lenguaje expresivo','Trastorno específico de lenguaje mixto','Otro'
+        ];
+
+        // Diccionario de siglas y abreviaciones comunes usadas en Excel → valor oficial del select
+        const DX_ALIAS = {
+            // Lenguaje
+            'tl':    'Trastorno del lenguaje',
+            'tl.':   'Trastorno del lenguaje',
+            'tel':   'Trastorno del lenguaje',
+            'tel expresivo': 'Trastorno específico de lenguaje expresivo',
+            'tel mixto':     'Trastorno específico de lenguaje mixto',
+            'tele':  'Trastorno específico de lenguaje expresivo',
+            'telm':  'Trastorno específico de lenguaje mixto',
+            'disfasia': 'Disfasia',
+            // Déficit atencional
+            'tda':   'Trastorno de déficit atencional',
+            'tdah':  'Trastorno de deficit atencional-H',
+            'tdah.': 'Trastorno de deficit atencional-H',
+            'tda-h': 'Trastorno de deficit atencional-H',
+            'tda/h': 'Trastorno de deficit atencional-H',
+            'déficit atencional': 'Trastorno de déficit atencional',
+            'deficit atencional': 'Trastorno de déficit atencional',
+            // Espectro autista
+            'tea':   'Trastorno del espectro autista',
+            'autismo': 'Trastorno del espectro autista',
+            'autista': 'Trastorno del espectro autista',
+            // Discapacidad intelectual
+            'di':    'Discapacidad intelectual',
+            'dil':   'Discapacidad intelectual leve',
+            'dim':   'Discapacidad intelectual moderada',
+            'ri':    'Discapacidad intelectual',
+            'ril':   'Rendimiento intelectual limítrofe',
+            'fil':   'Funcionamiento intelectual limítrofe',
+            'limit': 'Funcionamiento intelectual limítrofe',
+            'limítrofe': 'Funcionamiento intelectual limítrofe',
+            'limitrofe': 'Funcionamiento intelectual limítrofe',
+            // Dificultades aprendizaje
+            'dea':   'Dificultades específicas del aprendizaje',
+            'dificultad aprendizaje': 'Dificultades específicas del aprendizaje',
+            'dificultades aprendizaje': 'Dificultades específicas del aprendizaje',
+            // Discapacidad motora
+            'dm':    'Discapacidad motora',
+            // Discapacidad auditiva
+            'da':    'Discapacidad auditiva',
+            'hipoacusia': 'Discapacidad auditiva',
+            // Discapacidad visual
+            'dv':    'Discapacidad visual',
+            'baja vision': 'Discapacidad visual',
+            'baja visión': 'Discapacidad visual',
+            // Síndrome de Down
+            'sd':    'Síndrome de Down',
+            'down':  'Síndrome de Down',
+            'sindrome de down': 'Síndrome de Down',
+            'síndrome de down': 'Síndrome de Down',
+            // Retraso del desarrollo
+            'rgd':   'Retraso global del desarrollo',
+            'retraso global': 'Retraso global del desarrollo',
+            'retraso del desarrollo': 'Retraso global del desarrollo',
+            // Discapacidad múltiple
+            'dmul':  'Discapacidad múltiple',
+            'multiple': 'Discapacidad múltiple',
+            'múltiple': 'Discapacidad múltiple',
+            // GARC
+            'garc':  'GARC',
+        };
+
         function ensureDxPrevioInSelect(form) {
             const sel = form.querySelector('select[name="diagnostico_unificado"]');
             if (!sel) return;
-            // Si ya tiene valor, no hacer nada
-            if (sel.value) return;
-            // Si tiene data-dx-previo, intentar setear el valor
+            if (sel.value && DX_VALIDOS.includes(sel.value)) return;
             const previo = (sel.dataset.dxPrevio || '').trim();
             if (!previo) return;
-            // Buscar coincidencia exacta
+
+            const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+            const previoNorm = norm(previo);
+
+            // 1. Diccionario de siglas/alias (prioridad máxima)
+            if (DX_ALIAS[previoNorm]) {
+                sel.value = DX_ALIAS[previoNorm]; return;
+            }
+            // También buscar si el previo CONTIENE alguna sigla clave (ej: "TDAH severo")
+            for (const [alias, valor] of Object.entries(DX_ALIAS)) {
+                if (previoNorm === alias || previoNorm.startsWith(alias + ' ') || previoNorm.endsWith(' ' + alias)) {
+                    sel.value = valor; return;
+                }
+            }
+            // 2. Coincidencia exacta (insensible a mayúsculas/tildes)
             for (const opt of sel.options) {
-                if (opt.value && opt.value.toLowerCase() === previo.toLowerCase()) {
+                if (opt.value && norm(opt.value) === previoNorm) {
                     sel.value = opt.value; return;
                 }
             }
-            // Buscar coincidencia parcial
+            // 3. El option contiene el previo
             for (const opt of sel.options) {
-                if (opt.value && opt.value.toLowerCase().includes(previo.toLowerCase())) {
+                if (opt.value && norm(opt.value).includes(previoNorm)) {
                     sel.value = opt.value; return;
                 }
             }
-            // Crear opción dinámica con el valor exacto
-            let dynOpt = sel.querySelector('option[data-dynamic]');
-            if (!dynOpt) {
-                dynOpt = document.createElement('option');
-                dynOpt.setAttribute('data-dynamic', '1');
-                sel.appendChild(dynOpt);
+            // 4. Palabras clave del previo (>3 chars) en el option
+            const palabras = previoNorm.split(/\s+/).filter(p => p.length > 3);
+            if (palabras.length) {
+                for (const opt of sel.options) {
+                    if (opt.value && palabras.some(p => norm(opt.value).includes(p))) {
+                        sel.value = opt.value; return;
+                    }
+                }
             }
-            dynOpt.value = previo;
-            dynOpt.textContent = previo;
-            sel.value = previo;
+            // 5. Sin match → dejar vacío, doctora elige manualmente
+            sel.value = '';
         }
 
         function autoDeriv(form) {
@@ -2925,11 +2987,25 @@
             }
 
 
+            // Validar que el diagnóstico esté seleccionado
+            const selDxVal = form.querySelector('select[name="diagnostico_unificado"]');
+            if (selDxVal && !selDxVal.value) {
+                allFilled = false;
+                selDxVal.style.borderColor = 'var(--accent-red)';
+                selDxVal.style.borderWidth = '2px';
+                // Asegurarse de que el select sea visible
+                selDxVal.style.display = 'block';
+                selDxVal.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
             if (!allFilled) {
+                const msgExtra = (selDxVal && !selDxVal.value)
+                    ? '<br><br><strong style="color:#dc2626;">⚠️ El diagnóstico PIE es obligatorio.</strong><br><span style="font-size:.87rem;color:#64748b;">El diagnóstico previo no pudo reconocerse automáticamente. Por favor seleccione el diagnóstico correcto del desplegable.</span>'
+                    : '';
                 Swal.fire({
                     icon: 'error',
                     title: 'Faltan datos',
-                    text: 'Faltan datos obligatorios para marcar y guardar la evaluación. Por favor, revise los campos resaltados.',
+                    html: 'Faltan datos obligatorios para marcar y guardar la evaluación. Por favor, revise los campos resaltados.' + msgExtra,
                     confirmButtonText: 'Entendido'
                 });
                 return;

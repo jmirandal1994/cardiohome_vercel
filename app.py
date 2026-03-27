@@ -1104,8 +1104,8 @@ def marcar_evaluado():
         update_data.update({
             # Diagnósticos y Derivaciones
             'diagnostico_1': diagnostico_unificado_valor,
-            # Al confirmar diagnóstico, limpiar dx_previo para que no quede el badge
-            'diagnostico_sospecha': '' if diagnostico_unificado_valor else None,
+            # Limpiar dx_previo solo si se guardó un valor válido del desplegable
+            'diagnostico_sospecha': ('' if diagnostico_unificado_valor and diagnostico_unificado_valor.strip() else None),
             'diagnostico_2': diagnostico_unificado_valor,
             'diagnostico_complementario': get_form_field_value('diagnostico_complementario', request.form),
             'clasificacion': get_form_field_value('clasificacion_imc', request.form),
@@ -5029,8 +5029,8 @@ def guardar_evaluacion():
 
         update_data.update({
             'diagnostico_1': diagnostico_unificado_valor,
-            # Al confirmar diagnóstico, limpiar dx_previo para que no quede el badge
-            'diagnostico_sospecha': '' if diagnostico_unificado_valor else None,
+            # Limpiar dx_previo solo si se guardó un valor válido del desplegable
+            'diagnostico_sospecha': ('' if diagnostico_unificado_valor and diagnostico_unificado_valor.strip() else None),
             'diagnostico_2': diagnostico_unificado_valor,
             'diagnostico_complementario': get_form_field_value('diagnostico_complementario', request.form),
             'clasificacion':  get_form_field_value('clasificacion_imc', request.form) or None,

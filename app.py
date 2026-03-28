@@ -5390,8 +5390,8 @@ def agente_barrer_nomina():
             f"check_audicionnormal,check_hipoacusia,check_tapondecerumen,"
             f"check_sinhallazgos,check_caries,check_apinamientodental,"
             f"check_retenciondental,check_frenillolingual,check_hipertrofia,"
-            f"altura,peso,imc,observacion_1,observacion_2,observacion_3,"
-            f"observacion_4,observacion_5,fecha_evaluacion",
+            f"altura,peso,imc,clasificacion_imc,observacion_1,observacion_2,observacion_3,"
+            f"observacion_4,observacion_5,observacion_6,observacion_7,fecha_evaluacion",
             headers=SUPABASE_SERVICE_HEADERS)
         alumnos = res_est.json() if res_est.ok else []
 
@@ -5446,44 +5446,66 @@ def agente_barrer_nomina():
             if not a.get('imc'):             errores.append("IMC no calculado")
             if not a.get('clasificacion_imc'): errores.append("Clasificación IMC vacía")
 
-            # ── Grupos de checks — al menos 1 por grupo ───────────────────────
-            GRUPOS = [
-                ("Parto",           ["check_cesarea","check_atermino","check_vaginal","check_prematuro"]),
-                ("DSM",             ["check_acorde","check_retraso","check_retrasogeneralizado"]),
-                ("Vacunas",         ["check_esquemac","check_esquemai"]),
-                ("Alergias",        ["check_alergiano","check_alergiasi"]),
-                ("Cirugías",        ["check_cirugiano","check_cirugiasi"]),
-                ("Visión",          ["check_visionsinalteracion","check_visionrefraccion"]),
-                ("Audición",        ["check_audicionnormal","check_hipoacusia","check_tapondecerumen"]),
-                ("Boca/Dental",     ["check_sinhallazgos","check_caries","check_apinamientodental",
-                                     "check_retenciondental","check_frenillolingual","check_hipertrofia"]),
-            ]
-            for grupo_nombre, campos in GRUPOS:
-                tiene = any(a.get(c) for c in campos)
-                obs_vacia = True
-                # Verificar si la observación correspondiente tiene "NO INFORMADO"
-                if grupo_nombre == "Parto":     obs_vacia = not (a.get('observacion_1') or '').upper().startswith('NO INFORMADO')
-                elif grupo_nombre == "DSM":     obs_vacia = not (a.get('observacion_2') or '').upper().startswith('NO INFORMADO')
-                elif grupo_nombre == "Vacunas": obs_vacia = not (a.get('observacion_3') or '').upper().startswith('NO INFORMADO')
-                if not tiene and obs_vacia:
-                    errores.append(f"Grupo '{grupo_nombre}' sin ningún check marcado y sin 'NO INFORMADO'")
+            # ── Helper: observacion contiene "NO INFORMADO" en cualquier parte ──
+            def obs_no_informado(obs_text):
+                return 'NO INFORMADO' in (obs_text or '').upper()
 
-            # ── Derivaciones vs Checks (validación cruzada básica) ────────────
-            derivaciones = (a.get('derivaciones') or '').upper()
-            if a.get('check_visionrefraccion') and 'OFTALM' not in derivaciones:
-                errores.append("Marcó alteración de visión pero no tiene derivación a Oftalmólogo")
-            if (a.get('check_hipoacusia') or a.get('check_tapondecerumen') or a.get('check_hipertrofia')) and 'OTORRIN' not in derivaciones:
-                errores.append("Marcó hallazgo auditivo pero no tiene derivación a Otorrino")
-            if (a.get('check_caries') or a.get('check_apinamientodental') or a.get('check_frenillolingual')) and 'DENTIST' not in derivaciones:
-                errores.append("Marcó hallazgo dental pero no tiene derivación a Dentista")
-            if a.get('clasificacion_imc') in ('Obesidad','Bajo peso') and 'NUTRICION' not in derivaciones:
-                errores.append(f"IMC clasificado como '{a.get('clasificacion_imc')}' pero no tiene derivación a Nutricionista")
+            # ── Grupos de checks con su observación de respaldo ────────────────
+            # Regla: si ningún check del grupo está marcado, la observación
+            # correspondiente debe contener "NO INFORMADO". Si no hay observación
+            # asociada (Audición, Boca/Dental), el check es SIEMPRE obligatorio.
+            GRUPOS = [
+                # (nombre, campos_check, obs_respaldo_key)
+                ("Antecedentes Perinatales", ["check_cesarea","check_atermino","check_vaginal","check_prematuro"], "observacion_1"),
+                ("DSM",                      ["check_acorde","check_retraso","check_retrasogeneralizado"],         "observacion_2"),
+                ("Vacunas",                  ["check_esquemac","check_esquemai"],                                  "observacion_3"),
+                ("Alergias",                 ["check_alergiano","check_alergiasi"],                                "observacion_3"),
+                ("Cirugías/Hospitalizaciones",["check_cirugiano","check_cirugiasi"],                               "observacion_6"),
+                ("Visión",                   ["check_visionsinalteracion","check_visionrefraccion"],               "observacion_7"),
+                # Sin observación de respaldo — check obligatorio siempre
+                ("Audición",     ["check_audicionnormal","check_hipoacusia","check_tapondecerumen"],    None),
+                ("Salud Bucodental", ["check_sinhallazgos","check_caries","check_apinamientodental",
+                                     "check_retenciondental","check_frenillolingual","check_hipertrofia"], None),
+            ]
+            for grupo_nombre, campos, obs_key in GRUPOS:
+                tiene_check = any(a.get(c) for c in campos)
+                if tiene_check:
+                    continue  # OK — tiene al menos un check marcado
+                # No tiene check — verificar si hay observación con NO INFORMADO
+                if obs_key and obs_no_informado(a.get(obs_key)):
+                    continue  # OK — tiene NO INFORMADO en la observación
+                # Error real
+                if obs_key:
+                    errores.append(f"{grupo_nombre}: ningún check marcado y observación sin 'NO INFORMADO'")
+                else:
+                    errores.append(f"{grupo_nombre}: debe tener al menos un check marcado")
+
+            # ── Derivaciones vs Checks ─────────────────────────────────────────
+            # Buscar palabras clave con flexibilidad (minúsculas, sin tildes)
+            import unicodedata as _ud
+            def norm_str(s):
+                return _ud.normalize('NFD', (s or '').lower()).encode('ascii','ignore').decode()
+            deriv_norm = norm_str(a.get('derivaciones') or '')
+
+            if a.get('check_visionrefraccion') and 'oftalm' not in deriv_norm:
+                errores.append("Visión con refracción marcada pero sin derivación a Oftalmólogo")
+            if (a.get('check_hipoacusia') or a.get('check_tapondecerumen') or a.get('check_hipertrofia')):
+                if 'otorrin' not in deriv_norm:
+                    errores.append("Hallazgo auditivo marcado pero sin derivación a Otorrino")
+            if (a.get('check_caries') or a.get('check_apinamientodental') or a.get('check_frenillolingual')):
+                if 'dentist' not in deriv_norm and 'odontol' not in deriv_norm:
+                    errores.append("Hallazgo dental marcado pero sin derivación a Dentista")
+            clasif = (a.get('clasificacion_imc') or '').lower()
+            if ('obesidad' in clasif or 'bajo peso' in clasif):
+                if 'nutricion' not in deriv_norm and 'nutriol' not in deriv_norm:
+                    errores.append(f"IMC '{a.get('clasificacion_imc')}' sin derivación a Nutricionista")
 
             if errores:
                 errores_por_alumno.append({
                     "alumno_id": str(a.get('id','')),
                     "nombre":    nombre,
                     "rut":       a.get('rut','N/A'),
+                    "nomina_id": nomina_id,
                     "errores":   errores,
                     "total_errores": len(errores)
                 })

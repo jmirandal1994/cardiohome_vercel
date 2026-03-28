@@ -3504,42 +3504,98 @@ def eliminar_establecimiento(establecimiento_id):
         print(f"ERROR: Error inesperado al eliminar establecimiento: {e}")
         return jsonify({"success": False, "message": f"Error interno del servidor al eliminar colegio: {str(e)}"}), 500
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Eliminar NÓMINA completa (alumnos + solicitudes_correccion + nómina)
+#  DELETE /admin/eliminar_nomina/<nomina_id>   ← ya existía, mejorada
+# ─────────────────────────────────────────────────────────────────────────────
+@app.route('/admin/eliminar_proyecto/<proyecto_id>', methods=['DELETE'])
+def eliminar_proyecto(proyecto_id):
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "Acceso denegado"}), 403
+    try:
+        # 1. Obtener todas las nóminas del proyecto
+        res_nom = requests.get(
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas?proyecto_id=eq.{proyecto_id}&select=id",
+            headers=SUPABASE_SERVICE_HEADERS)
+        nominas = res_nom.json() if res_nom.ok else []
+        nomina_ids = [n['id'] for n in nominas]
+
+        for nid in nomina_ids:
+            # 2a. Obtener alumnos de la nómina
+            res_alum = requests.get(
+                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nid}&select=id",
+                headers=SUPABASE_SERVICE_HEADERS)
+            alumnos = res_alum.json() if res_alum.ok else []
+            alumno_ids = [a['id'] for a in alumnos]
+
+            # 2b. Eliminar solicitudes_correccion de esos alumnos
+            if alumno_ids:
+                aids = ','.join(str(i) for i in alumno_ids)
+                requests.delete(
+                    f"{SUPABASE_URL}/rest/v1/solicitudes_correccion?alumno_id=in.({aids})",
+                    headers=SUPABASE_SERVICE_HEADERS)
+
+            # 2c. Eliminar estudiantes de la nómina
+            requests.delete(
+                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nid}",
+                headers=SUPABASE_SERVICE_HEADERS)
+
+            # 2d. Eliminar la nómina
+            requests.delete(
+                f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nid}",
+                headers=SUPABASE_SERVICE_HEADERS)
+
+        # 3. Eliminar el proyecto
+        res_del = requests.delete(
+            f"{SUPABASE_URL}/rest/v1/proyectos?id=eq.{proyecto_id}",
+            headers=SUPABASE_SERVICE_HEADERS)
+        res_del.raise_for_status()
+
+        return jsonify({"success": True, "message": f"Proyecto y {len(nomina_ids)} nómina(s) eliminados correctamente."})
+
+    except Exception as e:
+        print(f"ERROR eliminar_proyecto: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
 @app.route('/admin/eliminar_nomina/<nomina_id>', methods=['DELETE'])
 def eliminar_nomina(nomina_id):
     if session.get('usuario') != 'admin':
-        return jsonify({"success": False, "message": "Acceso denegado. Solo administradores pueden eliminar."}), 403
-    
-    print(f"DEBUG: Intentando eliminar nómina y sus estudiantes con ID: {nomina_id}")
-
+        return jsonify({"success": False, "message": "Acceso denegado"}), 403
     try:
-        # 1. Eliminar todos los estudiantes asociados a esta nómina
-        res_delete_students = requests.delete(
+        # 1. Obtener alumnos de la nómina
+        res_alum = requests.get(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nomina_id}&select=id",
+            headers=SUPABASE_SERVICE_HEADERS)
+        alumnos = res_alum.json() if res_alum.ok else []
+        alumno_ids = [a['id'] for a in alumnos]
+
+        # 2. Eliminar solicitudes_correccion de esos alumnos (evita FK error)
+        if alumno_ids:
+            aids = ','.join(str(i) for i in alumno_ids)
+            requests.delete(
+                f"{SUPABASE_URL}/rest/v1/solicitudes_correccion?alumno_id=in.({aids})",
+                headers=SUPABASE_SERVICE_HEADERS)
+
+        # 3. Eliminar estudiantes
+        requests.delete(
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?nomina_id=eq.{nomina_id}",
-            headers=SUPABASE_SERVICE_HEADERS
-        )
-        res_delete_students.raise_for_status()
-        print(f"DEBUG: Estudiantes de nómina {nomina_id} eliminados. Status: {res_delete_students.status_code}")
+            headers=SUPABASE_SERVICE_HEADERS)
 
-        # 2. Eliminar la propia nómina
-        res_delete_nomina = requests.delete(
+        # 4. Eliminar la nómina
+        res_del = requests.delete(
             f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}",
-            headers=SUPABASE_SERVICE_HEADERS
-        )
-        res_delete_nomina.raise_for_status()
-        print(f"DEBUG: Nómina {nomina_id} eliminada. Status: {res_delete_nomina.status_code}")
+            headers=SUPABASE_SERVICE_HEADERS)
+        res_del.raise_for_status()
 
-        if res_delete_nomina.status_code == 204:
-            return jsonify({"success": True, "message": "Nómina y sus estudiantes eliminados correctamente."})
+        if res_del.status_code == 204:
+            return jsonify({"success": True, "message": "Nómina y sus alumnos eliminados correctamente."})
         else:
-            print(f"ERROR: Error inesperado al eliminar nómina. Status: {res_delete_nomina.status_code}, Response: {res_delete_nomina.text}")
-            return jsonify({"success": False, "message": f"Error al eliminar la nómina: {res_delete_nomina.text}"}), 500
+            return jsonify({"success": False, "message": f"Error al eliminar: {res_del.text}"}), 500
 
-    except requests.exceptions.RequestException as e:
-        print(f"ERROR: Error de solicitud al eliminar nómina: {e}")
-        return jsonify({"success": False, "message": f"Error de conexión al eliminar nómina: {str(e)}"}), 500
     except Exception as e:
-        print(f"ERROR: Error inesperado al eliminar nómina: {e}")
-        return jsonify({"success": False, "message": f"Error interno del servidor al eliminar nómina: {str(e)}"}), 500
+        print(f"ERROR eliminar_nomina: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
 
 
 # ============================================================

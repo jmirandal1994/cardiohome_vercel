@@ -21,6 +21,8 @@ import urllib.parse
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "clave_super_segura_cardiohome_2025")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+ANTHROPIC_MODEL   = "claude-sonnet-4-6"
 ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'xls', 'xlsx', 'csv'}
 
 # Define los PDFs base para cada tipo de formulario
@@ -5222,6 +5224,355 @@ def actualizar_respuesta_correccion():
         res.raise_for_status()
         return jsonify({"success": True})
     except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  AGENTE IA — Analizar solicitud de corrección
+#  POST /api/agente/analizar_correccion
+#  Body: { solicitud_id }
+# ─────────────────────────────────────────────────────────────────────────────
+@app.route('/api/agente/analizar_correccion', methods=['POST'])
+def agente_analizar_correccion():
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "Acceso denegado"}), 403
+    if not ANTHROPIC_API_KEY:
+        return jsonify({"success": False, "message": "API key de Anthropic no configurada"}), 500
+    try:
+        data         = request.get_json() or {}
+        solicitud_id = data.get('solicitud_id')
+        if not solicitud_id:
+            return jsonify({"success": False, "message": "Falta solicitud_id"}), 400
+
+        # 1. Obtener la solicitud
+        res_sol = requests.get(
+            f"{SUPABASE_URL}/rest/v1/solicitudes_correccion"
+            f"?id=eq.{solicitud_id}"
+            f"&select=*,estudiantes_nomina(nombre,rut,fecha_nacimiento,sexo,"
+            f"diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion_imc,"
+            f"derivaciones,observacion_1,observacion_2,observacion_3,observacion_4,"
+            f"observacion_5,observacion_6,observacion_7,fecha_evaluacion,fecha_relleno,"
+            f"evaluado_flag,nomina_id,nacionalidad)",
+            headers=SUPABASE_SERVICE_HEADERS)
+        sol_list = res_sol.json() if res_sol.ok else []
+        if not sol_list:
+            return jsonify({"success": False, "message": "Solicitud no encontrada"}), 404
+        sol  = sol_list[0]
+        est  = sol.get('estudiantes_nomina') or {}
+
+        # 2. Obtener nombre del colegio
+        colegio = ''
+        if est.get('nomina_id'):
+            res_nom = requests.get(
+                f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+                f"?id=eq.{est['nomina_id']}&select=nombre_colegio",
+                headers=SUPABASE_SERVICE_HEADERS)
+            if res_nom.ok and res_nom.json():
+                colegio = res_nom.json()[0].get('nombre_colegio', '')
+
+        # 3. Construir contexto para el agente
+        alumno_ctx = f"""
+DATOS ACTUALES DEL ALUMNO EN PLATAFORMA:
+- Nombre: {est.get('nombre', 'N/A')}
+- RUT: {est.get('rut', 'N/A')}
+- Fecha nacimiento: {est.get('fecha_nacimiento', 'N/A')}
+- Sexo: {est.get('sexo', 'N/A')}
+- Nacionalidad: {est.get('nacionalidad', 'N/A')}
+- Colegio: {colegio}
+- Evaluado: {'Sí' if est.get('evaluado_flag') else 'No'}
+- Fecha evaluación: {est.get('fecha_evaluacion', 'N/A')}
+- Diagnóstico PIE: {est.get('diagnostico_1', 'N/A')}
+- Diagnóstico complementario: {est.get('diagnostico_complementario', 'N/A')}
+- Clasificación IMC: {est.get('clasificacion_imc', 'N/A')}
+- Derivaciones: {est.get('derivaciones', 'N/A')}
+- Observaciones: {' | '.join(filter(None, [est.get(f'observacion_{i}','') for i in range(1,8)]))}
+
+SOLICITUD DE LA COORDINADORA:
+{sol.get('detalles', 'Sin detalle')}
+"""
+
+        system_prompt = """Eres un asistente experto del programa PIE (Programa de Integración Escolar) de Chile.
+Tu rol es analizar solicitudes de corrección de coordinadoras de escuela sobre evaluaciones médicas de estudiantes.
+
+Debes responder SIEMPRE en formato JSON con esta estructura exacta:
+{
+  "procedencia": "PROCEDE" | "NO PROCEDE" | "REQUIERE REVISIÓN",
+  "justificacion": "Explicación breve en 1-2 oraciones de por qué procede o no",
+  "cambios_sugeridos": [
+    {"campo": "nombre_del_campo", "valor_actual": "...", "valor_sugerido": "..."}
+  ],
+  "mensaje_coordinadora": "Mensaje claro y amable para enviar a la coordinadora explicando la decisión",
+  "nivel_urgencia": "ALTA" | "MEDIA" | "BAJA"
+}
+
+Reglas:
+- PROCEDE si el error es claro (dato incorrecto, typo, campo equivocado)
+- NO PROCEDE si la solicitud pide algo clínicamente incorrecto o fuera de protocolo PIE
+- REQUIERE REVISIÓN si necesitas más información o hay ambigüedad
+- cambios_sugeridos puede estar vacío si no procede
+- Sé directo, claro y profesional. Usa lenguaje simple."""
+
+        # 4. Llamar a Claude
+        resp = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key":         ANTHROPIC_API_KEY,
+                "anthropic-version": "2023-06-01",
+                "content-type":      "application/json",
+            },
+            json={
+                "model":      ANTHROPIC_MODEL,
+                "max_tokens": 1024,
+                "system":     system_prompt,
+                "messages":   [{"role": "user", "content": alumno_ctx}]
+            },
+            timeout=30
+        )
+        resp.raise_for_status()
+        resp_data = resp.json()
+
+        # 5. Parsear respuesta JSON del agente
+        raw_text = resp_data['content'][0]['text'].strip()
+        # Limpiar posibles markdown fences
+        raw_text = re.sub(r'^```json\s*', '', raw_text)
+        raw_text = re.sub(r'\s*```$',     '', raw_text)
+        analisis = json.loads(raw_text)
+
+        return jsonify({"success": True, "analisis": analisis, "alumno": {
+            "nombre": est.get('nombre',''),
+            "rut":    est.get('rut',''),
+            "colegio": colegio,
+        }})
+
+    except json.JSONDecodeError as e:
+        return jsonify({"success": False, "message": f"Error parseando respuesta del agente: {e}"}), 500
+    except Exception as e:
+        print(f"ERROR agente_analizar_correccion: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  AGENTE IA — Barrido de nómina completa
+#  POST /api/agente/barrer_nomina
+#  Body: { nomina_id }
+# ─────────────────────────────────────────────────────────────────────────────
+@app.route('/api/agente/barrer_nomina', methods=['POST'])
+def agente_barrer_nomina():
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "Acceso denegado"}), 403
+    if not ANTHROPIC_API_KEY:
+        return jsonify({"success": False, "message": "API key de Anthropic no configurada"}), 500
+    try:
+        data      = request.get_json() or {}
+        nomina_id = data.get('nomina_id')
+        if not nomina_id:
+            return jsonify({"success": False, "message": "Falta nomina_id"}), 400
+
+        # 1. Obtener datos de la nómina
+        res_nom = requests.get(
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?id=eq.{nomina_id}&select=nombre_nomina,nombre_colegio,form_type",
+            headers=SUPABASE_SERVICE_HEADERS)
+        nom_data = res_nom.json()[0] if res_nom.ok and res_nom.json() else {}
+
+        # 2. Obtener todos los alumnos evaluados de la nómina
+        res_est = requests.get(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            f"?nomina_id=eq.{nomina_id}"
+            f"&evaluado_flag=eq.true"
+            f"&estado_asistencia=in.(activo,extra)"
+            f"&select=id,nombre,rut,fecha_nacimiento,edad,nacionalidad,sexo,"
+            f"diagnostico_1,diagnostico_complementario,clasificacion_imc,"
+            f"derivaciones,check_cesarea,check_atermino,check_vaginal,check_prematuro,"
+            f"check_acorde,check_retraso,check_retrasogeneralizado,"
+            f"check_esquemac,check_esquemai,check_alergiano,check_alergiasi,"
+            f"check_cirugiano,check_cirugiasi,check_visionsinalteracion,check_visionrefraccion,"
+            f"check_audicionnormal,check_hipoacusia,check_tapondecerumen,"
+            f"check_sinhallazgos,check_caries,check_apinamientodental,"
+            f"check_retenciondental,check_frenillolingual,check_hipertrofia,"
+            f"altura,peso,imc,observacion_1,observacion_2,observacion_3,"
+            f"observacion_4,observacion_5,fecha_evaluacion",
+            headers=SUPABASE_SERVICE_HEADERS)
+        alumnos = res_est.json() if res_est.ok else []
+
+        if not alumnos:
+            return jsonify({"success": True, "resumen": "No hay alumnos evaluados en esta nómina.", "errores": [], "total": 0, "con_errores": 0})
+
+        # 3. Análisis local de errores (rápido, sin llamar a Claude)
+        errores_por_alumno = []
+        for a in alumnos:
+            errores = []
+            nombre = a.get('nombre', 'N/A')
+
+            # ── Datos personales ──────────────────────────────────────────────
+            if not a.get('rut'):             errores.append("RUT vacío")
+            if not a.get('sexo'):            errores.append("Sexo no registrado")
+            if not a.get('nacionalidad'):    errores.append("Nacionalidad vacía")
+            if not a.get('fecha_evaluacion'):errores.append("Fecha de evaluación vacía")
+
+            # ── Edad / Fecha de nacimiento ────────────────────────────────────
+            edad_val = a.get('edad')
+            if edad_val is not None:
+                try:
+                    edad_num = float(str(edad_val).replace(' años','').replace(' meses','').strip().split()[0])
+                    if edad_num < 0:
+                        errores.append(f"Edad negativa ({edad_val}) — fecha de nacimiento incorrecta")
+                    elif edad_num > 25:
+                        errores.append(f"Edad inusualmente alta ({edad_val}) — verificar fecha de nacimiento")
+                except:
+                    pass
+            if a.get('fecha_nacimiento'):
+                try:
+                    from datetime import date as dt_date
+                    fn = dt_date.fromisoformat(a['fecha_nacimiento'])
+                    today = dt_date.today()
+                    diff_years = (today - fn).days / 365.25
+                    if diff_years < 0:
+                        errores.append(f"Fecha de nacimiento en el futuro ({a['fecha_nacimiento']})")
+                    elif diff_years > 25:
+                        errores.append(f"Fecha de nacimiento inusual — edad calculada {diff_years:.1f} años")
+                except:
+                    errores.append("Formato de fecha de nacimiento inválido")
+            else:
+                errores.append("Fecha de nacimiento vacía")
+
+            # ── Diagnóstico PIE (obligatorio) ─────────────────────────────────
+            if not a.get('diagnostico_1'):
+                errores.append("Diagnóstico PIE vacío — campo obligatorio")
+
+            # ── IMC / Medidas antropométricas ─────────────────────────────────
+            if not a.get('altura'):          errores.append("Altura no registrada")
+            if not a.get('peso'):            errores.append("Peso no registrado")
+            if not a.get('imc'):             errores.append("IMC no calculado")
+            if not a.get('clasificacion_imc'): errores.append("Clasificación IMC vacía")
+
+            # ── Grupos de checks — al menos 1 por grupo ───────────────────────
+            GRUPOS = [
+                ("Parto",           ["check_cesarea","check_atermino","check_vaginal","check_prematuro"]),
+                ("DSM",             ["check_acorde","check_retraso","check_retrasogeneralizado"]),
+                ("Vacunas",         ["check_esquemac","check_esquemai"]),
+                ("Alergias",        ["check_alergiano","check_alergiasi"]),
+                ("Cirugías",        ["check_cirugiano","check_cirugiasi"]),
+                ("Visión",          ["check_visionsinalteracion","check_visionrefraccion"]),
+                ("Audición",        ["check_audicionnormal","check_hipoacusia","check_tapondecerumen"]),
+                ("Boca/Dental",     ["check_sinhallazgos","check_caries","check_apinamientodental",
+                                     "check_retenciondental","check_frenillolingual","check_hipertrofia"]),
+            ]
+            for grupo_nombre, campos in GRUPOS:
+                tiene = any(a.get(c) for c in campos)
+                obs_vacia = True
+                # Verificar si la observación correspondiente tiene "NO INFORMADO"
+                if grupo_nombre == "Parto":     obs_vacia = not (a.get('observacion_1') or '').upper().startswith('NO INFORMADO')
+                elif grupo_nombre == "DSM":     obs_vacia = not (a.get('observacion_2') or '').upper().startswith('NO INFORMADO')
+                elif grupo_nombre == "Vacunas": obs_vacia = not (a.get('observacion_3') or '').upper().startswith('NO INFORMADO')
+                if not tiene and obs_vacia:
+                    errores.append(f"Grupo '{grupo_nombre}' sin ningún check marcado y sin 'NO INFORMADO'")
+
+            # ── Derivaciones vs Checks (validación cruzada básica) ────────────
+            derivaciones = (a.get('derivaciones') or '').upper()
+            if a.get('check_visionrefraccion') and 'OFTALM' not in derivaciones:
+                errores.append("Marcó alteración de visión pero no tiene derivación a Oftalmólogo")
+            if (a.get('check_hipoacusia') or a.get('check_tapondecerumen') or a.get('check_hipertrofia')) and 'OTORRIN' not in derivaciones:
+                errores.append("Marcó hallazgo auditivo pero no tiene derivación a Otorrino")
+            if (a.get('check_caries') or a.get('check_apinamientodental') or a.get('check_frenillolingual')) and 'DENTIST' not in derivaciones:
+                errores.append("Marcó hallazgo dental pero no tiene derivación a Dentista")
+            if a.get('clasificacion_imc') in ('Obesidad','Bajo peso') and 'NUTRICION' not in derivaciones:
+                errores.append(f"IMC clasificado como '{a.get('clasificacion_imc')}' pero no tiene derivación a Nutricionista")
+
+            if errores:
+                errores_por_alumno.append({
+                    "alumno_id": str(a.get('id','')),
+                    "nombre":    nombre,
+                    "rut":       a.get('rut','N/A'),
+                    "errores":   errores,
+                    "total_errores": len(errores)
+                })
+
+        total        = len(alumnos)
+        con_errores  = len(errores_por_alumno)
+        sin_errores  = total - con_errores
+
+        # 4. Llamar a Claude para generar resumen inteligente
+        ctx = f"""Eres el asistente del sistema CardioHome del programa PIE chileno.
+Acabas de hacer un barrido de la nómina "{nom_data.get('nombre_colegio','')}" con {total} alumnos evaluados.
+Resultados: {con_errores} alumnos con errores, {sin_errores} sin errores.
+
+Errores encontrados:
+{json.dumps(errores_por_alumno, ensure_ascii=False, indent=2) if errores_por_alumno else 'Ninguno — todo correcto.'}
+
+Genera un resumen ejecutivo breve (máximo 4 oraciones) para el administrador, mencionando los errores más críticos y si es urgente corregirlos antes de cerrar la jornada. Sé directo y claro. No uses markdown."""
+
+        resp = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": ANTHROPIC_API_KEY,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": ANTHROPIC_MODEL,
+                "max_tokens": 300,
+                "messages": [{"role": "user", "content": ctx}]
+            },
+            timeout=20
+        )
+        resumen_ia = resp.json()['content'][0]['text'].strip() if resp.ok else "Barrido completado."
+
+        return jsonify({
+            "success":      True,
+            "total":        total,
+            "con_errores":  con_errores,
+            "sin_errores":  sin_errores,
+            "resumen_ia":   resumen_ia,
+            "errores":      errores_por_alumno,
+            "colegio":      nom_data.get('nombre_colegio',''),
+        })
+
+    except Exception as e:
+        print(f"ERROR agente_barrer_nomina: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  AGENTE IA — Chat flotante (pregunta libre sobre la plataforma)
+#  POST /api/agente/chat
+# ─────────────────────────────────────────────────────────────────────────────
+@app.route('/api/agente/chat', methods=['POST'])
+def agente_chat():
+    if 'usuario' not in session:
+        return jsonify({"success": False, "message": "No autorizado"}), 401
+    if not ANTHROPIC_API_KEY:
+        return jsonify({"success": False, "message": "API key no configurada"}), 500
+    try:
+        data     = request.get_json() or {}
+        mensaje  = data.get('mensaje', '').strip()
+        historial = data.get('historial', [])
+        if not mensaje:
+            return jsonify({"success": False, "message": "Mensaje vacío"}), 400
+
+        system = """Eres el asistente IA de CardioHome, plataforma de evaluaciones médicas del Programa PIE (Programa de Integración Escolar) de Chile.
+Ayudas a administradores, coordinadoras y doctoras a usar la plataforma.
+Conoces el flujo completo: carga de nóminas Excel, evaluaciones médicas (medicina familiar y neurología), diagnósticos PIE, derivaciones automáticas, sistema de correcciones y roles de usuario.
+Responde siempre en español, de forma clara, breve y profesional. Máximo 3 oraciones salvo que se pida más detalle."""
+
+        messages = historial[-6:] + [{"role": "user", "content": mensaje}]
+
+        resp = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": ANTHROPIC_API_KEY,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={"model": ANTHROPIC_MODEL, "max_tokens": 400, "system": system, "messages": messages},
+            timeout=20
+        )
+        resp.raise_for_status()
+        respuesta = resp.json()['content'][0]['text'].strip()
+        return jsonify({"success": True, "respuesta": respuesta})
+
+    except Exception as e:
+        print(f"ERROR agente_chat: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
 

@@ -2687,6 +2687,56 @@
             }
             .corr-no-results i { font-size: 2.5rem; color: #cbd5e0; margin-bottom: 12px; display: block; }
             .corr-no-results p { color: #94a3b8; font-size: .9rem; }
+
+            /* ── AGENTE IA ── */
+            .agente-panel {
+                margin-top: 12px; border-radius: 12px; overflow: hidden;
+                border: 1.5px solid #e0eaf6;
+                transition: all .3s;
+            }
+            .agente-header {
+                display: flex; align-items: center; gap: 10px;
+                padding: 10px 14px;
+                background: linear-gradient(90deg,#0d3b5e,#1c67a3);
+                cursor: pointer; user-select: none;
+            }
+            .agente-header span { color: white; font-size: .8rem; font-weight: 700; }
+            .agente-header .agente-badge {
+                margin-left: auto; padding: 2px 9px; border-radius: 99px;
+                font-size: .68rem; font-weight: 800; border: 1px solid rgba(255,255,255,.3);
+                color: white;
+            }
+            .agente-badge.procede    { background: rgba(16,185,129,.35); }
+            .agente-badge.no-procede { background: rgba(220,38,38,.35); }
+            .agente-badge.revision   { background: rgba(245,158,11,.35); }
+            .agente-body {
+                padding: 14px 16px; background: #f8faff;
+                display: none;
+            }
+            .agente-body.open { display: block; }
+            .agente-justif {
+                font-size: .82rem; color: #334155; line-height: 1.5;
+                margin-bottom: 10px;
+            }
+            .agente-cambio {
+                background: white; border: 1.5px solid #e2e8f0;
+                border-radius: 10px; padding: 10px 13px; margin-bottom: 8px;
+                font-size: .8rem;
+            }
+            .agente-cambio .campo { font-weight: 800; color: #0d3b5e; font-size: .75rem;
+                text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+            .agente-cambio .val-actual { color: #dc2626; text-decoration: line-through; font-size: .78rem; }
+            .agente-cambio .val-nuevo  { color: #059669; font-weight: 700; font-size: .82rem; }
+            .agente-msg {
+                background: #eff6ff; border-left: 3px solid #1d4ed8;
+                border-radius: 0 8px 8px 0; padding: 9px 12px;
+                font-size: .79rem; color: #1e3a8a; line-height: 1.45;
+                margin-top: 10px;
+            }
+            .agente-spinner {
+                display: flex; align-items: center; gap: 10px;
+                padding: 14px; color: #64748b; font-size: .82rem;
+            }
             </style>
 
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap;">
@@ -5945,6 +5995,8 @@
 
                         var div = document.createElement('div');
                         div.className = 'corr-card';
+                        div.dataset.solid    = req.id;
+                        div.dataset.alumnoId = req.alumno_id || '';
 
                         var metaHtml = '';
                         if (req.proyecto_nombre) metaHtml += '<span class="corr-meta-chip project"><i class="fas fa-folder-open"></i> ' + req.proyecto_nombre + '</span>';
@@ -5968,6 +6020,16 @@
                               + '<div style="flex:1;"><strong style="color:#0f3460;font-size:.85rem;">Correccion pendiente</strong><div style="color:#64748b;font-size:.78rem;margin-top:2px;">Usa el boton para abrir y editar el formulario directamente aqui.</div></div>'
                               + '</div>';
 
+                        var agentePanel = '<div class="agente-panel" id="agente-panel-' + req.id + '">'
+                            + '<div class="agente-header" onclick="toggleAgentePanel(' + req.id + ', this)">'
+                            + '<i class="fas fa-robot" style="color:white;font-size:.85rem;"></i>'
+                            + '<span>Análisis IA</span>'
+                            + '<span class="agente-badge" id="agente-badge-' + req.id + '">Sin analizar</span>'
+                            + '</div>'
+                            + '<div class="agente-body" id="agente-body-' + req.id + '">'
+                            + '<div class="agente-spinner"><i class="fas fa-circle-notch fa-spin"></i> Haz clic en "Análisis IA" para que el agente analice esta solicitud.</div>'
+                            + '</div></div>';
+
                         div.innerHTML = '<div class="corr-card-stripe' + stripeC + '"></div>'
                             + '<div class="corr-card-body">'
                             + '<div class="corr-card-header">'
@@ -5977,9 +6039,10 @@
                             + '<span class="corr-status-badge ' + badgeC + '"><i class="fas ' + badgeIc + '"></i> ' + badgeTx + '</span>'
                             + '</div>'
                             + '<div class="corr-meta-row">' + metaHtml + '</div>'
-                            + '<div class="corr-obs-box"><div class="corr-obs-label"><i class="fas fa-triangle-exclamation"></i> Correccion Solicitada</div>'
+                            + '<div class="corr-obs-box"><div class="corr-obs-label"><i class="fas fa-triangle-exclamation"></i> Corrección Solicitada</div>'
                             + '<div class="corr-obs-text">' + (req.detalles || 'Sin detalle especificado.') + '</div></div>'
                             + estadoArea
+                            + agentePanel
                             + '<div class="corr-actions" id="corr-actions-' + req.id + '"></div>'
                             + '</div>';
 
@@ -6243,6 +6306,131 @@
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-floppy-disk"></i> Guardar Correcciones';
+            }
+        }
+
+        function toggleAgentePanel(solicitudId, headerEl) {
+            const body  = document.getElementById('agente-body-' + solicitudId);
+            const badge = document.getElementById('agente-badge-' + solicitudId);
+            if (!body) return;
+            const isOpen = body.classList.contains('open');
+            if (isOpen) { body.classList.remove('open'); return; }
+            body.classList.add('open');
+            // Si ya tiene análisis no volver a llamar
+            if (body.dataset.analizado === '1') return;
+            // Llamar al agente
+            analizarConAgente(solicitudId, body, badge);
+        }
+
+        async function analizarConAgente(solicitudId, bodyEl, badgeEl) {
+            bodyEl.innerHTML = '<div class="agente-spinner"><i class="fas fa-circle-notch fa-spin"></i> El agente está analizando la solicitud…</div>';
+            try {
+                const res  = await fetch('/api/agente/analizar_correccion', {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ solicitud_id: solicitudId })
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.message || 'Error del agente');
+
+                const a = data.analisis;
+                bodyEl.dataset.analizado = '1';
+
+                // Badge de procedencia
+                const badgeClass = a.procedencia === 'PROCEDE' ? 'procede'
+                                 : a.procedencia === 'NO PROCEDE' ? 'no-procede' : 'revision';
+                const badgeIcon  = a.procedencia === 'PROCEDE' ? '✓'
+                                 : a.procedencia === 'NO PROCEDE' ? '✗' : '?';
+                if (badgeEl) {
+                    badgeEl.textContent = badgeIcon + ' ' + a.procedencia;
+                    badgeEl.className   = 'agente-badge ' + badgeClass;
+                }
+
+                // Urgencia color
+                const urgColor = a.nivel_urgencia === 'ALTA' ? '#dc2626'
+                               : a.nivel_urgencia === 'MEDIA' ? '#d97706' : '#059669';
+
+                // Cambios sugeridos
+                let cambiosHtml = '';
+                if (a.cambios_sugeridos && a.cambios_sugeridos.length > 0) {
+                    cambiosHtml = '<div style="margin:10px 0 6px;font-size:.74rem;font-weight:800;color:#0d3b5e;text-transform:uppercase;letter-spacing:.04em;">Cambios sugeridos:</div>';
+                    a.cambios_sugeridos.forEach(c => {
+                        cambiosHtml += '<div class="agente-cambio">'
+                            + '<div class="campo">' + c.campo + '</div>'
+                            + (c.valor_actual ? '<div class="val-actual">Actual: ' + c.valor_actual + '</div>' : '')
+                            + '<div class="val-nuevo">→ ' + c.valor_sugerido + '</div>'
+                            + '</div>';
+                    });
+                }
+
+                // Botón aplicar corrección directa si procede
+                const btnAplicar = (a.procedencia === 'PROCEDE' && a.cambios_sugeridos && a.cambios_sugeridos.length > 0)
+                    ? '<button onclick="aplicarCorreccionAgente(' + solicitudId + ', ' + JSON.stringify(JSON.stringify(a.cambios_sugeridos)) + ', ' + JSON.stringify(JSON.stringify(a.mensaje_coordinadora || '')) + ')"'
+                      + ' style="margin-top:10px;width:100%;padding:9px;background:linear-gradient(135deg,#059669,#047857);color:white;border:none;border-radius:10px;font-weight:800;font-size:.82rem;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px;">'
+                      + '<i class="fas fa-wand-magic-sparkles"></i> Aplicar corrección sugerida</button>'
+                    : '';
+
+                bodyEl.innerHTML =
+                    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">'
+                    + '<span style="font-size:.72rem;font-weight:800;color:' + urgColor + ';background:' + urgColor + '18;border:1px solid ' + urgColor + '33;border-radius:6px;padding:2px 8px;">Urgencia: ' + a.nivel_urgencia + '</span>'
+                    + '</div>'
+                    + '<div class="agente-justif">' + a.justificacion + '</div>'
+                    + cambiosHtml
+                    + (a.mensaje_coordinadora ? '<div class="agente-msg"><strong>Mensaje sugerido para la coordinadora:</strong><br>' + a.mensaje_coordinadora + '</div>' : '')
+                    + btnAplicar;
+
+            } catch(e) {
+                bodyEl.innerHTML = '<div style="color:#dc2626;font-size:.8rem;padding:8px;"><i class="fas fa-circle-exclamation"></i> Error: ' + e.message + '</div>';
+            }
+        }
+
+        async function aplicarCorreccionAgente(solicitudId, cambiosJson, mensajeJson) {
+            const cambios = JSON.parse(cambiosJson);
+            const mensaje = JSON.parse(mensajeJson);
+            const { isConfirmed } = await Swal.fire({
+                title: 'Aplicar corrección del agente',
+                html: '<p style="font-size:.85rem;color:#475569;margin:0 0 10px;">El agente aplicará los cambios sugeridos y notificará a la coordinadora.</p>'
+                    + '<textarea id="swal-msg-agente" style="width:100%;height:80px;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px;font-size:.83rem;font-family:inherit;resize:vertical;box-sizing:border-box;">' + (mensaje || '') + '</textarea>',
+                showCancelButton: true,
+                confirmButtonColor: '#059669',
+                confirmButtonText: '<i class="fas fa-check"></i> Aplicar',
+                cancelButtonText: 'Cancelar',
+                preConfirm: () => document.getElementById('swal-msg-agente').value.trim()
+            });
+            if (!isConfirmed) return;
+            const mensajeFinal = document.getElementById('swal-msg-agente')?.value.trim() || mensaje;
+
+            // Convertir cambios a campos para la API
+            const camposAplicar = {};
+            cambios.forEach(c => { camposAplicar[c.campo] = c.valor_sugerido; });
+
+            try {
+                Swal.fire({ title: 'Aplicando…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                // Obtener alumno_id de la solicitud
+                const resSol = await fetch('/api/agente/analizar_correccion', {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ solicitud_id: solicitudId })
+                });
+                // Usar corregir_alumno directamente
+                const resCorr = await fetch('/api/admin/corregir_alumno', {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({
+                        solicitud_id:    solicitudId,
+                        alumno_id:       document.querySelector('[data-solid="' + solicitudId + '"]')?.dataset.alumnoId || '',
+                        respuesta_admin: mensajeFinal,
+                        campos:          camposAplicar
+                    })
+                });
+                const dataCorr = await resCorr.json();
+                if (dataCorr.success) {
+                    Swal.fire({ icon:'success', title:'¡Corrección aplicada!',
+                        text: 'Los cambios fueron guardados y la coordinadora fue notificada.',
+                        timer: 2200, showConfirmButton: false });
+                    loadCorrectionRequests(); fetchCorrectionAlert();
+                } else {
+                    throw new Error(dataCorr.message || 'Error al aplicar');
+                }
+            } catch(e) {
+                Swal.fire('Error', e.message, 'error');
             }
         }
 
@@ -8838,6 +9026,293 @@ async function confirmarEliminarAlumno(alumnoId, nombre, filaEl) {
         }
     } catch(e) {
         Swal.fire({ icon:'error', title:'Error de conexión', text: e.message });
+    }
+}
+</script>
+
+<style>
+/* ══ AGENTE FLOTANTE ══════════════════════════════════════════════ */
+/* ── Agente flotante CardioHome ── */
+#agente-float-wrap {
+    position: fixed; bottom: 28px; right: 28px; z-index: 9999;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    cursor: pointer;
+}
+#agente-float-btn {
+    position: relative;
+    width: 72px; height: 72px; border-radius: 50%;
+    background: white;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    box-shadow: 0 8px 28px rgba(13,59,94,.35), 0 2px 8px rgba(13,59,94,.15);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s;
+    overflow: visible;
+    cursor: pointer;
+    padding: 0;
+}
+#agente-float-btn::before {
+    content: '';
+    position: absolute; inset: -3px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0d3b5e, #1c67a3, #1a6b4a);
+    z-index: -1;
+    animation: spin-border 6s linear infinite;
+}
+@keyframes spin-border {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+#agente-float-btn:hover { transform: scale(1.1) translateY(-3px); box-shadow: 0 14px 36px rgba(13,59,94,.45); }
+#agente-float-btn:hover #agente-label { opacity: 1; transform: translateY(0); }
+#agente-float-btn svg {
+    width: 46px; height: 46px;
+    animation: float-idle 3.5s ease-in-out infinite;
+    filter: drop-shadow(0 2px 4px rgba(13,59,94,.25));
+}
+@keyframes float-idle {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-4px); }
+}
+#agente-label {
+    background: linear-gradient(135deg,#0d3b5e,#1c67a3);
+    color: white; font-size: .65rem; font-weight: 800;
+    letter-spacing: .06em; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 99px;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(13,59,94,.3);
+    opacity: 0; transform: translateY(4px);
+    transition: opacity .2s, transform .2s;
+    pointer-events: none;
+}
+#agente-float-wrap:hover #agente-label { opacity: 1; transform: translateY(0); }
+.notif-dot{
+    position:absolute;top:2px;right:2px;width:14px;height:14px;
+    background:#10b981;border-radius:50%;border:2.5px solid white;
+    animation:pulse-dot 2s infinite;
+    z-index: 2;
+}
+@keyframes pulse-dot{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.4);opacity:.7;}}
+#agente-chat-panel{
+    position:fixed;bottom:100px;right:28px;z-index:9998;
+    width:360px;max-height:520px;background:white;border-radius:20px;
+    box-shadow:0 12px 48px rgba(13,59,94,.22);border:1.5px solid #e0eaf6;
+    display:none;flex-direction:column;overflow:hidden;
+    animation:slideUpChat .3s cubic-bezier(.22,1,.36,1);
+}
+#agente-chat-panel.open{display:flex;}
+@keyframes slideUpChat{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+.agente-chat-header{background:linear-gradient(135deg,#0d3b5e,#1c67a3);padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.agente-chat-header .ch-avatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:.95rem;color:white;flex-shrink:0;}
+.agente-chat-title{color:white;font-weight:800;font-size:.88rem;}
+.agente-chat-sub{color:rgba(255,255,255,.7);font-size:.7rem;}
+.agente-chat-close{margin-left:auto;background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:.9rem;padding:4px;}
+.agente-chat-close:hover{color:white;}
+#agente-chat-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:0;}
+.chat-msg{max-width:85%;padding:9px 13px;border-radius:14px;font-size:.82rem;line-height:1.5;}
+.chat-msg.user{align-self:flex-end;background:linear-gradient(135deg,#0d3b5e,#1c67a3);color:white;border-bottom-right-radius:4px;}
+.chat-msg.agent{align-self:flex-start;background:#f0f6ff;color:#1e293b;border:1px solid #e0eaf6;border-bottom-left-radius:4px;}
+.chat-msg.typing{background:#f0f6ff;border:1px solid #e0eaf6;align-self:flex-start;color:#94a3b8;font-style:italic;}
+.agente-chat-input-row{padding:10px 12px;border-top:1px solid #f0f4f8;display:flex;gap:8px;flex-shrink:0;}
+.agente-chat-input-row input{flex:1;border:1.5px solid #e2e8f0;border-radius:10px;padding:8px 12px;font-size:.82rem;font-family:inherit;outline:none;color:#334155;}
+.agente-chat-input-row input:focus{border-color:#1c67a3;}
+.agente-chat-send{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#0d3b5e,#1c67a3);border:none;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;transition:opacity .15s;}
+.agente-chat-send:hover{opacity:.85;}
+</style>
+
+<!-- CHAT FLOTANTE — Agente CardioHome -->
+<div id="agente-float-wrap" onclick="toggleAgenteChat()" title="Asistente CardioHome IA">
+    <button id="agente-float-btn">
+        <!-- Personaje médico CardioHome -->
+        <svg id="agente-float-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <!-- Cuerpo / bata médica -->
+          <ellipse cx="50" cy="74" rx="22" ry="18" fill="#e8f4fd" stroke="#1c67a3" stroke-width="2"/>
+          <!-- Solapa bata izquierda -->
+          <path d="M36 60 L44 74 L38 88" fill="white" stroke="#1c67a3" stroke-width="1.5"/>
+          <!-- Solapa bata derecha -->
+          <path d="M64 60 L56 74 L62 88" fill="white" stroke="#1c67a3" stroke-width="1.5"/>
+          <!-- Cruz médica en bata -->
+          <rect x="47" y="67" width="6" height="14" rx="1.5" fill="#1c67a3" opacity=".7"/>
+          <rect x="44" y="72" width="12" height="5" rx="1.5" fill="#1c67a3" opacity=".7"/>
+          <!-- Cuello -->
+          <rect x="45" y="56" width="10" height="7" rx="3" fill="#f9dcc4"/>
+          <!-- Cabeza -->
+          <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+          <!-- Cabello -->
+          <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#0d3b5e"/>
+          <!-- Orejas -->
+          <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+          <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+          <!-- Estetoscopio -->
+          <path d="M36 46 Q30 54 34 62 Q38 68 44 64" fill="none" stroke="#0d3b5e" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="34" cy="62" r="3.5" fill="none" stroke="#0d3b5e" stroke-width="1.5"/>
+          <circle cx="34" cy="62" r="1.5" fill="#1c67a3"/>
+          <!-- Ojos -->
+          <ellipse cx="43" cy="43" rx="3.5" ry="3.8" fill="white"/>
+          <ellipse cx="57" cy="43" rx="3.5" ry="3.8" fill="white"/>
+          <circle cx="44" cy="44" r="2" fill="#0d3b5e"/>
+          <circle cx="58" cy="44" r="2" fill="#0d3b5e"/>
+          <circle cx="44.8" cy="43.2" r=".7" fill="white"/>
+          <circle cx="58.8" cy="43.2" r=".7" fill="white"/>
+          <!-- Sonrisa -->
+          <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+          <!-- Mejillas -->
+          <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+          <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+          <!-- Estrellita IA -->
+          <text x="68" y="28" font-size="11" fill="#1c67a3" font-family="Arial">✦</text>
+        </svg>
+        <span class="notif-dot"></span>
+    </button>
+    <span id="agente-label">CardioHome IA</span>
+</div>
+<div id="agente-chat-panel">
+    <div class="agente-chat-header">
+        <div class="ch-avatar" style="background:white;overflow:hidden;padding:2px;">
+            <svg viewBox="0 0 100 100" width="30" height="30" xmlns="http://www.w3.org/2000/svg">
+              <ellipse cx="50" cy="74" rx="22" ry="18" fill="#e8f4fd"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#0d3b5e"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/><ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#0d3b5e"/><circle cx="58" cy="44" r="1.8" fill="#0d3b5e"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <div><div class="agente-chat-title">Asistente CardioHome</div><div class="agente-chat-sub">IA · Siempre disponible</div></div>
+        <button class="agente-chat-close" onclick="toggleAgenteChat()"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div id="agente-chat-messages">
+        <div class="chat-msg agent">Hola! Soy el asistente IA de CardioHome. Puedes preguntarme sobre el sistema, los formularios PIE, cómo usar la plataforma o cualquier duda que tengas.</div>
+    </div>
+    <div class="agente-chat-input-row">
+        <input type="text" id="agente-chat-input" placeholder="Escribe tu pregunta..."
+            onkeydown="if(event.key==='Enter')enviarMensajeChat()">
+        <button class="agente-chat-send" onclick="enviarMensajeChat()"><i class="fas fa-paper-plane"></i></button>
+    </div>
+</div>
+
+<!-- MODAL BARRIDO -->
+<div id="barrido-modal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);overflow-y:auto;">
+    <div style="min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:30px 16px;">
+        <div style="background:white;border-radius:20px;width:100%;max-width:640px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+            <div style="background:linear-gradient(135deg,#0d3b5e,#1c67a3);padding:18px 22px;display:flex;align-items:center;gap:12px;">
+                <div style="width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-robot" style="color:white;font-size:1rem;"></i>
+                </div>
+                <div>
+                    <div style="color:white;font-weight:800;font-size:.95rem;">Agente de Revisión</div>
+                    <div id="barrido-modal-sub" style="color:rgba(255,255,255,.7);font-size:.74rem;">Barrido inteligente de formularios</div>
+                </div>
+                <button onclick="cerrarBarridoModal()" style="margin-left:auto;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:white;border-radius:8px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <div style="padding:20px 22px;">
+                <div style="background:#f0f6ff;border:1.5px solid #d4e5f5;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:.82rem;color:#1e3a8a;line-height:1.5;">
+                    <i class="fas fa-circle-info" style="margin-right:6px;"></i>
+                    El agente revisara todos los formularios evaluados de esta nomina y detectara: datos personales incompletos, edades negativas, diagnosticos PIE vacios, grupos de checks sin marcar, medidas antropometricas faltantes y derivaciones inconsistentes con los hallazgos.
+                </div>
+                <button id="barrido-modal-btn" onclick="ejecutarBarridoModal()"
+                    style="width:100%;padding:12px;background:linear-gradient(135deg,#0d3b5e,#1c67a3);color:white;border:none;border-radius:12px;font-weight:800;font-size:.88rem;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;">
+                    <i class="fas fa-wand-magic-sparkles"></i> Iniciar barrido de nomina
+                </button>
+                <div id="barrido-modal-results" style="display:none;">
+                    <div id="barrido-modal-stats" style="display:flex;gap:10px;margin-bottom:14px;"></div>
+                    <div id="barrido-modal-resumen" style="background:#f8faff;border:1.5px solid #e0eaf6;border-radius:10px;padding:12px 14px;font-size:.82rem;color:#334155;line-height:1.5;margin-bottom:14px;"></div>
+                    <div style="font-size:.74rem;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Detalle por alumno</div>
+                    <div id="barrido-modal-errlist" style="border:1.5px solid #e2e8f0;border-radius:12px;overflow:hidden;max-height:360px;overflow-y:auto;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ══ CHAT FLOTANTE ══ */
+let _chatHistorial = [];
+function toggleAgenteChat() {
+    const panel = document.getElementById('agente-chat-panel');
+    const wrap  = document.getElementById('agente-float-wrap');
+    const isOpen = panel.classList.contains('open');
+    if (isOpen) { panel.classList.remove('open'); if(wrap) wrap.style.transform=''; }
+    else { panel.classList.add('open'); setTimeout(()=>document.getElementById('agente-chat-input')?.focus(),100); }
+}
+async function enviarMensajeChat() {
+    const input = document.getElementById('agente-chat-input');
+    const msgs  = document.getElementById('agente-chat-messages');
+    const texto = input.value.trim();
+    if (!texto) return;
+    input.value = '';
+    const uMsg = document.createElement('div'); uMsg.className='chat-msg user'; uMsg.textContent=texto; msgs.appendChild(uMsg);
+    const typing = document.createElement('div'); typing.className='chat-msg typing'; typing.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Escribiendo...'; msgs.appendChild(typing);
+    msgs.scrollTop = msgs.scrollHeight;
+    _chatHistorial.push({role:'user',content:texto});
+    try {
+        const res  = await fetch('/api/agente/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mensaje:texto,historial:_chatHistorial.slice(-6)})});
+        const data = await res.json();
+        typing.remove();
+        const aMsg = document.createElement('div'); aMsg.className='chat-msg agent';
+        aMsg.textContent = data.success ? data.respuesta : 'Error: '+(data.message||'Sin respuesta');
+        msgs.appendChild(aMsg);
+        if (data.success) _chatHistorial.push({role:'assistant',content:data.respuesta});
+    } catch(e) { typing.remove(); const eMsg=document.createElement('div');eMsg.className='chat-msg agent';eMsg.textContent='Error de conexion.';msgs.appendChild(eMsg); }
+    msgs.scrollTop = msgs.scrollHeight;
+}
+
+/* ══ BARRIDO ══ */
+let _barridoNominaId = null;
+function abrirBarridoModal(nominaId, nominaNombre) {
+    _barridoNominaId = nominaId;
+    document.getElementById('barrido-modal-sub').textContent = nominaNombre;
+    document.getElementById('barrido-modal-results').style.display = 'none';
+    const btn = document.getElementById('barrido-modal-btn');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Iniciar barrido de nomina';
+    document.getElementById('barrido-modal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+function cerrarBarridoModal() {
+    document.getElementById('barrido-modal').style.display = 'none';
+    document.body.style.overflow = '';
+    _barridoNominaId = null;
+}
+async function ejecutarBarridoModal() {
+    if (!_barridoNominaId) return;
+    const btn=document.getElementById('barrido-modal-btn');
+    const results=document.getElementById('barrido-modal-results');
+    const stats=document.getElementById('barrido-modal-stats');
+    const resumen=document.getElementById('barrido-modal-resumen');
+    const errlist=document.getElementById('barrido-modal-errlist');
+    btn.disabled=true; btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Analizando formularios...';
+    results.style.display='block';
+    resumen.textContent='El agente esta revisando cada formulario...';
+    stats.innerHTML=''; errlist.innerHTML='<div style="padding:16px;text-align:center;color:#94a3b8;font-size:.8rem;"><i class="fas fa-circle-notch fa-spin"></i> Procesando...</div>';
+    try {
+        const res=await fetch('/api/agente/barrer_nomina',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nomina_id:_barridoNominaId})});
+        const data=await res.json();
+        if(!data.success) throw new Error(data.message||'Error en el barrido');
+        const ss='flex:1;text-align:center;padding:12px 8px;border-radius:10px;border:1.5px solid';
+        stats.innerHTML=
+            '<div style="'+ss+' #e0eaf6;background:#f0f6ff;"><div style="font-size:1.6rem;font-weight:900;color:#0d3b5e;">'+data.total+'</div><div style="font-size:.68rem;color:#64748b;text-transform:uppercase;">Evaluados</div></div>'
+            +'<div style="'+ss+' #a7f3d0;background:#d1fae5;"><div style="font-size:1.6rem;font-weight:900;color:#059669;">'+data.sin_errores+'</div><div style="font-size:.68rem;color:#065f46;text-transform:uppercase;">Sin errores</div></div>'
+            +'<div style="'+ss+' #fecaca;background:#fff5f5;"><div style="font-size:1.6rem;font-weight:900;color:#dc2626;">'+data.con_errores+'</div><div style="font-size:.68rem;color:#991b1b;text-transform:uppercase;">Con errores</div></div>';
+        resumen.textContent = data.resumen_ia;
+        if (!data.errores||data.errores.length===0) {
+            errlist.innerHTML='<div style="text-align:center;padding:24px;color:#059669;"><i class="fas fa-check-circle" style="font-size:2rem;display:block;margin-bottom:8px;"></i><strong>Todos los formularios estan completos!</strong><br><span style="font-size:.8rem;color:#64748b;">La jornada puede cerrarse sin problemas.</span></div>';
+        } else {
+            errlist.innerHTML = data.errores.map(a=>{
+                const chips=a.errores.map(e=>'<span style="display:inline-block;background:#fff5f5;color:#dc2626;border:1px solid #fecaca;border-radius:6px;padding:2px 8px;font-size:.69rem;font-weight:600;margin:2px 2px 0 0;">'+e+'</span>').join('');
+                return '<div style="padding:12px 16px;border-bottom:1px solid #f1f5f9;background:white;" >'
+                    +'<div style="font-weight:700;font-size:.85rem;color:#0f2030;">'+a.nombre+'</div>'
+                    +'<div style="font-size:.73rem;color:#94a3b8;margin-bottom:4px;">RUT: '+a.rut+' &middot; <strong style="color:#dc2626;">'+a.total_errores+' error'+(a.total_errores!==1?'es':'')+'</strong></div>'
+                    +'<div>'+chips+'</div></div>';
+            }).join('');
+        }
+        btn.disabled=false; btn.innerHTML='<i class="fas fa-rotate-right"></i> Repetir barrido';
+    } catch(e) {
+        resumen.textContent='Error: '+e.message;
+        errlist.innerHTML='';
+        btn.disabled=false; btn.innerHTML='<i class="fas fa-wand-magic-sparkles"></i> Iniciar barrido de nomina';
     }
 }
 </script>

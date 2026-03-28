@@ -9308,9 +9308,16 @@ async function ejecutarBarridoModal() {
         if (!data.errores||data.errores.length===0) {
             errlist.innerHTML='<div style="text-align:center;padding:24px;color:#059669;"><i class="fas fa-check-circle" style="font-size:2rem;display:block;margin-bottom:8px;"></i><strong>Todos los formularios estan completos!</strong><br><span style="font-size:.8rem;color:#64748b;">La jornada puede cerrarse sin problemas.</span></div>';
         } else {
-            errlist.innerHTML = data.errores.map(a=>{
-                const chips = a.errores.map(e=>'<span style="display:inline-block;background:#fff5f5;color:#dc2626;border:1px solid #fecaca;border-radius:6px;padding:2px 8px;font-size:.69rem;font-weight:600;margin:2px 2px 0 0;">'+e+'</span>').join('');
-                const link = a.nomina_id ? '<a href="/relleno_formulario/'+a.nomina_id+'" target="_blank" style="display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:5px 12px;background:linear-gradient(135deg,#0d3b5e,#1c67a3);color:white;border-radius:8px;font-size:.72rem;font-weight:700;text-decoration:none;"><i class="fas fa-pen-to-square"></i> Abrir formulario</a>' : '';
+            errlist.innerHTML = data.errores.map(function(a){
+                var chips = a.errores.map(function(e){ return '<span style="display:inline-block;background:#fff5f5;color:#dc2626;border:1px solid #fecaca;border-radius:6px;padding:2px 8px;font-size:.69rem;font-weight:600;margin:2px 2px 0 0;">'+e+'</span>'; }).join('');
+                var btnStyle = 'padding:5px 11px;background:linear-gradient(135deg,#0d3b5e,#1c67a3);color:white;border:none;border-radius:8px;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;';
+                var link = a.nomina_id
+                    ? '<div style="display:flex;gap:5px;flex-direction:column;align-items:flex-end;">'
+                      + '<button style="'+btnStyle+'" data-aid="'+a.alumno_id+'" data-nid="'+a.nomina_id+'" data-nom="'+encodeURIComponent(a.nombre||'')+'" onclick="abrirCorreccionRapida(this.dataset.aid,this.dataset.nid,decodeURIComponent(this.dataset.nom))">'
+                      + '<i class="fas fa-pen-to-square"></i> Corregir</button>'
+                      + '<a href="/relleno_formulario/'+a.nomina_id+'" target="_blank" style="font-size:.67rem;color:#94a3b8;text-decoration:underline;text-align:center;">Ver nómina</a>'
+                      + '</div>'
+                    : '';
                 return '<div style="padding:12px 16px;border-bottom:1px solid #f1f5f9;background:white;">'
                     +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;"><div style="flex:1;">'
                     +'<div style="font-weight:700;font-size:.85rem;color:#0f2030;">'+a.nombre+'</div>'
@@ -9328,5 +9335,160 @@ async function ejecutarBarridoModal() {
     }
 }
 </script>
+<!-- ══ MODAL CORRECCIÓN RÁPIDA DESDE BARRIDO ══════════════════════════════ -->
+<div id="corr-rapida-modal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);overflow-y:auto;">
+    <div style="min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:30px 16px;">
+        <div style="background:white;border-radius:20px;width:100%;max-width:620px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+            <!-- Header -->
+            <div style="background:linear-gradient(135deg,#0d3b5e,#1c67a3);padding:16px 20px;display:flex;align-items:center;gap:12px;">
+                <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-pen-to-square" style="color:white;font-size:.9rem;"></i>
+                </div>
+                <div>
+                    <div style="color:white;font-weight:800;font-size:.9rem;" id="crm-titulo">Corrección Rápida</div>
+                    <div style="color:rgba(255,255,255,.7);font-size:.72rem;" id="crm-subtitulo">Cargando...</div>
+                </div>
+                <button onclick="cerrarCorrRapida()" style="margin-left:auto;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:white;border-radius:8px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <!-- Body -->
+            <div style="padding:18px 20px;" id="crm-body">
+                <div style="text-align:center;padding:30px;color:#94a3b8;">
+                    <i class="fas fa-circle-notch fa-spin fa-2x" style="display:block;margin-bottom:10px;"></i>
+                    Cargando datos del alumno...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let _crmAlumnoId = null, _crmNominaId = null;
+
+async function abrirCorreccionRapida(alumnoId, nominaId, nombre) {
+    _crmAlumnoId = alumnoId;
+    _crmNominaId = nominaId;
+    document.getElementById('crm-titulo').textContent = nombre || 'Corrección Rápida';
+    document.getElementById('crm-subtitulo').textContent = 'Cargando datos...';
+    document.getElementById('crm-body').innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;"><i class="fas fa-circle-notch fa-spin fa-2x" style="display:block;margin-bottom:10px;"></i>Cargando datos del alumno...</div>';
+    document.getElementById('corr-rapida-modal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+
+    try {
+        const res  = await fetch('/api/admin/alumno_datos/' + alumnoId);
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Error al cargar');
+        const a = data.alumno;
+        document.getElementById('crm-subtitulo').textContent = 'RUT: ' + (a.rut || 'N/A');
+        renderCorrRapida(a, data.form_type);
+    } catch(e) {
+        document.getElementById('crm-body').innerHTML = '<div style="color:#dc2626;padding:20px;"><i class="fas fa-circle-exclamation"></i> ' + e.message + '</div>';
+    }
+}
+
+function renderCorrRapida(a, formType) {
+    const fld = (label, name, val, type='text') =>
+        '<div style="margin-bottom:12px;">'
+        + '<label style="font-size:.73rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px;">' + label + '</label>'
+        + '<input id="crm-' + name + '" name="' + name + '" type="' + type + '" value="' + (val||'').toString().replace(/"/g,'&quot;') + '"'
+        + ' style="width:100%;border:1.5px solid #e2e8f0;border-radius:9px;padding:8px 11px;font-size:.83rem;font-family:inherit;box-sizing:border-box;color:#334155;">'
+        + '</div>';
+
+    const sel = (label, name, val, opts) =>
+        '<div style="margin-bottom:12px;">'
+        + '<label style="font-size:.73rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px;">' + label + '</label>'
+        + '<select id="crm-' + name + '" name="' + name + '" style="width:100%;border:1.5px solid #e2e8f0;border-radius:9px;padding:8px 11px;font-size:.83rem;font-family:inherit;box-sizing:border-box;color:#334155;">'
+        + opts.map(o => '<option value="'+o+'"'+(val===o?' selected':'')+'>'+o+'</option>').join('')
+        + '</select>'
+        + '</div>';
+
+    const ta = (label, name, val, rows=2) =>
+        '<div style="margin-bottom:12px;">'
+        + '<label style="font-size:.73rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px;">' + label + '</label>'
+        + '<textarea id="crm-' + name + '" name="' + name + '" rows="'+rows+'" style="width:100%;border:1.5px solid #e2e8f0;border-radius:9px;padding:8px 11px;font-size:.83rem;font-family:inherit;box-sizing:border-box;color:#334155;resize:vertical;">' + (val||'') + '</textarea>'
+        + '</div>';
+
+    const DX_OPTS = ['','Dificultades específicas del aprendizaje','Discapacidad auditiva','Discapacidad intelectual','Discapacidad intelectual leve','Discapacidad intelectual moderada','Discapacidad motora','Discapacidad motora grave','Discapacidad múltiple','Discapacidad visual','Disfasia','Disfasia severa','Funcionamiento intelectual limítrofe','GARC','Hipoacusia','Pendiente','Rendimiento intelectual limítrofe','Retraso global del desarrollo','Síndrome de Down','Trastorno de déficit atencional','Trastorno de deficit atencional-H','Trastorno del espectro autista','Trastorno del lenguaje','Trastorno específico de lenguaje expresivo','Trastorno específico de lenguaje mixto','Trastorno Motor','Otro'];
+
+    let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px;">';
+    html += fld('Nombre', 'nombre', a.nombre);
+    html += fld('RUT', 'rut', a.rut);
+    html += fld('Fecha Nacimiento', 'fecha_nacimiento', a.fecha_nacimiento, 'date');
+    html += fld('Fecha Evaluación', 'fecha_evaluacion', a.fecha_evaluacion, 'date');
+    html += sel('Sexo', 'sexo', a.sexo, ['','F','M']);
+    html += fld('Nacionalidad', 'nacionalidad', a.nacionalidad);
+    html += '</div>';
+
+    if (formType === 'medicina_familiar') {
+        html += '<div style="border-top:1px solid #f1f5f9;margin:8px 0 14px;padding-top:14px;">';
+        html += sel('Diagnóstico PIE', 'diagnostico_1', a.diagnostico_1, DX_OPTS);
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px;">';
+        html += fld('Altura (cm)', 'altura', a.altura);
+        html += fld('Peso (kg)', 'peso', a.peso);
+        html += fld('IMC', 'imc', a.imc);
+        html += '</div>';
+        html += fld('Clasificación IMC', 'clasificacion_imc', a.clasificacion_imc || a.clasificacion);
+        html += ta('Derivaciones', 'derivaciones', a.derivaciones, 2);
+        html += '</div>';
+    } else if (formType === 'neurologia' || formType === 'informe_neurologico') {
+        html += '<div style="border-top:1px solid #f1f5f9;margin:8px 0 14px;padding-top:14px;">';
+        html += fld('Diagnóstico', 'diagnostico', a.diagnostico);
+        html += ta('Observaciones', 'observaciones', a.observaciones, 3);
+        html += ta('Derivaciones', 'derivaciones', a.derivaciones, 2);
+        html += '</div>';
+    }
+
+    html += '<div style="display:flex;gap:10px;justify-content:flex-end;padding-top:8px;border-top:1px solid #f1f5f9;">'
+        + '<button onclick="cerrarCorrRapida()" style="padding:9px 18px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:10px;font-weight:700;font-size:.83rem;cursor:pointer;font-family:inherit;color:#374151;">Cancelar</button>'
+        + '<button onclick="guardarCorrRapida()" style="padding:9px 22px;background:linear-gradient(135deg,#0d3b5e,#1c67a3);color:white;border:none;border-radius:10px;font-weight:800;font-size:.83rem;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:7px;" id="crm-guardar-btn"><i class="fas fa-floppy-disk"></i> Guardar cambios</button>'
+        + '</div>';
+
+    document.getElementById('crm-body').innerHTML = html;
+}
+
+async function guardarCorrRapida() {
+    if (!_crmAlumnoId) return;
+    const btn = document.getElementById('crm-guardar-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Guardando...';
+
+    // Recoger todos los inputs del modal
+    const campos = {};
+    document.querySelectorAll('#crm-body input, #crm-body select, #crm-body textarea').forEach(el => {
+        if (el.name) campos[el.name] = el.value || null;
+    });
+    // Sincronizar diagnostico_1 → diagnostico_2
+    if (campos.diagnostico_1) campos.diagnostico_2 = campos.diagnostico_1;
+
+    try {
+        const res  = await fetch('/api/admin/corregir_alumno', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ alumno_id: _crmAlumnoId, solicitud_id: null, campos })
+        });
+        const data = await res.json();
+        if (data.success) {
+            cerrarCorrRapida();
+            Swal.fire({ icon:'success', title:'Cambios guardados', text:'El formulario del alumno fue actualizado correctamente.', timer:2000, showConfirmButton:false });
+            // Repetir barrido automáticamente
+            if (_barridoNominaId) setTimeout(() => ejecutarBarridoModal(), 800);
+        } else {
+            throw new Error(data.message || 'Error al guardar');
+        }
+    } catch(e) {
+        Swal.fire('Error', e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-floppy-disk"></i> Guardar cambios';
+    }
+}
+
+function cerrarCorrRapida() {
+    document.getElementById('corr-rapida-modal').style.display = 'none';
+    document.body.style.overflow = '';
+    _crmAlumnoId = null; _crmNominaId = null;
+}
+</script>
+
 </body>
 </html>

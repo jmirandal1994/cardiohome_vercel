@@ -5481,23 +5481,32 @@ def agente_barrer_nomina():
                     errores.append(f"{grupo_nombre}: debe tener al menos un check marcado")
 
             # ── Derivaciones vs Checks ─────────────────────────────────────────
-            # Buscar palabras clave con flexibilidad (minúsculas, sin tildes)
+            # Las derivaciones se guardan como "OFTALMÓLOGO - OTORRINO - DENTISTA"
+            # Parsear la lista y normalizar (sin tildes, minúsculas) para comparar
             import unicodedata as _ud
             def norm_str(s):
                 return _ud.normalize('NFD', (s or '').lower()).encode('ascii','ignore').decode()
-            deriv_norm = norm_str(a.get('derivaciones') or '')
 
-            if a.get('check_visionrefraccion') and 'oftalm' not in deriv_norm:
-                errores.append("Visión con refracción marcada pero sin derivación a Oftalmólogo")
-            if (a.get('check_hipoacusia') or a.get('check_tapondecerumen') or a.get('check_hipertrofia')):
-                if 'otorrin' not in deriv_norm:
+            raw_deriv = a.get('derivaciones') or ''
+            # Parsear igual que el JS: separar por ' - ' o saltos de línea
+            import re as _re
+            deriv_items = [norm_str(d.strip()) for d in _re.split(r'\s*-\s*|\n', raw_deriv) if d.strip()]
+            # Función: ¿algún item de la lista contiene la clave?
+            def tiene_deriv(clave):
+                return any(clave in item for item in deriv_items)
+
+            if a.get('check_visionrefraccion'):
+                if not tiene_deriv('oftalm'):
+                    errores.append("Refracción visual marcada pero sin derivación a Oftalmólogo")
+            if a.get('check_hipoacusia') or a.get('check_tapondecerumen') or a.get('check_hipertrofia'):
+                if not tiene_deriv('otorrin'):
                     errores.append("Hallazgo auditivo marcado pero sin derivación a Otorrino")
-            if (a.get('check_caries') or a.get('check_apinamientodental') or a.get('check_frenillolingual')):
-                if 'dentist' not in deriv_norm and 'odontol' not in deriv_norm:
+            if a.get('check_caries') or a.get('check_apinamientodental') or a.get('check_frenillolingual'):
+                if not tiene_deriv('dentist') and not tiene_deriv('odontol'):
                     errores.append("Hallazgo dental marcado pero sin derivación a Dentista")
             clasif = (a.get('clasificacion_imc') or '').lower()
-            if ('obesidad' in clasif or 'bajo peso' in clasif):
-                if 'nutricion' not in deriv_norm and 'nutriol' not in deriv_norm:
+            if 'obesidad' in clasif or 'bajo peso' in clasif:
+                if not tiene_deriv('nutricion') and not tiene_deriv('nutriol'):
                     errores.append(f"IMC '{a.get('clasificacion_imc')}' sin derivación a Nutricionista")
 
             if errores:

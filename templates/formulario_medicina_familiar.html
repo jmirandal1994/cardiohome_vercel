@@ -2510,6 +2510,28 @@
             'garc':  'GARC',
         };
 
+        // Fuerza sincronización de chips de derivación al textarea antes de enviar
+        function forzarSyncDerivaciones(form) {
+            const estudianteId = form.querySelector('input[name="estudiante_id"]')?.value;
+            if (!estudianteId) return;
+            const bar = document.getElementById('deriv-bar-' + estudianteId);
+            const ta  = document.getElementById('derivaciones_' + estudianteId);
+            if (!bar || !ta) return;
+            // Recolectar chips activos y actualizar el textarea
+            const activos = [...bar.querySelectorAll('.deriv-chip.active')].map(c => {
+                // Extraer el nombre del especialista del onclick
+                const m = (c.getAttribute('onclick') || '').match(/'([^']+)'/);
+                return m ? m[1] : null;
+            }).filter(Boolean);
+            // Solo sobreescribir si hay chips activos (para no borrar derivaciones manuales)
+            if (activos.length > 0) {
+                const manual = parseDeriv(ta.value).filter(d =>
+                    !activos.some(a => a.toUpperCase() === d.toUpperCase())
+                );
+                ta.value = serializeDeriv([...activos, ...manual]);
+            }
+        }
+
         function ensureDxPrevioInSelect(form) {
             const sel = form.querySelector('select[name="diagnostico_unificado"]');
             if (!sel) return;
@@ -2829,9 +2851,9 @@
         }
 
         async function submitForm(form) {
-            // Forzar cálculo de IMC y diagnóstico previo antes de capturar el formulario
             calculateIMC(form);
             ensureDxPrevioInSelect(form);
+            forzarSyncDerivaciones(form);
             const formData = new FormData(form);
 
             // Manually set checkbox values if they are unchecked, as FormData doesn't include them
@@ -2958,6 +2980,7 @@
             const form = buttonElement.closest('form');
             calculateIMC(form);
             ensureDxPrevioInSelect(form);
+            forzarSyncDerivaciones(form);
             const formData = new FormData(form);
 
             // Incluir checkboxes desmarcados como vacío
@@ -2995,6 +3018,7 @@
             const form = buttonElement.closest('form');
             calculateIMC(form);
             ensureDxPrevioInSelect(form);
+            forzarSyncDerivaciones(form);
             const formData = new FormData(form);
             form.querySelectorAll('input[type="checkbox"]').forEach(cb => {
                 if (!cb.checked) formData.set(cb.name, '');
@@ -3041,7 +3065,7 @@
 
         async function marcarComoEvaluado(buttonElement) {
             const form = buttonElement.closest('form');
-            
+            forzarSyncDerivaciones(form); // Sync derivaciones antes de cualquier cosa
             const requiredInputs = form.querySelectorAll('input[required], select[required], textarea[required]');
             let allFilled = true;
             requiredInputs.forEach(input => {
@@ -3107,6 +3131,7 @@
                     try {
                         calculateIMC(form);
                         ensureDxPrevioInSelect(form);
+                        forzarSyncDerivaciones(form);
                         const formData = new FormData(form); 
                         
                         // Asegurarse de que los valores de los checkboxes se incluyan correctamente

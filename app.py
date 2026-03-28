@@ -5480,34 +5480,37 @@ def agente_barrer_nomina():
                 else:
                     errores.append(f"{grupo_nombre}: debe tener al menos un check marcado")
 
-            # ── Derivaciones vs Checks ─────────────────────────────────────────
-            # Las derivaciones se guardan como "OFTALMÓLOGO - OTORRINO - DENTISTA"
-            # Parsear la lista y normalizar (sin tildes, minúsculas) para comparar
+            # Derivaciones vs Checks
+            # Valores exactos del formulario: OFTALMÓLOGO, OTORRINO, DENTISTA,
+            # NUTRICIONISTA — separados por ' - '
             import unicodedata as _ud
-            def norm_str(s):
-                return _ud.normalize('NFD', (s or '').lower()).encode('ascii','ignore').decode()
-
-            raw_deriv = a.get('derivaciones') or ''
-            # Parsear igual que el JS: separar por ' - ' o saltos de línea
-            import re as _re
-            deriv_items = [norm_str(d.strip()) for d in _re.split(r'\s*-\s*|\n', raw_deriv) if d.strip()]
-            # Función: ¿algún item de la lista contiene la clave?
-            def tiene_deriv(clave):
-                return any(clave in item for item in deriv_items)
-
+            def _nrm(s):
+                return _ud.normalize('NFD', (s or '').upper()).encode('ascii','ignore').decode().strip()
+            raw_deriv  = a.get('derivaciones') or ''
+            drv_items  = [_nrm(d) for d in raw_deriv.replace('\n',' - ').split(' - ') if d.strip()]
+            OFTALMO    = {'OFTALMOLOGO','OFTALMO','OFTALM','OFTALMOLOGIA'}
+            OTORR      = {'OTORRINO','OTORRINOLARINGOLOGO','ORL','OTORRIN'}
+            DENTIST    = {'DENTISTA','ODONTOLOGO','ODONTOLOGIA','DENTAL'}
+            NUTRI      = {'NUTRICIONISTA','NUTRIOLOGO','NUTRICION'}
+            def tiene_esp(keys):
+                for item in drv_items:
+                    for k in keys:
+                        if k in item or item in k:
+                            return True
+                return False
             if a.get('check_visionrefraccion'):
-                if not tiene_deriv('oftalm'):
-                    errores.append("Refracción visual marcada pero sin derivación a Oftalmólogo")
+                if not tiene_esp(OFTALMO):
+                    errores.append('Refraccion visual marcada pero sin derivacion a Oftalmologo')
             if a.get('check_hipoacusia') or a.get('check_tapondecerumen') or a.get('check_hipertrofia'):
-                if not tiene_deriv('otorrin'):
-                    errores.append("Hallazgo auditivo marcado pero sin derivación a Otorrino")
+                if not tiene_esp(OTORR):
+                    errores.append('Hallazgo auditivo marcado pero sin derivacion a Otorrino')
             if a.get('check_caries') or a.get('check_apinamientodental') or a.get('check_frenillolingual'):
-                if not tiene_deriv('dentist') and not tiene_deriv('odontol'):
-                    errores.append("Hallazgo dental marcado pero sin derivación a Dentista")
+                if not tiene_esp(DENTIST):
+                    errores.append('Hallazgo dental marcado pero sin derivacion a Dentista')
             clasif = (a.get('clasificacion_imc') or '').lower()
             if 'obesidad' in clasif or 'bajo peso' in clasif:
-                if not tiene_deriv('nutricion') and not tiene_deriv('nutriol'):
-                    errores.append(f"IMC '{a.get('clasificacion_imc')}' sin derivación a Nutricionista")
+                if not tiene_esp(NUTRI):
+                    errores.append('IMC ' + str(a.get('clasificacion_imc')) + ' sin derivacion a Nutricionista')
 
             if errores:
                 errores_por_alumno.append({

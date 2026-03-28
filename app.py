@@ -1083,12 +1083,17 @@ def marcar_evaluado():
         # OBTENEMOS EL VALOR UNIFICADO DEL CAMPO DIAGNOSTICO
         diagnostico_unificado_valor = get_form_field_value('diagnostico_unificado', request.form)
 
-        # FUNCIÓN AUXILIAR PARA MAPEO BOOLEANO (True o None)
+        # FUNCIÓN AUXILIAR PARA MAPEO BOOLEANO
+        # Si el campo tiene valor → True (checkbox marcado)
+        # Si el campo viene vacío → False (checkbox desmarcado, JS envía '')
+        # Si el campo NO viene en el form → None (no tocar en BD)
         def map_to_boolean(field_name):
-            value = get_form_field_value(field_name, request.form)
-            if value and value.strip():
-                return True
-            return get_form_field_value(field_name, request.form, return_none_if_empty=True)
+            raw = request.form.get(field_name)
+            if raw is None:
+                return None      # campo ausente → no modificar
+            if raw.strip():
+                return True      # tiene valor → marcado
+            return False         # string vacío → desmarcado
             
         # 💡 CORRECCIÓN 1: Capturar y mapear el género (sexo) para guardar en el campo maestro 'sexo'
         genero_f_check = get_form_field_value('genero_f', request.form)
@@ -5075,10 +5080,12 @@ def guardar_evaluacion():
 
     # Reutiliza las mismas funciones auxiliares internas de marcar_evaluado
     def map_to_boolean_local(field_name):
-        value = get_form_field_value(field_name, request.form)
-        if value and value.strip():
-            return True
-        return get_form_field_value(field_name, request.form, return_none_if_empty=True)
+        raw = request.form.get(field_name)
+        if raw is None:
+            return None   # campo ausente → no modificar
+        if raw.strip():
+            return True   # valor presente → marcado
+        return False      # string vacío → desmarcado
 
     # Datos comunes
     update_data = {

@@ -2524,6 +2524,9 @@
                                             <a href="{{ url_for('relleno_formulario', nomina_id=nomina.id) }}" class="action-button green">
                                                 <i class="fa-solid fa-list-ul"></i> Rellenar y Ver Estudiantes
                                             </a>
+                                            <button class="action-button" style="background:linear-gradient(135deg,#0d3b5e,#1c67a3);color:white;border:none;" onclick="abrirBarridoModal('{{ nomina.id }}', '{{ nomina.nombre_nomina }}')">
+                                                <i class="fas fa-robot"></i> Revisar IA
+                                            </button>
                                             <button class="action-button red" onclick="confirmDelete('nomina', '{{ nomina.id }}', '{{ nomina.nombre_nomina }}')">
                                                 <i class="fas fa-trash"></i> Eliminar Nómina
                                             </button>
@@ -2933,6 +2936,11 @@
                                    style="background:white;color:#0f3460;padding:5px 10px;border-radius:7px;font-size:.73rem;font-weight:700;border:1.5px solid #0f3460;cursor:pointer;display:inline-flex;align-items:center;gap:4px;"
                                    title="Descargar listado de alumnos">
                                     <i class="fa-solid fa-download"></i> Listado
+                                </button>
+                                <button onclick="abrirBarridoModal('{{ nomina.id }}', '{{ nomina.nombre_nomina | replace("'", "\\'") }}')"
+                                   style="background:linear-gradient(135deg,#0d3b5e,#1c67a3);color:white;padding:5px 10px;border-radius:7px;font-size:.73rem;font-weight:700;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:4px;"
+                                   title="Revisar formularios con el agente IA">
+                                    <i class="fas fa-robot"></i> Revisar IA
                                 </button>
                                 <button onclick="confirmarEliminarNomina('{{ nomina.id }}', '{{ nomina.nombre_nomina | replace("'","\\'") }}', '{{ proyecto.id }}')"
                                    style="background:#fee2e2;color:#dc2626;padding:5px 10px;border-radius:7px;font-size:.73rem;font-weight:700;border:1.5px solid #fecaca;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .18s;"

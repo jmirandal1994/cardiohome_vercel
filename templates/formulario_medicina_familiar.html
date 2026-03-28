@@ -1945,19 +1945,35 @@
                             <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="2" placeholder="Detalles de derivaciones a especialistas. Puedes también escribir otras derivaciones aquí." oninput="syncDerivChips('{{ est.id }}'); updatePreview(this.form)">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
         
                             <div class="button-group">
-                                <button type="button"
-                                    onclick="guardarDatos(this)">
+                                {% if est.fecha_relleno is not none %}
+                                {# Ya evaluado → todos los botones activos #}
+                                <button type="button" onclick="guardarDatos(this)">
                                     <i class="fas fa-floppy-disk"></i> Guardar correcciones
                                 </button>
-                                <button type="submit">
+                                <button type="button" onclick="generarSoloPDF(this)">
+                                    <i class="fas fa-file-pdf"></i> Generar PDF
+                                </button>
+                                <button type="button" class="mark-evaluated-btn" disabled
+                                    style="opacity:.55;cursor:not-allowed;">
+                                    <i class="fas fa-check-circle"></i> Evaluado
+                                </button>
+                                {% else %}
+                                {# Aún no evaluado → guardar y PDF bloqueados con tooltip #}
+                                <button type="button" disabled
+                                    title="Primero debes marcar como evaluado"
+                                    style="opacity:.4;cursor:not-allowed;filter:grayscale(.5);">
+                                    <i class="fas fa-floppy-disk"></i> Guardar correcciones
+                                </button>
+                                <button type="button" disabled
+                                    title="Primero debes marcar como evaluado"
+                                    style="opacity:.4;cursor:not-allowed;filter:grayscale(.5);">
                                     <i class="fas fa-file-pdf"></i> Generar PDF
                                 </button>
                                 <button type="button" class="mark-evaluated-btn"
-                                    onclick="marcarComoEvaluado(this)"
-                                    {% if est.fecha_relleno is not none %}disabled{% endif %}>
-                                    <i class="fas fa-check-circle"></i>
-                                    {% if est.fecha_relleno is not none %}Evaluado{% else %}Marcar como evaluado{% endif %}
+                                    onclick="marcarComoEvaluado(this)">
+                                    <i class="fas fa-check-circle"></i> Marcar como evaluado
                                 </button>
+                                {% endif %}
                             </div>
                         </form>
                     </div>

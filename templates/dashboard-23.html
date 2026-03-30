@@ -3314,6 +3314,14 @@
                 .pres-empty-state i { font-size:3rem; color:#d1fae5; display:block; margin-bottom:14px; }
                 .pres-empty-state p { color:#94a3b8; font-size:.88rem; margin:0; }
 
+                /* ══ VELOCIDAD ══ */
+                .pres-vel-chip {
+                    display:inline-flex;align-items:center;gap:5px;
+                    background:#f0fdf4;color:#065f46;
+                    border:1px solid #bbf7d0;border-radius:8px;
+                    padding:3px 9px;font-size:.7rem;font-weight:800;
+                }
+                .pres-vel-chip.lenta { background:#fff5f5;color:#dc2626;border-color:#fecaca; }
                 @media(max-width:640px){
                     .pres-hero-kpis { display:none; }
                     .pres-grid { grid-template-columns:1fr; }
@@ -8815,52 +8823,83 @@ function presRenderGrid() {
     }
     if (empty) empty.style.display = 'none';
 
+    // Ordenar: más rápidas primero (menor mins_por_eval), sin dato al final, pausa, desconectada
+    visibles.sort((a, b) => {
+        if (a.estado === 'desconectada' && b.estado !== 'desconectada') return 1;
+        if (b.estado === 'desconectada' && a.estado !== 'desconectada') return -1;
+        if (a.estado === 'en_pausa' && b.estado === 'evaluando') return 1;
+        if (b.estado === 'en_pausa' && a.estado === 'evaluando') return -1;
+        const ma = a.mins_por_eval !== null && a.mins_por_eval !== undefined ? a.mins_por_eval : 9999;
+        const mb = b.mins_por_eval !== null && b.mins_por_eval !== undefined ? b.mins_por_eval : 9999;
+        return ma - mb;
+    });
+
     grid.innerHTML = visibles.map((d, i) => {
         const initials = (d.nombre||'?').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
         const color    = PRES_COLORS[i % PRES_COLORS.length];
         const label    = PRES_LABELS[d.estado] || d.estado;
         const pct      = d.pct_nomina !== undefined ? Math.round(d.pct_nomina) : 0;
         const evalCount= d.evaluados_nomina !== undefined
-            ? `${d.evaluados_nomina} / ${d.total_nomina}`
+            ? d.evaluados_nomina + ' / ' + d.total_nomina
             : '—';
-        const timeStr  = d.minutos !== null && d.minutos !== undefined
-            ? (d.minutos === 0 ? 'justo ahora' : `hace ${d.minutos} min`)
+        const timeStr = d.minutos !== null && d.minutos !== undefined
+            ? (d.minutos === 0 ? 'justo ahora' : 'hace ' + d.minutos + ' min')
             : 'activa';
+
+        // Velocidad promedio
+        const mpe = d.mins_por_eval;
+        const velocidadHtml = mpe !== null && mpe !== undefined
+            ? '<span style="display:inline-flex;align-items:center;gap:5px;background:#f0fdf4;color:#065f46;border:1px solid #bbf7d0;border-radius:8px;padding:3px 9px;font-size:.7rem;font-weight:800;">'
+              + '<i class="fas fa-bolt" style="font-size:.65rem;"></i>'
+              + mpe + ' min/eval'
+              + '</span>'
+            : '';
+
+        // Ranking badge (posición entre evaluando)
+        const rankIdx = visibles.filter(x => x.estado === 'evaluando').indexOf(d);
+        const rankBadge = d.estado === 'evaluando' && rankIdx >= 0
+            ? '<span style="position:absolute;top:10px;left:10px;background:' + (rankIdx===0?'#fbbf24':rankIdx===1?'#94a3b8':rankIdx===2?'#b45309':'#e2e8f0') + ';color:' + (rankIdx<=2?'white':'#475569') + ';border-radius:99px;padding:2px 8px;font-size:.65rem;font-weight:900;">'
+              + (rankIdx===0?'🥇':rankIdx===1?'🥈':rankIdx===2?'🥉':'#'+(rankIdx+1))
+              + '</span>'
+            : '';
+
+        // Nombre nómina
+        const nominaHtml = d.nomina_nombre
+            ? '<div style="font-size:.71rem;color:#1c67a3;font-weight:700;margin-top:2px;display:flex;align-items:center;gap:4px;">'
+              + '<i class="fas fa-file-medical" style="font-size:.62rem;"></i>' + d.nomina_nombre
+              + '</div>'
+            : '';
+
         const delay = i * 60;
-        return `<div class="pres-card" style="animation-delay:${delay}ms;">
-            <div class="pres-card-stripe ${d.estado}"></div>
-            <div class="pres-card-body">
-                <div class="pres-card-top">
-                    <div class="pres-avatar" style="background:${color};">
-                        ${initials}
-                        <div class="pres-dot-wrap"><div class="pres-dot ${d.estado}"></div></div>
-                    </div>
-                    <div class="pres-card-info">
-                        <p class="pres-name">${d.nombre}</p>
-                        <p class="pres-est">
-                            <i class="fa-solid fa-school" style="font-size:.65rem;color:#94a3b8;"></i>
-                            ${d.establecimiento || 'Sin establecimiento'}
-                        </p>
-                    </div>
-                    <span class="pres-badge ${d.estado}">${label}</span>
-                </div>
-                <div class="pres-prog-section">
-                    <div class="pres-prog-header">
-                        <span class="pres-prog-label">Avance nómina</span>
-                        <span class="pres-prog-val">${evalCount} · ${pct}%</span>
-                    </div>
-                    <div class="pres-prog-bar">
-                        <div class="pres-prog-fill ${d.estado}" style="width:${pct}%;"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="pres-card-footer">
-                <span class="pres-time-badge">
-                    <i class="fa-solid fa-clock" style="font-size:.65rem;"></i>
-                    ${timeStr}
-                </span>
-            </div>
-        </div>`;
+        return '<div class="pres-card" style="animation-delay:' + delay + 'ms;position:relative;">'
+            + rankBadge
+            + '<div class="pres-card-stripe ' + d.estado + '"></div>'
+            + '<div class="pres-card-body">'
+            + '<div class="pres-card-top">'
+            + '<div class="pres-avatar" style="background:' + color + ';">'
+            + initials
+            + '<div class="pres-dot-wrap"><div class="pres-dot ' + d.estado + '"></div></div>'
+            + '</div>'
+            + '<div class="pres-card-info">'
+            + '<p class="pres-name">' + d.nombre + '</p>'
+            + '<p class="pres-est"><i class="fa-solid fa-school" style="font-size:.65rem;color:#94a3b8;"></i>' + (d.establecimiento || 'Sin establecimiento') + '</p>'
+            + nominaHtml
+            + '</div>'
+            + '<span class="pres-badge ' + d.estado + '">' + label + '</span>'
+            + '</div>'
+            + '<div class="pres-prog-section">'
+            + '<div class="pres-prog-header">'
+            + '<span class="pres-prog-label">Avance nómina</span>'
+            + '<span class="pres-prog-val">' + evalCount + ' · ' + pct + '%</span>'
+            + '</div>'
+            + '<div class="pres-prog-bar"><div class="pres-prog-fill ' + d.estado + '" style="width:' + pct + '%;"></div></div>'
+            + '</div>'
+            + '</div>'
+            + '<div class="pres-card-footer" style="display:flex;align-items:center;justify-content:space-between;">'
+            + '<span class="pres-time-badge"><i class="fa-solid fa-clock" style="font-size:.65rem;"></i>' + timeStr + '</span>'
+            + velocidadHtml
+            + '</div>'
+            + '</div>';
     }).join('');
 }
 

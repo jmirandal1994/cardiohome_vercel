@@ -5368,22 +5368,8 @@
                   <option value="F">Femenino</option>
                 </select></div>
               <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Nacionalidad</label>
-                <select id="aem-nacionalidad" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;background:#fff;">
-                  <option value="">— Sin especificar —</option>
-                  <option value="Chilena">Chilena</option>
-                  <option value="Venezolana">Venezolana</option>
-                  <option value="Peruana">Peruana</option>
-                  <option value="Colombiana">Colombiana</option>
-                  <option value="Boliviana">Boliviana</option>
-                  <option value="Argentina">Argentina</option>
-                  <option value="Ecuatoriana">Ecuatoriana</option>
-                  <option value="Haitiana">Haitiana</option>
-                  <option value="Brasileña">Brasileña</option>
-                  <option value="Dominicana">Dominicana</option>
-                  <option value="Cubana">Cubana</option>
-                  <option value="Española">Española</option>
-                  <option value="Otra">Otra</option>
-                </select></div>
+                <input type="text" id="aem-nacionalidad" placeholder="Ej: Chilena, Venezolana…"
+                  style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
             </div>
           </div>
 
@@ -6189,10 +6175,8 @@
                 document.getElementById('aem-fecha-eval').value   = a.fecha_evaluacion  || '';
                 document.getElementById('aem-sexo').value         = a.sexo         || '';
                 // Poblar select de nacionalidad: si el valor existe como opción lo selecciona, si no pone "Otra"
-                const nacSelect = document.getElementById('aem-nacionalidad');
-                const nacVal    = a.nacionalidad || '';
-                const nacOpt    = Array.from(nacSelect.options).find(o => o.value === nacVal);
-                nacSelect.value = nacOpt ? nacVal : (nacVal ? 'Otra' : '');
+                const nacInput = document.getElementById('aem-nacionalidad');
+                if (nacInput) nacInput.value = a.nacionalidad || '';
                 // Calcular edad inicial
                 aemRecalcularEdad();
 
@@ -6252,7 +6236,7 @@
                 fecha_nacimiento:document.getElementById('aem-fecha-nac').value   || null,
                 fecha_evaluacion:document.getElementById('aem-fecha-eval').value  || null,
                 sexo:            document.getElementById('aem-sexo').value         || null,
-                nacionalidad:    document.getElementById('aem-nacionalidad').value || null,
+                nacionalidad:    (document.getElementById('aem-nacionalidad').value || '').trim() || null,
                 edad:            document.getElementById('aem-edad').value         || null,
             };
 

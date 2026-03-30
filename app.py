@@ -5000,11 +5000,88 @@ def api_presencia_get():
                     "minutos": None, "estado": "desconectada"
                 })
 
-        resultado.sort(key=lambda x: (
-            0 if x['estado'] == 'evaluando'
-            else 1 if x['estado'] == 'en_pausa'
-            else 2
-        ))
+        # 4. Enriquecer con datos de nómina actual y velocidad
+        for r in resultado:
+            r['evaluados_nomina'] = 0
+            r['total_nomina']     = 0
+            r['pct_nomina']       = 0
+            r['nomina_nombre']    = ''
+            r['mins_por_eval']    = None  # promedio minutos por evaluación
+
+        # Traer nomina_id de presencia
+        res_p2 = requests.get(
+            f"{SUPABASE_URL}/rest/v1/presencia_doctoras"
+            f"?select=doctora_id,nomina_id",
+            headers=SUPABASE_SERVICE_HEADERS)
+        nomina_por_doc = {}
+        if res_p2.ok:
+            for row in res_p2.json():
+                if row.get('nomina_id'):
+                    nomina_por_doc[str(row['doctora_id'])] = str(row['nomina_id'])
+
+        # Para cada doctora activa, traer datos de su nómina
+        for r in resultado:
+            if r['estado'] == 'desconectada':
+                continue
+            nid = nomina_por_doc.get(r['doctora_id'])
+            if not nid:
+                continue
+            # Nombre nómina
+            res_nom = requests.get(
+                f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+                f"?id=eq.{nid}&select=nombre_nomina,nombre_colegio",
+                headers=SUPABASE_SERVICE_HEADERS)
+            if res_nom.ok and res_nom.json():
+                nd = res_nom.json()[0]
+                r['nomina_nombre'] = nd.get('nombre_colegio') or nd.get('nombre_nomina') or ''
+
+            # Alumnos activos y evaluados
+            res_alum = requests.get(
+                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                f"?nomina_id=eq.{nid}"
+                f"&estado_asistencia=in.(activo,extra)"
+                f"&select=evaluado_flag,fecha_relleno",
+                headers=SUPABASE_SERVICE_HEADERS)
+            if res_alum.ok:
+                alumnos = res_alum.json()
+                total   = len(alumnos)
+                evaluados_list = [a for a in alumnos if a.get('evaluado_flag')]
+                evaluados = len(evaluados_list)
+                r['total_nomina']     = total
+                r['evaluados_nomina'] = evaluados
+                r['pct_nomina']       = round(evaluados / total * 100, 1) if total > 0 else 0
+
+                # Calcular promedio de minutos por evaluación
+                # Usamos fecha_relleno de hoy como proxy de evaluaciones de esta jornada
+                from datetime import timezone, timedelta
+                hoy = datetime.now(timezone.utc).date()
+                tiempos = []
+                for a in evaluados_list:
+                    fr = a.get('fecha_relleno')
+                    if fr:
+                        try:
+                            fd = datetime.fromisoformat(fr.replace('Z','+00:00')).date() if 'T' in fr else datetime.strptime(fr,'%Y-%m-%d').date()
+                            if fd == hoy:
+                                tiempos.append(fr)
+                        except:
+                            pass
+
+                if len(tiempos) >= 2 and r.get('ultima_actividad'):
+                    # Estimación: tiempo total activo / evaluaciones de hoy
+                    # Usamos minutos de la sesión actual dividido por evaluados hoy
+                    mins_sesion = r.get('minutos') or 0
+                    if mins_sesion > 0 and len(tiempos) > 0:
+                        r['mins_por_eval'] = round(mins_sesion / len(tiempos), 1)
+
+        # Ordenar: más rápidas primero (menor mins_por_eval), luego pausa, luego desconectadas
+        def sort_key(x):
+            if x['estado'] == 'desconectada': return (2, 9999)
+            if x['estado'] == 'en_pausa':     return (1, 9999)
+            # evaluando: ordenar por mins_por_eval (None = sin datos, va al final)
+            mpe = x.get('mins_por_eval')
+            return (0, mpe if mpe is not None else 9999)
+
+        resultado.sort(key=sort_key)
         return jsonify({"success": True, "data": resultado})
 
     except Exception as e:

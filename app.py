@@ -1379,11 +1379,24 @@ def admin_cargar_informe_individual():
                 fecha_nac_str = fecha_nacimiento_raw.strftime('%Y-%m-%d')
             else:
                 try:
-                    parsed_date = pd.to_datetime(fecha_nacimiento_raw, errors='coerce')
-                    if pd.notna(parsed_date):
+                    s = str(fecha_nacimiento_raw).strip()
+                    parsed_date = None
+                    # Intentar formatos explícitos en orden: DD/MM/YYYY → DD-MM-YYYY → YYYY-MM-DD
+                    for fmt in ('%d/%m/%Y', '%d.%m.%Y', '%d-%m-%Y', '%Y-%m-%d', '%d/%m/%y', '%d.%m.%y', '%d-%m-%y'):
+                        try:
+                            parsed_date = datetime.strptime(s, fmt)
+                            break
+                        except ValueError:
+                            continue
+                    # Fallback: pd.to_datetime con dayfirst=True
+                    if parsed_date is None:
+                        parsed_pd = pd.to_datetime(s, dayfirst=True, errors='coerce')
+                        if pd.notna(parsed_pd):
+                            parsed_date = parsed_pd.to_pydatetime()
+                    if parsed_date:
                         fecha_nac_str = parsed_date.strftime('%Y-%m-%d')
                     else:
-                        raise ValueError("Formato de fecha no reconocido o inválido.")
+                        raise ValueError("Formato de fecha no reconocido.")
                 except Exception:
                     fecha_nac_str = None 
 
@@ -2368,11 +2381,24 @@ def admin_cargar_nomina():
                 fecha_nac_str = fecha_nacimiento_raw.strftime('%Y-%m-%d')
             else:
                 try:
-                    parsed_date = pd.to_datetime(fecha_nacimiento_raw, errors='coerce')
-                    if pd.notna(parsed_date):
+                    s = str(fecha_nacimiento_raw).strip()
+                    parsed_date = None
+                    # Intentar formatos explícitos en orden: DD/MM/YYYY → DD-MM-YYYY → YYYY-MM-DD
+                    for fmt in ('%d/%m/%Y', '%d.%m.%Y', '%d-%m-%Y', '%Y-%m-%d', '%d/%m/%y', '%d.%m.%y', '%d-%m-%y'):
+                        try:
+                            parsed_date = datetime.strptime(s, fmt)
+                            break
+                        except ValueError:
+                            continue
+                    # Fallback: pd.to_datetime con dayfirst=True
+                    if parsed_date is None:
+                        parsed_pd = pd.to_datetime(s, dayfirst=True, errors='coerce')
+                        if pd.notna(parsed_pd):
+                            parsed_date = parsed_pd.to_pydatetime()
+                    if parsed_date:
                         fecha_nac_str = parsed_date.strftime('%Y-%m-%d')
                     else:
-                        raise ValueError("Formato de fecha no reconocido o inválido.")
+                        raise ValueError("Formato de fecha no reconocido.")
                 except Exception:
                     fecha_nac_str = None 
 

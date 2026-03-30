@@ -1892,6 +1892,18 @@ def dashboard():
     
 @app.route('/logout')
 def logout():
+    # Marcar doctora como desconectada en presencia antes de limpiar sesión
+    usuario_id = session.get('usuario_id')
+    rol        = session.get('usuario')
+    if usuario_id and rol == 'doctora':
+        try:
+            requests.patch(
+                f"{SUPABASE_URL}/rest/v1/presencia_doctoras?doctora_id=eq.{usuario_id}",
+                headers=SUPABASE_SERVICE_HEADERS,
+                json={"estado": "desconectada", "ultima_actividad": str(datetime.utcnow().isoformat()) + "Z"}
+            )
+        except Exception:
+            pass
     session.clear()
     flash('Has cerrado sesión correctamente.', 'info')
     return redirect(url_for('index'))

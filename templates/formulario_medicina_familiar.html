@@ -2562,34 +2562,68 @@
             if (DX_ALIAS[previoNorm]) {
                 sel.value = DX_ALIAS[previoNorm]; return;
             }
-            // También buscar si el previo CONTIENE alguna sigla clave (ej: "TDAH severo")
             for (const [alias, valor] of Object.entries(DX_ALIAS)) {
                 if (previoNorm === alias || previoNorm.startsWith(alias + ' ') || previoNorm.endsWith(' ' + alias)) {
                     sel.value = valor; return;
                 }
             }
+
             // 2. Coincidencia exacta (insensible a mayúsculas/tildes)
             for (const opt of sel.options) {
                 if (opt.value && norm(opt.value) === previoNorm) {
                     sel.value = opt.value; return;
                 }
             }
-            // 3. El option contiene el previo
+
+            // 3. El previo está contenido en el option (el texto del select es más largo)
             for (const opt of sel.options) {
                 if (opt.value && norm(opt.value).includes(previoNorm)) {
                     sel.value = opt.value; return;
                 }
             }
-            // 4. Palabras clave del previo (>3 chars) en el option
-            const palabras = previoNorm.split(/\s+/).filter(p => p.length > 3);
+
+            // 4. El option está contenido en el previo (el texto del excel es más largo)
+            for (const opt of sel.options) {
+                if (opt.value && previoNorm.includes(norm(opt.value))) {
+                    sel.value = opt.value; return;
+                }
+            }
+
+            // 5. Coincidencia por TODAS las palabras significativas (>3 chars)
+            // Excluir palabras genéricas que causan falsos positivos
+            const STOP_WORDS = new Set(['trastorno','trastornos','especifico','especifica','del','los','las','con','sin','por','para']);
+            const palabras = previoNorm.split(/\s+/).filter(p => p.length > 3 && !STOP_WORDS.has(p));
             if (palabras.length) {
+                // Buscar option donde TODAS las palabras significativas coincidan
                 for (const opt of sel.options) {
-                    if (opt.value && palabras.some(p => norm(opt.value).includes(p))) {
+                    if (!opt.value) continue;
+                    const optNorm = norm(opt.value);
+                    if (palabras.every(p => optNorm.includes(p))) {
                         sel.value = opt.value; return;
                     }
                 }
+                // Buscar option donde la MAYORÍA de palabras coincidan (al menos 2/3)
+                if (palabras.length >= 2) {
+                    let mejorOpt = null, mejorScore = 0;
+                    for (const opt of sel.options) {
+                        if (!opt.value) continue;
+                        const optNorm = norm(opt.value);
+                        const score = palabras.filter(p => optNorm.includes(p)).length;
+                        // Solo contar si el score cubre más del 60% de las palabras
+                        if (score > mejorScore && score >= Math.ceil(palabras.length * 0.6)) {
+                            // Verificar que no sea un match genérico por solo "trastorno"
+                            const palabrasEspecificas = palabras.filter(p => p !== 'trastorno');
+                            const scoreEsp = palabrasEspecificas.filter(p => optNorm.includes(p)).length;
+                            if (palabrasEspecificas.length === 0 || scoreEsp > 0) {
+                                mejorScore = score; mejorOpt = opt;
+                            }
+                        }
+                    }
+                    if (mejorOpt) { sel.value = mejorOpt.value; return; }
+                }
             }
-            // 5. Sin match → dejar vacío, doctora elige manualmente
+
+            // 6. Sin match → dejar vacío, doctora elige manualmente
             sel.value = '';
         }
 

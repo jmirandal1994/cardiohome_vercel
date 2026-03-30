@@ -4140,8 +4140,8 @@ function actualizarContadoresFormulario() {
 
 /* ── Presencia: heartbeat cada 60 s mientras el formulario está abierto ── */
 (function() {
-    const nominaId      = document.querySelector('input[name="nomina_id"]')?.value || '';
-    const establec      = document.title || '';
+    const nominaId = document.querySelector('input[name="nomina_id"]')?.value || '';
+    const establec = document.querySelector('.nomina-title, h1, title')?.textContent || document.title || '';
 
     function sendHeartbeat(accion) {
         fetch('/api/presencia', {
@@ -4151,15 +4151,40 @@ function actualizarContadoresFormulario() {
         }).catch(() => {});
     }
 
+    // sendBeacon garantiza entrega aunque la página esté cerrando
+    function sendBeaconLogout() {
+        const data = JSON.stringify({ nomina_id: nominaId, establecimiento: establec, accion: 'logout' });
+        if (navigator.sendBeacon) {
+            const blob = new Blob([data], { type: 'application/json' });
+            navigator.sendBeacon('/api/presencia', blob);
+        } else {
+            // Fallback síncrono
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/presencia', false); // sync
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            try { xhr.send(data); } catch(e) {}
+        }
+    }
+
     // Primer ping inmediato
     sendHeartbeat('heartbeat');
+
     // Repetir cada 60 s
     const timer = setInterval(() => sendHeartbeat('heartbeat'), 60000);
 
-    // Al cerrar la pestaña / navegar fuera → marcar desconectada
+    // Al cerrar pestaña o navegar fuera → logout garantizado con sendBeacon
     window.addEventListener('beforeunload', () => {
-        sendHeartbeat('logout');
         clearInterval(timer);
+        sendBeaconLogout();
+    });
+
+    // Si la pestaña queda en segundo plano por mucho tiempo → pausa
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            sendHeartbeat('heartbeat'); // último ping antes de ocultarse
+        } else {
+            sendHeartbeat('heartbeat'); // ping al volver
+        }
     });
 })();
 </script>

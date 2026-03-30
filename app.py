@@ -986,6 +986,11 @@ def api_admin_corregir_alumno():
             return jsonify({"success": False, "message": "No hay campos válidos para actualizar"}), 400
 
         # PATCH en estudiantes_nomina
+        # Limpiar payload: convertir strings vacíos a None, nunca guardar el string "None"
+        payload = {
+            k: (None if v in (None, '', 'None', 'null') else v)
+            for k, v in payload.items()
+        }
         r_patch = requests.patch(
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{alumno_id}",
             headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=minimal"},
@@ -2767,11 +2772,12 @@ def descargar_pdf_alumno(alumno_id):
         campos = {}
         
         if form_type == 'neurologia':
+            def _sg(f): v=est.get(f); return '' if v is None or str(v).strip() in ('None','null','') else str(v).strip()
             campos = {
                 "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato,
-                "nacionalidad": est.get('nacionalidad', ''), "edad": edad,
-                "diagnostico_1": est.get('diagnostico', ''), "diagnostico_2": est.get('diagnostico', ''),
-                "estado_general": est.get('estado_general', ''), "derivaciones": est.get('derivaciones', ''),
+                "nacionalidad": _sg('nacionalidad'), "edad": edad,
+                "diagnostico_1": _sg('diagnostico'), "diagnostico_2": _sg('diagnostico'),
+                "estado_general": _sg('estado_general'), "derivaciones": _sg('derivaciones'),
                 "fecha_evaluacion": fecha_evaluacion_formatted, "fecha_reevaluacion": fecha_reeval_pdf,
                 "sexo_f": "X" if est.get('sexo') == "F" else "",
                 "sexo_m": "X" if est.get('sexo') == "M" else "",
@@ -2800,20 +2806,27 @@ def descargar_pdf_alumno(alumno_id):
                     return "X"
                 return ""
 
+            # Safe getter: nunca retorna None ni el string "None"
+            def sg(field):
+                v = est.get(field)
+                if v is None or str(v).strip() in ('None','null',''):
+                    return ''
+                return str(v).strip()
+
             campos = {
-                "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato, "edad": edad, "nacionalidad": est.get('nacionalidad', ''),
+                "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato, "edad": edad, "nacionalidad": sg('nacionalidad'),
                 "sexo_f": "X" if est.get('sexo') == "F" else "", "sexo_m": "X" if est.get('sexo') == "M" else "",
 
-                "diagnostico_1": est.get('diagnostico_1', ''), "diagnostico_2": est.get('diagnostico_2', ''),
-                "diagnostico_complementario": est.get('diagnostico_complementario', ''), "clasificacion": est.get('clasificacion_imc', ''),
-                "indicaciones": est.get('indicaciones', ''), "derivaciones": est.get('derivaciones', ''),
+                "diagnostico_1": sg('diagnostico_1'), "diagnostico_2": sg('diagnostico_2'),
+                "diagnostico_complementario": sg('diagnostico_complementario'), "clasificacion": sg('clasificacion_imc'),
+                "indicaciones": sg('indicaciones'), "derivaciones": sg('derivaciones'),
                 "fecha_evaluacion": fecha_evaluacion_formatted, "fecha_reevaluacion": fecha_reeval_pdf,
 
-                "altura": str(est.get('altura', '') or ''), "peso": str(est.get('peso', '') or ''), "imc": str(est.get('imc', '') or ''),
-                "observacion_1": est.get('observacion_1', ''), "observacion_2": est.get('observacion_2', ''),
-                "observacion_3": est.get('observacion_3', ''), "observacion_4": est.get('observacion_4', ''),
-                "observacion_5": est.get('observacion_5', ''), "observacion_6": est.get('observacion_6', ''),
-                "observacion_7": est.get('observacion_7', ''),
+                "altura": sg('altura'), "peso": sg('peso'), "imc": sg('imc'),
+                "observacion_1": sg('observacion_1'), "observacion_2": sg('observacion_2'),
+                "observacion_3": sg('observacion_3'), "observacion_4": sg('observacion_4'),
+                "observacion_5": sg('observacion_5'), "observacion_6": sg('observacion_6'),
+                "observacion_7": sg('observacion_7'),
 
                 # Campos de texto que muestran "X" — misma lógica que generar_pdf (doctora)
                 "check_cesarea":             map_check_db(est.get('check_cesarea')),

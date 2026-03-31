@@ -10926,10 +10926,12 @@ var _SP = {
     miId:       '{{ session.get("usuario_id","") }}',
     miNombre:   '{{ session.get("nombre", session.get("usuario","")) }}',
     sesionId:   null,
-    estado:     'idle',   // idle | form | esperando | activo | admin_idle | admin_chat
+    estado:     'idle',
     timer:      null,
     ultimoTs:   null,
-    sesionPendiente: null,  // admin: sesion pendiente a mostrar
+    sesionPendiente: null,
+    // Token único por pestaña — aísla coordinadores con mismo usuario
+    tabToken:   (function(){ var k='_sp_tab_'+Date.now()+'_'+Math.random().toString(36).slice(2); sessionStorage.setItem('sp_tab_token', k); return k; })(),
 };
 
 function soporteToggle() {
@@ -10940,7 +10942,11 @@ function soporteToggle() {
     var open  = panel.classList.contains('open');
     if (open) {
         panel.classList.remove('open');
-        clearInterval(_SP.timer);
+        // NO cancelar el timer — el poll sigue para recibir notificaciones
+        // Solo cancelar si no hay sesión activa
+        if (!_SP.sesionId || _SP.estado === 'idle' || _SP.estado === 'admin_idle') {
+            clearInterval(_SP.timer); _SP.timer = null;
+        }
     } else {
         panel.classList.add('open');
         // Limpiar dot
@@ -11036,7 +11042,7 @@ function _spSolicitar() {
     btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Conectando...';
     fetch('/api/soporte/solicitar', {
         method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ nombre: nombre, escuela: escuela })
+        body: JSON.stringify({ nombre: nombre, escuela: escuela, tab_token: _SP.tabToken })
     }).then(r=>r.json()).then(function(data) {
         if (data.success) {
             _SP.sesionId = data.sesion.id;
@@ -11104,19 +11110,33 @@ function _spShowChat(adminNombre) {
     setTimeout(function() { document.getElementById('sp-input')?.focus(); }, 100);
 }
 
-function _spRenderMsgs(mensajes) {
-    // Asegurar que el container existe
+/* ── Render de mensajes ───────────────────────────────────────────────────── */
+function _spGetOrCreateContainer() {
     var body = document.getElementById('soporte-body');
-    if (!body) return;
-    var container = document.getElementById('sp-msgs-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.className = 'sp-msgs';
-        container.id = 'sp-msgs-container';
-        body.appendChild(container);
+    if (!body) return null;
+    var c = document.getElementById('sp-msgs-container');
+    if (!c) {
+        c = document.createElement('div');
+        c.className = 'sp-msgs';
+        c.id = 'sp-msgs-container';
+        // Insertar antes del input-row si existe
+        var inputRow = document.getElementById('sp-input-row');
+        if (inputRow && inputRow.parentNode === body.parentNode) {
+            body.appendChild(c);
+        } else {
+            body.appendChild(c);
+        }
     }
+    return c;
+}
+
+function _spRenderMsgs(mensajes) {
+    var container = _spGetOrCreateContainer();
+    if (!container) return;
+    var body = document.getElementById('soporte-body');
+    var atBottom = !body || (body.scrollHeight - body.scrollTop - body.clientHeight < 80);
+
     mensajes.forEach(function(m) {
-        // Evitar duplicados por id
         if (document.querySelector('[data-msg-id="' + m.id + '"]')) return;
         var esMio = (_SP.rol === 'admin')
             ? (m.autor_rol === 'admin')
@@ -11128,35 +11148,57 @@ function _spRenderMsgs(mensajes) {
             + '<div>' + _spEsc(m.mensaje) + '</div>'
             + '<div class="sp-mt">' + new Date(m.created_at).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}) + '</div>';
         container.appendChild(div);
-        body.scrollTop = body.scrollHeight;
     });
+
     if (mensajes.length) {
         _SP.ultimoTs = mensajes[mensajes.length - 1].created_at;
+        // Badge si el panel está cerrado
+        var panel = document.getElementById('soporte-panel');
+        if (panel && !panel.classList.contains('open')) {
+            var dot = document.getElementById('soporte-dot');
+            if (dot) { dot.className = 'soporte-notif-dot verde show'; }
+        }
     }
+    // Scroll al fondo si ya estaba abajo
+    if (atBottom && body) setTimeout(function(){ body.scrollTop = body.scrollHeight; }, 30);
 }
 
 function _spFetchMsgs() {
     if (!_SP.sesionId) return;
-    var url = '/api/soporte/mensajes/' + _SP.sesionId + (_SP.ultimoTs ? '?since=' + encodeURIComponent(_SP.ultimoTs) : '');
+    // Construir URL con since usando offset +1ms para evitar repetir el último
+    var sinceParam = '';
+    if (_SP.ultimoTs) {
+        // Sumar 1ms al último timestamp para traer solo mensajes posteriores
+        try {
+            var d = new Date(_SP.ultimoTs);
+            d.setMilliseconds(d.getMilliseconds() + 1);
+            sinceParam = '?since=' + encodeURIComponent(d.toISOString());
+        } catch(e) {
+            sinceParam = '?since=' + encodeURIComponent(_SP.ultimoTs);
+        }
+    }
+    var url = '/api/soporte/mensajes/' + _SP.sesionId + sinceParam;
     fetch(url).then(function(r){ return r.json(); }).then(function(data) {
         if (!data.success) return;
         if (data.sesion && data.sesion.estado === 'cerrado') {
             clearInterval(_SP.timer);
+            _SP.timer = null;
             _spShowCerrado();
             return;
         }
         if (data.mensajes && data.mensajes.length) {
             _spRenderMsgs(data.mensajes);
         }
-    }).catch(function(){});
+    }).catch(function(e){ console.warn('soporte poll error:', e); });
 }
 
 function _spPollMensajes() {
-    clearInterval(_SP.timer);
-    // Fetch inmediato para cargar mensajes existentes
-    setTimeout(_spFetchMsgs, 200);
-    // Luego poll cada 2.5 segundos
-    _SP.timer = setInterval(_spFetchMsgs, 2500);
+    // Limpiar timer anterior
+    if (_SP.timer) { clearInterval(_SP.timer); _SP.timer = null; }
+    // Fetch inmediato
+    _spFetchMsgs();
+    // Poll cada 2 segundos
+    _SP.timer = setInterval(_spFetchMsgs, 2000);
 }
 
 function _spShowCerrado() {
@@ -11425,6 +11467,16 @@ setTimeout(function() {
     var bubble = document.getElementById('soporte-tooltip-bubble');
     if (bubble) bubble.classList.add('hidden');
 }, 7000);
+
+// Cerrar chat de soporte al cerrar/refrescar la página
+window.addEventListener('beforeunload', function() {
+    if (_SP.sesionId && _SP.estado !== 'admin_idle' && _SP.estado !== 'idle') {
+        var data = JSON.stringify({ sesion_id: _SP.sesionId });
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon('/api/soporte/cerrar', new Blob([data], {type:'application/json'}));
+        }
+    }
+});
 
 // Background poll para badge (admin: nuevas solicitudes)
 setInterval(function() {

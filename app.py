@@ -1222,8 +1222,9 @@ def login():
             user_data = data[0]
             role = user_data['rol']
             
-            session['usuario'] = role
+            session['usuario']    = role
             session['usuario_id'] = user_data['id']
+            session['nombre']     = user_data.get('nombre') or usuario_login
             
             # 2. Lógica específica para COORDINADOR DE ESCUELA
             if role == 'coordinador_escuela':
@@ -5846,6 +5847,13 @@ def soporte_aceptar():
         sesion_id = data.get('sesion_id')
         admin_id  = str(session.get('usuario_id', ''))
         admin_nombre = session.get('nombre') or session.get('usuario') or 'Admin'
+        # Si nombre no está en sesión, buscarlo en BD
+        if not session.get('nombre'):
+            try:
+                res_n = requests.get(f"{SUPABASE_URL}/rest/v1/doctoras?id=eq.{admin_id}&select=nombre", headers=SUPABASE_SERVICE_HEADERS)
+                if res_n.ok and res_n.json():
+                    admin_nombre = res_n.json()[0].get('nombre') or admin_nombre
+            except: pass
 
         # Verificar que aún esté esperando
         res_check = requests.get(

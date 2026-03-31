@@ -6149,5 +6149,26 @@ def chat_admin_enviar_privado():
         return jsonify({"success": False, "message": str(e)}), 500
 
 
+@app.route('/api/chat_admin/mensajes_recibidos', methods=['GET'])
+def chat_admin_mensajes_recibidos():
+    """Mensajes privados recibidos por el admin actual desde cualquier otro admin."""
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False}), 403
+    try:
+        mi_id = str(session.get('usuario_id', ''))
+        since = request.args.get('since', '')
+        url   = (
+            f"{SUPABASE_URL}/rest/v1/chat_admin_privado"
+            f"?dest_id=eq.{mi_id}"
+            f"&order=created_at.asc&limit=20"
+        )
+        if since:
+            url += f"&created_at=gt.{since}"
+        res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS)
+        return jsonify({"success": True, "mensajes": res.json() if res.ok else []})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))

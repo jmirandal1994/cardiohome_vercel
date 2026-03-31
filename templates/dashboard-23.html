@@ -10947,5 +10947,168 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+<script>
+/* ══ NOTIFICACIONES CHAT PRIVADO ADMIN ════════════════════════════════════
+   Poll cada 8s en background. Cuando llega mensaje nuevo:
+   1. Badge en nav "Chat Admins"
+   2. Popup llamativo en esquina superior derecha
+   3. Sonido beep suave
+══════════════════════════════════════════════════════════════════════════ */
+
+var _CANotif = {
+    ultimoTs:    null,
+    pendientes:  {},    // { autor_id: { nombre, count, ultimo_msg } }
+    popupTimer:  null,
+    bgTimer:     null,
+    popupVisible: false,
+};
+
+/* ── Popup DOM (creado una sola vez) ── */
+(function() {
+    var popup = document.createElement('div');
+    popup.id  = 'ca-notif-popup';
+    popup.style.cssText = [
+        'position:fixed','top:24px','right:24px','z-index:99999',
+        'width:320px','border-radius:18px','overflow:hidden',
+        'box-shadow:0 16px 48px rgba(76,29,149,.3)',
+        'display:none','border:1.5px solid rgba(255,255,255,.15)',
+        'animation:caNotifIn .4s cubic-bezier(.34,1.56,.64,1)',
+    ].join(';');
+    popup.innerHTML = [
+        '<style>',
+        '@keyframes caNotifIn{from{opacity:0;transform:translateX(80px) scale(.85)}to{opacity:1;transform:translateX(0) scale(1)}}',
+        '@keyframes caNotifShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}',
+        '@keyframes caCountdown{from{width:100%}to{width:0%}}',
+        '</style>',
+        '<div id="ca-notif-banner" style="background:linear-gradient(135deg,#4c1d95,#7c3aed);padding:14px 16px;display:flex;align-items:center;gap:11px;">',
+        '  <div id="ca-notif-ring" style="width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:1.1rem;position:relative;flex-shrink:0;">',
+        '    💬',
+        '    <div style="position:absolute;inset:-4px;border-radius:50%;border:2.5px solid rgba(255,255,255,.4);animation:caNotifIn 1.5s ease-out infinite;"></div>',
+        '  </div>',
+        '  <div style="flex:1;">',
+        '    <div id="ca-notif-title" style="color:white;font-weight:800;font-size:.86rem;margin-bottom:2px;">Nuevo mensaje</div>',
+        '    <div id="ca-notif-body"  style="color:rgba(255,255,255,.7);font-size:.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;"></div>',
+        '  </div>',
+        '  <button onclick="caNotifCerrar()" style="background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:.85rem;align-self:flex-start;padding:0;">✕</button>',
+        '</div>',
+        '<div style="height:3px;background:rgba(255,255,255,.15);"><div id="ca-notif-bar" style="height:100%;background:rgba(255,255,255,.6);width:100%;"></div></div>',
+        '<div style="background:white;padding:10px 14px;display:flex;gap:8px;">',
+        '  <button id="ca-notif-abrir" onclick="caNotifAbrir()" style="flex:2;padding:8px;background:linear-gradient(135deg,#4c1d95,#7c3aed);color:white;border:none;border-radius:9px;font-weight:800;font-size:.78rem;cursor:pointer;font-family:inherit;">💬 Ver mensaje</button>',
+        '  <button onclick="caNotifCerrar()" style="flex:1;padding:8px;background:#f1f5f9;color:#64748b;border:1.5px solid #e2e8f0;border-radius:9px;font-weight:700;font-size:.78rem;cursor:pointer;font-family:inherit;">Después</button>',
+        '</div>',
+    ].join('');
+    document.body.appendChild(popup);
+})();
+
+function caNotifMostrar(autorId, autorNombre, mensaje) {
+    var popup = document.getElementById('ca-notif-popup');
+    if (!popup) return;
+    // Guardar quién escribió para el botón "Ver mensaje"
+    _CANotif._pendienteAutorId     = autorId;
+    _CANotif._pendienteAutorNombre = autorNombre;
+
+    document.getElementById('ca-notif-title').textContent = autorNombre + ' te escribió';
+    document.getElementById('ca-notif-body').textContent  = mensaje.length > 50 ? mensaje.slice(0,50)+'…' : mensaje;
+
+    // Reset countdown bar
+    var bar = document.getElementById('ca-notif-bar');
+    if (bar) { bar.style.animation = 'none'; bar.offsetHeight; bar.style.animation = 'caCountdown 12s linear forwards'; }
+
+    popup.style.display = 'block';
+    popup.style.animation = 'caNotifIn .4s cubic-bezier(.34,1.56,.64,1)';
+    _CANotif.popupVisible = true;
+
+    // Shake después de 0.5s
+    setTimeout(function() {
+        popup.style.animation = 'caNotifShake .5s ease';
+        setTimeout(function() { popup.style.animation = ''; }, 500);
+    }, 500);
+
+    // Sonido
+    try {
+        var ctx = new (window.AudioContext || window.webkitAudioContext)();
+        [660, 880].forEach(function(freq, i) {
+            var o = ctx.createOscillator(), g = ctx.createGain();
+            o.connect(g); g.connect(ctx.destination);
+            o.frequency.value = freq;
+            var t = ctx.currentTime + i * 0.15;
+            g.gain.setValueAtTime(.2, t);
+            g.gain.exponentialRampToValueAtTime(.001, t + .25);
+            o.start(t); o.stop(t + .25);
+        });
+    } catch(e) {}
+
+    // Badge en nav
+    var badge = document.getElementById('chat-badge');
+    if (badge) {
+        var actual = parseInt(badge.textContent) || 0;
+        badge.textContent = actual + 1;
+        badge.style.display = 'inline';
+    }
+
+    // Auto-cerrar en 12s
+    clearTimeout(_CANotif.popupTimer);
+    _CANotif.popupTimer = setTimeout(caNotifCerrar, 12000);
+}
+
+function caNotifCerrar() {
+    var popup = document.getElementById('ca-notif-popup');
+    if (popup) popup.style.display = 'none';
+    _CANotif.popupVisible = false;
+    clearTimeout(_CANotif.popupTimer);
+}
+
+function caNotifAbrir() {
+    caNotifCerrar();
+    // Limpiar badge
+    var badge = document.getElementById('chat-badge');
+    if (badge) { badge.style.display = 'none'; badge.textContent = ''; }
+    // Abrir sección y seleccionar admin
+    if (typeof showSection === 'function') showSection('admin-chat');
+    if (_CANotif._pendienteAutorId && typeof caSeleccionarAdmin === 'function') {
+        setTimeout(function() {
+            caSeleccionarAdmin(_CANotif._pendienteAutorId, _CANotif._pendienteAutorNombre);
+        }, 200);
+    }
+}
+
+/* ── Background poll: mensajes privados recibidos ── */
+async function caBgPoll() {
+    var miId = (document.body.dataset.userId || '').toString();
+    if (!miId) return;
+    // No hacer poll si ya estamos en la sección admin-chat con ese admin abierto
+    var enChat = document.getElementById('admin-chat') && document.getElementById('admin-chat').classList.contains('active');
+    try {
+        var since = _CANotif.ultimoTs
+            ? '?since=' + encodeURIComponent((function(){ var d=new Date(_CANotif.ultimoTs); d.setMilliseconds(d.getMilliseconds()+1); return d.toISOString(); })())
+            : '';
+        var res  = await fetch('/api/chat_admin/mensajes_recibidos' + since);
+        var data = await res.json();
+        if (!data.success || !data.mensajes.length) return;
+
+        data.mensajes.forEach(function(m) {
+            // Si estamos en el chat con ese admin, no notificar
+            if (enChat && typeof _CA !== 'undefined' && _CA.destId === m.autor_id) return;
+            caNotifMostrar(m.autor_id, m.autor_nombre, m.mensaje);
+        });
+        _CANotif.ultimoTs = data.mensajes[data.mensajes.length-1].created_at;
+    } catch(e) {}
+}
+
+// Iniciar background poll al cargar
+document.addEventListener('DOMContentLoaded', function() {
+    // Solo para admins
+    if ('{{ usuario }}' !== 'admin') return;
+    // Primer fetch inicial para establecer ultimoTs sin notificar
+    fetch('/api/chat_admin/mensajes_recibidos').then(function(r){ return r.json(); }).then(function(data) {
+        if (data.success && data.mensajes.length) {
+            _CANotif.ultimoTs = data.mensajes[data.mensajes.length-1].created_at;
+        }
+    }).catch(function(){});
+    // Poll cada 5 segundos
+    _CANotif.bgTimer = setInterval(caBgPoll, 5000);
+});
+</script>
+
 </body>
 </html>

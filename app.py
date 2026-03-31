@@ -5747,5 +5747,296 @@ Máximo 3 oraciones salvo que se pida más detalle. Si necesitas listar cosas, s
         return jsonify({"success": False, "message": str(e)}), 500
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+#  CHAT SOPORTE — Chat en vivo coordinadora ↔ admin
+#  Tabla Supabase: chat_soporte_sesiones + chat_soporte_mensajes
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/soporte/solicitar', methods=['POST'])
+def soporte_solicitar():
+    """Coordinadora solicita chat con un admin disponible."""
+    rol = session.get('usuario')
+    if rol not in ('coordinador_escuela', 'coordinadora'):
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        data      = request.get_json() or {}
+        nombre    = (data.get('nombre') or session.get('nombre') or '').strip()
+        escuela   = (data.get('escuela') or '').strip()
+        es_general = (rol == 'coordinadora')
+
+        if not nombre:
+            return jsonify({"success": False, "message": "Ingresa tu nombre"}), 400
+        if not es_general and not escuela:
+            return jsonify({"success": False, "message": "Ingresa el establecimiento"}), 400
+
+        solicitante_id = str(session.get('usuario_id', ''))
+
+        # Crear sesión de chat
+        sesion = {
+            "solicitante_id":     solicitante_id,
+            "solicitante_nombre": nombre,
+            "solicitante_escuela": escuela if not es_general else "Coordinación General",
+            "solicitante_rol":    rol,
+            "estado":             "esperando",   # esperando | activo | cerrado
+            "prioridad":          "alta" if es_general else "normal",
+            "admin_id":           None,
+            "admin_nombre":       None,
+        }
+        res = requests.post(
+            f"{SUPABASE_URL}/rest/v1/chat_soporte_sesiones",
+            headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=representation"},
+            json=sesion
+        )
+        if not res.ok:
+            return jsonify({"success": False, "message": res.text}), 500
+
+        nueva_sesion = res.json()[0]
+        return jsonify({"success": True, "sesion": nueva_sesion})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/soporte/sesiones_pendientes', methods=['GET'])
+def soporte_sesiones_pendientes():
+    """Admin: ver solicitudes de chat pendientes y activas propias."""
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False}), 403
+    try:
+        admin_id = str(session.get('usuario_id', ''))
+        # Pendientes (cualquier admin puede tomar)
+        res_pend = requests.get(
+            f"{SUPABASE_URL}/rest/v1/chat_soporte_sesiones"
+            f"?estado=eq.esperando&order=created_at.asc"
+            f"&select=id,solicitante_nombre,solicitante_escuela,solicitante_rol,prioridad,created_at",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        # Activas de este admin
+        res_activa = requests.get(
+            f"{SUPABASE_URL}/rest/v1/chat_soporte_sesiones"
+            f"?estado=eq.activo&admin_id=eq.{admin_id}"
+            f"&select=id,solicitante_nombre,solicitante_escuela,solicitante_rol,prioridad,created_at",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        return jsonify({
+            "success":   True,
+            "pendientes": res_pend.json() if res_pend.ok else [],
+            "activas":    res_activa.json() if res_activa.ok else [],
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/soporte/aceptar', methods=['POST'])
+def soporte_aceptar():
+    """Admin acepta una solicitud de chat."""
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False}), 403
+    try:
+        data     = request.get_json() or {}
+        sesion_id = data.get('sesion_id')
+        admin_id  = str(session.get('usuario_id', ''))
+        admin_nombre = session.get('nombre') or session.get('usuario') or 'Admin'
+
+        # Verificar que aún esté esperando
+        res_check = requests.get(
+            f"{SUPABASE_URL}/rest/v1/chat_soporte_sesiones?id=eq.{sesion_id}&select=estado",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        if not res_check.ok or not res_check.json():
+            return jsonify({"success": False, "message": "Sesión no encontrada"}), 404
+        if res_check.json()[0]['estado'] != 'esperando':
+            return jsonify({"success": False, "message": "Esta solicitud ya fue tomada por otro admin"}), 409
+
+        res = requests.patch(
+            f"{SUPABASE_URL}/rest/v1/chat_soporte_sesiones?id=eq.{sesion_id}",
+            headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=representation"},
+            json={"estado": "activo", "admin_id": admin_id, "admin_nombre": admin_nombre}
+        )
+        if not res.ok:
+            return jsonify({"success": False, "message": res.text}), 500
+
+        # Mensaje de bienvenida automático
+        requests.post(
+            f"{SUPABASE_URL}/rest/v1/chat_soporte_mensajes",
+            headers=SUPABASE_SERVICE_HEADERS,
+            json={
+                "sesion_id": sesion_id,
+                "autor_rol": "admin",
+                "autor_nombre": admin_nombre,
+                "mensaje": f"Hola, soy {admin_nombre}. ¿En qué te puedo ayudar?"
+            }
+        )
+        return jsonify({"success": True, "sesion": res.json()[0]})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/soporte/mensajes/<sesion_id>', methods=['GET'])
+def soporte_mensajes(sesion_id):
+    """Obtener mensajes de una sesión + estado de la sesión."""
+    rol = session.get('usuario')
+    if rol not in ('admin', 'coordinador_escuela', 'coordinadora'):
+        return jsonify({"success": False}), 403
+    try:
+        since = request.args.get('since', '')
+        url = (
+            f"{SUPABASE_URL}/rest/v1/chat_soporte_mensajes"
+            f"?sesion_id=eq.{sesion_id}"
+            f"&order=created_at.asc"
+        )
+        if since:
+            url += f"&created_at=gt.{since}"
+
+        res_msgs = requests.get(url, headers=SUPABASE_SERVICE_HEADERS)
+        res_ses  = requests.get(
+            f"{SUPABASE_URL}/rest/v1/chat_soporte_sesiones?id=eq.{sesion_id}&select=estado,admin_nombre,admin_id,solicitante_nombre",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        sesion_data = res_ses.json()[0] if res_ses.ok and res_ses.json() else {}
+        return jsonify({
+            "success":  True,
+            "mensajes": res_msgs.json() if res_msgs.ok else [],
+            "sesion":   sesion_data,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/soporte/enviar', methods=['POST'])
+def soporte_enviar():
+    """Enviar mensaje en una sesión activa."""
+    rol = session.get('usuario')
+    if rol not in ('admin', 'coordinador_escuela', 'coordinadora'):
+        return jsonify({"success": False}), 403
+    try:
+        data      = request.get_json() or {}
+        sesion_id = data.get('sesion_id')
+        mensaje   = (data.get('mensaje') or '').strip()
+        if not mensaje or not sesion_id:
+            return jsonify({"success": False, "message": "Datos incompletos"}), 400
+
+        nombre = session.get('nombre') or session.get('usuario') or rol
+        res = requests.post(
+            f"{SUPABASE_URL}/rest/v1/chat_soporte_mensajes",
+            headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=representation"},
+            json={"sesion_id": sesion_id, "autor_rol": rol, "autor_nombre": nombre, "mensaje": mensaje}
+        )
+        if not res.ok:
+            return jsonify({"success": False, "message": res.text}), 500
+        return jsonify({"success": True, "mensaje": res.json()[0]})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/soporte/cerrar', methods=['POST'])
+def soporte_cerrar():
+    """Cerrar una sesión de chat."""
+    rol = session.get('usuario')
+    if rol not in ('admin', 'coordinador_escuela', 'coordinadora'):
+        return jsonify({"success": False}), 403
+    try:
+        data      = request.get_json() or {}
+        sesion_id = data.get('sesion_id')
+        requests.patch(
+            f"{SUPABASE_URL}/rest/v1/chat_soporte_sesiones?id=eq.{sesion_id}",
+            headers=SUPABASE_SERVICE_HEADERS,
+            json={"estado": "cerrado"}
+        )
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/soporte/mi_sesion', methods=['GET'])
+def soporte_mi_sesion():
+    """Coordinadora: verificar si tiene sesión activa o esperando."""
+    rol = session.get('usuario')
+    if rol not in ('coordinador_escuela', 'coordinadora'):
+        return jsonify({"success": False}), 403
+    try:
+        solicitante_id = str(session.get('usuario_id', ''))
+        res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/chat_soporte_sesiones"
+            f"?solicitante_id=eq.{solicitante_id}"
+            f"&estado=in.(esperando,activo)"
+            f"&order=created_at.desc&limit=1"
+            f"&select=id,estado,admin_nombre,created_at,prioridad",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        sesiones = res.json() if res.ok else []
+        return jsonify({"success": True, "sesion": sesiones[0] if sesiones else None})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/soporte/chat_admin_mensajes', methods=['GET'])
+def soporte_chat_admin_mensajes():
+    """Admin: traer mensajes nuevos de su sesión activa."""
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False}), 403
+    try:
+        admin_id = str(session.get('usuario_id', ''))
+        since    = request.args.get('since', '')
+        # Buscar sesión activa de este admin
+        res_ses = requests.get(
+            f"{SUPABASE_URL}/rest/v1/chat_soporte_sesiones"
+            f"?admin_id=eq.{admin_id}&estado=eq.activo&select=id",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        sesiones = res_ses.json() if res_ses.ok else []
+        if not sesiones:
+            return jsonify({"success": True, "mensajes": [], "sesion_id": None})
+        sesion_id = sesiones[0]['id']
+        url = (
+            f"{SUPABASE_URL}/rest/v1/chat_soporte_mensajes"
+            f"?sesion_id=eq.{sesion_id}&order=created_at.asc"
+        )
+        if since: url += f"&created_at=gt.{since}"
+        res_msgs = requests.get(url, headers=SUPABASE_SERVICE_HEADERS)
+        return jsonify({
+            "success": True,
+            "mensajes": res_msgs.json() if res_msgs.ok else [],
+            "sesion_id": sesion_id
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/chat_admin/mensajes', methods=['GET'])
+def chat_admin_get():
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False}), 403
+    try:
+        since = request.args.get('since', '')
+        url = f"{SUPABASE_URL}/rest/v1/chat_admin?select=id,autor_id,autor_nombre,mensaje,created_at&order=created_at.asc"
+        if since:  url += f"&created_at=gt.{since}"
+        else:      url += f"&limit=60"
+        res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS)
+        return jsonify({"success": True, "mensajes": res.json() if res.ok else []})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/chat_admin/enviar', methods=['POST'])
+def chat_admin_enviar():
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False}), 403
+    try:
+        data    = request.get_json() or {}
+        mensaje = (data.get('mensaje') or '').strip()
+        if not mensaje: return jsonify({"success": False}), 400
+        autor_id     = session.get('usuario_id')
+        autor_nombre = session.get('nombre') or session.get('usuario') or 'Admin'
+        res = requests.post(
+            f"{SUPABASE_URL}/rest/v1/chat_admin",
+            headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=representation"},
+            json={"autor_id": str(autor_id), "autor_nombre": autor_nombre, "mensaje": mensaje}
+        )
+        if not res.ok: return jsonify({"success": False}), 500
+        return jsonify({"success": True, "mensaje": res.json()[0]})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))

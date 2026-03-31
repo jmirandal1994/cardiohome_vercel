@@ -1027,7 +1027,7 @@
 .kpi-ring-wrap svg { transform:rotate(-90deg); }
 
 </style>
-<body style="margin:0;padding:0;height:100vh;overflow:hidden;display:flex;flex-direction:column;background:#f4f7f9;font-family:Inter,sans-serif;">
+<body data-user-id="{{ session.get('usuario_id', '') }}" data-user-name="{{ session.get('nombre', session.get('usuario', 'Admin')) }}" style="margin:0;padding:0;height:100vh;overflow:hidden;display:flex;flex-direction:column;background:#f4f7f9;font-family:Inter,sans-serif;">
     <header style="display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;height:58px;min-height:58px;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.08);flex-shrink:0;z-index:20;">
         <div class="flex items-center space-x-4">
             <button id="menuToggle" class="text-xl text-gray-700 focus:outline-none md:hidden">
@@ -1110,6 +1110,26 @@
                         <li><a href="#" class="nav-link" data-section="admin-add-visit"><i class="fa-solid fa-calendar-days"></i> Programar Visita</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-calendar-doctoras"><i class="fa-solid fa-calendar-week"></i> Calendario Doctoras</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-presencia"><i class="fa-solid fa-circle-dot" style="color:#10b981;"></i> Actividad en Tiempo Real</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-chat"><svg viewBox="0 0 100 100" width="22" height="22" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e8f4fd" stroke="#8b5cf6" stroke-width="2"/>
+              <path d="M38 62 L44 76 L40 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <path d="M62 62 L56 76 L60 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+              <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/>
+              <ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/>
+              <circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <text x="67" y="28" font-size="11" fill="#8b5cf6" font-family="Arial">✦</text>
+            </svg> Chat Admins <span id="chat-badge" style="display:none;background:#8b5cf6;color:white;border-radius:99px;padding:1px 7px;font-size:.65rem;font-weight:800;margin-left:4px;"></span></a></li>
                         <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fa-solid fa-folder-plus"></i> Crear Proyecto</a></li>
                         <li><a href="#" class="nav-link" data-section="gestionar-proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-upload-nomina"><i class="fa-solid fa-file-excel"></i> Cargar Nómina</a></li>
@@ -1118,7 +1138,210 @@
                         <li><a href="#" class="nav-link relative" data-section="admin-correction-requests"><i class="fa-solid fa-bell-concierge"></i> Solicitudes Corrección<span id="correction-alert-badge" class="alert-badge hidden">0</span></a></li>
 
 
-                    {% elif usuario == 'coordinadora' %}
+        
+            <!-- ══ CHAT GRUPAL ADMINS ══════════════════════════════════════════ -->
+            <div id="admin-chat" class="content-section">
+                <div class="section-topbar">
+                    <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                    <span class="section-icon"><svg viewBox="0 0 100 100" width="32" height="32" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e8f4fd" stroke="#8b5cf6" stroke-width="2"/>
+              <path d="M38 62 L44 76 L40 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <path d="M62 62 L56 76 L60 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+              <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/>
+              <ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/>
+              <circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+            </svg></span>
+                    <h2 class="section-title">Chat de Administradores</h2>
+                </div>
+
+                <style>
+                .chat-admin-wrap {
+                    max-width: 760px; margin: 0 auto;
+                    display: flex; flex-direction: column; height: calc(100vh - 200px); min-height: 500px;
+                }
+                .chat-admin-header {
+                    background: linear-gradient(135deg, #4c1d95, #7c3aed);
+                    border-radius: 18px 18px 0 0; padding: 16px 22px;
+                    display: flex; align-items: center; gap: 12px;
+                    flex-shrink: 0;
+                }
+                .chat-admin-header .ch-icon {
+                    width: 42px; height: 42px; border-radius: 13px;
+                    background: rgba(255,255,255,.15); display: flex;
+                    align-items: center; justify-content: center;
+                    font-size: 1.1rem; color: white;
+                }
+                .chat-admin-header h3 { color: white; font-weight: 800; font-size: .95rem; margin: 0 0 2px; }
+                .chat-admin-header p  { color: rgba(255,255,255,.6); font-size: .72rem; margin: 0; }
+                .chat-admin-live {
+                    margin-left: auto; display: flex; align-items: center; gap: 6px;
+                    background: rgba(255,255,255,.12); border-radius: 99px;
+                    padding: 5px 12px; font-size: .72rem; color: rgba(255,255,255,.8); font-weight: 700;
+                }
+                .chat-live-dot {
+                    width: 8px; height: 8px; border-radius: 50%; background: #10b981;
+                    animation: chatPulse 1.8s ease-in-out infinite;
+                }
+                @keyframes chatPulse {
+                    0%,100%{ box-shadow: 0 0 0 0 rgba(16,185,129,.6); }
+                    50%    { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+                }
+                .chat-admin-messages {
+                    flex: 1; overflow-y: auto; padding: 20px 22px;
+                    background: #f8faff; border-left: 1px solid #e8f0f6; border-right: 1px solid #e8f0f6;
+                    display: flex; flex-direction: column; gap: 12px;
+                    scroll-behavior: smooth; min-height: 0;
+                }
+                .chat-admin-messages::-webkit-scrollbar { width: 5px; }
+                .chat-admin-messages::-webkit-scrollbar-track { background: transparent; }
+                .chat-admin-messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 99px; }
+                .chat-msg-row { display: flex; gap: 10px; align-items: flex-end; }
+                .chat-msg-row.mine { flex-direction: row-reverse; }
+                .chat-msg-avatar {
+                    width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: .72rem; font-weight: 800; color: white;
+                }
+                .chat-msg-bubble {
+                    max-width: 68%; padding: 10px 14px; border-radius: 16px;
+                    font-size: .84rem; line-height: 1.5; position: relative;
+                }
+                .chat-msg-row:not(.mine) .chat-msg-bubble {
+                    background: white; color: #1e293b;
+                    border: 1px solid #e8f0f6; border-bottom-left-radius: 4px;
+                    box-shadow: 0 2px 8px rgba(15,52,96,.06);
+                }
+                .chat-msg-row.mine .chat-msg-bubble {
+                    background: linear-gradient(135deg, #4c1d95, #7c3aed);
+                    color: white; border-bottom-right-radius: 4px;
+                    box-shadow: 0 4px 14px rgba(124,58,237,.3);
+                }
+                .chat-msg-meta {
+                    font-size: .65rem; margin-top: 4px; opacity: .65;
+                    display: flex; align-items: center; gap: 5px;
+                }
+                .chat-msg-row.mine .chat-msg-meta { justify-content: flex-end; }
+                .chat-msg-name { font-weight: 800; font-size: .7rem; margin-bottom: 3px; }
+                .chat-msg-row.mine .chat-msg-name { display: none; }
+                .chat-date-sep {
+                    text-align: center; font-size: .68rem; color: #94a3b8;
+                    font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+                    display: flex; align-items: center; gap: 10px; margin: 8px 0;
+                }
+                .chat-date-sep::before, .chat-date-sep::after {
+                    content: ''; flex: 1; height: 1px; background: #e2e8f0;
+                }
+                .chat-admin-input-wrap {
+                    background: white; border: 1px solid #e8f0f6;
+                    border-radius: 0 0 18px 18px; padding: 14px 18px;
+                    display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0;
+                    box-shadow: 0 4px 14px rgba(15,52,96,.08);
+                }
+                .chat-admin-textarea {
+                    flex: 1; border: 1.5px solid #e2e8f0; border-radius: 12px;
+                    padding: 10px 14px; font-size: .84rem; font-family: inherit;
+                    resize: none; outline: none; max-height: 120px; min-height: 42px;
+                    line-height: 1.5; color: #334155; transition: border-color .2s;
+                }
+                .chat-admin-textarea:focus { border-color: #7c3aed; }
+                .chat-admin-send {
+                    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+                    background: linear-gradient(135deg, #4c1d95, #7c3aed);
+                    border: none; color: white; cursor: pointer; font-size: .9rem;
+                    display: flex; align-items: center; justify-content: center;
+                    transition: opacity .15s, transform .15s; box-shadow: 0 4px 12px rgba(124,58,237,.35);
+                }
+                .chat-admin-send:hover  { opacity: .88; transform: scale(1.05); }
+                .chat-admin-send:active { transform: scale(.96); }
+                .chat-empty {
+                    text-align: center; padding: 40px 20px; color: #94a3b8;
+                }
+                .chat-empty i { font-size: 2.5rem; display: block; margin-bottom: 12px; opacity: .4; }
+                </style>
+
+                <div class="chat-admin-wrap">
+                    <!-- Header -->
+                    <div class="chat-admin-header">
+                        <div class="ch-icon" style="background:rgba(255,255,255,.15);overflow:hidden;padding:2px;"><svg viewBox="0 0 100 100" width="32" height="32" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e8f4fd" stroke="#8b5cf6" stroke-width="2"/>
+              <path d="M38 62 L44 76 L40 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <path d="M62 62 L56 76 L60 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+              <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/>
+              <ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/>
+              <circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+            </svg></div>
+                        <div>
+                            <h3>Chat de Administradores</h3>
+                            <p>Sala grupal · Solo visible para admins</p>
+                        </div>
+                        <div class="chat-admin-live">
+                            <div class="chat-live-dot"></div>
+                            En vivo
+                        </div>
+                    </div>
+
+                    <!-- Mensajes -->
+                    <div class="chat-admin-messages" id="chat-admin-msgs">
+                        <div class="chat-empty">
+                            <div style="display:flex;justify-content:center;margin-bottom:12px;"><svg viewBox="0 0 100 100" width="64" height="64" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e8f4fd" stroke="#8b5cf6" stroke-width="2"/>
+              <path d="M38 62 L44 76 L40 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <path d="M62 62 L56 76 L60 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+              <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/>
+              <ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/>
+              <circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+            </svg></div>
+                            <p>Cargando mensajes...</p>
+                        </div>
+                    </div>
+
+                    <!-- Input -->
+                    <div class="chat-admin-input-wrap">
+                        <textarea class="chat-admin-textarea" id="chat-admin-input"
+                            placeholder="Escribe un mensaje…" rows="1"
+                            onkeydown="chatAdminKeydown(event)"
+                            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+                        <button class="chat-admin-send" onclick="chatAdminEnviar()" title="Enviar (Enter)">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {% elif usuario == 'coordinadora' %}
                         <li><a href="#" class="nav-link active" data-section="coord-performance"><i class="fa-solid fa-gauge-high"></i> Rendimiento en Vivo</a></li>
                         <li><a href="#" class="nav-link" data-section="coord-evaluaciones"><i class="fa-solid fa-sitemap"></i> Evaluaciones por Establecimiento</a></li>
                         <li><a href="#" class="nav-link" data-section="coord-contact"><i class="fa-solid fa-envelope"></i> Solicitudes</a></li>
@@ -1548,19 +1771,628 @@
             <div class="wc-greeting-block">
                 <div class="wc-rol">
                     {% if usuario == 'admin' %}Administrador
-                    {% elif usuario == 'coordinadora' %}Coordinadora General
+        
+            <!-- ══ CHAT GRUPAL ADMINS ══════════════════════════════════════════ -->
+            <div id="admin-chat" class="content-section">
+                <div class="section-topbar">
+                    <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                    <span class="section-icon"><svg viewBox="0 0 100 100" width="32" height="32" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e8f4fd" stroke="#8b5cf6" stroke-width="2"/>
+              <path d="M38 62 L44 76 L40 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <path d="M62 62 L56 76 L60 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+              <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/>
+              <ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/>
+              <circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+            </svg></span>
+                    <h2 class="section-title">Chat de Administradores</h2>
+                </div>
+
+                <style>
+                .chat-admin-wrap {
+                    max-width: 760px; margin: 0 auto;
+                    display: flex; flex-direction: column; height: calc(100vh - 200px); min-height: 500px;
+                }
+                .chat-admin-header {
+                    background: linear-gradient(135deg, #4c1d95, #7c3aed);
+                    border-radius: 18px 18px 0 0; padding: 16px 22px;
+                    display: flex; align-items: center; gap: 12px;
+                    flex-shrink: 0;
+                }
+                .chat-admin-header .ch-icon {
+                    width: 42px; height: 42px; border-radius: 13px;
+                    background: rgba(255,255,255,.15); display: flex;
+                    align-items: center; justify-content: center;
+                    font-size: 1.1rem; color: white;
+                }
+                .chat-admin-header h3 { color: white; font-weight: 800; font-size: .95rem; margin: 0 0 2px; }
+                .chat-admin-header p  { color: rgba(255,255,255,.6); font-size: .72rem; margin: 0; }
+                .chat-admin-live {
+                    margin-left: auto; display: flex; align-items: center; gap: 6px;
+                    background: rgba(255,255,255,.12); border-radius: 99px;
+                    padding: 5px 12px; font-size: .72rem; color: rgba(255,255,255,.8); font-weight: 700;
+                }
+                .chat-live-dot {
+                    width: 8px; height: 8px; border-radius: 50%; background: #10b981;
+                    animation: chatPulse 1.8s ease-in-out infinite;
+                }
+                @keyframes chatPulse {
+                    0%,100%{ box-shadow: 0 0 0 0 rgba(16,185,129,.6); }
+                    50%    { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+                }
+                .chat-admin-messages {
+                    flex: 1; overflow-y: auto; padding: 20px 22px;
+                    background: #f8faff; border-left: 1px solid #e8f0f6; border-right: 1px solid #e8f0f6;
+                    display: flex; flex-direction: column; gap: 12px;
+                    scroll-behavior: smooth; min-height: 0;
+                }
+                .chat-admin-messages::-webkit-scrollbar { width: 5px; }
+                .chat-admin-messages::-webkit-scrollbar-track { background: transparent; }
+                .chat-admin-messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 99px; }
+                .chat-msg-row { display: flex; gap: 10px; align-items: flex-end; }
+                .chat-msg-row.mine { flex-direction: row-reverse; }
+                .chat-msg-avatar {
+                    width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: .72rem; font-weight: 800; color: white;
+                }
+                .chat-msg-bubble {
+                    max-width: 68%; padding: 10px 14px; border-radius: 16px;
+                    font-size: .84rem; line-height: 1.5; position: relative;
+                }
+                .chat-msg-row:not(.mine) .chat-msg-bubble {
+                    background: white; color: #1e293b;
+                    border: 1px solid #e8f0f6; border-bottom-left-radius: 4px;
+                    box-shadow: 0 2px 8px rgba(15,52,96,.06);
+                }
+                .chat-msg-row.mine .chat-msg-bubble {
+                    background: linear-gradient(135deg, #4c1d95, #7c3aed);
+                    color: white; border-bottom-right-radius: 4px;
+                    box-shadow: 0 4px 14px rgba(124,58,237,.3);
+                }
+                .chat-msg-meta {
+                    font-size: .65rem; margin-top: 4px; opacity: .65;
+                    display: flex; align-items: center; gap: 5px;
+                }
+                .chat-msg-row.mine .chat-msg-meta { justify-content: flex-end; }
+                .chat-msg-name { font-weight: 800; font-size: .7rem; margin-bottom: 3px; }
+                .chat-msg-row.mine .chat-msg-name { display: none; }
+                .chat-date-sep {
+                    text-align: center; font-size: .68rem; color: #94a3b8;
+                    font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+                    display: flex; align-items: center; gap: 10px; margin: 8px 0;
+                }
+                .chat-date-sep::before, .chat-date-sep::after {
+                    content: ''; flex: 1; height: 1px; background: #e2e8f0;
+                }
+                .chat-admin-input-wrap {
+                    background: white; border: 1px solid #e8f0f6;
+                    border-radius: 0 0 18px 18px; padding: 14px 18px;
+                    display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0;
+                    box-shadow: 0 4px 14px rgba(15,52,96,.08);
+                }
+                .chat-admin-textarea {
+                    flex: 1; border: 1.5px solid #e2e8f0; border-radius: 12px;
+                    padding: 10px 14px; font-size: .84rem; font-family: inherit;
+                    resize: none; outline: none; max-height: 120px; min-height: 42px;
+                    line-height: 1.5; color: #334155; transition: border-color .2s;
+                }
+                .chat-admin-textarea:focus { border-color: #7c3aed; }
+                .chat-admin-send {
+                    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+                    background: linear-gradient(135deg, #4c1d95, #7c3aed);
+                    border: none; color: white; cursor: pointer; font-size: .9rem;
+                    display: flex; align-items: center; justify-content: center;
+                    transition: opacity .15s, transform .15s; box-shadow: 0 4px 12px rgba(124,58,237,.35);
+                }
+                .chat-admin-send:hover  { opacity: .88; transform: scale(1.05); }
+                .chat-admin-send:active { transform: scale(.96); }
+                .chat-empty {
+                    text-align: center; padding: 40px 20px; color: #94a3b8;
+                }
+                .chat-empty i { font-size: 2.5rem; display: block; margin-bottom: 12px; opacity: .4; }
+                </style>
+
+                <div class="chat-admin-wrap">
+                    <!-- Header -->
+                    <div class="chat-admin-header">
+                        <div class="ch-icon" style="background:rgba(255,255,255,.15);overflow:hidden;padding:2px;"><svg viewBox="0 0 100 100" width="32" height="32" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e8f4fd" stroke="#8b5cf6" stroke-width="2"/>
+              <path d="M38 62 L44 76 L40 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <path d="M62 62 L56 76 L60 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+              <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/>
+              <ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/>
+              <circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+            </svg></div>
+                        <div>
+                            <h3>Chat de Administradores</h3>
+                            <p>Sala grupal · Solo visible para admins</p>
+                        </div>
+                        <div class="chat-admin-live">
+                            <div class="chat-live-dot"></div>
+                            En vivo
+                        </div>
+                    </div>
+
+                    <!-- Mensajes -->
+                    <div class="chat-admin-messages" id="chat-admin-msgs">
+                        <div class="chat-empty">
+                            <div style="display:flex;justify-content:center;margin-bottom:12px;"><svg viewBox="0 0 100 100" width="64" height="64" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e8f4fd" stroke="#8b5cf6" stroke-width="2"/>
+              <path d="M38 62 L44 76 L40 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <path d="M62 62 L56 76 L60 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+              <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/>
+              <ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/>
+              <circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+            </svg></div>
+                            <p>Cargando mensajes...</p>
+                        </div>
+                    </div>
+
+                    <!-- Input -->
+                    <div class="chat-admin-input-wrap">
+                        <textarea class="chat-admin-textarea" id="chat-admin-input"
+                            placeholder="Escribe un mensaje…" rows="1"
+                            onkeydown="chatAdminKeydown(event)"
+                            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+                        <button class="chat-admin-send" onclick="chatAdminEnviar()" title="Enviar (Enter)">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {% elif usuario == 'coordinadora' %}Coordinadora General
                     {% elif usuario == 'coordinador_escuela' %}Coordinador de Escuela
                     {% else %}Médico Evaluador{% endif %}
                 </div>
                 <h3>
                     {% if usuario == 'admin' %}Panel de Control General
-                    {% elif usuario == 'coordinadora' %}Centro de Coordinación
+        
+            <!-- ══ CHAT GRUPAL ADMINS ══════════════════════════════════════════ -->
+            <div id="admin-chat" class="content-section">
+                <div class="section-topbar">
+                    <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                    <span class="section-icon"><svg viewBox="0 0 100 100" width="32" height="32" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e8f4fd" stroke="#8b5cf6" stroke-width="2"/>
+              <path d="M38 62 L44 76 L40 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <path d="M62 62 L56 76 L60 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+              <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/>
+              <ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/>
+              <circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+            </svg></span>
+                    <h2 class="section-title">Chat de Administradores</h2>
+                </div>
+
+                <style>
+                .chat-admin-wrap {
+                    max-width: 760px; margin: 0 auto;
+                    display: flex; flex-direction: column; height: calc(100vh - 200px); min-height: 500px;
+                }
+                .chat-admin-header {
+                    background: linear-gradient(135deg, #4c1d95, #7c3aed);
+                    border-radius: 18px 18px 0 0; padding: 16px 22px;
+                    display: flex; align-items: center; gap: 12px;
+                    flex-shrink: 0;
+                }
+                .chat-admin-header .ch-icon {
+                    width: 42px; height: 42px; border-radius: 13px;
+                    background: rgba(255,255,255,.15); display: flex;
+                    align-items: center; justify-content: center;
+                    font-size: 1.1rem; color: white;
+                }
+                .chat-admin-header h3 { color: white; font-weight: 800; font-size: .95rem; margin: 0 0 2px; }
+                .chat-admin-header p  { color: rgba(255,255,255,.6); font-size: .72rem; margin: 0; }
+                .chat-admin-live {
+                    margin-left: auto; display: flex; align-items: center; gap: 6px;
+                    background: rgba(255,255,255,.12); border-radius: 99px;
+                    padding: 5px 12px; font-size: .72rem; color: rgba(255,255,255,.8); font-weight: 700;
+                }
+                .chat-live-dot {
+                    width: 8px; height: 8px; border-radius: 50%; background: #10b981;
+                    animation: chatPulse 1.8s ease-in-out infinite;
+                }
+                @keyframes chatPulse {
+                    0%,100%{ box-shadow: 0 0 0 0 rgba(16,185,129,.6); }
+                    50%    { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+                }
+                .chat-admin-messages {
+                    flex: 1; overflow-y: auto; padding: 20px 22px;
+                    background: #f8faff; border-left: 1px solid #e8f0f6; border-right: 1px solid #e8f0f6;
+                    display: flex; flex-direction: column; gap: 12px;
+                    scroll-behavior: smooth; min-height: 0;
+                }
+                .chat-admin-messages::-webkit-scrollbar { width: 5px; }
+                .chat-admin-messages::-webkit-scrollbar-track { background: transparent; }
+                .chat-admin-messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 99px; }
+                .chat-msg-row { display: flex; gap: 10px; align-items: flex-end; }
+                .chat-msg-row.mine { flex-direction: row-reverse; }
+                .chat-msg-avatar {
+                    width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: .72rem; font-weight: 800; color: white;
+                }
+                .chat-msg-bubble {
+                    max-width: 68%; padding: 10px 14px; border-radius: 16px;
+                    font-size: .84rem; line-height: 1.5; position: relative;
+                }
+                .chat-msg-row:not(.mine) .chat-msg-bubble {
+                    background: white; color: #1e293b;
+                    border: 1px solid #e8f0f6; border-bottom-left-radius: 4px;
+                    box-shadow: 0 2px 8px rgba(15,52,96,.06);
+                }
+                .chat-msg-row.mine .chat-msg-bubble {
+                    background: linear-gradient(135deg, #4c1d95, #7c3aed);
+                    color: white; border-bottom-right-radius: 4px;
+                    box-shadow: 0 4px 14px rgba(124,58,237,.3);
+                }
+                .chat-msg-meta {
+                    font-size: .65rem; margin-top: 4px; opacity: .65;
+                    display: flex; align-items: center; gap: 5px;
+                }
+                .chat-msg-row.mine .chat-msg-meta { justify-content: flex-end; }
+                .chat-msg-name { font-weight: 800; font-size: .7rem; margin-bottom: 3px; }
+                .chat-msg-row.mine .chat-msg-name { display: none; }
+                .chat-date-sep {
+                    text-align: center; font-size: .68rem; color: #94a3b8;
+                    font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+                    display: flex; align-items: center; gap: 10px; margin: 8px 0;
+                }
+                .chat-date-sep::before, .chat-date-sep::after {
+                    content: ''; flex: 1; height: 1px; background: #e2e8f0;
+                }
+                .chat-admin-input-wrap {
+                    background: white; border: 1px solid #e8f0f6;
+                    border-radius: 0 0 18px 18px; padding: 14px 18px;
+                    display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0;
+                    box-shadow: 0 4px 14px rgba(15,52,96,.08);
+                }
+                .chat-admin-textarea {
+                    flex: 1; border: 1.5px solid #e2e8f0; border-radius: 12px;
+                    padding: 10px 14px; font-size: .84rem; font-family: inherit;
+                    resize: none; outline: none; max-height: 120px; min-height: 42px;
+                    line-height: 1.5; color: #334155; transition: border-color .2s;
+                }
+                .chat-admin-textarea:focus { border-color: #7c3aed; }
+                .chat-admin-send {
+                    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+                    background: linear-gradient(135deg, #4c1d95, #7c3aed);
+                    border: none; color: white; cursor: pointer; font-size: .9rem;
+                    display: flex; align-items: center; justify-content: center;
+                    transition: opacity .15s, transform .15s; box-shadow: 0 4px 12px rgba(124,58,237,.35);
+                }
+                .chat-admin-send:hover  { opacity: .88; transform: scale(1.05); }
+                .chat-admin-send:active { transform: scale(.96); }
+                .chat-empty {
+                    text-align: center; padding: 40px 20px; color: #94a3b8;
+                }
+                .chat-empty i { font-size: 2.5rem; display: block; margin-bottom: 12px; opacity: .4; }
+                </style>
+
+                <div class="chat-admin-wrap">
+                    <!-- Header -->
+                    <div class="chat-admin-header">
+                        <div class="ch-icon" style="background:rgba(255,255,255,.15);overflow:hidden;padding:2px;"><svg viewBox="0 0 100 100" width="32" height="32" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e8f4fd" stroke="#8b5cf6" stroke-width="2"/>
+              <path d="M38 62 L44 76 L40 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <path d="M62 62 L56 76 L60 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+              <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/>
+              <ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/>
+              <circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+            </svg></div>
+                        <div>
+                            <h3>Chat de Administradores</h3>
+                            <p>Sala grupal · Solo visible para admins</p>
+                        </div>
+                        <div class="chat-admin-live">
+                            <div class="chat-live-dot"></div>
+                            En vivo
+                        </div>
+                    </div>
+
+                    <!-- Mensajes -->
+                    <div class="chat-admin-messages" id="chat-admin-msgs">
+                        <div class="chat-empty">
+                            <div style="display:flex;justify-content:center;margin-bottom:12px;"><svg viewBox="0 0 100 100" width="64" height="64" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e8f4fd" stroke="#8b5cf6" stroke-width="2"/>
+              <path d="M38 62 L44 76 L40 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <path d="M62 62 L56 76 L60 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+              <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/>
+              <ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/>
+              <circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+            </svg></div>
+                            <p>Cargando mensajes...</p>
+                        </div>
+                    </div>
+
+                    <!-- Input -->
+                    <div class="chat-admin-input-wrap">
+                        <textarea class="chat-admin-textarea" id="chat-admin-input"
+                            placeholder="Escribe un mensaje…" rows="1"
+                            onkeydown="chatAdminKeydown(event)"
+                            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+                        <button class="chat-admin-send" onclick="chatAdminEnviar()" title="Enviar (Enter)">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {% elif usuario == 'coordinadora' %}Centro de Coordinación
                     {% elif usuario == 'coordinador_escuela' %}Panel de Gestión Escolar
                     {% else %}Bienvenida, Doctora{% endif %}
                 </h3>
                 <p>
                     {% if usuario == 'admin' %}Gestiona proyectos, nóminas y el avance de todas las evaluaciones del Programa de Integración Escolar.
-                    {% elif usuario == 'coordinadora' %}Supervisa en tiempo real el rendimiento de todas las doctoras y establecimientos del programa.
+        
+            <!-- ══ CHAT GRUPAL ADMINS ══════════════════════════════════════════ -->
+            <div id="admin-chat" class="content-section">
+                <div class="section-topbar">
+                    <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                    <span class="section-icon"><svg viewBox="0 0 100 100" width="32" height="32" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e8f4fd" stroke="#8b5cf6" stroke-width="2"/>
+              <path d="M38 62 L44 76 L40 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <path d="M62 62 L56 76 L60 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+              <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/>
+              <ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/>
+              <circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+            </svg></span>
+                    <h2 class="section-title">Chat de Administradores</h2>
+                </div>
+
+                <style>
+                .chat-admin-wrap {
+                    max-width: 760px; margin: 0 auto;
+                    display: flex; flex-direction: column; height: calc(100vh - 200px); min-height: 500px;
+                }
+                .chat-admin-header {
+                    background: linear-gradient(135deg, #4c1d95, #7c3aed);
+                    border-radius: 18px 18px 0 0; padding: 16px 22px;
+                    display: flex; align-items: center; gap: 12px;
+                    flex-shrink: 0;
+                }
+                .chat-admin-header .ch-icon {
+                    width: 42px; height: 42px; border-radius: 13px;
+                    background: rgba(255,255,255,.15); display: flex;
+                    align-items: center; justify-content: center;
+                    font-size: 1.1rem; color: white;
+                }
+                .chat-admin-header h3 { color: white; font-weight: 800; font-size: .95rem; margin: 0 0 2px; }
+                .chat-admin-header p  { color: rgba(255,255,255,.6); font-size: .72rem; margin: 0; }
+                .chat-admin-live {
+                    margin-left: auto; display: flex; align-items: center; gap: 6px;
+                    background: rgba(255,255,255,.12); border-radius: 99px;
+                    padding: 5px 12px; font-size: .72rem; color: rgba(255,255,255,.8); font-weight: 700;
+                }
+                .chat-live-dot {
+                    width: 8px; height: 8px; border-radius: 50%; background: #10b981;
+                    animation: chatPulse 1.8s ease-in-out infinite;
+                }
+                @keyframes chatPulse {
+                    0%,100%{ box-shadow: 0 0 0 0 rgba(16,185,129,.6); }
+                    50%    { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+                }
+                .chat-admin-messages {
+                    flex: 1; overflow-y: auto; padding: 20px 22px;
+                    background: #f8faff; border-left: 1px solid #e8f0f6; border-right: 1px solid #e8f0f6;
+                    display: flex; flex-direction: column; gap: 12px;
+                    scroll-behavior: smooth; min-height: 0;
+                }
+                .chat-admin-messages::-webkit-scrollbar { width: 5px; }
+                .chat-admin-messages::-webkit-scrollbar-track { background: transparent; }
+                .chat-admin-messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 99px; }
+                .chat-msg-row { display: flex; gap: 10px; align-items: flex-end; }
+                .chat-msg-row.mine { flex-direction: row-reverse; }
+                .chat-msg-avatar {
+                    width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: .72rem; font-weight: 800; color: white;
+                }
+                .chat-msg-bubble {
+                    max-width: 68%; padding: 10px 14px; border-radius: 16px;
+                    font-size: .84rem; line-height: 1.5; position: relative;
+                }
+                .chat-msg-row:not(.mine) .chat-msg-bubble {
+                    background: white; color: #1e293b;
+                    border: 1px solid #e8f0f6; border-bottom-left-radius: 4px;
+                    box-shadow: 0 2px 8px rgba(15,52,96,.06);
+                }
+                .chat-msg-row.mine .chat-msg-bubble {
+                    background: linear-gradient(135deg, #4c1d95, #7c3aed);
+                    color: white; border-bottom-right-radius: 4px;
+                    box-shadow: 0 4px 14px rgba(124,58,237,.3);
+                }
+                .chat-msg-meta {
+                    font-size: .65rem; margin-top: 4px; opacity: .65;
+                    display: flex; align-items: center; gap: 5px;
+                }
+                .chat-msg-row.mine .chat-msg-meta { justify-content: flex-end; }
+                .chat-msg-name { font-weight: 800; font-size: .7rem; margin-bottom: 3px; }
+                .chat-msg-row.mine .chat-msg-name { display: none; }
+                .chat-date-sep {
+                    text-align: center; font-size: .68rem; color: #94a3b8;
+                    font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+                    display: flex; align-items: center; gap: 10px; margin: 8px 0;
+                }
+                .chat-date-sep::before, .chat-date-sep::after {
+                    content: ''; flex: 1; height: 1px; background: #e2e8f0;
+                }
+                .chat-admin-input-wrap {
+                    background: white; border: 1px solid #e8f0f6;
+                    border-radius: 0 0 18px 18px; padding: 14px 18px;
+                    display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0;
+                    box-shadow: 0 4px 14px rgba(15,52,96,.08);
+                }
+                .chat-admin-textarea {
+                    flex: 1; border: 1.5px solid #e2e8f0; border-radius: 12px;
+                    padding: 10px 14px; font-size: .84rem; font-family: inherit;
+                    resize: none; outline: none; max-height: 120px; min-height: 42px;
+                    line-height: 1.5; color: #334155; transition: border-color .2s;
+                }
+                .chat-admin-textarea:focus { border-color: #7c3aed; }
+                .chat-admin-send {
+                    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+                    background: linear-gradient(135deg, #4c1d95, #7c3aed);
+                    border: none; color: white; cursor: pointer; font-size: .9rem;
+                    display: flex; align-items: center; justify-content: center;
+                    transition: opacity .15s, transform .15s; box-shadow: 0 4px 12px rgba(124,58,237,.35);
+                }
+                .chat-admin-send:hover  { opacity: .88; transform: scale(1.05); }
+                .chat-admin-send:active { transform: scale(.96); }
+                .chat-empty {
+                    text-align: center; padding: 40px 20px; color: #94a3b8;
+                }
+                .chat-empty i { font-size: 2.5rem; display: block; margin-bottom: 12px; opacity: .4; }
+                </style>
+
+                <div class="chat-admin-wrap">
+                    <!-- Header -->
+                    <div class="chat-admin-header">
+                        <div class="ch-icon" style="background:rgba(255,255,255,.15);overflow:hidden;padding:2px;"><svg viewBox="0 0 100 100" width="32" height="32" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e8f4fd" stroke="#8b5cf6" stroke-width="2"/>
+              <path d="M38 62 L44 76 L40 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <path d="M62 62 L56 76 L60 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+              <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/>
+              <ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/>
+              <circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+            </svg></div>
+                        <div>
+                            <h3>Chat de Administradores</h3>
+                            <p>Sala grupal · Solo visible para admins</p>
+                        </div>
+                        <div class="chat-admin-live">
+                            <div class="chat-live-dot"></div>
+                            En vivo
+                        </div>
+                    </div>
+
+                    <!-- Mensajes -->
+                    <div class="chat-admin-messages" id="chat-admin-msgs">
+                        <div class="chat-empty">
+                            <div style="display:flex;justify-content:center;margin-bottom:12px;"><svg viewBox="0 0 100 100" width="64" height="64" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e8f4fd" stroke="#8b5cf6" stroke-width="2"/>
+              <path d="M38 62 L44 76 L40 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <path d="M62 62 L56 76 L60 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+              <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/>
+              <ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/>
+              <circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+            </svg></div>
+                            <p>Cargando mensajes...</p>
+                        </div>
+                    </div>
+
+                    <!-- Input -->
+                    <div class="chat-admin-input-wrap">
+                        <textarea class="chat-admin-textarea" id="chat-admin-input"
+                            placeholder="Escribe un mensaje…" rows="1"
+                            onkeydown="chatAdminKeydown(event)"
+                            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+                        <button class="chat-admin-send" onclick="chatAdminEnviar()" title="Enviar (Enter)">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {% elif usuario == 'coordinadora' %}Supervisa en tiempo real el rendimiento de todas las doctoras y establecimientos del programa.
                     {% elif usuario == 'coordinador_escuela' %}Accede al estado actualizado de las evaluaciones de tus establecimientos asignados.
                     {% else %}Gestiona tus nóminas, registra evaluaciones médicas y revisa tu calendario de visitas a terreno.{% endif %}
                 </p>
@@ -1592,6 +2424,209 @@
                 <button class="wc-action-btn ghost" onclick="showSection('gestionar-proyectos')">
                     <i class="fa-solid fa-folder-open"></i> Proyectos
                 </button>
+
+            <!-- ══ CHAT GRUPAL ADMINS ══════════════════════════════════════════ -->
+            <div id="admin-chat" class="content-section">
+                <div class="section-topbar">
+                    <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                    <span class="section-icon"><svg viewBox="0 0 100 100" width="32" height="32" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e8f4fd" stroke="#8b5cf6" stroke-width="2"/>
+              <path d="M38 62 L44 76 L40 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <path d="M62 62 L56 76 L60 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+              <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/>
+              <ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/>
+              <circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+            </svg></span>
+                    <h2 class="section-title">Chat de Administradores</h2>
+                </div>
+
+                <style>
+                .chat-admin-wrap {
+                    max-width: 760px; margin: 0 auto;
+                    display: flex; flex-direction: column; height: calc(100vh - 200px); min-height: 500px;
+                }
+                .chat-admin-header {
+                    background: linear-gradient(135deg, #4c1d95, #7c3aed);
+                    border-radius: 18px 18px 0 0; padding: 16px 22px;
+                    display: flex; align-items: center; gap: 12px;
+                    flex-shrink: 0;
+                }
+                .chat-admin-header .ch-icon {
+                    width: 42px; height: 42px; border-radius: 13px;
+                    background: rgba(255,255,255,.15); display: flex;
+                    align-items: center; justify-content: center;
+                    font-size: 1.1rem; color: white;
+                }
+                .chat-admin-header h3 { color: white; font-weight: 800; font-size: .95rem; margin: 0 0 2px; }
+                .chat-admin-header p  { color: rgba(255,255,255,.6); font-size: .72rem; margin: 0; }
+                .chat-admin-live {
+                    margin-left: auto; display: flex; align-items: center; gap: 6px;
+                    background: rgba(255,255,255,.12); border-radius: 99px;
+                    padding: 5px 12px; font-size: .72rem; color: rgba(255,255,255,.8); font-weight: 700;
+                }
+                .chat-live-dot {
+                    width: 8px; height: 8px; border-radius: 50%; background: #10b981;
+                    animation: chatPulse 1.8s ease-in-out infinite;
+                }
+                @keyframes chatPulse {
+                    0%,100%{ box-shadow: 0 0 0 0 rgba(16,185,129,.6); }
+                    50%    { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+                }
+                .chat-admin-messages {
+                    flex: 1; overflow-y: auto; padding: 20px 22px;
+                    background: #f8faff; border-left: 1px solid #e8f0f6; border-right: 1px solid #e8f0f6;
+                    display: flex; flex-direction: column; gap: 12px;
+                    scroll-behavior: smooth; min-height: 0;
+                }
+                .chat-admin-messages::-webkit-scrollbar { width: 5px; }
+                .chat-admin-messages::-webkit-scrollbar-track { background: transparent; }
+                .chat-admin-messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 99px; }
+                .chat-msg-row { display: flex; gap: 10px; align-items: flex-end; }
+                .chat-msg-row.mine { flex-direction: row-reverse; }
+                .chat-msg-avatar {
+                    width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: .72rem; font-weight: 800; color: white;
+                }
+                .chat-msg-bubble {
+                    max-width: 68%; padding: 10px 14px; border-radius: 16px;
+                    font-size: .84rem; line-height: 1.5; position: relative;
+                }
+                .chat-msg-row:not(.mine) .chat-msg-bubble {
+                    background: white; color: #1e293b;
+                    border: 1px solid #e8f0f6; border-bottom-left-radius: 4px;
+                    box-shadow: 0 2px 8px rgba(15,52,96,.06);
+                }
+                .chat-msg-row.mine .chat-msg-bubble {
+                    background: linear-gradient(135deg, #4c1d95, #7c3aed);
+                    color: white; border-bottom-right-radius: 4px;
+                    box-shadow: 0 4px 14px rgba(124,58,237,.3);
+                }
+                .chat-msg-meta {
+                    font-size: .65rem; margin-top: 4px; opacity: .65;
+                    display: flex; align-items: center; gap: 5px;
+                }
+                .chat-msg-row.mine .chat-msg-meta { justify-content: flex-end; }
+                .chat-msg-name { font-weight: 800; font-size: .7rem; margin-bottom: 3px; }
+                .chat-msg-row.mine .chat-msg-name { display: none; }
+                .chat-date-sep {
+                    text-align: center; font-size: .68rem; color: #94a3b8;
+                    font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+                    display: flex; align-items: center; gap: 10px; margin: 8px 0;
+                }
+                .chat-date-sep::before, .chat-date-sep::after {
+                    content: ''; flex: 1; height: 1px; background: #e2e8f0;
+                }
+                .chat-admin-input-wrap {
+                    background: white; border: 1px solid #e8f0f6;
+                    border-radius: 0 0 18px 18px; padding: 14px 18px;
+                    display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0;
+                    box-shadow: 0 4px 14px rgba(15,52,96,.08);
+                }
+                .chat-admin-textarea {
+                    flex: 1; border: 1.5px solid #e2e8f0; border-radius: 12px;
+                    padding: 10px 14px; font-size: .84rem; font-family: inherit;
+                    resize: none; outline: none; max-height: 120px; min-height: 42px;
+                    line-height: 1.5; color: #334155; transition: border-color .2s;
+                }
+                .chat-admin-textarea:focus { border-color: #7c3aed; }
+                .chat-admin-send {
+                    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+                    background: linear-gradient(135deg, #4c1d95, #7c3aed);
+                    border: none; color: white; cursor: pointer; font-size: .9rem;
+                    display: flex; align-items: center; justify-content: center;
+                    transition: opacity .15s, transform .15s; box-shadow: 0 4px 12px rgba(124,58,237,.35);
+                }
+                .chat-admin-send:hover  { opacity: .88; transform: scale(1.05); }
+                .chat-admin-send:active { transform: scale(.96); }
+                .chat-empty {
+                    text-align: center; padding: 40px 20px; color: #94a3b8;
+                }
+                .chat-empty i { font-size: 2.5rem; display: block; margin-bottom: 12px; opacity: .4; }
+                </style>
+
+                <div class="chat-admin-wrap">
+                    <!-- Header -->
+                    <div class="chat-admin-header">
+                        <div class="ch-icon" style="background:rgba(255,255,255,.15);overflow:hidden;padding:2px;"><svg viewBox="0 0 100 100" width="32" height="32" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e8f4fd" stroke="#8b5cf6" stroke-width="2"/>
+              <path d="M38 62 L44 76 L40 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <path d="M62 62 L56 76 L60 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+              <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/>
+              <ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/>
+              <circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+            </svg></div>
+                        <div>
+                            <h3>Chat de Administradores</h3>
+                            <p>Sala grupal · Solo visible para admins</p>
+                        </div>
+                        <div class="chat-admin-live">
+                            <div class="chat-live-dot"></div>
+                            En vivo
+                        </div>
+                    </div>
+
+                    <!-- Mensajes -->
+                    <div class="chat-admin-messages" id="chat-admin-msgs">
+                        <div class="chat-empty">
+                            <div style="display:flex;justify-content:center;margin-bottom:12px;"><svg viewBox="0 0 100 100" width="64" height="64" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e8f4fd" stroke="#8b5cf6" stroke-width="2"/>
+              <path d="M38 62 L44 76 L40 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <path d="M62 62 L56 76 L60 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+              <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/>
+              <ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/>
+              <circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+            </svg></div>
+                            <p>Cargando mensajes...</p>
+                        </div>
+                    </div>
+
+                    <!-- Input -->
+                    <div class="chat-admin-input-wrap">
+                        <textarea class="chat-admin-textarea" id="chat-admin-input"
+                            placeholder="Escribe un mensaje…" rows="1"
+                            onkeydown="chatAdminKeydown(event)"
+                            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+                        <button class="chat-admin-send" onclick="chatAdminEnviar()" title="Enviar (Enter)">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             {% elif usuario == 'coordinadora' %}
                 <button class="wc-action-btn primary" onclick="showSection('coord-performance')">
                     <i class="fa-solid fa-gauge-high"></i> Ver Rendimiento en Vivo
@@ -3561,6 +4596,209 @@
                     </div>
                 </div>
 
+            </div>
+
+
+            <!-- ══ CHAT GRUPAL ADMINS ══════════════════════════════════════════ -->
+            <div id="admin-chat" class="content-section">
+                <div class="section-topbar">
+                    <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                    <span class="section-icon"><svg viewBox="0 0 100 100" width="32" height="32" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e8f4fd" stroke="#8b5cf6" stroke-width="2"/>
+              <path d="M38 62 L44 76 L40 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <path d="M62 62 L56 76 L60 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+              <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/>
+              <ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/>
+              <circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+            </svg></span>
+                    <h2 class="section-title">Chat de Administradores</h2>
+                </div>
+
+                <style>
+                .chat-admin-wrap {
+                    max-width: 760px; margin: 0 auto;
+                    display: flex; flex-direction: column; height: calc(100vh - 200px); min-height: 500px;
+                }
+                .chat-admin-header {
+                    background: linear-gradient(135deg, #4c1d95, #7c3aed);
+                    border-radius: 18px 18px 0 0; padding: 16px 22px;
+                    display: flex; align-items: center; gap: 12px;
+                    flex-shrink: 0;
+                }
+                .chat-admin-header .ch-icon {
+                    width: 42px; height: 42px; border-radius: 13px;
+                    background: rgba(255,255,255,.15); display: flex;
+                    align-items: center; justify-content: center;
+                    font-size: 1.1rem; color: white;
+                }
+                .chat-admin-header h3 { color: white; font-weight: 800; font-size: .95rem; margin: 0 0 2px; }
+                .chat-admin-header p  { color: rgba(255,255,255,.6); font-size: .72rem; margin: 0; }
+                .chat-admin-live {
+                    margin-left: auto; display: flex; align-items: center; gap: 6px;
+                    background: rgba(255,255,255,.12); border-radius: 99px;
+                    padding: 5px 12px; font-size: .72rem; color: rgba(255,255,255,.8); font-weight: 700;
+                }
+                .chat-live-dot {
+                    width: 8px; height: 8px; border-radius: 50%; background: #10b981;
+                    animation: chatPulse 1.8s ease-in-out infinite;
+                }
+                @keyframes chatPulse {
+                    0%,100%{ box-shadow: 0 0 0 0 rgba(16,185,129,.6); }
+                    50%    { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+                }
+                .chat-admin-messages {
+                    flex: 1; overflow-y: auto; padding: 20px 22px;
+                    background: #f8faff; border-left: 1px solid #e8f0f6; border-right: 1px solid #e8f0f6;
+                    display: flex; flex-direction: column; gap: 12px;
+                    scroll-behavior: smooth; min-height: 0;
+                }
+                .chat-admin-messages::-webkit-scrollbar { width: 5px; }
+                .chat-admin-messages::-webkit-scrollbar-track { background: transparent; }
+                .chat-admin-messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 99px; }
+                .chat-msg-row { display: flex; gap: 10px; align-items: flex-end; }
+                .chat-msg-row.mine { flex-direction: row-reverse; }
+                .chat-msg-avatar {
+                    width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: .72rem; font-weight: 800; color: white;
+                }
+                .chat-msg-bubble {
+                    max-width: 68%; padding: 10px 14px; border-radius: 16px;
+                    font-size: .84rem; line-height: 1.5; position: relative;
+                }
+                .chat-msg-row:not(.mine) .chat-msg-bubble {
+                    background: white; color: #1e293b;
+                    border: 1px solid #e8f0f6; border-bottom-left-radius: 4px;
+                    box-shadow: 0 2px 8px rgba(15,52,96,.06);
+                }
+                .chat-msg-row.mine .chat-msg-bubble {
+                    background: linear-gradient(135deg, #4c1d95, #7c3aed);
+                    color: white; border-bottom-right-radius: 4px;
+                    box-shadow: 0 4px 14px rgba(124,58,237,.3);
+                }
+                .chat-msg-meta {
+                    font-size: .65rem; margin-top: 4px; opacity: .65;
+                    display: flex; align-items: center; gap: 5px;
+                }
+                .chat-msg-row.mine .chat-msg-meta { justify-content: flex-end; }
+                .chat-msg-name { font-weight: 800; font-size: .7rem; margin-bottom: 3px; }
+                .chat-msg-row.mine .chat-msg-name { display: none; }
+                .chat-date-sep {
+                    text-align: center; font-size: .68rem; color: #94a3b8;
+                    font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+                    display: flex; align-items: center; gap: 10px; margin: 8px 0;
+                }
+                .chat-date-sep::before, .chat-date-sep::after {
+                    content: ''; flex: 1; height: 1px; background: #e2e8f0;
+                }
+                .chat-admin-input-wrap {
+                    background: white; border: 1px solid #e8f0f6;
+                    border-radius: 0 0 18px 18px; padding: 14px 18px;
+                    display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0;
+                    box-shadow: 0 4px 14px rgba(15,52,96,.08);
+                }
+                .chat-admin-textarea {
+                    flex: 1; border: 1.5px solid #e2e8f0; border-radius: 12px;
+                    padding: 10px 14px; font-size: .84rem; font-family: inherit;
+                    resize: none; outline: none; max-height: 120px; min-height: 42px;
+                    line-height: 1.5; color: #334155; transition: border-color .2s;
+                }
+                .chat-admin-textarea:focus { border-color: #7c3aed; }
+                .chat-admin-send {
+                    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+                    background: linear-gradient(135deg, #4c1d95, #7c3aed);
+                    border: none; color: white; cursor: pointer; font-size: .9rem;
+                    display: flex; align-items: center; justify-content: center;
+                    transition: opacity .15s, transform .15s; box-shadow: 0 4px 12px rgba(124,58,237,.35);
+                }
+                .chat-admin-send:hover  { opacity: .88; transform: scale(1.05); }
+                .chat-admin-send:active { transform: scale(.96); }
+                .chat-empty {
+                    text-align: center; padding: 40px 20px; color: #94a3b8;
+                }
+                .chat-empty i { font-size: 2.5rem; display: block; margin-bottom: 12px; opacity: .4; }
+                </style>
+
+                <div class="chat-admin-wrap">
+                    <!-- Header -->
+                    <div class="chat-admin-header">
+                        <div class="ch-icon" style="background:rgba(255,255,255,.15);overflow:hidden;padding:2px;"><svg viewBox="0 0 100 100" width="32" height="32" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e8f4fd" stroke="#8b5cf6" stroke-width="2"/>
+              <path d="M38 62 L44 76 L40 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <path d="M62 62 L56 76 L60 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+              <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/>
+              <ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/>
+              <circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+            </svg></div>
+                        <div>
+                            <h3>Chat de Administradores</h3>
+                            <p>Sala grupal · Solo visible para admins</p>
+                        </div>
+                        <div class="chat-admin-live">
+                            <div class="chat-live-dot"></div>
+                            En vivo
+                        </div>
+                    </div>
+
+                    <!-- Mensajes -->
+                    <div class="chat-admin-messages" id="chat-admin-msgs">
+                        <div class="chat-empty">
+                            <div style="display:flex;justify-content:center;margin-bottom:12px;"><svg viewBox="0 0 100 100" width="64" height="64" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+              <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e8f4fd" stroke="#8b5cf6" stroke-width="2"/>
+              <path d="M38 62 L44 76 L40 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <path d="M62 62 L56 76 L60 90" fill="white" stroke="#8b5cf6" stroke-width="1.5"/>
+              <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#8b5cf6" opacity=".7"/>
+              <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+              <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/>
+              <ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+              <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/>
+              <circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
+              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+              <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
+            </svg></div>
+                            <p>Cargando mensajes...</p>
+                        </div>
+                    </div>
+
+                    <!-- Input -->
+                    <div class="chat-admin-input-wrap">
+                        <textarea class="chat-admin-textarea" id="chat-admin-input"
+                            placeholder="Escribe un mensaje…" rows="1"
+                            onkeydown="chatAdminKeydown(event)"
+                            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+                        <button class="chat-admin-send" onclick="chatAdminEnviar()" title="Enviar (Enter)">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {% elif usuario == 'coordinadora' %}
@@ -9169,60 +10407,139 @@ async function confirmarEliminarAlumno(alumnoId, nombre, filaEl) {
 
 <style>
 /* ══ AGENTE FLOTANTE ══════════════════════════════════════════════ */
-/* ── Agente flotante CardioHome ── */
-#agente-float-wrap {
+/* ── BOTONES FLOTANTES ── */
+#float-buttons-container {
     position: fixed; bottom: 28px; right: 28px; z-index: 9999;
+    display: flex; flex-direction: row; align-items: flex-end; gap: 14px;
+}
+
+/* ── Chat Admin flotante ── */
+#chat-float-wrap {
     display: flex; flex-direction: column; align-items: center; gap: 6px;
     cursor: pointer;
 }
-#agente-float-btn {
+#chat-float-btn {
     position: relative;
-    width: 72px; height: 72px; border-radius: 50%;
+    width: 62px; height: 62px; border-radius: 50%;
     background: white;
     border: 3px solid transparent;
     background-clip: padding-box;
-    box-shadow: 0 8px 28px rgba(13,59,94,.35), 0 2px 8px rgba(13,59,94,.15);
+    box-shadow: 0 8px 28px rgba(76,29,149,.35), 0 2px 8px rgba(76,29,149,.15);
     display: flex; align-items: center; justify-content: center;
     transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s;
-    overflow: visible;
-    cursor: pointer;
-    padding: 0;
+    overflow: visible; cursor: pointer; padding: 0;
 }
-#agente-float-btn::before {
+#chat-float-btn::before {
     content: '';
     position: absolute; inset: -3px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #0d3b5e, #1c67a3, #1a6b4a);
+    background: linear-gradient(135deg, #4c1d95, #7c3aed, #059669);
     z-index: -1;
     animation: spin-border 6s linear infinite;
 }
-@keyframes spin-border {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
-}
-#agente-float-btn:hover { transform: scale(1.1) translateY(-3px); box-shadow: 0 14px 36px rgba(13,59,94,.45); }
-#agente-float-btn:hover #agente-label { opacity: 1; transform: translateY(0); }
-#agente-float-btn svg {
-    width: 46px; height: 46px;
+#chat-float-btn:hover { transform: scale(1.1) translateY(-3px); box-shadow: 0 14px 36px rgba(76,29,149,.45); }
+#chat-float-btn svg {
+    width: 40px; height: 40px;
     animation: float-idle 3.5s ease-in-out infinite;
-    filter: drop-shadow(0 2px 4px rgba(13,59,94,.25));
+    animation-delay: .8s;
+    filter: drop-shadow(0 2px 4px rgba(76,29,149,.25));
 }
-@keyframes float-idle {
-    0%,100% { transform: translateY(0); }
-    50%      { transform: translateY(-4px); }
-}
-#agente-label {
-    background: linear-gradient(135deg,#0d3b5e,#1c67a3);
-    color: white; font-size: .65rem; font-weight: 800;
+#chat-float-label {
+    background: linear-gradient(135deg,#4c1d95,#7c3aed);
+    color: white; font-size: .62rem; font-weight: 800;
     letter-spacing: .06em; text-transform: uppercase;
     padding: 3px 10px; border-radius: 99px;
     white-space: nowrap;
-    box-shadow: 0 2px 8px rgba(13,59,94,.3);
+    box-shadow: 0 2px 8px rgba(76,29,149,.3);
     opacity: 0; transform: translateY(4px);
     transition: opacity .2s, transform .2s;
     pointer-events: none;
 }
-#agente-float-wrap:hover #agente-label { opacity: 1; transform: translateY(0); }
+#chat-float-wrap:hover #chat-float-label { opacity: 1; transform: translateY(0); }
+.chat-float-notif-dot {
+    position: absolute; top: 2px; right: 2px;
+    width: 13px; height: 13px;
+    background: #ef4444; border-radius: 50%; border: 2.5px solid white;
+    animation: pulse-dot 2s infinite; z-index: 2;
+    display: none;
+}
+.chat-float-notif-dot.show { display: block; }
+
+/* ── Panel chat flotante ── */
+#chat-float-panel {
+    position: fixed; bottom: 110px; right: 120px; z-index: 9998;
+    width: 370px; max-height: 520px;
+    background: white; border-radius: 22px;
+    box-shadow: 0 12px 48px rgba(76,29,149,.22);
+    border: 1.5px solid #ede9fe;
+    display: none; flex-direction: column; overflow: hidden;
+    animation: slideUpChat .3s cubic-bezier(.22,1,.36,1);
+}
+#chat-float-panel.open { display: flex; }
+
+.chat-float-header {
+    background: linear-gradient(135deg,#4c1d95,#7c3aed);
+    padding: 14px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.chat-float-header .cf-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,.2); border: 1.5px solid rgba(255,255,255,.3);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; flex-shrink: 0;
+}
+.chat-float-title { color: white; font-weight: 800; font-size: .88rem; }
+.chat-float-sub   { color: rgba(255,255,255,.65); font-size: .7rem; }
+.chat-float-close {
+    margin-left: auto; background: none; border: none;
+    color: rgba(255,255,255,.7); cursor: pointer; font-size: .9rem; padding: 4px;
+}
+.chat-float-close:hover { color: white; }
+
+#chat-float-messages {
+    flex: 1; overflow-y: auto; padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+    background: #f8faff; min-height: 0;
+    scroll-behavior: smooth;
+}
+#chat-float-messages::-webkit-scrollbar { width: 4px; }
+#chat-float-messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 99px; }
+
+.cfmsg { max-width: 82%; padding: 9px 13px; border-radius: 14px; font-size: .82rem; line-height: 1.5; }
+.cfmsg.mine {
+    align-self: flex-end;
+    background: linear-gradient(135deg,#4c1d95,#7c3aed);
+    color: white; border-bottom-right-radius: 4px;
+}
+.cfmsg.other {
+    align-self: flex-start;
+    background: white; color: #1e293b;
+    border: 1px solid #ede9fe; border-bottom-left-radius: 4px;
+    box-shadow: 0 2px 6px rgba(76,29,149,.07);
+}
+.cfmsg .cf-name { font-size: .68rem; font-weight: 800; opacity: .7; margin-bottom: 3px; }
+.cfmsg .cf-time { font-size: .65rem; opacity: .55; margin-top: 4px; text-align: right; }
+.cfmsg.typing   { align-self: flex-start; background: white; border: 1px solid #ede9fe; color: #94a3b8; font-style: italic; }
+
+.chat-float-input-row {
+    padding: 10px 12px; border-top: 1px solid #f0eaff;
+    display: flex; gap: 8px; flex-shrink: 0; background: white;
+}
+.chat-float-input-row input {
+    flex: 1; border: 1.5px solid #ede9fe; border-radius: 12px;
+    padding: 8px 12px; font-size: .82rem; font-family: inherit;
+    outline: none; color: #334155;
+}
+.chat-float-input-row input:focus { border-color: #7c3aed; }
+.chat-float-send {
+    width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+    background: linear-gradient(135deg,#4c1d95,#7c3aed);
+    border: none; color: white; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .85rem; transition: opacity .15s;
+}
+.chat-float-send:hover { opacity: .85; }
+
+
 .notif-dot{
     position:absolute;top:2px;right:2px;width:14px;height:14px;
     background:#10b981;border-radius:50%;border:2.5px solid white;
@@ -9230,394 +10547,598 @@ async function confirmarEliminarAlumno(alumnoId, nombre, filaEl) {
     z-index: 2;
 }
 @keyframes pulse-dot{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.4);opacity:.7;}}
-#agente-chat-panel{
-    position:fixed;bottom:100px;right:28px;z-index:9998;
-    width:360px;max-height:520px;background:white;border-radius:20px;
-    box-shadow:0 12px 48px rgba(13,59,94,.22);border:1.5px solid #e0eaf6;
-    display:none;flex-direction:column;overflow:hidden;
-    animation:slideUpChat .3s cubic-bezier(.22,1,.36,1);
-}
-#agente-chat-panel.open{display:flex;}
-@keyframes slideUpChat{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
-.agente-chat-header{background:linear-gradient(135deg,#0d3b5e,#1c67a3);padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
-.agente-chat-header .ch-avatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:.95rem;color:white;flex-shrink:0;}
-.agente-chat-title{color:white;font-weight:800;font-size:.88rem;}
-.agente-chat-sub{color:rgba(255,255,255,.7);font-size:.7rem;}
-.agente-chat-close{margin-left:auto;background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:.9rem;padding:4px;}
-.agente-chat-close:hover{color:white;}
-#agente-chat-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:0;}
-.chat-msg{max-width:85%;padding:9px 13px;border-radius:14px;font-size:.82rem;line-height:1.5;}
-.chat-msg.user{align-self:flex-end;background:linear-gradient(135deg,#0d3b5e,#1c67a3);color:white;border-bottom-right-radius:4px;}
-.chat-msg.agent{align-self:flex-start;background:#f0f6ff;color:#1e293b;border:1px solid #e0eaf6;border-bottom-left-radius:4px;}
-.chat-msg.typing{background:#f0f6ff;border:1px solid #e0eaf6;align-self:flex-start;color:#94a3b8;font-style:italic;}
-.agente-chat-input-row{padding:10px 12px;border-top:1px solid #f0f4f8;display:flex;gap:8px;flex-shrink:0;}
-.agente-chat-input-row input{flex:1;border:1.5px solid #e2e8f0;border-radius:10px;padding:8px 12px;font-size:.82rem;font-family:inherit;outline:none;color:#334155;}
-.agente-chat-input-row input:focus{border-color:#1c67a3;}
-.agente-chat-send{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#0d3b5e,#1c67a3);border:none;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;transition:opacity .15s;}
-.agente-chat-send:hover{opacity:.85;}
+
 </style>
 
 <!-- CHAT FLOTANTE — Agente CardioHome -->
-<div id="agente-float-wrap" onclick="toggleAgenteChat()" title="Asistente CardioHome IA">
-    <button id="agente-float-btn">
-        <!-- Personaje médico CardioHome -->
-        <svg id="agente-float-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <!-- Cuerpo / bata médica -->
-          <ellipse cx="50" cy="74" rx="22" ry="18" fill="#e8f4fd" stroke="#1c67a3" stroke-width="2"/>
-          <!-- Solapa bata izquierda -->
-          <path d="M36 60 L44 74 L38 88" fill="white" stroke="#1c67a3" stroke-width="1.5"/>
-          <!-- Solapa bata derecha -->
-          <path d="M64 60 L56 74 L62 88" fill="white" stroke="#1c67a3" stroke-width="1.5"/>
-          <!-- Cruz médica en bata -->
-          <rect x="47" y="67" width="6" height="14" rx="1.5" fill="#1c67a3" opacity=".7"/>
-          <rect x="44" y="72" width="12" height="5" rx="1.5" fill="#1c67a3" opacity=".7"/>
-          <!-- Cuello -->
-          <rect x="45" y="56" width="10" height="7" rx="3" fill="#f9dcc4"/>
-          <!-- Cabeza -->
+<!-- ══ CONTENEDOR BOTONES FLOTANTES ══ -->
+<!-- ══ CHAT SOPORTE FLOTANTE CardioHome ══════════════════════════════════ -->
+<style>
+/* ── Botón flotante soporte ── */
+#float-buttons-container {
+    position: fixed; bottom: 28px; right: 28px; z-index: 9999;
+    display: flex; flex-direction: row; align-items: flex-end; gap: 14px;
+}
+#soporte-float-wrap {
+    display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer;
+}
+#soporte-float-btn {
+    position: relative; width: 68px; height: 68px; border-radius: 50%;
+    background: white; border: 3px solid transparent; background-clip: padding-box;
+    box-shadow: 0 8px 28px rgba(76,29,149,.35);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .25s cubic-bezier(.34,1.56,.64,1); overflow: visible; padding: 0;
+}
+#soporte-float-btn::before {
+    content: ''; position: absolute; inset: -3px; border-radius: 50%;
+    background: linear-gradient(135deg,#4c1d95,#7c3aed,#059669);
+    z-index: -1; animation: spin-border 6s linear infinite;
+}
+#soporte-float-btn:hover { transform: scale(1.1) translateY(-3px); }
+#soporte-float-btn svg { width: 44px; height: 44px; animation: float-idle 3.5s ease-in-out infinite; }
+#soporte-float-label {
+    background: linear-gradient(135deg,#4c1d95,#7c3aed); color: white;
+    font-size: .62rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 99px; white-space: nowrap;
+    opacity: 0; transform: translateY(4px); transition: opacity .2s, transform .2s;
+    pointer-events: none;
+}
+#soporte-float-wrap:hover #soporte-float-label { opacity: 1; transform: translateY(0); }
+.soporte-notif-dot {
+    position: absolute; top: 2px; right: 2px; width: 14px; height: 14px;
+    border-radius: 50%; border: 2.5px solid white; z-index: 2;
+    animation: pulse-dot 2s infinite; display: none;
+}
+.soporte-notif-dot.show { display: block; }
+.soporte-notif-dot.verde { background: #10b981; }
+.soporte-notif-dot.rojo  { background: #ef4444; }
+.soporte-notif-dot.naranja { background: #f59e0b; }
+
+/* ── Panel soporte ── */
+#soporte-panel {
+    position: fixed; bottom: 110px; right: 28px; z-index: 9998;
+    width: 390px; max-height: 580px; background: white;
+    border-radius: 22px; box-shadow: 0 16px 56px rgba(76,29,149,.22);
+    border: 1.5px solid #ede9fe; display: none; flex-direction: column; overflow: hidden;
+}
+#soporte-panel.open { display: flex; animation: slideUpChat .3s cubic-bezier(.22,1,.36,1); }
+.sp-header {
+    padding: 14px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.sp-header.purple { background: linear-gradient(135deg,#4c1d95,#7c3aed); }
+.sp-header.blue   { background: linear-gradient(135deg,#0d3b5e,#1c67a3); }
+.sp-header.urgent { background: linear-gradient(135deg,#92400e,#d97706); }
+.sp-h-icon {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: rgba(255,255,255,.18); border: 1.5px solid rgba(255,255,255,.3);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.sp-h-title { color: white; font-weight: 800; font-size: .88rem; margin: 0 0 1px; }
+.sp-h-sub   { color: rgba(255,255,255,.65); font-size: .7rem; }
+.sp-close   { margin-left: auto; background: none; border: none; color: rgba(255,255,255,.7); cursor: pointer; font-size: .9rem; }
+.sp-close:hover { color: white; }
+#soporte-body {
+    flex: 1; overflow-y: auto; min-height: 0;
+    background: #f8faff; scroll-behavior: smooth;
+}
+#soporte-body::-webkit-scrollbar { width: 4px; }
+#soporte-body::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 99px; }
+.sp-msgs { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.sp-msg { max-width: 82%; padding: 9px 13px; border-radius: 14px; font-size: .82rem; line-height: 1.5; }
+.sp-msg.mine  { align-self: flex-end; background: linear-gradient(135deg,#4c1d95,#7c3aed); color: white; border-bottom-right-radius: 4px; }
+.sp-msg.other { align-self: flex-start; background: white; color: #1e293b; border: 1px solid #ede9fe; border-bottom-left-radius: 4px; box-shadow: 0 2px 6px rgba(76,29,149,.07); }
+.sp-msg .sp-mn { font-size: .68rem; font-weight: 800; opacity: .7; margin-bottom: 3px; }
+.sp-msg .sp-mt { font-size: .65rem; opacity: .5; margin-top: 4px; text-align: right; }
+.sp-input-row {
+    padding: 10px 12px; border-top: 1px solid #f0eaff;
+    display: flex; gap: 8px; flex-shrink: 0; background: white;
+}
+.sp-input-row input {
+    flex: 1; border: 1.5px solid #ede9fe; border-radius: 12px;
+    padding: 8px 12px; font-size: .82rem; font-family: inherit; outline: none; color: #334155;
+}
+.sp-input-row input:focus { border-color: #7c3aed; }
+.sp-send {
+    width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+    background: linear-gradient(135deg,#4c1d95,#7c3aed); border: none;
+    color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: .85rem;
+}
+/* Formulario ingreso */
+.sp-form { padding: 20px; }
+.sp-form-title { font-size: .9rem; font-weight: 800; color: #1e293b; margin: 0 0 6px; }
+.sp-form-sub { font-size: .78rem; color: #64748b; margin: 0 0 18px; line-height: 1.5; }
+.sp-field { margin-bottom: 12px; }
+.sp-field label { font-size: .72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .04em; display: block; margin-bottom: 4px; }
+.sp-field input { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 9px 12px; font-size: .84rem; font-family: inherit; outline: none; color: #334155; box-sizing: border-box; }
+.sp-field input:focus { border-color: #7c3aed; }
+.sp-btn-primary {
+    width: 100%; padding: 11px; background: linear-gradient(135deg,#4c1d95,#7c3aed);
+    color: white; border: none; border-radius: 12px; font-weight: 800;
+    font-size: .84rem; cursor: pointer; font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px;
+}
+.sp-btn-primary:hover { opacity: .9; }
+.sp-btn-primary:disabled { opacity: .5; cursor: wait; }
+/* Esperando */
+.sp-waiting {
+    text-align: center; padding: 32px 20px;
+}
+.sp-waiting-spinner {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: linear-gradient(135deg,#ede9fe,#ddd6fe);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
+    animation: float-idle 2s ease-in-out infinite;
+}
+.sp-waiting-title { font-weight: 800; color: #1e293b; margin: 0 0 8px; font-size: .9rem; }
+.sp-waiting-sub   { font-size: .78rem; color: #64748b; margin: 0 0 20px; line-height: 1.5; }
+.sp-btn-cancel {
+    background: #fee2e2; color: #dc2626; border: 1.5px solid #fecaca;
+    border-radius: 10px; padding: 8px 18px; font-weight: 700; font-size: .78rem;
+    cursor: pointer; font-family: inherit;
+}
+/* Notificacion admin */
+.sp-notif-card {
+    margin: 14px; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 4px 16px rgba(76,29,149,.12); border: 1.5px solid #ede9fe;
+}
+.sp-notif-top {
+    padding: 14px 16px; background: linear-gradient(135deg,#4c1d95,#7c3aed);
+    display: flex; align-items: center; gap: 10px;
+}
+.sp-notif-top.urgent { background: linear-gradient(135deg,#92400e,#d97706); }
+.sp-notif-icon { font-size: 1.4rem; }
+.sp-notif-name { color: white; font-weight: 800; font-size: .88rem; }
+.sp-notif-esc  { color: rgba(255,255,255,.7); font-size: .72rem; }
+.sp-notif-body { padding: 14px 16px; background: white; display: flex; gap: 8px; }
+.sp-btn-aceptar { flex: 1; padding: 10px; background: linear-gradient(135deg,#059669,#10b981); color: white; border: none; border-radius: 10px; font-weight: 800; font-size: .8rem; cursor: pointer; font-family: inherit; }
+.sp-btn-ignorar { flex: 1; padding: 10px; background: #f1f5f9; color: #64748b; border: 1.5px solid #e2e8f0; border-radius: 10px; font-weight: 700; font-size: .8rem; cursor: pointer; font-family: inherit; }
+</style>
+
+<div id="float-buttons-container">
+{% if usuario in ('coordinador_escuela', 'coordinadora') %}
+<div id="soporte-float-wrap" onclick="soporteToggle()" title="Contactar administrador">
+    <button id="soporte-float-btn">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="50" cy="76" rx="22" ry="16" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
+          <path d="M38 62 L44 76 L40 90" fill="white" stroke="#7c3aed" stroke-width="1.5"/>
+          <path d="M62 62 L56 76 L60 90" fill="white" stroke="#7c3aed" stroke-width="1.5"/>
+          <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#7c3aed" opacity=".7"/>
+          <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#7c3aed" opacity=".7"/>
+          <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
           <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
-          <!-- Cabello -->
-          <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#0d3b5e"/>
-          <!-- Orejas -->
-          <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
-          <ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
-          <!-- Estetoscopio -->
-          <path d="M36 46 Q30 54 34 62 Q38 68 44 64" fill="none" stroke="#0d3b5e" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="34" cy="62" r="3.5" fill="none" stroke="#0d3b5e" stroke-width="1.5"/>
-          <circle cx="34" cy="62" r="1.5" fill="#1c67a3"/>
-          <!-- Ojos -->
-          <ellipse cx="43" cy="43" rx="3.5" ry="3.8" fill="white"/>
-          <ellipse cx="57" cy="43" rx="3.5" ry="3.8" fill="white"/>
-          <circle cx="44" cy="44" r="2" fill="#0d3b5e"/>
-          <circle cx="58" cy="44" r="2" fill="#0d3b5e"/>
-          <circle cx="44.8" cy="43.2" r=".7" fill="white"/>
-          <circle cx="58.8" cy="43.2" r=".7" fill="white"/>
-          <!-- Sonrisa -->
+          <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#4c1d95"/>
+          <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4"/><ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4"/>
+          <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/><ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+          <circle cx="44" cy="44" r="1.8" fill="#4c1d95"/><circle cx="58" cy="44" r="1.8" fill="#4c1d95"/>
           <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
-          <!-- Mejillas -->
-          <ellipse cx="39" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
-          <ellipse cx="61" cy="50" rx="4" ry="2.5" fill="#f5a0a0" opacity=".5"/>
-          <!-- Estrellita IA -->
-          <text x="68" y="28" font-size="11" fill="#1c67a3" font-family="Arial">✦</text>
+          <text x="66" y="28" font-size="13" fill="#7c3aed" font-family="Arial">✦</text>
         </svg>
-        <span class="notif-dot"></span>
+        <span class="soporte-notif-dot verde" id="soporte-dot"></span>
     </button>
-    <span id="agente-label">CardioHome IA</span>
+    <span id="soporte-float-label">Soporte</span>
 </div>
-<div id="agente-chat-panel">
-    <div class="agente-chat-header">
-        <div class="ch-avatar" style="background:white;overflow:hidden;padding:2px;">
-            <svg viewBox="0 0 100 100" width="30" height="30" xmlns="http://www.w3.org/2000/svg">
-              <ellipse cx="50" cy="74" rx="22" ry="18" fill="#e8f4fd"/>
-              <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4"/>
-              <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#0d3b5e"/>
-              <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/><ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
-              <circle cx="44" cy="44" r="1.8" fill="#0d3b5e"/><circle cx="58" cy="44" r="1.8" fill="#0d3b5e"/>
-              <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
-            </svg>
-        </div>
-        <div><div class="agente-chat-title">Asistente CardioHome</div><div class="agente-chat-sub">IA · Siempre disponible</div></div>
-        <button class="agente-chat-close" onclick="toggleAgenteChat()"><i class="fas fa-xmark"></i></button>
-    </div>
-    <div id="agente-chat-messages">
-        <div class="chat-msg agent">Hola! Soy el asistente IA de CardioHome. Puedes preguntarme sobre el sistema, los formularios PIE, cómo usar la plataforma o cualquier duda que tengas.</div>
-    </div>
-    <div class="agente-chat-input-row">
-        <input type="text" id="agente-chat-input" placeholder="Escribe tu pregunta..."
-            onkeydown="if(event.key==='Enter')enviarMensajeChat()">
-        <button class="agente-chat-send" onclick="enviarMensajeChat()"><i class="fas fa-paper-plane"></i></button>
-    </div>
+{% endif %}
+{% if usuario == 'admin' %}
+<div id="soporte-float-wrap" onclick="soporteToggle()" title="Solicitudes de soporte">
+    <button id="soporte-float-btn">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e0f2fe" stroke="#0369a1" stroke-width="2"/>
+          <path d="M38 62 L44 76 L40 90" fill="white" stroke="#0369a1" stroke-width="1.5"/>
+          <path d="M62 62 L56 76 L60 90" fill="white" stroke="#0369a1" stroke-width="1.5"/>
+          <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#0369a1" opacity=".7"/>
+          <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#0369a1" opacity=".7"/>
+          <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+          <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+          <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#0d3b5e"/>
+          <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4"/><ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4"/>
+          <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/><ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+          <circle cx="44" cy="44" r="1.8" fill="#0d3b5e"/><circle cx="58" cy="44" r="1.8" fill="#0d3b5e"/>
+          <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+          <text x="66" y="28" font-size="13" fill="#1c67a3" font-family="Arial">★</text>
+        </svg>
+        <span class="soporte-notif-dot rojo" id="soporte-dot"></span>
+    </button>
+    <span id="soporte-float-label">Soporte</span>
+</div>
+{% endif %}
 </div>
 
-<!-- MODAL BARRIDO -->
-<div id="barrido-modal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);overflow-y:auto;">
-    <div style="min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:30px 16px;">
-        <div style="background:white;border-radius:20px;width:100%;max-width:640px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3);">
-            <div style="background:linear-gradient(135deg,#0d3b5e,#1c67a3);padding:18px 22px;display:flex;align-items:center;gap:12px;">
-                <div style="width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="fas fa-robot" style="color:white;font-size:1rem;"></i>
-                </div>
-                <div>
-                    <div style="color:white;font-weight:800;font-size:.95rem;">Agente de Revisión</div>
-                    <div id="barrido-modal-sub" style="color:rgba(255,255,255,.7);font-size:.74rem;">Barrido inteligente de formularios</div>
-                </div>
-                <button onclick="cerrarBarridoModal()" style="margin-left:auto;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:white;border-radius:8px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;">
-                    <i class="fas fa-xmark"></i>
-                </button>
-            </div>
-            <div style="padding:20px 22px;">
-                <div style="background:#f0f6ff;border:1.5px solid #d4e5f5;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:.82rem;color:#1e3a8a;line-height:1.5;">
-                    <i class="fas fa-circle-info" style="margin-right:6px;"></i>
-                    El agente revisara todos los formularios evaluados de esta nomina y detectara: datos personales incompletos, edades negativas, diagnosticos PIE vacios, grupos de checks sin marcar, medidas antropometricas faltantes y derivaciones inconsistentes con los hallazgos.
-                </div>
-                <button id="barrido-modal-btn" onclick="ejecutarBarridoModal()"
-                    style="width:100%;padding:12px;background:linear-gradient(135deg,#0d3b5e,#1c67a3);color:white;border:none;border-radius:12px;font-weight:800;font-size:.88rem;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;">
-                    <i class="fas fa-wand-magic-sparkles"></i> Iniciar barrido de nomina
-                </button>
-                <div id="barrido-modal-results" style="display:none;">
-                    <div id="barrido-modal-stats" style="display:flex;gap:10px;margin-bottom:14px;"></div>
-                    <div id="barrido-modal-resumen" style="background:#f8faff;border:1.5px solid #e0eaf6;border-radius:10px;padding:12px 14px;font-size:.82rem;color:#334155;line-height:1.5;margin-bottom:14px;"></div>
-                    <div style="font-size:.74rem;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Detalle por alumno</div>
-                    <div id="barrido-modal-errlist" style="border:1.5px solid #e2e8f0;border-radius:12px;overflow:hidden;max-height:360px;overflow-y:auto;"></div>
-                </div>
-            </div>
+<!-- Panel soporte -->
+<div id="soporte-panel">
+    <div class="sp-header purple" id="sp-header">
+        <div class="sp-h-icon"><i class="fas fa-headset" style="color:white;font-size:.9rem;"></i></div>
+        <div style="flex:1;">
+            <div class="sp-h-title" id="sp-title">Soporte CardioHome</div>
+            <div class="sp-h-sub"  id="sp-sub">Administradores en línea</div>
         </div>
+        <button class="sp-close" onclick="soporteToggle()"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div id="soporte-body"></div>
+    <div class="sp-input-row" id="sp-input-row" style="display:none;">
+        <input type="text" id="sp-input" placeholder="Escribe tu mensaje…" onkeydown="if(event.key==='Enter')soporteEnviar()">
+        <button class="sp-send" onclick="soporteEnviar()"><i class="fas fa-paper-plane"></i></button>
     </div>
 </div>
 
 <script>
-/* ══ CHAT FLOTANTE ══ */
-let _chatHistorial = [];
-function toggleAgenteChat() {
-    const panel = document.getElementById('agente-chat-panel');
-    const wrap  = document.getElementById('agente-float-wrap');
-    const isOpen = panel.classList.contains('open');
-    if (isOpen) { panel.classList.remove('open'); if(wrap) wrap.style.transform=''; }
-    else { panel.classList.add('open'); setTimeout(()=>document.getElementById('agente-chat-input')?.focus(),100); }
-}
-async function enviarMensajeChat() {
-    const input = document.getElementById('agente-chat-input');
-    const msgs  = document.getElementById('agente-chat-messages');
-    const texto = input.value.trim();
-    if (!texto) return;
-    input.value = '';
-    const uMsg = document.createElement('div'); uMsg.className='chat-msg user'; uMsg.textContent=texto; msgs.appendChild(uMsg);
-    const typing = document.createElement('div'); typing.className='chat-msg typing'; typing.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Escribiendo...'; msgs.appendChild(typing);
-    msgs.scrollTop = msgs.scrollHeight;
-    _chatHistorial.push({role:'user',content:texto});
-    try {
-        const res  = await fetch('/api/agente/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mensaje:texto,historial:_chatHistorial.slice(-6)})});
-        const data = await res.json();
-        typing.remove();
-        const aMsg = document.createElement('div'); aMsg.className='chat-msg agent';
-        aMsg.textContent = data.success ? data.respuesta : 'Error: '+(data.message||'Sin respuesta');
-        msgs.appendChild(aMsg);
-        if (data.success) _chatHistorial.push({role:'assistant',content:data.respuesta});
-    } catch(e) { typing.remove(); const eMsg=document.createElement('div');eMsg.className='chat-msg agent';eMsg.textContent='Error de conexion.';msgs.appendChild(eMsg); }
-    msgs.scrollTop = msgs.scrollHeight;
-}
+/* ══ SOPORTE FLOTANTE ════════════════════════════════════════════════════════
+   Roles: coordinador_escuela / coordinadora → solicitan
+          admin → reciben, aceptan y chatean
+══════════════════════════════════════════════════════════════════════════════ */
+var _SP = {
+    rol:        '{{ usuario }}',
+    miId:       '{{ session.get("usuario_id","") }}',
+    miNombre:   '{{ session.get("nombre", session.get("usuario","")) }}',
+    sesionId:   null,
+    estado:     'idle',   // idle | form | esperando | activo | admin_idle | admin_chat
+    timer:      null,
+    ultimoTs:   null,
+    sesionPendiente: null,  // admin: sesion pendiente a mostrar
+};
 
-/* ══ BARRIDO ══ */
-let _barridoNominaId = null;
-function abrirBarridoModal(nominaId, nominaNombre) {
-    _barridoNominaId = nominaId;
-    document.getElementById('barrido-modal-sub').textContent = nominaNombre;
-    document.getElementById('barrido-modal-results').style.display = 'none';
-    const btn = document.getElementById('barrido-modal-btn');
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Iniciar barrido de nomina';
-    document.getElementById('barrido-modal').style.display = 'block';
-    document.body.style.overflow = 'hidden';
-}
-function cerrarBarridoModal() {
-    document.getElementById('barrido-modal').style.display = 'none';
-    document.body.style.overflow = '';
-    _barridoNominaId = null;
-}
-async function ejecutarBarridoModal() {
-    if (!_barridoNominaId) return;
-    const btn=document.getElementById('barrido-modal-btn');
-    const results=document.getElementById('barrido-modal-results');
-    const stats=document.getElementById('barrido-modal-stats');
-    const resumen=document.getElementById('barrido-modal-resumen');
-    const errlist=document.getElementById('barrido-modal-errlist');
-    btn.disabled=true; btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Analizando formularios...';
-    results.style.display='block';
-    resumen.textContent='El agente esta revisando cada formulario...';
-    stats.innerHTML=''; errlist.innerHTML='<div style="padding:16px;text-align:center;color:#94a3b8;font-size:.8rem;"><i class="fas fa-circle-notch fa-spin"></i> Procesando...</div>';
-    try {
-        const res=await fetch('/api/agente/barrer_nomina',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nomina_id:_barridoNominaId})});
-        const data=await res.json();
-        if(!data.success) throw new Error(data.message||'Error en el barrido');
-        const ss='flex:1;text-align:center;padding:12px 8px;border-radius:10px;border:1.5px solid';
-        stats.innerHTML=
-            '<div style="'+ss+' #e0eaf6;background:#f0f6ff;"><div style="font-size:1.6rem;font-weight:900;color:#0d3b5e;">'+data.total+'</div><div style="font-size:.68rem;color:#64748b;text-transform:uppercase;">Evaluados</div></div>'
-            +'<div style="'+ss+' #a7f3d0;background:#d1fae5;"><div style="font-size:1.6rem;font-weight:900;color:#059669;">'+data.sin_errores+'</div><div style="font-size:.68rem;color:#065f46;text-transform:uppercase;">Sin errores</div></div>'
-            +'<div style="'+ss+' #fecaca;background:#fff5f5;"><div style="font-size:1.6rem;font-weight:900;color:#dc2626;">'+data.con_errores+'</div><div style="font-size:.68rem;color:#991b1b;text-transform:uppercase;">Con errores</div></div>';
-        resumen.textContent = data.resumen_ia;
-        if (!data.errores||data.errores.length===0) {
-            errlist.innerHTML='<div style="text-align:center;padding:24px;color:#059669;"><i class="fas fa-check-circle" style="font-size:2rem;display:block;margin-bottom:8px;"></i><strong>Todos los formularios estan completos!</strong><br><span style="font-size:.8rem;color:#64748b;">La jornada puede cerrarse sin problemas.</span></div>';
+function soporteToggle() {
+    var panel = document.getElementById('soporte-panel');
+    var open  = panel.classList.contains('open');
+    if (open) {
+        panel.classList.remove('open');
+        clearInterval(_SP.timer);
+    } else {
+        panel.classList.add('open');
+        // Limpiar dot
+        var dot = document.getElementById('soporte-dot');
+        if (dot) { dot.classList.remove('show'); }
+        // Inicializar según rol y estado
+        if (_SP.rol === 'admin') {
+            _spAdminInit();
         } else {
-            errlist.innerHTML = data.errores.map(function(a){
-                var chips = a.errores.map(function(e){ return '<span style="display:inline-block;background:#fff5f5;color:#dc2626;border:1px solid #fecaca;border-radius:6px;padding:2px 8px;font-size:.69rem;font-weight:600;margin:2px 2px 0 0;">'+e+'</span>'; }).join('');
-                var btnStyle = 'padding:5px 11px;background:linear-gradient(135deg,#0d3b5e,#1c67a3);color:white;border:none;border-radius:8px;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;';
-                var link = a.nomina_id
-                    ? '<div style="display:flex;gap:5px;flex-direction:column;align-items:flex-end;">'
-                      + '<button style="'+btnStyle+'" data-aid="'+a.alumno_id+'" data-nid="'+a.nomina_id+'" data-nom="'+encodeURIComponent(a.nombre||'')+'" onclick="abrirCorreccionRapida(this.dataset.aid,this.dataset.nid,decodeURIComponent(this.dataset.nom))">'
-                      + '<i class="fas fa-pen-to-square"></i> Corregir</button>'
-                      + '<a href="/relleno_formulario/'+a.nomina_id+'" target="_blank" style="font-size:.67rem;color:#94a3b8;text-decoration:underline;text-align:center;">Ver nómina</a>'
-                      + '</div>'
-                    : '';
-                return '<div style="padding:12px 16px;border-bottom:1px solid #f1f5f9;background:white;">'
-                    +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;"><div style="flex:1;">'
-                    +'<div style="font-weight:700;font-size:.85rem;color:#0f2030;">'+a.nombre+'</div>'
-                    +'<div style="font-size:.73rem;color:#94a3b8;margin-bottom:4px;">RUT: '+a.rut+' &middot; <strong style="color:#dc2626;">'+a.total_errores+' error'+(a.total_errores!==1?'es':'')+'</strong></div>'
-                    +'<div>'+chips+'</div>'
-                    +'</div><div style="flex-shrink:0;padding-left:8px;">'+link+'</div>'
-                    +'</div></div>';
-            }).join('');
+            _spCoordInit();
         }
-        btn.disabled=false; btn.innerHTML='<i class="fas fa-rotate-right"></i> Repetir barrido';
-    } catch(e) {
-        resumen.textContent='Error: '+e.message;
-        errlist.innerHTML='';
-        btn.disabled=false; btn.innerHTML='<i class="fas fa-wand-magic-sparkles"></i> Iniciar barrido de nomina';
-    }
-}
-</script>
-<!-- ══ MODAL CORRECCIÓN RÁPIDA DESDE BARRIDO ══════════════════════════════ -->
-<div id="corr-rapida-modal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);overflow-y:auto;">
-    <div style="min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:30px 16px;">
-        <div style="background:white;border-radius:20px;width:100%;max-width:620px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3);">
-            <!-- Header -->
-            <div style="background:linear-gradient(135deg,#0d3b5e,#1c67a3);padding:16px 20px;display:flex;align-items:center;gap:12px;">
-                <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="fas fa-pen-to-square" style="color:white;font-size:.9rem;"></i>
-                </div>
-                <div>
-                    <div style="color:white;font-weight:800;font-size:.9rem;" id="crm-titulo">Corrección Rápida</div>
-                    <div style="color:rgba(255,255,255,.7);font-size:.72rem;" id="crm-subtitulo">Cargando...</div>
-                </div>
-                <button onclick="cerrarCorrRapida()" style="margin-left:auto;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:white;border-radius:8px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;">
-                    <i class="fas fa-xmark"></i>
-                </button>
-            </div>
-            <!-- Body -->
-            <div style="padding:18px 20px;" id="crm-body">
-                <div style="text-align:center;padding:30px;color:#94a3b8;">
-                    <i class="fas fa-circle-notch fa-spin fa-2x" style="display:block;margin-bottom:10px;"></i>
-                    Cargando datos del alumno...
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-let _crmAlumnoId = null, _crmNominaId = null;
-
-async function abrirCorreccionRapida(alumnoId, nominaId, nombre) {
-    _crmAlumnoId = alumnoId;
-    _crmNominaId = nominaId;
-    document.getElementById('crm-titulo').textContent = nombre || 'Corrección Rápida';
-    document.getElementById('crm-subtitulo').textContent = 'Cargando datos...';
-    document.getElementById('crm-body').innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;"><i class="fas fa-circle-notch fa-spin fa-2x" style="display:block;margin-bottom:10px;"></i>Cargando datos del alumno...</div>';
-    document.getElementById('corr-rapida-modal').style.display = 'block';
-    document.body.style.overflow = 'hidden';
-
-    try {
-        const res  = await fetch('/api/admin/alumno_datos/' + alumnoId);
-        const data = await res.json();
-        if (!data.success) throw new Error(data.message || 'Error al cargar');
-        const a = data.alumno;
-        document.getElementById('crm-subtitulo').textContent = 'RUT: ' + (a.rut || 'N/A');
-        renderCorrRapida(a, data.form_type);
-    } catch(e) {
-        document.getElementById('crm-body').innerHTML = '<div style="color:#dc2626;padding:20px;"><i class="fas fa-circle-exclamation"></i> ' + e.message + '</div>';
     }
 }
 
-function renderCorrRapida(a, formType) {
-    const fld = (label, name, val, type='text') =>
-        '<div style="margin-bottom:12px;">'
-        + '<label style="font-size:.73rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px;">' + label + '</label>'
-        + '<input id="crm-' + name + '" name="' + name + '" type="' + type + '" value="' + (val||'').toString().replace(/"/g,'&quot;') + '"'
-        + ' style="width:100%;border:1.5px solid #e2e8f0;border-radius:9px;padding:8px 11px;font-size:.83rem;font-family:inherit;box-sizing:border-box;color:#334155;">'
-        + '</div>';
-
-    const sel = (label, name, val, opts) =>
-        '<div style="margin-bottom:12px;">'
-        + '<label style="font-size:.73rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px;">' + label + '</label>'
-        + '<select id="crm-' + name + '" name="' + name + '" style="width:100%;border:1.5px solid #e2e8f0;border-radius:9px;padding:8px 11px;font-size:.83rem;font-family:inherit;box-sizing:border-box;color:#334155;">'
-        + opts.map(o => '<option value="'+o+'"'+(val===o?' selected':'')+'>'+o+'</option>').join('')
-        + '</select>'
-        + '</div>';
-
-    const ta = (label, name, val, rows=2) =>
-        '<div style="margin-bottom:12px;">'
-        + '<label style="font-size:.73rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px;">' + label + '</label>'
-        + '<textarea id="crm-' + name + '" name="' + name + '" rows="'+rows+'" style="width:100%;border:1.5px solid #e2e8f0;border-radius:9px;padding:8px 11px;font-size:.83rem;font-family:inherit;box-sizing:border-box;color:#334155;resize:vertical;">' + (val||'') + '</textarea>'
-        + '</div>';
-
-    const DX_OPTS = ['','Dificultades específicas del aprendizaje','Discapacidad auditiva','Discapacidad intelectual','Discapacidad intelectual leve','Discapacidad intelectual moderada','Discapacidad motora','Discapacidad motora grave','Discapacidad múltiple','Discapacidad visual','Disfasia','Disfasia severa','Funcionamiento intelectual limítrofe','GARC','Hipoacusia','Pendiente','Rendimiento intelectual limítrofe','Retraso global del desarrollo','Síndrome de Down','Trastorno de déficit atencional','Trastorno de deficit atencional-H','Trastorno del espectro autista','Trastorno del lenguaje','Trastorno específico de lenguaje expresivo','Trastorno específico de lenguaje mixto','Trastorno Motor','Otro'];
-
-    let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px;">';
-    html += fld('Nombre', 'nombre', a.nombre);
-    html += fld('RUT', 'rut', a.rut);
-    html += fld('Fecha Nacimiento', 'fecha_nacimiento', a.fecha_nacimiento, 'date');
-    html += fld('Fecha Evaluación', 'fecha_evaluacion', a.fecha_evaluacion, 'date');
-    html += sel('Sexo', 'sexo', a.sexo, ['','F','M']);
-    html += fld('Nacionalidad', 'nacionalidad', a.nacionalidad);
-    html += '</div>';
-
-    if (formType === 'medicina_familiar') {
-        html += '<div style="border-top:1px solid #f1f5f9;margin:8px 0 14px;padding-top:14px;">';
-        html += sel('Diagnóstico PIE', 'diagnostico_1', a.diagnostico_1, DX_OPTS);
-        html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px;">';
-        html += fld('Altura (cm)', 'altura', a.altura);
-        html += fld('Peso (kg)', 'peso', a.peso);
-        html += fld('IMC', 'imc', a.imc);
-        html += '</div>';
-        html += fld('Clasificación IMC', 'clasificacion_imc', a.clasificacion_imc || a.clasificacion);
-        html += ta('Derivaciones', 'derivaciones', a.derivaciones, 2);
-        html += '</div>';
-    } else if (formType === 'neurologia' || formType === 'informe_neurologico') {
-        html += '<div style="border-top:1px solid #f1f5f9;margin:8px 0 14px;padding-top:14px;">';
-        html += fld('Diagnóstico', 'diagnostico', a.diagnostico);
-        html += ta('Observaciones', 'observaciones', a.observaciones, 3);
-        html += ta('Derivaciones', 'derivaciones', a.derivaciones, 2);
-        html += '</div>';
-    }
-
-    html += '<div style="display:flex;gap:10px;justify-content:flex-end;padding-top:8px;border-top:1px solid #f1f5f9;">'
-        + '<button onclick="cerrarCorrRapida()" style="padding:9px 18px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:10px;font-weight:700;font-size:.83rem;cursor:pointer;font-family:inherit;color:#374151;">Cancelar</button>'
-        + '<button onclick="guardarCorrRapida()" style="padding:9px 22px;background:linear-gradient(135deg,#0d3b5e,#1c67a3);color:white;border:none;border-radius:10px;font-weight:800;font-size:.83rem;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:7px;" id="crm-guardar-btn"><i class="fas fa-floppy-disk"></i> Guardar cambios</button>'
-        + '</div>';
-
-    document.getElementById('crm-body').innerHTML = html;
+/* ══ FLUJO COORDINADORA ══════════════════════════════════════════════════════ */
+function _spCoordInit() {
+    // Verificar si ya tiene sesión activa
+    fetch('/api/soporte/mi_sesion').then(r=>r.json()).then(function(data) {
+        if (data.sesion) {
+            _SP.sesionId = data.sesion.id;
+            if (data.sesion.estado === 'esperando') {
+                _spShowEsperando(data.sesion);
+            } else if (data.sesion.estado === 'activo') {
+                _SP.estado = 'activo';
+                _spShowChat(data.sesion.admin_nombre);
+                _SP.ultimoTs = null;
+                _spPollMensajes();
+            }
+        } else {
+            _spShowForm();
+        }
+    }).catch(function() { _spShowForm(); });
 }
 
-async function guardarCorrRapida() {
-    if (!_crmAlumnoId) return;
-    const btn = document.getElementById('crm-guardar-btn');
+function _spShowForm() {
+    _SP.estado = 'form';
+    var esEscuela = _SP.rol === 'coordinador_escuela';
+    var body = document.getElementById('soporte-body');
+    body.innerHTML = '<div class="sp-form">'
+        + '<div style="text-align:center;margin-bottom:18px;">'
+        + '<div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#ede9fe,#ddd6fe);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:1.5rem;">🎧</div>'
+        + '<p class="sp-form-title">Contactar Administrador</p>'
+        + '<p class="sp-form-sub">Si tienes alguna duda, nuestros administradores están disponibles para ayudarte en tiempo real.</p>'
+        + '</div>'
+        + (esEscuela ? '<div class="sp-field"><label>Tu nombre completo</label><input type="text" id="sp-nombre" placeholder="Ej: María González"></div>'
+                     + '<div class="sp-field"><label>Establecimiento</label><input type="text" id="sp-escuela" placeholder="Ej: Escuela Las Acacias"></div>'
+                     : '<div style="background:#fef3c7;border:1.5px solid #fde68a;border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:.8rem;color:#92400e;"><i class="fas fa-star" style="margin-right:6px;"></i><strong>Coordinación General</strong> — Prioridad alta. Un administrador te atenderá de inmediato.</div>')
+        + '<button class="sp-btn-primary" id="sp-solicitar-btn" onclick="_spSolicitar()">'
+        + '<i class="fas fa-headset"></i> Iniciar chat con administrador</button>'
+        + '</div>';
+}
+
+function _spSolicitar() {
+    var btn    = document.getElementById('sp-solicitar-btn');
+    var nombre = _SP.miNombre;
+    var escuela = '';
+    if (_SP.rol === 'coordinador_escuela') {
+        nombre  = (document.getElementById('sp-nombre')?.value || '').trim();
+        escuela = (document.getElementById('sp-escuela')?.value || '').trim();
+        if (!nombre) { document.getElementById('sp-nombre').style.borderColor='#ef4444'; return; }
+        if (!escuela){ document.getElementById('sp-escuela').style.borderColor='#ef4444'; return; }
+    }
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Guardando...';
-
-    // Recoger todos los inputs del modal
-    const campos = {};
-    document.querySelectorAll('#crm-body input, #crm-body select, #crm-body textarea').forEach(el => {
-        if (el.name) campos[el.name] = el.value || null;
-    });
-    // Sincronizar diagnostico_1 → diagnostico_2
-    if (campos.diagnostico_1) campos.diagnostico_2 = campos.diagnostico_1;
-
-    try {
-        const res  = await fetch('/api/admin/corregir_alumno', {
-            method: 'POST', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ alumno_id: _crmAlumnoId, solicitud_id: null, campos })
-        });
-        const data = await res.json();
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Conectando...';
+    fetch('/api/soporte/solicitar', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ nombre: nombre, escuela: escuela })
+    }).then(r=>r.json()).then(function(data) {
         if (data.success) {
-            cerrarCorrRapida();
-            Swal.fire({ icon:'success', title:'Cambios guardados', text:'El formulario del alumno fue actualizado correctamente.', timer:2000, showConfirmButton:false });
-            // Repetir barrido automáticamente
-            if (_barridoNominaId) setTimeout(() => ejecutarBarridoModal(), 800);
+            _SP.sesionId = data.sesion.id;
+            _spShowEsperando(data.sesion);
         } else {
-            throw new Error(data.message || 'Error al guardar');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-headset"></i> Iniciar chat con administrador';
+            alert(data.message || 'Error al conectar');
         }
-    } catch(e) {
-        Swal.fire('Error', e.message, 'error');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-floppy-disk"></i> Guardar cambios';
+    }).catch(function() { btn.disabled = false; });
+}
+
+function _spShowEsperando(sesion) {
+    _SP.estado = 'esperando';
+    var body = document.getElementById('soporte-body');
+    body.innerHTML = '<div class="sp-waiting">'
+        + '<div class="sp-waiting-spinner"><i class="fas fa-headset" style="color:#7c3aed;font-size:1.4rem;"></i></div>'
+        + '<p class="sp-waiting-title">Buscando administrador...</p>'
+        + '<p class="sp-waiting-sub">Tu solicitud fue enviada. Un administrador aceptará el chat en breve. Por favor espera.</p>'
+        + '<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:20px;">'
+        + '<span style="width:8px;height:8px;background:#7c3aed;border-radius:50%;animation:pulse-dot 1.2s .0s infinite;display:inline-block;"></span>'
+        + '<span style="width:8px;height:8px;background:#7c3aed;border-radius:50%;animation:pulse-dot 1.2s .3s infinite;display:inline-block;"></span>'
+        + '<span style="width:8px;height:8px;background:#7c3aed;border-radius:50%;animation:pulse-dot 1.2s .6s infinite;display:inline-block;"></span>'
+        + '</div>'
+        + '<button class="sp-btn-cancel" onclick="_spCancelar()"><i class="fas fa-times"></i> Cancelar solicitud</button>'
+        + '</div>';
+    // Poll hasta que un admin acepte
+    clearInterval(_SP.timer);
+    _SP.timer = setInterval(_spCheckAceptado, 3000);
+}
+
+function _spCheckAceptado() {
+    fetch('/api/soporte/mi_sesion').then(r=>r.json()).then(function(data) {
+        if (data.sesion && data.sesion.estado === 'activo') {
+            clearInterval(_SP.timer);
+            _SP.estado = 'activo';
+            _spShowChat(data.sesion.admin_nombre);
+            _SP.ultimoTs = null;
+            _spPollMensajes();
+        } else if (!data.sesion) {
+            clearInterval(_SP.timer);
+            _SP.sesionId = null;
+            _spShowForm();
+        }
+    });
+}
+
+function _spCancelar() {
+    clearInterval(_SP.timer);
+    if (_SP.sesionId) {
+        fetch('/api/soporte/cerrar', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sesion_id:_SP.sesionId})});
+        _SP.sesionId = null;
     }
+    _SP.estado = 'idle';
+    _spShowForm();
 }
 
-function cerrarCorrRapida() {
-    document.getElementById('corr-rapida-modal').style.display = 'none';
-    document.body.style.overflow = '';
-    _crmAlumnoId = null; _crmNominaId = null;
+function _spShowChat(adminNombre) {
+    document.getElementById('sp-title').textContent = adminNombre || 'Administrador';
+    document.getElementById('sp-sub').textContent = '● Conectado · Chat en vivo';
+    var body = document.getElementById('soporte-body');
+    body.innerHTML = '<div class="sp-msgs" id="sp-msgs-container"></div>';
+    var inputRow = document.getElementById('sp-input-row');
+    inputRow.style.display = 'flex';
+    setTimeout(function() { document.getElementById('sp-input')?.focus(); }, 100);
 }
+
+function _spPollMensajes() {
+    clearInterval(_SP.timer);
+    _SP.timer = setInterval(function() {
+        if (!_SP.sesionId) return;
+        var url = '/api/soporte/mensajes/' + _SP.sesionId + (_SP.ultimoTs ? '?since='+encodeURIComponent(_SP.ultimoTs) : '');
+        fetch(url).then(r=>r.json()).then(function(data) {
+            if (!data.success) return;
+            // Check if session was closed
+            if (data.sesion && data.sesion.estado === 'cerrado') {
+                clearInterval(_SP.timer);
+                _spShowCerrado();
+                return;
+            }
+            if (data.mensajes && data.mensajes.length) {
+                var container = document.getElementById('sp-msgs-container');
+                if (!container) return;
+                data.mensajes.forEach(function(m) {
+                    var esMio = m.autor_nombre === _SP.miNombre || 
+                                (_SP.rol !== 'admin' && m.autor_rol !== 'admin') ||
+                                (_SP.rol === 'admin' && m.autor_rol === 'admin');
+                    var div = document.createElement('div');
+                    div.className = 'sp-msg ' + (esMio ? 'mine' : 'other');
+                    div.innerHTML = (esMio ? '' : '<div class="sp-mn">' + _spEsc(m.autor_nombre) + '</div>')
+                        + '<div>' + _spEsc(m.mensaje) + '</div>'
+                        + '<div class="sp-mt">' + new Date(m.created_at).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}) + '</div>';
+                    container.appendChild(div);
+                    var body = document.getElementById('soporte-body');
+                    body.scrollTop = body.scrollHeight;
+                });
+                _SP.ultimoTs = data.mensajes[data.mensajes.length-1].created_at;
+            }
+        });
+    }, 3000);
+}
+
+function _spShowCerrado() {
+    _SP.estado = 'idle'; _SP.sesionId = null;
+    document.getElementById('sp-title').textContent = 'Chat finalizado';
+    document.getElementById('sp-sub').textContent   = 'El administrador cerró la sesión';
+    document.getElementById('sp-input-row').style.display = 'none';
+    var body = document.getElementById('soporte-body');
+    var existing = body.querySelector('.sp-msgs') || body.querySelector('#sp-msgs-container');
+    var cerrado = document.createElement('div');
+    cerrado.style.cssText = 'text-align:center;padding:16px 20px;color:#64748b;font-size:.8rem;';
+    cerrado.innerHTML = '<i class="fas fa-circle-check" style="color:#10b981;font-size:1.2rem;display:block;margin-bottom:6px;"></i>Chat finalizado. <a href="javascript:void(0)" onclick="_spShowForm()" style="color:#7c3aed;font-weight:700;">Nueva consulta</a>';
+    body.appendChild(cerrado);
+}
+
+function soporteEnviar() {
+    var input = document.getElementById('sp-input');
+    var texto = (input.value || '').trim();
+    if (!texto || !_SP.sesionId) return;
+    input.value = '';
+    fetch('/api/soporte/enviar', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ sesion_id: _SP.sesionId, mensaje: texto })
+    }).then(r=>r.json()).then(function(data) {
+        if (data.success) {
+            var container = document.getElementById('sp-msgs-container');
+            if (!container) return;
+            var div = document.createElement('div');
+            div.className = 'sp-msg mine';
+            div.innerHTML = '<div>' + _spEsc(data.mensaje.mensaje) + '</div>'
+                + '<div class="sp-mt">' + new Date(data.mensaje.created_at).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}) + '</div>';
+            container.appendChild(div);
+            var body = document.getElementById('soporte-body');
+            body.scrollTop = body.scrollHeight;
+            _SP.ultimoTs = data.mensaje.created_at;
+        }
+    });
+}
+
+function _spEsc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ══ FLUJO ADMIN ═════════════════════════════════════════════════════════════ */
+function _spAdminInit() {
+    _SP.estado = 'admin_idle';
+    _spAdminPoll();
+    clearInterval(_SP.timer);
+    _SP.timer = setInterval(_spAdminPoll, 4000);
+}
+
+function _spAdminPoll() {
+    fetch('/api/soporte/sesiones_pendientes').then(r=>r.json()).then(function(data) {
+        if (!data.success) return;
+        var pend   = data.pendientes || [];
+        var activa = data.activas    || [];
+        var body   = document.getElementById('soporte-body');
+
+        // Si tenemos sesión activa → mostrar chat
+        if (activa.length && _SP.estado !== 'admin_chat') {
+            _SP.estado   = 'admin_chat';
+            _SP.sesionId = activa[0].id;
+            _spAdminShowChat(activa[0]);
+            clearInterval(_SP.timer);
+            _SP.timer = null;
+            _spPollMensajes();
+            return;
+        }
+
+        if (_SP.estado === 'admin_chat') return; // ya en chat
+
+        // Mostrar pendientes
+        document.getElementById('sp-title').textContent = 'Solicitudes de Soporte';
+        document.getElementById('sp-sub').textContent   = pend.length + ' pendiente' + (pend.length!==1?'s':'');
+
+        if (!pend.length) {
+            body.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#94a3b8;">'
+                + '<i class="fas fa-headset" style="font-size:2.5rem;display:block;margin-bottom:14px;opacity:.3;"></i>'
+                + '<strong style="display:block;margin-bottom:6px;color:#64748b;">Sin solicitudes pendientes</strong>'
+                + '<span style="font-size:.78rem;">Se actualizará automáticamente</span></div>';
+            // Dot off
+            var dot = document.getElementById('soporte-dot');
+            if (dot) dot.classList.remove('show');
+            return;
+        }
+
+        // Mostrar cards de solicitudes
+        var dot = document.getElementById('soporte-dot');
+        if (dot) { dot.className = 'soporte-notif-dot rojo show'; }
+
+        body.innerHTML = '<div style="padding:10px 14px;">'
+            + '<div style="font-size:.72rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Solicitudes entrantes</div>'
+            + pend.map(function(s) {
+                var isUrgente = s.prioridad === 'alta' || s.solicitante_rol === 'coordinadora';
+                var color     = isUrgente ? '#92400e' : '#4c1d95';
+                var bgGrad    = isUrgente ? 'linear-gradient(135deg,#92400e,#d97706)' : 'linear-gradient(135deg,#4c1d95,#7c3aed)';
+                var mins      = Math.floor((Date.now() - new Date(s.created_at))/60000);
+                return '<div class="sp-notif-card">'
+                    + '<div class="sp-notif-top' + (isUrgente?' urgent':'') + '" style="background:'+bgGrad+'">'
+                    + '<div class="sp-notif-icon">' + (isUrgente ? '⭐' : '💬') + '</div>'
+                    + '<div style="flex:1;"><div class="sp-notif-name">' + _spEsc(s.solicitante_nombre) + '</div>'
+                    + '<div class="sp-notif-esc">' + _spEsc(s.solicitante_escuela)
+                    + (isUrgente ? ' · <strong style="color:#fde68a;">PRIORIDAD ALTA</strong>' : '')
+                    + ' · hace ' + (mins < 1 ? 'un momento' : mins + ' min') + '</div></div></div>'
+                    + '<div class="sp-notif-body">'
+                    + '<button class="sp-btn-aceptar" onclick="_spAdminAceptar(\'' + s.id + '\')"><i class="fas fa-check"></i> Aceptar chat</button>'
+                    + '<button class="sp-btn-ignorar" onclick="_spAdminIgnorar(\'' + s.id + '\', this)"><i class="fas fa-times"></i> Ignorar</button>'
+                    + '</div></div>';
+            }).join('')
+            + '</div>';
+    });
+}
+
+function _spAdminAceptar(sesionId) {
+    fetch('/api/soporte/aceptar', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ sesion_id: sesionId })
+    }).then(r=>r.json()).then(function(data) {
+        if (data.success) {
+            _SP.estado   = 'admin_chat';
+            _SP.sesionId = sesionId;
+            _spAdminShowChat(data.sesion);
+            clearInterval(_SP.timer);
+            _SP.timer = null;
+            _SP.ultimoTs = null;
+            _spPollMensajes();
+        } else if (data.message && data.message.includes('tomada')) {
+            alert('Esta solicitud ya fue tomada por otro administrador.');
+            _spAdminPoll();
+        }
+    });
+}
+
+function _spAdminIgnorar(sesionId, btn) {
+    btn.closest('.sp-notif-card').style.opacity = '.4';
+    btn.closest('.sp-notif-card').style.pointerEvents = 'none';
+}
+
+function _spAdminShowChat(sesion) {
+    var nombre = sesion.solicitante_nombre || 'Coordinadora';
+    var esc    = sesion.solicitante_escuela || '';
+    document.getElementById('sp-title').textContent = nombre;
+    document.getElementById('sp-sub').textContent   = (esc ? esc + ' · ' : '') + '● Chat activo';
+    var body = document.getElementById('soporte-body');
+    body.innerHTML = '<div class="sp-msgs" id="sp-msgs-container"></div>';
+    var inputRow = document.getElementById('sp-input-row');
+    inputRow.style.display = 'flex';
+    // Add close button
+    var closeBtn = document.createElement('div');
+    closeBtn.style.cssText = 'padding:8px 14px;border-top:1px solid #f0eaff;background:#fafbfc;';
+    closeBtn.innerHTML = '<button onclick="_spAdminCerrar()" style="width:100%;padding:7px;background:#fee2e2;color:#dc2626;border:1.5px solid #fecaca;border-radius:9px;font-weight:700;font-size:.76rem;cursor:pointer;font-family:inherit;"><i class="fas fa-circle-stop"></i> Finalizar chat</button>';
+    body.parentNode.insertBefore(closeBtn, document.getElementById('sp-input-row'));
+    setTimeout(function() { document.getElementById('sp-input')?.focus(); }, 100);
+}
+
+function _spAdminCerrar() {
+    if (!_SP.sesionId) return;
+    fetch('/api/soporte/cerrar', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sesion_id:_SP.sesionId})}).then(function() {
+        clearInterval(_SP.timer);
+        _SP.sesionId = null; _SP.estado = 'admin_idle';
+        document.getElementById('sp-input-row').style.display = 'none';
+        // Remove close button
+        var closeBtns = document.querySelectorAll('#soporte-panel > div:not(#soporte-body):not(.sp-header):not(#sp-input-row):not(#sp-header)');
+        closeBtns.forEach(function(el) { if(el.querySelector && el.querySelector('.fa-circle-stop')) el.remove(); });
+        _spAdminInit();
+    });
+}
+
+// Background poll para badge (admin: nuevas solicitudes)
+setInterval(function() {
+    var panel = document.getElementById('soporte-panel');
+    if (panel && panel.classList.contains('open')) return;
+    if (_SP.rol === 'admin') {
+        fetch('/api/soporte/sesiones_pendientes').then(r=>r.json()).then(function(data) {
+            if (data.success && (data.pendientes||[]).length) {
+                var dot = document.getElementById('soporte-dot');
+                if (dot) { dot.className = 'soporte-notif-dot rojo show'; }
+            }
+        }).catch(function(){});
+    } else if (_SP.rol === 'coordinador_escuela' || _SP.rol === 'coordinadora') {
+        if (_SP.sesionId && _SP.estado === 'esperando') {
+            fetch('/api/soporte/mi_sesion').then(r=>r.json()).then(function(data) {
+                if (data.sesion && data.sesion.estado === 'activo') {
+                    var dot = document.getElementById('soporte-dot');
+                    if (dot) { dot.className = 'soporte-notif-dot verde show'; }
+                }
+            }).catch(function(){});
+        }
+    }
+}, 10000);
 </script>
-
 </body>
 </html>

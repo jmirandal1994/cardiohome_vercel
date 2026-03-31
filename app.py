@@ -6082,5 +6082,72 @@ def soporte_historial():
         return jsonify({"success": False, "message": str(e)}), 500
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+#  CHAT PRIVADO ENTRE ADMINS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/chat_admin/admins', methods=['GET'])
+def chat_admin_lista_admins():
+    """Lista todos los usuarios con rol admin."""
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False}), 403
+    try:
+        res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/doctoras?rol=eq.admin&select=id,nombre,usuario",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        return jsonify({"success": True, "admins": res.json() if res.ok else []})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/chat_admin/mensajes_privados/<dest_id>', methods=['GET'])
+def chat_admin_mensajes_privados(dest_id):
+    """Mensajes del hilo privado entre el admin actual y dest_id."""
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False}), 403
+    try:
+        mi_id = str(session.get('usuario_id', ''))
+        since = request.args.get('since', '')
+        # Mensajes donde (autor=yo, dest=ellos) OR (autor=ellos, dest=yo)
+        url = (
+            f"{SUPABASE_URL}/rest/v1/chat_admin_privado"
+            f"?or=(and(autor_id.eq.{mi_id},dest_id.eq.{dest_id}),and(autor_id.eq.{dest_id},dest_id.eq.{mi_id}))"
+            f"&order=created_at.asc&limit=80"
+        )
+        if since:
+            url += f"&created_at=gt.{since}"
+        res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS)
+        return jsonify({"success": True, "mensajes": res.json() if res.ok else []})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/chat_admin/enviar_privado', methods=['POST'])
+def chat_admin_enviar_privado():
+    """Envía un mensaje privado a otro admin."""
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False}), 403
+    try:
+        data    = request.get_json() or {}
+        dest_id = data.get('dest_id')
+        mensaje = (data.get('mensaje') or '').strip()
+        if not mensaje or not dest_id:
+            return jsonify({"success": False, "message": "Datos incompletos"}), 400
+        autor_id     = str(session.get('usuario_id', ''))
+        autor_nombre = session.get('nombre') or session.get('usuario') or 'Admin'
+        res = requests.post(
+            f"{SUPABASE_URL}/rest/v1/chat_admin_privado",
+            headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=representation"},
+            json={"autor_id": autor_id, "dest_id": dest_id,
+                  "autor_nombre": autor_nombre, "mensaje": mensaje}
+        )
+        if not res.ok:
+            return jsonify({"success": False, "message": res.text}), 500
+        return jsonify({"success": True, "mensaje": res.json()[0]})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))

@@ -10561,6 +10561,17 @@ async function confirmarEliminarAlumno(alumnoId, nombre, filaEl) {
 }
 #soporte-float-wrap {
     display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer;
+    position: relative;
+}
+@keyframes bubbleIn {
+    from { opacity:0; transform: scale(.7) translateY(10px); }
+    to   { opacity:1; transform: scale(1) translateY(0); }
+}
+#soporte-tooltip-bubble {
+    transition: opacity .3s, transform .3s;
+}
+#soporte-tooltip-bubble.hidden {
+    opacity: 0; pointer-events: none; transform: translateY(6px);
 }
 #soporte-float-btn {
     position: relative; width: 68px; height: 68px; border-radius: 50%;
@@ -10696,6 +10707,22 @@ async function confirmarEliminarAlumno(alumnoId, nombre, filaEl) {
 
 <div id="float-buttons-container">
 {% if usuario in ('coordinador_escuela', 'coordinadora') %}
+<!-- Tooltip burbuja -->
+<div id="soporte-tooltip-bubble" style="
+    position:absolute;bottom:82px;right:0;
+    background:white;
+    border-radius:16px 16px 4px 16px;
+    padding:10px 14px;
+    box-shadow:0 8px 28px rgba(76,29,149,.18);
+    border:1.5px solid #ede9fe;
+    width:200px;
+    animation:bubbleIn .4s cubic-bezier(.34,1.56,.64,1);
+    pointer-events:none;
+">
+    <div style="font-size:.72rem;font-weight:800;color:#4c1d95;margin-bottom:3px;">¿Tienes alguna duda?</div>
+    <div style="font-size:.7rem;color:#64748b;line-height:1.4;">Comunícate con nuestros administradores en línea.</div>
+    <div style="position:absolute;bottom:-8px;right:22px;width:14px;height:14px;background:white;border-right:1.5px solid #ede9fe;border-bottom:1.5px solid #ede9fe;transform:rotate(45deg);"></div>
+</div>
 <div id="soporte-float-wrap" onclick="soporteToggle()" title="Contactar administrador">
     <button id="soporte-float-btn">
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -10718,6 +10745,43 @@ async function confirmarEliminarAlumno(alumnoId, nombre, filaEl) {
     <span id="soporte-float-label">Soporte</span>
 </div>
 {% endif %}
+{% if usuario == 'doctora' %}
+<!-- Burbuja tooltip doctora -->
+<div id="soporte-tooltip-bubble" style="
+    position:absolute;bottom:82px;right:0;
+    background:white;border-radius:16px 16px 4px 16px;
+    padding:10px 14px;
+    box-shadow:0 8px 28px rgba(13,59,94,.18);
+    border:1.5px solid #dbeafe;width:200px;
+    animation:bubbleIn .4s cubic-bezier(.34,1.56,.64,1);
+    pointer-events:none;">
+    <div style="font-size:.72rem;font-weight:800;color:#0d3b5e;margin-bottom:3px;">¿Necesitas ayuda?</div>
+    <div style="font-size:.7rem;color:#64748b;line-height:1.4;">Comunícate con nuestros administradores en línea.</div>
+    <div style="position:absolute;bottom:-8px;right:22px;width:14px;height:14px;background:white;border-right:1.5px solid #dbeafe;border-bottom:1.5px solid #dbeafe;transform:rotate(45deg);"></div>
+</div>
+<div id="soporte-float-wrap" onclick="soporteToggle()" title="Contactar administrador">
+    <button id="soporte-float-btn" style="box-shadow:0 8px 28px rgba(13,59,94,.35);">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="50" cy="76" rx="22" ry="16" fill="#e0f2fe" stroke="#0369a1" stroke-width="2"/>
+          <path d="M38 62 L44 76 L40 90" fill="white" stroke="#0369a1" stroke-width="1.5"/>
+          <path d="M62 62 L56 76 L60 90" fill="white" stroke="#0369a1" stroke-width="1.5"/>
+          <rect x="47" y="69" width="6" height="12" rx="1.5" fill="#0369a1" opacity=".7"/>
+          <rect x="44" y="73" width="12" height="5" rx="1.5" fill="#0369a1" opacity=".7"/>
+          <rect x="45" y="57" width="10" height="7" rx="3" fill="#f9dcc4"/>
+          <ellipse cx="50" cy="42" rx="18" ry="19" fill="#f9dcc4" stroke="#e8c9a8" stroke-width="1"/>
+          <path d="M32 40 Q33 22 50 21 Q67 22 68 40 Q65 28 50 27 Q35 28 32 40Z" fill="#0d3b5e"/>
+          <ellipse cx="32" cy="44" rx="4" ry="5" fill="#f9dcc4"/><ellipse cx="68" cy="44" rx="4" ry="5" fill="#f9dcc4"/>
+          <ellipse cx="43" cy="43" rx="3" ry="3.5" fill="white"/><ellipse cx="57" cy="43" rx="3" ry="3.5" fill="white"/>
+          <circle cx="44" cy="44" r="1.8" fill="#0d3b5e"/><circle cx="58" cy="44" r="1.8" fill="#0d3b5e"/>
+          <path d="M44 52 Q50 57 56 52" fill="none" stroke="#c87941" stroke-width="1.8" stroke-linecap="round"/>
+          <text x="66" y="28" font-size="13" fill="#1c67a3" font-family="Arial">✦</text>
+        </svg>
+        <span class="soporte-notif-dot verde" id="soporte-dot"></span>
+    </button>
+    <span id="soporte-float-label">Soporte</span>
+</div>
+{% endif %}
+
 {% if usuario == 'admin' %}
 <div id="soporte-float-wrap" onclick="soporteToggle()" title="Solicitudes de soporte">
     <button id="soporte-float-btn">
@@ -10743,6 +10807,29 @@ async function confirmarEliminarAlumno(alumnoId, nombre, filaEl) {
 {% endif %}
 </div>
 
+<!-- Notificacion popup admin (solo admin) -->
+{% if usuario == 'admin' %}
+<div id="sp-notif-popup">
+    <div class="sp-notif-banner normal" id="sp-notif-banner">
+        <div class="sp-notif-pulse-ring" id="sp-notif-icon">💬</div>
+        <div style="flex:1;">
+            <p class="sp-notif-title" id="sp-notif-title">Nueva solicitud de soporte</p>
+            <p class="sp-notif-desc"  id="sp-notif-desc">Alguien quiere chatear contigo</p>
+        </div>
+        <button onclick="spNotifCerrar()" style="background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:.85rem;align-self:flex-start;padding:2px;">
+            <i class="fas fa-xmark"></i>
+        </button>
+    </div>
+    <div class="sp-notif-countdown"><div class="sp-notif-countdown-bar" id="sp-notif-bar"></div></div>
+    <div class="sp-notif-btns">
+        <button class="sp-notif-btn-ok" id="sp-notif-aceptar-btn" onclick="spNotifAceptar()">
+            <i class="fas fa-headset"></i> Aceptar chat ahora
+        </button>
+        <button class="sp-notif-btn-later" onclick="spNotifCerrar()">Después</button>
+    </div>
+</div>
+{% endif %}
+
 <!-- Panel soporte -->
 <div id="soporte-panel">
     <div class="sp-header purple" id="sp-header">
@@ -10754,12 +10841,81 @@ async function confirmarEliminarAlumno(alumnoId, nombre, filaEl) {
         <button class="sp-close" onclick="soporteToggle()"><i class="fas fa-xmark"></i></button>
     </div>
     <div id="soporte-body"></div>
-    <div class="sp-input-row" id="sp-input-row" style="display:none;">
+    <div class="sp-input-row" id="sp-input-row" style="display:none;padding:10px 12px;border-top:1px solid #f0eaff;gap:8px;flex-shrink:0;background:white;">
         <input type="text" id="sp-input" placeholder="Escribe tu mensaje…" onkeydown="if(event.key==='Enter')soporteEnviar()">
         <button class="sp-send" onclick="soporteEnviar()"><i class="fas fa-paper-plane"></i></button>
     </div>
 </div>
 
+<style>
+/* ══ NOTIFICACION ADMIN SOPORTE ══════════════════════════════════════════════ */
+#sp-notif-popup {
+    position: fixed; top: 24px; right: 24px; z-index: 99999;
+    width: 340px; border-radius: 20px; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(76,29,149,.35);
+    display: none; animation: spNotifIn .5s cubic-bezier(.34,1.56,.64,1);
+    border: 1.5px solid rgba(255,255,255,.15);
+}
+#sp-notif-popup.show { display: block; }
+@keyframes spNotifIn {
+    from { opacity:0; transform: translateX(100px) scale(.8); }
+    to   { opacity:1; transform: translateX(0) scale(1); }
+}
+@keyframes spNotifShake {
+    0%,100% { transform: translateX(0); }
+    15%     { transform: translateX(-8px) rotate(-1deg); }
+    30%     { transform: translateX(8px) rotate(1deg); }
+    45%     { transform: translateX(-6px); }
+    60%     { transform: translateX(6px); }
+    75%     { transform: translateX(-3px); }
+}
+.sp-notif-banner {
+    padding: 16px 18px;
+    display: flex; align-items: center; gap: 12px;
+}
+.sp-notif-banner.normal  { background: linear-gradient(135deg,#4c1d95,#7c3aed); }
+.sp-notif-banner.urgente { background: linear-gradient(135deg,#92400e,#dc2626); }
+.sp-notif-pulse-ring {
+    width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; font-size: 1.3rem;
+}
+.sp-notif-pulse-ring::before, .sp-notif-pulse-ring::after {
+    content: ''; position: absolute; inset: -4px; border-radius: 50%;
+    border: 3px solid rgba(255,255,255,.5);
+    animation: spRingPulse 1.5s ease-out infinite;
+}
+.sp-notif-pulse-ring::after { animation-delay: .5s; }
+@keyframes spRingPulse {
+    0%   { transform: scale(1); opacity: .8; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+.sp-notif-title { color: white; font-weight: 900; font-size: .88rem; margin: 0 0 2px; }
+.sp-notif-desc  { color: rgba(255,255,255,.75); font-size: .74rem; margin: 0; line-height: 1.4; }
+.sp-notif-btns  { padding: 12px 16px; background: white; display: flex; gap: 8px; }
+.sp-notif-btn-ok {
+    flex: 2; padding: 10px; background: linear-gradient(135deg,#059669,#10b981);
+    color: white; border: none; border-radius: 10px; font-weight: 800;
+    font-size: .8rem; cursor: pointer; font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: opacity .15s;
+}
+.sp-notif-btn-ok:hover { opacity: .88; }
+.sp-notif-btn-later {
+    flex: 1; padding: 10px; background: #f1f5f9; color: #64748b;
+    border: 1.5px solid #e2e8f0; border-radius: 10px; font-weight: 700;
+    font-size: .8rem; cursor: pointer; font-family: inherit;
+}
+.sp-notif-countdown {
+    height: 3px; background: rgba(255,255,255,.2);
+}
+.sp-notif-countdown-bar {
+    height: 100%; background: rgba(255,255,255,.7);
+    animation: spCountdown 30s linear forwards;
+}
+@keyframes spCountdown { from { width: 100%; } to { width: 0%; } }
+
+</style>
 <script>
 /* ══ SOPORTE FLOTANTE ════════════════════════════════════════════════════════
    Roles: coordinador_escuela / coordinadora → solicitan
@@ -10777,6 +10933,9 @@ var _SP = {
 };
 
 function soporteToggle() {
+    // Ocultar burbuja al hacer clic
+    var bubble = document.getElementById('soporte-tooltip-bubble');
+    if (bubble) bubble.classList.add('hidden');
     var panel = document.getElementById('soporte-panel');
     var open  = panel.classList.contains('open');
     if (open) {
@@ -10819,16 +10978,44 @@ function _spCoordInit() {
 function _spShowForm() {
     _SP.estado = 'form';
     var esEscuela = _SP.rol === 'coordinador_escuela';
+    var esDoctora = _SP.rol === 'doctora';
     var body = document.getElementById('soporte-body');
+
+    // Doctora y Coordinadora General: no piden datos, van directo
+    if (esDoctora || !esEscuela) {
+        var badgeColor = esDoctora ? '#dbeafe' : '#fef3c7';
+        var badgeBorder = esDoctora ? '#93c5fd' : '#fde68a';
+        var badgeTextColor = esDoctora ? '#1e40af' : '#92400e';
+        var badgeIcon = esDoctora ? '🩺' : '⭐';
+        var badgeTitle = esDoctora ? 'Doctora evaluadora' : 'Coordinación General';
+        var badgeDesc = esDoctora
+            ? 'Prioridad alta. Tu consulta llegará de inmediato al administrador.'
+            : 'Prioridad alta. Un administrador te atenderá de inmediato.';
+        body.innerHTML = '<div class="sp-form">'
+            + '<div style="text-align:center;margin-bottom:18px;">'
+            + '<div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#dbeafe,#bfdbfe);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:1.5rem;">🎧</div>'
+            + '<p class="sp-form-title">Contactar Administrador</p>'
+            + '<p class="sp-form-sub">Nuestros administradores están disponibles para ayudarte en tiempo real.</p>'
+            + '</div>'
+            + '<div style="background:'+badgeColor+';border:1.5px solid '+badgeBorder+';border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:.8rem;color:'+badgeTextColor+';">'
+            + '<i class="fas fa-bolt" style="margin-right:6px;"></i>'
+            + '<strong>' + badgeIcon + ' ' + badgeTitle + '</strong> — ' + badgeDesc
+            + '</div>'
+            + '<button class="sp-btn-primary" id="sp-solicitar-btn" onclick="_spSolicitar()">'
+            + '<i class="fas fa-headset"></i> Iniciar chat con administrador</button>'
+            + '</div>';
+        return;
+    }
+
+    // Coordinadora escuela: pide nombre y establecimiento
     body.innerHTML = '<div class="sp-form">'
         + '<div style="text-align:center;margin-bottom:18px;">'
         + '<div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#ede9fe,#ddd6fe);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:1.5rem;">🎧</div>'
         + '<p class="sp-form-title">Contactar Administrador</p>'
         + '<p class="sp-form-sub">Si tienes alguna duda, nuestros administradores están disponibles para ayudarte en tiempo real.</p>'
         + '</div>'
-        + (esEscuela ? '<div class="sp-field"><label>Tu nombre completo</label><input type="text" id="sp-nombre" placeholder="Ej: María González"></div>'
-                     + '<div class="sp-field"><label>Establecimiento</label><input type="text" id="sp-escuela" placeholder="Ej: Escuela Las Acacias"></div>'
-                     : '<div style="background:#fef3c7;border:1.5px solid #fde68a;border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:.8rem;color:#92400e;"><i class="fas fa-star" style="margin-right:6px;"></i><strong>Coordinación General</strong> — Prioridad alta. Un administrador te atenderá de inmediato.</div>')
+        + '<div class="sp-field"><label>Tu nombre completo</label><input type="text" id="sp-nombre" placeholder="Ej: María González"></div>'
+        + '<div class="sp-field"><label>Establecimiento</label><input type="text" id="sp-escuela" placeholder="Ej: Escuela Las Acacias"></div>'
         + '<button class="sp-btn-primary" id="sp-solicitar-btn" onclick="_spSolicitar()">'
         + '<i class="fas fa-headset"></i> Iniciar chat con administrador</button>'
         + '</div>';
@@ -10844,6 +11031,7 @@ function _spSolicitar() {
         if (!nombre) { document.getElementById('sp-nombre').style.borderColor='#ef4444'; return; }
         if (!escuela){ document.getElementById('sp-escuela').style.borderColor='#ef4444'; return; }
     }
+    // Doctora: nombre desde sesión, escuela vacía, prioridad alta automática
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Conectando...';
     fetch('/api/soporte/solicitar', {
@@ -10933,9 +11121,10 @@ function _spPollMensajes() {
                 var container = document.getElementById('sp-msgs-container');
                 if (!container) return;
                 data.mensajes.forEach(function(m) {
-                    var esMio = m.autor_nombre === _SP.miNombre || 
-                                (_SP.rol !== 'admin' && m.autor_rol !== 'admin') ||
-                                (_SP.rol === 'admin' && m.autor_rol === 'admin');
+                    // esMio: si el rol del mensaje coincide con mi rol
+                    var esMio = (_SP.rol === 'admin')
+                        ? (m.autor_rol === 'admin')
+                        : (m.autor_rol !== 'admin');
                     var div = document.createElement('div');
                     div.className = 'sp-msg ' + (esMio ? 'mine' : 'other');
                     div.innerHTML = (esMio ? '' : '<div class="sp-mn">' + _spEsc(m.autor_nombre) + '</div>')
@@ -11029,9 +11218,10 @@ function _spAdminPoll() {
                 + '<i class="fas fa-headset" style="font-size:2.5rem;display:block;margin-bottom:14px;opacity:.3;"></i>'
                 + '<strong style="display:block;margin-bottom:6px;color:#64748b;">Sin solicitudes pendientes</strong>'
                 + '<span style="font-size:.78rem;">Se actualizará automáticamente</span></div>';
-            // Dot off
+            // Dot off y cerrar popup si no hay más
             var dot = document.getElementById('soporte-dot');
             if (dot) dot.classList.remove('show');
+            spNotifCerrar();
             return;
         }
 
@@ -11092,15 +11282,21 @@ function _spAdminShowChat(sesion) {
     var esc    = sesion.solicitante_escuela || '';
     document.getElementById('sp-title').textContent = nombre;
     document.getElementById('sp-sub').textContent   = (esc ? esc + ' · ' : '') + '● Chat activo';
+    // Limpiar botones de finalizar previos
+    var panel = document.getElementById('soporte-panel');
+    panel.querySelectorAll('.sp-admin-close-wrap').forEach(function(el){ el.remove(); });
+    // Mostrar msgs container
     var body = document.getElementById('soporte-body');
     body.innerHTML = '<div class="sp-msgs" id="sp-msgs-container"></div>';
+    // Input row visible
     var inputRow = document.getElementById('sp-input-row');
-    inputRow.style.display = 'flex';
-    // Add close button
-    var closeBtn = document.createElement('div');
-    closeBtn.style.cssText = 'padding:8px 14px;border-top:1px solid #f0eaff;background:#fafbfc;';
-    closeBtn.innerHTML = '<button onclick="_spAdminCerrar()" style="width:100%;padding:7px;background:#fee2e2;color:#dc2626;border:1.5px solid #fecaca;border-radius:9px;font-weight:700;font-size:.76rem;cursor:pointer;font-family:inherit;"><i class="fas fa-circle-stop"></i> Finalizar chat</button>';
-    body.parentNode.insertBefore(closeBtn, document.getElementById('sp-input-row'));
+    inputRow.style.cssText = 'display:flex;padding:10px 12px;border-top:1px solid #f0eaff;gap:8px;flex-shrink:0;background:white;';
+    // Boton finalizar
+    var closeWrap = document.createElement('div');
+    closeWrap.className = 'sp-admin-close-wrap';
+    closeWrap.style.cssText = 'padding:8px 14px;border-top:1px solid #f0eaff;background:#fafbfc;flex-shrink:0;';
+    closeWrap.innerHTML = '<button onclick="_spAdminCerrar()" style="width:100%;padding:7px;background:#fee2e2;color:#dc2626;border:1.5px solid #fecaca;border-radius:9px;font-weight:700;font-size:.76rem;cursor:pointer;font-family:inherit;"><i class="fas fa-circle-stop"></i> Finalizar chat</button>';
+    panel.insertBefore(closeWrap, inputRow);
     setTimeout(function() { document.getElementById('sp-input')?.focus(); }, 100);
 }
 
@@ -11108,14 +11304,117 @@ function _spAdminCerrar() {
     if (!_SP.sesionId) return;
     fetch('/api/soporte/cerrar', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sesion_id:_SP.sesionId})}).then(function() {
         clearInterval(_SP.timer);
-        _SP.sesionId = null; _SP.estado = 'admin_idle';
-        document.getElementById('sp-input-row').style.display = 'none';
-        // Remove close button
-        var closeBtns = document.querySelectorAll('#soporte-panel > div:not(#soporte-body):not(.sp-header):not(#sp-input-row):not(#sp-header)');
-        closeBtns.forEach(function(el) { if(el.querySelector && el.querySelector('.fa-circle-stop')) el.remove(); });
+        _SP.sesionId = null; _SP.estado = 'admin_idle'; _SP.ultimoTs = null;
+        var inputRow = document.getElementById('sp-input-row');
+        if (inputRow) inputRow.style.display = 'none';
+        // Remove close btn wraps
+        document.querySelectorAll('.sp-admin-close-wrap').forEach(function(el){ el.remove(); });
         _spAdminInit();
     });
 }
+
+/* ══ POPUP NOTIFICACIÓN ADMIN ════════════════════════════════════════════ */
+var _spNotifSesionId    = null;
+var _spNotifMostradas   = new Set(); // IDs ya notificadas
+var _spNotifAutoClose   = null;
+
+function spNotifMostrar(sesion) {
+    if (_spNotifMostradas.has(sesion.id)) return;
+    _spNotifMostradas.add(sesion.id);
+    _spNotifSesionId = sesion.id;
+
+    var isUrgente = sesion.prioridad === 'alta' || sesion.solicitante_rol === 'coordinadora';
+    var banner  = document.getElementById('sp-notif-banner');
+    var icon    = document.getElementById('sp-notif-icon');
+    var title   = document.getElementById('sp-notif-title');
+    var desc    = document.getElementById('sp-notif-desc');
+    var bar     = document.getElementById('sp-notif-bar');
+    var popup   = document.getElementById('sp-notif-popup');
+    if (!popup) return;
+
+    if (isUrgente) {
+        banner.className = 'sp-notif-banner urgente';
+        icon.textContent = '⭐';
+        title.textContent = '¡Solicitud Prioritaria!';
+        desc.textContent  = sesion.solicitante_nombre + ' — Coordinación General';
+    } else {
+        banner.className = 'sp-notif-banner normal';
+        icon.textContent = '💬';
+        title.textContent = 'Nueva solicitud de soporte';
+        desc.textContent  = sesion.solicitante_nombre + ' · ' + (sesion.solicitante_escuela || 'Sin establecimiento');
+    }
+
+    // Reset countdown bar
+    if (bar) { bar.style.animation = 'none'; bar.offsetHeight; bar.style.animation = ''; }
+
+    popup.classList.add('show');
+    popup.style.animation = 'spNotifIn .5s cubic-bezier(.34,1.56,.64,1)';
+
+    // Shake animation para llamar la atención
+    setTimeout(function() {
+        popup.style.animation = 'spNotifShake .5s ease';
+        setTimeout(function() { popup.style.animation = ''; }, 500);
+    }, 600);
+
+    // Sonido beep (si el navegador lo permite)
+    try {
+        var ctx = new (window.AudioContext || window.webkitAudioContext)();
+        var osc = ctx.createOscillator(); var gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = isUrgente ? 880 : 660;
+        gain.gain.setValueAtTime(.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + .4);
+        osc.start(ctx.currentTime); osc.stop(ctx.currentTime + .4);
+        if (isUrgente) {
+            var osc2 = ctx.createOscillator(); var gain2 = ctx.createGain();
+            osc2.connect(gain2); gain2.connect(ctx.destination);
+            osc2.frequency.value = 1100;
+            gain2.gain.setValueAtTime(.2, ctx.currentTime + .45);
+            gain2.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + .8);
+            osc2.start(ctx.currentTime + .45); osc2.stop(ctx.currentTime + .8);
+        }
+    } catch(e) {}
+
+    // Cerrar automáticamente en 30s
+    clearTimeout(_spNotifAutoClose);
+    _spNotifAutoClose = setTimeout(spNotifCerrar, 30000);
+}
+
+function spNotifAceptar() {
+    if (!_spNotifSesionId) return;
+    var id = _spNotifSesionId;
+    spNotifCerrar();
+    fetch('/api/soporte/aceptar', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ sesion_id: id })
+    }).then(r=>r.json()).then(function(data) {
+        if (data.success) {
+            _SP.estado = 'admin_chat'; _SP.sesionId = id;
+            var panel = document.getElementById('soporte-panel');
+            if (panel) panel.classList.add('open');
+            var dot = document.getElementById('soporte-dot');
+            if (dot) dot.classList.remove('show');
+            _spAdminShowChat(data.sesion);
+            _SP.ultimoTs = null; clearInterval(_SP.timer); _SP.timer = null;
+            _spPollMensajes();
+        } else if (data.message && data.message.includes('tomada')) {
+            Swal.fire({icon:'info',title:'Solicitud tomada',text:'Otro administrador ya aceptó este chat.',timer:2000,showConfirmButton:false});
+        }
+    });
+}
+
+function spNotifCerrar() {
+    var popup = document.getElementById('sp-notif-popup');
+    if (popup) popup.classList.remove('show');
+    clearTimeout(_spNotifAutoClose);
+    _spNotifSesionId = null;
+}
+
+// Auto-ocultar burbuja de tooltip después de 7 segundos
+setTimeout(function() {
+    var bubble = document.getElementById('soporte-tooltip-bubble');
+    if (bubble) bubble.classList.add('hidden');
+}, 7000);
 
 // Background poll para badge (admin: nuevas solicitudes)
 setInterval(function() {
@@ -11123,9 +11422,18 @@ setInterval(function() {
     if (panel && panel.classList.contains('open')) return;
     if (_SP.rol === 'admin') {
         fetch('/api/soporte/sesiones_pendientes').then(r=>r.json()).then(function(data) {
-            if (data.success && (data.pendientes||[]).length) {
+            if (!data.success) return;
+            var pend = data.pendientes || [];
+            if (pend.length) {
                 var dot = document.getElementById('soporte-dot');
                 if (dot) { dot.className = 'soporte-notif-dot rojo show'; }
+                // Mostrar popup para la más reciente/urgente aún no notificada
+                var sinNotif = pend.filter(function(s){ return !_spNotifMostradas.has(s.id); });
+                if (sinNotif.length) {
+                    // Primero los urgentes
+                    sinNotif.sort(function(a,b){ return (b.prioridad==='alta'?1:0)-(a.prioridad==='alta'?1:0); });
+                    spNotifMostrar(sinNotif[0]);
+                }
             }
         }).catch(function(){});
     } else if (_SP.rol === 'coordinador_escuela' || _SP.rol === 'coordinadora') {

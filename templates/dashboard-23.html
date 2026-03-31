@@ -11075,7 +11075,7 @@ function _spCheckAceptado() {
             _SP.estado = 'activo';
             _spShowChat(data.sesion.admin_nombre);
             _SP.ultimoTs = null;
-            _spPollMensajes();
+            setTimeout(function() { _spPollMensajes(); }, 300);
         } else if (!data.sesion) {
             clearInterval(_SP.timer);
             _SP.sesionId = null;
@@ -11104,40 +11104,59 @@ function _spShowChat(adminNombre) {
     setTimeout(function() { document.getElementById('sp-input')?.focus(); }, 100);
 }
 
+function _spRenderMsgs(mensajes) {
+    // Asegurar que el container existe
+    var body = document.getElementById('soporte-body');
+    if (!body) return;
+    var container = document.getElementById('sp-msgs-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'sp-msgs';
+        container.id = 'sp-msgs-container';
+        body.appendChild(container);
+    }
+    mensajes.forEach(function(m) {
+        // Evitar duplicados por id
+        if (document.querySelector('[data-msg-id="' + m.id + '"]')) return;
+        var esMio = (_SP.rol === 'admin')
+            ? (m.autor_rol === 'admin')
+            : (m.autor_rol !== 'admin');
+        var div = document.createElement('div');
+        div.className = 'sp-msg ' + (esMio ? 'mine' : 'other');
+        div.dataset.msgId = m.id;
+        div.innerHTML = (esMio ? '' : '<div class="sp-mn">' + _spEsc(m.autor_nombre) + '</div>')
+            + '<div>' + _spEsc(m.mensaje) + '</div>'
+            + '<div class="sp-mt">' + new Date(m.created_at).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}) + '</div>';
+        container.appendChild(div);
+        body.scrollTop = body.scrollHeight;
+    });
+    if (mensajes.length) {
+        _SP.ultimoTs = mensajes[mensajes.length - 1].created_at;
+    }
+}
+
+function _spFetchMsgs() {
+    if (!_SP.sesionId) return;
+    var url = '/api/soporte/mensajes/' + _SP.sesionId + (_SP.ultimoTs ? '?since=' + encodeURIComponent(_SP.ultimoTs) : '');
+    fetch(url).then(function(r){ return r.json(); }).then(function(data) {
+        if (!data.success) return;
+        if (data.sesion && data.sesion.estado === 'cerrado') {
+            clearInterval(_SP.timer);
+            _spShowCerrado();
+            return;
+        }
+        if (data.mensajes && data.mensajes.length) {
+            _spRenderMsgs(data.mensajes);
+        }
+    }).catch(function(){});
+}
+
 function _spPollMensajes() {
     clearInterval(_SP.timer);
-    _SP.timer = setInterval(function() {
-        if (!_SP.sesionId) return;
-        var url = '/api/soporte/mensajes/' + _SP.sesionId + (_SP.ultimoTs ? '?since='+encodeURIComponent(_SP.ultimoTs) : '');
-        fetch(url).then(r=>r.json()).then(function(data) {
-            if (!data.success) return;
-            // Check if session was closed
-            if (data.sesion && data.sesion.estado === 'cerrado') {
-                clearInterval(_SP.timer);
-                _spShowCerrado();
-                return;
-            }
-            if (data.mensajes && data.mensajes.length) {
-                var container = document.getElementById('sp-msgs-container');
-                if (!container) return;
-                data.mensajes.forEach(function(m) {
-                    // esMio: si el rol del mensaje coincide con mi rol
-                    var esMio = (_SP.rol === 'admin')
-                        ? (m.autor_rol === 'admin')
-                        : (m.autor_rol !== 'admin');
-                    var div = document.createElement('div');
-                    div.className = 'sp-msg ' + (esMio ? 'mine' : 'other');
-                    div.innerHTML = (esMio ? '' : '<div class="sp-mn">' + _spEsc(m.autor_nombre) + '</div>')
-                        + '<div>' + _spEsc(m.mensaje) + '</div>'
-                        + '<div class="sp-mt">' + new Date(m.created_at).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}) + '</div>';
-                    container.appendChild(div);
-                    var body = document.getElementById('soporte-body');
-                    body.scrollTop = body.scrollHeight;
-                });
-                _SP.ultimoTs = data.mensajes[data.mensajes.length-1].created_at;
-            }
-        });
-    }, 3000);
+    // Fetch inmediato para cargar mensajes existentes
+    setTimeout(_spFetchMsgs, 200);
+    // Luego poll cada 2.5 segundos
+    _SP.timer = setInterval(_spFetchMsgs, 2500);
 }
 
 function _spShowCerrado() {
@@ -11163,16 +11182,7 @@ function soporteEnviar() {
         body: JSON.stringify({ sesion_id: _SP.sesionId, mensaje: texto })
     }).then(r=>r.json()).then(function(data) {
         if (data.success) {
-            var container = document.getElementById('sp-msgs-container');
-            if (!container) return;
-            var div = document.createElement('div');
-            div.className = 'sp-msg mine';
-            div.innerHTML = '<div>' + _spEsc(data.mensaje.mensaje) + '</div>'
-                + '<div class="sp-mt">' + new Date(data.mensaje.created_at).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}) + '</div>';
-            container.appendChild(div);
-            var body = document.getElementById('soporte-body');
-            body.scrollTop = body.scrollHeight;
-            _SP.ultimoTs = data.mensaje.created_at;
+            _spRenderMsgs([data.mensaje]);
         }
     });
 }
@@ -11260,11 +11270,10 @@ function _spAdminAceptar(sesionId) {
         if (data.success) {
             _SP.estado   = 'admin_chat';
             _SP.sesionId = sesionId;
-            _spAdminShowChat(data.sesion);
-            clearInterval(_SP.timer);
-            _SP.timer = null;
             _SP.ultimoTs = null;
-            _spPollMensajes();
+            clearInterval(_SP.timer); _SP.timer = null;
+            _spAdminShowChat(data.sesion);
+            setTimeout(function() { _spPollMensajes(); }, 300);
         } else if (data.message && data.message.includes('tomada')) {
             alert('Esta solicitud ya fue tomada por otro administrador.');
             _spAdminPoll();
@@ -11389,14 +11398,15 @@ function spNotifAceptar() {
         body: JSON.stringify({ sesion_id: id })
     }).then(r=>r.json()).then(function(data) {
         if (data.success) {
-            _SP.estado = 'admin_chat'; _SP.sesionId = id;
+            _SP.estado = 'admin_chat'; _SP.sesionId = id; _SP.ultimoTs = null;
+            clearInterval(_SP.timer); _SP.timer = null;
             var panel = document.getElementById('soporte-panel');
             if (panel) panel.classList.add('open');
             var dot = document.getElementById('soporte-dot');
             if (dot) dot.classList.remove('show');
             _spAdminShowChat(data.sesion);
-            _SP.ultimoTs = null; clearInterval(_SP.timer); _SP.timer = null;
-            _spPollMensajes();
+            // Dar tiempo al DOM para renderizar antes de iniciar polling
+            setTimeout(function() { _spPollMensajes(); }, 300);
         } else if (data.message && data.message.includes('tomada')) {
             Swal.fire({icon:'info',title:'Solicitud tomada',text:'Otro administrador ya aceptó este chat.',timer:2000,showConfirmButton:false});
         }

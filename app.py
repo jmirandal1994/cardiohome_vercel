@@ -5756,13 +5756,13 @@ Máximo 3 oraciones salvo que se pida más detalle. Si necesitas listar cosas, s
 def soporte_solicitar():
     """Coordinadora solicita chat con un admin disponible."""
     rol = session.get('usuario')
-    if rol not in ('coordinador_escuela', 'coordinadora'):
+    if rol not in ('coordinador_escuela', 'coordinadora', 'doctora'):
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
         data      = request.get_json() or {}
         nombre    = (data.get('nombre') or session.get('nombre') or '').strip()
         escuela   = (data.get('escuela') or '').strip()
-        es_general = (rol == 'coordinadora')
+        es_general = (rol in ('coordinadora', 'doctora'))  # doctora y coord general = prioridad alta
 
         if not nombre:
             return jsonify({"success": False, "message": "Ingresa tu nombre"}), 400
@@ -5875,7 +5875,7 @@ def soporte_aceptar():
 def soporte_mensajes(sesion_id):
     """Obtener mensajes de una sesión + estado de la sesión."""
     rol = session.get('usuario')
-    if rol not in ('admin', 'coordinador_escuela', 'coordinadora'):
+    if rol not in ('admin', 'coordinador_escuela', 'coordinadora', 'doctora'):
         return jsonify({"success": False}), 403
     try:
         since = request.args.get('since', '')
@@ -5906,7 +5906,7 @@ def soporte_mensajes(sesion_id):
 def soporte_enviar():
     """Enviar mensaje en una sesión activa."""
     rol = session.get('usuario')
-    if rol not in ('admin', 'coordinador_escuela', 'coordinadora'):
+    if rol not in ('admin', 'coordinador_escuela', 'coordinadora', 'doctora'):
         return jsonify({"success": False}), 403
     try:
         data      = request.get_json() or {}
@@ -5932,7 +5932,7 @@ def soporte_enviar():
 def soporte_cerrar():
     """Cerrar una sesión de chat."""
     rol = session.get('usuario')
-    if rol not in ('admin', 'coordinador_escuela', 'coordinadora'):
+    if rol not in ('admin', 'coordinador_escuela', 'coordinadora', 'doctora'):
         return jsonify({"success": False}), 403
     try:
         data      = request.get_json() or {}
@@ -5951,7 +5951,7 @@ def soporte_cerrar():
 def soporte_mi_sesion():
     """Coordinadora: verificar si tiene sesión activa o esperando."""
     rol = session.get('usuario')
-    if rol not in ('coordinador_escuela', 'coordinadora'):
+    if rol not in ('coordinador_escuela', 'coordinadora', 'doctora'):
         return jsonify({"success": False}), 403
     try:
         solicitante_id = str(session.get('usuario_id', ''))

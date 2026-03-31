@@ -6063,5 +6063,24 @@ def chat_admin_enviar():
         return jsonify({"success": False, "message": str(e)}), 500
 
 
+@app.route('/api/soporte/historial', methods=['GET'])
+def soporte_historial():
+    """Admin: últimas 30 sesiones de soporte (atendidas y no atendidas)."""
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False}), 403
+    try:
+        res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/chat_soporte_sesiones"
+            f"?order=created_at.desc&limit=30"
+            f"&select=id,solicitante_nombre,solicitante_escuela,solicitante_rol,"
+            f"prioridad,estado,admin_id,admin_nombre,created_at",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        sesiones = res.json() if res.ok else []
+        return jsonify({"success": True, "sesiones": sesiones})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))

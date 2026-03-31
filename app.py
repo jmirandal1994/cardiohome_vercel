@@ -5769,11 +5769,21 @@ def soporte_solicitar():
         if not es_general and not escuela:
             return jsonify({"success": False, "message": "Ingresa el establecimiento"}), 400
 
+        # Token único por pestaña del navegador (enviado desde el JS frontend)
+        # Esto aísla coordinadores que comparten el mismo usuario_id
+        import uuid as _uuid
+        tab_token = (data.get('tab_token') or '').strip()
+        if not tab_token:
+            tab_token = str(_uuid.uuid4())
+        # Guardar en sesión Flask también para logout
+        session['soporte_session_token'] = tab_token
+        session_token  = tab_token
         solicitante_id = str(session.get('usuario_id', ''))
 
         # Crear sesión de chat
         sesion = {
             "solicitante_id":     solicitante_id,
+            "session_token":      session_token,
             "solicitante_nombre": nombre,
             "solicitante_escuela": escuela if not es_general else "Coordinación General",
             "solicitante_rol":    rol,
@@ -5883,9 +5893,14 @@ def soporte_mensajes(sesion_id):
             f"{SUPABASE_URL}/rest/v1/chat_soporte_mensajes"
             f"?sesion_id=eq.{sesion_id}"
             f"&order=created_at.asc"
+            f"&limit=100"
         )
         if since:
+            # Supabase acepta ISO timestamp directamente con gt
             url += f"&created_at=gt.{since}"
+        else:
+            # Sin since: traer últimos 50 mensajes
+            url = url.replace("&limit=100", "&limit=50")
 
         res_msgs = requests.get(url, headers=SUPABASE_SERVICE_HEADERS)
         res_ses  = requests.get(
@@ -5955,9 +5970,11 @@ def soporte_mi_sesion():
         return jsonify({"success": False}), 403
     try:
         solicitante_id = str(session.get('usuario_id', ''))
+        session_token = session.get('soporte_session_token', '')
+        filtro_id = f'session_token=eq.{session_token}' if session_token else f'solicitante_id=eq.{solicitante_id}'
         res = requests.get(
             f"{SUPABASE_URL}/rest/v1/chat_soporte_sesiones"
-            f"?solicitante_id=eq.{solicitante_id}"
+            f"?{filtro_id}"
             f"&estado=in.(esperando,activo)"
             f"&order=created_at.desc&limit=1"
             f"&select=id,estado,admin_nombre,created_at,prioridad",

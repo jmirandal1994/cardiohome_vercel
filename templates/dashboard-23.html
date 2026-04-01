@@ -2905,9 +2905,19 @@
         <!-- Cuerpo colapsable con nóminas -->
         <div id="proy-{{ proyecto.id }}" style="display:none;">
             {% if proyecto.nominas %}
+            <!-- Buscador de nóminas -->
+            <div style="padding:12px 20px 0;">
+                <div style="position:relative;max-width:360px;">
+                    <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.8rem;"></i>
+                    <input type="text"
+                        placeholder="Buscar nómina por nombre o tipo…"
+                        oninput="filtrarNominas(this,'tbody-{{ proyecto.id }}')"
+                        style="width:100%;padding:7px 12px 7px 30px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:.78rem;outline:none;background:#f8faff;color:#334155;box-sizing:border-box;">
+                </div>
+            </div>
             <!-- Tabla de nóminas -->
             <div style="padding:0 20px 16px;">
-                <table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:.82rem;">
+                <table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:.82rem;">
                     <thead>
                         <tr style="background:#f1f5fd;">
                             <th style="padding:9px 12px;text-align:left;color:#475569;font-weight:700;border-bottom:1px solid #e2e8f4;">Nómina</th>
@@ -2919,7 +2929,7 @@
                             <th style="padding:9px 12px;text-align:center;color:#475569;font-weight:700;border-bottom:1px solid #e2e8f4;">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="tbody-{{ proyecto.id }}">
                     {% for nomina in proyecto.nominas %}
                         {% set ev_n = nomina.evaluados if nomina.evaluados is defined else 0 %}
                         {% set tot_n = nomina.total_alumnos if nomina.total_alumnos is defined else 0 %}
@@ -11108,6 +11118,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // Poll cada 5 segundos
     _CANotif.bgTimer = setInterval(caBgPoll, 5000);
 });
+</script>
+
+<script>
+/* ── Filtrar nóminas dentro de gestionar proyectos ── */
+function filtrarNominas(input, tbodyId) {
+    var q     = input.value.toLowerCase().trim();
+    var tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+    var rows = tbody.querySelectorAll('tr');
+    var visible = 0;
+    rows.forEach(function(row) {
+        var text = row.textContent.toLowerCase();
+        var show = !q || text.includes(q);
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+}
 </script>
 
 </body>

@@ -4005,15 +4005,13 @@
                         <p style="color:#64748b;font-size:.875rem;margin:.25rem 0 0 0;">Rendimiento en tiempo real · Neurología y Medicina Familiar · Todas las doctoras</p>
                     </div>
                     <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
-                        <button onclick="coordDescargarReporte()" style="background:linear-gradient(135deg,#0f3460,#1c67a3);color:white;border:none;padding:.5rem 1.1rem;border-radius:12px;font-weight:700;font-size:.8rem;cursor:pointer;display:flex;align-items:center;gap:.5rem;">
-                            <i class="fas fa-file-arrow-down"></i> Descargar Reporte PDF
+                        <button onclick="coordAbrirModalReporte()" style="background:linear-gradient(135deg,#0f3460,#1c67a3);color:white;border:none;padding:.5rem 1.1rem;border-radius:12px;font-weight:700;font-size:.8rem;cursor:pointer;display:flex;align-items:center;gap:.5rem;">
+                            <i class="fas fa-file-arrow-down"></i> Exportar Reporte
                         </button>
                         <button onclick="loadCoordStats()" style="background:#f1f5f9;color:#0A3D62;border:2px solid #e2e8f0;padding:.5rem 1rem;border-radius:12px;font-weight:700;font-size:.8rem;cursor:pointer;display:flex;align-items:center;gap:.5rem;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
                             <i class="fa-solid fa-rotate-right"></i> Actualizar
                         </button>
-                        <button onclick="exportarPDFCoordinadora()" style="background:white;color:#1C67A3;border:2px solid #1C67A3;padding:.5rem 1rem;border-radius:12px;font-weight:700;font-size:.8rem;cursor:pointer;display:flex;align-items:center;gap:.5rem;" onmouseover="this.style.background='#1C67A3';this.style.color='white'" onmouseout="this.style.background='white';this.style.color='#1C67A3'">
-                            <i class="fa-solid fa-file-pdf"></i> Exportar Reporte PDF
-                        </button>
+
                     </div>
                 </div>
 
@@ -11225,126 +11223,205 @@ function filtrarNominas(input, tbodyId) {
 }
 </script>
 
+<!-- Modal Exportar Reporte Coordinadora -->
+<div id="coord-export-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(10,30,60,.55);align-items:center;justify-content:center;">
+    <div style="background:white;border-radius:22px;padding:32px 30px;width:440px;max-width:95vw;box-shadow:0 24px 64px rgba(15,52,96,.28);position:relative;">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+            <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#0f3460,#1c67a3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-file-arrow-down" style="color:white;font-size:1.1rem;"></i>
+            </div>
+            <div>
+                <h3 style="font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:900;color:#0f2030;margin:0 0 3px;">Exportar Reporte</h3>
+                <p style="font-size:.75rem;color:#94a3b8;margin:0;">Selecciona el formato de exportación</p>
+            </div>
+            <button onclick="coordCerrarModalReporte()" style="position:absolute;top:18px;right:18px;background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1.2rem;line-height:1;" title="Cerrar">✕</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+            <div onclick="coordExportarPDF()" style="border:2px solid #e2e8f0;border-radius:14px;padding:15px 16px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .15s;" onmouseover="this.style.borderColor='#1c67a3';this.style.background='#f0f7ff'" onmouseout="this.style.borderColor='#e2e8f0';this.style.background='white'">
+                <div style="width:42px;height:42px;border-radius:11px;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-file-pdf" style="color:#dc2626;font-size:1.15rem;"></i></div>
+                <div style="flex:1;"><div style="font-weight:800;font-size:.88rem;color:#0f2030;margin-bottom:2px;">Nómina Completa — PDF</div><div style="font-size:.73rem;color:#64748b;">Gráficos de torta y barras + listado de alumnos + ranking</div></div>
+                <i class="fas fa-chevron-right" style="color:#94a3b8;font-size:.8rem;flex-shrink:0;"></i>
+            </div>
+            <div onclick="coordExportarExcel('evaluados')" style="border:2px solid #e2e8f0;border-radius:14px;padding:15px 16px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .15s;" onmouseover="this.style.borderColor='#059669';this.style.background='#f0fdf4'" onmouseout="this.style.borderColor='#e2e8f0';this.style.background='white'">
+                <div style="width:42px;height:42px;border-radius:11px;background:#d1fae5;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-file-excel" style="color:#059669;font-size:1.15rem;"></i></div>
+                <div style="flex:1;"><div style="font-weight:800;font-size:.88rem;color:#0f2030;margin-bottom:2px;">Excel — Alumnos Evaluados</div><div style="font-size:.73rem;color:#64748b;">Listado de alumnos con evaluación completada (.csv)</div></div>
+                <i class="fas fa-chevron-right" style="color:#94a3b8;font-size:.8rem;flex-shrink:0;"></i>
+            </div>
+            <div onclick="coordExportarExcel('pendientes')" style="border:2px solid #e2e8f0;border-radius:14px;padding:15px 16px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .15s;" onmouseover="this.style.borderColor='#d97706';this.style.background='#fffbeb'" onmouseout="this.style.borderColor='#e2e8f0';this.style.background='white'">
+                <div style="width:42px;height:42px;border-radius:11px;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-file-excel" style="color:#d97706;font-size:1.15rem;"></i></div>
+                <div style="flex:1;"><div style="font-weight:800;font-size:.88rem;color:#0f2030;margin-bottom:2px;">Excel — Alumnos Pendientes</div><div style="font-size:.73rem;color:#64748b;">Listado de alumnos sin evaluación (.csv)</div></div>
+                <i class="fas fa-chevron-right" style="color:#94a3b8;font-size:.8rem;flex-shrink:0;"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-/* ══ REPORTE PDF COORDINADORA GENERAL ════════════════════════════════════ */
-function coordDescargarReporte() {
-    if (!_coordData) {
-        Swal.fire({ icon:'info', title:'Sin datos', text:'Primero carga las estadísticas.', timer:2000, showConfirmButton:false });
-        return;
-    }
-    var d   = _coordData;
-    var hoy = new Date().toLocaleDateString('es-CL', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+function coordAbrirModalReporte() {
+    if (!_coordData) { Swal.fire({icon:'info',title:'Sin datos',text:'Primero carga las estadísticas.',timer:2000,showConfirmButton:false}); return; }
+    var m = document.getElementById('coord-export-modal');
+    if (m) m.style.display = 'flex';
+}
+function coordCerrarModalReporte() {
+    var m = document.getElementById('coord-export-modal');
+    if (m) m.style.display = 'none';
+}
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') coordCerrarModalReporte(); });
+
+function coordExportarPDF() {
+    coordCerrarModalReporte();
+    var d = _coordData;
+    var hoy = new Date().toLocaleDateString('es-CL',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
     var neuroP = d.neuro_total   > 0 ? Math.round(d.neuro_completed   / d.neuro_total   * 100) : 0;
     var famP   = d.familiar_total > 0 ? Math.round(d.familiar_completed / d.familiar_total * 100) : 0;
 
-    // Build pie chart as SVG (donut)
-    function donutSVG(pct, color, label) {
-        var r = 38, cx = 50, cy = 50;
-        var circ = 2 * Math.PI * r;
-        var dash = (pct / 100) * circ;
-        return '<svg width="120" height="120" viewBox="0 0 100 100" style="display:inline-block;">'
-            + '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="#e2e8f0" stroke-width="14"/>'
-            + '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="14"'
-            + ' stroke-dasharray="' + dash + ' ' + circ + '" stroke-dashoffset="' + (circ * 0.25) + '"'
-            + ' transform="rotate(-90 50 50)" stroke-linecap="round"/>'
-            + '<text x="50" y="46" text-anchor="middle" font-size="14" font-weight="900" fill="' + color + '">' + pct + '%</text>'
-            + '<text x="50" y="60" text-anchor="middle" font-size="7" fill="#94a3b8">' + label + '</text>'
-            + '</svg>';
+    function donutSVG(pct,color,label,sub){
+        var r=38,circ=2*Math.PI*r,dash=(pct/100)*circ;
+        return '<svg width="120" height="120" viewBox="0 0 100 100">'
+            +'<circle cx="50" cy="50" r="38" fill="none" stroke="#f1f5f9" stroke-width="13"/>'
+            +'<circle cx="50" cy="50" r="38" fill="none" stroke="'+color+'" stroke-width="13"'
+            +' stroke-dasharray="'+dash.toFixed(1)+' '+circ.toFixed(1)+'"'
+            +' stroke-dashoffset="'+(circ*0.25).toFixed(1)+'"'
+            +' transform="rotate(-90 50 50)" stroke-linecap="round"/>'
+            +'<text x="50" y="46" text-anchor="middle" font-size="15" font-weight="900" fill="'+color+'">'+pct+'%</text>'
+            +'<text x="50" y="57" text-anchor="middle" font-size="7.5" fill="#64748b">'+label+'</text>'
+            +'<text x="50" y="67" text-anchor="middle" font-size="7" fill="#94a3b8">'+sub+'</text>'
+            +'</svg>';
     }
 
-    // Bars for por_dia
-    var porDia = d.por_dia || {};
-    var dias   = Object.keys(porDia).sort().slice(-14);
-    var maxVal = Math.max.apply(null, dias.map(function(k){ return porDia[k].total || 0; })) || 1;
-    var barH   = 80;
-    var barsHTML = dias.map(function(k, i) {
-        var tot  = porDia[k].total || 0;
-        var neuro= porDia[k].neurologia || 0;
-        var fam  = porDia[k].medicina_familiar || 0;
-        var hTot = Math.round((tot / maxVal) * barH);
-        var hN   = Math.round((neuro / maxVal) * barH);
-        var hF   = Math.round((fam  / maxVal) * barH);
-        var label = k.slice(5); // MM-DD
-        var x = 8 + i * 34;
+    var porDia=d.por_dia||{};
+    var dias=Object.keys(porDia).sort().slice(-14);
+    var maxVal=Math.max.apply(null,[1].concat(dias.map(function(k){return porDia[k].total||0;})));
+    var bH=85,bW=20,gap=5,padL=28,padB=30,svgW=padL+dias.length*(bW+gap)+8,svgH=bH+padB+8;
+    var bars=dias.map(function(k,i){
+        var tot=porDia[k].total||0,neuro=porDia[k].neurologia||0,fam=porDia[k].medicina_familiar||0;
+        var hTot=Math.round((tot/maxVal)*bH),hN=Math.round((neuro/maxVal)*bH),hF=Math.round((fam/maxVal)*bH);
+        var x=padL+i*(bW+gap),lbl=k.slice(5);
         return '<g>'
-            + '<rect x="' + x + '" y="' + (barH - hF) + '" width="14" height="' + hF + '" rx="2" fill="#f97316"/>'
-            + '<rect x="' + (x+14) + '" y="' + (barH - hN) + '" width="14" height="' + hN + '" rx="2" fill="#8b5cf6"/>'
-            + '<text x="' + (x + 14) + '" y="' + (barH + 12) + '" text-anchor="middle" font-size="7" fill="#64748b">' + label + '</text>'
-            + (tot > 0 ? '<text x="' + (x+14) + '" y="' + (barH - hTot - 3) + '" text-anchor="middle" font-size="8" font-weight="700" fill="#0f3460">' + tot + '</text>' : '')
-            + '</g>';
+            +'<rect x="'+x+'" y="'+(bH-hF)+'" width="'+(bW/2)+'" height="'+hF+'" rx="2" fill="#f97316"/>'
+            +'<rect x="'+(x+bW/2)+'" y="'+(bH-hN)+'" width="'+(bW/2)+'" height="'+hN+'" rx="2" fill="#8b5cf6"/>'
+            +(tot>0?'<text x="'+(x+bW/2)+'" y="'+(bH-hTot-3)+'" text-anchor="middle" font-size="7" font-weight="700" fill="#0f3460">'+tot+'</text>':'')
+            +'<text x="'+(x+bW/2)+'" y="'+(bH+16)+'" text-anchor="middle" font-size="6.5" fill="#64748b"'
+            +' transform="rotate(-38 '+(x+bW/2)+' '+(bH+16)+')">'+lbl+'</text>'
+            +'</g>';
     }).join('');
-    var svgW = 8 + dias.length * 34 + 10;
-    var barSVG = '<svg width="' + svgW + '" height="' + (barH + 30) + '" viewBox="0 0 ' + svgW + ' ' + (barH + 30) + '">'
-        + '<line x1="0" y1="' + barH + '" x2="' + svgW + '" y2="' + barH + '" stroke="#e2e8f0" stroke-width="1"/>'
-        + barsHTML + '</svg>';
+    var yTicks=[0,Math.round(maxVal/2),maxVal].map(function(v){
+        var y=bH-Math.round((v/maxVal)*bH);
+        return '<line x1="'+padL+'" y1="'+y+'" x2="'+svgW+'" y2="'+y+'" stroke="#f1f5f9" stroke-width="1"/>'
+              +'<text x="'+(padL-4)+'" y="'+(y+3)+'" text-anchor="end" font-size="7" fill="#94a3b8">'+v+'</text>';
+    }).join('');
+    var barSVG='<svg width="'+svgW+'" height="'+svgH+'" viewBox="0 0 '+svgW+' '+svgH+'">'+yTicks+bars
+        +'<line x1="'+padL+'" y1="'+bH+'" x2="'+svgW+'" y2="'+bH+'" stroke="#e2e8f0" stroke-width="1"/></svg>';
 
-    // Ranking rows
-    var rankRows = (d.doctoras_ranking || []).slice(0, 8).map(function(r, i) {
-        var medals = ['🥇','🥈','🥉'];
-        var pct = r.total > 0 ? Math.round(r.completados / r.total * 100) : 0;
-        return '<tr style="border-bottom:1px solid #f1f5f9;">'
-            + '<td style="padding:7px 10px;">' + (medals[i] || (i+1)) + '</td>'
-            + '<td style="padding:7px 10px;font-weight:700;color:#0f2030;">' + (r.nombre || r.usuario || 'N/A') + '</td>'
-            + '<td style="padding:7px 10px;text-align:center;">' + r.completados + ' / ' + r.total + '</td>'
-            + '<td style="padding:7px 10px;text-align:center;">'
-            + '<div style="background:#e2e8f0;border-radius:99px;height:8px;width:80px;display:inline-block;overflow:hidden;vertical-align:middle;">'
-            + '<div style="background:#1c67a3;height:100%;width:' + pct + '%;border-radius:99px;"></div></div>'
-            + ' <span style="font-size:.8rem;font-weight:700;color:#1c67a3;">' + pct + '%</span>'
-            + '</td></tr>';
+    var rankRows=(d.doctoras_ranking||[]).slice(0,10).map(function(r,i){
+        var medals=['🥇','🥈','🥉'];
+        var pct=r.total>0?Math.round(r.completados/r.total*100):0;
+        return '<tr style="border-bottom:1px solid #f8fafc;">'
+            +'<td style="padding:6px 8px;text-align:center;">'+(medals[i]||'<span style="color:#94a3b8;">'+(i+1)+'</span>')+'</td>'
+            +'<td style="padding:6px 8px;font-weight:700;color:#0f2030;">'+(r.nombre||r.usuario||'N/A')+'</td>'
+            +'<td style="padding:6px 8px;text-align:center;color:#059669;font-weight:700;">'+r.completados+'</td>'
+            +'<td style="padding:6px 8px;text-align:center;color:#64748b;">'+r.total+'</td>'
+            +'<td style="padding:6px 8px;"><div style="display:flex;align-items:center;gap:5px;">'
+            +'<div style="width:70px;background:#e2e8f0;border-radius:3px;height:6px;overflow:hidden;">'
+            +'<div style="width:'+Math.round(pct*0.7)+'px;height:100%;background:#1c67a3;border-radius:3px;"></div></div>'
+            +'<span style="font-size:.72rem;font-weight:700;color:#1c67a3;">'+pct+'%</span></div></td></tr>';
     }).join('');
 
-    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
-        + '<style>*{margin:0;padding:0;box-sizing:border-box;font-family:\'Helvetica Neue\',Arial,sans-serif;}'
-        + 'body{padding:32px;background:white;color:#1e293b;font-size:13px;}'
-        + '.header{background:linear-gradient(135deg,#0f3460,#1c67a3);color:white;border-radius:14px;padding:24px 28px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center;}'
-        + '.header h1{font-size:1.4rem;font-weight:900;margin-bottom:4px;}'
-        + '.header p{font-size:.8rem;opacity:.75;}'
-        + '.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}'
-        + '.kpi{background:#f8faff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;text-align:center;}'
-        + '.kpi .val{font-size:1.8rem;font-weight:900;color:#0f3460;}'
-        + '.kpi .lbl{font-size:.7rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-top:3px;}'
-        + '.section{background:white;border:1px solid #e2e8f0;border-radius:14px;padding:18px;margin-bottom:18px;}'
-        + '.section-title{font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:14px;}'
-        + 'table{width:100%;border-collapse:collapse;font-size:.82rem;}'
-        + 'th{padding:7px 10px;background:#f1f5f9;text-align:left;font-weight:700;color:#475569;font-size:.75rem;}'
-        + '.legend{display:flex;gap:16px;align-items:center;font-size:.75rem;margin-bottom:8px;}'
-        + '.legend-dot{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:4px;}'
-        + '</style></head><body>'
-        + '<div class="header"><div><h1>Reporte de Avance PIE</h1><p>Coordinación General · ' + hoy + '</p></div>'
-        + '<div style="text-align:right;"><div style="font-size:2rem;font-weight:900;">' + d.percent + '%</div><div style="font-size:.8rem;opacity:.75;">Completado</div></div>'
-        + '</div>'
-        + '<div class="kpi-grid">'
-        + '<div class="kpi"><div class="val">' + d.total + '</div><div class="lbl">Total alumnos</div></div>'
-        + '<div class="kpi"><div class="val" style="color:#059669;">' + d.completed + '</div><div class="lbl">Evaluados</div></div>'
-        + '<div class="kpi"><div class="val" style="color:#f97316;">' + d.pending + '</div><div class="lbl">Pendientes</div></div>'
-        + '<div class="kpi"><div class="val" style="color:#8b5cf6;">' + (d.doctoras_ranking ? d.doctoras_ranking.length : 0) + '</div><div class="lbl">Doctoras activas</div></div>'
-        + '</div>'
-        + '<div class="section"><div class="section-title">Progreso por Especialidad</div>'
-        + '<div style="display:flex;justify-content:space-around;align-items:center;">'
-        + donutSVG(neuroP, '#8b5cf6', 'Neurología')
-        + '<div style="font-size:.82rem;color:#64748b;">'
-        + '<div style="margin-bottom:8px;"><span style="font-weight:800;font-size:1.2rem;color:#8b5cf6;">' + d.neuro_completed + '</span>/' + d.neuro_total + ' Neurología</div>'
-        + '<div><span style="font-weight:800;font-size:1.2rem;color:#f97316;">' + d.familiar_completed + '</span>/' + d.familiar_total + ' Med. Familiar</div>'
-        + '</div>'
-        + donutSVG(famP, '#f97316', 'Med. Familiar')
-        + '</div></div>'
-        + '<div class="section"><div class="section-title">Evaluaciones diarias (últimos 14 días)</div>'
-        + '<div class="legend"><span><span class="legend-dot" style="background:#f97316;"></span>Med. Familiar</span><span><span class="legend-dot" style="background:#8b5cf6;"></span>Neurología</span></div>'
-        + barSVG + '</div>'
-        + '<div class="section"><div class="section-title">Ranking de Doctoras</div>'
-        + '<table><thead><tr><th>#</th><th>Doctora</th><th>Evaluados / Total</th><th>Avance</th></tr></thead><tbody>' + rankRows + '</tbody></table>'
-        + '</div>'
-        + '</body></html>';
+    var estRows=(d.establecimientos||[]).slice(0,10).map(function(e){
+        var pct=e.total>0?Math.round(e.completados/e.total*100):0;
+        var col=pct>=80?'#059669':pct>=50?'#d97706':'#dc2626';
+        return '<tr style="border-bottom:1px solid #f8fafc;">'
+            +'<td style="padding:6px 8px;font-weight:600;color:#0f2030;">'+(e.nombre_colegio||'—')+'</td>'
+            +'<td style="padding:6px 8px;text-align:center;">'+e.total+'</td>'
+            +'<td style="padding:6px 8px;text-align:center;color:#059669;font-weight:700;">'+e.completados+'</td>'
+            +'<td style="padding:6px 8px;text-align:center;font-weight:800;color:'+col+';">'+pct+'%</td></tr>';
+    }).join('');
 
-    var blob = new Blob([html], { type:'text/html' });
-    var url  = URL.createObjectURL(blob);
-    var a    = document.createElement('a');
-    a.href     = url;
-    a.download = 'Reporte_PIE_' + new Date().toISOString().slice(0,10) + '.html';
-    a.click();
-    URL.revokeObjectURL(url);
+    var html='<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Reporte PIE</title>'
+        +'<style>@page{margin:14mm 13mm}*{margin:0;padding:0;box-sizing:border-box;font-family:"Helvetica Neue",Arial,sans-serif;}'
+        +'body{background:white;color:#1e293b;font-size:11px;line-height:1.45;}'
+        +'.header{background:linear-gradient(135deg,#0f3460,#1c67a3);color:white;border-radius:12px;padding:20px 24px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;}'
+        +'.header h1{font-size:1.2rem;font-weight:900;margin-bottom:3px;}.header .sub{opacity:.7;font-size:.75rem;}'
+        +'.pct-big{font-size:2.2rem;font-weight:900;line-height:1;}.pct-lbl{font-size:.7rem;opacity:.75;}'
+        +'.kpis{display:flex;gap:10px;margin-bottom:14px;}'
+        +'.kpi{flex:1;background:#f8faff;border:1px solid #e2e8f0;border-radius:9px;padding:10px;text-align:center;}'
+        +'.kpi .v{font-size:1.4rem;font-weight:900;color:#0f3460;}.kpi .l{font-size:.62rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}'
+        +'.section{border:1px solid #e8f0f6;border-radius:11px;margin-bottom:14px;overflow:hidden;page-break-inside:avoid;}'
+        +'.sec-head{background:#f8faff;padding:9px 14px;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#64748b;border-bottom:1px solid #e8f0f6;}'
+        +'.sec-body{padding:14px;}'
+        +'table{width:100%;border-collapse:collapse;font-size:.79rem;}'
+        +'th{padding:6px 8px;background:#f1f5f9;text-align:left;font-weight:700;color:#475569;font-size:.7rem;}'
+        +'.charts-row{display:flex;gap:16px;align-items:flex-start;}'
+        +'.donuts{display:flex;gap:12px;align-items:center;justify-content:center;flex-shrink:0;}'
+        +'.donut-item{text-align:center;}.donut-item .lbl{font-size:.7rem;font-weight:700;margin-top:2px;}'
+        +'.bar-wrap{flex:1;}'
+        +'.legend{display:flex;gap:12px;font-size:.7rem;margin-bottom:6px;}'
+        +'.ld{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:3px;vertical-align:middle;}'
+        +'@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body>'
+        +'<div class="header"><div><h1>Reporte de Avance PIE</h1><p class="sub">Coordinación General · '+hoy+'</p></div>'
+        +'<div style="text-align:right;"><div class="pct-big">'+d.percent+'%</div><div class="pct-lbl">Completado</div></div></div>'
+        +'<div class="kpis">'
+        +'<div class="kpi"><div class="v">'+d.total+'</div><div class="l">Total</div></div>'
+        +'<div class="kpi"><div class="v" style="color:#059669;">'+d.completed+'</div><div class="l">Evaluados</div></div>'
+        +'<div class="kpi"><div class="v" style="color:#f97316;">'+d.pending+'</div><div class="l">Pendientes</div></div>'
+        +'<div class="kpi"><div class="v" style="color:#8b5cf6;">'+d.neuro_completed+'/'+d.neuro_total+'</div><div class="l">Neurología</div></div>'
+        +'<div class="kpi"><div class="v" style="color:#1c67a3;">'+d.familiar_completed+'/'+d.familiar_total+'</div><div class="l">Med. Familiar</div></div>'
+        +'</div>'
+        +'<div class="section"><div class="sec-head">📊 Gráficos de Progreso</div><div class="sec-body">'
+        +'<div class="charts-row">'
+        +'<div class="donuts">'
+        +'<div class="donut-item">'+donutSVG(neuroP,'#8b5cf6','Neurología',d.neuro_completed+'/'+d.neuro_total)+'<div class="lbl" style="color:#6d28d9;">Neurología</div></div>'
+        +'<div class="donut-item">'+donutSVG(famP,'#f97316','Med.Familiar',d.familiar_completed+'/'+d.familiar_total)+'<div class="lbl" style="color:#ea580c;">Med. Familiar</div></div>'
+        +'</div>'
+        +'<div class="bar-wrap"><div class="legend"><span><span class="ld" style="background:#f97316;"></span>Med. Familiar</span><span><span class="ld" style="background:#8b5cf6;"></span>Neurología</span><span style="color:#94a3b8;font-size:.68rem;">Últimos '+dias.length+' días con actividad</span></div>'
+        +barSVG+'</div></div></div></div>'
+        +'<div class="section"><div class="sec-head">👩‍⚕️ Ranking de Doctoras</div><div class="sec-body">'
+        +'<table><thead><tr><th>#</th><th>Doctora</th><th>Evaluados</th><th>Total</th><th>Avance</th></tr></thead>'
+        +'<tbody>'+rankRows+'</tbody></table></div></div>'
+        +'<div class="section"><div class="sec-head">🏫 Top Establecimientos</div><div class="sec-body">'
+        +'<table><thead><tr><th>Establecimiento</th><th>Total</th><th>Evaluados</th><th>%</th></tr></thead>'
+        +'<tbody>'+estRows+'</tbody></table></div></div>'
+        +'<div style="text-align:center;color:#94a3b8;font-size:.68rem;margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9;">'
+        +'CardioHome · Sistema PIE · '+new Date().toLocaleString('es-CL')+'</div>'
+        +'</body></html>';
 
-    Swal.fire({ icon:'success', title:'Reporte generado', text:'Abre el archivo .html descargado e imprime como PDF desde el navegador (Ctrl+P).', timer:4000, showConfirmButton:false });
+    var win=window.open('','_blank');
+    if(!win){Swal.fire({icon:'warning',title:'Bloqueado',text:'Permite ventanas emergentes en tu navegador.',timer:3000,showConfirmButton:false});return;}
+    win.document.write(html);
+    win.document.close();
+    win.onload=function(){setTimeout(function(){win.print();},600);};
+}
+
+async function coordExportarExcel(tipo) {
+    coordCerrarModalReporte();
+    try {
+        var res=await fetch('/api/coordinadora/export_listado?tipo='+tipo);
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        var data=await res.json();
+        if(!data.success) throw new Error(data.message||'Error');
+        var rows=data.alumnos||[];
+        if(!rows.length){Swal.fire({icon:'info',title:'Sin datos',text:'No hay alumnos '+tipo+' para exportar.',timer:2000,showConfirmButton:false});return;}
+        var headers=['Nombre','RUT','Establecimiento','Tipo Nómina','Doctora','Fecha Evaluación','Estado'];
+        var csv=headers.join(',')+'\\n';
+        rows.forEach(function(r){
+            csv+=[
+                '"'+(r.nombre||'').replace(/"/g,'')+'"',
+                '"'+(r.rut||'')+'"',
+                '"'+(r.nombre_colegio||'').replace(/"/g,'')+'"',
+                '"'+(r.tipo_nomina||'')+'"',
+                '"'+(r.doctora||'').replace(/"/g,'')+'"',
+                '"'+(r.fecha_evaluacion||'')+'"',
+                '"'+(tipo==='evaluados'?'Evaluado':'Pendiente')+'"'
+            ].join(',')+'\\n';
+        });
+        var bom='﻿';
+        var blob=new Blob([bom+csv],{type:'text/csv;charset=utf-8;'});
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement('a');
+        a.href=url;a.download='Reporte_PIE_'+tipo+'_'+new Date().toISOString().slice(0,10)+'.csv';
+        document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+        Swal.fire({icon:'success',title:'Descargado',text:rows.length+' alumnos exportados.',timer:2000,showConfirmButton:false});
+    }catch(e){Swal.fire({icon:'error',title:'Error',text:e.message});}
 }
 </script>
 

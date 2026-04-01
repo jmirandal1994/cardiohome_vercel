@@ -3948,6 +3948,7 @@ def api_coordinadora_stats():
                     f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
                     f"?evaluado_flag=eq.true"
                     f"&nomina_id=in.({in_str})"
+                    f"&estado_asistencia=in.(activo,extra)"
                     f"&select=fecha_evaluacion,nomina_id"
                     f"&limit=5000"
                 )
@@ -3968,12 +3969,18 @@ def api_coordinadora_stats():
         por_semana = defaultdict(lambda: {"neurologia": 0, "medicina_familiar": 0, "total": 0})
 
         for ev in evaluados:
-            fecha_str = (ev.get('fecha_evaluacion') or '')[:10]
+            fecha_str = (ev.get('fecha_evaluacion') or '').strip()
             if not fecha_str:
                 continue
-            try:
-                fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-            except ValueError:
+            # Intentar múltiples formatos: fecha_evaluacion se guarda como DD/MM/YYYY
+            fecha = None
+            for fmt in ('%d/%m/%Y', '%Y-%m-%d', '%d-%m-%Y'):
+                try:
+                    fecha = datetime.strptime(fecha_str[:10], fmt).date()
+                    break
+                except ValueError:
+                    continue
+            if not fecha:
                 continue
 
             ftype_raw = (nomina_type_map.get(ev.get('nomina_id', ''), '') or '').lower().strip()

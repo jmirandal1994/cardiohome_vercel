@@ -3935,17 +3935,25 @@ def api_coordinadora_stats():
         # ── 3. Datos diarios y semanales desde estudiantes_nomina ────────
         # Traemos estudiantes evaluados de todas las nóminas de la coordinadora
         # Límite de 2000 para evitar timeouts (suficiente para 30 días de actividad)
-        url_evaluados = (
-            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-            f"?evaluado_flag=eq.true"
-            f"&select=fecha_evaluacion,nomina_id"
-            f"&limit=2000"
-        )
-        res_ev = requests.get(url_evaluados, headers=SUPABASE_SERVICE_HEADERS)
-        evaluados_raw = res_ev.json() if res_ev.ok else []
-
-        # Filtrar solo los que pertenecen a nóminas de esta coordinadora
-        evaluados = [e for e in evaluados_raw if e.get('nomina_id') in nominas_set]
+        # Filtrar directamente en Supabase por nominas de esta coordinadora
+        evaluados = []
+        if nominas_set:
+            # Supabase IN filter — split en chunks de 100 para evitar URL muy larga
+            nominas_list = list(nominas_set)
+            chunk_size   = 80
+            for i in range(0, len(nominas_list), chunk_size):
+                chunk  = nominas_list[i:i+chunk_size]
+                in_str = ','.join(chunk)
+                url_ev = (
+                    f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                    f"?evaluado_flag=eq.true"
+                    f"&nomina_id=in.({in_str})"
+                    f"&select=fecha_evaluacion,nomina_id"
+                    f"&limit=5000"
+                )
+                res_ev = requests.get(url_ev, headers=SUPABASE_SERVICE_HEADERS)
+                if res_ev.ok:
+                    evaluados.extend(res_ev.json())
 
         # Mapear nomina_id → form_type
         nomina_type_map = {n['id']: (n.get('form_type') or '') for n in nominas}
@@ -3968,7 +3976,15 @@ def api_coordinadora_stats():
             except ValueError:
                 continue
 
-            ftype     = nomina_type_map.get(ev.get('nomina_id', ''), '')
+            ftype_raw = (nomina_type_map.get(ev.get('nomina_id', ''), '') or '').lower().strip()
+            # Normalizar variantes: neurologia/neurología/neuro → neurologia
+            if 'neuro' in ftype_raw:
+                ftype = 'neurologia'
+            elif 'familiar' in ftype_raw or 'medicina' in ftype_raw:
+                ftype = 'medicina_familiar'
+            else:
+                ftype = ftype_raw
+
             key_dia   = fecha.strftime('%Y-%m-%d')
             iso_cal   = fecha.isocalendar()
             key_sem   = f"S{iso_cal[1]:02d}/{iso_cal[0]}"

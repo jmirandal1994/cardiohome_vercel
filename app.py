@@ -1209,7 +1209,7 @@ def login():
     usuario_login = request.form['username']
     clave = request.form['password']
     
-    url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario_login}&password=eq.{clave}&select=id,rol"
+    url = f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario_login}&password=eq.{clave}&select=id,rol,nombre"
     
     print(f"DEBUG: Intento de login para usuario: {usuario_login}, URL: {url}")
     try:

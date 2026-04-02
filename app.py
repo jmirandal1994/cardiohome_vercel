@@ -3932,85 +3932,64 @@ def api_coordinadora_stats():
         pending_global = total_global - completed_global
         percent = round((completed_global / total_global * 100), 1) if total_global > 0 else 0
 
-        # ── 3. Datos diarios y semanales desde estudiantes_nomina ────────
-        # Traemos estudiantes evaluados de todas las nóminas de la coordinadora
-        # Límite de 2000 para evitar timeouts (suficiente para 30 días de actividad)
-        # Filtrar directamente en Supabase por nominas de esta coordinadora
-        evaluados = []
-        if nominas_set:
-            # Supabase IN filter — split en chunks de 100 para evitar URL muy larga
-            nominas_list = list(nominas_set)
-            chunk_size   = 80
-            for i in range(0, len(nominas_list), chunk_size):
-                chunk  = nominas_list[i:i+chunk_size]
-                in_str = ','.join(chunk)
-                url_ev = (
-                    f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                    f"?evaluado_flag=eq.true"
-                    f"&nomina_id=in.({in_str})"
-                    f"&estado_asistencia=in.(activo,extra)"
-                    f"&select=fecha_evaluacion,nomina_id"
-                    f"&limit=5000"
-                )
-                res_ev = requests.get(url_ev, headers=SUPABASE_SERVICE_HEADERS)
-                if res_ev.ok:
-                    evaluados.extend(res_ev.json())
-
-        # Mapear nomina_id → form_type
-        nomina_type_map = {n['id']: (n.get('form_type') or '') for n in nominas}
-
-        hoy       = date.today()
-        hace_30   = hoy - timedelta(days=30)
-        hace_12s  = hoy - timedelta(weeks=12)
-
-        # Usamos defaultdict para acumular
+        # ── 3. Datos diarios y semanales (misma lógica que admin) ──────────
         from collections import defaultdict
+        hoy      = date.today()
+        hace_30  = hoy - timedelta(days=30)
+        hace_12s = hoy - timedelta(weeks=12)
+
         por_dia    = defaultdict(lambda: {"neurologia": 0, "medicina_familiar": 0, "total": 0})
         por_semana = defaultdict(lambda: {"neurologia": 0, "medicina_familiar": 0, "total": 0})
 
-        for ev in evaluados:
-            fe_raw = (ev.get('fecha_evaluacion') or '').strip()
-            if not fe_raw:
-                continue
-            # Multi-formato: BD guarda DD/MM/YYYY, normalizar a date
-            fecha = None
-            for fmt in ('%d/%m/%Y', '%Y-%m-%d', '%d-%m-%Y'):
-                try:
-                    fecha = datetime.strptime(fe_raw[:10], fmt).date()
-                    break
-                except ValueError:
-                    continue
-            if fecha is None:
-                continue
-
-            ftype_raw = (nomina_type_map.get(ev.get('nomina_id', ''), '') or '').lower().strip()
-            # Normalizar variantes: neurologia/neurología/neuro → neurologia
-            if 'neuro' in ftype_raw:
-                ftype = 'neurologia'
-            elif 'familiar' in ftype_raw or 'medicina' in ftype_raw:
-                ftype = 'medicina_familiar'
+        for nom in nominas:
+            nid    = nom['id']
+            ftype  = (nom.get('form_type') or '').lower().strip()
+            tipo_n = (nom.get('tipo_nomina') or '').lower().strip()
+            if 'neuro' in ftype or 'neuro' in tipo_n:
+                tipo_key = 'neurologia'
+            elif 'familiar' in ftype or 'medicina' in ftype or 'familiar' in tipo_n:
+                tipo_key = 'medicina_familiar'
             else:
-                ftype = ftype_raw
-
-            key_dia   = fecha.strftime('%Y-%m-%d')
-            iso_cal   = fecha.isocalendar()
-            key_sem   = f"S{iso_cal[1]:02d}/{iso_cal[0]}"
-
-            # Gráfico diario: últimos 30 días
-            if fecha >= hace_30:
-                por_dia[key_dia]["total"] += 1
-                if ftype == 'neurologia':
-                    por_dia[key_dia]["neurologia"] += 1
-                elif ftype == 'medicina_familiar':
-                    por_dia[key_dia]["medicina_familiar"] += 1
-
-            # Gráfico semanal: últimas 12 semanas
-            if fecha >= hace_12s:
-                por_semana[key_sem]["total"] += 1
-                if ftype == 'neurologia':
-                    por_semana[key_sem]["neurologia"] += 1
-                elif ftype == 'medicina_familiar':
-                    por_semana[key_sem]["medicina_familiar"] += 1
+                tipo_key = 'otro'
+            try:
+                url_f = (
+                    f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                    f"?nomina_id=eq.{nid}"
+                    f"&evaluado_flag=eq.true"
+                    f"&estado_asistencia=in.(activo,extra)"
+                    f"&select=fecha_evaluacion"
+                )
+                res_f = requests.get(url_f, headers=SUPABASE_SERVICE_HEADERS)
+                if not res_f.ok:
+                    continue
+                for row in res_f.json():
+                    fe = (row.get('fecha_evaluacion') or '').strip()
+                    if not fe:
+                        continue
+                    fe_date = None
+                    for fmt in ('%d/%m/%Y', '%Y-%m-%d', '%d-%m-%Y'):
+                        try:
+                            fe_date = datetime.strptime(fe[:10], fmt).date()
+                            break
+                        except ValueError:
+                            continue
+                    if not fe_date:
+                        continue
+                    delta = (hoy - fe_date).days
+                    if 0 <= delta <= 30:
+                        k = str(fe_date)
+                        por_dia[k]["total"] += 1
+                        if tipo_key != 'otro':
+                            por_dia[k][tipo_key] += 1
+                    delta_w = delta // 7
+                    if 0 <= delta_w < 12:
+                        iso_w = fe_date.isocalendar()
+                        ks = f"S{iso_w[1]:02d}/{iso_w[0]}"
+                        por_semana[ks]["total"] += 1
+                        if tipo_key != 'otro':
+                            por_semana[ks][tipo_key] += 1
+            except Exception:
+                pass
 
         # Ordenar por clave cronológicamente
         por_dia_sorted    = dict(sorted(por_dia.items()))
@@ -6231,20 +6210,28 @@ def api_coordinadora_export_listado():
                              headers=SUPABASE_SERVICE_HEADERS)
         docs_map = {d['id']: (d.get('nombre') or d.get('usuario','')) for d in (res_d.json() if res_d.ok else [])}
 
-        # Alumnos en chunks
+        # Alumnos — iterar por nomina con paginación (evita límite 1000 Supabase)
         ev_flag = 'true' if tipo == 'evaluados' else 'false'
         alumnos = []
-        for i in range(0, len(nom_ids), 80):
-            chunk = ','.join(nom_ids[i:i+80])
-            url_a = (f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                     f"?nomina_id=in.({chunk})"
-                     f"&evaluado_flag=eq.{ev_flag}"
-                     f"&estado_asistencia=in.(activo,extra)"
-                     f"&select=nombre,rut,fecha_evaluacion,nomina_id"
-                     f"&order=nombre.asc&limit=5000")
-            res_a = requests.get(url_a, headers=SUPABASE_SERVICE_HEADERS)
-            if res_a.ok:
-                alumnos.extend(res_a.json())
+        for nom_id_e in nom_ids:
+            page_size = 1000
+            offset    = 0
+            while True:
+                url_a = (f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                         f"?nomina_id=eq.{nom_id_e}"
+                         f"&evaluado_flag=eq.{ev_flag}"
+                         f"&estado_asistencia=in.(activo,extra)"
+                         f"&select=nombre,rut,fecha_evaluacion,nomina_id"
+                         f"&order=nombre.asc"
+                         f"&limit={page_size}&offset={offset}")
+                res_a = requests.get(url_a, headers=SUPABASE_SERVICE_HEADERS)
+                if not res_a.ok:
+                    break
+                page = res_a.json()
+                alumnos.extend(page)
+                if len(page) < page_size:
+                    break
+                offset += page_size
 
         # Crear Excel
         wb = Workbook()

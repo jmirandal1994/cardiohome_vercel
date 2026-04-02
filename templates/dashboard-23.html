@@ -7934,7 +7934,7 @@ async function exportarPDFCoordinadora() {
                     'Neurología y Medicina Familiar · Todas las doctoras',
                     'General', fecha, hora);
 
-        // KPIs
+        // ── 1. KPIs ──────────────────────────────────────────────────────
         y = _drawKpis(doc, y, [
             { label: 'Total Alumnos', val: d.total     || 0, fr: 239, fg: 246, fb: 255, vr: 15,  vg: 52,  vb: 96  },
             { label: 'Completados',   val: d.completed || 0, fr: 240, fg: 253, fb: 244, vr: 5,   vg: 150, vb: 105 },
@@ -7942,58 +7942,287 @@ async function exportarPDFCoordinadora() {
             { label: '% Avance',      val: pct + '%',        fr: 245, fg: 243, fb: 255, vr: 124, vg: 58,  vb: 237 }
         ]);
 
-        // Especialidades con mini barras
-        y = _drawSec(doc, y, 'Desglose por Especialidad', 28, 103, 163);
+        // ── 2. ANÁLISIS NARRATIVO (resumen inteligente) ───────────────────
+        y = _drawSec(doc, y, 'Análisis del Proceso — Resumen Ejecutivo', 15, 52, 96);
+        y += 2;
+
         var np  = (d.neuro_total    || 0) > 0 ? Math.round((d.neuro_completed    || 0) / d.neuro_total    * 100) : 0;
         var fp  = (d.familiar_total || 0) > 0 ? Math.round((d.familiar_completed || 0) / d.familiar_total * 100) : 0;
-        var eW2 = (PDF_INN - 3) / 2;
-        [
-            { lbl: 'NEUROLOGIA',     comp: d.neuro_completed    || 0, tot: d.neuro_total    || 0, p: np, fr: 239, fg: 246, fb: 255, vr: 55,  vg: 48,  vb: 163 },
-            { lbl: 'MED. FAMILIAR', comp: d.familiar_completed || 0, tot: d.familiar_total || 0, p: fp, fr: 255, fg: 247, fb: 237, vr: 194, vg: 65,  vb: 12  }
-        ].forEach(function(e, i) {
-            var ex = PDF_M + i * (eW2 + 3);
-            doc.setFillColor(e.fr, e.fg, e.fb);
-            doc.roundedRect(ex, y, eW2, 20, 2, 2, 'F');
+        var ranking = d.doctoras_ranking || [];
+        var topDoc  = ranking.length ? (ranking[0].nombre || 'Sin nombre') : '—';
+        var topPct  = ranking.length ? (ranking[0].percent || 0) : 0;
+        var numDocs = ranking.length;
+        var numEst  = (d.establecimientos || []).length;
 
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(7);
-            doc.setTextColor(e.vr, e.vg, e.vb);
-            doc.text(e.lbl, ex + 4, y + 6);
+        // Determinar estado general
+        var estadoTexto, estadoColor;
+        if (pct >= 90)      { estadoTexto = 'EXCELENTE'; estadoColor = [5, 150, 105]; }
+        else if (pct >= 75) { estadoTexto = 'AVANCE FAVORABLE'; estadoColor = [16, 185, 129]; }
+        else if (pct >= 50) { estadoTexto = 'EN PROGRESO'; estadoColor = [245, 158, 11]; }
+        else                { estadoTexto = 'REQUIERE ATENCIÓN'; estadoColor = [220, 38, 38]; }
 
-            doc.setFontSize(14);
-            doc.text(String(e.comp), ex + 4, y + 13.5);
+        // Badge de estado
+        doc.setFillColor(estadoColor[0], estadoColor[1], estadoColor[2]);
+        doc.roundedRect(PDF_M, y, 42, 6, 1.5, 1.5, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(6.5);
+        doc.setTextColor(255, 255, 255);
+        doc.text(estadoTexto, PDF_M + 21, y + 4, { align: 'center' });
+        y += 9;
 
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(80, 80, 80);
-            var xOff = ex + 4 + doc.getTextWidth(String(e.comp)) + 1.5;
-            doc.text('/ ' + e.tot, xOff, y + 13.5);
-
-            // Barra mini
-            var bx3 = ex + 4, by3 = y + 15.5, bw3 = eW2 - 8;
-            doc.setFillColor(210, 220, 235);
-            doc.roundedRect(bx3, by3, bw3, 2, 0.6, 0.6, 'F');
-            var fillW3 = Math.max(0.5, e.p / 100 * bw3);
-            doc.setFillColor(e.vr, e.vg, e.vb);
-            doc.roundedRect(bx3, by3, fillW3, 2, 0.6, 0.6, 'F');
-
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(7);
-            doc.setTextColor(e.vr, e.vg, e.vb);
-            doc.text(e.p + '%', ex + eW2 - 3, y + 13.5, { align: 'right' });
+        // Párrafo 1 — estado general
+        var lineas1 = [
+            'El programa PIE registra ' + (d.total || 0) + ' alumnos en ' + numEst + ' establecimiento' + (numEst !== 1 ? 's' : '') +
+            ', atendidos por ' + numDocs + ' profesional' + (numDocs !== 1 ? 'es' : '') + '.',
+            'A la fecha del informe se han completado ' + (d.completed || 0) + ' evaluaciones, representando un avance global de ' + pct + '%',
+            'sobre el total de alumnos activos del programa.'
+        ];
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(30, 41, 59);
+        lineas1.forEach(function(l) {
+            y = _needPage(doc, y, 5);
+            doc.text(l, PDF_M, y);
+            y += 4.5;
         });
-        y += 24;
+        y += 2;
 
-        // Gráfico establecimientos
+        // Párrafo 2 — especialidades
+        var mejorEsp = np >= fp ? 'Neurología (' + np + '%)' : 'Medicina Familiar (' + fp + '%)';
+        var menorEsp = np < fp  ? 'Neurología (' + np + '%)' : 'Medicina Familiar (' + fp + '%)';
+        var lineas2 = [
+            'Por especialidad, ' + mejorEsp + ' lidera el avance, mientras que ' + menorEsp + ' concentra',
+            'la mayor proporción de evaluaciones pendientes. Ambas especialidades operan en paralelo',
+            'con equipos diferenciados de profesionales.'
+        ];
+        lineas2.forEach(function(l) {
+            y = _needPage(doc, y, 5);
+            doc.text(l, PDF_M, y);
+            y += 4.5;
+        });
+        y += 2;
+
+        // Párrafo 3 — doctoras
+        if (ranking.length) {
+            var alertas = ranking.filter(function(r) { return (r.percent || 0) < 50; });
+            var lineas3 = [
+                'La profesional con mayor rendimiento es ' + topDoc + ' con un avance de ' + topPct + '% en sus nóminas asignadas.'
+            ];
+            if (alertas.length > 0) {
+                lineas3.push('Se identifican ' + alertas.length + ' profesional' + (alertas.length !== 1 ? 'es' : '') +
+                    ' con avance inferior al 50%, lo que requiere seguimiento prioritario.');
+            } else {
+                lineas3.push('Todos los profesionales registran avances superiores al 50%, indicando un ritmo adecuado de evaluaciones.');
+            }
+            lineas3.forEach(function(l) {
+                y = _needPage(doc, y, 5);
+                doc.text(l, PDF_M, y);
+                y += 4.5;
+            });
+        }
+        y += 4;
+
+        // ── 3. GRÁFICO DONUT ESPECIALIDADES (jsPDF nativo) ───────────────
+        y = _needPage(doc, y, 58);
+        y = _drawSec(doc, y, 'Distribución por Especialidad', 55, 48, 163);
+        y += 3;
+
+        var donW = 50;  // diámetro del donut en mm
+        var cx   = PDF_M + donW / 2 + 5;
+        var cy   = y + donW / 2;
+        var rOuter = donW / 2;
+        var rInner = donW / 2 * 0.55;
+
+        var neuroComp = d.neuro_completed    || 0;
+        var famComp   = d.familiar_completed || 0;
+        var totalComp = neuroComp + famComp || 1;
+
+        // Dibujar donut con jsPDF (sectores aproximados con arcos)
+        function _drawDonutSector(doc, cx, cy, r, startAngle, endAngle, R, G, B) {
+            // Aproximar sector como polígono con 40 puntos
+            var steps = 40;
+            var pts = [];
+            // Centro del donut
+            for (var i = 0; i <= steps; i++) {
+                var a = startAngle + (endAngle - startAngle) * (i / steps);
+                pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+            }
+            for (var i = steps; i >= 0; i--) {
+                var a = startAngle + (endAngle - startAngle) * (i / steps);
+                pts.push([cx + rInner * Math.cos(a), cy + rInner * Math.sin(a)]);
+            }
+            doc.setFillColor(R, G, B);
+            doc.setDrawColor(255, 255, 255);
+            doc.setLineWidth(0.5);
+            if (pts.length > 2) {
+                doc.moveTo(pts[0][0], pts[0][1]);
+                doc.lines(pts.slice(1).map(function(p, i) {
+                    var prev = pts[i];
+                    return [p[0] - prev[0], p[1] - prev[1]];
+                }), pts[0][0], pts[0][1], [1, 1], 'FD', true);
+            }
+        }
+
+        var neuroAngle = (neuroComp / totalComp) * 2 * Math.PI;
+        var famAngle   = (famComp   / totalComp) * 2 * Math.PI;
+        var startA = -Math.PI / 2;
+
+        // Sector Neurología (morado)
+        _drawDonutSector(doc, cx, cy, rOuter, startA, startA + neuroAngle, 99, 91, 215);
+        // Sector Med. Familiar (naranja)
+        _drawDonutSector(doc, cx, cy, rOuter, startA + neuroAngle, startA + neuroAngle + famAngle, 249, 115, 22);
+        // Hueco central blanco
+        doc.setFillColor(255, 255, 255);
+        doc.circle(cx, cy, rInner, 'F');
+
+        // Texto central
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(15, 52, 96);
+        doc.text(pct + '%', cx, cy + 1.5, { align: 'center' });
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(5.5);
+        doc.setTextColor(100, 116, 139);
+        doc.text('completado', cx, cy + 6, { align: 'center' });
+
+        // Leyenda donut
+        var lx2 = cx + donW / 2 + 10;
+        var ly2 = y + 8;
+        [
+            [99, 91, 215, 'Neurología', neuroComp, d.neuro_total || 0, np],
+            [249, 115, 22, 'Med. Familiar', famComp, d.familiar_total || 0, fp]
+        ].forEach(function(item) {
+            doc.setFillColor(item[0], item[1], item[2]);
+            doc.roundedRect(lx2, ly2 - 2, 5, 5, 0.8, 0.8, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7);
+            doc.setTextColor(item[0], item[1], item[2]);
+            doc.text(item[3], lx2 + 7, ly2 + 2);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7);
+            doc.setTextColor(30, 41, 59);
+            doc.text(item[4] + ' / ' + item[5] + ' (' + item[6] + '%)', lx2 + 7, ly2 + 7);
+            // Mini barra
+            var mbW = 60;
+            doc.setFillColor(220, 228, 238);
+            doc.roundedRect(lx2 + 7, ly2 + 9, mbW, 2.5, 0.7, 0.7, 'F');
+            var mbFill = Math.max(0.5, item[6] / 100 * mbW);
+            doc.setFillColor(item[0], item[1], item[2]);
+            doc.roundedRect(lx2 + 7, ly2 + 9, mbFill, 2.5, 0.7, 0.7, 'F');
+            ly2 += 22;
+        });
+
+        y = cy + rOuter + 6;
+
+        // ── 4. GRÁFICO BARRAS VERTICALES — actividad diaria ──────────────
+        var porDia = d.por_dia || {};
+        var dias   = Object.keys(porDia).sort().slice(-14);
+        if (dias.length > 1) {
+            y = _needPage(doc, y, 55);
+            y = _drawSec(doc, y, 'Actividad Diaria — Últimos 30 Días', 28, 103, 163);
+            y += 3;
+
+            var chartH  = 35;
+            var chartX  = PDF_M + 12;
+            var chartW  = PDF_INN - 14;
+            var barW2   = Math.min(10, (chartW / dias.length) - 1.5);
+            var gap2    = (chartW - dias.length * barW2) / (dias.length + 1);
+            var maxVal2 = Math.max.apply(null, dias.map(function(k){ return porDia[k].total || 0; }));
+            if (maxVal2 < 1) maxVal2 = 1;
+
+            // Eje Y — líneas guía
+            [0, 0.25, 0.5, 0.75, 1].forEach(function(frac) {
+                var gy = y + chartH - chartH * frac;
+                var gv = Math.round(maxVal2 * frac);
+                doc.setDrawColor(235, 240, 245);
+                doc.setLineWidth(0.2);
+                doc.line(chartX, gy, chartX + chartW, gy);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(5.5);
+                doc.setTextColor(148, 163, 184);
+                doc.text(String(gv), chartX - 2, gy + 1, { align: 'right' });
+            });
+
+            // Barras
+            dias.forEach(function(k, i) {
+                var tot   = porDia[k].total || 0;
+                var neuro = porDia[k].neurologia || 0;
+                var fam   = porDia[k].medicina_familiar || 0;
+                var bx4   = chartX + gap2 + i * (barW2 + gap2);
+                var hTot  = (tot / maxVal2) * chartH;
+                var hN    = (neuro / maxVal2) * chartH;
+                var hF    = (fam   / maxVal2) * chartH;
+                var hOther = hTot - hN - hF;
+
+                // Barra apilada: otro (gris) + fam (naranja) + neuro (morado)
+                var stackY = y + chartH;
+                if (hOther > 0) {
+                    stackY -= hOther;
+                    doc.setFillColor(148, 163, 184);
+                    doc.rect(bx4, stackY, barW2, hOther, 'F');
+                }
+                if (hF > 0) {
+                    stackY -= hF;
+                    doc.setFillColor(249, 115, 22);
+                    doc.rect(bx4, stackY, barW2, hF, 'F');
+                }
+                if (hN > 0) {
+                    stackY -= hN;
+                    doc.setFillColor(99, 91, 215);
+                    doc.rect(bx4, stackY, barW2, hN, 'F');
+                }
+
+                // Total encima
+                if (tot > 0) {
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(5);
+                    doc.setTextColor(15, 52, 96);
+                    doc.text(String(tot), bx4 + barW2 / 2, y + chartH - hTot - 1, { align: 'center' });
+                }
+
+                // Etiqueta fecha
+                var parts = k.split('-');
+                var lbl2 = parts.length === 3 ? parts[2] + '/' + parts[1] : k;
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(4.8);
+                doc.setTextColor(100, 116, 139);
+                doc.text(lbl2, bx4 + barW2 / 2, y + chartH + 4, { align: 'center' });
+            });
+
+            // Eje X base
+            doc.setDrawColor(203, 213, 225);
+            doc.setLineWidth(0.4);
+            doc.line(chartX, y + chartH, chartX + chartW, y + chartH);
+
+            // Leyenda barras
+            y = y + chartH + 10;
+            var legItems = [
+                [99, 91, 215, 'Neurología'],
+                [249, 115, 22, 'Med. Familiar'],
+                [148, 163, 184, 'Sin clasificar']
+            ];
+            var legX = PDF_M;
+            legItems.forEach(function(li) {
+                doc.setFillColor(li[0], li[1], li[2]);
+                doc.rect(legX, y - 2.5, 4, 4, 'F');
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(6);
+                doc.setTextColor(80, 80, 80);
+                doc.text(li[3], legX + 5.5, y + 0.5);
+                legX += 38;
+            });
+            y += 7;
+        }
+
+        // ── 5. GRÁFICO BARRAS HORIZONTALES — establecimientos ────────────
         var estData = (d.establecimientos || []).map(function(e) {
-            return { colegio: e.nombre, evaluados: e.completed || 0, total: e.total || 0 };
+            return { colegio: e.nombre || e.nombre_colegio || '—', evaluados: e.completed || e.completados || 0, total: e.total || 0 };
         });
         if (estData.length) {
             y = _drawChart(doc, y, estData.slice(0, 20));
         }
 
-        // Ranking doctoras
-        var ranking = d.doctoras_ranking || [];
+        // ── 6. RANKING DOCTORAS ───────────────────────────────────────────
         if (ranking.length) {
             y = _drawSec(doc, y, 'Ranking de Doctoras', 15, 52, 96);
             var rkC = [
@@ -8017,7 +8246,7 @@ async function exportarPDFCoordinadora() {
             y += 4;
         }
 
-        // Desglose detallado alumnos por establecimiento
+        // ── 7. DESGLOSE DETALLADO POR ESTABLECIMIENTO ─────────────────────
         var resC = await fetch('/api/coordinadora/reporte_detalle');
         var dataC = await resC.json();
         if (dataC.success && dataC.data && dataC.data.length) {

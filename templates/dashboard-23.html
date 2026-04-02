@@ -11270,26 +11270,8 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') coordCerr
 
 function coordExportarPDF() {
     coordCerrarModalReporte();
-    Swal.fire({ title: 'Generando PDF...', text: 'Esto puede tomar unos segundos', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-    fetch('/api/coordinadora/export_pdf')
-        .then(function(res) {
-            if (!res.ok) return res.text().then(function(t){ throw new Error('Error ' + res.status + ': ' + t.slice(0,200)); });
-            return res.blob();
-        })
-        .then(function(blob) {
-            var url = URL.createObjectURL(blob);
-            var a   = document.createElement('a');
-            a.href  = url;
-            a.download = 'Reporte_PIE_' + new Date().toISOString().slice(0,10) + '.pdf';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            Swal.fire({ icon:'success', title:'PDF descargado', text:'El reporte se descargo correctamente.', timer:2500, showConfirmButton:false });
-        })
-        .catch(function(e) {
-            Swal.fire({ icon:'error', title:'Error al generar PDF', text: e.message });
-        });
+    // Usa el mismo motor jsPDF del admin → descarga directa sin servidor
+    exportarPDFCoordinadora();
 }
 
 async function coordExportarExcel(tipo) {

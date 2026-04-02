@@ -3969,18 +3969,18 @@ def api_coordinadora_stats():
         por_semana = defaultdict(lambda: {"neurologia": 0, "medicina_familiar": 0, "total": 0})
 
         for ev in evaluados:
-            fecha_str = (ev.get('fecha_evaluacion') or '').strip()
-            if not fecha_str:
+            fe_raw = (ev.get('fecha_evaluacion') or '').strip()
+            if not fe_raw:
                 continue
-            # Intentar múltiples formatos: fecha_evaluacion se guarda como DD/MM/YYYY
+            # Multi-formato: BD guarda DD/MM/YYYY, normalizar a date
             fecha = None
             for fmt in ('%d/%m/%Y', '%Y-%m-%d', '%d-%m-%Y'):
                 try:
-                    fecha = datetime.strptime(fecha_str[:10], fmt).date()
+                    fecha = datetime.strptime(fe_raw[:10], fmt).date()
                     break
                 except ValueError:
                     continue
-            if not fecha:
+            if fecha is None:
                 continue
 
             ftype_raw = (nomina_type_map.get(ev.get('nomina_id', ''), '') or '').lower().strip()
@@ -6190,6 +6190,329 @@ def chat_admin_mensajes_recibidos():
         res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS)
         return jsonify({"success": True, "mensajes": res.json() if res.ok else []})
     except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RUTA: Coordinadora — Exportar listado alumnos (Excel .xlsx)
+#  GET /api/coordinadora/export_listado?tipo=evaluados|pendientes
+# ─────────────────────────────────────────────────────────────────────────────
+@app.route('/api/coordinadora/export_listado', methods=['GET'])
+def api_coordinadora_export_listado():
+    if session.get('usuario') not in ('coordinadora', 'admin'):
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from io import BytesIO
+
+        tipo      = request.args.get('tipo', 'evaluados')
+        user_role = session.get('usuario')
+        user_id   = session.get('usuario_id')
+
+        # Nóminas según rol
+        if user_role == 'coordinadora':
+            url_n = (f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+                     f"?coord_general_id=eq.{user_id}"
+                     f"&select=id,nombre_colegio,nombre_nomina,tipo_nomina,doctora_id")
+        else:
+            url_n = (f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+                     f"?select=id,nombre_colegio,nombre_nomina,tipo_nomina,doctora_id")
+        nominas = requests.get(url_n, headers=SUPABASE_SERVICE_HEADERS).json() or []
+        if not nominas:
+            return jsonify({"success": False, "message": "Sin nóminas"}), 404
+
+        nom_map  = {n['id']: n for n in nominas}
+        nom_ids  = list(nom_map.keys())
+
+        # Nombres doctoras
+        res_d = requests.get(f"{SUPABASE_URL}/rest/v1/doctoras?select=id,nombre,usuario",
+                             headers=SUPABASE_SERVICE_HEADERS)
+        docs_map = {d['id']: (d.get('nombre') or d.get('usuario','')) for d in (res_d.json() if res_d.ok else [])}
+
+        # Alumnos en chunks
+        ev_flag = 'true' if tipo == 'evaluados' else 'false'
+        alumnos = []
+        for i in range(0, len(nom_ids), 80):
+            chunk = ','.join(nom_ids[i:i+80])
+            url_a = (f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                     f"?nomina_id=in.({chunk})"
+                     f"&evaluado_flag=eq.{ev_flag}"
+                     f"&estado_asistencia=in.(activo,extra)"
+                     f"&select=nombre,rut,fecha_evaluacion,nomina_id"
+                     f"&order=nombre.asc&limit=5000")
+            res_a = requests.get(url_a, headers=SUPABASE_SERVICE_HEADERS)
+            if res_a.ok:
+                alumnos.extend(res_a.json())
+
+        # Crear Excel
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Listado" if tipo == 'evaluados' else "Pendientes"
+
+        hdr_fill  = PatternFill("solid", fgColor="0F3460")
+        hdr_font  = Font(name="Calibri", bold=True, color="FFFFFF", size=11)
+        body_font = Font(name="Calibri", size=10)
+        alt_fill  = PatternFill("solid", fgColor="EEF4FF")
+        thin      = Side(style='thin', color='D1D5DB')
+        border    = Border(left=thin, right=thin, top=thin, bottom=thin)
+        center    = Alignment(horizontal='center', vertical='center')
+
+        titulo = "ALUMNOS EVALUADOS" if tipo == 'evaluados' else "ALUMNOS PENDIENTES"
+        ws.merge_cells('A1:F1')
+        ws['A1'] = f"REPORTE PIE — {titulo}"
+        ws['A1'].font = Font(name="Calibri", bold=True, color="FFFFFF", size=13)
+        ws['A1'].fill = PatternFill("solid", fgColor="0F3460")
+        ws['A1'].alignment = center
+        ws.row_dimensions[1].height = 28
+
+        headers = ['N°','Nombre Alumno','RUT','Establecimiento','Tipo Nómina','Doctora','Fecha Evaluación','Estado']
+        for col, h in enumerate(headers, 1):
+            c = ws.cell(row=2, column=col, value=h)
+            c.font = hdr_font; c.fill = hdr_fill
+            c.alignment = center; c.border = border
+
+        for idx, al in enumerate(alumnos, 1):
+            nom = nom_map.get(al.get('nomina_id'), {})
+            row = idx + 2
+            vals = [
+                idx,
+                al.get('nombre',''),
+                al.get('rut',''),
+                nom.get('nombre_colegio') or nom.get('nombre_nomina',''),
+                nom.get('tipo_nomina',''),
+                docs_map.get(nom.get('doctora_id',''),''),
+                al.get('fecha_evaluacion',''),
+                'Evaluado' if tipo == 'evaluados' else 'Pendiente'
+            ]
+            fill = alt_fill if idx % 2 == 0 else None
+            for col, v in enumerate(vals, 1):
+                c = ws.cell(row=row, column=col, value=v)
+                c.font = body_font; c.border = border
+                if fill: c.fill = fill
+                if col == 1: c.alignment = center
+
+        # Anchos de columna
+        for w, col in zip([6,32,14,30,18,22,16,12], range(1,9)):
+            ws.column_dimensions[chr(64+col)].width = w
+
+        buf = BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+
+        filename = f"PIE_{tipo}_{__import__('datetime').date.today().isoformat()}.xlsx"
+        return buf.read(), 200, {
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': f'attachment; filename="{filename}"'
+        }
+
+    except Exception as e:
+        print(f"ERROR export_listado: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RUTA: Coordinadora — Exportar Reporte PDF (descarga directa con xhtml2pdf)
+#  GET /api/coordinadora/export_pdf
+# ─────────────────────────────────────────────────────────────────────────────
+@app.route('/api/coordinadora/export_pdf', methods=['GET'])
+def api_coordinadora_export_pdf():
+    if session.get('usuario') not in ('coordinadora', 'admin'):
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        from xhtml2pdf import pisa
+        from io import BytesIO
+        from datetime import date as date_cls
+
+        user_role = session.get('usuario')
+        user_id   = session.get('usuario_id')
+
+        # Nominas
+        if user_role == 'coordinadora':
+            url_n = (SUPABASE_URL + "/rest/v1/nominas_medicas"
+                     "?coord_general_id=eq." + str(user_id) +
+                     "&select=id,nombre_colegio,nombre_nomina,form_type,tipo_nomina,doctora_id")
+        else:
+            url_n = (SUPABASE_URL + "/rest/v1/nominas_medicas"
+                     "?select=id,nombre_colegio,nombre_nomina,form_type,tipo_nomina,doctora_id")
+        nominas = requests.get(url_n, headers=SUPABASE_SERVICE_HEADERS).json() or []
+        if not nominas:
+            return jsonify({"success": False, "message": "Sin nominas"}), 404
+
+        nom_map = {n['id']: n for n in nominas}
+
+        # Doctoras
+        res_d = requests.get(SUPABASE_URL + "/rest/v1/doctoras?select=id,nombre,usuario",
+                             headers=SUPABASE_SERVICE_HEADERS)
+        docs_map = {d['id']: (d.get('nombre') or d.get('usuario',''))
+                    for d in (res_d.json() if res_d.ok else [])}
+
+        # Totales
+        total_global = 0; completed_global = 0
+        neuro_total = 0;  neuro_comp = 0
+        fam_total = 0;    fam_comp = 0
+        ranking_dict = {}
+        est_dict = {}
+
+        for nom in nominas:
+            nid   = nom['id']
+            ftype = (nom.get('form_type') or '').lower()
+            tipo  = (nom.get('tipo_nomina') or '').lower()
+            t = get_supabase_count("nomina_id=eq." + str(nid) + "&estado_asistencia=in.(activo,extra)")
+            c = get_supabase_count("nomina_id=eq." + str(nid) + "&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
+            total_global += t; completed_global += c
+
+            if 'neuro' in ftype or 'neuro' in tipo:
+                neuro_total += t; neuro_comp += c
+            elif 'familiar' in ftype or 'medicina' in ftype or 'familiar' in tipo:
+                fam_total += t; fam_comp += c
+
+            did = str(nom.get('doctora_id', '') or '')
+            if did:
+                if did not in ranking_dict:
+                    ranking_dict[did] = {'nombre': docs_map.get(did,''), 'completados': 0, 'total': 0}
+                ranking_dict[did]['completados'] += c
+                ranking_dict[did]['total'] += t
+
+            colegio = nom.get('nombre_colegio') or nom.get('nombre_nomina','Sin nombre')
+            if colegio not in est_dict:
+                est_dict[colegio] = {'completados': 0, 'total': 0}
+            est_dict[colegio]['completados'] += c
+            est_dict[colegio]['total'] += t
+
+        pending_global = total_global - completed_global
+        pct_global = round(completed_global / total_global * 100, 1) if total_global > 0 else 0
+        neuro_pct = round(neuro_comp / neuro_total * 100) if neuro_total > 0 else 0
+        fam_pct   = round(fam_comp / fam_total * 100) if fam_total > 0 else 0
+
+        # Ranking rows
+        ranking = sorted(ranking_dict.values(), key=lambda x: x['completados'], reverse=True)[:8]
+        medals = ['1.', '2.', '3.']
+        rank_rows = ''
+        for i, r in enumerate(ranking):
+            p = round(r['completados']/r['total']*100) if r['total'] > 0 else 0
+            bar_w = min(p, 100)
+            medal = medals[i] if i < 3 else str(i+1) + '.'
+            rank_rows += (
+                '<tr>'
+                '<td style="text-align:center;">' + medal + '</td>'
+                '<td>' + (r['nombre'] or 'Sin nombre') + '</td>'
+                '<td style="text-align:center;color:#059669;font-weight:700;">' + str(r['completados']) + '</td>'
+                '<td style="text-align:center;">' + str(r['total']) + '</td>'
+                '<td>'
+                '<div style="display:inline-block;width:80px;height:7px;background:#e2e8f0;border-radius:4px;overflow:hidden;vertical-align:middle;">'
+                '<div style="width:' + str(bar_w) + '%;height:100%;background:#1c67a3;"></div>'
+                '</div>'
+                ' <span style="font-size:8px;font-weight:700;color:#1c67a3;">' + str(p) + '%</span>'
+                '</td>'
+                '</tr>'
+            )
+
+        # Establecimientos rows
+        establecimientos = sorted(est_dict.items(), key=lambda x: x[1]['completados'], reverse=True)[:8]
+        est_rows = ''
+        for nom_e, vals_e in establecimientos:
+            p = round(vals_e['completados']/vals_e['total']*100) if vals_e['total'] > 0 else 0
+            col = '#059669' if p >= 80 else '#d97706' if p >= 50 else '#dc2626'
+            est_rows += (
+                '<tr>'
+                '<td>' + nom_e + '</td>'
+                '<td style="text-align:center;">' + str(vals_e['total']) + '</td>'
+                '<td style="text-align:center;color:#059669;font-weight:700;">' + str(vals_e['completados']) + '</td>'
+                '<td style="text-align:center;font-weight:800;color:' + col + ';">' + str(p) + '%</td>'
+                '</tr>'
+            )
+
+        hoy_str = date_cls.today().strftime('%d/%m/%Y')
+        pct_str = str(pct_global) + '%'
+
+        html_parts = [
+            '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">',
+            '<style>',
+            '* { box-sizing:border-box; margin:0; padding:0; }',
+            'body { font-family:Arial,sans-serif; font-size:10px; color:#1e293b; padding:16px; }',
+            '.header { background:#0f3460; color:white; border-radius:8px; padding:16px 20px; margin-bottom:14px; }',
+            '.header h1 { font-size:14px; font-weight:900; margin-bottom:3px; color:white; }',
+            '.header p { font-size:9px; opacity:.75; color:white; }',
+            '.header-pct { float:right; font-size:28px; font-weight:900; color:white; }',
+            '.kpi-table { width:100%; margin-bottom:12px; }',
+            '.kpi-cell { background:#f8faff; border:1px solid #e2e8f0; border-radius:8px; padding:8px; text-align:center; width:20%; }',
+            '.kpi-v { font-size:16px; font-weight:900; color:#0f3460; }',
+            '.kpi-l { font-size:8px; color:#94a3b8; text-transform:uppercase; letter-spacing:.5px; margin-top:2px; }',
+            '.section { border:1px solid #e8f0f6; border-radius:8px; margin-bottom:12px; }',
+            '.sec-head { background:#f8faff; padding:8px 12px; font-size:8px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:#64748b; border-bottom:1px solid #e8f0f6; }',
+            '.sec-body { padding:12px; }',
+            'table { width:100%; border-collapse:collapse; font-size:9px; }',
+            'th { padding:5px 8px; background:#0f3460; color:white; text-align:left; font-size:8px; font-weight:700; }',
+            'td { padding:5px 8px; border-bottom:1px solid #f1f5f9; }',
+            '.bar-outer { display:inline-block; width:80px; height:7px; background:#e2e8f0; border-radius:4px; overflow:hidden; vertical-align:middle; }',
+            '.footer { margin-top:10px; font-size:8px; color:#94a3b8; text-align:center; border-top:1px solid #f1f5f9; padding-top:8px; }',
+            '@page { size:A4; margin:15mm 12mm; }',
+            '</style></head><body>',
+            '<div class="header">',
+            '<span class="header-pct">' + pct_str + '</span>',
+            '<h1>Reporte de Avance PIE</h1>',
+            '<p>Coordinacion General &middot; ' + hoy_str + '</p>',
+            '</div>',
+            '<table class="kpi-table"><tr>',
+            '<td class="kpi-cell"><div class="kpi-v">' + str(total_global) + '</div><div class="kpi-l">Total</div></td>',
+            '<td class="kpi-cell"><div class="kpi-v" style="color:#059669;">' + str(completed_global) + '</div><div class="kpi-l">Evaluados</div></td>',
+            '<td class="kpi-cell"><div class="kpi-v" style="color:#f97316;">' + str(pending_global) + '</div><div class="kpi-l">Pendientes</div></td>',
+            '<td class="kpi-cell"><div class="kpi-v" style="color:#8b5cf6;">' + str(neuro_comp) + '/' + str(neuro_total) + '</div><div class="kpi-l">Neurologia</div></td>',
+            '<td class="kpi-cell"><div class="kpi-v" style="color:#1c67a3;">' + str(fam_comp) + '/' + str(fam_total) + '</div><div class="kpi-l">Med. Familiar</div></td>',
+            '</tr></table>',
+            '<div class="section"><div class="sec-head">Progreso por Especialidad</div><div class="sec-body">',
+            '<table><tr>',
+            '<td style="width:50%;padding:10px;text-align:center;">',
+            '<div style="font-size:22px;font-weight:900;color:#8b5cf6;">' + str(neuro_pct) + '%</div>',
+            '<div style="font-size:9px;color:#64748b;margin:4px 0;">Neurologia &mdash; ' + str(neuro_comp) + '/' + str(neuro_total) + ' evaluados</div>',
+            '<div style="width:100%;height:10px;background:#f1f5f9;border-radius:5px;overflow:hidden;">',
+            '<div style="width:' + str(neuro_pct) + '%;height:100%;background:#8b5cf6;border-radius:5px;"></div></div>',
+            '</td>',
+            '<td style="width:50%;padding:10px;text-align:center;">',
+            '<div style="font-size:22px;font-weight:900;color:#f97316;">' + str(fam_pct) + '%</div>',
+            '<div style="font-size:9px;color:#64748b;margin:4px 0;">Med. Familiar &mdash; ' + str(fam_comp) + '/' + str(fam_total) + ' evaluados</div>',
+            '<div style="width:100%;height:10px;background:#f1f5f9;border-radius:5px;overflow:hidden;">',
+            '<div style="width:' + str(fam_pct) + '%;height:100%;background:#f97316;border-radius:5px;"></div></div>',
+            '</td>',
+            '</tr></table>',
+            '</div></div>',
+            '<div class="section"><div class="sec-head">Ranking de Doctoras</div><div class="sec-body">',
+            '<table><thead><tr>',
+            '<th style="width:28px;">#</th><th>Doctora</th>',
+            '<th style="width:60px;text-align:center;">Evaluados</th>',
+            '<th style="width:50px;text-align:center;">Total</th>',
+            '<th style="width:120px;">Avance</th>',
+            '</tr></thead><tbody>' + rank_rows + '</tbody></table>',
+            '</div></div>',
+            '<div class="section"><div class="sec-head">Top Establecimientos</div><div class="sec-body">',
+            '<table><thead><tr>',
+            '<th>Establecimiento</th>',
+            '<th style="width:50px;text-align:center;">Total</th>',
+            '<th style="width:60px;text-align:center;">Evaluados</th>',
+            '<th style="width:40px;text-align:center;">%</th>',
+            '</tr></thead><tbody>' + est_rows + '</tbody></table>',
+            '</div></div>',
+            '<div class="footer">CardioHome &middot; Sistema PIE &middot; ' + hoy_str + '</div>',
+            '</body></html>'
+        ]
+        html = ''.join(html_parts)
+
+        buf = BytesIO()
+        result = pisa.CreatePDF(html, dest=buf)
+        if result.err:
+            return jsonify({"success": False, "message": "Error al generar PDF"}), 500
+        buf.seek(0)
+        filename = "Reporte_PIE_" + date_cls.today().isoformat() + ".pdf"
+        return buf.read(), 200, {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="' + filename + '"'
+        }
+
+    except Exception as e:
+        print("ERROR export_pdf: " + str(e))
         return jsonify({"success": False, "message": str(e)}), 500
 
 

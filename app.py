@@ -1565,6 +1565,183 @@ def api_admin_stats_global():
         print(f"ERROR api_admin_stats_global: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
+@app.route('/admin/eliminar_visita/<visita_id>', methods=['POST'])
+def eliminar_visita_calendario(visita_id):
+    """
+    Elimina una visita/establecimiento desde el calendario del Admin.
+    El JS del dashboard usa POST + esta ruta exacta.
+    """
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "Acceso denegado"}), 403
+
+    print(f"DEBUG: Eliminando visita calendario ID: {visita_id}")
+
+    try:
+        # La tabla es 'establecimientos' — mismo origen que api_admin_visitas_doctora
+        res = requests.delete(
+            f"{SUPABASE_URL}/rest/v1/establecimientos?id=eq.{visita_id}",
+            headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=minimal"}
+        )
+
+        # Supabase devuelve 200 o 204 en DELETE exitoso
+        if res.status_code in (200, 204):
+            print(f"DEBUG: Visita {visita_id} eliminada correctamente.")
+            return jsonify({"success": True, "message": "Visita eliminada correctamente"})
+        else:
+            print(f"ERROR eliminar_visita: status={res.status_code} body={res.text}")
+            return jsonify({
+                "success": False,
+                "message": f"Error al eliminar en base de datos: {res.text}"
+            }), 500
+
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR eliminar_visita (request): {e}")
+        return jsonify({"success": False, "message": f"Error de conexión: {str(e)}"}), 500
+    except Exception as e:
+        print(f"ERROR eliminar_visita (inesperado): {e}")
+        return jsonify({"success": False, "message": f"Error interno: {str(e)}"}), 500
+
+
+# ══════════════════════════════════════════════════════════════════════
+# FIX PUNTO 2 — GESTIÓN DE USUARIOS (Admin)
+# Agrega estas rutas también en app.py
+# ══════════════════════════════════════════════════════════════════════
+
+@app.route('/api/admin/roles', methods=['GET'])
+def api_admin_roles():
+    """Devuelve los roles únicos desde la tabla doctoras para el select dinámico."""
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/doctoras?select=rol&order=rol.asc",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        roles_raw = res.json() if res.ok else []
+        roles_existentes = sorted(set(r['rol'] for r in roles_raw if r.get('rol')))
+
+        # Roles base del sistema siempre disponibles
+        roles_base = ['admin', 'coordinador_escuela', 'coordinador_general', 'coordinadora', 'doctora']
+        for rb in roles_base:
+            if rb not in roles_existentes:
+                roles_existentes.append(rb)
+        roles_existentes.sort()
+
+        return jsonify({"success": True, "roles": roles_existentes})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/admin/listar_usuarios', methods=['GET'])
+def api_admin_listar_usuarios():
+    """Lista todos los usuarios del sistema."""
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/doctoras?select=id,nombre,usuario,rol,email&order=nombre.asc",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        usuarios = res.json() if res.ok else []
+        return jsonify({"success": True, "usuarios": usuarios})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/admin/crear_usuario', methods=['POST'])
+def api_admin_crear_usuario():
+    """Admin crea un nuevo usuario en la tabla doctoras."""
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        data     = request.get_json() or {}
+        nombre   = (data.get('nombre') or '').strip()
+        usuario  = (data.get('usuario') or '').strip()
+        password = (data.get('password') or '').strip()
+        rol      = (data.get('rol') or '').strip()
+        email    = (data.get('email') or '').strip() or None
+
+        if not all([nombre, usuario, password, rol]):
+            return jsonify({"success": False,
+                            "message": "Nombre, usuario, contraseña y rol son obligatorios"}), 400
+
+        # Verificar duplicado
+        res_check = requests.get(
+            f"{SUPABASE_URL}/rest/v1/doctoras?usuario=eq.{usuario}&select=id",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        if res_check.ok and res_check.json():
+            return jsonify({"success": False,
+                            "message": f"El usuario '{usuario}' ya existe"}), 409
+
+        new_id  = str(uuid.uuid4())
+        payload = {
+            "id":       new_id,
+            "nombre":   nombre,
+            "usuario":  usuario,
+            "password": password,
+            "rol":      rol,
+            "email":    email,
+        }
+
+        res = requests.post(
+            f"{SUPABASE_URL}/rest/v1/doctoras",
+            headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=representation"},
+            json=payload
+        )
+        if not res.ok:
+            return jsonify({"success": False,
+                            "message": f"Error Supabase: {res.text}"}), 500
+
+        nuevo = res.json()[0] if res.json() else {}
+        return jsonify({"success": True,
+                        "message": f"✅ Usuario '{usuario}' creado exitosamente",
+                        "usuario": nuevo})
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/admin/eliminar_usuario/<user_id>', methods=['DELETE'])
+def api_admin_eliminar_usuario(user_id):
+    """Admin elimina un usuario. No puede eliminarse a sí mismo."""
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+
+    if str(session.get('usuario_id')) == str(user_id):
+        return jsonify({"success": False,
+                        "message": "No puedes eliminarte a ti mismo"}), 400
+    try:
+        # Proteger al último admin
+        res_admins = requests.get(
+            f"{SUPABASE_URL}/rest/v1/doctoras?rol=eq.admin&select=id",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        admins = res_admins.json() if res_admins.ok else []
+
+        res_target = requests.get(
+            f"{SUPABASE_URL}/rest/v1/doctoras?id=eq.{user_id}&select=rol,nombre",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        target = res_target.json()[0] if res_target.ok and res_target.json() else {}
+
+        if target.get('rol') == 'admin' and len(admins) <= 1:
+            return jsonify({"success": False,
+                            "message": "No puedes eliminar al único administrador del sistema"}), 400
+
+        res = requests.delete(
+            f"{SUPABASE_URL}/rest/v1/doctoras?id=eq.{user_id}",
+            headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=minimal"}
+        )
+        if res.status_code in (200, 204):
+            return jsonify({"success": True,
+                            "message": f"Usuario '{target.get('nombre', user_id)}' eliminado correctamente"})
+        return jsonify({"success": False, "message": f"Error: {res.text}"}), 500
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
 # - Ruta 
 @app.route('/api/admin/stats/<project_id>')
 def get_admin_stats(project_id):

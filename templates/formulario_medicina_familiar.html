@@ -1581,8 +1581,10 @@
                     <div class="student-info">
                         <div class="student-name">{{ est.nombre }}
                             {% if est_estado == 'extra' %}<span style="font-size:.68rem;color:#6c5ce7;font-weight:700;margin-left:6px;">EXTRA</span>{% endif %}
+                            {% if est.datos_incompletos %}<span style="font-size:.68rem;color:#e17055;font-weight:700;margin-left:6px;background:rgba(225,112,85,.10);padding:2px 8px;border-radius:99px;border:1px solid rgba(225,112,85,.3);">⚠ Datos incompletos</span>{% endif %}
                         </div>
-                        <div class="student-meta">RUT: {{ est.rut }} &nbsp;·&nbsp; Edad: {{ est.edad }}
+                        <div class="student-meta">RUT: {{ est.rut or '— Sin RUT —' }} &nbsp;·&nbsp; Edad: {{ est.edad or '—' }}
+                            {% if est.campos_faltantes %}&nbsp;·&nbsp; <span style="color:#e17055;font-weight:600;">Falta: {{ est.campos_faltantes }}</span>{% endif %}
                             {% if est.motivo_ausencia %}&nbsp;·&nbsp; <span style="color:#e17055;">{{ est.motivo_ausencia }}</span>{% endif %}
                         </div>
                     </div>
@@ -1626,6 +1628,16 @@
                         <form id="form-estudiante-{{ est.id }}" onsubmit="event.preventDefault(); submitForm(this);">
                             <input type="hidden" name="estudiante_id" value="{{ est.id }}">
                             <input type="hidden" name="nomina_id" value="{{ session['current_nomina_id'] }}">
+
+                            {% if est.datos_incompletos %}
+                            <div style="background:#fff3ef;border:1.5px solid #e17055;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:flex-start;gap:10px;">
+                                <i class="fas fa-exclamation-triangle" style="color:#e17055;margin-top:2px;flex-shrink:0;"></i>
+                                <div>
+                                    <strong style="color:#c0392b;font-size:.85rem;">Datos incompletos — completa antes de evaluar</strong>
+                                    <div style="font-size:.78rem;color:#7f5a50;margin-top:3px;">Falta: <strong>{{ est.campos_faltantes }}</strong>. Los campos con fondo naranja están habilitados para completar.</div>
+                                </div>
+                            </div>
+                            {% endif %}
                             
 <h3 class="section-title">Identificación del Estudiante</h3>
 
@@ -1635,9 +1647,13 @@
 <input type="hidden" name="nombre_original" value="{{ est.nombre }}">
 
 {# NOMBRE DE CAMPO: RUN (PDF) -> rut (HTML) #}
-<label for="rut_{{ est.id }}">RUN:</label>
-<input type="text" name="rut" id="rut_{{ est.id }}" value="{{ est.rut }}" required oninput="updatePreview(this.form); calcularEdadAutomatica(this)">
-<input type="hidden" name="rut_original" value="{{ est.rut }}">
+<label for="rut_{{ est.id }}">RUN: {% if est.datos_incompletos and not est.rut %}<span style="color:#e17055;font-size:.75rem;">(faltaba en el Excel — completa aquí)</span>{% endif %}</label>
+<input type="text" name="rut" id="rut_{{ est.id }}"
+    value="{{ est.rut or '' }}"
+    placeholder="{{ '⚠ Ingresa el RUT' if not est.rut else '' }}"
+    style="{{ 'background:#fff3ef;border-color:#e17055;' if not est.rut else '' }}"
+    required oninput="updatePreview(this.form); calcularEdadAutomatica(this)">
+<input type="hidden" name="rut_original" value="{{ est.rut or '' }}">
 
 {# NOMBRE DE CAMPO: Genero (PDF) -> genero_f/m (HTML) #}
 <label>Género:</label>
@@ -1651,9 +1667,12 @@
 </div>
 
 {# NOMBRE DE CAMPO: Fecha nacimiento (dd/mm/aaaa) (PDF) -> fecha_nacimiento (HTML) #}
-<label for="fecha_nacimiento_{{ est.id }}">Fecha de Nacimiento:</label>
-<input type="date" name="fecha_nacimiento" id="fecha_nacimiento_{{ est.id }}" value="{{ est.fecha_nacimiento }}" required oninput="updatePreview(this.form); calcularEdadAutomatica(this)">
-<input type="hidden" name="fecha_nacimiento_original" value="{{ est.fecha_nacimiento }}">
+<label for="fecha_nacimiento_{{ est.id }}">Fecha de Nacimiento: {% if est.datos_incompletos and not est.fecha_nacimiento %}<span style="color:#e17055;font-size:.75rem;">(faltaba en el Excel — completa aquí)</span>{% endif %}</label>
+<input type="date" name="fecha_nacimiento" id="fecha_nacimiento_{{ est.id }}"
+    value="{{ est.fecha_nacimiento or '' }}"
+    style="{{ 'background:#fff3ef;border-color:#e17055;' if not est.fecha_nacimiento else '' }}"
+    required oninput="updatePreview(this.form); calcularEdadAutomatica(this)">
+<input type="hidden" name="fecha_nacimiento_original" value="{{ est.fecha_nacimiento or '' }}">
 
 {# NOMBRE DE CAMPO: Edad (en años y meses) (PDF) -> edad (HTML) #}
 <label for="edad_{{ est.id }}">Edad:</label>

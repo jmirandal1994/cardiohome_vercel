@@ -1606,13 +1606,73 @@ def eliminar_visita_calendario(visita_id):
 
 
 # ══════════════════════════════════════════════════════════════════════
+# MERCADO PÚBLICO — Proxy seguro (la API key queda en el servidor)
+# ══════════════════════════════════════════════════════════════════════
+
+MERCADO_PUBLICO_API_KEY = os.getenv("MERCADO_PUBLICO_API_KEY", "C1148555-988E-40E5-9115-809B36F23168")
+
+@app.route('/api/mercadopublico/licitaciones', methods=['GET'])
+def api_mp_licitaciones():
+    """Proxy: busca licitaciones en la API de Mercado Público."""
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        keyword = request.args.get('keyword', 'salud').strip()
+        estado  = request.args.get('estado', '').strip()
+        fecha   = request.args.get('fecha', '').strip()
+
+        params = {'ticket': MERCADO_PUBLICO_API_KEY, 'formato': 'json'}
+        if keyword: params['keywords'] = keyword
+        if estado:  params['estado']   = estado
+        if fecha:   params['fecha']    = fecha
+
+        res = requests.get(
+            'https://api.mercadopublico.cl/servicios/v1/publico/licitaciones.json',
+            params=params, timeout=20
+        )
+        if not res.ok:
+            return jsonify({"success": False, "message": f"Error API MP: {res.status_code} — {res.text[:200]}"}), 502
+
+        return jsonify({"success": True, "data": res.json()})
+    except requests.exceptions.Timeout:
+        return jsonify({"success": False, "message": "Timeout al conectar con Mercado Público. Intenta de nuevo."}), 504
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/mercadopublico/ordenes', methods=['GET'])
+def api_mp_ordenes():
+    """Proxy: busca órdenes de compra por RUT proveedor."""
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        rut    = request.args.get('rut', '77028328-0').strip()
+        estado = request.args.get('estado', '').strip()
+
+        params = {'ticket': MERCADO_PUBLICO_API_KEY, 'rutProveedor': rut, 'formato': 'json'}
+        if estado: params['estado'] = estado
+
+        res = requests.get(
+            'https://api.mercadopublico.cl/servicios/v1/publico/ordenesdecompra.json',
+            params=params, timeout=20
+        )
+        if not res.ok:
+            return jsonify({"success": False, "message": f"Error API MP: {res.status_code} — {res.text[:200]}"}), 502
+
+        return jsonify({"success": True, "data": res.json()})
+    except requests.exceptions.Timeout:
+        return jsonify({"success": False, "message": "Timeout al conectar con Mercado Público."}), 504
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# ══════════════════════════════════════════════════════════════════════
 # FIX PUNTO 2 — GESTIÓN DE USUARIOS (Admin)
-# Agrega estas rutas también en app.py
 # ══════════════════════════════════════════════════════════════════════
 
 @app.route('/api/admin/roles', methods=['GET'])
 def api_admin_roles():
-    """Devuelve los roles únicos desde la tabla doctoras para el select dinámico."""
+    """Devuelve los roles únicos desde la tabla doctoras — normalizados a minúscula."""
     if session.get('usuario') != 'admin':
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
@@ -1621,16 +1681,19 @@ def api_admin_roles():
             headers=SUPABASE_SERVICE_HEADERS
         )
         roles_raw = res.json() if res.ok else []
-        roles_existentes = sorted(set(r['rol'] for r in roles_raw if r.get('rol')))
-
-        # Roles base del sistema siempre disponibles
+        # Normalizar a minúscula y eliminar duplicados
+        roles_norm = sorted(set(
+            r['rol'].strip().lower()
+            for r in roles_raw
+            if r.get('rol') and r['rol'].strip()
+        ))
+        # Roles base siempre disponibles
         roles_base = ['admin', 'coordinador_escuela', 'coordinador_general', 'coordinadora', 'doctora']
         for rb in roles_base:
-            if rb not in roles_existentes:
-                roles_existentes.append(rb)
-        roles_existentes.sort()
-
-        return jsonify({"success": True, "roles": roles_existentes})
+            if rb not in roles_norm:
+                roles_norm.append(rb)
+        roles_norm.sort()
+        return jsonify({"success": True, "roles": roles_norm})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
@@ -3924,15 +3987,29 @@ def api_doctor_performance():
     proyecto_filtro = request.args.get('proyecto', '').strip()
 
     try:
-        # 1. Obtener nóminas asignadas a esta doctora con proyecto_id
-        url_nominas = (
+        # 1. Obtener nóminas donde esta doctora es principal O segunda doctora
+        url_nominas_principal = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?doctora_id=eq.{user_id}"
             f"&select=id,nombre_nomina,nombre_colegio,form_type,tipo_nomina,proyecto_id"
         )
-        res_nominas = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
-        res_nominas.raise_for_status()
-        nominas_raw = res_nominas.json()
+        url_nominas_compartida = (
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?doctora_id_2=eq.{user_id}"
+            f"&select=id,nombre_nomina,nombre_colegio,form_type,tipo_nomina,proyecto_id"
+        )
+        res_n1 = requests.get(url_nominas_principal,  headers=SUPABASE_SERVICE_HEADERS)
+        res_n2 = requests.get(url_nominas_compartida, headers=SUPABASE_SERVICE_HEADERS)
+        lista_n1 = res_n1.json() if res_n1.ok else []
+        lista_n2 = res_n2.json() if res_n2.ok else []
+
+        # Combinar sin duplicados
+        ids_vistos = set()
+        nominas_raw = []
+        for n in lista_n1 + lista_n2:
+            if n['id'] not in ids_vistos:
+                ids_vistos.add(n['id'])
+                nominas_raw.append(n)
 
         # 2. Resolver nombres de proyectos en batch
         proyecto_ids = list({n['proyecto_id'] for n in nominas_raw if n.get('proyecto_id')})

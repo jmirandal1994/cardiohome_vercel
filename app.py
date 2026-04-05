@@ -547,7 +547,7 @@ def relleno_formulario(nomina_id):
     url_nomina = (
         f"{SUPABASE_URL}/rest/v1/nominas_medicas"
         f"?id=eq.{nomina_id}"
-        f"&select=form_type,tipo_nomina,doctora_id,nombre_nomina,doctora_id_para_formulario,token_acceso"
+        f"&select=form_type,tipo_nomina,doctora_id,doctora_id_2,nombre_nomina,doctora_id_para_formulario,token_acceso"
     )
     
     try:
@@ -567,10 +567,13 @@ def relleno_formulario(nomina_id):
         session['current_form_type'] = form_type
         session['doctora_id_para_formulario'] = nomina.get('doctora_id_para_formulario')
         
-        # Validación de acceso
-        if user_role == 'doctora' and nomina['doctora_id'] != user_id:
-            flash('Acceso no autorizado a esta nómina.', 'error')
-            return redirect(url_for('dashboard'))
+        # Validación de acceso — soporta nómina compartida (doctora principal O segunda doctora)
+        if user_role == 'doctora':
+            doctora_1 = nomina.get('doctora_id')
+            doctora_2 = nomina.get('doctora_id_2')
+            if user_id not in [doctora_1, doctora_2]:
+                flash('Acceso no autorizado a esta nómina.', 'error')
+                return redirect(url_for('dashboard'))
 
     except requests.exceptions.RequestException as e:
         error_detail = e.response.text if e.response is not None else 'Conexión Fallida'
@@ -1742,6 +1745,47 @@ def api_admin_eliminar_usuario(user_id):
         return jsonify({"success": False, "message": str(e)}), 500
 
 
+
+# - Ruta nueva: Asignar segunda doctora a nómina existente
+@app.route('/api/admin/nomina_asignar_doctora2', methods=['POST'])
+def api_nomina_asignar_doctora2():
+    """Admin asigna o quita una segunda doctora a una nómina ya existente."""
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        data        = request.get_json() or {}
+        nomina_id   = data.get('nomina_id', '').strip()
+        doctora_id2 = data.get('doctora_id_2') or None  # None = quitar segunda doctora
+
+        if not nomina_id:
+            return jsonify({"success": False, "message": "nomina_id requerido"}), 400
+
+        # Verificar que no sea la misma que la doctora principal
+        if doctora_id2:
+            res_nom = requests.get(
+                f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}&select=doctora_id,nombre_nomina",
+                headers=SUPABASE_SERVICE_HEADERS
+            )
+            nom_data = res_nom.json()[0] if res_nom.ok and res_nom.json() else {}
+            if doctora_id2 == nom_data.get('doctora_id'):
+                return jsonify({"success": False,
+                                "message": "La segunda doctora no puede ser la misma que la doctora principal"}), 400
+
+        res = requests.patch(
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}",
+            headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=representation"},
+            json={"doctora_id_2": doctora_id2}
+        )
+        if not res.ok:
+            return jsonify({"success": False, "message": f"Error Supabase: {res.text}"}), 500
+
+        accion = "asignada" if doctora_id2 else "removida"
+        return jsonify({"success": True, "message": f"Segunda doctora {accion} correctamente"})
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
 # - Ruta 
 @app.route('/api/admin/stats/<project_id>')
 def get_admin_stats(project_id):
@@ -1965,7 +2009,7 @@ def dashboard():
         # NUEVO: Se agregó 'proyecto_id' al select
         url_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?select=id,nombre_nomina,tipo_nomina,doctora_id,url_excel_original,nombre_excel_original,form_type,doctora_id_para_formulario,nombre_colegio,coord_general_id,coord_escuela_id,proyecto_id"
+            f"?select=id,nombre_nomina,tipo_nomina,doctora_id,doctora_id_2,url_excel_original,nombre_excel_original,form_type,doctora_id_para_formulario,nombre_colegio,coord_general_id,coord_escuela_id,proyecto_id"
             f"&order=nombre_nomina.asc"
         )
         
@@ -1983,6 +2027,7 @@ def dashboard():
                     'nombre_nomina': nom['nombre_nomina'],
                     'tipo_nomina': nom['tipo_nomina'],
                     'doctora_id': nom['doctora_id'],
+                    'doctora_id_2': nom.get('doctora_id_2'),
                     'url_excel_original': nom['url_excel_original'],
                     'nombre_excel_original': nom['nombre_excel_original'],
                     'form_type': nom['form_type'],
@@ -2010,18 +2055,33 @@ def dashboard():
             admin_nominas_cargadas = []
 
     elif user_role == 'doctora':
-        # Doctora ve solo sus nóminas asignadas (filtrando por doctora_id)
-        url_nominas_asignadas = (
+        # Doctora ve sus nóminas: como doctora principal Y como segunda doctora (nómina compartida)
+        url_nominas_principal = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?doctora_id=eq.{user_id}"
-            f"&select=id,nombre_nomina,tipo_nomina,form_type,doctora_id_para_formulario,nombre_colegio,proyecto_id"
+            f"&select=id,nombre_nomina,tipo_nomina,form_type,doctora_id,doctora_id_2,doctora_id_para_formulario,nombre_colegio,proyecto_id"
+            f"&order=nombre_nomina.asc"
+        )
+        url_nominas_compartida = (
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?doctora_id_2=eq.{user_id}"
+            f"&select=id,nombre_nomina,tipo_nomina,form_type,doctora_id,doctora_id_2,doctora_id_para_formulario,nombre_colegio,proyecto_id"
             f"&order=nombre_nomina.asc"
         )
         
         try:
-            res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_SERVICE_HEADERS) 
-            res_nominas_asignadas.raise_for_status()
-            nominas_raw = res_nominas_asignadas.json()
+            res_n1 = requests.get(url_nominas_principal,  headers=SUPABASE_SERVICE_HEADERS)
+            res_n2 = requests.get(url_nominas_compartida, headers=SUPABASE_SERVICE_HEADERS)
+            nominas_lista_1 = res_n1.json() if res_n1.ok else []
+            nominas_lista_2 = res_n2.json() if res_n2.ok else []
+
+            # Combinar sin duplicados
+            ids_vistos = set()
+            nominas_raw = []
+            for nom in nominas_lista_1 + nominas_lista_2:
+                if nom['id'] not in ids_vistos:
+                    ids_vistos.add(nom['id'])
+                    nominas_raw.append(nom)
             
             for nom in nominas_raw:
                 # Buscar el nombre del proyecto si tiene proyecto_id
@@ -2036,10 +2096,12 @@ def dashboard():
                     'nombre_establecimiento': nom['nombre_nomina'],
                     'tipo_nomina_display': nom['tipo_nomina'].replace('_', ' ').title(),
                     'form_type': nom.get('form_type'),
+                    'doctora_id': nom.get('doctora_id'),
+                    'doctora_id_2': nom.get('doctora_id_2'),
                     'doctora_id_para_formulario': nom.get('doctora_id_para_formulario'),
                     'nombre_colegio': nom.get('nombre_colegio') or nom['nombre_nomina'],
-                    'proyecto_id': nom.get('proyecto_id'),      # ← NUEVO
-                    'proyecto_nombre': proyecto_nombre           # ← NUEVO
+                    'proyecto_id': nom.get('proyecto_id'),
+                    'proyecto_nombre': proyecto_nombre
                 })
         
         except requests.exceptions.RequestException as e:
@@ -2392,6 +2454,9 @@ def admin_cargar_nomina():
     doctora_id_para_formulario = request.form.get('doctora_id_para_formulario', '').strip()
     proyecto_id_from_form = request.form.get('proyecto_id', '').strip()
     
+    # Segunda doctora (nómina compartida — opcional)
+    doctora_id_2_from_form = request.form.get('doctora_id_2', '').strip() or None
+    
     # Obtener IDs de coordinación
     coord_general_id_from_form = request.form.get('coord_general_id', '').strip()
     coord_escuela_id_from_form = request.form.get('coord_escuela_id', '').strip()
@@ -2459,7 +2524,8 @@ def admin_cargar_nomina():
         "id": nomina_id,
         "nombre_nomina": nombre_colegio_o_establecimiento, 
         "tipo_nomina": tipo_nomina_raw, 
-        "doctora_id": doctora_id_from_form, 
+        "doctora_id": doctora_id_from_form,
+        "doctora_id_2": doctora_id_2_from_form,  # ← NÓMINA COMPARTIDA
         "url_excel_original": url_excel_publica,
         "nombre_excel_original": excel_filename,
         "form_type": form_type, 

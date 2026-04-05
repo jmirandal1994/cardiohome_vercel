@@ -161,7 +161,39 @@ def get_supabase_count(filter_params=""):
         return 0
 
 
-# app-30.py (Función get_assigned_nomina_ids)
+def get_counts_para_nominas(nomina_ids):
+    """
+    Versión rápida: obtiene total y evaluados para TODAS las nóminas
+    en solo 1 llamada a Supabase en lugar de 2×N llamadas individuales.
+    Con 20 nóminas: 40 requests → 1 request.
+
+    Retorna dict: { nomina_id: {"total": int, "evaluados": int} }
+    """
+    if not nomina_ids:
+        return {}
+
+    ids_str   = ','.join(str(i) for i in nomina_ids)
+    resultado = {str(nid): {"total": 0, "evaluados": 0} for nid in nomina_ids}
+
+    try:
+        url = (
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            f"?nomina_id=in.({ids_str})"
+            f"&estado_asistencia=in.(activo,extra)"
+            f"&select=nomina_id,evaluado_flag"
+        )
+        res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS)
+        if res.ok:
+            for row in res.json():
+                nid = str(row.get('nomina_id', ''))
+                if nid in resultado:
+                    resultado[nid]["total"] += 1
+                    if row.get('evaluado_flag') is True:
+                        resultado[nid]["evaluados"] += 1
+    except Exception as e:
+        print(f"❌ ERROR en get_counts_para_nominas: {e}")
+
+    return resultado
 
 # app-30.py (Función get_assigned_nomina_ids - CORREGIDA)
 
@@ -2721,6 +2753,8 @@ def admin_cargar_nomina():
         return redirect(url_for('dashboard'))
 
     estudiantes_a_insertar = []
+    omitidos               = []   # filas sin nombre — no se pueden cargar
+    con_datos_incompletos  = []   # cargados pero con datos faltantes
     df.columns = [normalizar(col) for col in df.columns]
 
     column_mapping = {
@@ -2738,48 +2772,66 @@ def admin_cargar_nomina():
                 col_map[key] = name
                 break
     
-    required_columns_excel = ['nombre_completo', 'rut', 'fecha_nacimiento']
-    if not all(k in col_map for k in required_columns_excel):
-        missing_cols = [col for col in required_columns_excel if col not in col_map]
-        flash(f"❌ El archivo no contiene las columnas necesarias: {', '.join(missing_cols)}.", 'error')
-        # Rollback
+    # ✅ Solo el nombre es obligatorio — rut y fecha son opcionales
+    if 'nombre_completo' not in col_map:
+        flash("❌ El archivo no contiene la columna 'nombre' o 'nombre_completo'. Sin nombre no es posible cargar alumnos.", 'error')
         try:
             requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
             requests.delete(f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}", headers=SUPABASE_SERVICE_HEADERS)
         except Exception: pass
         return redirect(url_for('dashboard'))
         
-    establecimiento_id_db_para_estudiantes = None # Siempre NULL para no causar error si la columna era INT8 y ya no apunta a nada
+    establecimiento_id_db_para_estudiantes = None
+
+    def _es_vacio(val):
+        """Devuelve True si el valor es None, NaN o string vacío."""
+        if val is None:
+            return True
+        try:
+            if pd.isna(val):
+                return True
+        except Exception:
+            pass
+        return str(val).strip() == ''
 
     for index, row in df.iterrows():
         try:
-            # Usar .get() en el DataFrame con el nombre de columna mapeado
-            nombre_completo_raw = row.get(col_map.get('nombre_completo'))
-            rut_raw = row.get(col_map.get('rut'))
-            fecha_nacimiento_raw = row.get(col_map.get('fecha_nacimiento'))
-            nacionalidad_raw = row.get(col_map.get('nacionalidad')) 
-            diagnostico_previo_raw = row.get(col_map.get('diagnostico_previo')) if col_map.get('diagnostico_previo') else None
+            nombre_completo_raw   = row.get(col_map.get('nombre_completo'))
+            rut_raw               = row.get(col_map.get('rut'))               if col_map.get('rut')               else None
+            fecha_nacimiento_raw  = row.get(col_map.get('fecha_nacimiento'))  if col_map.get('fecha_nacimiento')  else None
+            nacionalidad_raw      = row.get(col_map.get('nacionalidad'))      if col_map.get('nacionalidad')      else None
+            diagnostico_previo_raw= row.get(col_map.get('diagnostico_previo'))if col_map.get('diagnostico_previo')else None
 
-            if pd.isna(nombre_completo_raw) or pd.isna(rut_raw) or pd.isna(fecha_nacimiento_raw):
+            # Nombre vacío → omitir fila (no hay nada que hacer)
+            if _es_vacio(nombre_completo_raw):
+                omitidos.append(index + 2)
                 continue
-            
-            rut_limpio = str(rut_raw).replace('.', '').replace('-', '').strip()
-            
-            fecha_nac_str = None
-            if isinstance(fecha_nacimiento_raw, (datetime, date)):
-                fecha_nac_str = fecha_nacimiento_raw.strftime('%Y-%m-%d')
-            else:
-                try:
+
+            nombre_str = str(nombre_completo_raw).strip()
+
+            # ── RUT: opcional ─────────────────────────────────────────────
+            rut_limpio = None
+            rut_faltante = _es_vacio(rut_raw)
+            if not rut_faltante:
+                rut_limpio = str(rut_raw).replace('.', '').replace('-', '').strip()
+
+            # ── FECHA NACIMIENTO: opcional ────────────────────────────────
+            fecha_nac_str  = None
+            edad_calculada = None
+            fecha_faltante = _es_vacio(fecha_nacimiento_raw)
+
+            if not fecha_faltante:
+                if isinstance(fecha_nacimiento_raw, (datetime, date)):
+                    fecha_nac_str = fecha_nacimiento_raw.strftime('%Y-%m-%d')
+                else:
                     s = str(fecha_nacimiento_raw).strip()
                     parsed_date = None
-                    # Intentar formatos explícitos en orden: DD/MM/YYYY → DD-MM-YYYY → YYYY-MM-DD
                     for fmt in ('%d/%m/%Y', '%d.%m.%Y', '%d-%m-%Y', '%Y-%m-%d', '%d/%m/%y', '%d.%m.%y', '%d-%m-%y'):
                         try:
                             parsed_date = datetime.strptime(s, fmt)
                             break
                         except ValueError:
                             continue
-                    # Fallback: pd.to_datetime con dayfirst=True
                     if parsed_date is None:
                         parsed_pd = pd.to_datetime(s, dayfirst=True, errors='coerce')
                         if pd.notna(parsed_pd):
@@ -2787,50 +2839,50 @@ def admin_cargar_nomina():
                     if parsed_date:
                         fecha_nac_str = parsed_date.strftime('%Y-%m-%d')
                     else:
-                        raise ValueError("Formato de fecha no reconocido.")
-                except Exception:
-                    fecha_nac_str = None 
+                        fecha_faltante = True  # valor inválido → tratar como faltante
 
-            if fecha_nac_str is None:
-                continue
+                if fecha_nac_str:
+                    try:
+                        edad_calculada = calculate_age(datetime.strptime(fecha_nac_str, '%Y-%m-%d').date())
+                    except Exception:
+                        pass
 
-            # Pre-cálculo de edad y sexo (necesario para el nuevo Informe Neurológico)
-            fecha_nac_obj = datetime.strptime(fecha_nac_str, '%Y-%m-%d').date()
-            edad_calculada = calculate_age(fecha_nac_obj)
-            sexo_adivinado = guess_gender(str(nombre_completo_raw))
-            
-            nacionalidad_valor = str(nacionalidad_raw).strip() if pd.notna(nacionalidad_raw) else 'Chilena'
+            # ── Registrar campos faltantes ────────────────────────────────
+            campos_faltantes = []
+            if rut_faltante:   campos_faltantes.append('RUT')
+            if fecha_faltante: campos_faltantes.append('Fecha de nacimiento')
+
+            sexo_adivinado = guess_gender(nombre_str)
+            nacionalidad_valor = str(nacionalidad_raw).strip() if not _es_vacio(nacionalidad_raw) else 'Chilena'
 
             estudiante = {
-                "nomina_id": nomina_id,
-                "nombre": str(nombre_completo_raw).strip(),
-                "rut": rut_limpio,
-                "fecha_nacimiento": fecha_nac_str, 
-                "nacionalidad": nacionalidad_valor,
-                "sexo": sexo_adivinado,
-                "edad": edad_calculada, # Añadir edad calculada
-                "fecha_relleno": None,
-                "diagnostico_sospecha": str(diagnostico_previo_raw).strip() if diagnostico_previo_raw and not pd.isna(diagnostico_previo_raw) else None,
+                "nomina_id":           nomina_id,
+                "nombre":              nombre_str,
+                "rut":                 rut_limpio,
+                "fecha_nacimiento":    fecha_nac_str,
+                "nacionalidad":        nacionalidad_valor,
+                "sexo":                sexo_adivinado,
+                "edad":                edad_calculada,
+                "fecha_relleno":       None,
+                "evaluado_flag":       False,
+                "datos_incompletos":   len(campos_faltantes) > 0,
+                "campos_faltantes":    ', '.join(campos_faltantes) if campos_faltantes else None,
+                "diagnostico_sospecha": str(diagnostico_previo_raw).strip() if not _es_vacio(diagnostico_previo_raw) else None,
             }
-            # 🟢 Añadir flag específico si es el nuevo tipo de informe (para pre-relleno en DB)
             if form_type == 'informe_neurologico':
-                 # Esto es redundante si form_type es 'informe_neurologico', pero asegura que si la tabla tiene un flag específico, se llene.
-                 estudiante["tipo_registro_individual"] = "INFORME_NEURO" 
-            
+                estudiante["tipo_registro_individual"] = "INFORME_NEURO"
+
+            if campos_faltantes:
+                con_datos_incompletos.append(nombre_str)
+
             estudiantes_a_insertar.append(estudiante)
             
         except Exception as e:
-            print(f"❌ Error al procesar fila {index+2}: {e}. Datos de la fila: {row.to_dict()}")
-            flash(f"Error al procesar la fila {index+2} del archivo. Verifique el formato de los datos. ({e})", 'error')
-            # Rollback: eliminar la nómina y el archivo subido
-            try:
-                requests.delete(upload_url, headers=SUPABASE_SERVICE_HEADERS)
-                requests.delete(f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{nomina_id}", headers=SUPABASE_SERVICE_HEADERS)
-            except Exception: pass
-            return redirect(url_for('dashboard'))
+            print(f"❌ Error fila {index+2}: {e}. Datos: {row.to_dict()}")
+            continue  # ✅ No abortar todo por una fila con error
 
     if not estudiantes_a_insertar:
-        flash("⚠️ El archivo Excel/CSV no contiene datos válidos para estudiantes.", 'warning')
+        flash("⚠️ El archivo Excel/CSV no contiene datos válidos. Verifica que exista al menos una columna 'nombre'.", 'warning')
         return redirect(url_for('dashboard'))
 
     try:
@@ -2841,7 +2893,14 @@ def admin_cargar_nomina():
         )
         res_insert_estudiantes.raise_for_status()
 
-        flash(f"✅ Nómina '{nombre_colegio_o_establecimiento}' cargada con éxito. Se agregaron {len(estudiantes_a_insertar)} estudiantes. Token: {token_generado if token_generado else 'N/A'}", 'success')
+        msg = f"✅ Nómina '{nombre_colegio_o_establecimiento}' cargada. {len(estudiantes_a_insertar)} estudiantes agregados."
+        if token_generado:
+            msg += f" Token: {token_generado}."
+        if omitidos:
+            msg += f" ⚠️ {len(omitidos)} fila(s) sin nombre omitidas."
+        if con_datos_incompletos:
+            msg += f" ⚠️ {len(con_datos_incompletos)} alumno(s) cargados con datos incompletos (RUT o fecha faltante) — la doctora verá una alerta al evaluarlos."
+        flash(msg, 'success')
         return redirect(url_for('dashboard'))
 
     except requests.exceptions.RequestException as e:
@@ -4139,13 +4198,16 @@ def api_doctor_performance():
         neuro_completed = 0
         familiar_completed = 0
 
+        # ✅ RÁPIDO: 1 query para todas las nóminas en lugar de 2×N queries
+        counts_doc = get_counts_para_nominas([n['id'] for n in nominas])
+
         for nomina in nominas:
             nid   = nomina['id']
             label = (nomina.get('nombre_colegio') or nomina.get('nombre_nomina') or 'Nómina')[:30]
             ftype = nomina.get('form_type', '')
 
-            total_n = get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)")
-            comp_n  = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
+            total_n = counts_doc.get(str(nid), {}).get('total', 0)
+            comp_n  = counts_doc.get(str(nid), {}).get('evaluados', 0)
 
             nomina_labels.append(label)
             nomina_totals.append(total_n)
@@ -4304,7 +4366,9 @@ def api_coordinadora_stats():
         nomina_ids   = [n['id'] for n in nominas]
         nominas_set  = set(nomina_ids)
 
-        # ── 2. Conteos globales usando get_supabase_count (igual que el resto del app) ──
+        # ── 2. ✅ CONTEO RÁPIDO: 1 query para todas las nóminas ─────────────
+        counts = get_counts_para_nominas(nomina_ids)
+
         total_global     = 0
         completed_global = 0
         neuro_total      = 0
@@ -4317,13 +4381,12 @@ def api_coordinadora_stats():
             ftype = nomina.get('form_type', '') or ''
             tipo  = (nomina.get('tipo_nomina') or '').lower()
 
-            t = get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)")
-            c = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
+            t = counts.get(str(nid), {}).get('total', 0)
+            c = counts.get(str(nid), {}).get('evaluados', 0)
 
             total_global     += t
             completed_global += c
 
-            # Detectar tipo por form_type primero, luego por tipo_nomina (igual que dashboard_counts)
             if ftype == 'neurologia' or 'neuro' in tipo:
                 neuro_total     += t
                 neuro_completed += c
@@ -4413,8 +4476,9 @@ def api_coordinadora_stats():
             doctoras_info = {d['id']: d for d in (res_docs.json() if res_docs.ok else [])}
 
             for did, nids in doctoras_nominas.items():
-                doc_total = sum(get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)") for nid in nids)
-                doc_comp  = sum(get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)") for nid in nids)
+                # ✅ RÁPIDO: usar counts ya calculados
+                doc_total = sum(counts.get(str(nid), {}).get('total', 0)    for nid in nids)
+                doc_comp  = sum(counts.get(str(nid), {}).get('evaluados', 0) for nid in nids)
                 doc_pct   = round((doc_comp / doc_total * 100), 1) if doc_total > 0 else 0
                 # Usar 'usuario' o 'nombre' para mostrar
                 doc_info  = doctoras_info.get(did, {})
@@ -4434,8 +4498,9 @@ def api_coordinadora_stats():
         for nomina in nominas:
             nid   = nomina['id']
             ename = nomina.get('nombre_colegio') or nomina.get('nombre_nomina') or 'Sin nombre'
-            t = get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)")
-            c = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
+            # ✅ RÁPIDO: usar counts ya calculados
+            t = counts.get(str(nid), {}).get('total', 0)
+            c = counts.get(str(nid), {}).get('evaluados', 0)
             est_data[ename]["total"]     += t
             est_data[ename]["completed"] += c
 

@@ -4159,11 +4159,12 @@
                 ══════════════════════════════════════════════ */
                 var _nuUsuarios = [];
                 var _nuRolColors = {
-                    admin:               { bg:'#fef2f2', color:'#dc2626', border:'#fecaca' },
-                    doctora:             { bg:'#f5f3ff', color:'#7c3aed', border:'#ddd6fe' },
-                    coordinadora:        { bg:'#eff6ff', color:'#1d4ed8', border:'#bfdbfe' },
-                    coordinador_escuela: { bg:'#f0fdf4', color:'#15803d', border:'#bbf7d0' },
-                    coordinador_general: { bg:'#fff7ed', color:'#c2410c', border:'#fed7aa' },
+                    admin:                 { bg:'#fef2f2', color:'#dc2626', border:'#fecaca' },
+                    doctora:               { bg:'#f5f3ff', color:'#7c3aed', border:'#ddd6fe' },
+                    coordinadora:          { bg:'#eff6ff', color:'#1d4ed8', border:'#bfdbfe' },
+                    coordinador_escuela:   { bg:'#f0fdf4', color:'#15803d', border:'#bbf7d0' },
+                    coordinador_general:   { bg:'#fff7ed', color:'#c2410c', border:'#fed7aa' },
+                    'sin rol':             { bg:'#f8faff', color:'#94a3b8', border:'#e2e8f0' },
                 };
 
                 function nuGetRolStyle(rol) {
@@ -4172,7 +4173,10 @@
                 }
 
                 async function nuInit() {
-                    await Promise.all([nuCargarRoles(), nuCargarUsuarios()]);
+                    // ✅ FIX: cargar secuencialmente — primero usuarios, luego roles
+                    // Así el filtro nunca se aplica sobre un array vacío
+                    await nuCargarUsuarios();
+                    await nuCargarRoles();
                 }
 
                 async function nuCargarRoles() {
@@ -4180,15 +4184,33 @@
                         var res  = await fetch('/api/admin/roles');
                         var data = await res.json();
                         if (!data.success) return;
-                        // ✅ FIX: normalizar roles a minúscula para evitar "Doctora" vs "doctora"
-                        var rolesNorm = data.roles.map(function(r){ return r.trim().toLowerCase(); });
-                        // Eliminar duplicados tras normalizar
-                        rolesNorm = rolesNorm.filter(function(r, i){ return r && rolesNorm.indexOf(r) === i; }).sort();
-                        var opts = rolesNorm.map(function(r){ return '<option value="'+r+'">'+r+'</option>'; }).join('');
-                        var selCrear  = document.getElementById('nu-rol');
+
+                        // Normalizar a minúscula y eliminar duplicados
+                        var rolesNorm = data.roles
+                            .map(function(r){ return r.trim().toLowerCase(); })
+                            .filter(function(r, i, arr){ return r && arr.indexOf(r) === i; })
+                            .sort();
+
+                        // ✅ FIX: construir opciones para el select de CREAR (no cambia el de filtro
+                        // para no perder la selección actual del usuario)
+                        var selCrear = document.getElementById('nu-rol');
+                        if (selCrear) {
+                            selCrear.innerHTML = '<option value="">— Selecciona un rol —</option>' +
+                                rolesNorm.map(function(r){ return '<option value="'+r+'">'+r+'</option>'; }).join('');
+                        }
+
+                        // Para el filtro: solo poblarlo si todavía tiene el valor por defecto
+                        // (evita pisarlo si el usuario ya eligió algo)
                         var selFiltro = document.getElementById('nu-filter-rol');
-                        if (selCrear)  selCrear.innerHTML  = '<option value="">— Selecciona un rol —</option>' + opts;
-                        if (selFiltro) selFiltro.innerHTML = '<option value="">Todos los roles</option>' + opts;
+                        if (selFiltro) {
+                            var valorActual = selFiltro.value;
+                            selFiltro.innerHTML = '<option value="">Todos los roles</option>' +
+                                rolesNorm.map(function(r){ return '<option value="'+r+'">'+r+'</option>'; }).join('');
+                            // Restaurar la selección previa si sigue siendo válida
+                            if (valorActual && rolesNorm.includes(valorActual)) {
+                                selFiltro.value = valorActual;
+                            }
+                        }
                     } catch(e) { console.error('Error roles:', e); }
                 }
 
@@ -4199,13 +4221,28 @@
                     try {
                         var res  = await fetch('/api/admin/listar_usuarios');
                         var data = await res.json();
-                        if (!data.success) throw new Error(data.message);
+                        if (!data.success) throw new Error(data.message || 'Error al cargar usuarios');
                         _nuUsuarios = data.usuarios || [];
-                        nuRenderTabla(_nuUsuarios);
+
+                        // ✅ FIX: mostrar TODOS sin filtrar al cargar
+                        // Si había un filtro activo, aplicarlo sobre los datos ya cargados
+                        var rolFiltro = (document.getElementById('nu-filter-rol')?.value || '').toLowerCase().trim();
+                        var txtFiltro = (document.getElementById('nu-search')?.value || '').toLowerCase().trim();
+                        if (rolFiltro || txtFiltro) {
+                            nuFiltrarUsuarios();
+                        } else {
+                            nuRenderTabla(_nuUsuarios);
+                        }
+
                         var badge = document.getElementById('nu-count-badge');
-                        if (badge) badge.textContent = _nuUsuarios.length + ' usuarios';
+                        if (badge) badge.textContent = _nuUsuarios.length + ' usuario' + (_nuUsuarios.length !== 1 ? 's' : '');
                     } catch(e) {
-                        tabla.innerHTML = '<div style="text-align:center;padding:30px;color:#ef4444;"><i class="fa-solid fa-circle-exclamation" style="font-size:1.5rem;display:block;margin-bottom:8px;"></i>Error: ' + e.message + '</div>';
+                        tabla.innerHTML = '<div style="text-align:center;padding:30px;color:#ef4444;">' +
+                            '<i class="fa-solid fa-circle-exclamation" style="font-size:1.5rem;display:block;margin-bottom:8px;"></i>' +
+                            '<strong>Error al cargar usuarios</strong><br>' +
+                            '<span style="font-size:.8rem;color:#94a3b8;">' + e.message + '</span><br>' +
+                            '<button onclick="nuCargarUsuarios()" style="margin-top:12px;background:#f1f5f9;border:1.5px solid #e2e8f0;color:#0A3D62;padding:7px 16px;border-radius:8px;font-size:.78rem;font-weight:700;cursor:pointer;">Reintentar</button>' +
+                            '</div>';
                     }
                 }
 
@@ -4213,7 +4250,24 @@
                     var tabla = document.getElementById('nu-tabla');
                     if (!tabla) return;
                     if (!usuarios.length) {
-                        tabla.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;"><i class="fa-solid fa-users-slash" style="font-size:2rem;display:block;margin-bottom:10px;opacity:.3;"></i>No hay usuarios que coincidan.</div>';
+                        // ✅ FIX: mensaje distinto si nunca cargaron vs si el filtro no encontró nada
+                        var hayUsuariosCargados = _nuUsuarios.length > 0;
+                        if (hayUsuariosCargados) {
+                            tabla.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">' +
+                                '<i class="fa-solid fa-filter" style="font-size:2rem;display:block;margin-bottom:10px;opacity:.3;"></i>' +
+                                '<strong style="color:#64748b;display:block;margin-bottom:4px;">Sin resultados</strong>' +
+                                '<span style="font-size:.8rem;">El filtro activo no coincide con ningún usuario.</span><br>' +
+                                '<button onclick="document.getElementById(\'nu-filter-rol\').value=\'\';document.getElementById(\'nu-search\').value=\'\';nuRenderTabla(_nuUsuarios);" ' +
+                                'style="margin-top:10px;background:#f1f5f9;border:1.5px solid #e2e8f0;color:#0A3D62;padding:6px 14px;border-radius:8px;font-size:.78rem;font-weight:700;cursor:pointer;">' +
+                                '<i class="fa-solid fa-filter-circle-xmark"></i> Limpiar filtros</button>' +
+                                '</div>';
+                        } else {
+                            tabla.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">' +
+                                '<i class="fa-solid fa-users-slash" style="font-size:2rem;display:block;margin-bottom:10px;opacity:.3;"></i>' +
+                                '<strong style="color:#64748b;display:block;margin-bottom:4px;">No hay usuarios registrados</strong>' +
+                                '<span style="font-size:.8rem;">Crea el primer usuario con el formulario de la izquierda.</span>' +
+                                '</div>';
+                        }
                         return;
                     }
                     var rows = usuarios.map(function(u, i) {
@@ -4250,13 +4304,14 @@
                     var q   = (document.getElementById('nu-search')?.value || '').toLowerCase().trim();
                     var rol = (document.getElementById('nu-filter-rol')?.value || '').toLowerCase().trim();
                     var filtrados = _nuUsuarios.filter(function(u) {
+                        // El rol viene normalizado a minúscula desde el backend
+                        var rolUsuario = (u.rol || 'sin rol').toLowerCase().trim();
                         var coincideTexto = !q ||
                             (u.nombre  ||'').toLowerCase().includes(q) ||
                             (u.usuario ||'').toLowerCase().includes(q) ||
                             (u.email   ||'').toLowerCase().includes(q) ||
-                            (u.rol     ||'').toLowerCase().includes(q);
-                        // ✅ FIX: comparar en minúscula en ambos lados para "Doctora" vs "doctora"
-                        var coincideRol = !rol || (u.rol||'').toLowerCase().trim() === rol;
+                            rolUsuario.includes(q);
+                        var coincideRol = !rol || rolUsuario === rol;
                         return coincideTexto && coincideRol;
                     });
                     nuRenderTabla(filtrados);

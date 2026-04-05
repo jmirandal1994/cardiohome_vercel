@@ -618,9 +618,11 @@
                 <div class="student-info">
                     <div class="student-name">{{ est.nombre }}
                         {% if est_estado == 'extra' %}<span style="font-size:.68rem;color:var(--accent);font-weight:700;margin-left:6px;background:rgba(124,58,237,.08);padding:2px 7px;border-radius:99px;">EXTRA</span>{% endif %}
+                        {% if est.datos_incompletos %}<span style="font-size:.68rem;color:#e17055;font-weight:700;margin-left:6px;background:rgba(225,112,85,.10);padding:2px 8px;border-radius:99px;border:1px solid rgba(225,112,85,.3);">⚠ Datos incompletos</span>{% endif %}
                     </div>
                     <div class="student-meta">
-                        RUT: {{ est.rut }} &nbsp;·&nbsp; Edad: {{ est.edad }}
+                        RUT: {{ est.rut or '— Sin RUT —' }} &nbsp;·&nbsp; Edad: {{ est.edad or '—' }}
+                        {% if est.campos_faltantes %}&nbsp;·&nbsp; <span style="color:#e17055;font-weight:600;">Falta: {{ est.campos_faltantes }}</span>{% endif %}
                         {% if est.motivo_ausencia %}&nbsp;·&nbsp; <span style="color:var(--danger);">{{ est.motivo_ausencia }}</span>{% endif %}
                     </div>
                 </div>
@@ -658,13 +660,27 @@
                         <input type="hidden" name="estudiante_id" value="{{ est.id }}">
                         <input type="hidden" name="nomina_id"     value="{{ session['current_nomina_id'] }}">
 
+                        {% if est.datos_incompletos %}
+                        <div style="background:#fff3ef;border:1.5px solid #e17055;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:flex-start;gap:10px;">
+                            <i class="fas fa-exclamation-triangle" style="color:#e17055;margin-top:2px;flex-shrink:0;"></i>
+                            <div>
+                                <strong style="color:#c0392b;font-size:.85rem;">Datos incompletos — completa antes de evaluar</strong>
+                                <div style="font-size:.78rem;color:#7f5a50;margin-top:3px;">Falta: <strong>{{ est.campos_faltantes }}</strong>. Los campos marcados con fondo naranja están habilitados para editar.</div>
+                            </div>
+                        </div>
+                        {% endif %}
+
                         <div class="form-section-title"><i class="fas fa-id-card"></i> Identificación del Alumno</div>
 
                         <label for="nombre_{{ est.id }}">Nombre</label>
                         <input type="text" name="nombre" id="nombre_{{ est.id }}" value="{{ est.nombre }}" required readonly>
 
-                        <label for="rut_{{ est.id }}">RUT</label>
-                        <input type="text" name="rut" id="rut_{{ est.id }}" value="{{ est.rut }}" required readonly>
+                        <label for="rut_{{ est.id }}">RUT {% if est.datos_incompletos and not est.rut %}<span style="color:#e17055;font-size:.75rem;">(requerido — faltaba en el Excel)</span>{% endif %}</label>
+                        <input type="text" name="rut" id="rut_{{ est.id }}" value="{{ est.rut or '' }}"
+                            {% if est.rut %}readonly{% endif %}
+                            placeholder="{{ '⚠ Ingresa el RUT' if not est.rut else '' }}"
+                            style="{{ 'background:#fff3ef;border-color:#e17055;' if not est.rut else '' }}"
+                            required>
 
                         <label for="sexo_{{ est.id }}">Sexo</label>
                         <select name="sexo" id="sexo_{{ est.id }}" required onchange="updatePreview(this.form)">

@@ -1136,6 +1136,7 @@
 
 
                         <li><a href="#" class="nav-link relative" data-section="admin-correction-requests"><i class="fa-solid fa-bell-concierge"></i> Solicitudes Corrección<span id="correction-alert-badge" class="alert-badge hidden">0</span></a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-usuarios" onclick="setTimeout(nuInit,150)"><i class="fa-solid fa-users-gear"></i> Gestión Usuarios</a></li>
 
 
         
@@ -2420,19 +2421,36 @@
                         cancelButtonText:  'Cancelar'
                     });
                     if (!ok.isConfirmed) return;
+
+                    // Feedback visual inmediato
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
+                    }
+
                     try {
-                        var res  = await fetch('/admin/eliminar_visita/' + id, { method: 'POST' });
+                        // ✅ CORRECTO: POST /admin/eliminar_visita/<id>
+                        var res = await fetch('/admin/eliminar_visita/' + id, { method: 'POST' });
+
+                        // Verificar respuesta JSON
+                        var contentType = res.headers.get('content-type') || '';
+                        if (!contentType.includes('application/json')) {
+                            throw new Error('Respuesta inesperada del servidor (status: ' + res.status + '). Verifica que la sesión no haya expirado.');
+                        }
+
                         var data = await res.json();
                         if (data.success) {
-                            // Remover del array y re-renderizar
-                            _adminCalEvents = _adminCalEvents.filter(function(e){ return e.id !== id; });
+                            // Remover del array local y re-renderizar
+                            _adminCalEvents = _adminCalEvents.filter(function(e){ return String(e.id) !== String(id); });
                             adminCalRender();
-                            Swal.fire({ icon:'success', title:'Visita eliminada', timer:1500, showConfirmButton:false });
+                            Swal.fire({ icon:'success', title:'✅ Visita eliminada', timer:1600, showConfirmButton:false, position:'top-end', toast:true });
                         } else {
-                            Swal.fire({ icon:'error', title:'Error', text: data.message || 'No se pudo eliminar' });
+                            Swal.fire({ icon:'error', title:'No se pudo eliminar', text: data.message || 'Error desconocido' });
+                            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-trash-can"></i> Eliminar visita'; }
                         }
                     } catch(e) {
                         Swal.fire({ icon:'error', title:'Error de conexión', text: e.message });
+                        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-trash-can"></i> Eliminar visita'; }
                     }
                 }
 
@@ -3989,6 +4007,305 @@
                     </div>
                 </div>
             </div>
+
+
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 SECCIÓN: GESTIÓN DE USUARIOS (Admin)
+            ══════════════════════════════════════════════════════════════ -->
+            <div id="admin-usuarios" class="content-section">
+                <div class="section-topbar">
+                    <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                    <i class="fa-solid fa-users-gear section-icon"></i>
+                    <h2 class="section-title">Gestión de Usuarios</h2>
+                </div>
+
+                <style>
+                .nu-label { display:block; font-size:.78rem; font-weight:700; color:#64748b; margin-bottom:5px; text-transform:uppercase; letter-spacing:.04em; }
+                .nu-input { width:100%; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:10px; font-size:.88rem; font-family:inherit; outline:none; box-sizing:border-box; transition:border-color .2s, box-shadow .2s; }
+                .nu-input:focus { border-color:#1c67a3; box-shadow:0 0 0 3px rgba(28,103,163,.1); }
+                </style>
+
+                <div style="display:grid;grid-template-columns:380px 1fr;gap:1.5rem;align-items:start;">
+
+                    <!-- ── Formulario Crear ── -->
+                    <div class="card" style="margin-bottom:0;padding:1.5rem;">
+                        <h3 style="font-size:1rem;margin-bottom:1.2rem;"><i class="fa-solid fa-user-plus"></i> Crear Nuevo Usuario</h3>
+                        <div style="display:flex;flex-direction:column;gap:.9rem;">
+                            <div>
+                                <label class="nu-label">Nombre Completo *</label>
+                                <input type="text" id="nu-nombre" placeholder="Ej: Dra. María González" class="nu-input">
+                            </div>
+                            <div>
+                                <label class="nu-label">Usuario (para login) *</label>
+                                <input type="text" id="nu-usuario" placeholder="Ej: dra.maria" class="nu-input" oninput="this.value=this.value.toLowerCase().replace(/\s/g,'')">
+                            </div>
+                            <div>
+                                <label class="nu-label">Contraseña *</label>
+                                <div style="position:relative;">
+                                    <input type="password" id="nu-password" placeholder="Mínimo 6 caracteres" class="nu-input" style="padding-right:42px;">
+                                    <button type="button" onclick="nuTogglePass()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94a3b8;font-size:.85rem;">
+                                        <i class="fas fa-eye" id="nu-eye-icon"></i>
+                                    </button>
+                                </div>
+                                <!-- Indicador fortaleza -->
+                                <div id="nu-pass-strength" style="display:none;margin-top:6px;">
+                                    <div style="height:4px;border-radius:2px;background:#e2e8f0;overflow:hidden;margin-bottom:4px;">
+                                        <div id="nu-pass-bar" style="height:100%;width:0;border-radius:2px;transition:width .3s,background .3s;"></div>
+                                    </div>
+                                    <span id="nu-pass-label" style="font-size:.7rem;color:#94a3b8;"></span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="nu-label">Rol *</label>
+                                <select id="nu-rol" class="nu-input" style="background:white;">
+                                    <option value="">⏳ Cargando roles...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="nu-label">Email (opcional)</label>
+                                <input type="email" id="nu-email" placeholder="correo@ejemplo.cl" class="nu-input">
+                            </div>
+                            <button onclick="nuCrearUsuario()" id="nu-btn-crear"
+                                style="background:linear-gradient(135deg,#0A3D62,#1C67A3);color:white;border:none;padding:12px 20px;border-radius:12px;font-weight:700;font-size:.88rem;cursor:pointer;display:flex;align-items:center;gap:8px;width:100%;justify-content:center;transition:opacity .2s;">
+                                <i class="fa-solid fa-user-plus"></i> Crear Usuario
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ── Lista Usuarios ── -->
+                    <div class="card" style="margin-bottom:0;padding:1.5rem;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;border-bottom:2px solid #e2e8f0;padding-bottom:1rem;">
+                            <h3 style="font-size:1rem;margin:0;border:none;padding:0;">
+                                <i class="fa-solid fa-list-ul"></i> Usuarios del Sistema
+                                <span id="nu-count-badge" style="background:#f1f5f9;color:#64748b;border-radius:99px;padding:2px 10px;font-size:.72rem;font-weight:700;margin-left:8px;">—</span>
+                            </h3>
+                            <button onclick="nuCargarUsuarios()" style="background:#f1f5f9;border:1.5px solid #e2e8f0;color:#0A3D62;padding:7px 14px;border-radius:9px;font-size:.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                                <i class="fa-solid fa-rotate-right"></i> Actualizar
+                            </button>
+                        </div>
+                        <!-- Filtros -->
+                        <div style="display:flex;gap:.7rem;margin-bottom:1rem;flex-wrap:wrap;">
+                            <div style="position:relative;flex:1;min-width:160px;">
+                                <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.78rem;pointer-events:none;"></i>
+                                <input type="text" id="nu-search" placeholder="Buscar nombre o usuario…" oninput="nuFiltrarUsuarios()" class="nu-input" style="padding-left:32px;">
+                            </div>
+                            <select id="nu-filter-rol" onchange="nuFiltrarUsuarios()" class="nu-input" style="background:white;min-width:150px;max-width:180px;">
+                                <option value="">Todos los roles</option>
+                            </select>
+                        </div>
+                        <!-- Tabla -->
+                        <div id="nu-tabla" style="max-height:460px;overflow-y:auto;border-radius:10px;border:1px solid #f1f5f9;">
+                            <div style="text-align:center;padding:40px;color:#94a3b8;">
+                                <i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;display:block;margin-bottom:10px;"></i>
+                                Cargando usuarios...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                /* ══════════════════════════════════════════════
+                   GESTIÓN DE USUARIOS — JS
+                ══════════════════════════════════════════════ */
+                var _nuUsuarios = [];
+                var _nuRolColors = {
+                    admin:               { bg:'#fef2f2', color:'#dc2626', border:'#fecaca' },
+                    doctora:             { bg:'#f5f3ff', color:'#7c3aed', border:'#ddd6fe' },
+                    coordinadora:        { bg:'#eff6ff', color:'#1d4ed8', border:'#bfdbfe' },
+                    coordinador_escuela: { bg:'#f0fdf4', color:'#15803d', border:'#bbf7d0' },
+                    coordinador_general: { bg:'#fff7ed', color:'#c2410c', border:'#fed7aa' },
+                };
+
+                function nuGetRolStyle(rol) {
+                    var s = _nuRolColors[rol] || { bg:'#f8faff', color:'#475569', border:'#e2e8f0' };
+                    return 'background:' + s.bg + ';color:' + s.color + ';border:1px solid ' + s.border + ';';
+                }
+
+                async function nuInit() {
+                    await Promise.all([nuCargarRoles(), nuCargarUsuarios()]);
+                }
+
+                async function nuCargarRoles() {
+                    try {
+                        var res  = await fetch('/api/admin/roles');
+                        var data = await res.json();
+                        if (!data.success) return;
+                        var opts = data.roles.map(function(r){ return '<option value="'+r+'">'+r+'</option>'; }).join('');
+                        var selCrear  = document.getElementById('nu-rol');
+                        var selFiltro = document.getElementById('nu-filter-rol');
+                        if (selCrear)  selCrear.innerHTML  = '<option value="">— Selecciona un rol —</option>' + opts;
+                        if (selFiltro) selFiltro.innerHTML = '<option value="">Todos los roles</option>' + opts;
+                    } catch(e) { console.error('Error roles:', e); }
+                }
+
+                async function nuCargarUsuarios() {
+                    var tabla = document.getElementById('nu-tabla');
+                    if (!tabla) return;
+                    tabla.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;"><i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;display:block;margin-bottom:10px;"></i>Cargando...</div>';
+                    try {
+                        var res  = await fetch('/api/admin/listar_usuarios');
+                        var data = await res.json();
+                        if (!data.success) throw new Error(data.message);
+                        _nuUsuarios = data.usuarios || [];
+                        nuRenderTabla(_nuUsuarios);
+                        var badge = document.getElementById('nu-count-badge');
+                        if (badge) badge.textContent = _nuUsuarios.length + ' usuarios';
+                    } catch(e) {
+                        tabla.innerHTML = '<div style="text-align:center;padding:30px;color:#ef4444;"><i class="fa-solid fa-circle-exclamation" style="font-size:1.5rem;display:block;margin-bottom:8px;"></i>Error: ' + e.message + '</div>';
+                    }
+                }
+
+                function nuRenderTabla(usuarios) {
+                    var tabla = document.getElementById('nu-tabla');
+                    if (!tabla) return;
+                    if (!usuarios.length) {
+                        tabla.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;"><i class="fa-solid fa-users-slash" style="font-size:2rem;display:block;margin-bottom:10px;opacity:.3;"></i>No hay usuarios que coincidan.</div>';
+                        return;
+                    }
+                    var rows = usuarios.map(function(u, i) {
+                        var iniciales = (u.nombre || u.usuario || '?').split(' ').slice(0,2).map(function(w){ return w[0]||''; }).join('').toUpperCase();
+                        var rolStyle  = nuGetRolStyle(u.rol);
+                        return '<tr style="border-bottom:1px solid #f1f5f9;background:' + (i%2===0?'white':'#fafbff') + ';">' +
+                            '<td style="padding:11px 14px;">' +
+                                '<div style="display:flex;align-items:center;gap:10px;">' +
+                                    '<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#0A3D62,#1C67A3);color:white;font-weight:800;font-size:.72rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' + iniciales + '</div>' +
+                                    '<div><div style="font-weight:700;color:#1e293b;font-size:.85rem;">' + (u.nombre||'—') + '</div>' +
+                                    '<div style="font-size:.72rem;color:#94a3b8;">' + (u.email||'') + '</div></div>' +
+                                '</div>' +
+                            '</td>' +
+                            '<td style="padding:11px 14px;"><code style="background:#f1f5f9;color:#334155;padding:2px 8px;border-radius:6px;font-size:.78rem;">' + (u.usuario||'—') + '</code></td>' +
+                            '<td style="padding:11px 14px;"><span style="' + rolStyle + 'padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:700;">' + (u.rol||'—') + '</span></td>' +
+                            '<td style="padding:11px 14px;text-align:center;">' +
+                                '<button onclick="nuEliminarUsuario(\'' + u.id + '\',\'' + (u.nombre||u.usuario||'').replace(/'/g,'') + '\')" ' +
+                                'style="background:#fee2e2;color:#dc2626;border:1.5px solid #fecaca;border-radius:8px;padding:5px 12px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;" ' +
+                                'onmouseover="this.style.background=\'#fecaca\'" onmouseout="this.style.background=\'#fee2e2\'">' +
+                                '<i class="fa-solid fa-trash"></i> Eliminar</button>' +
+                            '</td>' +
+                        '</tr>';
+                    }).join('');
+                    tabla.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:.83rem;">' +
+                        '<thead><tr style="background:#f8faff;position:sticky;top:0;z-index:1;">' +
+                            '<th style="padding:10px 14px;text-align:left;color:#64748b;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0;font-weight:700;">Nombre</th>' +
+                            '<th style="padding:10px 14px;text-align:left;color:#64748b;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0;font-weight:700;">Usuario</th>' +
+                            '<th style="padding:10px 14px;text-align:left;color:#64748b;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0;font-weight:700;">Rol</th>' +
+                            '<th style="padding:10px 14px;text-align:center;color:#64748b;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0;font-weight:700;">Acción</th>' +
+                        '</tr></thead><tbody>' + rows + '</tbody></table>';
+                }
+
+                function nuFiltrarUsuarios() {
+                    var q   = (document.getElementById('nu-search')?.value || '').toLowerCase();
+                    var rol = (document.getElementById('nu-filter-rol')?.value || '');
+                    var filtrados = _nuUsuarios.filter(function(u) {
+                        var coincideTexto = !q || (u.nombre||'').toLowerCase().includes(q) || (u.usuario||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q);
+                        var coincideRol   = !rol || u.rol === rol;
+                        return coincideTexto && coincideRol;
+                    });
+                    nuRenderTabla(filtrados);
+                }
+
+                function nuTogglePass() {
+                    var inp  = document.getElementById('nu-password');
+                    var icon = document.getElementById('nu-eye-icon');
+                    if (!inp) return;
+                    inp.type = inp.type === 'password' ? 'text' : 'password';
+                    if (icon) icon.className = inp.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+                }
+
+                // Indicador fortaleza contraseña
+                (function() {
+                    var passInput = document.getElementById('nu-password');
+                    if (!passInput) return;
+                    passInput.addEventListener('input', function() {
+                        var val = this.value;
+                        var wrap = document.getElementById('nu-pass-strength');
+                        var bar  = document.getElementById('nu-pass-bar');
+                        var lbl  = document.getElementById('nu-pass-label');
+                        if (!wrap || !bar || !lbl) return;
+                        if (!val) { wrap.style.display='none'; return; }
+                        wrap.style.display = 'block';
+                        var score = 0;
+                        if (val.length >= 6)           score++;
+                        if (val.length >= 10)          score++;
+                        if (/[A-Z]/.test(val))         score++;
+                        if (/[0-9]/.test(val))         score++;
+                        if (/[^A-Za-z0-9]/.test(val)) score++;
+                        var cfgs = [
+                            { pct:'20%', bg:'#ef4444', txt:'Muy débil' },
+                            { pct:'40%', bg:'#f97316', txt:'Débil' },
+                            { pct:'60%', bg:'#eab308', txt:'Regular' },
+                            { pct:'80%', bg:'#22c55e', txt:'Buena' },
+                            { pct:'100%',bg:'#16a34a', txt:'💪 Muy fuerte' },
+                        ];
+                        var cfg = cfgs[Math.min(score-1, 4)] || cfgs[0];
+                        bar.style.width = cfg.pct; bar.style.background = cfg.bg;
+                        lbl.textContent = cfg.txt; lbl.style.color = cfg.bg;
+                    });
+                })();
+
+                async function nuCrearUsuario() {
+                    var nombre   = (document.getElementById('nu-nombre')?.value   || '').trim();
+                    var usuario  = (document.getElementById('nu-usuario')?.value  || '').trim();
+                    var password = (document.getElementById('nu-password')?.value || '').trim();
+                    var rol      = (document.getElementById('nu-rol')?.value      || '');
+                    var email    = (document.getElementById('nu-email')?.value    || '').trim();
+                    if (!nombre || !usuario || !password || !rol) {
+                        Swal.fire({ icon:'warning', title:'Campos incompletos', text:'Completa nombre, usuario, contraseña y rol.', confirmButtonColor:'#1C67A3' });
+                        return;
+                    }
+                    if (password.length < 6) {
+                        Swal.fire({ icon:'warning', title:'Contraseña muy corta', text:'Mínimo 6 caracteres.', confirmButtonColor:'#1C67A3' });
+                        return;
+                    }
+                    var btn = document.getElementById('nu-btn-crear');
+                    if (btn) { btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Creando...'; }
+                    try {
+                        var res  = await fetch('/api/admin/crear_usuario', {
+                            method:'POST', headers:{'Content-Type':'application/json'},
+                            body: JSON.stringify({ nombre, usuario, password, rol, email })
+                        });
+                        var data = await res.json();
+                        if (data.success) {
+                            Swal.fire({ icon:'success', title:'¡Creado!', text:data.message, confirmButtonColor:'#1C67A3', timer:2500 });
+                            ['nu-nombre','nu-usuario','nu-password','nu-email'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+                            var rolEl = document.getElementById('nu-rol'); if(rolEl) rolEl.value='';
+                            var sw = document.getElementById('nu-pass-strength'); if(sw) sw.style.display='none';
+                            nuCargarUsuarios();
+                        } else {
+                            Swal.fire({ icon:'error', title:'Error', text:data.message, confirmButtonColor:'#dc2626' });
+                        }
+                    } catch(e) {
+                        Swal.fire({ icon:'error', title:'Error de conexión', text:e.message });
+                    } finally {
+                        if (btn) { btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-user-plus"></i> Crear Usuario'; }
+                    }
+                }
+
+                async function nuEliminarUsuario(userId, nombre) {
+                    var conf = await Swal.fire({
+                        title:'¿Eliminar usuario?',
+                        html:'Estás a punto de eliminar a <strong>' + nombre + '</strong>.<br><span style="color:#ef4444;font-size:.85rem;">Esta acción no se puede deshacer.</span>',
+                        icon:'warning', showCancelButton:true,
+                        confirmButtonColor:'#dc2626', cancelButtonColor:'#6b7280',
+                        confirmButtonText:'<i class="fas fa-trash"></i> Sí, eliminar', cancelButtonText:'Cancelar'
+                    });
+                    if (!conf.isConfirmed) return;
+                    try {
+                        var res  = await fetch('/api/admin/eliminar_usuario/' + userId, { method:'DELETE' });
+                        var data = await res.json();
+                        if (data.success) {
+                            Swal.fire({ icon:'success', title:'Eliminado', text:data.message, timer:2000, confirmButtonColor:'#1C67A3' });
+                            nuCargarUsuarios();
+                        } else {
+                            Swal.fire({ icon:'error', title:'No se pudo eliminar', text:data.message });
+                        }
+                    } catch(e) {
+                        Swal.fire({ icon:'error', title:'Error', text:e.message });
+                    }
+                }
+                </script>
+            </div>
+            <!-- ══ FIN GESTIÓN DE USUARIOS ══ -->
 
 
 

@@ -1137,6 +1137,7 @@
 
                         <li><a href="#" class="nav-link relative" data-section="admin-correction-requests"><i class="fa-solid fa-bell-concierge"></i> Solicitudes Corrección<span id="correction-alert-badge" class="alert-badge hidden">0</span></a></li>
                         <li><a href="#" class="nav-link" data-section="admin-usuarios" onclick="setTimeout(nuInit,150)"><i class="fa-solid fa-users-gear"></i> Gestión Usuarios</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-mercadopublico" onclick="setTimeout(mpInit,150)"><i class="fa-solid fa-gavel"></i> Mercado Público</a></li>
 
 
         
@@ -4179,7 +4180,11 @@
                         var res  = await fetch('/api/admin/roles');
                         var data = await res.json();
                         if (!data.success) return;
-                        var opts = data.roles.map(function(r){ return '<option value="'+r+'">'+r+'</option>'; }).join('');
+                        // ✅ FIX: normalizar roles a minúscula para evitar "Doctora" vs "doctora"
+                        var rolesNorm = data.roles.map(function(r){ return r.trim().toLowerCase(); });
+                        // Eliminar duplicados tras normalizar
+                        rolesNorm = rolesNorm.filter(function(r, i){ return r && rolesNorm.indexOf(r) === i; }).sort();
+                        var opts = rolesNorm.map(function(r){ return '<option value="'+r+'">'+r+'</option>'; }).join('');
                         var selCrear  = document.getElementById('nu-rol');
                         var selFiltro = document.getElementById('nu-filter-rol');
                         if (selCrear)  selCrear.innerHTML  = '<option value="">— Selecciona un rol —</option>' + opts;
@@ -4242,11 +4247,16 @@
                 }
 
                 function nuFiltrarUsuarios() {
-                    var q   = (document.getElementById('nu-search')?.value || '').toLowerCase();
-                    var rol = (document.getElementById('nu-filter-rol')?.value || '');
+                    var q   = (document.getElementById('nu-search')?.value || '').toLowerCase().trim();
+                    var rol = (document.getElementById('nu-filter-rol')?.value || '').toLowerCase().trim();
                     var filtrados = _nuUsuarios.filter(function(u) {
-                        var coincideTexto = !q || (u.nombre||'').toLowerCase().includes(q) || (u.usuario||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q);
-                        var coincideRol   = !rol || u.rol === rol;
+                        var coincideTexto = !q ||
+                            (u.nombre  ||'').toLowerCase().includes(q) ||
+                            (u.usuario ||'').toLowerCase().includes(q) ||
+                            (u.email   ||'').toLowerCase().includes(q) ||
+                            (u.rol     ||'').toLowerCase().includes(q);
+                        // ✅ FIX: comparar en minúscula en ambos lados para "Doctora" vs "doctora"
+                        var coincideRol = !rol || (u.rol||'').toLowerCase().trim() === rol;
                         return coincideTexto && coincideRol;
                     });
                     nuRenderTabla(filtrados);
@@ -4354,6 +4364,597 @@
                 </script>
             </div>
             <!-- ══ FIN GESTIÓN DE USUARIOS ══ -->
+
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 SECCIÓN: MERCADO PÚBLICO (Admin)
+            ══════════════════════════════════════════════════════════════ -->
+            <div id="admin-mercadopublico" class="content-section">
+                <div class="section-topbar">
+                    <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                    <i class="fa-solid fa-gavel section-icon" style="color:#0369a1;"></i>
+                    <h2 class="section-title">Mercado Público</h2>
+                </div>
+
+                <style>
+                /* ── Mercado Público styles ── */
+                .mp-tabs { display:flex; gap:4px; margin-bottom:20px; background:#f1f5f9; border-radius:12px; padding:4px; }
+                .mp-tab  { flex:1; padding:9px 14px; border-radius:9px; border:none; cursor:pointer; font-size:.8rem; font-weight:700;
+                           color:#64748b; background:transparent; font-family:inherit; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:6px; }
+                .mp-tab.active { background:white; color:#0A3D62; box-shadow:0 2px 8px rgba(0,0,0,.08); }
+                .mp-panel { display:none; } .mp-panel.active { display:block; }
+                .mp-card  { background:white; border:1px solid #e2e8f0; border-radius:14px; padding:18px; margin-bottom:14px;
+                           transition:box-shadow .2s, transform .2s; }
+                .mp-card:hover { box-shadow:0 6px 20px rgba(0,0,0,.08); transform:translateY(-2px); }
+                .mp-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:.68rem; font-weight:700; }
+                .mp-badge-pub  { background:#dcfce7; color:#15803d; }
+                .mp-badge-cie  { background:#fef3c7; color:#92400e; }
+                .mp-badge-adj  { background:#dbeafe; color:#1e40af; }
+                .mp-badge-des  { background:#fee2e2; color:#dc2626; }
+                .mp-score-bar  { height:6px; border-radius:3px; background:#e2e8f0; overflow:hidden; margin-top:6px; }
+                .mp-score-fill { height:100%; border-radius:3px; transition:width .5s; }
+                .mp-kpi-grid   { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-bottom:18px; }
+                .mp-kpi        { background:white; border:1px solid #e2e8f0; border-radius:12px; padding:14px; text-align:center; }
+                .mp-kpi-val    { font-size:1.8rem; font-weight:900; color:#0A3D62; font-family:'Montserrat',sans-serif; }
+                .mp-kpi-lbl    { font-size:.68rem; color:#94a3b8; text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+                .mp-chip       { display:inline-block; padding:4px 12px; border-radius:20px; font-size:.72rem; font-weight:600;
+                                cursor:pointer; border:1.5px solid #e2e8f0; background:white; color:#475569;
+                                transition:all .15s; margin:3px; }
+                .mp-chip:hover,.mp-chip.on { background:#0A3D62; color:white; border-color:#0A3D62; }
+                .mp-input { width:100%; padding:10px 14px 10px 36px; border:1.5px solid #e2e8f0; border-radius:10px;
+                            font-size:.88rem; font-family:inherit; outline:none; transition:border-color .2s; box-sizing:border-box; }
+                .mp-input:focus { border-color:#1c67a3; box-shadow:0 0 0 3px rgba(28,103,163,.1); }
+                .mp-empty { text-align:center; padding:50px 20px; color:#94a3b8; }
+                .mp-empty i { font-size:2.5rem; display:block; margin-bottom:12px; opacity:.3; }
+                .mp-oc-row { display:flex; align-items:center; gap:14px; padding:14px 16px;
+                             border-bottom:1px solid #f1f5f9; transition:background .15s; }
+                .mp-oc-row:hover { background:#f8faff; }
+                .mp-oc-row:last-child { border-bottom:none; }
+                </style>
+
+                <!-- KPIs -->
+                <div class="mp-kpi-grid">
+                    <div class="mp-kpi"><div class="mp-kpi-val" id="mp-kpi-total">—</div><div class="mp-kpi-lbl">Resultados</div></div>
+                    <div class="mp-kpi"><div class="mp-kpi-val" style="color:#15803d;" id="mp-kpi-alta">—</div><div class="mp-kpi-lbl">Alta relevancia</div></div>
+                    <div class="mp-kpi"><div class="mp-kpi-val" style="color:#dc2626;" id="mp-kpi-oc">—</div><div class="mp-kpi-lbl">Órdenes de compra</div></div>
+                    <div class="mp-kpi"><div class="mp-kpi-val" style="color:#7c3aed;" id="mp-kpi-favs">0</div><div class="mp-kpi-lbl">Favoritos</div></div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="mp-tabs">
+                    <button class="mp-tab active" onclick="mpTab('buscar',this)"><i class="fas fa-search"></i> Licitaciones</button>
+                    <button class="mp-tab" onclick="mpTab('ordenes',this)"><i class="fas fa-file-invoice-dollar"></i> Órdenes de Compra</button>
+                    <button class="mp-tab" onclick="mpTab('favoritos',this)"><i class="fas fa-star"></i> Favoritos <span id="mp-fav-badge" style="background:#0A3D62;color:white;border-radius:99px;padding:1px 7px;font-size:.65rem;font-weight:800;margin-left:4px;">0</span></button>
+                </div>
+
+                <!-- TAB: Licitaciones -->
+                <div id="mp-panel-buscar" class="mp-panel active">
+                    <div class="card" style="margin-bottom:14px;padding:1.2rem;">
+                        <!-- Chips rápidos -->
+                        <div style="margin-bottom:12px;">
+                            <span style="font-size:.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Búsquedas rápidas:</span>
+                            <div style="margin-top:6px;">
+                                <span class="mp-chip" onclick="mpChip(this,'salud')">Salud</span>
+                                <span class="mp-chip" onclick="mpChip(this,'neurologia')">Neurología</span>
+                                <span class="mp-chip" onclick="mpChip(this,'PIE')">PIE</span>
+                                <span class="mp-chip" onclick="mpChip(this,'pediatria')">Pediatría</span>
+                                <span class="mp-chip" onclick="mpChip(this,'evaluacion medica')">Evaluación médica</span>
+                                <span class="mp-chip" onclick="mpChip(this,'fonoaudiologia')">Fonoaudiología</span>
+                                <span class="mp-chip" onclick="mpChip(this,'psicologia')">Psicología</span>
+                            </div>
+                        </div>
+                        <!-- Buscador -->
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+                            <div style="position:relative;flex:1;min-width:200px;">
+                                <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.8rem;pointer-events:none;"></i>
+                                <input type="text" id="mp-kw" class="mp-input" placeholder="Ej: neurología infantil, PIE, evaluación…"
+                                    onkeydown="if(event.key==='Enter')mpBuscar()">
+                            </div>
+                            <div>
+                                <select id="mp-estado" style="padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.85rem;font-family:inherit;outline:none;background:white;min-width:160px;">
+                                    <option value="">Todos los estados</option>
+                                    <option value="publicada">Publicada</option>
+                                    <option value="cerrada">Cerrada</option>
+                                    <option value="adjudicada">Adjudicada</option>
+                                    <option value="desierta">Desierta</option>
+                                </select>
+                            </div>
+                            <button onclick="mpBuscar()" id="mp-btn-buscar"
+                                style="background:linear-gradient(135deg,#0A3D62,#1C67A3);color:white;border:none;padding:10px 20px;border-radius:10px;font-weight:700;font-size:.85rem;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:7px;white-space:nowrap;">
+                                <i class="fas fa-search"></i> Buscar
+                            </button>
+                            <button onclick="mpExportarCSV()"
+                                style="background:#f1f5f9;border:1.5px solid #e2e8f0;color:#0A3D62;padding:10px 16px;border-radius:10px;font-weight:700;font-size:.85rem;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;">
+                                <i class="fas fa-download"></i> CSV
+                            </button>
+                        </div>
+                    </div>
+                    <div id="mp-resultados">
+                        <div class="mp-empty"><i class="fas fa-search"></i><p>Ingresa una palabra clave y presiona Buscar</p></div>
+                    </div>
+                </div>
+
+                <!-- TAB: Órdenes de Compra -->
+                <div id="mp-panel-ordenes" class="mp-panel">
+                    <div class="card" style="margin-bottom:14px;padding:1.2rem;">
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+                            <div style="position:relative;flex:1;min-width:180px;">
+                                <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.8rem;pointer-events:none;"></i>
+                                <input type="text" id="mp-oc-rut" class="mp-input" placeholder="RUT proveedor (ej: 77028328-0)"
+                                    value="77028328-0" onkeydown="if(event.key==='Enter')mpBuscarOC()">
+                            </div>
+                            <select id="mp-oc-estado" style="padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.85rem;font-family:inherit;outline:none;background:white;min-width:170px;">
+                                <option value="">Todos los estados</option>
+                                <option value="recepcionconforme">Recepción Conforme</option>
+                                <option value="aceptada">Aceptada</option>
+                                <option value="pendiente">Pendiente</option>
+                                <option value="cancelada">Cancelada</option>
+                            </select>
+                            <button onclick="mpBuscarOC()" id="mp-btn-oc"
+                                style="background:linear-gradient(135deg,#0A3D62,#1C67A3);color:white;border:none;padding:10px 20px;border-radius:10px;font-weight:700;font-size:.85rem;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:7px;">
+                                <i class="fas fa-search"></i> Buscar OC
+                            </button>
+                        </div>
+                    </div>
+                    <div id="mp-oc-resultados">
+                        <div class="mp-empty"><i class="fas fa-file-invoice-dollar"></i><p>Ingresa el RUT y presiona Buscar OC</p></div>
+                    </div>
+                </div>
+
+                <!-- TAB: Favoritos -->
+                <div id="mp-panel-favoritos" class="mp-panel">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                        <span style="font-weight:700;color:#0A3D62;font-size:.9rem;"><i class="fas fa-star" style="color:#f59e0b;margin-right:6px;"></i>Licitaciones guardadas</span>
+                        <button onclick="mpLimpiarFavs()" style="background:#fee2e2;color:#dc2626;border:1.5px solid #fecaca;border-radius:8px;padding:5px 12px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;">
+                            <i class="fas fa-trash"></i> Limpiar todo
+                        </button>
+                    </div>
+                    <div id="mp-favs-lista">
+                        <div class="mp-empty"><i class="fas fa-star"></i><p>No tienes favoritos guardados aún</p></div>
+                    </div>
+                </div>
+
+                <!-- Modal detalle licitación -->
+                <div id="mp-modal-ov" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;">
+                    <div style="background:white;border-radius:18px;width:100%;max-width:680px;max-height:88vh;overflow-y:auto;box-shadow:0 32px 80px rgba(0,0,0,.25);">
+                        <div style="display:flex;align-items:center;gap:12px;padding:20px 22px;border-bottom:1px solid #f1f5f9;position:sticky;top:0;background:white;z-index:1;">
+                            <div style="width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,#0A3D62,#1C67A3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <i class="fas fa-gavel" style="color:white;font-size:.95rem;"></i>
+                            </div>
+                            <div style="flex:1;"><h3 id="mp-det-titulo" style="font-size:.95rem;font-weight:700;margin:0;color:#0f172a;"></h3>
+                            <p id="mp-det-org" style="font-size:.73rem;color:#64748b;margin:2px 0 0 0;"></p></div>
+                            <button onclick="mpCerrarModal()" style="width:32px;height:32px;border-radius:8px;border:none;background:#f1f5f9;color:#94a3b8;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center;">✕</button>
+                        </div>
+                        <div id="mp-det-body" style="padding:22px;"></div>
+                    </div>
+                </div>
+
+                <script>
+                /* ══════════════════════════════════════════════
+                   MERCADO PÚBLICO — JS
+                ══════════════════════════════════════════════ */
+                var _mpResultados = [];
+                var _mpFavs = JSON.parse(localStorage.getItem('mp_favs') || '[]');
+
+                function mpInit() {
+                    mpActualizarFavBadge();
+                    mpRenderFavs();
+                }
+
+                // ── Tabs ────────────────────────────────────────
+                function mpTab(id, btn) {
+                    document.querySelectorAll('.mp-panel').forEach(function(p){ p.classList.remove('active'); });
+                    document.querySelectorAll('.mp-tab').forEach(function(b){ b.classList.remove('active'); });
+                    document.getElementById('mp-panel-' + id).classList.add('active');
+                    btn.classList.add('active');
+                    if (id === 'favoritos') mpRenderFavs();
+                }
+
+                // ── Chips rápidos ────────────────────────────────
+                function mpChip(el, kw) {
+                    document.querySelectorAll('.mp-chip').forEach(function(c){ c.classList.remove('on'); });
+                    el.classList.add('on');
+                    document.getElementById('mp-kw').value = kw;
+                    mpBuscar();
+                }
+
+                // ── Score de relevancia ──────────────────────────
+                function mpScore(nombre, desc, org) {
+                    var txt = ((nombre||'')+(desc||'')+(org||'')).toLowerCase();
+                    var kws = ['salud','neurolog','pie','pediatr','fonoaudio','psicolog','evaluaci','medic','kinesiol','terapeut','infantil','escolar'];
+                    var s = 0;
+                    kws.forEach(function(k){ if(txt.includes(k)) s += 14; });
+                    return Math.min(s, 100);
+                }
+
+                function mpScoreColor(s) {
+                    if (s >= 70) return '#15803d';
+                    if (s >= 40) return '#d97706';
+                    return '#94a3b8';
+                }
+
+                function mpBadgeEstado(estado) {
+                    var e = (estado||'').toLowerCase();
+                    if (e.includes('publi'))  return '<span class="mp-badge mp-badge-pub">Publicada</span>';
+                    if (e.includes('cerr'))   return '<span class="mp-badge mp-badge-cie">Cerrada</span>';
+                    if (e.includes('adjud'))  return '<span class="mp-badge mp-badge-adj">Adjudicada</span>';
+                    if (e.includes('desier')) return '<span class="mp-badge mp-badge-des">Desierta</span>';
+                    return '<span class="mp-badge" style="background:#f1f5f9;color:#64748b;">' + (estado||'—') + '</span>';
+                }
+
+                // ── Buscar licitaciones ──────────────────────────
+                async function mpBuscar() {
+                    var kw     = (document.getElementById('mp-kw')?.value || '').trim();
+                    var estado = document.getElementById('mp-estado')?.value || '';
+                    var btn    = document.getElementById('mp-btn-buscar');
+                    if (!kw) { Swal.fire({ icon:'warning', title:'Ingresa una palabra clave', confirmButtonColor:'#0A3D62' }); return; }
+
+                    var div = document.getElementById('mp-resultados');
+                    div.innerHTML = '<div class="mp-empty"><i class="fas fa-spinner fa-spin" style="font-size:2rem;opacity:.5;"></i><p>Consultando Mercado Público…</p></div>';
+                    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando…'; }
+
+                    try {
+                        var url = '/api/mercadopublico/licitaciones?keyword=' + encodeURIComponent(kw);
+                        if (estado) url += '&estado=' + encodeURIComponent(estado);
+                        var res  = await fetch(url);
+                        var data = await res.json();
+                        if (!data.success) throw new Error(data.message || 'Error de API');
+
+                        var items = (data.data?.Listado || data.data?.listado || []);
+                        // Añadir score y ordenar
+                        items.forEach(function(l){
+                            l._score = mpScore(l.Nombre, l.Descripcion, l.Organismo);
+                        });
+                        items.sort(function(a,b){ return b._score - a._score; });
+                        _mpResultados = items;
+
+                        // KPIs
+                        document.getElementById('mp-kpi-total').textContent = items.length;
+                        document.getElementById('mp-kpi-alta').textContent  = items.filter(function(l){ return l._score >= 70; }).length;
+
+                        if (!items.length) {
+                            div.innerHTML = '<div class="mp-empty"><i class="fas fa-search-minus"></i><p>Sin resultados para "' + kw + '"</p></div>';
+                            return;
+                        }
+
+                        div.innerHTML = items.map(function(l) {
+                            var cod   = l.CodigoExterno || l.Codigo || '—';
+                            var nom   = (l.Nombre || 'Sin nombre').slice(0, 80);
+                            var org   = (l.Organismo || '—').slice(0, 50);
+                            var fecha = (l.FechaCierre || '').slice(0, 10);
+                            var s     = l._score;
+                            var esFav = _mpFavs.some(function(f){ return (f.CodigoExterno||f.Codigo) === cod; });
+                            return '<div class="mp-card">' +
+                                '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;">' +
+                                    '<div style="flex:1;">' +
+                                        '<strong style="color:#0f172a;font-size:.88rem;">' + nom + '</strong>' +
+                                        '<div style="font-size:.73rem;color:#64748b;margin-top:3px;">' + org + '</div>' +
+                                    '</div>' +
+                                    '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+                                        mpBadgeEstado(l.Estado) +
+                                        '<button onclick="mpTogFav(\'' + cod + '\')" id="fav-btn-' + cod.replace(/[^a-z0-9]/gi,'') + '" ' +
+                                        'style="background:' + (esFav?'#fef9c3':'#f1f5f9') + ';border:1.5px solid ' + (esFav?'#fde047':'#e2e8f0') + ';border-radius:8px;padding:4px 9px;cursor:pointer;font-size:.75rem;">' +
+                                        (esFav ? '★' : '☆') + '</button>' +
+                                    '</div>' +
+                                '</div>' +
+                                '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+                                    '<code style="background:#f1f5f9;padding:2px 8px;border-radius:6px;font-size:.72rem;color:#334155;">' + cod + '</code>' +
+                                    (fecha ? '<span style="font-size:.72rem;color:#94a3b8;"><i class="fas fa-clock" style="margin-right:3px;"></i>Cierre: ' + fecha + '</span>' : '') +
+                                    '<div style="flex:1;min-width:80px;">' +
+                                        '<div style="display:flex;align-items:center;gap:6px;">' +
+                                            '<div class="mp-score-bar" style="flex:1;"><div class="mp-score-fill" style="width:' + s + '%;background:' + mpScoreColor(s) + ';"></div></div>' +
+                                            '<span style="font-size:.7rem;font-weight:700;color:' + mpScoreColor(s) + ';">' + s + '%</span>' +
+                                        '</div>' +
+                                        '<div style="font-size:.62rem;color:#94a3b8;margin-top:1px;">Relevancia</div>' +
+                                    '</div>' +
+                                '</div>' +
+                                '<div style="display:flex;gap:7px;margin-top:10px;">' +
+                                    '<button onclick="mpVerDetalle(\'' + cod + '\')" style="background:#0A3D62;color:white;border:none;padding:6px 14px;border-radius:8px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;">' +
+                                    '<i class="fas fa-eye"></i> Ver detalle</button>' +
+                                    '<a href="https://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion=' + cod + '" target="_blank" ' +
+                                    'style="background:#f1f5f9;color:#0A3D62;border:1.5px solid #e2e8f0;padding:6px 14px;border-radius:8px;font-size:.75rem;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:5px;">' +
+                                    '<i class="fas fa-external-link-alt"></i> MP.cl</a>' +
+                                '</div>' +
+                            '</div>';
+                        }).join('');
+
+                    } catch(e) {
+                        div.innerHTML = '<div class="mp-empty"><i class="fas fa-exclamation-triangle" style="color:#ef4444;"></i><p>Error: ' + e.message + '</p><p style="font-size:.75rem;margin-top:6px;">Verifica que MERCADO_PUBLICO_API_KEY esté configurada en Vercel.</p></div>';
+                    } finally {
+                        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-search"></i> Buscar'; }
+                    }
+                }
+
+                // ── Buscar Órdenes de Compra ─────────────────────
+                async function mpBuscarOC() {
+                    var rut    = (document.getElementById('mp-oc-rut')?.value || '').trim();
+                    var estado = document.getElementById('mp-oc-estado')?.value || '';
+                    var btn    = document.getElementById('mp-btn-oc');
+                    var div    = document.getElementById('mp-oc-resultados');
+
+                    div.innerHTML = '<div class="mp-empty"><i class="fas fa-spinner fa-spin" style="font-size:2rem;opacity:.5;"></i><p>Consultando órdenes…</p></div>';
+                    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando…'; }
+
+                    try {
+                        var url = '/api/mercadopublico/ordenes?rut=' + encodeURIComponent(rut);
+                        if (estado) url += '&estado=' + encodeURIComponent(estado);
+                        var res  = await fetch(url);
+                        var data = await res.json();
+                        if (!data.success) throw new Error(data.message || 'Error de API');
+
+                        var items = data.data?.Listado || data.data?.listado || [];
+                        document.getElementById('mp-kpi-oc').textContent = items.length;
+
+                        if (!items.length) {
+                            div.innerHTML = '<div class="mp-empty"><i class="fas fa-file-invoice-dollar"></i><p>Sin órdenes de compra para el RUT indicado</p></div>';
+                            return;
+                        }
+
+                        div.innerHTML = '<div style="background:white;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;">' +
+                            items.map(function(oc) {
+                                var cod    = oc.CodigoOC || oc.Codigo || '—';
+                                var nom    = (oc.Nombre || oc.NombreOrganismo || 'Sin nombre').slice(0, 70);
+                                var org    = (oc.Organismo || oc.NombreOrganismo || '—').slice(0, 50);
+                                var total  = oc.TotalNeto ? '$' + Number(oc.TotalNeto).toLocaleString('es-CL') : '—';
+                                var fecha  = (oc.FechaCreacion || '').slice(0, 10);
+                                var est    = oc.Estado || '—';
+                                var esRC   = est.toLowerCase().includes('recepcion') || est.toLowerCase().includes('conforme');
+                                return '<div class="mp-oc-row">' +
+                                    '<div style="flex:1;">' +
+                                        '<strong style="font-size:.85rem;color:#0f172a;">' + nom + '</strong>' +
+                                        '<div style="font-size:.72rem;color:#64748b;margin-top:2px;">' + org + '</div>' +
+                                        '<div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;">' +
+                                            '<code style="background:#f1f5f9;padding:1px 7px;border-radius:5px;font-size:.7rem;">' + cod + '</code>' +
+                                            (fecha ? '<span style="font-size:.7rem;color:#94a3b8;"><i class="fas fa-calendar" style="margin-right:3px;"></i>' + fecha + '</span>' : '') +
+                                            '<span style="font-size:.7rem;font-weight:700;color:#0A3D62;">' + total + '</span>' +
+                                        '</div>' +
+                                    '</div>' +
+                                    '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">' +
+                                        '<span class="mp-badge ' + (esRC ? 'mp-badge-pub' : 'mp-badge-cie') + '">' + est + '</span>' +
+                                        '<a href="https://www.mercadopublico.cl/PurchaseOrder/Modules/PO/DetailsPurchaseOrder.aspx?codigoOC=' + cod + '" target="_blank" ' +
+                                        'style="font-size:.72rem;color:#1c67a3;font-weight:700;text-decoration:none;">' +
+                                        '<i class="fas fa-external-link-alt" style="margin-right:3px;"></i>Ver OC</a>' +
+                                    '</div>' +
+                                '</div>';
+                            }).join('') + '</div>';
+
+                    } catch(e) {
+                        div.innerHTML = '<div class="mp-empty"><i class="fas fa-exclamation-triangle" style="color:#ef4444;"></i><p>Error: ' + e.message + '</p></div>';
+                    } finally {
+                        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-search"></i> Buscar OC'; }
+                    }
+                }
+
+                // ── Favoritos ────────────────────────────────────
+                function mpTogFav(cod) {
+                    var item = _mpResultados.find(function(l){ return (l.CodigoExterno||l.Codigo) === cod; });
+                    var idx  = _mpFavs.findIndex(function(f){ return (f.CodigoExterno||f.Codigo) === cod; });
+                    if (idx >= 0) {
+                        _mpFavs.splice(idx, 1);
+                    } else if (item) {
+                        _mpFavs.push(item);
+                    }
+                    localStorage.setItem('mp_favs', JSON.stringify(_mpFavs));
+                    mpActualizarFavBadge();
+                    // Actualizar botón sin re-render completo
+                    var btnEl = document.getElementById('fav-btn-' + cod.replace(/[^a-z0-9]/gi,''));
+                    if (btnEl) {
+                        var esAhora = _mpFavs.some(function(f){ return (f.CodigoExterno||f.Codigo) === cod; });
+                        btnEl.style.background    = esAhora ? '#fef9c3' : '#f1f5f9';
+                        btnEl.style.borderColor   = esAhora ? '#fde047' : '#e2e8f0';
+                        btnEl.textContent         = esAhora ? '★' : '☆';
+                    }
+                }
+
+                function mpActualizarFavBadge() {
+                    var n = _mpFavs.length;
+                    var el = document.getElementById('mp-fav-badge');
+                    if (el) el.textContent = n;
+                    var kpi = document.getElementById('mp-kpi-favs');
+                    if (kpi) kpi.textContent = n;
+                }
+
+                function mpRenderFavs() {
+                    var div = document.getElementById('mp-favs-lista');
+                    if (!div) return;
+                    if (!_mpFavs.length) {
+                        div.innerHTML = '<div class="mp-empty"><i class="fas fa-star"></i><p>No tienes favoritos guardados aún</p></div>';
+                        return;
+                    }
+                    div.innerHTML = _mpFavs.map(function(l) {
+                        var cod = l.CodigoExterno || l.Codigo || '—';
+                        var nom = (l.Nombre || 'Sin nombre').slice(0, 80);
+                        var org = (l.Organismo || '—').slice(0, 50);
+                        return '<div class="mp-card" style="display:flex;align-items:center;gap:14px;">' +
+                            '<div style="flex:1;">' +
+                                '<strong style="font-size:.85rem;color:#0f172a;">' + nom + '</strong>' +
+                                '<div style="font-size:.72rem;color:#64748b;margin-top:2px;">' + org + '</div>' +
+                                '<code style="background:#f1f5f9;padding:1px 7px;border-radius:5px;font-size:.7rem;margin-top:4px;display:inline-block;">' + cod + '</code>' +
+                            '</div>' +
+                            '<div style="display:flex;gap:6px;">' +
+                                '<a href="https://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion=' + cod + '" target="_blank" ' +
+                                'style="background:#f1f5f9;color:#0A3D62;border:1.5px solid #e2e8f0;padding:6px 12px;border-radius:8px;font-size:.75rem;font-weight:700;text-decoration:none;">' +
+                                '<i class="fas fa-external-link-alt"></i></a>' +
+                                '<button onclick="mpQuitarFav(\'' + cod + '\')" style="background:#fee2e2;color:#dc2626;border:1.5px solid #fecaca;border-radius:8px;padding:6px 10px;font-size:.75rem;cursor:pointer;">' +
+                                '<i class="fas fa-trash"></i></button>' +
+                            '</div>' +
+                        '</div>';
+                    }).join('');
+                }
+
+                function mpQuitarFav(cod) {
+                    _mpFavs = _mpFavs.filter(function(f){ return (f.CodigoExterno||f.Codigo) !== cod; });
+                    localStorage.setItem('mp_favs', JSON.stringify(_mpFavs));
+                    mpActualizarFavBadge();
+                    mpRenderFavs();
+                }
+
+                function mpLimpiarFavs() {
+                    if (!_mpFavs.length) return;
+                    Swal.fire({ title:'¿Limpiar favoritos?', text:'Se eliminarán todos los guardados.', icon:'warning',
+                        showCancelButton:true, confirmButtonColor:'#dc2626', cancelButtonText:'Cancelar',
+                        confirmButtonText:'Sí, limpiar' }).then(function(r){
+                        if (r.isConfirmed) { _mpFavs = []; localStorage.setItem('mp_favs','[]'); mpActualizarFavBadge(); mpRenderFavs(); }
+                    });
+                }
+
+                // ── Ver detalle ──────────────────────────────────
+                async function mpVerDetalle(cod) {
+                    var item = _mpResultados.find(function(l){ return (l.CodigoExterno||l.Codigo) === cod; });
+                    if (!item) return;
+                    document.getElementById('mp-det-titulo').textContent = item.Nombre || cod;
+                    document.getElementById('mp-det-org').textContent    = item.Organismo || '—';
+                    var body = document.getElementById('mp-det-body');
+                    body.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">' +
+                        mpDet('Código', item.CodigoExterno||item.Codigo||'—') +
+                        mpDet('Estado', item.Estado||'—') +
+                        mpDet('Fecha cierre', (item.FechaCierre||'').slice(0,10)||'—') +
+                        mpDet('Tipo', item.Tipo||'—') +
+                        mpDet('Región', item.Region||'—') +
+                        mpDet('Rubro', item.Rubro||'—') +
+                    '</div>' +
+                    (item.Descripcion ? '<div style="background:#f8faff;border-radius:10px;padding:14px;margin-bottom:14px;font-size:.83rem;color:#334155;line-height:1.6;">' + item.Descripcion + '</div>' : '') +
+                    '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+                        '<a href="https://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion=' + cod + '" target="_blank" ' +
+                        'style="background:linear-gradient(135deg,#0A3D62,#1C67A3);color:white;padding:9px 18px;border-radius:10px;font-size:.82rem;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:6px;">' +
+                        '<i class="fas fa-external-link-alt"></i> Ver en Mercado Público</a>' +
+                    '</div>';
+                    var ov = document.getElementById('mp-modal-ov');
+                    ov.style.display = 'flex';
+                }
+
+                function mpDet(lbl, val) {
+                    return '<div style="background:#f8faff;border-radius:9px;padding:10px 12px;">' +
+                        '<div style="font-size:.63rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">' + lbl + '</div>' +
+                        '<div style="font-size:.83rem;font-weight:600;color:#0f172a;">' + val + '</div></div>';
+                }
+
+                function mpCerrarModal() { document.getElementById('mp-modal-ov').style.display = 'none'; }
+
+                // ── Exportar CSV ─────────────────────────────────
+                function mpExportarCSV() {
+                    if (!_mpResultados.length) { Swal.fire({ icon:'warning', title:'Sin resultados para exportar', confirmButtonColor:'#0A3D62' }); return; }
+                    var h = ['Codigo','Nombre','Organismo','Estado','FechaCierre','Relevancia%'];
+                    var rows = _mpResultados.map(function(l){
+                        return [(l.CodigoExterno||l.Codigo||''), '"'+(l.Nombre||'').replace(/"/g,'')+'\"',
+                                '"'+(l.Organismo||'').replace(/"/g,'')+'\"', l.Estado||'',
+                                (l.FechaCierre||'').slice(0,10), l._score||0].join(',');
+                    });
+                    var csv = h.join(',') + '\n' + rows.join('\n');
+                    var a = document.createElement('a');
+                    a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'}));
+                    a.download = 'licitaciones_' + new Date().toISOString().slice(0,10) + '.csv';
+                    document.body.appendChild(a); a.click(); a.remove();
+                }
+
+                document.addEventListener('keydown', function(e){
+                    if (e.key === 'Escape') mpCerrarModal();
+                });
+                </script>
+            </div>
+            <!-- ══ FIN MERCADO PÚBLICO ══ -->
+
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 SCRIPT GLOBAL: abrirBarridoModal (botón "Revisar IA")
+                 Llama a /api/agente/barrer_nomina — ruta que ya existe en app.py
+            ══════════════════════════════════════════════════════════════ -->
+            <script>
+            async function abrirBarridoModal(nominaId, nominaNombre) {
+                var result = await Swal.fire({
+                    title: '🤖 Revisar con IA',
+                    html: '<p style="color:#475569;font-size:.9rem;margin-bottom:4px;">Se analizará la nómina <strong>' + nominaNombre + '</strong> en busca de inconsistencias en diagnósticos, derivaciones y checkboxes.</p>' +
+                          '<p style="color:#94a3b8;font-size:.78rem;margin-top:8px;">⏱ Puede tardar unos segundos…</p>',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#0A3D62',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: '<i class="fas fa-robot"></i> Iniciar revisión',
+                    cancelButtonText: 'Cancelar'
+                });
+                if (!result.isConfirmed) return;
+
+                // Mostrar loading
+                Swal.fire({
+                    title: 'Analizando nómina…',
+                    html: '<div style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:10px 0;">' +
+                          '<i class="fas fa-robot" style="font-size:2.5rem;color:#1C67A3;animation:pulse 1.2s ease-in-out infinite;"></i>' +
+                          '<p style="color:#475569;font-size:.88rem;margin:0;">La IA está revisando cada formulario…</p>' +
+                          '</div>',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    didOpen: function() { Swal.showLoading(); }
+                });
+
+                try {
+                    var res  = await fetch('/api/agente/barrer_nomina', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nomina_id: nominaId })
+                    });
+                    var data = await res.json();
+
+                    if (!data.success) {
+                        Swal.fire({ icon:'error', title:'Error en la revisión', text: data.message || 'Error desconocido', confirmButtonColor:'#dc2626' });
+                        return;
+                    }
+
+                    // Construir HTML de resultado
+                    var colorTotal = data.con_errores > 0 ? '#dc2626' : '#15803d';
+                    var html =
+                        '<div style="text-align:left;">' +
+                        // KPIs
+                        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">' +
+                            '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px;text-align:center;">' +
+                                '<div style="font-size:1.6rem;font-weight:900;color:#15803d;">' + data.sin_errores + '</div>' +
+                                '<div style="font-size:.68rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Sin errores</div>' +
+                            '</div>' +
+                            '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px;text-align:center;">' +
+                                '<div style="font-size:1.6rem;font-weight:900;color:#dc2626;">' + data.con_errores + '</div>' +
+                                '<div style="font-size:.68rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Con errores</div>' +
+                            '</div>' +
+                            '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px;text-align:center;">' +
+                                '<div style="font-size:1.6rem;font-weight:900;color:#1d4ed8;">' + data.total + '</div>' +
+                                '<div style="font-size:.68rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Total revisados</div>' +
+                            '</div>' +
+                        '</div>' +
+                        // Resumen IA
+                        '<div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:14px;margin-bottom:14px;">' +
+                            '<div style="font-size:.65rem;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;display:flex;align-items:center;gap:5px;">' +
+                                '<i class="fas fa-brain"></i> Análisis IA</div>' +
+                            '<p style="font-size:.83rem;color:#334155;line-height:1.6;margin:0;">' + (data.resumen_ia || 'Revisión completada.') + '</p>' +
+                        '</div>';
+
+                    // Detalle errores (máx 5)
+                    if (data.errores && data.errores.length) {
+                        html += '<div style="font-size:.72rem;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;"><i class="fas fa-exclamation-triangle" style="margin-right:4px;"></i>Primeros errores detectados</div>' +
+                        '<div style="display:flex;flex-direction:column;gap:7px;max-height:200px;overflow-y:auto;">' +
+                        data.errores.slice(0,5).map(function(e) {
+                            return '<div style="background:#fff8f8;border:1px solid #fecaca;border-radius:9px;padding:10px 12px;">' +
+                                '<div style="font-weight:700;font-size:.82rem;color:#0f172a;margin-bottom:4px;">' + e.nombre + ' <span style="font-size:.7rem;color:#94a3b8;font-weight:400;">— ' + (e.rut||'') + '</span></div>' +
+                                '<ul style="margin:0;padding-left:16px;font-size:.77rem;color:#475569;">' +
+                                e.errores.map(function(err){ return '<li>' + err + '</li>'; }).join('') +
+                                '</ul></div>';
+                        }).join('') + '</div>';
+                    }
+
+                    html += '</div>';
+
+                    Swal.fire({
+                        title: '📋 Revisión completada — ' + (data.colegio || nominaNombre),
+                        html: html,
+                        icon: data.con_errores > 0 ? 'warning' : 'success',
+                        confirmButtonColor: '#0A3D62',
+                        confirmButtonText: 'Cerrar',
+                        width: '640px'
+                    });
+
+                } catch(e) {
+                    Swal.fire({ icon:'error', title:'Error de conexión', text: e.message, confirmButtonColor:'#dc2626' });
+                }
+            }
+            </script>
+            <!-- ══ FIN SCRIPT BARRIDO IA ══ -->
 
 
 

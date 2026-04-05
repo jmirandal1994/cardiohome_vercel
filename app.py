@@ -4198,16 +4198,13 @@ def api_doctor_performance():
         neuro_completed = 0
         familiar_completed = 0
 
-        # ✅ RÁPIDO: 1 query para todas las nóminas en lugar de 2×N queries
-        counts_doc = get_counts_para_nominas([n['id'] for n in nominas])
-
         for nomina in nominas:
             nid   = nomina['id']
             label = (nomina.get('nombre_colegio') or nomina.get('nombre_nomina') or 'Nómina')[:30]
             ftype = nomina.get('form_type', '')
 
-            total_n = counts_doc.get(str(nid), {}).get('total', 0)
-            comp_n  = counts_doc.get(str(nid), {}).get('evaluados', 0)
+            total_n = get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)")
+            comp_n  = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
 
             nomina_labels.append(label)
             nomina_totals.append(total_n)
@@ -4366,9 +4363,7 @@ def api_coordinadora_stats():
         nomina_ids   = [n['id'] for n in nominas]
         nominas_set  = set(nomina_ids)
 
-        # ── 2. ✅ CONTEO RÁPIDO: 1 query para todas las nóminas ─────────────
-        counts = get_counts_para_nominas(nomina_ids)
-
+        # ── 2. Conteos globales usando get_supabase_count ──
         total_global     = 0
         completed_global = 0
         neuro_total      = 0
@@ -4381,12 +4376,13 @@ def api_coordinadora_stats():
             ftype = nomina.get('form_type', '') or ''
             tipo  = (nomina.get('tipo_nomina') or '').lower()
 
-            t = counts.get(str(nid), {}).get('total', 0)
-            c = counts.get(str(nid), {}).get('evaluados', 0)
+            t = get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)")
+            c = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
 
             total_global     += t
             completed_global += c
 
+            # Detectar tipo por form_type primero, luego por tipo_nomina
             if ftype == 'neurologia' or 'neuro' in tipo:
                 neuro_total     += t
                 neuro_completed += c
@@ -4476,9 +4472,8 @@ def api_coordinadora_stats():
             doctoras_info = {d['id']: d for d in (res_docs.json() if res_docs.ok else [])}
 
             for did, nids in doctoras_nominas.items():
-                # ✅ RÁPIDO: usar counts ya calculados
-                doc_total = sum(counts.get(str(nid), {}).get('total', 0)    for nid in nids)
-                doc_comp  = sum(counts.get(str(nid), {}).get('evaluados', 0) for nid in nids)
+                doc_total = sum(get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)") for nid in nids)
+                doc_comp  = sum(get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)") for nid in nids)
                 doc_pct   = round((doc_comp / doc_total * 100), 1) if doc_total > 0 else 0
                 # Usar 'usuario' o 'nombre' para mostrar
                 doc_info  = doctoras_info.get(did, {})
@@ -4498,9 +4493,8 @@ def api_coordinadora_stats():
         for nomina in nominas:
             nid   = nomina['id']
             ename = nomina.get('nombre_colegio') or nomina.get('nombre_nomina') or 'Sin nombre'
-            # ✅ RÁPIDO: usar counts ya calculados
-            t = counts.get(str(nid), {}).get('total', 0)
-            c = counts.get(str(nid), {}).get('evaluados', 0)
+            t = get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)")
+            c = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
             est_data[ename]["total"]     += t
             est_data[ename]["completed"] += c
 

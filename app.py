@@ -1613,53 +1613,108 @@ MERCADO_PUBLICO_API_KEY = os.getenv("MERCADO_PUBLICO_API_KEY", "C1148555-988E-40
 
 @app.route('/api/mercadopublico/licitaciones', methods=['GET'])
 def api_mp_licitaciones():
-    """Proxy: busca licitaciones en la API de Mercado Público."""
+    """
+    Proxy a la API de Mercado Público.
+    Parámetros aceptados por la API: fecha (ddmmaaaa), estado, CodigoOrganismo, codigo.
+    NO acepta keywords — el filtro por palabra clave se hace en Python sobre los resultados.
+    """
     if session.get('usuario') != 'admin':
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
-        keyword = request.args.get('keyword', 'salud').strip()
+        keyword = request.args.get('keyword', '').strip().lower()
         estado  = request.args.get('estado', '').strip()
         fecha   = request.args.get('fecha', '').strip()
+        codigo  = request.args.get('codigo', '').strip()
 
-        params = {'ticket': MERCADO_PUBLICO_API_KEY, 'formato': 'json'}
-        if keyword: params['keywords'] = keyword
-        if estado:  params['estado']   = estado
-        if fecha:   params['fecha']    = fecha
+        # Si no viene fecha, usar hoy en formato ddmmaaaa
+        if not fecha and not codigo:
+            from datetime import datetime
+            fecha = datetime.now().strftime('%d%m%Y')
+
+        params = {'ticket': MERCADO_PUBLICO_API_KEY}
+        if codigo: params['codigo'] = codigo
+        if fecha:  params['fecha']  = fecha
+        if estado: params['estado'] = estado
 
         res = requests.get(
             'https://api.mercadopublico.cl/servicios/v1/publico/licitaciones.json',
-            params=params, timeout=20
+            params=params, timeout=25
         )
-        if not res.ok:
-            return jsonify({"success": False, "message": f"Error API MP: {res.status_code} — {res.text[:200]}"}), 502
 
-        return jsonify({"success": True, "data": res.json()})
+        if not res.ok:
+            return jsonify({"success": False,
+                            "message": f"Error API MP ({res.status_code}): {res.text[:300]}"}), 502
+
+        data = res.json()
+        items = data.get('Listado', [])
+
+        # Filtrar por keyword en Python (sobre nombre + descripcion + organismo)
+        if keyword and items:
+            palabras = keyword.split()
+            items_filtrados = []
+            for item in items:
+                texto = (
+                    (item.get('Nombre') or '') + ' ' +
+                    (item.get('Descripcion') or '') + ' ' +
+                    (item.get('Organismo') or '') + ' ' +
+                    (item.get('Rubro') or '')
+                ).lower()
+                if any(p in texto for p in palabras):
+                    items_filtrados.append(item)
+            items = items_filtrados
+
+        data['Listado'] = items
+        return jsonify({"success": True, "data": data, "total_filtrado": len(items)})
+
     except requests.exceptions.Timeout:
-        return jsonify({"success": False, "message": "Timeout al conectar con Mercado Público. Intenta de nuevo."}), 504
+        return jsonify({"success": False,
+                        "message": "Timeout al conectar con Mercado Público. Intenta de nuevo."}), 504
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
 
 @app.route('/api/mercadopublico/ordenes', methods=['GET'])
 def api_mp_ordenes():
-    """Proxy: busca órdenes de compra por RUT proveedor."""
+    """
+    Proxy: busca órdenes de compra por RUT proveedor.
+    Parámetros aceptados: rutProveedor, estado, fecha (ddmmaaaa), codigo.
+    """
     if session.get('usuario') != 'admin':
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
         rut    = request.args.get('rut', '77028328-0').strip()
         estado = request.args.get('estado', '').strip()
+        fecha  = request.args.get('fecha', '').strip()
 
-        params = {'ticket': MERCADO_PUBLICO_API_KEY, 'rutProveedor': rut, 'formato': 'json'}
+        # Limpiar el RUT (quitar puntos, dejar guion)
+        rut_limpio = rut.replace('.', '').strip()
+
+        params = {'ticket': MERCADO_PUBLICO_API_KEY, 'rutProveedor': rut_limpio}
         if estado: params['estado'] = estado
+        if fecha:  params['fecha']  = fecha
 
         res = requests.get(
             'https://api.mercadopublico.cl/servicios/v1/publico/ordenesdecompra.json',
-            params=params, timeout=20
+            params=params, timeout=25
         )
         if not res.ok:
-            return jsonify({"success": False, "message": f"Error API MP: {res.status_code} — {res.text[:200]}"}), 502
+            return jsonify({"success": False,
+                            "message": f"Error API MP ({res.status_code}): {res.text[:300]}"}), 502
 
-        return jsonify({"success": True, "data": res.json()})
+        data = res.json()
+        items = data.get('Listado', [])
+
+        # Filtrar por estado "recepcion conforme" si se pidió
+        if estado and items:
+            estado_lower = estado.lower().replace(' ', '')
+            items = [
+                oc for oc in items
+                if estado_lower in (oc.get('Estado') or '').lower().replace(' ', '')
+            ]
+            data['Listado'] = items
+
+        return jsonify({"success": True, "data": data, "total": len(items)})
+
     except requests.exceptions.Timeout:
         return jsonify({"success": False, "message": "Timeout al conectar con Mercado Público."}), 504
     except Exception as e:

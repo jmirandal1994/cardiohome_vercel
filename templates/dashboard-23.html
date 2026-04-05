@@ -2493,13 +2493,33 @@
                             <label for="nombre_especifico">Nombre Específico (Ej: Liceo X - Nómina Mayo):</label>
                             <input type="text" id="nombre_especifico" name="nombre_especifico" placeholder="Nombre único para esta nómina" required class="form-input" />
 
-                            <label for="doctora_nomina">Asignar a Doctora:</label>
+                            <label for="doctora_nomina">Asignar a Doctora Principal:</label>
                             <select id="doctora_nomina" name="doctora" required class="form-input">
                                 <option value="">Selecciona una doctora</option>
                                 {% for doc in doctoras %}
                                     <option value="{{ doc.id }}">{{ doc.usuario }}</option>
                                 {% endfor %}
                             </select>
+
+                            <!-- ══ SEGUNDA DOCTORA (NÓMINA COMPARTIDA) ══ -->
+                            <div style="background:#f0f7ff;border:1.5px dashed #93c5fd;border-radius:10px;padding:14px 16px;margin-top:2px;">
+                                <label for="doctora_id_2" style="font-weight:700;color:#1d4ed8;font-size:.88rem;display:flex;align-items:center;gap:7px;margin-bottom:8px;">
+                                    <i class="fa-solid fa-user-group" style="font-size:.9rem;"></i>
+                                    Segunda Doctora (Nómina Compartida)
+                                    <span style="background:#dbeafe;color:#1e40af;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:4px;">OPCIONAL</span>
+                                </label>
+                                <select id="doctora_id_2" name="doctora_id_2" class="form-input" style="border-color:#93c5fd;">
+                                    <option value="">— Sin segunda doctora —</option>
+                                    {% for doc in doctoras %}
+                                        <option value="{{ doc.id }}">{{ doc.usuario }}</option>
+                                    {% endfor %}
+                                </select>
+                                <p style="font-size:.75rem;color:#3b82f6;margin-top:6px;margin-bottom:0;">
+                                    <i class="fas fa-info-circle"></i>
+                                    Ambas doctoras podrán acceder y evaluar esta nómina. Cada evaluación quedará registrada con el nombre de quien la realizó.
+                                </p>
+                            </div>
+                            <!-- ══ FIN SEGUNDA DOCTORA ══ -->
 
                             <label for="coord_general_id">Asignar a Coordinadora General (Opcional):</label>
                             <select id="coord_general_id" name="coord_general_id" class="form-input">
@@ -2637,7 +2657,17 @@
                                             <span><i class="fa-solid fa-building"></i>{{ nomina.nombre_nomina }}</span>
                                             
                                             {% set user_info = all_users_for_lookup | selectattr('id', 'equalto', nomina.doctora_id) | first %}
-                                            <span class="text-sm text-gray-600">Asignada a: {{ user_info.usuario if user_info else 'N/A' }}</span>
+                                            <span class="text-sm text-gray-600">
+                                                <i class="fa-solid fa-user-doctor" style="color:#1C67A3;margin-right:3px;"></i>
+                                                {{ user_info.usuario if user_info else 'N/A' }}
+                                                {% if nomina.doctora_id_2 %}
+                                                    {% set user_info_2 = all_users_for_lookup | selectattr('id', 'equalto', nomina.doctora_id_2) | first %}
+                                                    <span style="background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;border-radius:20px;padding:2px 8px;font-size:.7rem;font-weight:700;margin-left:6px;">
+                                                        <i class="fa-solid fa-user-group" style="font-size:.6rem;margin-right:3px;"></i>
+                                                        + {{ user_info_2.usuario if user_info_2 else 'Doctora 2' }}
+                                                    </span>
+                                                {% endif %}
+                                            </span>
                                             </div>
                                         <div class="item-card-details">
                                             <span><i class="fa-solid fa-file-excel"></i>Archivo Original: {{ nomina.nombre_excel_original }}</span>
@@ -3054,11 +3084,29 @@
                             <td style="padding:10px 12px;">
                                 {% set doctora_obj = all_users_for_lookup | selectattr('id', 'equalto', nomina.doctora_id) | first %}
                                 {% if doctora_obj %}
-                                <div style="display:flex;align-items:center;gap:7px;">
-                                    <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#0f3460,#1c67a3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                                        <i class="fa-solid fa-user-doctor" style="color:white;font-size:.6rem;"></i>
+                                <div style="display:flex;flex-direction:column;gap:5px;">
+                                    <!-- Doctora principal -->
+                                    <div style="display:flex;align-items:center;gap:7px;">
+                                        <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#0f3460,#1c67a3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                            <i class="fa-solid fa-user-doctor" style="color:white;font-size:.6rem;"></i>
+                                        </div>
+                                        <span style="font-weight:600;color:#334155;font-size:.78rem;">{{ doctora_obj.nombre or doctora_obj.usuario }}</span>
                                     </div>
-                                    <span style="font-weight:600;color:#334155;font-size:.78rem;">{{ doctora_obj.nombre or doctora_obj.usuario }}</span>
+                                    <!-- Segunda doctora (si existe) -->
+                                    {% if nomina.doctora_id_2 %}
+                                        {% set doctora_obj_2 = all_users_for_lookup | selectattr('id', 'equalto', nomina.doctora_id_2) | first %}
+                                        {% if doctora_obj_2 %}
+                                        <div style="display:flex;align-items:center;gap:7px;">
+                                            <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#3b82f6);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                                <i class="fa-solid fa-user-doctor" style="color:white;font-size:.6rem;"></i>
+                                            </div>
+                                            <div style="display:flex;align-items:center;gap:4px;">
+                                                <span style="font-weight:600;color:#334155;font-size:.78rem;">{{ doctora_obj_2.nombre or doctora_obj_2.usuario }}</span>
+                                                <span style="background:#dbeafe;color:#1e40af;font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:20px;border:1px solid #93c5fd;">compartida</span>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    {% endif %}
                                 </div>
                                 {% else %}
                                 <span style="color:#94a3b8;font-size:.78rem;">—</span>
@@ -6087,7 +6135,14 @@
                                     <li class="item-card" data-name="{{ nomina.nombre_establecimiento | lower }}" data-type="{{ nomina.tipo_nomina_display | lower }}">
                                         <div class="item-card-header">
                                             <span><i class="fa-solid fa-building mr-2 text-primary-dark"></i>{{ nomina.nombre_establecimiento }}</span>
-                                            <span class="text-sm text-gray-600">Tipo: {{ nomina.tipo_nomina_display }}</span>
+                                            <span class="text-sm text-gray-600">
+                                                Tipo: {{ nomina.tipo_nomina_display }}
+                                                {% if nomina.doctora_id_2 %}
+                                                <span style="background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;border-radius:20px;padding:2px 8px;font-size:.68rem;font-weight:700;margin-left:6px;">
+                                                    <i class="fa-solid fa-user-group" style="font-size:.6rem;"></i> Nómina compartida
+                                                </span>
+                                                {% endif %}
+                                            </span>
                                         </div>
                                         <div class="item-card-details">
                                             {# CORRECCIÓN DE ERROR JINJA2: Se cambia doctora_id_para-formulario a doctora_id_para_formulario #}

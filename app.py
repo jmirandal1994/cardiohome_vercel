@@ -1732,22 +1732,26 @@ def api_admin_roles():
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
         res = requests.get(
-            f"{SUPABASE_URL}/rest/v1/doctoras?select=rol&order=rol.asc",
+            f"{SUPABASE_URL}/rest/v1/doctoras?select=rol",
             headers=SUPABASE_SERVICE_HEADERS
         )
         roles_raw = res.json() if res.ok else []
-        # Normalizar a minúscula y eliminar duplicados
-        roles_norm = sorted(set(
-            r['rol'].strip().lower()
-            for r in roles_raw
-            if r.get('rol') and r['rol'].strip()
-        ))
-        # Roles base siempre disponibles
-        roles_base = ['admin', 'coordinador_escuela', 'coordinador_general', 'coordinadora', 'doctora']
-        for rb in roles_base:
+
+        # Normalizar: minúscula, strip, ignorar None/vacíos, eliminar duplicados
+        roles_set = set()
+        for r in roles_raw:
+            val = r.get('rol')
+            if val and str(val).strip():
+                roles_set.add(str(val).strip().lower())
+
+        roles_norm = sorted(roles_set)
+
+        # Roles base siempre disponibles (por si la tabla está vacía)
+        for rb in ['admin', 'coordinador_escuela', 'coordinador_general', 'coordinadora', 'doctora']:
             if rb not in roles_norm:
                 roles_norm.append(rb)
         roles_norm.sort()
+
         return jsonify({"success": True, "roles": roles_norm})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
@@ -1755,17 +1759,40 @@ def api_admin_roles():
 
 @app.route('/api/admin/listar_usuarios', methods=['GET'])
 def api_admin_listar_usuarios():
-    """Lista todos los usuarios del sistema."""
+    """Lista todos los usuarios del sistema desde la tabla doctoras."""
     if session.get('usuario') != 'admin':
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
+        # ✅ FIX: no incluir 'email' si la columna no existe en tu tabla doctoras
+        # Usamos solo las columnas seguras que vimos en la imagen de Supabase
         res = requests.get(
-            f"{SUPABASE_URL}/rest/v1/doctoras?select=id,nombre,usuario,rol,email&order=nombre.asc",
+            f"{SUPABASE_URL}/rest/v1/doctoras?select=id,nombre,usuario,rol&order=nombre.asc",
             headers=SUPABASE_SERVICE_HEADERS
         )
-        usuarios = res.json() if res.ok else []
-        return jsonify({"success": True, "usuarios": usuarios})
+
+        if not res.ok:
+            return jsonify({
+                "success": False,
+                "message": f"Error Supabase {res.status_code}: {res.text[:300]}"
+            }), 500
+
+        usuarios_raw = res.json() if isinstance(res.json(), list) else []
+
+        # Normalizar: rol NULL → string vacío, nunca None en el frontend
+        usuarios = []
+        for u in usuarios_raw:
+            usuarios.append({
+                "id":      u.get("id", ""),
+                "nombre":  u.get("nombre") or "",
+                "usuario": u.get("usuario") or "",
+                "rol":     (u.get("rol") or "sin rol").strip().lower(),
+                "email":   u.get("email") or "",
+            })
+
+        return jsonify({"success": True, "usuarios": usuarios, "total": len(usuarios)})
+
     except Exception as e:
+        print(f"ERROR api_admin_listar_usuarios: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
 

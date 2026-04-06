@@ -1692,17 +1692,25 @@
         <i class="fas fa-clipboard-list" style="font-size:.75rem;opacity:.7;flex-shrink:0;"></i>
         Dx previo: {{ est.diagnostico_sospecha }}
     </span>
+    {% if est.fecha_relleno is none %}
+    {# No evaluado → mostrar aviso de que puede cambiarlo directo en el select #}
+    <span style="white-space:nowrap;padding:5px 10px;border-radius:9px;border:1.5px solid #fde68a;background:#fef9c3;color:#92400e;font-size:.72rem;font-weight:700;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;">
+        <i class="fas fa-pen" style="font-size:.65rem;"></i> Editable abajo
+    </span>
+    {% else %}
+    {# Ya evaluado → botón cambiar para mostrar el select si quiere corregir #}
     <button type="button"
         onclick="event.preventDefault();event.stopPropagation();mostrarSelectDx('{{ est.id }}')"
         style="white-space:nowrap;padding:7px 11px;border-radius:9px;border:1.5px solid #93c5fd;background:#eff6ff;color:#1d4ed8;font-size:.78rem;font-weight:700;cursor:pointer;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;">
         <i class="fas fa-chevron-down" style="font-size:.7rem;"></i> Cambiar
     </button>
+    {% endif %}
 </div>
 {% endif %}
 <select name="diagnostico_unificado" id="diagnostico_unificado_{{ est.id }}"
     onchange="onDxSelectChange(this, '{{ est.id }}')"
     data-dx-previo="{{ est.diagnostico_sospecha if est.diagnostico_sospecha else '' }}"
-    style="{% if est.diagnostico_sospecha and not est.diagnostico_1 %}display:none;{% endif %}">
+    style="{% if est.diagnostico_sospecha and est.fecha_relleno is not none and not est.diagnostico_1 %}display:none;{% endif %}">
     <option value="">Seleccione un diagnóstico</option>
     <option value="Dificultades específicas del aprendizaje" {% if est.diagnostico_1 == 'Dificultades específicas del aprendizaje' or est.diagnostico_2 == 'Dificultades específicas del aprendizaje' %}selected{% endif %}>Dificultades específicas del aprendizaje</option>
     <option value="Discapacidad auditiva" {% if est.diagnostico_1 == 'Discapacidad auditiva' or est.diagnostico_2 == 'Discapacidad auditiva' %}selected{% endif %}>Discapacidad auditiva</option>

@@ -621,7 +621,7 @@ def relleno_formulario(nomina_id):
     url_estudiantes = (
         f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
         f"?nomina_id=eq.{nomina_id}"
-        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,check_cirugiasi,check_retraso,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,check_caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,fecha_reevaluacion_select,motivo_consulta,observacion_neurologia,observaciones,diagnostico_sospecha,diagnostico_definitivo,estado_asistencia,motivo_ausencia,deficit" 
+        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,check_cirugiasi,check_retraso,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,check_caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,fecha_reevaluacion_select,motivo_consulta,observacion_neurologia,observaciones,diagnostico_sospecha,diagnostico_definitivo,estado_asistencia,motivo_ausencia" 
         f"&order=nombre.asc"
     )
 
@@ -904,8 +904,6 @@ def generar_pdf():
                 "check_retenciondental": map_check_as_text('check_retenciondental'),
                 "check_frenillolingual": map_check_as_text('check_frenillolingual'),
                 "check_hipertrofia": map_check_as_text('check_hipertrofia'),
-                # Campo deficit — solo editable desde correcciones admin
-                "deficit": "X" if (est_data.get('deficit') or '').strip() == 'X' else "",
             }
 
         # Aplicar el relleno
@@ -1016,6 +1014,8 @@ def api_admin_corregir_alumno():
             # Medicina familiar — medidas
             'altura','peso','imc','clasificacion_imc',
             'fecha_reevaluacion_select','motivo_consulta',
+            # Solo editable desde correcciones admin
+            'deficit',
         }
 
         payload = {k: v for k, v in campos.items() if k in CAMPOS_PERMITIDOS}
@@ -3341,8 +3341,7 @@ def descargar_pdf_alumno(alumno_id):
                 "check_retenciondental":     map_check_db(est.get('check_retenciondental')),
                 "check_frenillolingual":     map_check_db(est.get('check_frenillolingual')),
                 "check_hipertrofia":         map_check_db(est.get('check_hipertrofia')),
-                # Campo deficit — solo editable desde correcciones admin
-                "deficit": "X" if (est.get('deficit') or '').strip() == 'X' else "",
+                "deficit":                   "X" if (est.get('deficit') or '').strip() == 'X' else "",
             }
 
 
@@ -3955,8 +3954,6 @@ def generar_pdfs_visibles():
                     "check_retenciondental": mapear_check_interno('check_retenciondental', est),
                     "check_frenillolingual": mapear_check_interno('check_frenillolingual', est),
                     "check_hipertrofia": mapear_check_interno('check_hipertrofia', est),
-                    # Campo deficit — solo editable desde correcciones admin
-                    "deficit": "X" if (est.get('deficit') or '').strip() == 'X' else "",
                 }
 
             if "/AcroForm" not in writer_single_pdf._root_object:

@@ -6971,6 +6971,23 @@
                   <textarea id="aem-diag1" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
                 <div style="grid-column:1/-1;"><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Diagnóstico Complementario</label>
                   <textarea id="aem-diag-comp" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+
+                <div style="grid-column:1/-1;">
+                  <label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">
+                    <i class="fas fa-x" style="font-size:.65rem;margin-right:3px;"></i> Campo especial PDF
+                  </label>
+                  <div style="display:flex;align-items:center;gap:10px;background:#fef9c3;border:1.5px solid #fde68a;border-radius:10px;padding:10px 14px;">
+                    <button type="button" id="aem-btn-deficit"
+                      onclick="toggleDeficit()"
+                      style="padding:8px 18px;border-radius:8px;border:2px solid #d97706;background:#fff;color:#92400e;font-weight:800;font-size:.85rem;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:7px;transition:all .2s;">
+                      <i class="fas fa-times" style="font-size:.8rem;"></i> deficit
+                    </button>
+                    <span id="aem-deficit-status" style="font-size:.8rem;color:#78350f;font-weight:600;">
+                      Sin marcar — presiona el botón para colocar <strong>X</strong> en el campo <em>deficit</em> del formulario
+                    </span>
+                    <input type="hidden" id="aem-deficit" value="">
+                  </div>
+                </div>
                 <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Altura (cm)</label>
                   <input id="aem-altura" type="number" step="0.1" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
                 <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Peso (kg)</label>
@@ -7782,6 +7799,10 @@
                     document.getElementById('aem-obs5').value = a.observacion_5 || '';
                     document.getElementById('aem-obs6').value = a.observacion_6 || '';
                     document.getElementById('aem-obs7').value = a.observacion_7 || '';
+                    // Cargar estado actual del campo deficit
+                    const defVal = a.deficit || '';
+                    document.getElementById('aem-deficit').value = defVal;
+                    _actualizarEstadoDeficit(defVal === 'X');
                 }
 
                 document.getElementById('aem-loading').style.display       = 'none';
@@ -7796,6 +7817,37 @@
         function cerrarAdminEditModal() {
             document.getElementById('admin-edit-modal').style.display = 'none';
             _aemAlumnoId = _aemSolicitudId = _aemFormType = null;
+            // Resetear deficit al cerrar
+            document.getElementById('aem-deficit').value = '';
+            _actualizarEstadoDeficit(false);
+        }
+
+        function _actualizarEstadoDeficit(marcado) {
+            var btn    = document.getElementById('aem-btn-deficit');
+            var status = document.getElementById('aem-deficit-status');
+            var input  = document.getElementById('aem-deficit');
+            if (!btn || !status || !input) return;
+            if (marcado) {
+                input.value  = 'X';
+                btn.style.background    = '#dc2626';
+                btn.style.color         = '#fff';
+                btn.style.borderColor   = '#dc2626';
+                btn.innerHTML = '<i class="fas fa-times"></i> deficit — ✓ X marcada';
+                status.innerHTML = '<span style="color:#dc2626;font-weight:800;">✓ Se guardará <strong>X</strong> en el campo <em>deficit</em> del formulario.</span> Presiona de nuevo para desmarcar.';
+            } else {
+                input.value  = '';
+                btn.style.background    = '#fff';
+                btn.style.color         = '#92400e';
+                btn.style.borderColor   = '#d97706';
+                btn.innerHTML = '<i class="fas fa-times" style="font-size:.8rem;"></i> deficit';
+                status.innerHTML = 'Sin marcar — presiona el botón para colocar <strong>X</strong> en el campo <em>deficit</em> del formulario.';
+            }
+        }
+
+        function toggleDeficit() {
+            var input = document.getElementById('aem-deficit');
+            if (!input) return;
+            _actualizarEstadoDeficit(input.value !== 'X');
         }
 
         async function guardarCorreccionAdmin() {
@@ -7825,6 +7877,7 @@
                 });
             } else if (_aemFormType === 'medicina_familiar') {
                 const diag = document.getElementById('aem-diag1').value.trim();
+                const deficitVal = document.getElementById('aem-deficit').value.trim();
                 Object.assign(campos, {
                     diagnostico_1:               diag || null,
                     diagnostico_2:               diag || null,
@@ -7841,6 +7894,8 @@
                     observacion_5:               document.getElementById('aem-obs5').value.trim() || null,
                     observacion_6:               document.getElementById('aem-obs6').value.trim() || null,
                     observacion_7:               document.getElementById('aem-obs7').value.trim() || null,
+                    // Campo especial solo desde correcciones — coloca X en el PDF
+                    deficit:                     deficitVal === 'X' ? 'X' : null,
                 });
             }
 

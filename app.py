@@ -1014,6 +1014,8 @@ def api_admin_corregir_alumno():
             # Medicina familiar — medidas
             'altura','peso','imc','clasificacion_imc',
             'fecha_reevaluacion_select','motivo_consulta',
+            # Campo especial solo editable desde correcciones admin
+            'deficit',
         }
 
         payload = {k: v for k, v in campos.items() if k in CAMPOS_PERMITIDOS}

@@ -7877,7 +7877,9 @@
                 });
             } else if (_aemFormType === 'medicina_familiar') {
                 const diag = document.getElementById('aem-diag1').value.trim();
-                const deficitVal = document.getElementById('aem-deficit').value.trim();
+                const deficitEl  = document.getElementById('aem-deficit');
+                const deficitVal = deficitEl ? deficitEl.value.trim() : '';
+                console.log('[deficit debug] elemento encontrado:', !!deficitEl, '| valor raw:', deficitEl?.value, '| trim:', deficitVal, '| será X:', deficitVal === 'X');
                 Object.assign(campos, {
                     diagnostico_1:               diag || null,
                     diagnostico_2:               diag || null,

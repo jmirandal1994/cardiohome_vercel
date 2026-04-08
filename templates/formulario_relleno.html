@@ -505,6 +505,53 @@
 
         @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
 
+        .btn-outline-purple {
+            background: rgba(124,58,237,0.08) !important;
+            color: var(--accent) !important;
+            border: 1.5px solid rgba(124,58,237,0.3) !important;
+        }
+        .btn-outline-purple:hover {
+            background: rgba(124,58,237,0.16) !important;
+            border-color: var(--accent) !important;
+        }
+
+        /* Modal Reporte Diagnósticos */
+        #modal-reporte {
+            display:none; position:fixed; inset:0;
+            background:rgba(10,20,40,.6); z-index:9500;
+            align-items:center; justify-content:center;
+            backdrop-filter:blur(4px);
+        }
+        .reporte-box {
+            background:white; border-radius:20px;
+            padding:32px 36px; max-width:680px; width:95%;
+            max-height:85vh; overflow-y:auto;
+            box-shadow:0 24px 64px rgba(0,0,0,.25);
+            animation:fadeUp .25s ease;
+        }
+        .reporte-titulo {
+            font-family:'Sora',sans-serif; font-size:1.1rem; font-weight:800;
+            color:var(--primary); margin-bottom:20px;
+            display:flex; align-items:center; gap:10px;
+            padding-bottom:14px; border-bottom:2px solid var(--border);
+        }
+        .dx-row {
+            display:flex; align-items:center; gap:12px;
+            padding:10px 14px; border-radius:10px; margin-bottom:8px;
+            background:#f8fafc; border:1px solid var(--border);
+            transition:all .2s;
+        }
+        .dx-row:hover { background:#f1f5ff; border-color:#c7d7f7; }
+        .dx-name { flex:1; font-size:.88rem; font-weight:600; color:var(--text-dark); }
+        .dx-count {
+            font-family:'Sora',sans-serif; font-size:1.1rem; font-weight:800;
+            color:var(--accent); min-width:32px; text-align:right;
+        }
+        .dx-bar-wrap { width:140px; height:8px; background:#e9ecf3; border-radius:99px; overflow:hidden; flex-shrink:0; }
+        .dx-bar-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent),#a78bfa); transition:width .6s ease; }
+        .dx-pct { font-size:.75rem; color:var(--text-muted); min-width:36px; text-align:right; }
+        .reporte-empty { text-align:center; padding:40px; color:var(--text-muted); font-size:.9rem; }
+
         @media (max-width: 900px) {
             .container { flex-direction: column; }
             .preview { width: 100%; position: static; max-height: none; }
@@ -547,6 +594,43 @@
         {% endif %}
     {% endwith %}
 
+    <!-- ─── BIENVENIDA DOCTORA ─── -->
+    <div style="background:linear-gradient(135deg,#0f4c75 0%,#1b6ca8 60%,#7c3aed 100%);border-radius:20px;padding:28px 32px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;box-shadow:0 8px 32px rgba(15,76,117,0.22);">
+        <div style="display:flex;align-items:center;gap:20px;">
+            <div style="width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.15);border:2.5px solid rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-user-md" style="font-size:1.5rem;color:white;"></i>
+            </div>
+            <div>
+                <div style="font-size:.75rem;font-weight:600;color:rgba(255,255,255,0.65);letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px;">Bienvenida</div>
+                <div style="font-family:'Sora',sans-serif;font-size:1.35rem;font-weight:800;color:white;margin-bottom:2px;">{{ doctora_nombre }}</div>
+                <div style="font-size:.82rem;color:rgba(255,255,255,0.7);">
+                    <i class="fas fa-hospital" style="margin-right:5px;opacity:.8;"></i>
+                    Nómina: <strong style="color:rgba(255,255,255,0.95);">{{ establecimiento_nombre }}</strong>
+                </div>
+            </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
+            {% if token_acceso %}
+            <div style="background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.25);border-radius:12px;padding:10px 18px;display:flex;align-items:center;gap:10px;">
+                <div>
+                    <div style="font-size:.68rem;font-weight:700;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;">Token de acceso</div>
+                    <div style="font-family:monospace;font-size:1.1rem;font-weight:800;color:white;letter-spacing:.08em;">{{ token_acceso }}</div>
+                </div>
+                <button onclick="navigator.clipboard.writeText('{{ token_acceso }}').then(()=>Swal.fire({icon:'success',title:'¡Copiado!',text:'Token copiado al portapapeles.',timer:1500,showConfirmButton:false}))"
+                    style="background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.35);border-radius:8px;padding:6px 10px;color:white;font-size:.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:inherit;transition:all .2s;"
+                    onmouseover="this.style.background='rgba(255,255,255,0.3)'"
+                    onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                    <i class="fas fa-copy"></i> Copiar
+                </button>
+            </div>
+            {% endif %}
+                <div style="font-size:.75rem;color:rgba(255,255,255,0.55);">
+                    <i class="fas fa-calendar-day" style="margin-right:4px;"></i>
+                    Sesión activa
+                </div>
+        </div>
+    </div>
+
     <!-- Estadísticas -->
     <div class="stats-bar">
         <div class="stat-card">
@@ -584,6 +668,9 @@
         <div class="report-panel-header">
             <h2><i class="fas fa-brain"></i> Evaluaciones Neurológicas — {{ establecimiento_nombre }}</h2>
             <div class="report-panel-actions">
+                <button class="btn btn-outline-purple btn-sm" onclick="abrirReporteDiagnosticos()">
+                    <i class="fas fa-chart-bar"></i> Ver Reporte
+                </button>
                 <button class="btn btn-success btn-sm" onclick="generarEImprimirPDFsVisibles('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
                     <i class="fas fa-file-pdf"></i> Generar PDFs
                 </button>
@@ -897,6 +984,22 @@
 
 <footer>© 2025 CardioHome · Todos los derechos reservados · Formulario Neurológico</footer>
 
+<!-- ─── MODAL REPORTE DIAGNÓSTICOS ─── -->
+<div id="modal-reporte" onclick="if(event.target===this)cerrarReporte()">
+    <div class="reporte-box">
+        <div class="reporte-titulo">
+            <i class="fas fa-chart-bar" style="color:var(--accent);"></i>
+            Reporte por Diagnóstico — {{ establecimiento_nombre }}
+        </div>
+        <div id="reporte-contenido"><div class="reporte-empty"><i class="fas fa-spinner fa-spin" style="font-size:1.5rem;margin-bottom:10px;display:block;"></i>Cargando...</div></div>
+        <div style="margin-top:20px;display:flex;justify-content:flex-end;">
+            <button onclick="cerrarReporte()" style="padding:10px 24px;border-radius:10px;border:1.5px solid var(--border);background:white;color:var(--text-secondary);font-weight:700;cursor:pointer;font-family:inherit;">
+                <i class="fas fa-xmark"></i> Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- ─── MODAL AUSENCIA ─── -->
 <div id="modal-ausencia" style="display:none;position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:9000;align-items:center;justify-content:center;" onclick="if(event.target===this)cerrarModalAusencia()">
     <div style="background:white;border-radius:20px;padding:28px 30px 24px;max-width:480px;width:94%;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:fadeUp .25s ease;">
@@ -1141,7 +1244,16 @@
                             '<i class="fas fa-check-circle"></i> Evaluado' +
                         '</button>';
                 }
-                Swal.fire({icon:'success', title:'¡Evaluado!', timer:1800, showConfirmButton:false});
+                // ✅ Cerrar el accordion y recargar la página para volver al inicio
+                await Swal.fire({
+                    icon:'success',
+                    title:'¡Evaluado correctamente!',
+                    html:'<span style="color:#059669;font-size:.9rem;">La evaluación quedó registrada.<br>Volviendo al listado para continuar...</span>',
+                    timer:2000, showConfirmButton:false,
+                    timerProgressBar:true
+                });
+                window.scrollTo({top:0, behavior:'smooth'});
+                setTimeout(() => window.location.reload(), 500);
             } else {
                 Swal.fire({icon:'error', title:'Error', text:d.message});
             }
@@ -1542,6 +1654,88 @@
         ensureDxPrevioNeuro(form);
         ensureNacionalidadNeuro(form);
     });
+
+    // ── FIX iPAD — click en <details><summary> ────────────────────────
+    // En algunos iPads el click con mouse/stylus no abre el accordion.
+    // Forzamos toggle manual si el evento viene de un dispositivo puntero.
+    document.querySelectorAll('details.estudiante > summary').forEach(function(summary) {
+        summary.addEventListener('click', function(e) {
+            // Solo intervenir si NO es un toque táctil directo
+            if (e.pointerType === 'mouse' || e.pointerType === 'pen') {
+                // Verificar que el clic no fue en un botón interno
+                if (e.target.closest('button')) return;
+                e.preventDefault();
+                const details = summary.parentElement;
+                details.open = !details.open;
+                // Scroll suave al abrir
+                if (details.open) {
+                    setTimeout(function() {
+                        details.scrollIntoView({behavior:'smooth', block:'nearest'});
+                    }, 80);
+                }
+            }
+        }, {passive: false});
+    });
+
+    // ── REPORTE POR DIAGNÓSTICO ───────────────────────────────────────
+    function abrirReporteDiagnosticos() {
+        document.getElementById('modal-reporte').style.display = 'flex';
+        const contenedor = document.getElementById('reporte-contenido');
+
+        // Recopilar diagnósticos de todos los alumnos evaluados
+        const conteo = {};
+        let totalEval = 0;
+
+        document.querySelectorAll('details.estudiante').forEach(function(card) {
+            if (card.dataset.evaluatedStatus !== 'true') return;
+            if (card.dataset.excluido === 'true') return;
+            const dxEl = card.querySelector('select[name="diagnostico"]');
+            const dx   = (dxEl ? dxEl.value : '').trim() || 'Sin diagnóstico';
+            conteo[dx] = (conteo[dx] || 0) + 1;
+            totalEval++;
+        });
+
+        if (totalEval === 0) {
+            contenedor.innerHTML = '<div class="reporte-empty"><i class="fas fa-brain" style="font-size:2rem;opacity:.2;display:block;margin-bottom:10px;"></i>Aún no hay alumnos evaluados en esta nómina.</div>';
+            return;
+        }
+
+        // Ordenar por frecuencia
+        const sorted = Object.entries(conteo).sort((a, b) => b[1] - a[1]);
+        const max    = sorted[0][1];
+
+        const colors = [
+            'linear-gradient(90deg,#7c3aed,#a78bfa)',
+            'linear-gradient(90deg,#0f4c75,#1b6ca8)',
+            'linear-gradient(90deg,#00796b,#00acc1)',
+            'linear-gradient(90deg,#d97706,#f59e0b)',
+            'linear-gradient(90deg,#dc2626,#f87171)',
+            'linear-gradient(90deg,#059669,#34d399)',
+        ];
+
+        let html = '<div style="margin-bottom:16px;font-size:.82rem;color:#64748b;">'+
+                   '<i class="fas fa-users" style="margin-right:5px;color:var(--accent);"></i>'+
+                   '<strong>' + totalEval + '</strong> alumno' + (totalEval !== 1 ? 's' : '') + ' evaluado' + (totalEval !== 1 ? 's' : '') +
+                   '</div>';
+
+        sorted.forEach(function([dx, count], i) {
+            const pct   = Math.round(count / totalEval * 100);
+            const barW  = Math.round(count / max * 100);
+            const color = colors[i % colors.length];
+            html += '<div class="dx-row">' +
+                '<span class="dx-name">' + dx + '</span>' +
+                '<span class="dx-count">' + count + '</span>' +
+                '<div class="dx-bar-wrap"><div class="dx-bar-fill" style="width:' + barW + '%;background:' + color + ';"></div></div>' +
+                '<span class="dx-pct">' + pct + '%</span>' +
+                '</div>';
+        });
+
+        contenedor.innerHTML = html;
+    }
+
+    function cerrarReporte() {
+        document.getElementById('modal-reporte').style.display = 'none';
+    }
 </script>
 </body>
 </html>

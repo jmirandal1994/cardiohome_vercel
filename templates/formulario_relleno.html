@@ -505,35 +505,6 @@
 
         @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
 
-        /* ── Overlay transición suave al recargar ── */
-        #page-transition {
-            display: none; position: fixed; inset: 0; z-index: 99999;
-            background: linear-gradient(135deg, #0f4c75 0%, #1b6ca8 50%, #7c3aed 100%);
-            opacity: 0; transition: opacity 0.4s ease;
-            flex-direction: column; align-items: center; justify-content: center; gap: 16px;
-        }
-        #page-transition.show { display: flex; }
-        #page-transition.fade { opacity: 1; }
-        .pt-icon {
-            width: 68px; height: 68px; border-radius: 50%;
-            background: rgba(255,255,255,0.18); border: 2.5px solid rgba(255,255,255,0.45);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.8rem; color: white;
-            animation: ptPop .3s cubic-bezier(.34,1.56,.64,1) .05s both;
-        }
-        .pt-msg {
-            font-family: 'Sora', sans-serif; font-size: .95rem; font-weight: 700;
-            color: white; animation: ptPop .3s ease .15s both;
-        }
-        .pt-sub {
-            font-size: .75rem; color: rgba(255,255,255,0.6);
-            animation: ptPop .3s ease .22s both;
-        }
-        @keyframes ptPop {
-            from { opacity: 0; transform: scale(.8) translateY(6px); }
-            to   { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
         .btn-outline-purple {
             background: rgba(124,58,237,0.08) !important;
             color: var(--accent) !important;
@@ -1013,13 +984,6 @@
 
 <footer>© 2025 CardioHome · Todos los derechos reservados · Formulario Neurológico</footer>
 
-<!-- ─── OVERLAY TRANSICIÓN SUAVE ─── -->
-<div id="page-transition">
-    <div class="pt-icon"><i class="fas fa-check"></i></div>
-    <div class="pt-msg">¡Evaluación guardada!</div>
-    <div class="pt-sub">Cargando siguiente alumno…</div>
-</div>
-
 <!-- ─── MODAL REPORTE DIAGNÓSTICOS ─── -->
 <div id="modal-reporte" onclick="if(event.target===this)cerrarReporte()">
     <div class="reporte-box">
@@ -1266,16 +1230,23 @@
             const d = await r.json();
             if (d.success) {
                 updateStudentUI(eid, true);
-                // ── Transición suave: fade out con overlay, luego reload ──
-                const overlay = document.getElementById('page-transition');
-                overlay.classList.add('show');
-                // Pequeño frame para asegurar que display:flex se aplica antes del fade
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        overlay.classList.add('fade');
-                        setTimeout(() => window.location.reload(), 650);
-                    });
+                // ── Swal discreto (toast) + fade suave de página ──────────
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Evaluado!',
+                    text: 'Volviendo al listado...',
+                    timer: 1400,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end',
+                    timerProgressBar: true,
                 });
+                // Fade out suave del body, luego reload (sin scroll, sin destello)
+                setTimeout(() => {
+                    document.body.style.transition = 'opacity 0.35s ease';
+                    document.body.style.opacity = '0';
+                    setTimeout(() => window.location.reload(), 380);
+                }, 1000);
             } else {
                 Swal.fire({icon:'error', title:'Error', text:d.message});
             }

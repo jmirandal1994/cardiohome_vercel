@@ -650,6 +650,14 @@
                     <i class="fas fa-undo"></i> Reactivar
                 </button>
                 {% endif %}
+                <button type="button"
+                    onclick="event.preventDefault();event.stopPropagation();eliminarAlumno('{{ est.id }}','{{ est.nombre | replace(\"'\",\"\\\\'\") }}')"
+                    style="background:rgba(220,38,38,.08);color:#dc2626;border:1.5px solid rgba(220,38,38,.2);border-radius:99px;padding:5px 12px;font-size:.72rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:inherit;flex-shrink:0;"
+                    title="Eliminar alumno"
+                    onmouseover="this.style.background='rgba(220,38,38,.18)'"
+                    onmouseout="this.style.background='rgba(220,38,38,.08)'">
+                    <i class="fas fa-trash-can"></i> Eliminar
+                </button>
                 <i class="fas fa-chevron-right chevron-icon"></i>
             </summary>
 
@@ -695,7 +703,9 @@
                             oninput="recalcularEdad(this.form)">
 
                         <label for="nacionalidad_edit_{{ est.id }}">Nacionalidad</label>
-                        <select name="nacionalidad" id="nacionalidad_edit_{{ est.id }}" onchange="updatePreview(this.form)">
+                        <select name="nacionalidad" id="nacionalidad_edit_{{ est.id }}"
+                            onchange="updatePreview(this.form)"
+                            data-nac-original="{{ est.nacionalidad or '' }}">
                             <option value="">— Sin especificar —</option>
                             {% for nac in ['Chilena','Venezolana','Peruana','Colombiana','Boliviana','Argentina','Ecuatoriana','Haitiana','Brasileña','Dominicana','Cubana','Española','Otra'] %}
                             <option value="{{ nac }}" {% if est.nacionalidad == nac %}selected{% endif %}>{{ nac }}</option>
@@ -721,7 +731,31 @@
                             onchange="updatePreview(this.form)">{{ est.estado_general if est.estado_general is not none else '' }}</textarea>
 
                         <label for="diagnostico_{{ est.id }}">Diagnóstico</label>
-                        <select name="diagnostico" id="diagnostico_{{ est.id }}" required onchange="updatePreview(this.form)">
+
+                        {% if est.diagnostico_sospecha %}
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;" id="dx-previo-row-{{ est.id }}">
+                            <span style="flex:1;padding:7px 11px;border-radius:9px;border:1.5px solid #bae6fd;background:#e0f2fe;color:#0369a1;font-size:.8rem;font-weight:600;display:flex;align-items:center;gap:6px;">
+                                <i class="fas fa-clipboard-list" style="font-size:.75rem;opacity:.7;flex-shrink:0;"></i>
+                                Dx previo: {{ est.diagnostico_sospecha }}
+                            </span>
+                            {% if est.fecha_relleno is none %}
+                            <span style="white-space:nowrap;padding:5px 10px;border-radius:9px;border:1.5px solid #fde68a;background:#fef9c3;color:#92400e;font-size:.72rem;font-weight:700;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;">
+                                <i class="fas fa-pen" style="font-size:.65rem;"></i> Editable abajo
+                            </span>
+                            {% else %}
+                            <button type="button"
+                                onclick="event.preventDefault();event.stopPropagation();document.getElementById('diagnostico_{{ est.id }}').style.display='block';document.getElementById('diagnostico_{{ est.id }}').focus();"
+                                style="white-space:nowrap;padding:7px 11px;border-radius:9px;border:1.5px solid #93c5fd;background:#eff6ff;color:#1d4ed8;font-size:.78rem;font-weight:700;cursor:pointer;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;">
+                                <i class="fas fa-chevron-down" style="font-size:.7rem;"></i> Cambiar
+                            </button>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <select name="diagnostico" id="diagnostico_{{ est.id }}" required
+                            onchange="updatePreview(this.form)"
+                            data-dx-previo="{{ est.diagnostico_sospecha if est.diagnostico_sospecha else '' }}"
+                            style="{% if est.diagnostico_sospecha and est.fecha_relleno is not none and not est.diagnostico %}display:none;{% endif %}">
                             <option value="">Seleccionar diagnóstico</option>
                             <option value="Trastorno Del Espectro Autista"      {% if est.diagnostico == 'Trastorno Del Espectro Autista' %}selected{% endif %}>Trastorno Del Espectro Autista</option>
                             <option value="Trastorno Por Deficit de Atención"   {% if est.diagnostico == 'Trastorno Por Deficit de Atención' %}selected{% endif %}>Trastorno Por Déficit de Atención</option>
@@ -991,6 +1025,7 @@
 
     // ── SUBMIT (Guardar + PDF) ────────────────────────────────────────
     async function submitForm(form) {
+        ensureDxPrevioNeuro(form);
         const fd = new FormData(form);
         const eid = form.querySelector('input[name="estudiante_id"]').value;
         Swal.fire({title:'Guardando y Generando PDF…',text:'Por favor, espera.',didOpen:()=>Swal.showLoading(),allowOutsideClick:false,allowEscapeKey:false});
@@ -1184,6 +1219,180 @@
         const el  = document.getElementById('nuevo-edad-display');
         if (el) el.value = calcularEdad(fn, ref);
     }
+
+    // ── ELIMINAR ALUMNO ───────────────────────────────────────────────
+    async function eliminarAlumno(estudianteId, nombre) {
+        const result = await Swal.fire({
+            title: '¿Eliminar alumno?',
+            html: `<div style="text-align:left;background:#fff5f5;border:1.5px solid #fecaca;border-radius:12px;padding:12px 14px;">
+                     <div style="font-weight:700;color:#1e293b;font-size:.9rem;margin-bottom:6px;">
+                       <i class="fas fa-user-graduate" style="color:#dc2626;margin-right:6px;"></i>${nombre}
+                     </div>
+                     <div style="color:#dc2626;font-size:.78rem;font-weight:600;">
+                       <i class="fas fa-triangle-exclamation" style="margin-right:4px;"></i>
+                       Se eliminará permanentemente del conteo y de la nómina.
+                     </div>
+                   </div>`,
+            icon: 'warning', iconColor: '#dc2626',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-trash-can"></i>&nbsp; Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b',
+            reverseButtons: true, focusCancel: true,
+        });
+        if (!result.isConfirmed) return;
+        Swal.fire({ title: 'Eliminando…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+            const res  = await fetch('/api/estudiante/eliminar/' + estudianteId, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+                await Swal.fire({ icon: 'success', title: '¡Eliminado!',
+                    text: data.message, timer: 1800, showConfirmButton: false });
+                const fila = document.querySelector(`[data-estudiante-id="${estudianteId}"]`);
+                if (fila) {
+                    fila.style.transition = 'opacity .4s, transform .4s';
+                    fila.style.opacity = '0';
+                    fila.style.transform = 'translateX(-18px)';
+                    setTimeout(() => { fila.remove(); actualizarContadoresFormulario(); }, 420);
+                } else { location.reload(); }
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'No se pudo eliminar.' });
+            }
+        } catch(e) {
+            Swal.fire({ icon: 'error', title: 'Error de conexión', text: e.message });
+        }
+    }
+
+    function actualizarContadoresFormulario() {
+        const filas      = document.querySelectorAll('.estudiante');
+        const total      = filas.length;
+        const evaluados  = document.querySelectorAll('.estudiante [data-evaluated-status="true"], .estudiante .evaluated').length;
+        const pendientes = total - evaluados;
+        const pct        = total > 0 ? Math.round(evaluados / total * 100) : 0;
+        const tEl = document.getElementById('stat-total');
+        const pEl = document.getElementById('stat-pending');
+        const rEl = document.getElementById('stat-pct');
+        const bEl = document.getElementById('progress-bar');
+        if (tEl) tEl.textContent = total;
+        if (pEl) pEl.textContent = pendientes;
+        if (rEl) rEl.textContent = pct + '%';
+        if (bEl) bEl.style.width = pct + '%';
+    }
+
+    // ── DIAGNÓSTICO PREVIO: SIGLAS Y CORRELACIÓN CON SELECT NEUROLOGÍA ─
+    const DX_ALIAS_NEURO = {
+        // Espectro autista
+        'tea':   'Trastorno Del Espectro Autista',
+        'autismo': 'Trastorno Del Espectro Autista',
+        'autista': 'Trastorno Del Espectro Autista',
+        'trastorno del espectro autista': 'Trastorno Del Espectro Autista',
+        // Déficit atencional
+        'tda':   'Trastorno Por Deficit de Atención',
+        'tdah':  'TDAH',
+        'tda-h': 'TDAH',
+        'tda/h': 'TDAH',
+        'deficit atencional': 'Trastorno Por Deficit de Atención',
+        'déficit atencional': 'Trastorno Por Deficit de Atención',
+        'trastorno deficit atencion': 'Trastorno Por Deficit de Atención',
+        // Aprendizaje
+        'dea':   'Trastorno del Aprendizaje',
+        'trastorno aprendizaje': 'Trastorno del Aprendizaje',
+        'dificultad aprendizaje': 'Trastorno del Aprendizaje',
+        // GARC
+        'garc':  'GARC',
+        // Motor
+        'dm':    'Trastorno Motor Moderado',
+        'tmo':   'Trastorno Motor Moderado',
+        'trastorno motor': 'Trastorno Motor Moderado',
+        // Hipoacusia
+        'hipoacusia': 'Hipoacusia',
+        'da':    'Hipoacusia',
+        // Sin diagnóstico
+        'sin diagnostico': 'Sin Diagnostico para ingreso PIE',
+        'sin diagnóstico': 'Sin Diagnostico para ingreso PIE',
+        'pendiente': 'Sin Diagnostico para ingreso PIE',
+        // FIL / DIL
+        'fil':   'FIL',
+        'funcionamiento intelectual limitrofe': 'FIL',
+        'funcionamiento intelectual limítrofe': 'FIL',
+        'dil':   'DIL',
+        'discapacidad intelectual leve': 'DIL',
+        // Discapacidad intelectual
+        'di':    'Discapacidad Intelectual',
+        'discapacidad intelectual': 'Discapacidad Intelectual',
+        'rim':   'Discapacidad Intelectual',
+        // Síndrome de Down
+        'sd':    'Sindrome de Down',
+        'down':  'Sindrome de Down',
+        'sindrome de down': 'Sindrome de Down',
+        'síndrome de down': 'Sindrome de Down',
+    };
+
+    // Diccionario de nacionalidades del Excel → opción del select
+    const NACION_ALIAS = {
+        'chile':      'Chilena',  'chileno': 'Chilena',  'chilena': 'Chilena',
+        'venezuela':  'Venezolana', 'venezolano': 'Venezolana', 'venezolana': 'Venezolana',
+        'peru':       'Peruana',  'peruano': 'Peruana',  'peruana': 'Peruana', 'perú': 'Peruana',
+        'colombia':   'Colombiana', 'colombiano': 'Colombiana', 'colombiana': 'Colombiana',
+        'bolivia':    'Boliviana', 'boliviano': 'Boliviana', 'boliviana': 'Boliviana',
+        'argentina':  'Argentina', 'argentino': 'Argentina',
+        'ecuador':    'Ecuatoriana', 'ecuatoriano': 'Ecuatoriana', 'ecuatoriana': 'Ecuatoriana',
+        'haiti':      'Haitiana', 'haitiano': 'Haitiana', 'haitiana': 'Haitiana', 'haití': 'Haitiana',
+        'brasil':     'Brasileña', 'brasileño': 'Brasileña', 'brasileña': 'Brasileña',
+        'republica dominicana': 'Dominicana', 'dominicano': 'Dominicana', 'dominicana': 'Dominicana',
+        'cuba':       'Cubana', 'cubano': 'Cubana', 'cubana': 'Cubana',
+        'españa':     'Española', 'español': 'Española', 'espanol': 'Española', 'española': 'Española',
+    };
+
+    const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+
+    function ensureDxPrevioNeuro(form) {
+        const sel = form.querySelector('select[name="diagnostico"]');
+        if (!sel) return;
+        if (sel.value) return; // ya tiene valor elegido
+        const previo = (sel.dataset.dxPrevio || '').trim();
+        if (!previo) return;
+        const previoNorm = norm(previo);
+
+        // 1. Diccionario siglas (prioridad máxima)
+        if (DX_ALIAS_NEURO[previoNorm]) { sel.value = DX_ALIAS_NEURO[previoNorm]; return; }
+        for (const [alias, valor] of Object.entries(DX_ALIAS_NEURO)) {
+            if (previoNorm === alias || previoNorm.startsWith(alias + ' ') || previoNorm.endsWith(' ' + alias)) {
+                sel.value = valor; return;
+            }
+        }
+        // 2. Coincidencia exacta (insensible a tildes/mayúsculas)
+        for (const opt of sel.options) {
+            if (opt.value && norm(opt.value) === previoNorm) { sel.value = opt.value; return; }
+        }
+        // 3. El previo está contenido en el option
+        for (const opt of sel.options) {
+            if (opt.value && norm(opt.value).includes(previoNorm)) { sel.value = opt.value; return; }
+        }
+        // 4. El option está contenido en el previo
+        for (const opt of sel.options) {
+            if (opt.value && previoNorm.includes(norm(opt.value))) { sel.value = opt.value; return; }
+        }
+    }
+
+    function ensureNacionalidadNeuro(form) {
+        const sel = form.querySelector('select[name="nacionalidad"]');
+        if (!sel || sel.value) return; // ya tiene valor elegido
+        const rawVal = (sel.dataset.nacOriginal || '').trim();
+        if (!rawVal) return;
+        const rawNorm = norm(rawVal);
+        if (NACION_ALIAS[rawNorm]) { sel.value = NACION_ALIAS[rawNorm]; return; }
+        // Intentar coincidencia directa con las opciones
+        for (const opt of sel.options) {
+            if (opt.value && norm(opt.value) === rawNorm) { sel.value = opt.value; return; }
+        }
+    }
+
+    // Ejecutar correlaciones al cargar la página
+    document.querySelectorAll('form[id^="form-estudiante-"]').forEach(function(form) {
+        ensureDxPrevioNeuro(form);
+        ensureNacionalidadNeuro(form);
+    });
 </script>
 </body>
 </html>

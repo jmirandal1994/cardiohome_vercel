@@ -400,23 +400,56 @@
             padding-top: 20px; border-top: 1.5px solid var(--border);
         }
         .button-group button {
-            flex: 1; min-width: 140px; padding: 12px 20px;
-            border: none; border-radius: var(--border-radius-full);
-            font-family: var(--font-body); font-size: 0.88rem; font-weight: 700;
+            flex: 1; min-width: 140px; padding: 11px 18px;
+            border: none; border-radius: 10px;
+            font-family: var(--font-body); font-size: 0.82rem; font-weight: 700;
             cursor: pointer; display: flex; align-items: center; justify-content: center;
-            gap: 8px; transition: all var(--transition); letter-spacing: 0.01em;
+            gap: 7px; transition: all 0.2s ease; letter-spacing: 0.01em;
+            position: relative; overflow: hidden;
+        }
+        /* Botón Guardar correcciones — azul oscuro */
+        .button-group button.btn-guardar {
+            background: linear-gradient(135deg, #0f4c75 0%, #1b6ca8 100%);
+            color: white;
+            box-shadow: 0 3px 12px rgba(15,76,117,0.28);
+        }
+        .button-group button.btn-guardar:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(15,76,117,0.38);
+        }
+        /* Botón Generar PDF — verde esmeralda */
+        .button-group button.btn-pdf {
+            background: linear-gradient(135deg, #00796b 0%, #00acc1 100%);
+            color: white;
+            box-shadow: 0 3px 12px rgba(0,121,107,0.28);
+        }
+        .button-group button.btn-pdf:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,121,107,0.38);
+        }
+        /* Botón Marcar como Evaluado — púrpura */
+        .button-group button.mark-evaluated-btn {
+            background: var(--accent-gradient); color: white;
+            box-shadow: 0 3px 12px rgba(124,58,237,0.28);
+        }
+        .button-group button.mark-evaluated-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(124,58,237,0.38);
+        }
+        /* Estado evaluado (deshabilitado) */
+        .button-group button.mark-evaluated-btn[disabled] {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            box-shadow: none; opacity: 1 !important;
+        }
+        .button-group button:disabled:not(.mark-evaluated-btn) {
+            opacity: 0.38 !important; cursor: not-allowed !important;
+            transform: none !important; box-shadow: none !important;
         }
         .button-group button[type="submit"] {
             background: var(--primary-gradient); color: white;
             box-shadow: 0 4px 15px rgba(15,76,117,0.3);
         }
         .button-group button[type="submit"]:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(15,76,117,0.38); }
-        .button-group button.mark-evaluated-btn {
-            background: var(--accent-gradient); color: white;
-            box-shadow: 0 4px 15px rgba(124,58,237,0.3);
-        }
-        .button-group button.mark-evaluated-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(124,58,237,0.38); }
-        .button-group button:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
 
         /* Preview panel */
         .preview h3 {
@@ -681,14 +714,16 @@
                         <div class="form-section-title"><i class="fas fa-id-card"></i> Identificación del Alumno</div>
 
                         <label for="nombre_{{ est.id }}">Nombre</label>
-                        <input type="text" name="nombre" id="nombre_{{ est.id }}" value="{{ est.nombre }}" required readonly>
+                        <input type="text" name="nombre" id="nombre_{{ est.id }}"
+                            value="{{ est.nombre }}" required
+                            oninput="updatePreview(this.form)">
 
-                        <label for="rut_{{ est.id }}">RUT {% if est.datos_incompletos and not est.rut %}<span style="color:#e17055;font-size:.75rem;">(requerido — faltaba en el Excel)</span>{% endif %}</label>
-                        <input type="text" name="rut" id="rut_{{ est.id }}" value="{{ est.rut or '' }}"
-                            {% if est.rut %}readonly{% endif %}
+                        <label for="rut_{{ est.id }}">RUT</label>
+                        <input type="text" name="rut" id="rut_{{ est.id }}"
+                            value="{{ est.rut or '' }}"
                             placeholder="{{ '⚠ Ingresa el RUT' if not est.rut else '' }}"
                             style="{{ 'background:#fff3ef;border-color:#e17055;' if not est.rut else '' }}"
-                            required>
+                            required oninput="updatePreview(this.form)">
 
                         <label for="sexo_{{ est.id }}">Sexo</label>
                         <select name="sexo" id="sexo_{{ est.id }}" required onchange="updatePreview(this.form)">
@@ -698,7 +733,7 @@
                         </select>
 
                         <label for="fecha_nac_edit_{{ est.id }}">Fecha de Nacimiento</label>
-                        <input type="date" name="fecha_nacimiento_original" id="fecha_nac_edit_{{ est.id }}"
+                        <input type="date" name="fecha_nacimiento" id="fecha_nac_edit_{{ est.id }}"
                             value="{{ est.fecha_nacimiento if est.fecha_nacimiento is not none else '' }}"
                             oninput="recalcularEdad(this.form)">
 
@@ -796,26 +831,23 @@
                         <div class="button-group">
                             {% if est.fecha_relleno is not none %}
                             {# Ya evaluado → guardar y PDF activos, marcar evaluado deshabilitado #}
-                            <button type="button" onclick="guardarCorreccionesNeuro(this)">
+                            <button type="button" class="btn-guardar" onclick="guardarCorreccionesNeuro(this)">
                                 <i class="fas fa-floppy-disk"></i> Guardar correcciones
                             </button>
-                            <button type="button" onclick="generarSoloPDFNeuro(this)">
+                            <button type="button" class="btn-pdf" onclick="generarSoloPDFNeuro(this)">
                                 <i class="fas fa-file-pdf"></i> Generar PDF
                             </button>
-                            <button type="button" class="mark-evaluated-btn" disabled
-                                style="opacity:.55;cursor:not-allowed;">
+                            <button type="button" class="mark-evaluated-btn" disabled>
                                 <i class="fas fa-check-circle"></i> Evaluado
                             </button>
                             {% else %}
                             {# Aún no evaluado → guardar y PDF bloqueados #}
-                            <button type="button" disabled
-                                title="Primero debes marcar como evaluado"
-                                style="opacity:.4;cursor:not-allowed;filter:grayscale(.5);">
+                            <button type="button" class="btn-guardar" disabled
+                                title="Primero debes marcar como evaluado">
                                 <i class="fas fa-floppy-disk"></i> Guardar correcciones
                             </button>
-                            <button type="button" disabled
-                                title="Primero debes marcar como evaluado"
-                                style="opacity:.4;cursor:not-allowed;filter:grayscale(.5);">
+                            <button type="button" class="btn-pdf" disabled
+                                title="Primero debes marcar como evaluado">
                                 <i class="fas fa-file-pdf"></i> Generar PDF
                             </button>
                             <button type="button" class="mark-evaluated-btn"
@@ -994,7 +1026,7 @@
         c.querySelector('.prev-diagnostico').textContent  = form.diagnostico?.value || '—';
         c.querySelector('.prev-derivaciones').textContent = form.derivaciones?.value || '—';
 
-        const fn = form.querySelector('input[name="fecha_nacimiento_original"]');
+        const fn = form.querySelector('input[name="fecha_nacimiento"]');
         if (fn?.value) { try { const [y,m,d]=fn.value.split('-'); c.querySelector('.prev-fecha-nacimiento-info').textContent=`${d}/${m}/${y}`; } catch{} }
 
         const ei = form.querySelector('input[name="edad"]');
@@ -1095,17 +1127,17 @@
             const d = await r.json();
             if (d.success) {
                 updateStudentUI(eid, true);
-                // ✅ Desbloquear botones Guardar y PDF, bloquear el de Marcar
+                // ✅ Desbloquear botones Guardar y PDF, mostrar Evaluado verde
                 const group = btn.closest('.button-group');
                 if (group) {
                     group.innerHTML =
-                        '<button type="button" onclick="guardarCorreccionesNeuro(this)">' +
+                        '<button type="button" class="btn-guardar" onclick="guardarCorreccionesNeuro(this)">' +
                             '<i class="fas fa-floppy-disk"></i> Guardar correcciones' +
                         '</button>' +
-                        '<button type="button" onclick="generarSoloPDFNeuro(this)">' +
+                        '<button type="button" class="btn-pdf" onclick="generarSoloPDFNeuro(this)">' +
                             '<i class="fas fa-file-pdf"></i> Generar PDF' +
                         '</button>' +
-                        '<button type="button" class="mark-evaluated-btn" disabled style="opacity:.55;cursor:not-allowed;">' +
+                        '<button type="button" class="mark-evaluated-btn" disabled>' +
                             '<i class="fas fa-check-circle"></i> Evaluado' +
                         '</button>';
                 }
@@ -1320,7 +1352,7 @@
 
     // Recalcula edad en formulario existente al cambiar fecha nacimiento o evaluación
     function recalcularEdad(form) {
-        const fn  = form.querySelector('input[name="fecha_nacimiento_original"]');
+        const fn  = form.querySelector('input[name="fecha_nacimiento"]');
         const fe  = form.querySelector('input[name="fecha_evaluacion"]');
         const ei  = form.querySelector('input[name="edad"]');
         if (!fn || !fe || !ei) return;

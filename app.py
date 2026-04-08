@@ -541,6 +541,27 @@ def aplicar_autosize_campos(writer):
         print(f"⚠️  aplicar_autosize_campos: error general — {e}")
 
 
+
+
+def wrap_texto_pdf(texto, chars_por_linea=85):
+    """
+    Inserta saltos de linea automaticos en texto largo para que no se corte
+    al escribirlo en campos PDF de ancho fijo.
+    Respeta saltos existentes. chars_por_linea=85 calibrado para el campo
+    indicaciones del formulario neurologico.
+    """
+    if not texto:
+        return texto or ""
+    import textwrap
+    lineas = []
+    for linea in texto.splitlines():
+        if len(linea) <= chars_por_linea:
+            lineas.append(linea)
+        else:
+            lineas.append(textwrap.fill(linea, width=chars_por_linea,
+                break_long_words=True, break_on_hyphens=True))
+    return "\n".join(lineas)
+
 # Nuevo: Función para obtener el PDF de neurología específico para una doctora
 def get_doctor_specific_neurologia_pdf(doctora_id):
     """
@@ -859,10 +880,10 @@ def generar_pdf():
                 "edad": edad,
                 "diagnostico_1": get_form_field_value('diagnostico', request.form),
                 "diagnostico_2": get_form_field_value('diagnostico', request.form), 
-                "estado_general": get_form_field_value('estado', request.form), 
+                "estado_general": wrap_texto_pdf(get_form_field_value('estado', request.form)),
                 "fecha_evaluacion": fecha_evaluacion_formatted,
                 "fecha_reevaluacion": fecha_reeval_pdf,
-                "derivaciones": derivaciones,
+                "derivaciones": wrap_texto_pdf(derivaciones),
                 "sexo_f": sexo_f_pdf,
                 "sexo_m": sexo_m_pdf,
             }
@@ -873,12 +894,12 @@ def generar_pdf():
                 "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato, 
                 "edad": edad, "genero_m": sexo_m_pdf, "genero_f": sexo_f_pdf, 
                 "nacionalidad": nacionalidad,
-                "motivo_consulta": get_form_field_value('motivo_consulta', request.form),
-                "observaciones": get_form_field_value('observaciones', request.form),      
-                "observacion_neurologia": get_form_field_value('observacion_neurologia', request.form), 
-                "diagnostico": get_form_field_value('diagnostico', request.form),
-                "indicaciones": get_form_field_value('indicaciones', request.form),        
-                "derivaciones": derivaciones, 
+                "motivo_consulta": wrap_texto_pdf(get_form_field_value('motivo_consulta', request.form)),
+                "observaciones": wrap_texto_pdf(get_form_field_value('observaciones', request.form)),      
+                "observacion_neurologia": wrap_texto_pdf(get_form_field_value('observacion_neurologia', request.form)), 
+                "diagnostico": wrap_texto_pdf(get_form_field_value('diagnostico', request.form)),
+                "indicaciones": wrap_texto_pdf(get_form_field_value('indicaciones', request.form)),        
+                "derivaciones": wrap_texto_pdf(derivaciones), 
                 "fecha_evaluacion": fecha_evaluacion_formatted,
                 "fecha_reevaluacion": fecha_reeval_pdf,
             }
@@ -3286,7 +3307,8 @@ def descargar_pdf_alumno(alumno_id):
                 "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato,
                 "nacionalidad": _sg('nacionalidad'), "edad": edad,
                 "diagnostico_1": _sg('diagnostico'), "diagnostico_2": _sg('diagnostico'),
-                "estado_general": _sg('estado_general'), "derivaciones": _sg('derivaciones'),
+                "estado_general": wrap_texto_pdf(_sg('estado_general')),
+                "derivaciones":   wrap_texto_pdf(_sg('derivaciones')),
                 "fecha_evaluacion": fecha_evaluacion_formatted, "fecha_reevaluacion": fecha_reeval_pdf,
                 "sexo_f": "X" if est.get('sexo') == "F" else "",
                 "sexo_m": "X" if est.get('sexo') == "M" else "",
@@ -3298,12 +3320,12 @@ def descargar_pdf_alumno(alumno_id):
                 "edad": edad, "nacionalidad": est.get('nacionalidad', ''),
                 "genero_m": "X" if est.get('sexo') == "M" else "",
                 "genero_f": "X" if est.get('sexo') == "F" else "",
-                "motivo_consulta": est.get('motivo_consulta', ''),
-                "observaciones": est.get('observaciones', ''),
-                "observacion_neurologia": est.get('observacion_neurologia', ''),
-                "diagnostico": est.get('diagnostico', ''),
-                "indicaciones": est.get('indicaciones', ''),
-                "derivaciones": est.get('derivaciones', ''),
+                "motivo_consulta":        wrap_texto_pdf(est.get('motivo_consulta', '')),
+                "observaciones":          wrap_texto_pdf(est.get('observaciones', '')),
+                "observacion_neurologia": wrap_texto_pdf(est.get('observacion_neurologia', '')),
+                "diagnostico":            wrap_texto_pdf(est.get('diagnostico', '')),
+                "indicaciones":           wrap_texto_pdf(est.get('indicaciones', '')),
+                "derivaciones":           wrap_texto_pdf(est.get('derivaciones', '')),
                 "fecha_evaluacion": fecha_evaluacion_formatted,
                 "fecha_reevaluacion": fecha_reeval_pdf,
             }
@@ -3940,8 +3962,8 @@ def generar_pdfs_visibles():
                     "diagnostico_1": diag_unif, "diagnostico_2": diag_unif, 
                     "diagnostico_complementario": est.get('diagnostico_complementario', ''),
                     "clasificacion": est.get('clasificacion_imc', '') or est.get('clasificacion', ''),
-                    "indicaciones": est.get('indicaciones', ''), 
-                    "derivaciones": est.get('derivaciones', ''), 
+                    "indicaciones": wrap_texto_pdf(est.get('indicaciones', '')), 
+                    "derivaciones": wrap_texto_pdf(est.get('derivaciones', '')), 
                     "fecha_evaluacion": fecha_eval_pdf, 
                     "fecha_reevaluacion": fecha_reeval_pdf,
                     "altura": est.get('altura', ''), "peso": est.get('peso', ''), "imc": est.get('imc', ''),

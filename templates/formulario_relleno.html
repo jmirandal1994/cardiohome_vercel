@@ -1230,23 +1230,21 @@
             const d = await r.json();
             if (d.success) {
                 updateStudentUI(eid, true);
-                // ── Swal discreto (toast) + fade suave de página ──────────
+                // Toast discreto en esquina + scroll al inicio sin recargar
                 Swal.fire({
                     icon: 'success',
                     title: '¡Evaluado!',
-                    text: 'Volviendo al listado...',
-                    timer: 1400,
+                    timer: 1200,
                     showConfirmButton: false,
                     toast: true,
                     position: 'top-end',
                     timerProgressBar: true,
                 });
-                // Fade out suave del body, luego reload (sin scroll, sin destello)
-                setTimeout(() => {
-                    document.body.style.transition = 'opacity 0.35s ease';
-                    document.body.style.opacity = '0';
-                    setTimeout(() => window.location.reload(), 380);
-                }, 1000);
+                // Cerrar el accordion del alumno evaluado
+                const details = btn.closest('details');
+                if (details) details.open = false;
+                // Scroll suave al inicio
+                window.scrollTo({top: 0, behavior: 'smooth'});
             } else {
                 Swal.fire({icon:'error', title:'Error', text:d.message});
             }

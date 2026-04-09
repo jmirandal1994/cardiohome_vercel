@@ -3980,35 +3980,25 @@
             Swal.fire({
                 title: '<i class="fas fa-robot" style="color:#7c3aed;margin-right:8px;"></i> Revisando nómina…',
                 html: '<div style="font-size:.85rem;color:#64748b;">Analizando todos los alumnos evaluados.<br>Esto puede tardar unos segundos.</div>',
-                allowOutsideClick: false,
-                showConfirmButton: false,
+                allowOutsideClick: false, showConfirmButton: false,
                 didOpen: () => Swal.showLoading()
             });
 
             try {
                 const res  = await fetch('/api/doctora/revisar_nomina', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ nomina_id: nominaId })
                 });
                 const data = await res.json();
                 Swal.close();
 
-                if (!data.success) {
-                    Swal.fire({ icon: 'error', title: 'Error', text: data.message });
-                    return;
-                }
+                if (!data.success) { Swal.fire({ icon:'error', title:'Error', text:data.message }); return; }
 
-                const resultados = data.resultados || [];
+                const resultados   = data.resultados || [];
                 const totalAlumnos = resultados.length;
 
                 if (totalAlumnos === 0) {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Sin evaluados',
-                        text: 'No hay alumnos evaluados en esta nómina aún.',
-                        confirmButtonColor: '#7c3aed'
-                    });
+                    Swal.fire({ icon:'info', title:'Sin evaluados', text:'No hay alumnos evaluados en esta nómina aún.', confirmButtonColor:'#7c3aed' });
                     return;
                 }
 
@@ -4017,77 +4007,110 @@
                 const pctOk       = Math.round(sinErrores / totalAlumnos * 100);
                 const colorHeader = pctOk === 100 ? '#059669' : pctOk >= 70 ? '#d97706' : '#dc2626';
 
-                // Resumen por alumno
+                // Construir contenido
                 let cuerpo = '';
-
-                // Primero los que tienen errores
-                resultados
-                    .filter(r => r.errores.length > 0)
-                    .forEach(function(r) {
-                        const errHtml = r.errores.map(function(e) {
-                            const color = e.tipo === 'error' ? '#dc2626' : '#d97706';
-                            const icon  = e.tipo === 'error' ? 'fa-circle-xmark' : 'fa-triangle-exclamation';
-                            return '<div style="display:flex;align-items:flex-start;gap:7px;margin-top:5px;">'
-                                + '<i class="fas ' + icon + '" style="color:' + color + ';font-size:.75rem;margin-top:3px;flex-shrink:0;"></i>'
-                                + '<span style="font-size:.76rem;color:#475569;">'
-                                + '<strong>' + e.campo + ':</strong> ' + e.descripcion
-                                + '</span></div>';
-                        }).join('');
-
-                        cuerpo += '<div style="background:#fff5f5;border:1.5px solid #fecaca;border-radius:10px;padding:11px 14px;margin-bottom:8px;">'
-                            + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'
-                            + '<i class="fas fa-user-graduate" style="color:#dc2626;font-size:.85rem;"></i>'
-                            + '<strong style="font-size:.85rem;color:#1e293b;">' + r.nombre + '</strong>'
-                            + '<span style="margin-left:auto;background:#fee2e2;color:#dc2626;border-radius:6px;padding:2px 8px;font-size:.7rem;font-weight:700;">'
-                            + r.errores.length + ' problema' + (r.errores.length > 1 ? 's' : '') + '</span>'
-                            + '</div>'
-                            + errHtml
-                            + '</div>';
-                    });
-
-                // Luego los correctos (colapsados en un bloque)
+                resultados.filter(r => r.errores.length > 0).forEach(function(r) {
+                    const errHtml = r.errores.map(function(e) {
+                        const color = e.tipo === 'error' ? '#dc2626' : '#d97706';
+                        const icon  = e.tipo === 'error' ? 'fa-circle-xmark' : 'fa-triangle-exclamation';
+                        return '<div style="display:flex;align-items:flex-start;gap:6px;margin-top:4px;">'
+                            + '<i class="fas ' + icon + '" style="color:' + color + ';font-size:.7rem;margin-top:3px;flex-shrink:0;"></i>'
+                            + '<span style="font-size:.73rem;color:#475569;"><strong>' + e.campo + ':</strong> ' + e.descripcion + '</span></div>';
+                    }).join('');
+                    cuerpo += '<div style="background:#fff5f5;border:1.5px solid #fecaca;border-radius:10px;padding:10px 12px;margin-bottom:7px;">'
+                        + '<div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;">'
+                        + '<i class="fas fa-user-graduate" style="color:#dc2626;font-size:.8rem;flex-shrink:0;"></i>'
+                        + '<strong style="font-size:.82rem;color:#1e293b;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + r.nombre + '">' + r.nombre + '</strong>'
+                        + '<span style="background:#fee2e2;color:#dc2626;border-radius:5px;padding:1px 6px;font-size:.67rem;font-weight:800;flex-shrink:0;">'
+                        + r.errores.length + ' ⚠</span></div>' + errHtml + '</div>';
+                });
                 if (sinErrores > 0) {
-                    const nombresOk = resultados
-                        .filter(r => r.errores.length === 0)
-                        .map(r => r.nombre).join(', ');
-                    cuerpo += '<div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:11px 14px;margin-bottom:8px;">'
-                        + '<div style="display:flex;align-items:center;gap:8px;">'
-                        + '<i class="fas fa-circle-check" style="color:#059669;"></i>'
-                        + '<strong style="font-size:.85rem;color:#065f46;">' + sinErrores + ' alumno' + (sinErrores > 1 ? 's' : '') + ' sin problemas</strong>'
-                        + '</div>'
-                        + '<div style="font-size:.73rem;color:#16a34a;margin-top:4px;">' + nombresOk + '</div>'
-                        + '</div>';
+                    cuerpo += '<div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:10px 12px;margin-bottom:7px;">'
+                        + '<div style="display:flex;align-items:center;gap:7px;">'
+                        + '<i class="fas fa-circle-check" style="color:#059669;font-size:.85rem;"></i>'
+                        + '<strong style="font-size:.8rem;color:#065f46;">' + sinErrores + ' alumno' + (sinErrores>1?'s':'') + ' sin problemas</strong>'
+                        + '</div></div>';
                 }
 
-                // Crear y abrir modal propio (Swal no soporta bien scroll largo)
-                const modal = document.createElement('div');
-                modal.id = 'modal-ia-revision';
-                modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(10,20,40,.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px);';
-                modal.innerHTML =
-                    '<div style="background:white;border-radius:20px;padding:28px 32px;max-width:620px;width:95%;max-height:85vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.25);">'
-                    + '<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #f1f5f9;">'
-                    + '<div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#6d28d9,#7c3aed);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
-                    + '<i class="fas fa-robot" style="color:white;font-size:1.2rem;"></i></div>'
-                    + '<div style="flex:1;">'
-                    + '<div style="font-family:\'Sora\',sans-serif;font-size:1rem;font-weight:800;color:#0f2030;">Revisión IA — Nómina completa</div>'
-                    + '<div style="font-size:.78rem;color:#64748b;">' + totalAlumnos + ' evaluado' + (totalAlumnos > 1 ? 's' : '') + ' revisado' + (totalAlumnos > 1 ? 's' : '') + '</div>'
-                    + '</div>'
-                    + '<div style="text-align:center;">'
-                    + '<div style="font-family:\'Sora\',sans-serif;font-size:1.8rem;font-weight:800;color:' + colorHeader + ';">' + pctOk + '%</div>'
-                    + '<div style="font-size:.7rem;color:#94a3b8;">sin errores</div>'
-                    + '</div></div>'
-                    + '<div>' + cuerpo + '</div>'
-                    + '<div style="margin-top:20px;display:flex;justify-content:flex-end;">'
-                    + '<button onclick="document.getElementById(\'modal-ia-revision\').remove()" '
-                    + 'style="background:linear-gradient(135deg,#6d28d9,#7c3aed);color:white;border:none;border-radius:10px;padding:10px 28px;font-weight:700;font-size:.88rem;cursor:pointer;font-family:inherit;">'
-                    + '<i class="fas fa-check"></i> Entendido</button>'
-                    + '</div></div>';
-                modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
-                document.body.appendChild(modal);
+                // Panel lateral flotante — quitar el anterior si existe
+                const prev = document.getElementById('panel-ia-lateral');
+                if (prev) prev.remove();
+
+                const panel = document.createElement('div');
+                panel.id = 'panel-ia-lateral';
+                panel.style.cssText = [
+                    'position:fixed',
+                    'top:80px',
+                    'right:0',
+                    'width:320px',
+                    'max-height:calc(100vh - 100px)',
+                    'background:white',
+                    'border-radius:16px 0 0 16px',
+                    'box-shadow:-4px 0 32px rgba(109,40,217,.18)',
+                    'border-left:3px solid #7c3aed',
+                    'border-top:1.5px solid #e9d5ff',
+                    'border-bottom:1.5px solid #e9d5ff',
+                    'z-index:9000',
+                    'display:flex',
+                    'flex-direction:column',
+                    'transition:transform .3s ease',
+                    'transform:translateX(0)'
+                ].join(';');
+
+                panel.innerHTML =
+                    // Header fijo con título + botones minimizar/cerrar
+                    '<div id="panel-ia-header" style="'
+                        + 'background:linear-gradient(135deg,#6d28d9,#7c3aed);'
+                        + 'border-radius:13px 0 0 0;'
+                        + 'padding:12px 14px;'
+                        + 'display:flex;align-items:center;gap:10px;'
+                        + 'cursor:pointer;flex-shrink:0;'
+                        + '" onclick="togglePanelIA()">'
+                        + '<i class="fas fa-robot" style="color:white;font-size:.95rem;"></i>'
+                        + '<div style="flex:1;">'
+                        + '<div style="font-size:.82rem;font-weight:800;color:white;font-family:\'Sora\',sans-serif;">Revisión IA</div>'
+                        + '<div style="font-size:.68rem;color:rgba(255,255,255,.7);">' + conErrores + ' con errores · ' + sinErrores + ' ok</div>'
+                        + '</div>'
+                        + '<div style="background:white;color:' + colorHeader + ';border-radius:8px;padding:3px 8px;font-size:.85rem;font-weight:800;font-family:\'Sora\',sans-serif;">' + pctOk + '%</div>'
+                        + '<div style="display:flex;gap:6px;margin-left:4px;">'
+                        + '<button id="btn-panel-minimizar" onclick="event.stopPropagation();togglePanelIA()" title="Minimizar" '
+                        + 'style="background:rgba(255,255,255,.2);border:none;border-radius:6px;width:24px;height:24px;color:white;cursor:pointer;font-size:.75rem;display:flex;align-items:center;justify-content:center;">'
+                        + '<i class="fas fa-minus"></i></button>'
+                        + '<button onclick="event.stopPropagation();document.getElementById(\'panel-ia-lateral\').remove()" title="Cerrar" '
+                        + 'style="background:rgba(255,255,255,.2);border:none;border-radius:6px;width:24px;height:24px;color:white;cursor:pointer;font-size:.75rem;display:flex;align-items:center;justify-content:center;">'
+                        + '<i class="fas fa-xmark"></i></button>'
+                        + '</div></div>'
+
+                    // Cuerpo scrollable
+                    + '<div id="panel-ia-body" style="overflow-y:auto;padding:12px;flex:1;">'
+                    + cuerpo
+                    + '</div>';
+
+                document.body.appendChild(panel);
 
             } catch(e) {
                 Swal.close();
-                Swal.fire({ icon: 'error', title: 'Error de conexión', text: e.message });
+                Swal.fire({ icon:'error', title:'Error de conexión', text:e.message });
+            }
+        }
+
+        // Minimizar / restaurar el panel lateral
+        function togglePanelIA() {
+            const panel = document.getElementById('panel-ia-lateral');
+            const body  = document.getElementById('panel-ia-body');
+            const btnI  = document.querySelector('#btn-panel-minimizar i');
+            if (!panel) return;
+            const minimizado = panel.dataset.minimizado === '1';
+            if (minimizado) {
+                body.style.display = '';
+                panel.style.borderRadius = '16px 0 0 16px';
+                if (btnI) btnI.className = 'fas fa-minus';
+                panel.dataset.minimizado = '0';
+            } else {
+                body.style.display = 'none';
+                panel.style.borderRadius = '10px 0 0 10px';
+                if (btnI) btnI.className = 'fas fa-chevron-up';
+                panel.dataset.minimizado = '1';
             }
         }
 

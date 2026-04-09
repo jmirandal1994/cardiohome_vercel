@@ -468,11 +468,23 @@ def get_form_field_value(field_name, form_data, return_none_if_empty=False):
 
 def aplicar_autosize_campos(writer):
     """
-    Recorre todos los campos de texto del PDF y les aplica tamaño de fuente
-    automático (DA con tamaño 0 = auto-fit). Evita que el texto se corte
-    o salga del campo cuando el contenido es largo.
-    Funciona con PyPDF2 y pypdf.
+    Recorre todos los campos de texto del PDF y les aplica:
+    - Tamaño de fuente automático (DA con tamaño 0 = auto-fit)
+    - Flag Multiline activado para campos de texto largos (indicaciones, diagnóstico, etc.)
+    - Flag DoNotScroll desactivado para permitir scroll dentro del campo
+    Evita que el texto se corte o salga del campo cuando el contenido es largo.
     """
+    # Campos que sabemos son multilinea (texto largo)
+    CAMPOS_MULTILINEA = {
+        'indicaciones', 'derivaciones', 'estado_general', 'diagnostico',
+        'diagnostico_1', 'diagnostico_2', 'observaciones', 'observacion_neurologia',
+        'motivo_consulta', 'observacion_1', 'observacion_2', 'observacion_3',
+        'observacion_4', 'observacion_5', 'observacion_6', 'observacion_7',
+    }
+    # Flags de campo PDF
+    FF_MULTILINE    = 1 << 12   # bit 13 — activa texto multilinea
+    FF_DO_NOT_SCROLL = 1 << 23  # bit 24 — desactiva scroll (lo quitamos)
+
     try:
         if "/AcroForm" not in writer._root_object:
             return
@@ -488,19 +500,25 @@ def aplicar_autosize_campos(writer):
 
                 if ft == "/Tx":
                     # Tamaño 0 = auto-size en lectores PDF compatibles
-                    # Intentar leer la fuente actual del DA para mantenerla
                     da_actual = str(field.get("/DA", "/Helv 0 Tf 0 g"))
                     import re
-                    # Reemplazar el tamaño numérico por 0 (auto)
                     da_nuevo = re.sub(r'(\d+\.?\d*)\s+Tf', '0 Tf', da_actual)
                     if "Tf" not in da_nuevo:
                         da_nuevo = "/Helv 0 Tf 0 g"
-                    field.update({
-                        NameObject("/DA"): NameObject(da_nuevo),
-                    })
-                    # Quitar flag de tamaño fijo en DS si existe
+                    field.update({NameObject("/DA"): NameObject(da_nuevo)})
                     if "/DS" in field:
                         del field[NameObject("/DS")]
+
+                    # Obtener nombre del campo para detectar si es multilinea
+                    nombre_campo = str(field.get("/T", "")).lower()
+                    es_multilinea = any(m in nombre_campo for m in CAMPOS_MULTILINEA)
+
+                    if es_multilinea:
+                        # Leer flags actuales
+                        ff_actual = int(field.get("/Ff", 0))
+                        # Activar Multiline, desactivar DoNotScroll
+                        ff_nuevo = (ff_actual | FF_MULTILINE) & ~FF_DO_NOT_SCROLL
+                        field.update({NameObject("/Ff"): NumberObject(ff_nuevo)})
 
                 # Procesar hijos (campos agrupados)
                 if "/Kids" in field:
@@ -514,15 +532,35 @@ def aplicar_autosize_campos(writer):
         for field_ref in fields:
             _procesar_campo(field_ref)
 
-        # Forzar re-render de apariencias
         writer._root_object["/AcroForm"].update({
             NameObject("/NeedAppearances"): BooleanObject(True)
         })
-        print("✅ aplicar_autosize_campos: auto-size aplicado correctamente.")
+        print("✅ aplicar_autosize_campos: auto-size + multiline aplicado.")
 
     except Exception as e:
         print(f"⚠️  aplicar_autosize_campos: error general — {e}")
 
+
+
+
+def wrap_texto_pdf(texto, chars_por_linea=85):
+    """
+    Inserta saltos de linea automaticos en texto largo para que no se corte
+    al escribirlo en campos PDF de ancho fijo.
+    Respeta saltos existentes. chars_por_linea=85 calibrado para el campo
+    indicaciones del formulario neurologico.
+    """
+    if not texto:
+        return texto or ""
+    import textwrap
+    lineas = []
+    for linea in texto.splitlines():
+        if len(linea) <= chars_por_linea:
+            lineas.append(linea)
+        else:
+            lineas.append(textwrap.fill(linea, width=chars_por_linea,
+                break_long_words=True, break_on_hyphens=True))
+    return "\n".join(lineas)
 
 # Nuevo: Función para obtener el PDF de neurología específico para una doctora
 def get_doctor_specific_neurologia_pdf(doctora_id):
@@ -755,7 +793,11 @@ def generar_pdf():
     rut = format_rut_python(get_form_field_value('rut', request.form))
     
     fecha_nac_formato = ''
-    fecha_nac_original_str = get_form_field_value('fecha_nacimiento_original', request.form)
+    # ✅ FIX: leer 'fecha_nacimiento' primero (nombre nuevo), con fallback a 'fecha_nacimiento_original' (nombre viejo)
+    fecha_nac_original_str = (
+        get_form_field_value('fecha_nacimiento', request.form)
+        or get_form_field_value('fecha_nacimiento_original', request.form)
+    )
     if fecha_nac_original_str:
         try:
             fecha_nac_formato = datetime.strptime(fecha_nac_original_str, '%Y-%m-%d').strftime('%d/%m/%Y')
@@ -838,10 +880,10 @@ def generar_pdf():
                 "edad": edad,
                 "diagnostico_1": get_form_field_value('diagnostico', request.form),
                 "diagnostico_2": get_form_field_value('diagnostico', request.form), 
-                "estado_general": get_form_field_value('estado', request.form), 
+                "estado_general": wrap_texto_pdf(get_form_field_value('estado', request.form)),
                 "fecha_evaluacion": fecha_evaluacion_formatted,
                 "fecha_reevaluacion": fecha_reeval_pdf,
-                "derivaciones": derivaciones,
+                "derivaciones": wrap_texto_pdf(derivaciones),
                 "sexo_f": sexo_f_pdf,
                 "sexo_m": sexo_m_pdf,
             }
@@ -852,12 +894,12 @@ def generar_pdf():
                 "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato, 
                 "edad": edad, "genero_m": sexo_m_pdf, "genero_f": sexo_f_pdf, 
                 "nacionalidad": nacionalidad,
-                "motivo_consulta": get_form_field_value('motivo_consulta', request.form),
-                "observaciones": get_form_field_value('observaciones', request.form),      
-                "observacion_neurologia": get_form_field_value('observacion_neurologia', request.form), 
-                "diagnostico": get_form_field_value('diagnostico', request.form),
-                "indicaciones": get_form_field_value('indicaciones', request.form),        
-                "derivaciones": derivaciones, 
+                "motivo_consulta": wrap_texto_pdf(get_form_field_value('motivo_consulta', request.form)),
+                "observaciones": wrap_texto_pdf(get_form_field_value('observaciones', request.form)),      
+                "observacion_neurologia": wrap_texto_pdf(get_form_field_value('observacion_neurologia', request.form)), 
+                "diagnostico": wrap_texto_pdf(get_form_field_value('diagnostico', request.form)),
+                "indicaciones": wrap_texto_pdf(get_form_field_value('indicaciones', request.form)),        
+                "derivaciones": wrap_texto_pdf(derivaciones), 
                 "fecha_evaluacion": fecha_evaluacion_formatted,
                 "fecha_reevaluacion": fecha_reeval_pdf,
             }
@@ -1014,6 +1056,8 @@ def api_admin_corregir_alumno():
             # Medicina familiar — medidas
             'altura','peso','imc','clasificacion_imc',
             'fecha_reevaluacion_select','motivo_consulta',
+            # Solo editable desde correcciones admin
+            'deficit',
         }
 
         payload = {k: v for k, v in campos.items() if k in CAMPOS_PERMITIDOS}
@@ -3076,29 +3120,23 @@ def desbloquear_nomina():
     if school_name not in colegios_permitidos:
         return jsonify({"success": False, "message": "No tiene permiso asignado para este establecimiento."}), 403
         
-    # 3. Validar el token de acceso para ese colegio
+    # 3. Validar el token de acceso para ese colegio (Envuelto en TRY/EXCEPT para errores de conexión)
     try:
-        # ✅ FIX: Buscar por nombre_colegio SIN filtrar por coord_escuela_id
-        # así encuentra nóminas aunque tengan coord_escuela_id distinto o nulo
         url_token = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?nombre_colegio=eq.{school_name}"
-            f"&select=token_acceso,id,form_type"
+            f"&coord_escuela_id=eq.{session.get('usuario_id')}"
+            f"&select=token_acceso,id"
         )
         
         res_token = requests.get(url_token, headers=SUPABASE_SERVICE_HEADERS)
         res_token.raise_for_status()
         nominas_con_token = res_token.json()
-
-        # ✅ FIX: Aceptar si el token ingresado coincide con CUALQUIER nómina del colegio
-        # (antes solo comparaba contra la primera, fallando cuando había varias)
-        token_valido = any(
-            nom.get('token_acceso') and nom.get('token_acceso') == password_ingresada
-            for nom in nominas_con_token
-        )
+        
+        token_esperado = nominas_con_token[0].get('token_acceso') if nominas_con_token and nominas_con_token[0] else None
         
         # 4. Comparamos la contraseña
-        if token_valido:
+        if token_esperado and token_esperado == password_ingresada:
             
             nomina_ids = [nom.get('id') for nom in nominas_con_token if nom.get('id')]
             nomina_ids_str = ",".join(nomina_ids)
@@ -3171,7 +3209,7 @@ def descargar_pdf_alumno(alumno_id):
         url_student_data = (
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
             f"?id=eq.{alumno_id}"
-            f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,check_cirugiasi,check_retraso,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,check_caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,doctora_evaluadora_id,nomina_id,clasificacion_imc,motivo_consulta,observaciones,observacion_neurologia,estado_asistencia,motivo_ausencia" 
+            f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,check_cirugiasi,check_retraso,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,check_caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,doctora_evaluadora_id,nomina_id,clasificacion_imc,motivo_consulta,observaciones,observacion_neurologia,estado_asistencia,motivo_ausencia,deficit" 
         )
         res_student = requests.get(url_student_data, headers=SUPABASE_SERVICE_HEADERS)
         res_student.raise_for_status() 
@@ -3269,7 +3307,8 @@ def descargar_pdf_alumno(alumno_id):
                 "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato,
                 "nacionalidad": _sg('nacionalidad'), "edad": edad,
                 "diagnostico_1": _sg('diagnostico'), "diagnostico_2": _sg('diagnostico'),
-                "estado_general": _sg('estado_general'), "derivaciones": _sg('derivaciones'),
+                "estado_general": wrap_texto_pdf(_sg('estado_general')),
+                "derivaciones":   wrap_texto_pdf(_sg('derivaciones')),
                 "fecha_evaluacion": fecha_evaluacion_formatted, "fecha_reevaluacion": fecha_reeval_pdf,
                 "sexo_f": "X" if est.get('sexo') == "F" else "",
                 "sexo_m": "X" if est.get('sexo') == "M" else "",
@@ -3281,12 +3320,12 @@ def descargar_pdf_alumno(alumno_id):
                 "edad": edad, "nacionalidad": est.get('nacionalidad', ''),
                 "genero_m": "X" if est.get('sexo') == "M" else "",
                 "genero_f": "X" if est.get('sexo') == "F" else "",
-                "motivo_consulta": est.get('motivo_consulta', ''),
-                "observaciones": est.get('observaciones', ''),
-                "observacion_neurologia": est.get('observacion_neurologia', ''),
-                "diagnostico": est.get('diagnostico', ''),
-                "indicaciones": est.get('indicaciones', ''),
-                "derivaciones": est.get('derivaciones', ''),
+                "motivo_consulta":        wrap_texto_pdf(est.get('motivo_consulta', '')),
+                "observaciones":          wrap_texto_pdf(est.get('observaciones', '')),
+                "observacion_neurologia": wrap_texto_pdf(est.get('observacion_neurologia', '')),
+                "diagnostico":            wrap_texto_pdf(est.get('diagnostico', '')),
+                "indicaciones":           wrap_texto_pdf(est.get('indicaciones', '')),
+                "derivaciones":           wrap_texto_pdf(est.get('derivaciones', '')),
                 "fecha_evaluacion": fecha_evaluacion_formatted,
                 "fecha_reevaluacion": fecha_reeval_pdf,
             }
@@ -3345,6 +3384,7 @@ def descargar_pdf_alumno(alumno_id):
                 "check_retenciondental":     map_check_db(est.get('check_retenciondental')),
                 "check_frenillolingual":     map_check_db(est.get('check_frenillolingual')),
                 "check_hipertrofia":         map_check_db(est.get('check_hipertrofia')),
+                "deficit":                   "X" if (est.get('deficit') or '').strip() == 'X' else "",
             }
 
 
@@ -3922,8 +3962,8 @@ def generar_pdfs_visibles():
                     "diagnostico_1": diag_unif, "diagnostico_2": diag_unif, 
                     "diagnostico_complementario": est.get('diagnostico_complementario', ''),
                     "clasificacion": est.get('clasificacion_imc', '') or est.get('clasificacion', ''),
-                    "indicaciones": est.get('indicaciones', ''), 
-                    "derivaciones": est.get('derivaciones', ''), 
+                    "indicaciones": wrap_texto_pdf(est.get('indicaciones', '')), 
+                    "derivaciones": wrap_texto_pdf(est.get('derivaciones', '')), 
                     "fecha_evaluacion": fecha_eval_pdf, 
                     "fecha_reevaluacion": fecha_reeval_pdf,
                     "altura": est.get('altura', ''), "peso": est.get('peso', ''), "imc": est.get('imc', ''),
@@ -5957,113 +5997,12 @@ Reglas:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  AGENTE IA — Revisión de evaluación por la DOCTORA
-#  POST /api/doctora/revisar_evaluacion
-#  Body: { estudiante_id }
-#  Acceso: doctora (no admin) — analiza solo SU alumno evaluado
+#  AGENTE IA — Barrido de nómina completa
+#  POST /api/agente/barrer_nomina
+#  Body: { nomina_id }
 # ─────────────────────────────────────────────────────────────────────────────
-@app.route('/api/doctora/revisar_evaluacion', methods=['POST'])
-def doctora_revisar_evaluacion():
-    if 'usuario' not in session:
-        return jsonify({"success": False, "message": "No autorizado"}), 401
-    try:
-        data          = request.get_json() or {}
-        estudiante_id = data.get('estudiante_id')
-        if not estudiante_id:
-            return jsonify({"success": False, "message": "Falta estudiante_id"}), 400
-
-        # 1. Obtener datos completos del alumno
-        res = requests.get(
-            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-            f"?id=eq.{estudiante_id}"
-            f"&select=id,nombre,rut,fecha_nacimiento,edad,nacionalidad,sexo,"
-            f"diagnostico_1,diagnostico_complementario,clasificacion_imc,"
-            f"derivaciones,check_cesarea,check_atermino,check_vaginal,check_prematuro,"
-            f"check_acorde,check_retraso,check_retrasogeneralizado,"
-            f"check_esquemac,check_esquemai,check_alergiano,check_alergiasi,"
-            f"check_cirugiano,check_cirugiasi,check_visionsinalteracion,check_visionrefraccion,"
-            f"check_audicionnormal,check_hipoacusia,check_tapondecerumen,"
-            f"check_sinhallazgos,check_caries,check_apinamientodental,"
-            f"check_retenciondental,check_frenillolingual,check_hipertrofia,"
-            f"altura,peso,imc,clasificacion_imc,observacion_1,observacion_2,observacion_3,"
-            f"observacion_4,observacion_5,observacion_6,observacion_7,fecha_evaluacion",
-            headers=SUPABASE_SERVICE_HEADERS
-        )
-        alumnos = res.json() if res.ok else []
-        if not alumnos:
-            return jsonify({"success": False, "message": "Alumno no encontrado"}), 404
-        a = alumnos[0]
-
-        # 2. Misma lógica de validación que agente_barrer_nomina
-        errores = []
-
-        # Datos personales
-        if not a.get('rut'):             errores.append({"campo": "RUT", "descripcion": "RUT vacío — campo obligatorio", "tipo": "error"})
-        if not a.get('sexo'):            errores.append({"campo": "Sexo", "descripcion": "Sexo no registrado", "tipo": "error"})
-        if not a.get('nacionalidad'):    errores.append({"campo": "Nacionalidad", "descripcion": "Nacionalidad vacía", "tipo": "error"})
-        if not a.get('fecha_evaluacion'):errores.append({"campo": "Fecha evaluación", "descripcion": "Fecha de evaluación vacía", "tipo": "error"})
-
-        # Edad / Fecha nacimiento
-        if a.get('fecha_nacimiento'):
-            try:
-                from datetime import date as dt_date
-                fn = dt_date.fromisoformat(a['fecha_nacimiento'])
-                diff = (dt_date.today() - fn).days / 365.25
-                if diff < 0:
-                    errores.append({"campo": "Fecha de nacimiento", "descripcion": f"Fecha en el futuro ({a['fecha_nacimiento']})", "tipo": "error"})
-                elif diff > 25:
-                    errores.append({"campo": "Fecha de nacimiento", "descripcion": f"Edad calculada inusualmente alta ({diff:.1f} años) — verifica la fecha", "tipo": "advertencia"})
-            except:
-                errores.append({"campo": "Fecha de nacimiento", "descripcion": "Formato de fecha inválido", "tipo": "error"})
-        else:
-            errores.append({"campo": "Fecha de nacimiento", "descripcion": "Fecha de nacimiento vacía", "tipo": "error"})
-
-        # Diagnóstico PIE
-        if not a.get('diagnostico_1'):
-            errores.append({"campo": "Diagnóstico PIE", "descripcion": "Diagnóstico PIE vacío — campo obligatorio", "tipo": "error"})
-
-        # Medidas antropométricas
-        if not a.get('altura'):        errores.append({"campo": "Altura", "descripcion": "Altura no registrada", "tipo": "advertencia"})
-        if not a.get('peso'):          errores.append({"campo": "Peso", "descripcion": "Peso no registrado", "tipo": "advertencia"})
-        if not a.get('imc'):           errores.append({"campo": "IMC", "descripcion": "IMC no calculado — ingresa altura y peso para calcularlo", "tipo": "advertencia"})
-        if not a.get('clasificacion_imc'): errores.append({"campo": "Clasificación IMC", "descripcion": "Clasificación IMC vacía", "tipo": "advertencia"})
-
-        # Grupos de checks
-        def obs_no_informado(t): return 'NO INFORMADO' in (t or '').upper()
-        GRUPOS = [
-            ("Antecedentes Perinatales", ["check_cesarea","check_atermino","check_vaginal","check_prematuro"], "observacion_1"),
-            ("Desarrollo Psicomotor (DSM)", ["check_acorde","check_retraso","check_retrasogeneralizado"], "observacion_2"),
-            ("Vacunas",  ["check_esquemac","check_esquemai"], "observacion_3"),
-            ("Alergias", ["check_alergiano","check_alergiasi"], "observacion_3"),
-            ("Cirugías/Hospitalizaciones", ["check_cirugiano","check_cirugiasi"], "observacion_6"),
-            ("Visión",   ["check_visionsinalteracion","check_visionrefraccion"], "observacion_7"),
-            ("Audición", ["check_audicionnormal","check_hipoacusia","check_tapondecerumen"], None),
-            ("Salud Bucodental", ["check_sinhallazgos","check_caries","check_apinamientodental",
-                                  "check_retenciondental","check_frenillolingual","check_hipertrofia"], None),
-        ]
-        for grupo, campos, obs_key in GRUPOS:
-            if any(a.get(c) for c in campos):
-                continue
-            if obs_key and obs_no_informado(a.get(obs_key)):
-                continue
-            if obs_key:
-                errores.append({"campo": grupo, "descripcion": "Ningún check marcado y la observación no indica 'NO INFORMADO'", "tipo": "error"})
-            else:
-                errores.append({"campo": grupo, "descripcion": "Debe tener al menos un check marcado", "tipo": "error"})
-
-        # Total de campos que se validan
-        total_campos = 4 + 1 + 1 + 4 + len(GRUPOS)  # personales + dx + fecha + medidas + grupos
-
-        return jsonify({
-            "success": True,
-            "errores": errores,
-            "total_campos": total_campos,
-            "nombre": a.get('nombre', '')
-        })
-
-    except Exception as e:
-        print(f"ERROR doctora_revisar_evaluacion: {e}")
-        return jsonify({"success": False, "message": str(e)}), 500
+@app.route('/api/agente/barrer_nomina', methods=['POST'])
+def agente_barrer_nomina():
     if session.get('usuario') != 'admin':
         return jsonify({"success": False, "message": "Acceso denegado"}), 403
     if not ANTHROPIC_API_KEY:

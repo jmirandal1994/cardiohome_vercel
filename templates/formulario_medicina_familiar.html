@@ -1980,6 +1980,13 @@
                                 <button type="button" onclick="generarSoloPDF(this)">
                                     <i class="fas fa-file-pdf"></i> Generar PDF
                                 </button>
+                                <button type="button"
+                                    onclick="revisarConIA('{{ est.id }}', '{{ est.nombre | replace("'", " ") }}')"
+                                    style="background:linear-gradient(135deg,#6d28d9,#7c3aed);color:white;border:none;border-radius:10px;padding:11px 18px;font-weight:700;font-size:.82rem;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:7px;box-shadow:0 3px 12px rgba(109,40,217,.28);transition:all .2s;"
+                                    onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(109,40,217,.38)'"
+                                    onmouseout="this.style.transform='';this.style.boxShadow='0 3px 12px rgba(109,40,217,.28)'">
+                                    <i class="fas fa-robot"></i> Revisar con IA
+                                </button>
                                 <button type="button" class="mark-evaluated-btn" disabled
                                     style="opacity:.55;cursor:not-allowed;">
                                     <i class="fas fa-check-circle"></i> Evaluado
@@ -3967,6 +3974,85 @@
                     alert('Error al agregar alumno: ' + (data.error || 'Error'));
                 }
             } catch(e) { alert('Error de conexión: ' + e.message); }
+        }
+
+        // ── AGENTE IA — Revisión de evaluación ───────────────────────
+        async function revisarConIA(estudianteId, nombreAlumno) {
+            // Mostrar loading
+            Swal.fire({
+                title: '<i class="fas fa-robot" style="color:#7c3aed;margin-right:8px;"></i> Revisando con IA…',
+                html: '<div style="font-size:.85rem;color:#64748b;">Analizando la evaluación de <strong>' + nombreAlumno + '</strong>.<br>Esto tarda unos segundos.</div>',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            try {
+                const res  = await fetch('/api/doctora/revisar_evaluacion', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ estudiante_id: estudianteId })
+                });
+                const data = await res.json();
+                Swal.close();
+
+                if (!data.success) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message });
+                    return;
+                }
+
+                // Mostrar resultados en modal
+                const errores  = data.errores || [];
+                const total    = data.total_campos;
+                const sinError = total - errores.length;
+                const pct      = total > 0 ? Math.round(sinError / total * 100) : 100;
+                const colorPct = pct >= 90 ? '#059669' : pct >= 70 ? '#d97706' : '#dc2626';
+                const iconPct  = pct >= 90 ? 'fa-circle-check' : pct >= 70 ? 'fa-triangle-exclamation' : 'fa-circle-xmark';
+
+                let erroresHtml = '';
+                if (errores.length === 0) {
+                    erroresHtml = '<div style="text-align:center;padding:20px;background:#f0fdf4;border-radius:12px;border:1.5px solid #bbf7d0;">'
+                        + '<i class="fas fa-party-horn" style="font-size:1.8rem;color:#059669;display:block;margin-bottom:8px;"></i>'
+                        + '<strong style="color:#065f46;">¡Evaluación completa y correcta!</strong>'
+                        + '<div style="color:#16a34a;font-size:.82rem;margin-top:4px;">No se encontraron campos con problemas.</div>'
+                        + '</div>';
+                } else {
+                    erroresHtml = errores.map(function(e) {
+                        const color = e.tipo === 'error' ? '#dc2626' : '#d97706';
+                        const bg    = e.tipo === 'error' ? '#fff5f5' : '#fffbeb';
+                        const border= e.tipo === 'error' ? '#fecaca' : '#fde68a';
+                        const icon  = e.tipo === 'error' ? 'fa-circle-xmark' : 'fa-triangle-exclamation';
+                        return '<div style="background:' + bg + ';border:1.5px solid ' + border
+                            + ';border-radius:10px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;">'
+                            + '<i class="fas ' + icon + '" style="color:' + color + ';margin-top:2px;flex-shrink:0;"></i>'
+                            + '<div><div style="font-weight:700;font-size:.83rem;color:#1e293b;">' + e.campo + '</div>'
+                            + '<div style="font-size:.78rem;color:#475569;margin-top:2px;">' + e.descripcion + '</div>'
+                            + '</div></div>';
+                    }).join('');
+                }
+
+                Swal.fire({
+                    title: '<i class="fas fa-robot" style="color:#7c3aed;margin-right:8px;"></i>Revisión IA — ' + nombreAlumno,
+                    html: '<div style="text-align:left;">'
+                        + '<div style="display:flex;align-items:center;gap:16px;background:#faf5ff;border-radius:12px;padding:14px 18px;margin-bottom:16px;border:1.5px solid #e9d5ff;">'
+                        + '<div style="font-family:\'Sora\',sans-serif;font-size:2rem;font-weight:800;color:' + colorPct + ';">' + pct + '%</div>'
+                        + '<div><div style="font-weight:700;font-size:.88rem;color:#1e293b;">'
+                        + (errores.length === 0 ? 'Evaluación completa' : errores.length + ' punto' + (errores.length > 1 ? 's' : '') + ' para revisar')
+                        + '</div><div style="font-size:.75rem;color:#64748b;">' + sinError + ' de ' + total + ' campos verificados OK</div></div>'
+                        + '<i class="fas ' + iconPct + '" style="font-size:1.5rem;color:' + colorPct + ';margin-left:auto;"></i>'
+                        + '</div>'
+                        + erroresHtml
+                        + '</div>',
+                    confirmButtonText: 'Entendido',
+                    confirmButtonColor: '#7c3aed',
+                    width: '560px',
+                    customClass: { popup: 'swal-ia-popup' }
+                });
+
+            } catch(e) {
+                Swal.close();
+                Swal.fire({ icon: 'error', title: 'Error de conexión', text: e.message });
+            }
         }
 
     </script>

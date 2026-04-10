@@ -1830,5 +1830,46 @@
         document.getElementById('modal-reporte').style.display = 'none';
     }
 </script>
+
+<script>
+/* ── Presencia: heartbeat cada 60 s mientras el formulario está abierto ── */
+(function() {
+    const nominaId = '{{ session["current_nomina_id"] }}';
+    const establec = '{{ establecimiento_nombre | replace("'", " ") }}';
+
+    function sendHeartbeat(accion) {
+        fetch('/api/presencia', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nomina_id: nominaId, establecimiento: establec, accion: accion })
+        }).catch(() => {});
+    }
+
+    function sendBeaconLogout() {
+        const data = JSON.stringify({ nomina_id: nominaId, establecimiento: establec, accion: 'logout' });
+        if (navigator.sendBeacon) {
+            const blob = new Blob([data], { type: 'application/json' });
+            navigator.sendBeacon('/api/presencia', blob);
+        } else {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/presencia', false);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            try { xhr.send(data); } catch(e) {}
+        }
+    }
+
+    sendHeartbeat('heartbeat');
+    const timer = setInterval(() => sendHeartbeat('heartbeat'), 60000);
+
+    window.addEventListener('beforeunload', () => {
+        clearInterval(timer);
+        sendBeaconLogout();
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        sendHeartbeat('heartbeat');
+    });
+})();
+</script>
 </body>
 </html>

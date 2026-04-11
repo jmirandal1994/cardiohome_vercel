@@ -6077,6 +6077,106 @@ Reglas:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+#  AGENTE IA — Revisión de nómina completa por la DOCTORA
+#  POST /api/doctora/revisar_nomina
+#  Body: { nomina_id }
+#  Solo barre alumnos evaluados (evaluado_flag=true, activo o extra)
+# ─────────────────────────────────────────────────────────────────────────────
+@app.route('/api/doctora/revisar_nomina', methods=['POST'])
+def doctora_revisar_nomina():
+    if 'usuario' not in session:
+        return jsonify({"success": False, "message": "No autorizado"}), 401
+    try:
+        data      = request.get_json() or {}
+        nomina_id = data.get('nomina_id')
+        if not nomina_id:
+            return jsonify({"success": False, "message": "Falta nomina_id"}), 400
+
+        res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            f"?nomina_id=eq.{nomina_id}"
+            f"&evaluado_flag=eq.true"
+            f"&estado_asistencia=in.(activo,extra)"
+            f"&select=id,nombre,rut,fecha_nacimiento,edad,nacionalidad,sexo,"
+            f"diagnostico_1,clasificacion_imc,altura,peso,imc,"
+            f"check_cesarea,check_atermino,check_vaginal,check_prematuro,"
+            f"check_acorde,check_retraso,check_retrasogeneralizado,"
+            f"check_esquemac,check_esquemai,check_alergiano,check_alergiasi,"
+            f"check_cirugiano,check_cirugiasi,check_visionsinalteracion,check_visionrefraccion,"
+            f"check_audicionnormal,check_hipoacusia,check_tapondecerumen,"
+            f"check_sinhallazgos,check_caries,check_apinamientodental,"
+            f"check_retenciondental,check_frenillolingual,check_hipertrofia,"
+            f"observacion_1,observacion_2,observacion_3,observacion_4,"
+            f"observacion_5,observacion_6,observacion_7,fecha_evaluacion"
+            f"&order=nombre.asc",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        alumnos = res.json() if res.ok else []
+
+        if not alumnos:
+            return jsonify({"success": True, "resultados": [], "total": 0})
+
+        def obs_no_informado(t): return 'NO INFORMADO' in (t or '').upper()
+
+        GRUPOS = [
+            ("Antecedentes Perinatales",   ["check_cesarea","check_atermino","check_vaginal","check_prematuro"],                                                              "observacion_1"),
+            ("Desarrollo Psicomotor (DSM)",["check_acorde","check_retraso","check_retrasogeneralizado"],                                                                      "observacion_2"),
+            ("Vacunas",                    ["check_esquemac","check_esquemai"],                                                                                               "observacion_3"),
+            ("Alergias",                   ["check_alergiano","check_alergiasi"],                                                                                             "observacion_3"),
+            ("Cirugías/Hospitalizaciones", ["check_cirugiano","check_cirugiasi"],                                                                                             "observacion_6"),
+            ("Visión",                     ["check_visionsinalteracion","check_visionrefraccion"],                                                                             "observacion_7"),
+            ("Audición",                   ["check_audicionnormal","check_hipoacusia","check_tapondecerumen"],                                                                 None),
+            ("Salud Bucodental",           ["check_sinhallazgos","check_caries","check_apinamientodental","check_retenciondental","check_frenillolingual","check_hipertrofia"], None),
+        ]
+
+        resultados = []
+        for a in alumnos:
+            errores = []
+
+            if not a.get('rut'):              errores.append({"campo": "RUT",              "descripcion": "RUT vacío",                        "tipo": "error"})
+            if not a.get('sexo'):             errores.append({"campo": "Sexo",             "descripcion": "Sexo no registrado",               "tipo": "error"})
+            if not a.get('nacionalidad'):     errores.append({"campo": "Nacionalidad",     "descripcion": "Nacionalidad vacía",               "tipo": "error"})
+            if not a.get('fecha_evaluacion'): errores.append({"campo": "Fecha evaluación", "descripcion": "Fecha de evaluación vacía",        "tipo": "error"})
+            if not a.get('diagnostico_1'):    errores.append({"campo": "Diagnóstico PIE",  "descripcion": "Diagnóstico PIE vacío",            "tipo": "error"})
+            if not a.get('altura'):           errores.append({"campo": "Altura",           "descripcion": "Altura no registrada",             "tipo": "advertencia"})
+            if not a.get('peso'):             errores.append({"campo": "Peso",             "descripcion": "Peso no registrado",               "tipo": "advertencia"})
+            if not a.get('imc'):              errores.append({"campo": "IMC",              "descripcion": "IMC no calculado",                 "tipo": "advertencia"})
+            if not a.get('clasificacion_imc'):errores.append({"campo": "Clasificación IMC","descripcion": "Clasificación IMC vacía",          "tipo": "advertencia"})
+
+            if a.get('fecha_nacimiento'):
+                try:
+                    from datetime import date as dt_date
+                    fn   = dt_date.fromisoformat(a['fecha_nacimiento'])
+                    diff = (dt_date.today() - fn).days / 365.25
+                    if diff < 0:
+                        errores.append({"campo": "Fecha de nacimiento", "descripcion": f"Fecha en el futuro ({a['fecha_nacimiento']})", "tipo": "error"})
+                    elif diff > 25:
+                        errores.append({"campo": "Fecha de nacimiento", "descripcion": f"Edad inusualmente alta ({diff:.1f} años)", "tipo": "advertencia"})
+                except:
+                    errores.append({"campo": "Fecha de nacimiento", "descripcion": "Formato de fecha inválido", "tipo": "error"})
+            else:
+                errores.append({"campo": "Fecha de nacimiento", "descripcion": "Fecha de nacimiento vacía", "tipo": "error"})
+
+            for grupo, campos, obs_key in GRUPOS:
+                if any(a.get(c) for c in campos):
+                    continue
+                if obs_key and obs_no_informado(a.get(obs_key)):
+                    continue
+                if obs_key:
+                    errores.append({"campo": grupo, "descripcion": "Ningún check marcado y observación sin 'NO INFORMADO'", "tipo": "error"})
+                else:
+                    errores.append({"campo": grupo, "descripcion": "Debe tener al menos un check marcado", "tipo": "error"})
+
+            resultados.append({"id": a.get('id'), "nombre": a.get('nombre', 'N/A'), "errores": errores})
+
+        return jsonify({"success": True, "resultados": resultados, "total": len(resultados)})
+
+    except Exception as e:
+        print(f"ERROR doctora_revisar_nomina: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 #  AGENTE IA — Barrido de nómina completa
 #  POST /api/agente/barrer_nomina
 #  Body: { nomina_id }

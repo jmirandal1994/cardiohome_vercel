@@ -2502,48 +2502,25 @@
                                 {% endfor %}
                             </select>
 
-                            <!-- ══ DOCTORAS ADICIONALES (NÓMINA COMPARTIDA) ══ -->
+                            <!-- ══ SEGUNDA DOCTORA (NÓMINA COMPARTIDA) ══ -->
                             <div style="background:#f0f7ff;border:1.5px dashed #93c5fd;border-radius:10px;padding:14px 16px;margin-top:2px;">
-                                <label style="font-weight:700;color:#1d4ed8;font-size:.88rem;display:flex;align-items:center;gap:7px;margin-bottom:10px;">
+                                <label for="doctora_id_2" style="font-weight:700;color:#1d4ed8;font-size:.88rem;display:flex;align-items:center;gap:7px;margin-bottom:8px;">
                                     <i class="fa-solid fa-user-group" style="font-size:.9rem;"></i>
-                                    Doctoras Adicionales (Nómina Compartida)
+                                    Segunda Doctora (Nómina Compartida)
                                     <span style="background:#dbeafe;color:#1e40af;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:4px;">OPCIONAL</span>
                                 </label>
-                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                                    <div>
-                                        <label style="font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:4px;">2ª Doctora</label>
-                                        <select id="doctora_id_2" name="doctora_id_2" class="form-input" style="border-color:#93c5fd;">
-                                            <option value="">— Sin asignar —</option>
-                                            {% for doc in doctoras %}
-                                                <option value="{{ doc.id }}">{{ doc.usuario }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label style="font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:4px;">3ª Doctora</label>
-                                        <select id="doctora_id_3" name="doctora_id_3" class="form-input" style="border-color:#93c5fd;">
-                                            <option value="">— Sin asignar —</option>
-                                            {% for doc in doctoras %}
-                                                <option value="{{ doc.id }}">{{ doc.usuario }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label style="font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:4px;">4ª Doctora</label>
-                                        <select id="doctora_id_4" name="doctora_id_4" class="form-input" style="border-color:#93c5fd;">
-                                            <option value="">— Sin asignar —</option>
-                                            {% for doc in doctoras %}
-                                                <option value="{{ doc.id }}">{{ doc.usuario }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                </div>
-                                <p style="font-size:.75rem;color:#3b82f6;margin-top:8px;margin-bottom:0;">
+                                <select id="doctora_id_2" name="doctora_id_2" class="form-input" style="border-color:#93c5fd;">
+                                    <option value="">— Sin segunda doctora —</option>
+                                    {% for doc in doctoras %}
+                                        <option value="{{ doc.id }}">{{ doc.usuario }}</option>
+                                    {% endfor %}
+                                </select>
+                                <p style="font-size:.75rem;color:#3b82f6;margin-top:6px;margin-bottom:0;">
                                     <i class="fas fa-info-circle"></i>
-                                    Todas las doctoras asignadas podrán acceder y evaluar esta nómina. Cada evaluación quedará registrada con el nombre de quien la realizó.
+                                    Ambas doctoras podrán acceder y evaluar esta nómina. Cada evaluación quedará registrada con el nombre de quien la realizó.
                                 </p>
                             </div>
-                            <!-- ══ FIN DOCTORAS ADICIONALES ══ -->
+                            <!-- ══ FIN SEGUNDA DOCTORA ══ -->
 
                             <label for="coord_general_id">Asignar a Coordinadora General (Opcional):</label>
                             <select id="coord_general_id" name="coord_general_id" class="form-input">
@@ -2570,31 +2547,15 @@
                             </select>
 
                             <div id="doctora_para_formulario_div" class="mb-4" style="display: none;">
-                                <label for="doctora_id_para_formulario" class="block text-gray-700 text-sm font-bold mb-2">Doctora para el Formulario PDF:</label>
+                                <label for="doctora_id_para_formulario" class="block text-gray-700 text-sm font-bold mb-2">Doctora para el Formulario (solo Neurología o informe):</label>
                                 <select name="doctora_id_para_formulario" id="doctora_id_para_formulario" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                                     <option value="">Seleccione una doctora...</option>
                                     {% for doc in doctoras %}
                                         <option value="{{ doc.id }}">{{ doc.usuario }}</option>
                                     {% endfor %}
                                 </select>
-                                <p class="text-xs text-gray-500 mt-1" id="doctora_formulario_hint">Si no se selecciona, se usará el formulario base.</p>
+                                <p class="text-xs text-gray-500 mt-1">Este campo es obligatorio si el tipo de nómina es "Neurología".</p>
                             </div>
-
-                            <!-- ══ FECHA DE EVALUACIÓN FIJA ══ -->
-                            <div style="background:#fefce8;border:1.5px dashed #fbbf24;border-radius:10px;padding:14px 16px;margin-top:2px;">
-                                <label style="font-weight:700;color:#92400e;font-size:.88rem;display:flex;align-items:center;gap:7px;margin-bottom:8px;">
-                                    <i class="fas fa-calendar-lock" style="font-size:.9rem;"></i>
-                                    Fecha de Evaluación Fija
-                                    <span style="background:#fef3c7;color:#92400e;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:4px;">OPCIONAL</span>
-                                </label>
-                                <input type="date" id="fecha_evaluacion_fija" name="fecha_evaluacion_fija"
-                                    class="form-input" style="border-color:#fbbf24;max-width:240px;">
-                                <p style="font-size:.75rem;color:#92400e;margin-top:6px;margin-bottom:0;">
-                                    <i class="fas fa-info-circle"></i>
-                                    Si se asigna, <strong>todos los alumnos</strong> de esta nómina quedarán con esta fecha de evaluación fija e inamovible, independientemente del día en que la doctora los marque como evaluados. Si no se asigna, la fecha se registra automáticamente el día que la doctora evalúa (comportamiento normal).
-                                </p>
-                            </div>
-                            <!-- ══ FIN FECHA FIJA ══ -->
                             
                             <label for="excel_nomina">Archivo Excel/CSV de la Nómina:</label>
                             <input type="file" id="excel_nomina" name="excel" accept=".xls,.xlsx,.csv" required class="form-input" />
@@ -7167,27 +7128,21 @@
                 });
             });
             
-            // 2. Lógica de tipo de nómina en carga (Admin)
+            // 2. Lógica de Neurología en carga de nómina (Admin)
             if (formTypeNominaSelect && doctoraParaFormularioDiv) {
                 
                 // --- FUNCIÓN DE VISIBILIDAD UNIFICADA ---
                 const toggleDoctoraFormulario = (selectedValue) => {
+                    // Los tipos que requieren la selección de doctora para el formulario
                     const requiresDoctoraForm = (selectedValue === 'neurologia' || selectedValue === 'informe_neurologico');
-                    const optionalDoctoraForm = (selectedValue === 'medicina_familiar');
-                    const hint = document.getElementById('doctora_formulario_hint');
 
                     if (requiresDoctoraForm) {
                         doctoraParaFormularioDiv.style.display = 'block';
                         document.getElementById('doctora_id_para_formulario').required = true;
-                        if (hint) hint.textContent = 'Este campo es obligatorio para Neurología.';
-                    } else if (optionalDoctoraForm) {
-                        doctoraParaFormularioDiv.style.display = 'block';
-                        document.getElementById('doctora_id_para_formulario').required = false;
-                        if (hint) hint.textContent = 'Opcional. Si se asigna, se usará el formulario PDF de esa doctora. Si no, se usa el base.';
                     } else {
                         doctoraParaFormularioDiv.style.display = 'none';
                         document.getElementById('doctora_id_para_formulario').required = false;
-                        document.getElementById('doctora_id_para_formulario').value = '';
+                        document.getElementById('doctora_id_para_formulario').value = ''; // Limpiar valor si se oculta
                     }
                 };
                 
@@ -7327,7 +7282,7 @@
             nominas.forEach(alumno => {
                 const isEval=alumno.descarga_habilitada;
                 const pdfBtn=isEval
-                    ?`<a href="/descargar_pdf_alumno/${alumno.id}" target="_blank" class="al-btn pdf"><i class="fas fa-file-pdf"></i> PDF</a>`
+                    ?`<a href="/descargar_pdf_alumno/${alumno.id}" class="al-btn pdf"><i class="fas fa-file-pdf"></i> PDF</a>`
                     :`<button class="al-btn pdf disabled" disabled><i class="fas fa-lock"></i> Pendiente</button>`;
                 const corrBtn=corrBloqueado
                     ?`<button class="al-btn corr locked" disabled><i class="fas fa-lock"></i> Bloqueado</button>`
@@ -7390,7 +7345,7 @@
                           + '</div>'
                         : '';
                     const pdfBtn = aprobada
-                        ? '<a href="/descargar_pdf_alumno/' + c.alumno_id + '" target="_blank"'
+                        ? '<a href="/descargar_pdf_alumno/' + c.alumno_id + '"'
                           + ' style="background:linear-gradient(135deg,#0f3460,#1a5276);color:white;border-radius:9px;padding:7px 14px;font-size:.78rem;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(15,52,96,.2);">'
                           + '<i class="fas fa-file-pdf"></i> Descargar PDF</a>'
                         : '';
@@ -10155,7 +10110,7 @@ async function cslepAbrirNomina(idx) {
     listEl.innerHTML = alumnos.map(a => {
         const eval_ = a.evaluado_flag;
         const pdfBtn = eval_
-            ? `<a href="/descargar_pdf_alumno/${a.id||''}" target="_blank" class="cslep-btn pdf">
+            ? `<a href="/descargar_pdf_alumno/${a.id||''}" class="cslep-btn pdf">
                    <i class="fas fa-file-pdf"></i> Descargar PDF
                </a>`
             : `<button class="cslep-btn pdf dis" disabled>

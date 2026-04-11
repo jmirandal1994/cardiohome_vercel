@@ -2295,6 +2295,8 @@ def dashboard():
                     'tipo_nomina': nom['tipo_nomina'],
                     'doctora_id': nom['doctora_id'],
                     'doctora_id_2': nom.get('doctora_id_2'),
+                    'doctora_id_3': nom.get('doctora_id_3'),
+                    'doctora_id_4': nom.get('doctora_id_4'),
                     'url_excel_original': nom['url_excel_original'],
                     'nombre_excel_original': nom['nombre_excel_original'],
                     'form_type': nom['form_type'],

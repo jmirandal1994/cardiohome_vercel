@@ -29,11 +29,10 @@ ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'xls', 'xlsx', 'csv'}
 # Asegúrate de que estos archivos PDF existan en la misma carpeta que app.py
 PDF_BASE_NEUROLOGIA = 'FORMULARIO TIPO NEUROLOGIA INFANTIL EDITABLE.pdf'
 PDF_BASE_FAMILIAR = 'formulario_familiar.pdf' 
-# 🟢 NUEVA CONSTANTE PARA EL INFORME NEUROLÓGICO
 PDF_BASE_INFORME_NEURO = 'INFORME_NEUROLOGICO_BASE.pdf'
-# Nuevo: Directorio para los PDFs de neurología específicos por doctora
-# Asegúrate de que esta carpeta exista en la misma ubicación que app.py
 PDF_BASES_NEUROLOGIA_DIR = 'pdf_bases_doctoras_neurologia'
+# Directorio para PDFs personalizados de medicina familiar por doctora
+PDF_BASES_FAMILIAR_DIR = 'pdf_bases_doctoras_familiar'
 
 
 # -------------------- Supabase Configuration --------------------
@@ -629,7 +628,7 @@ def relleno_formulario(nomina_id):
     url_nomina = (
         f"{SUPABASE_URL}/rest/v1/nominas_medicas"
         f"?id=eq.{nomina_id}"
-        f"&select=form_type,tipo_nomina,doctora_id,doctora_id_2,nombre_nomina,doctora_id_para_formulario,token_acceso"
+        f"&select=form_type,tipo_nomina,doctora_id,doctora_id_2,doctora_id_3,doctora_id_4,nombre_nomina,doctora_id_para_formulario,token_acceso,fecha_evaluacion_fija"
     )
     
     try:
@@ -653,7 +652,9 @@ def relleno_formulario(nomina_id):
         if user_role == 'doctora':
             doctora_1 = nomina.get('doctora_id')
             doctora_2 = nomina.get('doctora_id_2')
-            if user_id not in [doctora_1, doctora_2]:
+            doctora_3 = nomina.get('doctora_id_3')
+            doctora_4 = nomina.get('doctora_id_4')
+            if user_id not in [doctora_1, doctora_2, doctora_3, doctora_4]:
                 flash('Acceso no autorizado a esta nómina.', 'error')
                 return redirect(url_for('dashboard'))
 
@@ -735,6 +736,9 @@ def relleno_formulario(nomina_id):
 
 
         # 5. LÓGICA DE REDIRECCIÓN CLAVE (UNIFICADA POR form_type)
+        # Guardar fecha_evaluacion_fija en sesión para que marcar_evaluado la use
+        session['fecha_evaluacion_fija'] = nomina.get('fecha_evaluacion_fija') or None
+
         base_render_params = {
             'nomina_id': nomina_id,
             'establecimiento_nombre': nomina['nombre_nomina'],
@@ -745,6 +749,7 @@ def relleno_formulario(nomina_id):
             'doctora_nombre': doctora_nombre,
             'usuario': user_role,
             'token_acceso': nomina.get('token_acceso') or '',
+            'fecha_evaluacion_fija': nomina.get('fecha_evaluacion_fija') or None,
         }
         
         # Redirección basada en la columna 'form_type'
@@ -877,7 +882,11 @@ def generar_pdf():
         pdf_base_path = specific_pdf_path if os.path.exists(specific_pdf_path) else os.path.join(base_dir, PDF_BASE_INFORME_NEURO)
     
     elif form_type == 'medicina_familiar':
-        pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
+        # Soporte para PDF personalizado por doctora — fallback al base si no existe
+        specific_pdf_filename_fam = f"FORMULARIO_FAMILIAR_{doctora_id_para_pdf}.pdf"
+        full_pdf_bases_familiar_dir = os.path.join(base_dir, PDF_BASES_FAMILIAR_DIR)
+        specific_pdf_path_fam = os.path.join(full_pdf_bases_familiar_dir, specific_pdf_filename_fam)
+        pdf_base_path = specific_pdf_path_fam if os.path.exists(specific_pdf_path_fam) else os.path.join(base_dir, PDF_BASE_FAMILIAR)
 
     # --- 4. Lógica de Relleno y Generación ---
     try:
@@ -1142,15 +1151,33 @@ def marcar_evaluado():
         return jsonify({"success": False, "message": "Faltan datos obligatorios para marcar y guardar la evaluación."}), 400
 
     # --- 1. DATOS BASE (Comunes a todos los formularios) ---
+    # Si la nómina tiene fecha_evaluacion_fija → usarla siempre (inamovible)
+    # Si no → usar la que envía el formulario (comportamiento actual)
+    fecha_evaluacion_fija = session.get('fecha_evaluacion_fija')
+    fecha_evaluacion_final = fecha_evaluacion_fija if fecha_evaluacion_fija else get_form_field_value('fecha_evaluacion', request.form, return_none_if_empty=True)
+
+    # Si hay fecha fija, recalcular edad con esa fecha como referencia
+    edad_final = get_form_field_value('edad', request.form)
+    if fecha_evaluacion_fija:
+        fn_str = get_form_field_value('fecha_nacimiento', request.form, return_none_if_empty=True)
+        if fn_str:
+            try:
+                from datetime import date as _dt_date
+                fn_obj  = _dt_date.fromisoformat(fn_str)
+                ref_obj = _dt_date.fromisoformat(fecha_evaluacion_fija)
+                edad_final = calculate_age(fn_obj, fecha_ref=ref_obj)
+            except Exception:
+                pass  # si falla, deja la edad que vino del formulario
+
     update_data = {
         'fecha_relleno': str(date.today()),
         'doctora_evaluadora_id': doctora_id, 
         'nombre': nombre,
         'rut': rut, 
         'fecha_nacimiento': get_form_field_value('fecha_nacimiento', request.form, return_none_if_empty=True), 
-        'fecha_evaluacion': get_form_field_value('fecha_evaluacion', request.form, return_none_if_empty=True),
+        'fecha_evaluacion': fecha_evaluacion_final,
         'fecha_reevaluacion': get_form_field_value('fecha_reevaluacion', request.form, return_none_if_empty=True),
-        'edad': get_form_field_value('edad', request.form), 
+        'edad': edad_final, 
         'nacionalidad': get_form_field_value('nacionalidad', request.form), 
         'sexo': get_form_field_value('sexo', request.form),
         'evaluado_flag': True,
@@ -2249,7 +2276,7 @@ def dashboard():
         # NUEVO: Se agregó 'proyecto_id' al select
         url_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?select=id,nombre_nomina,tipo_nomina,doctora_id,doctora_id_2,url_excel_original,nombre_excel_original,form_type,doctora_id_para_formulario,nombre_colegio,coord_general_id,coord_escuela_id,proyecto_id"
+            f"?select=id,nombre_nomina,tipo_nomina,doctora_id,doctora_id_2,doctora_id_3,doctora_id_4,url_excel_original,nombre_excel_original,form_type,doctora_id_para_formulario,nombre_colegio,coord_general_id,coord_escuela_id,proyecto_id"
             f"&order=nombre_nomina.asc"
         )
         
@@ -2295,30 +2322,46 @@ def dashboard():
             admin_nominas_cargadas = []
 
     elif user_role == 'doctora':
-        # Doctora ve sus nóminas: como doctora principal Y como segunda doctora (nómina compartida)
+        # Doctora ve sus nóminas: como doctora principal Y como doctora 2, 3 o 4 (nómina compartida)
         url_nominas_principal = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?doctora_id=eq.{user_id}"
-            f"&select=id,nombre_nomina,tipo_nomina,form_type,doctora_id,doctora_id_2,doctora_id_para_formulario,nombre_colegio,proyecto_id"
+            f"&select=id,nombre_nomina,tipo_nomina,form_type,doctora_id,doctora_id_2,doctora_id_3,doctora_id_4,doctora_id_para_formulario,nombre_colegio,proyecto_id"
             f"&order=nombre_nomina.asc"
         )
-        url_nominas_compartida = (
+        url_nominas_compartida_2 = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?doctora_id_2=eq.{user_id}"
-            f"&select=id,nombre_nomina,tipo_nomina,form_type,doctora_id,doctora_id_2,doctora_id_para_formulario,nombre_colegio,proyecto_id"
+            f"&select=id,nombre_nomina,tipo_nomina,form_type,doctora_id,doctora_id_2,doctora_id_3,doctora_id_4,doctora_id_para_formulario,nombre_colegio,proyecto_id"
+            f"&order=nombre_nomina.asc"
+        )
+        url_nominas_compartida_3 = (
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?doctora_id_3=eq.{user_id}"
+            f"&select=id,nombre_nomina,tipo_nomina,form_type,doctora_id,doctora_id_2,doctora_id_3,doctora_id_4,doctora_id_para_formulario,nombre_colegio,proyecto_id"
+            f"&order=nombre_nomina.asc"
+        )
+        url_nominas_compartida_4 = (
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?doctora_id_4=eq.{user_id}"
+            f"&select=id,nombre_nomina,tipo_nomina,form_type,doctora_id,doctora_id_2,doctora_id_3,doctora_id_4,doctora_id_para_formulario,nombre_colegio,proyecto_id"
             f"&order=nombre_nomina.asc"
         )
         
         try:
-            res_n1 = requests.get(url_nominas_principal,  headers=SUPABASE_SERVICE_HEADERS)
-            res_n2 = requests.get(url_nominas_compartida, headers=SUPABASE_SERVICE_HEADERS)
+            res_n1 = requests.get(url_nominas_principal,    headers=SUPABASE_SERVICE_HEADERS)
+            res_n2 = requests.get(url_nominas_compartida_2, headers=SUPABASE_SERVICE_HEADERS)
+            res_n3 = requests.get(url_nominas_compartida_3, headers=SUPABASE_SERVICE_HEADERS)
+            res_n4 = requests.get(url_nominas_compartida_4, headers=SUPABASE_SERVICE_HEADERS)
             nominas_lista_1 = res_n1.json() if res_n1.ok else []
             nominas_lista_2 = res_n2.json() if res_n2.ok else []
+            nominas_lista_3 = res_n3.json() if res_n3.ok else []
+            nominas_lista_4 = res_n4.json() if res_n4.ok else []
 
             # Combinar sin duplicados
             ids_vistos = set()
             nominas_raw = []
-            for nom in nominas_lista_1 + nominas_lista_2:
+            for nom in nominas_lista_1 + nominas_lista_2 + nominas_lista_3 + nominas_lista_4:
                 if nom['id'] not in ids_vistos:
                     ids_vistos.add(nom['id'])
                     nominas_raw.append(nom)
@@ -2694,8 +2737,13 @@ def admin_cargar_nomina():
     doctora_id_para_formulario = request.form.get('doctora_id_para_formulario', '').strip()
     proyecto_id_from_form = request.form.get('proyecto_id', '').strip()
     
-    # Segunda doctora (nómina compartida — opcional)
+    # Doctoras adicionales (nómina compartida — opcionales)
     doctora_id_2_from_form = request.form.get('doctora_id_2', '').strip() or None
+    doctora_id_3_from_form = request.form.get('doctora_id_3', '').strip() or None
+    doctora_id_4_from_form = request.form.get('doctora_id_4', '').strip() or None
+
+    # Fecha de evaluación fija (opcional)
+    fecha_evaluacion_fija_from_form = request.form.get('fecha_evaluacion_fija', '').strip() or None
     
     # Obtener IDs de coordinación
     coord_general_id_from_form = request.form.get('coord_general_id', '').strip()
@@ -2765,14 +2813,18 @@ def admin_cargar_nomina():
         "nombre_nomina": nombre_colegio_o_establecimiento, 
         "tipo_nomina": tipo_nomina_raw, 
         "doctora_id": doctora_id_from_form,
-        "doctora_id_2": doctora_id_2_from_form,  # ← NÓMINA COMPARTIDA
+        "doctora_id_2": doctora_id_2_from_form,
+        "doctora_id_3": doctora_id_3_from_form,
+        "doctora_id_4": doctora_id_4_from_form,
         "url_excel_original": url_excel_publica,
         "nombre_excel_original": excel_filename,
         "form_type": form_type, 
-        "doctora_id_para_formulario": doctora_id_para_formulario if form_type == 'neurologia' else None,
+        # doctora_id_para_formulario aplica a neurología Y medicina_familiar
+        "doctora_id_para_formulario": doctora_id_para_formulario if form_type in ('neurologia', 'medicina_familiar', 'informe_neurologico') else None,
+        "fecha_evaluacion_fija": fecha_evaluacion_fija_from_form,
         
         # --- CAMPOS CLAVE 100% INTEGRADOS ---
-        "nombre_colegio": nombre_colegio_o_establecimiento, # <-- COLUMNA DE TEXTO EN NOMINAS_MEDICAS
+        "nombre_colegio": nombre_colegio_o_establecimiento,
         "coord_general_id": coord_general_id_db,
         "coord_escuela_id": coord_escuela_id_db,
         "token_acceso": token_generado,
@@ -3282,7 +3334,11 @@ def descargar_pdf_alumno(alumno_id):
                 pdf_base_path = os.path.join(base_dir, PDF_BASE_INFORME_NEURO)
                 
         elif form_type == 'medicina_familiar':
-            pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
+            # Soporte para PDF personalizado por doctora — fallback al base
+            specific_pdf_filename_fam = f"FORMULARIO_FAMILIAR_{doc_id_for_pdf}.pdf"
+            full_pdf_bases_familiar_dir = os.path.join(base_dir, PDF_BASES_FAMILIAR_DIR)
+            specific_pdf_path_fam = os.path.join(full_pdf_bases_familiar_dir, specific_pdf_filename_fam)
+            pdf_base_path = specific_pdf_path_fam if (doc_id_for_pdf and os.path.exists(specific_pdf_path_fam)) else os.path.join(base_dir, PDF_BASE_FAMILIAR)
         
         else:
             raise FileNotFoundError(f"Tipo de formulario no reconocido: {form_type}")
@@ -3912,7 +3968,10 @@ def generar_pdfs_visibles():
         else:
             pdf_base_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
     elif form_type == 'medicina_familiar':
-        pdf_base_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
+        specific_pdf_filename_fam = f"FORMULARIO_FAMILIAR_{doctora_id_para_formulario}.pdf"
+        full_pdf_bases_familiar_dir = os.path.join(base_dir, PDF_BASES_FAMILIAR_DIR)
+        specific_pdf_path_fam = os.path.join(full_pdf_bases_familiar_dir, specific_pdf_filename_fam)
+        pdf_base_path = specific_pdf_path_fam if (doctora_id_para_formulario and os.path.exists(specific_pdf_path_fam)) else os.path.join(base_dir, PDF_BASE_FAMILIAR)
     else:
         return jsonify({"success": False, "message": "Tipo de formulario no reconocido."}), 400
 

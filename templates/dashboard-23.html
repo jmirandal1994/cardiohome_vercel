@@ -3147,6 +3147,36 @@
                                         </div>
                                         {% endif %}
                                     {% endif %}
+                                    <!-- Tercera doctora (si existe) -->
+                                    {% if nomina.doctora_id_3 %}
+                                        {% set doctora_obj_3 = all_users_for_lookup | selectattr('id', 'equalto', nomina.doctora_id_3) | first %}
+                                        {% if doctora_obj_3 %}
+                                        <div style="display:flex;align-items:center;gap:7px;">
+                                            <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#6d28d9,#7c3aed);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                                <i class="fa-solid fa-user-doctor" style="color:white;font-size:.6rem;"></i>
+                                            </div>
+                                            <div style="display:flex;align-items:center;gap:4px;">
+                                                <span style="font-weight:600;color:#334155;font-size:.78rem;">{{ doctora_obj_3.nombre or doctora_obj_3.usuario }}</span>
+                                                <span style="background:#ede9fe;color:#6d28d9;font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:20px;border:1px solid #c4b5fd;">compartida</span>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    {% endif %}
+                                    <!-- Cuarta doctora (si existe) -->
+                                    {% if nomina.doctora_id_4 %}
+                                        {% set doctora_obj_4 = all_users_for_lookup | selectattr('id', 'equalto', nomina.doctora_id_4) | first %}
+                                        {% if doctora_obj_4 %}
+                                        <div style="display:flex;align-items:center;gap:7px;">
+                                            <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#065f46,#059669);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                                <i class="fa-solid fa-user-doctor" style="color:white;font-size:.6rem;"></i>
+                                            </div>
+                                            <div style="display:flex;align-items:center;gap:4px;">
+                                                <span style="font-weight:600;color:#334155;font-size:.78rem;">{{ doctora_obj_4.nombre or doctora_obj_4.usuario }}</span>
+                                                <span style="background:#d1fae5;color:#065f46;font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:20px;border:1px solid #6ee7b7;">compartida</span>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    {% endif %}
                                 </div>
                                 {% else %}
                                 <span style="color:#94a3b8;font-size:.78rem;">—</span>
@@ -5925,9 +5955,26 @@
                     <!-- Grid establecimientos -->
                     <div id="school-list-container">
                         {% if colegios_asignados %}
-                        <div class="colegios-premium-grid">
+
+                        <!-- Buscador de establecimientos -->
+                        <div style="margin-bottom:18px;">
+                            <div style="position:relative;max-width:420px;">
+                                <i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.85rem;pointer-events:none;"></i>
+                                <input type="text" id="buscador-colegios"
+                                    placeholder="Buscar establecimiento..."
+                                    oninput="filtrarColegios(this.value)"
+                                    style="width:100%;padding:11px 14px 11px 40px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.88rem;font-family:inherit;color:#334155;outline:none;background:white;box-shadow:0 1px 4px rgba(0,0,0,.06);transition:border-color .2s;"
+                                    onfocus="this.style.borderColor='#1c67a3'"
+                                    onblur="this.style.borderColor='#e2e8f0'">
+                            </div>
+                            <div id="colegios-no-resultados" style="display:none;padding:10px 4px;font-size:.82rem;color:#94a3b8;">
+                                <i class="fas fa-search" style="margin-right:5px;"></i> Sin resultados para esa búsqueda.
+                            </div>
+                        </div>
+
+                        <div class="colegios-premium-grid" id="colegios-grid">
                             {% for colegio in colegios_asignados %}
-                            <div class="col-card" onclick="showAccessForm('{{ colegio.id }}', '{{ colegio.nombre_colegio }}')">
+                            <div class="col-card" data-nombre="{{ colegio.nombre_colegio | lower }}" onclick="showAccessForm('{{ colegio.id }}', '{{ colegio.nombre_colegio }}')">
                                 <div class="col-card-bar"></div>
                                 <div class="col-card-body">
                                     <div class="col-building-wrap">
@@ -7252,6 +7299,20 @@
         }
 
         // ── SHOW ACCESS FORM ──────────────────────────────────────────────
+        function filtrarColegios(query) {
+            const q = query.toLowerCase().trim();
+            const cards = document.querySelectorAll('#colegios-grid .col-card');
+            let visibles = 0;
+            cards.forEach(function(card) {
+                const nombre = (card.dataset.nombre || '');
+                const match = !q || nombre.includes(q);
+                card.style.display = match ? '' : 'none';
+                if (match) visibles++;
+            });
+            const noRes = document.getElementById('colegios-no-resultados');
+            if (noRes) noRes.style.display = visibles === 0 && q ? 'block' : 'none';
+        }
+
         function showAccessForm(schoolId, schoolName) {
             const schoolList  = document.getElementById('school-list-container');
             const accessPanel = document.getElementById('access-modal-container');

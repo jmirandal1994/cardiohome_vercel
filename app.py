@@ -2802,6 +2802,15 @@ def admin_cargar_nomina():
     coord_general_id_db = coord_general_id_from_form if coord_general_id_from_form else None
     coord_escuela_id_db = coord_escuela_id_from_form if coord_escuela_id_from_form else None
 
+    # Limpiar todos los campos UUID — Supabase rechaza string vacío en columna UUID
+    def uuid_or_none(v): return v if v else None
+    doctora_id_from_form         = uuid_or_none(doctora_id_from_form)
+    doctora_id_2_from_form       = uuid_or_none(doctora_id_2_from_form)
+    doctora_id_3_from_form       = uuid_or_none(doctora_id_3_from_form)
+    doctora_id_4_from_form       = uuid_or_none(doctora_id_4_from_form)
+    doctora_id_para_formulario   = uuid_or_none(doctora_id_para_formulario)
+    proyecto_id_db               = uuid_or_none(proyecto_id_db)
+
     # GENERACIÓN DEL TOKEN DE ACCESO (solo si hay coordinador de escuela asignado)
     token_generado = None
     if coord_escuela_id_db: 

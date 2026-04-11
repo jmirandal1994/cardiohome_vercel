@@ -3335,6 +3335,7 @@ def descargar_pdf_alumno(alumno_id):
                 
         elif form_type == 'medicina_familiar':
             # Soporte para PDF personalizado por doctora — fallback al base
+            doc_id_for_pdf = doctora_id_para_formulario or doctora_evaluadora_id
             specific_pdf_filename_fam = f"FORMULARIO_FAMILIAR_{doc_id_for_pdf}.pdf"
             full_pdf_bases_familiar_dir = os.path.join(base_dir, PDF_BASES_FAMILIAR_DIR)
             specific_pdf_path_fam = os.path.join(full_pdf_bases_familiar_dir, specific_pdf_filename_fam)

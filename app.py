@@ -228,14 +228,26 @@ def permitido(filename):
     """Verifica si la extensión del archivo está permitida."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def calculate_age(birth_date):
-    """Calcula la edad en años y meses a partir de una fecha de nacimiento."""
-    today = date.today()
-    years = today.year - birth_date.year
-    months = today.month - birth_date.month
+def calculate_age(birth_date, fecha_ref=None):
+    """
+    Calcula la edad exacta en años y meses a partir de una fecha de nacimiento.
+    - fecha_ref: fecha de referencia (fecha_evaluacion). Si no se pasa, usa hoy.
+    - Considera el día del mes para no adelantar el cumpleaños.
+      Ej: nacido 30/04/2019, evaluado 04/04/2026 → 6 años con 11 meses (NO 7 años).
+    """
+    ref = fecha_ref if fecha_ref else date.today()
+    years  = ref.year  - birth_date.year
+    months = ref.month - birth_date.month
+    # Si el día de la ref es menor al día de nacimiento, el mes aún no se cumplió
+    if ref.day < birth_date.day:
+        months -= 1
     if months < 0:
-        years -= 1
+        years  -= 1
         months += 12
+    if years < 0:
+        return "0 meses"
+    if years == 0:
+        return f"{months} meses"
     return f"{years} años con {months} meses"
 
 def guess_gender(name):
@@ -683,7 +695,14 @@ def relleno_formulario(nomina_id):
 
             edad_calculada = "N/A"
             if fecha_nacimiento_obj:
-                edad_calculada = calculate_age(fecha_nacimiento_obj) 
+                # Usar fecha_evaluacion como referencia si existe, si no hoy
+                fecha_eval_obj = None
+                if est.get('fecha_evaluacion'):
+                    try:
+                        fecha_eval_obj = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').date()
+                    except:
+                        pass
+                edad_calculada = calculate_age(fecha_nacimiento_obj, fecha_ref=fecha_eval_obj)
 
             est['edad'] = edad_calculada
             # 💡 Aseguramos que el formato de fecha de nacimiento siempre esté disponible:
@@ -3293,7 +3312,8 @@ def descargar_pdf_alumno(alumno_id):
             return ""
 
         # --- Cálculo de campos y formato de fechas ---
-        edad = calculate_age(datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date()) if est.get('fecha_nacimiento') else 'N/A'
+        _fecha_eval_ref = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').date() if est.get('fecha_evaluacion') else None
+        edad = calculate_age(datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').date(), fecha_ref=_fecha_eval_ref) if est.get('fecha_nacimiento') else 'N/A'
         fecha_nac_formato = datetime.strptime(est['fecha_nacimiento'], '%Y-%m-%d').strftime('%d/%m/%Y') if est.get('fecha_nacimiento') else ''
         fecha_evaluacion_formatted = datetime.strptime(est['fecha_evaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y') if est.get('fecha_evaluacion') else ''
         fecha_reeval_pdf = datetime.strptime(est['fecha_reevaluacion'], '%Y-%m-%d').strftime('%d/%m/%Y') if est.get('fecha_reevaluacion') else ''
@@ -5993,107 +6013,6 @@ Reglas:
         return jsonify({"success": False, "message": f"Error parseando respuesta del agente: {e}"}), 500
     except Exception as e:
         print(f"ERROR agente_analizar_correccion: {e}")
-        return jsonify({"success": False, "message": str(e)}), 500
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  AGENTE IA — Revisión de nómina completa por la DOCTORA
-#  POST /api/doctora/revisar_nomina
-#  Body: { nomina_id }
-#  Solo barre alumnos evaluados (evaluado_flag=true, activo o extra)
-# ─────────────────────────────────────────────────────────────────────────────
-@app.route('/api/doctora/revisar_nomina', methods=['POST'])
-def doctora_revisar_nomina():
-    if 'usuario' not in session:
-        return jsonify({"success": False, "message": "No autorizado"}), 401
-    try:
-        data      = request.get_json() or {}
-        nomina_id = data.get('nomina_id')
-        if not nomina_id:
-            return jsonify({"success": False, "message": "Falta nomina_id"}), 400
-
-        # Traer solo los evaluados activos/extra
-        res = requests.get(
-            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-            f"?nomina_id=eq.{nomina_id}"
-            f"&evaluado_flag=eq.true"
-            f"&estado_asistencia=in.(activo,extra)"
-            f"&select=id,nombre,rut,fecha_nacimiento,edad,nacionalidad,sexo,"
-            f"diagnostico_1,clasificacion_imc,altura,peso,imc,"
-            f"check_cesarea,check_atermino,check_vaginal,check_prematuro,"
-            f"check_acorde,check_retraso,check_retrasogeneralizado,"
-            f"check_esquemac,check_esquemai,check_alergiano,check_alergiasi,"
-            f"check_cirugiano,check_cirugiasi,check_visionsinalteracion,check_visionrefraccion,"
-            f"check_audicionnormal,check_hipoacusia,check_tapondecerumen,"
-            f"check_sinhallazgos,check_caries,check_apinamientodental,"
-            f"check_retenciondental,check_frenillolingual,check_hipertrofia,"
-            f"observacion_1,observacion_2,observacion_3,observacion_4,"
-            f"observacion_5,observacion_6,observacion_7,fecha_evaluacion"
-            f"&order=nombre.asc",
-            headers=SUPABASE_SERVICE_HEADERS
-        )
-        alumnos = res.json() if res.ok else []
-
-        if not alumnos:
-            return jsonify({"success": True, "resultados": [], "total": 0})
-
-        def obs_no_informado(t): return 'NO INFORMADO' in (t or '').upper()
-
-        GRUPOS = [
-            ("Antecedentes Perinatales",   ["check_cesarea","check_atermino","check_vaginal","check_prematuro"],                                                              "observacion_1"),
-            ("Desarrollo Psicomotor (DSM)",["check_acorde","check_retraso","check_retrasogeneralizado"],                                                                      "observacion_2"),
-            ("Vacunas",                    ["check_esquemac","check_esquemai"],                                                                                               "observacion_3"),
-            ("Alergias",                   ["check_alergiano","check_alergiasi"],                                                                                             "observacion_3"),
-            ("Cirugías/Hospitalizaciones", ["check_cirugiano","check_cirugiasi"],                                                                                             "observacion_6"),
-            ("Visión",                     ["check_visionsinalteracion","check_visionrefraccion"],                                                                             "observacion_7"),
-            ("Audición",                   ["check_audicionnormal","check_hipoacusia","check_tapondecerumen"],                                                                 None),
-            ("Salud Bucodental",           ["check_sinhallazgos","check_caries","check_apinamientodental","check_retenciondental","check_frenillolingual","check_hipertrofia"], None),
-        ]
-
-        resultados = []
-        for a in alumnos:
-            errores = []
-
-            if not a.get('rut'):              errores.append({"campo": "RUT",              "descripcion": "RUT vacío",                         "tipo": "error"})
-            if not a.get('sexo'):             errores.append({"campo": "Sexo",             "descripcion": "Sexo no registrado",                "tipo": "error"})
-            if not a.get('nacionalidad'):     errores.append({"campo": "Nacionalidad",     "descripcion": "Nacionalidad vacía",                "tipo": "error"})
-            if not a.get('fecha_evaluacion'): errores.append({"campo": "Fecha evaluación", "descripcion": "Fecha de evaluación vacía",         "tipo": "error"})
-            if not a.get('diagnostico_1'):    errores.append({"campo": "Diagnóstico PIE",  "descripcion": "Diagnóstico PIE vacío",             "tipo": "error"})
-            if not a.get('altura'):           errores.append({"campo": "Altura",           "descripcion": "Altura no registrada",             "tipo": "advertencia"})
-            if not a.get('peso'):             errores.append({"campo": "Peso",             "descripcion": "Peso no registrado",               "tipo": "advertencia"})
-            if not a.get('imc'):              errores.append({"campo": "IMC",              "descripcion": "IMC no calculado",                 "tipo": "advertencia"})
-            if not a.get('clasificacion_imc'):errores.append({"campo": "Clasificación IMC","descripcion": "Clasificación IMC vacía",          "tipo": "advertencia"})
-
-            if a.get('fecha_nacimiento'):
-                try:
-                    from datetime import date as dt_date
-                    fn   = dt_date.fromisoformat(a['fecha_nacimiento'])
-                    diff = (dt_date.today() - fn).days / 365.25
-                    if diff < 0:
-                        errores.append({"campo": "Fecha de nacimiento", "descripcion": f"Fecha en el futuro ({a['fecha_nacimiento']})", "tipo": "error"})
-                    elif diff > 25:
-                        errores.append({"campo": "Fecha de nacimiento", "descripcion": f"Edad inusualmente alta ({diff:.1f} años)", "tipo": "advertencia"})
-                except:
-                    errores.append({"campo": "Fecha de nacimiento", "descripcion": "Formato de fecha inválido", "tipo": "error"})
-            else:
-                errores.append({"campo": "Fecha de nacimiento", "descripcion": "Fecha de nacimiento vacía", "tipo": "error"})
-
-            for grupo, campos, obs_key in GRUPOS:
-                if any(a.get(c) for c in campos):
-                    continue
-                if obs_key and obs_no_informado(a.get(obs_key)):
-                    continue
-                if obs_key:
-                    errores.append({"campo": grupo, "descripcion": "Ningún check marcado y observación sin 'NO INFORMADO'", "tipo": "error"})
-                else:
-                    errores.append({"campo": grupo, "descripcion": "Debe tener al menos un check marcado", "tipo": "error"})
-
-            resultados.append({"id": a.get('id'), "nombre": a.get('nombre', 'N/A'), "errores": errores})
-
-        return jsonify({"success": True, "resultados": resultados, "total": len(resultados)})
-
-    except Exception as e:
-        print(f"ERROR doctora_revisar_nomina: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
 

@@ -1747,8 +1747,22 @@
 </select>
                             
 {# NOMBRE DE CAMPO: Fecha evaluación (PDF) -> fecha_evaluacion (HTML) #}
-<label for="fecha_evaluacion_{{ est.id }}">Fecha Evaluación:</label>
-<input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}" value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}" required onchange="setFechaReevaluacion(this.form.querySelector('select[name=\'fecha_reevaluacion_select\']')); updatePreview(this.form)">                            
+<label for="fecha_evaluacion_{{ est.id }}">Fecha Evaluación:
+    {% if fecha_evaluacion_fija %}
+    <span style="background:#fef3c7;color:#92400e;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:6px;border:1px solid #fbbf24;">
+        <i class="fas fa-lock" style="font-size:.65rem;"></i> Fecha fija — no editable
+    </span>
+    {% endif %}
+</label>
+{% if fecha_evaluacion_fija %}
+<input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}"
+    value="{{ fecha_evaluacion_fija }}"
+    readonly
+    style="background:#fef9c3;border-color:#fbbf24;cursor:not-allowed;color:#92400e;font-weight:600;"
+    title="La fecha de evaluación fue fijada al crear la nómina y no puede modificarse.">
+{% else %}
+<input type="date" name="fecha_evaluacion" id="fecha_evaluacion_{{ est.id }}" value="{{ est.fecha_evaluacion if est.fecha_evaluacion is not none else '' }}" required onchange="setFechaReevaluacion(this.form.querySelector('select[name=\'fecha_reevaluacion_select\']')); updatePreview(this.form)">
+{% endif %}
 
                                                         {# Plazo de reevaluación (Solo ayuda a calcular la fecha) #}
                             <label for="fecha_reevaluacion_select_{{ est.id }}">Plazo de Reevaluación (años):</label>

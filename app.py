@@ -564,9 +564,13 @@ def aplicar_autosize_campos(writer):
 
 def aplicar_overlay_texto_largo(pdf_bytes, campos_valores):
     """
-    Para formularios FAMILIARES: overlay solo de campos largos usando PyPDF2.
-    Lee coords del PDF ya rellenado, dibuja texto largo con ReportLab.
-    Funciona bien para familiar porque sus campos NO tienen ReadOnly.
+    Solución definitiva para visores web (Chrome, Edge, iOS):
+    1. Lee el PDF ya rellenado con PyPDF2
+    2. VACIA el valor visible de los campos largos en AcroForm (evita texto doble)
+    3. Obtiene las coordenadas exactas de cada campo largo
+    4. Dibuja el texto con reportlab como gráfico fijo en esas coordenadas
+    5. Fusiona el overlay con el PDF
+    Si reportlab no está disponible, retorna el PDF sin cambios.
     """
     if not REPORTLAB_OK:
         return pdf_bytes
@@ -578,9 +582,11 @@ def aplicar_overlay_texto_largo(pdf_bytes, campos_valores):
         'observacion_4', 'observacion_5', 'observacion_6', 'observacion_7',
     }
 
-    def _get_rects(reader):
+    def _get_rects_y_limpiar(reader):
+        """Lee coords de campos largos y vacía su valor visible en AcroForm."""
         rects = {}
         try:
+            from pypdf.generic import create_string_object
             root = reader.trailer["/Root"].get_object()
             acro = root.get("/AcroForm")
             if not acro:
@@ -589,9 +595,10 @@ def aplicar_overlay_texto_largo(pdf_bytes, campos_valores):
 
             def _proc(fref):
                 try:
-                    f = fref.get_object() if hasattr(fref, 'get_object') else fref
+                    f = fref.get_object()
                     nombre = str(f.get("/T", "")).lower().strip()
                     if f.get("/FT") == "/Tx" and any(c in nombre for c in CAMPOS_LARGOS):
+                        # Buscar valor en campos_valores
                         valor = None
                         for k, v in campos_valores.items():
                             if k.lower() == nombre:
@@ -608,11 +615,19 @@ def aplicar_overlay_texto_largo(pdf_bytes, campos_valores):
                                     float(rect[2]), float(rect[3]),
                                     str(valor).strip()
                                 )
-                    kids = f.get("/Kids")
-                    if kids:
-                        for kid in kids: _proc(kid)
+                            # Vaciar valor visible del campo para evitar texto doble
+                            try:
+                                from pypdf.generic import create_string_object
+                                f["/V"] = create_string_object("")
+                                if "/AP" in f:
+                                    del f["/AP"]
+                            except Exception:
+                                pass
+                    if "/Kids" in f:
+                        for kid in f["/Kids"]: _proc(kid)
                 except Exception:
                     pass
+
             for fr in ao.get("/Fields", []):
                 _proc(fr)
         except Exception as ex:
@@ -620,6 +635,7 @@ def aplicar_overlay_texto_largo(pdf_bytes, campos_valores):
         return rects
 
     def _crear_overlay(rects, pw, ph):
+        """Crea página PDF con texto dibujado en posiciones exactas."""
         buf = io.BytesIO()
         c = rl_canvas.Canvas(buf, pagesize=(pw, ph))
         for nombre, (x0, y0, x1, y1, texto) in rects.items():
@@ -632,6 +648,7 @@ def aplicar_overlay_texto_largo(pdf_bytes, campos_valores):
                     lines.append('')
                 else:
                     lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
+            # Reducir fuente si no cabe verticalmente
             while lines and len(lines) * lh > h - 2*margin and fs > 6:
                 fs -= 0.5; lh = fs * 1.35
                 lines = []
@@ -657,24 +674,34 @@ def aplicar_overlay_texto_largo(pdf_bytes, campos_valores):
         return buf
 
     try:
-        reader = PdfReader(io.BytesIO(pdf_bytes))
-        rects = _get_rects(reader)
+        from pypdf import PdfReader as _PR, PdfWriter as _PW
+        reader = _PR(io.BytesIO(pdf_bytes))
+
+        # Obtener coordenadas Y limpiar valores visibles de campos largos
+        rects = _get_rects_y_limpiar(reader)
         if not rects:
             return pdf_bytes
+
         pg0 = reader.pages[0]
         pw, ph = float(pg0.mediabox.width), float(pg0.mediabox.height)
+
+        # Crear overlay con el texto
         ov_buf = _crear_overlay(rects, pw, ph)
-        ov_reader = PdfReader(ov_buf)
-        writer_out = PdfWriter()
+        ov_reader = _PR(ov_buf)
+
+        # Fusionar: primero el overlay (texto limpio), luego el resto del PDF
+        writer_out = _PW()
         for i, pg in enumerate(reader.pages):
             if i == 0 and ov_reader.pages:
                 pg.merge_page(ov_reader.pages[0])
             writer_out.add_page(pg)
+
         out = io.BytesIO()
         writer_out.write(out)
         out.seek(0)
-        print("✅ Overlay familiar aplicado.")
+        print("✅ Overlay de texto aplicado — compatible con visores web.")
         return out.read()
+
     except Exception as e:
         print(f"⚠️  overlay: {e} — PDF sin overlay.")
         return pdf_bytes
@@ -682,36 +709,36 @@ def aplicar_overlay_texto_largo(pdf_bytes, campos_valores):
 
 def generar_pdf_neurologia_overlay(pdf_base_path, campos):
     """
-    Para formularios de NEUROLOGÍA únicamente.
-    Usa ReportLab con coordenadas hardcodeadas del PDF base de neurología
-    para dibujar TODOS los campos (el PDF base tiene ReadOnly en todos los campos,
-    por eso PyPDF2 no puede escribir directamente).
-    Coordenadas verificadas inspeccionando el PDF base real.
+    Exclusivo para NEUROLOGÍA.
+    Usa ReportLab con coordenadas hardcodeadas del PDF base neurología
+    para dibujar todos los campos (el PDF base tiene ReadOnly en todos sus campos,
+    por lo que PyPDF2 no puede escribir en ellos directamente).
+    Coordenadas verificadas con inspección directa del AcroForm real.
     """
     if not REPORTLAB_OK:
         return None
 
-    # Coordenadas exactas del PDF base neurología (x0, y0, x1, y1)
-    # Verificadas con inspección directa del AcroForm
+    # Coordenadas exactas verificadas del PDF base neurología
     COORDS_NEURO = {
-        'nombre':            (43.0,  714.1, 346.4, 730.6),
-        'rut':               (454.9, 708.8, 553.7, 731.3),
-        'fecha_nacimiento':  (40.6,  686.4, 142.8, 708.4),
-        'edad':              (143.9, 685.7, 245.5, 707.2),
-        'nacionalidad':      (247.0, 687.7, 348.4, 708.5),
-        'fecha_evaluacion':  (249.0, 568.8, 399.7, 589.7),
-        'fecha_reevaluacion':(403.1, 568.2, 553.7, 591.0),
-        'sexo_f':            (360.7, 716.5, 379.0, 731.7),
-        'sexo_m':            (406.5, 715.2, 426.2, 731.9),
-        'diagnostico_1':     (393.4, 649.7, 565.0, 671.7),
-        'diagnostico_2':     (41.9,  294.3, 520.5, 316.3),
-        'estado_general':    (43.2,  359.7, 557.1, 514.6),
-        'derivaciones':      (41.9,  122.8, 552.5, 247.6),
+        'nombre':             (43.0,  714.1, 346.4, 730.6),
+        'rut':                (454.9, 708.8, 553.7, 731.3),
+        'fecha_nacimiento':   (40.6,  686.4, 142.8, 708.4),
+        'edad':               (143.9, 685.7, 245.5, 707.2),
+        'nacionalidad':       (247.0, 687.7, 348.4, 708.5),
+        'fecha_evaluacion':   (249.0, 568.8, 399.7, 589.7),
+        'fecha_reevaluacion': (403.1, 568.2, 553.7, 591.0),
+        # Checkboxes sexo — coordenadas exactas
+        'sexo_f':             (360.7, 716.5, 379.0, 731.7),
+        'sexo_m':             (406.5, 715.2, 426.2, 731.9),
+        # Diagnóstico corto (motivo de consulta arriba)
+        'diagnostico_1':      (393.4, 652.0, 565.0, 669.0),  # bajado 3pt para centrar mejor
+        # Campos largos multilinea
+        'diagnostico_2':      (41.9,  294.3, 520.5, 316.3),
+        'estado_general':     (43.2,  359.7, 557.1, 514.6),
+        'derivaciones':       (41.9,  122.8, 552.5, 247.6),
     }
 
-    CAMPOS_MULTILINEA = {
-        'estado_general', 'derivaciones', 'diagnostico_1', 'diagnostico_2',
-    }
+    CAMPOS_MULTILINEA = {'estado_general', 'derivaciones', 'diagnostico_2'}
 
     try:
         reader_base = PdfReader(pdf_base_path)
@@ -723,6 +750,7 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
         c = rl_canvas.Canvas(ov_buf, pagesize=(pw, ph))
 
         for campo, (x0, y0, x1, y1) in COORDS_NEURO.items():
+            # Normalizar sexo a mayúsculas para comparación segura
             valor = campos.get(campo, '')
             if not valor or not str(valor).strip():
                 continue
@@ -735,13 +763,14 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
             es_multilinea = campo in CAMPOS_MULTILINEA
 
             if es_checkbox:
-                # X centrada horizontal y verticalmente, negrita
-                fs = 10.0
-                c.setFont("Helvetica-Bold", fs)
+                # X en negrita, centrada exactamente en el casillero
+                fs = 11.0
+                font = "Helvetica-Bold"
+                c.setFont(font, fs)
                 c.setFillColorRGB(0, 0, 0)
-                tw = c.stringWidth(texto, "Helvetica-Bold", fs)
+                tw = c.stringWidth(texto, font, fs)
                 x_pos = x0 + (w - tw) / 2
-                y_pos = y0 + (h - fs) / 2
+                y_pos = y0 + (h - fs) / 2 + 1  # +1 ajuste visual
                 try:
                     c.drawString(x_pos, y_pos, texto)
                 except Exception:
@@ -757,7 +786,8 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                     else:
                         lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
                 while lines and len(lines) * lh > h - 2*margin and fs > 6:
-                    fs -= 0.5; lh = fs * 1.35
+                    fs -= 0.5
+                    lh = fs * 1.35
                     lines = []
                     for par in texto.splitlines():
                         if not par.strip():
@@ -778,11 +808,12 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                     y_pos -= lh
 
             else:
-                # Campo corto: texto en una línea, centrado verticalmente
-                fs = 9.0
-                while fs > 6 and c.stringWidth(texto, "Helvetica", fs) > w - 2*margin:
+                # Campo corto: fuente 10, centrado verticalmente, reducción si no cabe
+                fs = 10.0
+                font = "Helvetica"
+                while fs > 6 and c.stringWidth(texto, font, fs) > w - 2*margin:
                     fs -= 0.5
-                c.setFont("Helvetica", fs)
+                c.setFont(font, fs)
                 c.setFillColorRGB(0, 0, 0)
                 y_pos = y0 + (h - fs) / 2
                 try:
@@ -823,7 +854,7 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                         ])
                 pdf.save(dst)
             dst.seek(0)
-            print("✅ PDF neurología generado con overlay + flatten.")
+            print("✅ PDF neurología listo con overlay + flatten.")
             return dst.read()
         except Exception as e:
             print(f"⚠️  flatten: {e} — retornando sin flatten.")
@@ -3665,9 +3696,11 @@ def descargar_pdf_alumno(alumno_id):
         print(f"DEBUG: Usando PDF Base Path: {pdf_base_path}") 
 
 
-        # 5. INICIALIZAR READER/WRITER (solo para flujo familiar)
-        reader = PdfReader(pdf_base_path)
+        # 5. INICIALIZAR EL RELLENADOR DE PDF
+        reader = PdfReader(pdf_base_path) 
         writer = PdfWriter()
+        
+        # Iterar sobre las páginas
         for page in reader.pages:
             writer.add_page(page)
 
@@ -3693,6 +3726,7 @@ def descargar_pdf_alumno(alumno_id):
         
         if form_type == 'neurologia':
             def _sg(f): v=est.get(f); return '' if v is None or str(v).strip() in ('None','null','') else str(v).strip()
+            _sexo = (est.get('sexo') or '').strip().upper()
             campos = {
                 "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato,
                 "nacionalidad": _sg('nacionalidad'), "edad": edad,
@@ -3700,8 +3734,8 @@ def descargar_pdf_alumno(alumno_id):
                 "estado_general": wrap_texto_pdf(_sg('estado_general')),
                 "derivaciones":   wrap_texto_pdf(_sg('derivaciones')),
                 "fecha_evaluacion": fecha_evaluacion_formatted, "fecha_reevaluacion": fecha_reeval_pdf,
-                "sexo_f": "X" if est.get('sexo') == "F" else "",
-                "sexo_m": "X" if est.get('sexo') == "M" else "",
+                "sexo_f": "X" if _sexo == "F" else "",
+                "sexo_m": "X" if _sexo == "M" else "",
             }
 
         elif form_type == 'informe_neurologico':
@@ -3779,9 +3813,9 @@ def descargar_pdf_alumno(alumno_id):
 
 
         # 7. Generar PDF final
-        if form_type == 'neurologia' or form_type == 'informe_neurologico':
-            # NEUROLOGÍA: usa ReportLab con coordenadas hardcodeadas
-            # (el PDF base neurología tiene todos los campos como ReadOnly)
+        if form_type in ('neurologia', 'informe_neurologico'):
+            # NEUROLOGÍA: ReportLab con coordenadas hardcodeadas
+            # (PDF base tiene todos los campos ReadOnly — PyPDF2 no puede escribir en ellos)
             pdf_final = generar_pdf_neurologia_overlay(pdf_base_path, campos)
             if not pdf_final:
                 flash("❌ Error al generar el PDF de neurología.", 'error')

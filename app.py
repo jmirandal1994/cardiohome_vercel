@@ -554,6 +554,122 @@ def aplicar_autosize_campos(writer):
 
 
 
+
+def generar_apariencias_campos(writer, campos_valores):
+    """
+    Genera appearance streams (/AP) para campos de texto largo.
+    El texto queda visualmente incrustado — se ve igual en Chrome, Edge, iOS.
+    campos_valores: dict {nombre_campo: texto}
+    """
+    import textwrap
+    from PyPDF2.generic import (
+        DecodedStreamObject, DictionaryObject, ArrayObject,
+        NameObject, NumberObject
+    )
+
+    FONT_SIZE   = 9
+    LINE_HEIGHT = FONT_SIZE * 1.35
+    MARGIN      = 3
+
+    CAMPOS_LARGOS = {
+        'indicaciones', 'derivaciones', 'estado_general', 'diagnostico',
+        'diagnostico_1', 'diagnostico_2', 'observaciones', 'observacion_neurologia',
+        'motivo_consulta', 'observacion_1', 'observacion_2', 'observacion_3',
+        'observacion_4', 'observacion_5', 'observacion_6', 'observacion_7',
+    }
+
+    def _stream(valor, rect_obj):
+        try:
+            x0,y0,x1,y1 = [float(rect_obj[i]) for i in range(4)]
+        except Exception:
+            return None
+        w, h = x1-x0, y1-y0
+        if w<=0 or h<=0: return None
+
+        chars_line = max(10, int((w-2*MARGIN)/(FONT_SIZE*0.52)))
+        lines = []
+        for par in (valor or '').splitlines():
+            if not par.strip():
+                lines.append('')
+            else:
+                lines.extend(textwrap.wrap(par, width=chars_line, break_long_words=True) or [''])
+
+        fs, lh = FONT_SIZE, LINE_HEIGHT
+        while len(lines)*lh > h-2*MARGIN and fs > 5:
+            fs -= 0.5; lh = fs*1.35
+
+        ops = [
+            b"/Tx BMC", b"q",
+            ("0 0 %.2f %.2f re W n" % (w,h)).encode(),
+            b"BT", ("/Helv %.1f Tf" % fs).encode(), b"0 g",
+        ]
+        first = True
+        for i, line in enumerate(lines):
+            y_pos = h - MARGIN - fs - i*lh
+            if y_pos < MARGIN: break
+            safe = line.replace('\\','\\\\').replace('(','\\(').replace(')','\\)')
+            sb = safe.encode('latin-1', errors='replace')
+            if first:
+                ops.append(("%.2f %.2f Td" % (MARGIN, y_pos)).encode()); first=False
+            else:
+                ops.append(("0 %.2f Td" % (-lh,)).encode())
+            ops.append(b"(" + sb + b") Tj")
+        ops += [b"ET", b"Q", b"EMC"]
+        return b"\n".join(ops)
+
+    def _proc(field_ref):
+        try:
+            field = field_ref.get_object()
+            if field.get("/FT") == "/Tx":
+                nombre = str(field.get("/T","")).lower()
+                if any(c in nombre for c in CAMPOS_LARGOS):
+                    valor = None
+                    for k,v in campos_valores.items():
+                        if k.lower() == nombre or nombre.startswith(k.lower()):
+                            valor = v; break
+                    if valor:
+                        rect = field.get("/Rect")
+                        if rect:
+                            sc = _stream(valor, rect)
+                            if sc:
+                                ap_obj = DecodedStreamObject()
+                                ap_obj._data = sc
+                                ap_obj.update({
+                                    NameObject("/Type"):    NameObject("/XObject"),
+                                    NameObject("/Subtype"): NameObject("/Form"),
+                                    NameObject("/BBox"): ArrayObject([
+                                        NumberObject(0), NumberObject(0),
+                                        NumberObject(float(rect[2])-float(rect[0])),
+                                        NumberObject(float(rect[3])-float(rect[1]))
+                                    ]),
+                                    NameObject("/Resources"): DictionaryObject({
+                                        NameObject("/Font"): DictionaryObject({
+                                            NameObject("/Helv"): writer._add_object(DictionaryObject({
+                                                NameObject("/Type"):     NameObject("/Font"),
+                                                NameObject("/Subtype"):  NameObject("/Type1"),
+                                                NameObject("/BaseFont"): NameObject("/Helvetica"),
+                                            }))
+                                        })
+                                    }),
+                                })
+                                ap_ref = writer._add_object(ap_obj)
+                                field.update({NameObject("/AP"): DictionaryObject({NameObject("/N"): ap_ref})})
+            if "/Kids" in field:
+                for kid in field["/Kids"]: _proc(kid)
+        except Exception as ex:
+            print(f"  [ap] {ex}")
+
+    try:
+        acroform = writer._root_object.get("/AcroForm")
+        if not acroform: return
+        ao = acroform.get_object() if hasattr(acroform,'get_object') else acroform
+        for f in ao.get("/Fields",[]): _proc(f)
+        print("✅ AP streams generados para visores web.")
+    except Exception as e:
+        print(f"⚠️  generar_apariencias_campos: {e}")
+
+
+
 def wrap_texto_pdf(texto, chars_por_linea=85):
     """
     Inserta saltos de linea automaticos en texto largo para que no se corte
@@ -985,8 +1101,9 @@ def generar_pdf():
 
         writer._root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
 
-        # Auto-size: evita que texto largo se corte o salga del campo
+        # Auto-size y apariencias visuales para compatibilidad con visores web
         aplicar_autosize_campos(writer)
+        generar_apariencias_campos(writer, campos)
         
         output = io.BytesIO()
         writer.write(output)
@@ -2295,8 +2412,6 @@ def dashboard():
                     'tipo_nomina': nom['tipo_nomina'],
                     'doctora_id': nom['doctora_id'],
                     'doctora_id_2': nom.get('doctora_id_2'),
-                    'doctora_id_3': nom.get('doctora_id_3'),
-                    'doctora_id_4': nom.get('doctora_id_4'),
                     'url_excel_original': nom['url_excel_original'],
                     'nombre_excel_original': nom['nombre_excel_original'],
                     'form_type': nom['form_type'],
@@ -3490,8 +3605,9 @@ def descargar_pdf_alumno(alumno_id):
             NameObject("/NeedAppearances"): BooleanObject(True)
         })
 
-        # Auto-size: evita que texto largo se corte o salga del campo
+        # Auto-size y apariencias visuales para compatibilidad con visores web
         aplicar_autosize_campos(writer)
+        generar_apariencias_campos(writer, campos)
         
         output = io.BytesIO()
         writer.write(output)
@@ -4096,8 +4212,9 @@ def generar_pdfs_visibles():
             writer_single_pdf.update_page_form_field_values(writer_single_pdf.pages[0], campos)
             writer_single_pdf._root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
 
-            # Auto-size: evita que texto largo se corte o salga del campo
+            # Auto-size y apariencias visuales para compatibilidad con visores web
             aplicar_autosize_campos(writer_single_pdf)
+            generar_apariencias_campos(writer_single_pdf, campos)
 
             temp_output = io.BytesIO()
             writer_single_pdf.write(temp_output)

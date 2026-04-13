@@ -707,31 +707,43 @@ def aplicar_overlay_texto_largo(pdf_bytes, campos_valores):
         return pdf_bytes
 
 
+def _es_masculino(sexo_val):
+    """Detecta masculino sin importar cómo esté guardado en la BD."""
+    v = (sexo_val or '').strip().upper()
+    return v in ('M', 'MASCULINO', 'MALE', 'H', 'HOMBRE')
+
+def _es_femenino(sexo_val):
+    """Detecta femenino sin importar cómo esté guardado en la BD."""
+    v = (sexo_val or '').strip().upper()
+    return v in ('F', 'FEMENINO', 'FEMALE', 'MUJER')
+
+
 def generar_pdf_neurologia_overlay(pdf_base_path, campos):
     """
     Exclusivo para NEUROLOGÍA.
-    Usa ReportLab con coordenadas hardcodeadas del PDF base neurología
-    para dibujar todos los campos (el PDF base tiene ReadOnly en todos sus campos,
-    por lo que PyPDF2 no puede escribir en ellos directamente).
-    Coordenadas verificadas con inspección directa del AcroForm real.
+    Usa ReportLab con coordenadas ajustadas del PDF base neurología.
+    El PDF base tiene ReadOnly en todos sus campos — PyPDF2 no puede escribir.
     """
     if not REPORTLAB_OK:
         return None
 
-    # Coordenadas exactas verificadas del PDF base neurología
+    # Coordenadas (x0, y0, x1, y1) — y aumentado para subir el texto visualmente
+    # En PDF, Y crece hacia arriba. Subir texto = aumentar y0/y1.
     COORDS_NEURO = {
-        'nombre':             (43.0,  714.1, 346.4, 730.6),
-        'rut':                (454.9, 708.8, 553.7, 731.3),
-        'fecha_nacimiento':   (40.6,  686.4, 142.8, 708.4),
-        'edad':               (143.9, 685.7, 245.5, 707.2),
-        'nacionalidad':       (247.0, 687.7, 348.4, 708.5),
+        # Fila superior: nombre, sexo, rut  — subidos +4pt
+        'nombre':             (43.0,  718.0, 346.4, 734.0),
+        'rut':                (454.9, 712.5, 553.7, 734.0),
+        'sexo_f':             (360.7, 716.5, 379.0, 731.7),   # checkbox — no mover
+        'sexo_m':             (406.5, 715.2, 426.2, 731.9),   # checkbox — no mover
+        # Fila fecha nac, edad, nacionalidad — subidos +4pt
+        'fecha_nacimiento':   (40.6,  690.0, 142.8, 712.0),
+        'edad':               (143.9, 689.5, 245.5, 711.0),
+        'nacionalidad':       (247.0, 691.5, 348.4, 712.0),
+        # Fechas evaluación — sin cambio (ya se ven bien)
         'fecha_evaluacion':   (249.0, 568.8, 399.7, 589.7),
         'fecha_reevaluacion': (403.1, 568.2, 553.7, 591.0),
-        # Checkboxes sexo — coordenadas exactas
-        'sexo_f':             (360.7, 716.5, 379.0, 731.7),
-        'sexo_m':             (406.5, 715.2, 426.2, 731.9),
-        # Diagnóstico corto (motivo de consulta arriba)
-        'diagnostico_1':      (393.4, 652.0, 565.0, 669.0),  # bajado 3pt para centrar mejor
+        # Diagnóstico corto arriba — centrado
+        'diagnostico_1':      (393.4, 653.0, 565.0, 671.0),
         # Campos largos multilinea
         'diagnostico_2':      (41.9,  294.3, 520.5, 316.3),
         'estado_general':     (43.2,  359.7, 557.1, 514.6),
@@ -750,7 +762,6 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
         c = rl_canvas.Canvas(ov_buf, pagesize=(pw, ph))
 
         for campo, (x0, y0, x1, y1) in COORDS_NEURO.items():
-            # Normalizar sexo a mayúsculas para comparación segura
             valor = campos.get(campo, '')
             if not valor or not str(valor).strip():
                 continue
@@ -758,19 +769,17 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
             w = x1 - x0
             h = y1 - y0
             margin = 3
-
             es_checkbox = w < 30 and h < 30
             es_multilinea = campo in CAMPOS_MULTILINEA
 
             if es_checkbox:
-                # X en negrita, centrada exactamente en el casillero
                 fs = 11.0
                 font = "Helvetica-Bold"
                 c.setFont(font, fs)
                 c.setFillColorRGB(0, 0, 0)
                 tw = c.stringWidth(texto, font, fs)
                 x_pos = x0 + (w - tw) / 2
-                y_pos = y0 + (h - fs) / 2 + 1  # +1 ajuste visual
+                y_pos = y0 + (h - fs) / 2 + 1
                 try:
                     c.drawString(x_pos, y_pos, texto)
                 except Exception:
@@ -808,12 +817,10 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                     y_pos -= lh
 
             else:
-                # Campo corto: fuente 10, centrado verticalmente, reducción si no cabe
                 fs = 10.0
-                font = "Helvetica"
-                while fs > 6 and c.stringWidth(texto, font, fs) > w - 2*margin:
+                while fs > 6 and c.stringWidth(texto, "Helvetica", fs) > w - 2*margin:
                     fs -= 0.5
-                c.setFont(font, fs)
+                c.setFont("Helvetica", fs)
                 c.setFillColorRGB(0, 0, 0)
                 y_pos = y0 + (h - fs) / 2
                 try:
@@ -825,7 +832,6 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
         c.save()
         ov_buf.seek(0)
 
-        # Fusionar overlay sobre el PDF base
         ov_reader = PdfReader(ov_buf)
         writer_out = PdfWriter()
         for i, pg in enumerate(reader_base.pages):
@@ -838,7 +844,6 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
         merged.seek(0)
         pdf_bytes = merged.read()
 
-        # Aplanar AcroForm para compatibilidad con navegadores
         try:
             import pikepdf
             src = io.BytesIO(pdf_bytes)
@@ -854,10 +859,10 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                         ])
                 pdf.save(dst)
             dst.seek(0)
-            print("✅ PDF neurología listo con overlay + flatten.")
+            print("✅ PDF neurología listo.")
             return dst.read()
         except Exception as e:
-            print(f"⚠️  flatten: {e} — retornando sin flatten.")
+            print(f"⚠️ flatten: {e}")
             return pdf_bytes
 
     except Exception as e:
@@ -866,7 +871,6 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
 
 
 def flatten_pdf_fields(pdf_bytes):
-    """Aplana AcroForm para compatibilidad con navegadores."""
     try:
         import pikepdf
         src = io.BytesIO(pdf_bytes)
@@ -3726,7 +3730,7 @@ def descargar_pdf_alumno(alumno_id):
         
         if form_type == 'neurologia':
             def _sg(f): v=est.get(f); return '' if v is None or str(v).strip() in ('None','null','') else str(v).strip()
-            _sexo = (est.get('sexo') or '').strip().upper()
+            _sexo_raw = est.get('sexo', '')
             campos = {
                 "nombre": nombre, "rut": rut, "fecha_nacimiento": fecha_nac_formato,
                 "nacionalidad": _sg('nacionalidad'), "edad": edad,
@@ -3734,8 +3738,8 @@ def descargar_pdf_alumno(alumno_id):
                 "estado_general": wrap_texto_pdf(_sg('estado_general')),
                 "derivaciones":   wrap_texto_pdf(_sg('derivaciones')),
                 "fecha_evaluacion": fecha_evaluacion_formatted, "fecha_reevaluacion": fecha_reeval_pdf,
-                "sexo_f": "X" if _sexo == "F" else "",
-                "sexo_m": "X" if _sexo == "M" else "",
+                "sexo_f": "X" if _es_femenino(_sexo_raw) else "",
+                "sexo_m": "X" if _es_masculino(_sexo_raw) else "",
             }
 
         elif form_type == 'informe_neurologico':
@@ -3815,13 +3819,13 @@ def descargar_pdf_alumno(alumno_id):
         # 7. Generar PDF final
         if form_type in ('neurologia', 'informe_neurologico'):
             # NEUROLOGÍA: ReportLab con coordenadas hardcodeadas
-            # (PDF base tiene todos los campos ReadOnly — PyPDF2 no puede escribir en ellos)
+            # (PDF base tiene todos los campos ReadOnly)
             pdf_final = generar_pdf_neurologia_overlay(pdf_base_path, campos)
             if not pdf_final:
                 flash("❌ Error al generar el PDF de neurología.", 'error')
                 return redirect(url_for('dashboard'))
         else:
-            # FAMILIAR y otros: flujo original con PyPDF2 (funciona bien)
+            # FAMILIAR y otros: flujo original PyPDF2 (funciona bien)
             if "/AcroForm" not in writer._root_object:
                 writer._root_object.update({
                     NameObject("/AcroForm"): DictionaryObject()

@@ -565,12 +565,9 @@ def aplicar_autosize_campos(writer):
 def aplicar_overlay_texto_largo(pdf_bytes, campos_valores):
     """
     Solución definitiva para visores web (Chrome, Edge, iOS):
-    1. Lee el PDF ya rellenado con PyPDF2
-    2. VACIA el valor visible de los campos largos en AcroForm (evita texto doble)
-    3. Obtiene las coordenadas exactas de cada campo largo
-    4. Dibuja el texto con reportlab como gráfico fijo en esas coordenadas
-    5. Fusiona el overlay con el PDF
-    Si reportlab no está disponible, retorna el PDF sin cambios.
+    Usa SOLO PyPDF2 (sin pypdf) para leer coords de campos AcroForm,
+    dibuja el texto con ReportLab como gráfico fijo y fusiona el overlay.
+    Así el PDF se ve igual en navegadores y en Adobe.
     """
     if not REPORTLAB_OK:
         return pdf_bytes
@@ -582,11 +579,10 @@ def aplicar_overlay_texto_largo(pdf_bytes, campos_valores):
         'observacion_4', 'observacion_5', 'observacion_6', 'observacion_7',
     }
 
-    def _get_rects_y_limpiar(reader):
-        """Lee coords de campos largos y vacía su valor visible en AcroForm."""
+    def _get_rects(reader):
+        """Lee coordenadas de campos largos usando PyPDF2."""
         rects = {}
         try:
-            from pypdf.generic import create_string_object
             root = reader.trailer["/Root"].get_object()
             acro = root.get("/AcroForm")
             if not acro:
@@ -595,18 +591,20 @@ def aplicar_overlay_texto_largo(pdf_bytes, campos_valores):
 
             def _proc(fref):
                 try:
-                    f = fref.get_object()
+                    f = fref.get_object() if hasattr(fref, 'get_object') else fref
                     nombre = str(f.get("/T", "")).lower().strip()
-                    if f.get("/FT") == "/Tx" and any(c in nombre for c in CAMPOS_LARGOS):
-                        # Buscar valor en campos_valores
+                    ft = f.get("/FT")
+                    if ft == "/Tx" and any(c in nombre for c in CAMPOS_LARGOS):
                         valor = None
                         for k, v in campos_valores.items():
                             if k.lower() == nombre:
-                                valor = v; break
+                                valor = v
+                                break
                         if not valor:
                             for k, v in campos_valores.items():
                                 if nombre.startswith(k.lower()) or k.lower().startswith(nombre):
-                                    valor = v; break
+                                    valor = v
+                                    break
                         if valor and str(valor).strip():
                             rect = f.get("/Rect")
                             if rect:
@@ -615,48 +613,46 @@ def aplicar_overlay_texto_largo(pdf_bytes, campos_valores):
                                     float(rect[2]), float(rect[3]),
                                     str(valor).strip()
                                 )
-                            # Vaciar valor visible del campo para evitar texto doble
-                            try:
-                                from pypdf.generic import create_string_object
-                                f["/V"] = create_string_object("")
-                                if "/AP" in f:
-                                    del f["/AP"]
-                            except Exception:
-                                pass
-                    if "/Kids" in f:
-                        for kid in f["/Kids"]: _proc(kid)
+                    kids = f.get("/Kids")
+                    if kids:
+                        for kid in kids:
+                            _proc(kid)
                 except Exception:
                     pass
 
-            for fr in ao.get("/Fields", []):
+            fields = ao.get("/Fields", [])
+            for fr in fields:
                 _proc(fr)
         except Exception as ex:
             print(f"  [overlay] get_rects: {ex}")
         return rects
 
     def _crear_overlay(rects, pw, ph):
-        """Crea página PDF con texto dibujado en posiciones exactas."""
+        """Crea página PDF con texto dibujado en posiciones exactas con ReportLab."""
         buf = io.BytesIO()
         c = rl_canvas.Canvas(buf, pagesize=(pw, ph))
         for nombre, (x0, y0, x1, y1, texto) in rects.items():
-            w, h = x1 - x0, y1 - y0
-            margin, fs = 3, 9.0
+            w = x1 - x0
+            h = y1 - y0
+            margin = 3
+            fs = 9.0
             lh = fs * 1.35
             lines = []
             for par in texto.splitlines():
                 if not par.strip():
                     lines.append('')
                 else:
-                    lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
+                    lines.extend(simpleSplit(par, "Helvetica", fs, w - 2 * margin) or [''])
             # Reducir fuente si no cabe verticalmente
-            while lines and len(lines) * lh > h - 2*margin and fs > 6:
-                fs -= 0.5; lh = fs * 1.35
+            while lines and len(lines) * lh > h - 2 * margin and fs > 6:
+                fs -= 0.5
+                lh = fs * 1.35
                 lines = []
                 for par in texto.splitlines():
                     if not par.strip():
                         lines.append('')
                     else:
-                        lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
+                        lines.extend(simpleSplit(par, "Helvetica", fs, w - 2 * margin) or [''])
             c.setFont("Helvetica", fs)
             c.setFillColorRGB(0, 0, 0)
             y_pos = y1 - margin - fs
@@ -674,23 +670,24 @@ def aplicar_overlay_texto_largo(pdf_bytes, campos_valores):
         return buf
 
     try:
-        from pypdf import PdfReader as _PR, PdfWriter as _PW
-        reader = _PR(io.BytesIO(pdf_bytes))
+        reader = PdfReader(io.BytesIO(pdf_bytes))
 
-        # Obtener coordenadas Y limpiar valores visibles de campos largos
-        rects = _get_rects_y_limpiar(reader)
+        # Obtener coordenadas de campos largos
+        rects = _get_rects(reader)
         if not rects:
+            print("⚠️  overlay: no se encontraron campos largos — PDF sin overlay.")
             return pdf_bytes
 
         pg0 = reader.pages[0]
-        pw, ph = float(pg0.mediabox.width), float(pg0.mediabox.height)
+        pw = float(pg0.mediabox.width)
+        ph = float(pg0.mediabox.height)
 
-        # Crear overlay con el texto
+        # Crear overlay con texto fijo
         ov_buf = _crear_overlay(rects, pw, ph)
-        ov_reader = _PR(ov_buf)
+        ov_reader = PdfReader(ov_buf)
 
-        # Fusionar: primero el overlay (texto limpio), luego el resto del PDF
-        writer_out = _PW()
+        # Fusionar overlay sobre cada página del PDF
+        writer_out = PdfWriter()
         for i, pg in enumerate(reader.pages):
             if i == 0 and ov_reader.pages:
                 pg.merge_page(ov_reader.pages[0])
@@ -699,11 +696,42 @@ def aplicar_overlay_texto_largo(pdf_bytes, campos_valores):
         out = io.BytesIO()
         writer_out.write(out)
         out.seek(0)
-        print("✅ Overlay de texto aplicado — compatible con visores web.")
+        print("✅ Overlay de texto aplicado con PyPDF2 — compatible con visores web.")
         return out.read()
 
     except Exception as e:
         print(f"⚠️  overlay: {e} — PDF sin overlay.")
+        return pdf_bytes
+
+
+def flatten_pdf_fields(pdf_bytes):
+    """
+    Aplana los campos AcroForm del PDF convirtiéndolos en contenido estático.
+    Esto garantiza que el PDF se vea igual en navegadores (Chrome, Firefox, Edge) y Adobe.
+    Requiere pikepdf: pip install pikepdf
+    """
+    try:
+        import pikepdf
+        src = io.BytesIO(pdf_bytes)
+        dst = io.BytesIO()
+        with pikepdf.open(src) as pdf:
+            # Eliminar el diccionario AcroForm para aplanar campos
+            if "/AcroForm" in pdf.Root:
+                del pdf.Root["/AcroForm"]
+            # Limpiar anotaciones Widget (campos de formulario) en cada página
+            for page in pdf.pages:
+                if "/Annots" in page:
+                    annots_restantes = [
+                        annot for annot in page["/Annots"]
+                        if annot.get("/Subtype") != "/Widget"
+                    ]
+                    page["/Annots"] = pikepdf.Array(annots_restantes)
+            pdf.save(dst)
+        dst.seek(0)
+        print("✅ PDF aplanado — compatible con navegadores.")
+        return dst.read()
+    except Exception as e:
+        print(f"⚠️ flatten_pdf_fields: {e} — retornando PDF sin aplanar.")
         return pdf_bytes
 
 
@@ -3651,7 +3679,8 @@ def descargar_pdf_alumno(alumno_id):
         output = io.BytesIO()
         writer.write(output)
         output.seek(0)
-        pdf_final = aplicar_overlay_texto_largo(output.read(), campos)
+        pdf_overlay = aplicar_overlay_texto_largo(output.read(), campos)
+        pdf_final = flatten_pdf_fields(pdf_overlay)  # aplanar para compatibilidad con navegadores
 
 
         # Nombre del archivo para la descarga

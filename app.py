@@ -4458,22 +4458,31 @@ def generar_pdfs_visibles():
                     "check_hipertrofia": mapear_check_interno('check_hipertrofia', est),
                 }
 
-            if "/AcroForm" not in writer_single_pdf._root_object:
-                writer_single_pdf._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
-            
-            writer_single_pdf.update_page_form_field_values(writer_single_pdf.pages[0], campos)
-            writer_single_pdf._root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
+            if form_type == 'neurologia':
+                # NEUROLOGÍA: usar generar_pdf_neurologia_overlay para que
+                # los checkboxes de sexo (X) se dibujen correctamente con pikepdf
+                pdf_bytes = generar_pdf_neurologia_overlay(pdf_base_path, campos)
+                if not pdf_bytes:
+                    continue
+                temp_reader = PdfReader(io.BytesIO(pdf_bytes))
+                merged_pdf_writer.add_page(temp_reader.pages[0])
+            else:
+                if "/AcroForm" not in writer_single_pdf._root_object:
+                    writer_single_pdf._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
+                
+                writer_single_pdf.update_page_form_field_values(writer_single_pdf.pages[0], campos)
+                writer_single_pdf._root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
 
-            # Auto-size y apariencias visuales para compatibilidad con visores web
-            aplicar_autosize_campos(writer_single_pdf)
+                # Auto-size y apariencias visuales para compatibilidad con visores web
+                aplicar_autosize_campos(writer_single_pdf)
 
-            temp_output = io.BytesIO()
-            writer_single_pdf.write(temp_output)
-            temp_output.seek(0)
-            # Aplicar overlay de texto para visores web
-            temp_bytes = aplicar_overlay_texto_largo(temp_output.read(), campos)
-            temp_reader = PdfReader(io.BytesIO(temp_bytes))
-            merged_pdf_writer.add_page(temp_reader.pages[0])
+                temp_output = io.BytesIO()
+                writer_single_pdf.write(temp_output)
+                temp_output.seek(0)
+                # Aplicar overlay de texto para visores web
+                temp_bytes = aplicar_overlay_texto_largo(temp_output.read(), campos)
+                temp_reader = PdfReader(io.BytesIO(temp_bytes))
+                merged_pdf_writer.add_page(temp_reader.pages[0])
 
         final_output_pdf = io.BytesIO()
         merged_pdf_writer.write(final_output_pdf)

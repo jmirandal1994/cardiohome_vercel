@@ -721,43 +721,41 @@ def _es_femenino(sexo_val):
 def generar_pdf_neurologia_overlay(pdf_base_path, campos):
     """
     Exclusivo para NEUROLOGÍA.
-    Usa ReportLab con coordenadas ajustadas del PDF base neurología.
-    El PDF base tiene ReadOnly en todos sus campos — PyPDF2 no puede escribir.
+    - Campos de texto: ReportLab overlay con merge_page
+    - Checkboxes sexo (F/M): pikepdf stream directo (evita problema de color con merge_page)
     """
     if not REPORTLAB_OK:
         return None
 
-    # Coordenadas (x0, y0, x1, y1) — y aumentado para subir el texto visualmente
-    # En PDF, Y crece hacia arriba. Subir texto = aumentar y0/y1.
     COORDS_NEURO = {
-        # Fila superior: nombre, sexo, rut  — subidos +4pt
         'nombre':             (43.0,  718.0, 346.4, 734.0),
         'rut':                (454.9, 712.5, 553.7, 734.0),
-        'sexo_f':             (360.7, 716.5, 379.0, 731.7),   # checkbox — no mover
-        'sexo_m':             (406.5, 715.2, 426.2, 731.9),   # checkbox — no mover
-        # Fila fecha nac, edad, nacionalidad — subidos +4pt
         'fecha_nacimiento':   (40.6,  690.0, 142.8, 712.0),
         'edad':               (143.9, 689.5, 245.5, 711.0),
         'nacionalidad':       (247.0, 691.5, 348.4, 712.0),
-        # Fechas evaluación — sin cambio (ya se ven bien)
         'fecha_evaluacion':   (249.0, 568.8, 399.7, 589.7),
         'fecha_reevaluacion': (403.1, 568.2, 553.7, 591.0),
-        # Diagnóstico corto arriba — centrado
         'diagnostico_1':      (393.4, 653.0, 565.0, 671.0),
-        # Campos largos multilinea
         'diagnostico_2':      (41.9,  294.3, 520.5, 316.3),
         'estado_general':     (43.2,  359.7, 557.1, 514.6),
         'derivaciones':       (41.9,  122.8, 552.5, 247.6),
     }
-
+    # Coordenadas exactas de los checkboxes de sexo
+    COORDS_SEXO = {
+        'sexo_f': (360.7, 716.5, 379.0, 731.7),
+        'sexo_m': (406.5, 715.2, 426.2, 731.9),
+    }
     CAMPOS_MULTILINEA = {'estado_general', 'derivaciones', 'diagnostico_2'}
 
     try:
+        import pikepdf
+
         reader_base = PdfReader(pdf_base_path)
         pg0 = reader_base.pages[0]
         pw = float(pg0.mediabox.width)
         ph = float(pg0.mediabox.height)
 
+        # ── PASO 1: ReportLab overlay para todos los campos de TEXTO ─────────
         ov_buf = io.BytesIO()
         c = rl_canvas.Canvas(ov_buf, pagesize=(pw, ph))
 
@@ -769,21 +767,9 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
             w = x1 - x0
             h = y1 - y0
             margin = 3
-            es_checkbox = w < 30 and h < 30
             es_multilinea = campo in CAMPOS_MULTILINEA
 
-            if es_checkbox:
-                # Dibujar X como trazos vectoriales (no texto)
-                # Los paths no son afectados por el estado gráfico del PDF base
-                padding = 3.5
-                c.setStrokeColorRGB(0, 0, 0)
-                c.setLineWidth(1.8)
-                # Diagonal 1: esquina inf-izq → esquina sup-der
-                c.line(x0 + padding, y0 + padding, x1 - padding, y1 - padding)
-                # Diagonal 2: esquina sup-izq → esquina inf-der
-                c.line(x0 + padding, y1 - padding, x1 - padding, y0 + padding)
-
-            elif es_multilinea:
+            if es_multilinea:
                 fs = 9.0
                 lh = fs * 1.35
                 lines = []
@@ -813,7 +799,6 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                         c.drawString(x0 + margin, y_pos,
                                      line.encode('latin-1', 'replace').decode('latin-1'))
                     y_pos -= lh
-
             else:
                 fs = 10.0
                 while fs > 6 and c.stringWidth(texto, "Helvetica", fs) > w - 2*margin:
@@ -830,42 +815,73 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
         c.save()
         ov_buf.seek(0)
 
+        # Fusionar overlay de texto sobre el PDF base
         ov_reader = PdfReader(ov_buf)
         writer_out = PdfWriter()
         for i, pg in enumerate(reader_base.pages):
             if i == 0 and ov_reader.pages:
-                # overlay.merge_page(base) → overlay queda ENCIMA siempre
-                ov_page = ov_reader.pages[0]
-                ov_page.merge_page(pg)
-                writer_out.add_page(ov_page)
-            else:
-                writer_out.add_page(pg)
+                pg.merge_page(ov_reader.pages[0])
+            writer_out.add_page(pg)
 
         merged = io.BytesIO()
         writer_out.write(merged)
         merged.seek(0)
-        pdf_bytes = merged.read()
 
-        try:
-            import pikepdf
-            src = io.BytesIO(pdf_bytes)
+        # ── PASO 2: pikepdf agrega la X de sexo como stream directo ──────────
+        # Esto evita el problema de color que ocurre con merge_page para texto
+        with pikepdf.open(merged) as pdf:
+            page = pdf.pages[0]
+
+            # Construir stream con la X para cada checkbox marcado
+            stream_parts = []
+            for campo, (x0, y0, x1, y1) in COORDS_SEXO.items():
+                valor = campos.get(campo, '')
+                if not valor or not str(valor).strip():
+                    continue
+                w = x1 - x0
+                h = y1 - y0
+                # Fondo blanco para limpiar el casillero
+                # luego X en negro con fuente Helv (fuente estándar del PDF)
+                tw_approx = 5.5  # ancho aproximado de "X" en Helv 9
+                x_text = x0 + (w - tw_approx) / 2
+                y_text = y0 + (h - 9) / 2
+                stream_parts.append(
+                    f"q\n"
+                    f"1 1 1 rg\n"
+                    f"{x0+1:.2f} {y0+1:.2f} {w-2:.2f} {h-2:.2f} re f\n"
+                    f"0 0 0 rg\n"
+                    f"BT\n"
+                    f"/Helv 9 Tf\n"
+                    f"{x_text:.2f} {y_text:.2f} Td\n"
+                    f"(X) Tj\n"
+                    f"ET\n"
+                    f"Q\n"
+                )
+
+            if stream_parts:
+                combined = "".join(stream_parts).encode('latin-1')
+                new_stream = pikepdf.Stream(pdf, combined)
+                existing = page.obj.get('/Contents')
+                if isinstance(existing, pikepdf.Array):
+                    existing.append(new_stream)
+                elif existing is not None:
+                    page.obj['/Contents'] = pikepdf.Array([existing, new_stream])
+
+            # Eliminar AcroForm para compatibilidad con navegadores
+            if '/AcroForm' in pdf.Root:
+                del pdf.Root['/AcroForm']
+            for p in pdf.pages:
+                if '/Annots' in p:
+                    p['/Annots'] = pikepdf.Array([
+                        a for a in p['/Annots']
+                        if a.get('/Subtype') != '/Widget'
+                    ])
+
             dst = io.BytesIO()
-            with pikepdf.open(src) as pdf:
-                if "/AcroForm" in pdf.Root:
-                    del pdf.Root["/AcroForm"]
-                for page in pdf.pages:
-                    if "/Annots" in page:
-                        page["/Annots"] = pikepdf.Array([
-                            a for a in page["/Annots"]
-                            if a.get("/Subtype") != "/Widget"
-                        ])
-                pdf.save(dst)
+            pdf.save(dst)
             dst.seek(0)
-            print("✅ PDF neurología listo.")
+            print("✅ PDF neurología listo con texto + checkboxes + flatten.")
             return dst.read()
-        except Exception as e:
-            print(f"⚠️ flatten: {e}")
-            return pdf_bytes
 
     except Exception as e:
         print(f"❌ generar_pdf_neurologia_overlay: {e}")

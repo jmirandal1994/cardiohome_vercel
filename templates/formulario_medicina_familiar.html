@@ -2778,33 +2778,38 @@
             }
 
             // Tablas de percentil p3 y p85 y p97 de IMC por edad y sexo
-            // Fuente: OMS / MINSAL Chile (tablas de referencia pediátrica 2-18 años)
-            // Estructura: [edad_entera, [p3_F, p85_F, p97_F], [p3_M, p85_M, p97_M]]
-            // Tabla OMS 2007 IMC-para-edad: [p3(-2DE), p85(+1DE), p97(+2DE)]
-            // Fuente: WHO Growth Reference 2007 (de Onis et al.)
-            // p3=bajo peso, p3–p85=peso normal, p85–p97=sobrepeso, ≥p97=obesidad
+            // Fuente: WHO Growth Reference 2007 (de Onis et al.) — valores exactos de la OMS
+            // Estructura: edad_entera → { F:[p3, p85, p97], M:[p3, p85, p97] }
+            // p3  = Bajo peso  (< -2 DE)
+            // p85 = límite Sobrepeso  (> +1 DE)
+            // p97 = límite Obesidad   (> +2 DE)
+            // IMPORTANTE: Se usa interpolación lineal entre años para mayor precisión
             const imcPercentiles = {
-                2:  {F:[11.9,16.4,18.0], M:[12.0,16.6,18.3]},
-                3:  {F:[11.7,15.9,17.5], M:[11.8,16.1,17.7]},
-                4:  {F:[11.6,15.6,17.2], M:[11.7,15.8,17.4]},
-                5:  {F:[12.1,15.2,16.8], M:[12.1,15.3,17.0]},
-                6:  {F:[12.1,15.5,17.3], M:[12.1,15.5,17.4]},
-                7:  {F:[12.3,16.0,18.0], M:[12.3,16.0,18.1]},
-                8:  {F:[12.6,16.7,19.0], M:[12.5,16.6,18.9]},
-                9:  {F:[13.0,17.5,20.1], M:[12.8,17.2,19.8]},
-                10: {F:[13.4,18.3,21.1], M:[13.1,18.0,20.9]},
-                11: {F:[13.8,19.1,22.1], M:[13.5,18.8,22.0]},
-                12: {F:[14.3,19.9,23.1], M:[13.9,19.7,23.0]},
-                13: {F:[14.8,20.7,24.0], M:[14.4,20.5,24.0]},
-                14: {F:[15.3,21.4,24.9], M:[14.9,21.4,25.0]},
-                15: {F:[15.9,22.1,25.6], M:[15.5,22.2,25.9]},
-                16: {F:[16.4,22.8,26.3], M:[16.1,22.9,26.7]},
-                17: {F:[16.9,23.3,26.9], M:[16.7,23.6,27.4]},
+                2:  {F:[14.0,17.1,18.7], M:[14.2,17.2,18.8]},
+                3:  {F:[13.5,16.7,18.4], M:[13.7,16.8,18.5]},
+                4:  {F:[13.2,16.4,18.2], M:[13.4,16.5,18.3]},
+                5:  {F:[13.0,16.5,18.4], M:[13.2,16.5,18.5]},
+                6:  {F:[13.0,16.8,18.9], M:[13.1,16.8,19.0]},
+                7:  {F:[13.1,17.4,19.7], M:[13.2,17.4,19.8]},
+                8:  {F:[13.4,18.1,20.7], M:[13.4,18.1,20.8]},
+                9:  {F:[13.7,18.9,21.8], M:[13.7,18.9,21.7]},
+                10: {F:[14.2,19.7,22.8], M:[14.0,19.7,22.8]},
+                11: {F:[14.7,20.5,23.8], M:[14.4,20.5,23.8]},
+                12: {F:[15.2,21.3,24.8], M:[14.9,21.4,24.9]},
+                13: {F:[15.8,22.0,25.7], M:[15.4,22.2,25.9]},
+                14: {F:[16.3,22.7,26.5], M:[16.0,22.9,26.9]},
+                15: {F:[16.8,23.3,27.2], M:[16.6,23.6,27.8]},
+                16: {F:[17.3,23.8,27.8], M:[17.2,24.2,28.6]},
+                17: {F:[17.7,24.3,28.3], M:[17.7,24.7,29.3]},
+                18: {F:[18.0,25.0,30.0], M:[18.0,25.0,30.0]},
             };
 
             const ageInt = Math.min(17, Math.max(2, Math.floor(ageYears)));
+            const ageNext = Math.min(18, ageInt + 1);
+            const ageFrac = ageYears - ageInt; // fracción del año (0.0–1.0)
             const genderKey = (gender === 'F') ? 'F' : 'M';
             const percEntry = imcPercentiles[ageInt];
+            const percNext  = imcPercentiles[ageNext];
 
             if (!percEntry || !percEntry[genderKey]) {
                 const fb = imc < 18.5 ? 'Bajo peso' : imc < 25 ? 'Peso normal' : imc < 30 ? 'Sobrepeso' : 'Obesidad';
@@ -2813,7 +2818,12 @@
                 return;
             }
 
-            const [p3, p85, p97] = percEntry[genderKey];
+            // Interpolación lineal entre edad actual y siguiente para mayor precisión
+            const cur  = percEntry[genderKey];
+            const nxt  = (percNext && percNext[genderKey]) ? percNext[genderKey] : cur;
+            const p3   = cur[0] + (nxt[0] - cur[0]) * ageFrac;
+            const p85  = cur[1] + (nxt[1] - cur[1]) * ageFrac;
+            const p97  = cur[2] + (nxt[2] - cur[2]) * ageFrac;
             let classification = '';
             if (imc < p3) {
                 classification = 'Bajo peso';

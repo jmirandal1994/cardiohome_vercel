@@ -810,10 +810,23 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                     c.drawString(x0 + margin, y_pos,
                                  texto.encode('latin-1', 'replace').decode('latin-1'))
 
+        # ── Dibujar X de sexo en el mismo canvas de ReportLab ────────────────
+        for campo, (x0, y0, x1, y1) in COORDS_SEXO.items():
+            if not campos.get(campo, '').strip():
+                continue
+            w = x1 - x0
+            h = y1 - y0
+            fs = 11.0
+            c.setFont("Helvetica-Bold", fs)
+            c.setFillColorRGB(0, 0, 0)
+            x_text = x0 + (w - c.stringWidth("X", "Helvetica-Bold", fs)) / 2
+            y_text = y0 + (h - fs) / 2
+            c.drawString(x_text, y_text, "X")
+
         c.save()
         ov_buf.seek(0)
 
-        # Fusionar overlay de texto sobre el PDF base
+        # Fusionar overlay (texto + X de sexo) sobre el PDF base
         ov_reader = PdfReader(ov_buf)
         writer_out = PdfWriter()
         for i, pg in enumerate(reader_base.pages):
@@ -825,69 +838,27 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
         writer_out.write(merged)
         merged.seek(0)
 
-        # ── PASO 2: pikepdf para checkboxes de sexo ───────────────────────────
-        # Copia Helvetica del AcroForm como recurso de página y escribe X
-        with pikepdf.open(merged) as pdf:
-            page = pdf.pages[0]
-
-            # Obtener Helvetica del AcroForm y agregarla como recurso de página
-            try:
-                helv = pdf.Root['/AcroForm']['/DR']['/Font']['/Helv']
-                resources = page.obj['/Resources']
-                if '/Font' not in resources:
-                    resources['/Font'] = pikepdf.Dictionary()
-                resources['/Font']['/HelvX'] = helv
-                font_name = '/HelvX'
-            except Exception:
-                font_name = '/C2_0'  # fallback a Roboto si no hay AcroForm
-
-            stream_parts = []
-            for campo, (x0, y0, x1, y1) in COORDS_SEXO.items():
-                if not campos.get(campo, '').strip():
-                    continue
-                w = x1 - x0
-                h = y1 - y0
-                fs = 9
-                tw = 5.0
-                x_text = x0 + (w - tw) / 2
-                y_text = y0 + (h - fs) / 2
-                stream_parts.append(
-                    f"q\n"
-                    f"1 1 1 rg\n"
-                    f"{x0+1:.2f} {y0+1:.2f} {w-2:.2f} {h-2:.2f} re f\n"
-                    f"0 0 0 rg\n"
-                    f"BT\n"
-                    f"{font_name} {fs} Tf\n"
-                    f"{x_text:.2f} {y_text:.2f} Td\n"
-                    f"(X) Tj\n"
-                    f"ET\n"
-                    f"Q\n"
-                )
-
-            if stream_parts:
-                combined = "".join(stream_parts).encode('latin-1')
-                new_stream = pikepdf.Stream(pdf, combined)
-                existing = page.obj.get('/Contents')
-                if isinstance(existing, pikepdf.Array):
-                    existing.append(new_stream)
-                elif existing is not None:
-                    page.obj['/Contents'] = pikepdf.Array([existing, new_stream])
-
-            # Eliminar AcroForm y widgets para compatibilidad navegadores
-            if '/AcroForm' in pdf.Root:
-                del pdf.Root['/AcroForm']
-            for p in pdf.pages:
-                if '/Annots' in p:
-                    p['/Annots'] = pikepdf.Array([
-                        a for a in p['/Annots']
-                        if a.get('/Subtype') != '/Widget'
-                    ])
-
-            dst = io.BytesIO()
-            pdf.save(dst)
-            dst.seek(0)
-            print("✅ PDF neurología listo.")
-            return dst.read()
+        # ── PASO 2: pikepdf solo para limpiar AcroForm/widgets ────────────────
+        try:
+            import pikepdf
+            with pikepdf.open(merged) as pdf:
+                if '/AcroForm' in pdf.Root:
+                    del pdf.Root['/AcroForm']
+                for p in pdf.pages:
+                    if '/Annots' in p:
+                        p['/Annots'] = pikepdf.Array([
+                            a for a in p['/Annots']
+                            if a.get('/Subtype') != '/Widget'
+                        ])
+                dst = io.BytesIO()
+                pdf.save(dst)
+                dst.seek(0)
+                print("✅ PDF neurología listo.")
+                return dst.read()
+        except Exception:
+            merged.seek(0)
+            print("✅ PDF neurología listo (sin limpiar AcroForm).")
+            return merged.read()
 
     except Exception as e:
         print(f"❌ generar_pdf_neurologia_overlay: {e}")
@@ -4460,7 +4431,7 @@ def generar_pdfs_visibles():
 
             if form_type == 'neurologia':
                 # NEUROLOGÍA: usar generar_pdf_neurologia_overlay para que
-                # los checkboxes de sexo (X) se dibujen correctamente con pikepdf
+                # los checkboxes de sexo (X) se dibujen correctamente con ReportLab
                 pdf_bytes = generar_pdf_neurologia_overlay(pdf_base_path, campos)
                 if not pdf_bytes:
                     continue
@@ -4469,17 +4440,12 @@ def generar_pdfs_visibles():
             else:
                 if "/AcroForm" not in writer_single_pdf._root_object:
                     writer_single_pdf._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
-                
                 writer_single_pdf.update_page_form_field_values(writer_single_pdf.pages[0], campos)
                 writer_single_pdf._root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
-
-                # Auto-size y apariencias visuales para compatibilidad con visores web
                 aplicar_autosize_campos(writer_single_pdf)
-
                 temp_output = io.BytesIO()
                 writer_single_pdf.write(temp_output)
                 temp_output.seek(0)
-                # Aplicar overlay de texto para visores web
                 temp_bytes = aplicar_overlay_texto_largo(temp_output.read(), campos)
                 temp_reader = PdfReader(io.BytesIO(temp_bytes))
                 merged_pdf_writer.add_page(temp_reader.pages[0])

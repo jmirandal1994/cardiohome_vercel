@@ -721,10 +721,9 @@ def _es_femenino(sexo_val):
 def generar_pdf_neurologia_overlay(pdf_base_path, campos):
     """
     Exclusivo para NEUROLOGÍA.
-    PASO 1: pikepdf pone /V="X" + NeedAppearances en sexo_f/sexo_m.
-    PASO 2: ReportLab genera overlay de texto como stream raw.
-    PASO 3: pikepdf inyecta el stream directamente en la página
-            (sin PyPDF2 merge que destruye el AcroForm).
+    - pikepdf pone /V="X" + NeedAppearances en sexo_f/sexo_m (preserva AcroForm).
+    - ReportLab genera stream de texto con fuente Unicode (soporta tildes/ñ).
+    - pikepdf inyecta el stream directamente en la página (sin PyPDF2 merge).
     """
     if not REPORTLAB_OK:
         return None
@@ -746,15 +745,37 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
 
     try:
         import pikepdf
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        import os
 
         # Obtener dimensiones del PDF base
         with pikepdf.open(pdf_base_path) as _pdf:
             _mbox = _pdf.pages[0].mediabox
             pw = float(_mbox[2]); ph = float(_mbox[3])
 
-        # ── PASO 1: ReportLab — generar stream de texto ───────────────────────
+        # ── PASO 1: ReportLab — stream de texto con fuente Unicode ───────────
+        # Registrar fuente con soporte completo de tildes/ñ
+        font_name_rl = "Helvetica"
+        try:
+            # Intentar usar DejaVuSans si existe (soporte Unicode completo)
+            dejavu_paths = [
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "/usr/share/fonts/dejavu/DejaVuSans.ttf",
+                "/usr/share/fonts/TTF/DejaVuSans.ttf",
+            ]
+            for dp in dejavu_paths:
+                if os.path.exists(dp):
+                    pdfmetrics.registerFont(TTFont("DejaVuSans", dp))
+                    font_name_rl = "DejaVuSans"
+                    break
+        except Exception:
+            pass
+
         ov_buf = io.BytesIO()
         c = rl_canvas.Canvas(ov_buf, pagesize=(pw, ph))
+        c.setFillColorRGB(0, 0, 0)
+
         for campo, (x0, y0, x1, y1) in COORDS_NEURO.items():
             valor = campos.get(campo, '')
             if not valor or not str(valor).strip():
@@ -764,6 +785,7 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
             h      = y1 - y0
             margin = 3
             c.setFillColorRGB(0, 0, 0)
+
             if campo in CAMPOS_MULTILINEA:
                 fs = 9.0
                 lh = fs * 1.35
@@ -772,7 +794,7 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                     if not par.strip():
                         lines.append('')
                     else:
-                        lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
+                        lines.extend(simpleSplit(par, font_name_rl, fs, w - 2*margin) or [''])
                 while lines and len(lines) * lh > h - 2*margin and fs > 6:
                     fs -= 0.5
                     lh  = fs * 1.35
@@ -781,46 +803,46 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                         if not par.strip():
                             lines.append('')
                         else:
-                            lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
-                c.setFont("Helvetica", fs)
+                            lines.extend(simpleSplit(par, font_name_rl, fs, w - 2*margin) or [''])
+                c.setFont(font_name_rl, fs)
                 y_pos = y1 - margin - fs
                 for line in lines:
                     if y_pos < y0 + margin:
                         break
-                    try:
-                        c.drawString(x0 + margin, y_pos, line)
-                    except Exception:
-                        c.drawString(x0 + margin, y_pos,
-                                     line.encode('latin-1', 'replace').decode('latin-1'))
+                    c.drawString(x0 + margin, y_pos, line)
                     y_pos -= lh
             else:
                 fs = 10.0
-                while fs > 6 and c.stringWidth(texto, "Helvetica", fs) > w - 2*margin:
+                while fs > 6 and c.stringWidth(texto, font_name_rl, fs) > w - 2*margin:
                     fs -= 0.5
-                c.setFont("Helvetica", fs)
-                try:
-                    c.drawString(x0 + margin, y0 + (h - fs) / 2, texto)
-                except Exception:
-                    c.drawString(x0 + margin, y0 + (h - fs) / 2,
-                                 texto.encode('latin-1', 'replace').decode('latin-1'))
+                c.setFont(font_name_rl, fs)
+                c.drawString(x0 + margin, y0 + (h - fs) / 2, texto)
+
         c.save()
 
-        # Extraer stream raw y nombres de fuentes del overlay
+        # Extraer stream raw y fuentes del overlay
         ov_buf.seek(0)
         with pikepdf.open(ov_buf) as ov_pdf:
-            ov_page = ov_pdf.pages[0]
-            raw_bytes  = ov_page['/Contents'].read_bytes()
-            ov_res     = ov_page.get('/Resources', pikepdf.Dictionary())
-            ov_fkeys   = list(ov_res['/Font'].keys()) if '/Font' in ov_res else []
+            ov_page  = ov_pdf.pages[0]
+            raw_bytes = ov_page['/Contents'].read_bytes()
+            ov_res    = ov_page.get('/Resources', pikepdf.Dictionary())
+            ov_fkeys  = list(ov_res['/Font'].keys()) if '/Font' in ov_res else []
+            # Guardar objetos de fuente como bytes para copiarlos
+            ov_font_pdfs = {}
+            for fk in ov_fkeys:
+                font_obj = ov_res['/Font'][fk]
+                fbuf = io.BytesIO()
+                ov_pdf.save(fbuf)
+                ov_font_pdfs[fk] = fbuf
 
-        # Envolver en q/Q con negro forzado para aislar del estado del PDF base
-        wrapped = b'q\n0 0 0 rg\n0 0 0 RG\n' + raw_bytes + b'\nQ\n'
+        # Envolver en q/Q con estado de color negro forzado
+        wrapped = b'q\n0 g\n0 0 0 rg\n0 0 0 RG\n' + raw_bytes + b'\nQ\n'
 
-        # ── PASO 2: pikepdf — X en AcroForm + inyectar stream de texto ───────
+        # ── PASO 2: pikepdf — X en AcroForm + inyectar stream ────────────────
         with pikepdf.open(pdf_base_path) as pdf:
             page = pdf.pages[0]
 
-            # Poner X en sexo
+            # Poner X en campos de sexo
             acroform = pdf.Root.get('/AcroForm')
             if acroform and '/Fields' in acroform:
                 acroform['/NeedAppearances'] = pikepdf.Boolean(True)
@@ -829,7 +851,7 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                     if fname in ('sexo_f', 'sexo_m') and campos.get(fname, '').strip():
                         field_ref['/V'] = pikepdf.String('X')
 
-            # Inyectar stream de texto al final del contenido de la página
+            # Inyectar stream de texto al final del contenido
             new_stream = pikepdf.Stream(pdf, wrapped)
             existing = page.get('/Contents')
             if isinstance(existing, pikepdf.Array):
@@ -837,17 +859,24 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
             else:
                 page['/Contents'] = pikepdf.Array([existing, new_stream])
 
-            # Registrar fuentes Helvetica en recursos de la página
+            # Registrar fuentes en recursos de la página
             pg_res = page.get('/Resources', pikepdf.Dictionary())
             if '/Font' not in pg_res:
                 pg_res['/Font'] = pikepdf.Dictionary()
-            for fkey in ov_fkeys:
-                if fkey not in pg_res['/Font']:
-                    pg_res['/Font'][fkey] = pikepdf.Dictionary(
-                        Type=pikepdf.Name('/Font'),
-                        Subtype=pikepdf.Name('/Type1'),
-                        BaseFont=pikepdf.Name('/Helvetica'),
-                    )
+
+            # Volver a abrir el overlay para copiar fuentes con copy_foreign equivalente
+            ov_buf.seek(0)
+            with pikepdf.open(ov_buf) as ov_pdf2:
+                ov_res2 = ov_pdf2.pages[0].get('/Resources', pikepdf.Dictionary())
+                if '/Font' in ov_res2:
+                    for fk in ov_res2['/Font'].keys():
+                        if fk not in pg_res['/Font']:
+                            # Copiar objeto fuente al PDF principal
+                            src_font = ov_res2['/Font'][fk]
+                            pg_res['/Font'][fk] = pdf.make_indirect(
+                                pikepdf.Dictionary(src_font)
+                            )
+
             page['/Resources'] = pg_res
 
             dst = io.BytesIO()
@@ -4426,8 +4455,6 @@ def generar_pdfs_visibles():
                 }
 
             if form_type == 'neurologia':
-                # NEUROLOGÍA: usar generar_pdf_neurologia_overlay
-                # (escribe X en AcroForm antes de hacer merge, cuadro visible)
                 pdf_bytes = generar_pdf_neurologia_overlay(pdf_base_path, campos)
                 if not pdf_bytes:
                     continue

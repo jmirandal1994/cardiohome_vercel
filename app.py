@@ -721,9 +721,10 @@ def _es_femenino(sexo_val):
 def generar_pdf_neurologia_overlay(pdf_base_path, campos):
     """
     Exclusivo para NEUROLOGÍA.
-    PASO 1: pikepdf — escribe /V="X" en campos sexo_f/sexo_m con NeedAppearances=True.
-            El visor PDF renderiza la X automáticamente usando /DA del campo.
-    PASO 2: ReportLab — overlay con todo el texto encima.
+    PASO 1: pikepdf pone /V="X" + NeedAppearances en sexo_f/sexo_m.
+    PASO 2: ReportLab genera overlay de texto como stream raw.
+    PASO 3: pikepdf inyecta el stream directamente en la página
+            (sin PyPDF2 merge que destruye el AcroForm).
     """
     if not REPORTLAB_OK:
         return None
@@ -746,30 +747,14 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
     try:
         import pikepdf
 
-        # ── PASO 1: pikepdf — marcar sexo con /V="X" + NeedAppearances ───────
-        paso1_buf = io.BytesIO()
-        with pikepdf.open(pdf_base_path) as pdf:
-            acroform = pdf.Root.get('/AcroForm')
-            if acroform and '/Fields' in acroform:
-                acroform['/NeedAppearances'] = pikepdf.Boolean(True)
-                for field_ref in acroform['/Fields']:
-                    fname = str(field_ref.get('/T', ''))
-                    if fname in ('sexo_f', 'sexo_m'):
-                        valor = campos.get(fname, '').strip()
-                        if valor:
-                            field_ref['/V'] = pikepdf.String('X')
-            pdf.save(paso1_buf)
-        paso1_buf.seek(0)
+        # Obtener dimensiones del PDF base
+        with pikepdf.open(pdf_base_path) as _pdf:
+            _mbox = _pdf.pages[0].mediabox
+            pw = float(_mbox[2]); ph = float(_mbox[3])
 
-        # ── PASO 2: ReportLab — overlay con todo el texto ────────────────────
-        reader_base = PdfReader(paso1_buf)
-        pg0 = reader_base.pages[0]
-        pw  = float(pg0.mediabox.width)
-        ph  = float(pg0.mediabox.height)
-
+        # ── PASO 1: ReportLab — generar stream de texto ───────────────────────
         ov_buf = io.BytesIO()
         c = rl_canvas.Canvas(ov_buf, pagesize=(pw, ph))
-
         for campo, (x0, y0, x1, y1) in COORDS_NEURO.items():
             valor = campos.get(campo, '')
             if not valor or not str(valor).strip():
@@ -778,7 +763,7 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
             w      = x1 - x0
             h      = y1 - y0
             margin = 3
-
+            c.setFillColorRGB(0, 0, 0)
             if campo in CAMPOS_MULTILINEA:
                 fs = 9.0
                 lh = fs * 1.35
@@ -798,7 +783,6 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                         else:
                             lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
                 c.setFont("Helvetica", fs)
-                c.setFillColorRGB(0, 0, 0)
                 y_pos = y1 - margin - fs
                 for line in lines:
                     if y_pos < y0 + margin:
@@ -814,29 +798,68 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                 while fs > 6 and c.stringWidth(texto, "Helvetica", fs) > w - 2*margin:
                     fs -= 0.5
                 c.setFont("Helvetica", fs)
-                c.setFillColorRGB(0, 0, 0)
-                y_pos = y0 + (h - fs) / 2
                 try:
-                    c.drawString(x0 + margin, y_pos, texto)
+                    c.drawString(x0 + margin, y0 + (h - fs) / 2, texto)
                 except Exception:
-                    c.drawString(x0 + margin, y_pos,
+                    c.drawString(x0 + margin, y0 + (h - fs) / 2,
                                  texto.encode('latin-1', 'replace').decode('latin-1'))
-
         c.save()
+
+        # Extraer stream raw y nombres de fuentes del overlay
         ov_buf.seek(0)
+        with pikepdf.open(ov_buf) as ov_pdf:
+            ov_page = ov_pdf.pages[0]
+            raw_bytes  = ov_page['/Contents'].read_bytes()
+            ov_res     = ov_page.get('/Resources', pikepdf.Dictionary())
+            ov_fkeys   = list(ov_res['/Font'].keys()) if '/Font' in ov_res else []
 
-        ov_reader  = PdfReader(ov_buf)
-        writer_out = PdfWriter()
-        for i, pg in enumerate(reader_base.pages):
-            if i == 0 and ov_reader.pages:
-                pg.merge_page(ov_reader.pages[0])
-            writer_out.add_page(pg)
+        # Envolver en q/Q con negro forzado para aislar del estado del PDF base
+        wrapped = b'q
+0 0 0 rg
+0 0 0 RG
+' + raw_bytes + b'
+Q
+'
 
-        merged = io.BytesIO()
-        writer_out.write(merged)
-        merged.seek(0)
+        # ── PASO 2: pikepdf — X en AcroForm + inyectar stream de texto ───────
+        with pikepdf.open(pdf_base_path) as pdf:
+            page = pdf.pages[0]
+
+            # Poner X en sexo
+            acroform = pdf.Root.get('/AcroForm')
+            if acroform and '/Fields' in acroform:
+                acroform['/NeedAppearances'] = pikepdf.Boolean(True)
+                for field_ref in acroform['/Fields']:
+                    fname = str(field_ref.get('/T', ''))
+                    if fname in ('sexo_f', 'sexo_m') and campos.get(fname, '').strip():
+                        field_ref['/V'] = pikepdf.String('X')
+
+            # Inyectar stream de texto al final del contenido de la página
+            new_stream = pikepdf.Stream(pdf, wrapped)
+            existing = page.get('/Contents')
+            if isinstance(existing, pikepdf.Array):
+                existing.append(new_stream)
+            else:
+                page['/Contents'] = pikepdf.Array([existing, new_stream])
+
+            # Registrar fuentes Helvetica en recursos de la página
+            pg_res = page.get('/Resources', pikepdf.Dictionary())
+            if '/Font' not in pg_res:
+                pg_res['/Font'] = pikepdf.Dictionary()
+            for fkey in ov_fkeys:
+                if fkey not in pg_res['/Font']:
+                    pg_res['/Font'][fkey] = pikepdf.Dictionary(
+                        Type=pikepdf.Name('/Font'),
+                        Subtype=pikepdf.Name('/Type1'),
+                        BaseFont=pikepdf.Name('/Helvetica'),
+                    )
+            page['/Resources'] = pg_res
+
+            dst = io.BytesIO()
+            pdf.save(dst)
+
         print("✅ PDF neurología listo.")
-        return merged.read()
+        return dst.getvalue()
 
     except Exception as e:
         print(f"❌ generar_pdf_neurologia_overlay: {e}")

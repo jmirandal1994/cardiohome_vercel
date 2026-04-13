@@ -721,8 +721,9 @@ def _es_femenino(sexo_val):
 def generar_pdf_neurologia_overlay(pdf_base_path, campos):
     """
     Exclusivo para NEUROLOGÍA.
-    Usa ReportLab para texto largo + pikepdf para checkboxes de sexo.
-    Los checkboxes usan Helvetica del AcroForm inyectada como recurso de página.
+    PASO 1: pikepdf — escribe /V="X" en campos sexo_f/sexo_m con NeedAppearances=True.
+            El visor PDF renderiza la X automáticamente usando /DA del campo.
+    PASO 2: ReportLab — overlay con todo el texto encima.
     """
     if not REPORTLAB_OK:
         return None
@@ -740,21 +741,32 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
         'estado_general':     (43.2,  359.7, 557.1, 514.6),
         'derivaciones':       (41.9,  122.8, 552.5, 247.6),
     }
-    COORDS_SEXO = {
-        'sexo_f': (360.7, 716.5, 379.0, 731.7),
-        'sexo_m': (406.5, 715.2, 426.2, 731.9),
-    }
     CAMPOS_MULTILINEA = {'estado_general', 'derivaciones', 'diagnostico_2'}
 
     try:
         import pikepdf
 
-        reader_base = PdfReader(pdf_base_path)
-        pg0 = reader_base.pages[0]
-        pw = float(pg0.mediabox.width)
-        ph = float(pg0.mediabox.height)
+        # ── PASO 1: pikepdf — marcar sexo con /V="X" + NeedAppearances ───────
+        paso1_buf = io.BytesIO()
+        with pikepdf.open(pdf_base_path) as pdf:
+            acroform = pdf.Root.get('/AcroForm')
+            if acroform and '/Fields' in acroform:
+                acroform['/NeedAppearances'] = pikepdf.Boolean(True)
+                for field_ref in acroform['/Fields']:
+                    fname = str(field_ref.get('/T', ''))
+                    if fname in ('sexo_f', 'sexo_m'):
+                        valor = campos.get(fname, '').strip()
+                        if valor:
+                            field_ref['/V'] = pikepdf.String('X')
+            pdf.save(paso1_buf)
+        paso1_buf.seek(0)
 
-        # ── PASO 1: ReportLab para todos los campos de TEXTO ─────────────────
+        # ── PASO 2: ReportLab — overlay con todo el texto ────────────────────
+        reader_base = PdfReader(paso1_buf)
+        pg0 = reader_base.pages[0]
+        pw  = float(pg0.mediabox.width)
+        ph  = float(pg0.mediabox.height)
+
         ov_buf = io.BytesIO()
         c = rl_canvas.Canvas(ov_buf, pagesize=(pw, ph))
 
@@ -762,9 +774,9 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
             valor = campos.get(campo, '')
             if not valor or not str(valor).strip():
                 continue
-            texto = str(valor).strip()
-            w = x1 - x0
-            h = y1 - y0
+            texto  = str(valor).strip()
+            w      = x1 - x0
+            h      = y1 - y0
             margin = 3
 
             if campo in CAMPOS_MULTILINEA:
@@ -778,7 +790,7 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                         lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
                 while lines and len(lines) * lh > h - 2*margin and fs > 6:
                     fs -= 0.5
-                    lh = fs * 1.35
+                    lh  = fs * 1.35
                     lines = []
                     for par in texto.splitlines():
                         if not par.strip():
@@ -810,24 +822,10 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                     c.drawString(x0 + margin, y_pos,
                                  texto.encode('latin-1', 'replace').decode('latin-1'))
 
-        # ── Dibujar X de sexo en el mismo canvas de ReportLab ────────────────
-        for campo, (x0, y0, x1, y1) in COORDS_SEXO.items():
-            if not campos.get(campo, '').strip():
-                continue
-            w = x1 - x0
-            h = y1 - y0
-            fs = 11.0
-            c.setFont("Helvetica-Bold", fs)
-            c.setFillColorRGB(0, 0, 0)
-            x_text = x0 + (w - c.stringWidth("X", "Helvetica-Bold", fs)) / 2
-            y_text = y0 + (h - fs) / 2
-            c.drawString(x_text, y_text, "X")
-
         c.save()
         ov_buf.seek(0)
 
-        # Fusionar overlay (texto + X de sexo) sobre el PDF base
-        ov_reader = PdfReader(ov_buf)
+        ov_reader  = PdfReader(ov_buf)
         writer_out = PdfWriter()
         for i, pg in enumerate(reader_base.pages):
             if i == 0 and ov_reader.pages:
@@ -837,28 +835,8 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
         merged = io.BytesIO()
         writer_out.write(merged)
         merged.seek(0)
-
-        # ── PASO 2: pikepdf solo para limpiar AcroForm/widgets ────────────────
-        try:
-            import pikepdf
-            with pikepdf.open(merged) as pdf:
-                if '/AcroForm' in pdf.Root:
-                    del pdf.Root['/AcroForm']
-                for p in pdf.pages:
-                    if '/Annots' in p:
-                        p['/Annots'] = pikepdf.Array([
-                            a for a in p['/Annots']
-                            if a.get('/Subtype') != '/Widget'
-                        ])
-                dst = io.BytesIO()
-                pdf.save(dst)
-                dst.seek(0)
-                print("✅ PDF neurología listo.")
-                return dst.read()
-        except Exception:
-            merged.seek(0)
-            print("✅ PDF neurología listo (sin limpiar AcroForm).")
-            return merged.read()
+        print("✅ PDF neurología listo.")
+        return merged.read()
 
     except Exception as e:
         print(f"❌ generar_pdf_neurologia_overlay: {e}")
@@ -4430,8 +4408,8 @@ def generar_pdfs_visibles():
                 }
 
             if form_type == 'neurologia':
-                # NEUROLOGÍA: usar generar_pdf_neurologia_overlay para que
-                # los checkboxes de sexo (X) se dibujen correctamente con ReportLab
+                # NEUROLOGÍA: usar generar_pdf_neurologia_overlay
+                # (escribe X en AcroForm antes de hacer merge, cuadro visible)
                 pdf_bytes = generar_pdf_neurologia_overlay(pdf_base_path, campos)
                 if not pdf_bytes:
                     continue

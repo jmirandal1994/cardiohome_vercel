@@ -836,8 +836,13 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
         writer_out = PdfWriter()
         for i, pg in enumerate(reader_base.pages):
             if i == 0 and ov_reader.pages:
-                pg.merge_page(ov_reader.pages[0])
-            writer_out.add_page(pg)
+                # CRÍTICO: overlay.merge_page(base) garantiza que el overlay
+                # queda ENCIMA del contenido del PDF base (no tapado por fondos blancos)
+                ov_page = ov_reader.pages[0]
+                ov_page.merge_page(pg)
+                writer_out.add_page(ov_page)
+            else:
+                writer_out.add_page(pg)
 
         merged = io.BytesIO()
         writer_out.write(merged)

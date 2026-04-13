@@ -773,17 +773,15 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
             es_multilinea = campo in CAMPOS_MULTILINEA
 
             if es_checkbox:
-                fs = 11.0
-                font = "Helvetica-Bold"
-                c.setFont(font, fs)
-                c.setFillColorRGB(0, 0, 0)
-                tw = c.stringWidth(texto, font, fs)
-                x_pos = x0 + (w - tw) / 2
-                y_pos = y0 + (h - fs) / 2 + 1
-                try:
-                    c.drawString(x_pos, y_pos, texto)
-                except Exception:
-                    pass
+                # Dibujar X como trazos vectoriales (no texto)
+                # Los paths no son afectados por el estado gráfico del PDF base
+                padding = 3.5
+                c.setStrokeColorRGB(0, 0, 0)
+                c.setLineWidth(1.8)
+                # Diagonal 1: esquina inf-izq → esquina sup-der
+                c.line(x0 + padding, y0 + padding, x1 - padding, y1 - padding)
+                # Diagonal 2: esquina sup-izq → esquina inf-der
+                c.line(x0 + padding, y1 - padding, x1 - padding, y0 + padding)
 
             elif es_multilinea:
                 fs = 9.0
@@ -836,8 +834,7 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
         writer_out = PdfWriter()
         for i, pg in enumerate(reader_base.pages):
             if i == 0 and ov_reader.pages:
-                # CRÍTICO: overlay.merge_page(base) garantiza que el overlay
-                # queda ENCIMA del contenido del PDF base (no tapado por fondos blancos)
+                # overlay.merge_page(base) → overlay queda ENCIMA siempre
                 ov_page = ov_reader.pages[0]
                 ov_page.merge_page(pg)
                 writer_out.add_page(ov_page)

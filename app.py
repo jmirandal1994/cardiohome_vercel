@@ -707,39 +707,6 @@ def aplicar_overlay_texto_largo(pdf_bytes, campos_valores):
         return pdf_bytes
 
 
-def flatten_pdf_fields(pdf_bytes):
-    """
-    Aplana los campos AcroForm del PDF convirtiéndolos en contenido estático.
-    Esto garantiza que el PDF se vea igual en navegadores (Chrome, Firefox, Edge) y Adobe.
-    Requiere pikepdf: pip install pikepdf
-    """
-    try:
-        import pikepdf
-        src = io.BytesIO(pdf_bytes)
-        dst = io.BytesIO()
-        with pikepdf.open(src) as pdf:
-            # Eliminar el diccionario AcroForm para aplanar campos
-            if "/AcroForm" in pdf.Root:
-                del pdf.Root["/AcroForm"]
-            # Limpiar anotaciones de campos en cada página
-            for page in pdf.pages:
-                if "/Annots" in page:
-                    annots_restantes = []
-                    for annot in page["/Annots"]:
-                        a = annot
-                        # Mantener solo anotaciones que NO son campos de formulario
-                        if a.get("/Subtype") != "/Widget":
-                            annots_restantes.append(annot)
-                    page["/Annots"] = pikepdf.Array(annots_restantes)
-            pdf.save(dst)
-        dst.seek(0)
-        print("✅ PDF aplanado — compatible con visores web (navegadores).")
-        return dst.read()
-    except Exception as e:
-        print(f"⚠️ flatten_pdf_fields: {e} — retornando PDF sin aplanar.")
-        return pdf_bytes
-
-
 def wrap_texto_pdf(texto, chars_por_linea=85):
     """
     Inserta saltos de linea automaticos en texto largo para que no se corte
@@ -3684,8 +3651,7 @@ def descargar_pdf_alumno(alumno_id):
         output = io.BytesIO()
         writer.write(output)
         output.seek(0)
-        pdf_overlay = aplicar_overlay_texto_largo(output.read(), campos)
-        pdf_final = flatten_pdf_fields(pdf_overlay)  # aplanar para compatibilidad con navegadores
+        pdf_final = aplicar_overlay_texto_largo(output.read(), campos)
 
 
         # Nombre del archivo para la descarga

@@ -487,20 +487,20 @@ def get_form_field_value(field_name, form_data, return_none_if_empty=False):
 def aplicar_autosize_campos(writer):
     """
     Recorre todos los campos de texto del PDF y les aplica:
-    - Quita el flag ReadOnly (bit 25) para que PyPDF2 pueda escribir los valores
     - Tamaño de fuente automático (DA con tamaño 0 = auto-fit)
-    - Flag Multiline activado para campos de texto largos
+    - Flag Multiline activado para campos de texto largos (indicaciones, diagnóstico, etc.)
     - Flag DoNotScroll desactivado para permitir scroll dentro del campo
+    Evita que el texto se corte o salga del campo cuando el contenido es largo.
     """
+    # Campos que sabemos son multilinea (texto largo)
     CAMPOS_MULTILINEA = {
         'indicaciones', 'derivaciones', 'estado_general', 'diagnostico',
         'diagnostico_1', 'diagnostico_2', 'observaciones', 'observacion_neurologia',
         'motivo_consulta', 'observacion_1', 'observacion_2', 'observacion_3',
         'observacion_4', 'observacion_5', 'observacion_6', 'observacion_7',
     }
-    FF_READ_ONLY     = 1 << 0   # bit 1  — solo lectura (lo QUITAMOS)
-    FF_READONLY_ALT  = 1 << 25  # bit 26 — otra forma de ReadOnly usada por algunos editores
-    FF_MULTILINE     = 1 << 12  # bit 13 — activa texto multilinea
+    # Flags de campo PDF
+    FF_MULTILINE    = 1 << 12   # bit 13 — activa texto multilinea
     FF_DO_NOT_SCROLL = 1 << 23  # bit 24 — desactiva scroll (lo quitamos)
 
     try:
@@ -517,28 +517,26 @@ def aplicar_autosize_campos(writer):
                 ft = field.get("/FT")
 
                 if ft == "/Tx":
-                    nombre_campo = str(field.get("/T", "")).lower()
-
-                    # ── 1. Quitar ReadOnly para que se pueda escribir ──────────
-                    ff_actual = int(field.get("/Ff", 0))
-                    ff_nuevo  = ff_actual & ~FF_READ_ONLY & ~FF_READONLY_ALT & ~FF_DO_NOT_SCROLL
-
-                    # ── 2. Activar Multiline en campos largos ─────────────────
-                    es_multilinea = any(m in nombre_campo for m in CAMPOS_MULTILINEA)
-                    if es_multilinea:
-                        ff_nuevo = ff_nuevo | FF_MULTILINE
-
-                    field.update({NameObject("/Ff"): NumberObject(ff_nuevo)})
-
-                    # ── 3. Auto-size fuente ───────────────────────────────────
+                    # Tamaño 0 = auto-size en lectores PDF compatibles
                     da_actual = str(field.get("/DA", "/Helv 0 Tf 0 g"))
-                    da_nuevo  = re.sub(r'(\d+\.?\d*)\s+Tf', '0 Tf', da_actual)
+                    import re
+                    da_nuevo = re.sub(r'(\d+\.?\d*)\s+Tf', '0 Tf', da_actual)
                     if "Tf" not in da_nuevo:
                         da_nuevo = "/Helv 0 Tf 0 g"
                     field.update({NameObject("/DA"): NameObject(da_nuevo)})
-
                     if "/DS" in field:
                         del field[NameObject("/DS")]
+
+                    # Obtener nombre del campo para detectar si es multilinea
+                    nombre_campo = str(field.get("/T", "")).lower()
+                    es_multilinea = any(m in nombre_campo for m in CAMPOS_MULTILINEA)
+
+                    if es_multilinea:
+                        # Leer flags actuales
+                        ff_actual = int(field.get("/Ff", 0))
+                        # Activar Multiline, desactivar DoNotScroll
+                        ff_nuevo = (ff_actual | FF_MULTILINE) & ~FF_DO_NOT_SCROLL
+                        field.update({NameObject("/Ff"): NumberObject(ff_nuevo)})
 
                 # Procesar hijos (campos agrupados)
                 if "/Kids" in field:
@@ -555,7 +553,7 @@ def aplicar_autosize_campos(writer):
         writer._root_object["/AcroForm"].update({
             NameObject("/NeedAppearances"): BooleanObject(True)
         })
-        print("✅ aplicar_autosize_campos: ReadOnly removido + auto-size + multiline aplicado.")
+        print("✅ aplicar_autosize_campos: auto-size + multiline aplicado.")
 
     except Exception as e:
         print(f"⚠️  aplicar_autosize_campos: error general — {e}")
@@ -566,23 +564,15 @@ def aplicar_autosize_campos(writer):
 
 def extraer_coordenadas_campos(pdf_path):
     """
-    Lee el PDF BASE (plantilla) ANTES de llenarlo y extrae las coordenadas
-    de todos los campos de texto largos (AcroForm /Rect).
+    Lee TODOS los campos del PDF base y retorna sus coordenadas.
     Retorna dict: { nombre_campo_lower: (x0, y0, x1, y1) }
     """
-    CAMPOS_LARGOS = {
-        'indicaciones', 'derivaciones', 'estado_general', 'diagnostico',
-        'diagnostico_1', 'diagnostico_2', 'observaciones', 'observacion_neurologia',
-        'motivo_consulta', 'observacion_1', 'observacion_2', 'observacion_3',
-        'observacion_4', 'observacion_5', 'observacion_6', 'observacion_7',
-    }
     coordenadas = {}
     try:
         reader = PdfReader(pdf_path)
         root = reader.trailer["/Root"].get_object()
         acro = root.get("/AcroForm")
         if not acro:
-            print("  [extraer_coords] No hay AcroForm en el PDF base.")
             return coordenadas
         ao = acro.get_object() if hasattr(acro, 'get_object') else acro
 
@@ -591,89 +581,94 @@ def extraer_coordenadas_campos(pdf_path):
                 f = fref.get_object() if hasattr(fref, 'get_object') else fref
                 nombre = str(f.get("/T", "")).lower().strip()
                 ft = f.get("/FT")
-                if ft == "/Tx" and any(c in nombre for c in CAMPOS_LARGOS):
+                if ft == "/Tx" and nombre:
                     rect = f.get("/Rect")
                     if rect:
                         coordenadas[nombre] = (
                             float(rect[0]), float(rect[1]),
                             float(rect[2]), float(rect[3])
                         )
-                        print(f"  [extraer_coords] Campo '{nombre}': {coordenadas[nombre]}")
                 kids = f.get("/Kids")
                 if kids:
                     for kid in kids:
                         _proc(kid)
-            except Exception as ex:
-                print(f"  [extraer_coords] error en campo: {ex}")
+            except Exception:
+                pass
 
         for fr in ao.get("/Fields", []):
             _proc(fr)
-
-        print(f"  [extraer_coords] Total campos largos encontrados: {len(coordenadas)}")
+        print(f"  [extraer_coords] {len(coordenadas)} campos encontrados: {list(coordenadas.keys())}")
     except Exception as e:
-        print(f"  [extraer_coords] Error general: {e}")
+        print(f"  [extraer_coords] Error: {e}")
     return coordenadas
 
 
-def aplicar_overlay_texto_largo(pdf_bytes, campos_valores, coordenadas_base=None):
+# Campos multilinea (texto largo que necesita wrapping)
+_CAMPOS_MULTILINEA = {
+    'indicaciones', 'derivaciones', 'estado_general', 'diagnostico',
+    'diagnostico_1', 'diagnostico_2', 'observaciones', 'observacion_neurologia',
+    'motivo_consulta', 'observacion_1', 'observacion_2', 'observacion_3',
+    'observacion_4', 'observacion_5', 'observacion_6', 'observacion_7',
+}
+
+
+def generar_pdf_con_overlay(pdf_base_path, campos_valores):
     """
-    Dibuja el texto de los campos largos como gráfico fijo usando ReportLab,
-    usando coordenadas extraídas del PDF BASE (antes de llenarlo).
-    Luego aplana el PDF para que se vea igual en Chrome, Edge, Firefox y Adobe.
+    Solución definitiva para dibujar datos en PDFs con campos ReadOnly.
+    
+    Estrategia: NO usa AcroForm ni update_page_form_field_values.
+    En cambio, usa ReportLab para dibujar TODOS los valores directamente
+    sobre el PDF base como texto gráfico fijo, luego elimina el AcroForm
+    para que el resultado sea idéntico en Chrome, Firefox, Edge y Adobe.
+    
+    Funciona independientemente del flag ReadOnly del PDF base.
     """
     if not REPORTLAB_OK:
-        return pdf_bytes
+        print("⚠️  generar_pdf_con_overlay: ReportLab no disponible.")
+        return None
 
-    if not coordenadas_base:
-        print("⚠️  overlay: no se recibieron coordenadas — PDF sin overlay.")
-        return pdf_bytes
+    try:
+        # 1. Leer coordenadas de TODOS los campos del PDF base
+        coordenadas = extraer_coordenadas_campos(pdf_base_path)
+        if not coordenadas:
+            print("⚠️  generar_pdf_con_overlay: no se encontraron coordenadas.")
+            return None
 
-    CAMPOS_LARGOS = {
-        'indicaciones', 'derivaciones', 'estado_general', 'diagnostico',
-        'diagnostico_1', 'diagnostico_2', 'observaciones', 'observacion_neurologia',
-        'motivo_consulta', 'observacion_1', 'observacion_2', 'observacion_3',
-        'observacion_4', 'observacion_5', 'observacion_6', 'observacion_7',
-    }
+        # 2. Leer dimensiones de página del PDF base
+        reader_base = PdfReader(pdf_base_path)
+        pg0 = reader_base.pages[0]
+        pw = float(pg0.mediabox.width)
+        ph = float(pg0.mediabox.height)
 
-    # Construir rects: { nombre_campo: (x0,y0,x1,y1,texto) }
-    rects = {}
-    for nombre, (x0, y0, x1, y1) in coordenadas_base.items():
-        if not any(c in nombre for c in CAMPOS_LARGOS):
-            continue
-        valor = None
-        for k, v in campos_valores.items():
-            if k.lower() == nombre:
-                valor = v
-                break
-        if not valor:
+        # 3. Crear overlay ReportLab con TODOS los valores
+        ov_buf = io.BytesIO()
+        c = rl_canvas.Canvas(ov_buf, pagesize=(pw, ph))
+
+        for nombre_campo, (x0, y0, x1, y1) in coordenadas.items():
+            # Buscar valor en campos_valores (coincidencia exacta primero)
+            valor = None
             for k, v in campos_valores.items():
-                if nombre.startswith(k.lower()) or k.lower().startswith(nombre):
+                if k.lower() == nombre_campo:
                     valor = v
                     break
-        if valor and str(valor).strip():
-            rects[nombre] = (x0, y0, x1, y1, str(valor).strip())
+            if valor is None:
+                for k, v in campos_valores.items():
+                    if nombre_campo.startswith(k.lower()) or k.lower().startswith(nombre_campo):
+                        valor = v
+                        break
+            if not valor or not str(valor).strip():
+                continue
 
-    if not rects:
-        print("⚠️  overlay: ningún campo largo con valor — PDF sin overlay.")
-        return pdf_bytes
-
-    def _crear_overlay(rects, pw, ph):
-        buf = io.BytesIO()
-        c = rl_canvas.Canvas(buf, pagesize=(pw, ph))
-        for nombre, (x0, y0, x1, y1, texto) in rects.items():
+            texto = str(valor).strip()
             w = x1 - x0
             h = y1 - y0
-            margin = 4
-            fs = 9.0
-            lh = fs * 1.35
-            lines = []
-            for par in texto.splitlines():
-                if not par.strip():
-                    lines.append('')
-                else:
-                    lines.extend(simpleSplit(par, "Helvetica", fs, w - 2 * margin) or [''])
-            while lines and len(lines) * lh > h - 2 * margin and fs > 6:
-                fs -= 0.5
+            margin = 3
+
+            es_multilinea = any(m in nombre_campo for m in _CAMPOS_MULTILINEA)
+
+            if es_multilinea:
+                # Texto largo: wrapping automático con reducción de fuente
+                fs = 9.0
                 lh = fs * 1.35
                 lines = []
                 for par in texto.splitlines():
@@ -681,54 +676,94 @@ def aplicar_overlay_texto_largo(pdf_bytes, campos_valores, coordenadas_base=None
                         lines.append('')
                     else:
                         lines.extend(simpleSplit(par, "Helvetica", fs, w - 2 * margin) or [''])
-            c.setFont("Helvetica", fs)
-            c.setFillColorRGB(0, 0, 0)
-            y_pos = y1 - margin - fs
-            for line in lines:
-                if y_pos < y0 + margin:
-                    break
+                while lines and len(lines) * lh > h - 2 * margin and fs > 6:
+                    fs -= 0.5
+                    lh = fs * 1.35
+                    lines = []
+                    for par in texto.splitlines():
+                        if not par.strip():
+                            lines.append('')
+                        else:
+                            lines.extend(simpleSplit(par, "Helvetica", fs, w - 2 * margin) or [''])
+                c.setFont("Helvetica", fs)
+                c.setFillColorRGB(0, 0, 0)
+                y_pos = y1 - margin - fs
+                for line in lines:
+                    if y_pos < y0 + margin:
+                        break
+                    try:
+                        c.drawString(x0 + margin, y_pos, line)
+                    except Exception:
+                        c.drawString(x0 + margin, y_pos,
+                                     line.encode('latin-1', 'replace').decode('latin-1'))
+                    y_pos -= lh
+            else:
+                # Texto corto: una sola línea centrada verticalmente
+                fs = 9.0
+                # Reducir fuente si el texto es muy ancho
+                while fs > 6 and simpleSplit(texto, "Helvetica", fs, w - 2 * margin) and \
+                      len(simpleSplit(texto, "Helvetica", fs, w - 2 * margin)) > 1:
+                    fs -= 0.5
+                c.setFont("Helvetica", fs)
+                c.setFillColorRGB(0, 0, 0)
+                y_center = y0 + (h - fs) / 2
                 try:
-                    c.drawString(x0 + margin, y_pos, line)
+                    c.drawString(x0 + margin, y_center, texto)
                 except Exception:
-                    c.drawString(x0 + margin, y_pos,
-                                 line.encode('latin-1', 'replace').decode('latin-1'))
-                y_pos -= lh
+                    c.drawString(x0 + margin, y_center,
+                                 texto.encode('latin-1', 'replace').decode('latin-1'))
+
         c.save()
-        buf.seek(0)
-        return buf
+        ov_buf.seek(0)
 
-    try:
-        reader = PdfReader(io.BytesIO(pdf_bytes))
-        pg0 = reader.pages[0]
-        pw = float(pg0.mediabox.width)
-        ph = float(pg0.mediabox.height)
-
-        ov_buf = _crear_overlay(rects, pw, ph)
+        # 4. Fusionar overlay sobre el PDF base
         ov_reader = PdfReader(ov_buf)
-
         writer_out = PdfWriter()
-        for i, pg in enumerate(reader.pages):
+        for i, pg in enumerate(reader_base.pages):
             if i == 0 and ov_reader.pages:
                 pg.merge_page(ov_reader.pages[0])
             writer_out.add_page(pg)
 
-        out = io.BytesIO()
-        writer_out.write(out)
-        out.seek(0)
-        print("✅ Overlay de texto aplicado con coordenadas del PDF base.")
-        return out.read()
+        merged_buf = io.BytesIO()
+        writer_out.write(merged_buf)
+        merged_buf.seek(0)
+        pdf_merged = merged_buf.read()
+
+        # 5. Eliminar AcroForm con pikepdf para que se vea igual en todos los visores
+        try:
+            import pikepdf
+            src = io.BytesIO(pdf_merged)
+            dst = io.BytesIO()
+            with pikepdf.open(src) as pdf:
+                if "/AcroForm" in pdf.Root:
+                    del pdf.Root["/AcroForm"]
+                for page in pdf.pages:
+                    if "/Annots" in page:
+                        page["/Annots"] = pikepdf.Array([
+                            a for a in page["/Annots"]
+                            if a.get("/Subtype") != "/Widget"
+                        ])
+                pdf.save(dst)
+            dst.seek(0)
+            print("✅ generar_pdf_con_overlay: PDF listo con overlay + flatten.")
+            return dst.read()
+        except Exception as e:
+            print(f"⚠️  flatten falló ({e}), retornando PDF sin flatten.")
+            return pdf_merged
 
     except Exception as e:
-        print(f"⚠️  overlay: {e} — PDF sin overlay.")
-        return pdf_bytes
+        print(f"❌ generar_pdf_con_overlay: {e}")
+        return None
+
+
+# Mantener estas funciones por compatibilidad con otros usos en el código
+def aplicar_overlay_texto_largo(pdf_bytes, campos_valores, coordenadas_base=None):
+    """Wrapper de compatibilidad — redirige a generar_pdf_con_overlay si es posible."""
+    return pdf_bytes  # No se usa más directamente; ver generar_pdf_con_overlay
 
 
 def flatten_pdf_fields(pdf_bytes):
-    """
-    Aplana los campos AcroForm del PDF convirtiéndolos en contenido estático.
-    Garantiza que el PDF se vea igual en Chrome, Firefox, Edge y Adobe.
-    Requiere pikepdf.
-    """
+    """Aplana AcroForm para compatibilidad con navegadores."""
     try:
         import pikepdf
         src = io.BytesIO(pdf_bytes)
@@ -738,17 +773,15 @@ def flatten_pdf_fields(pdf_bytes):
                 del pdf.Root["/AcroForm"]
             for page in pdf.pages:
                 if "/Annots" in page:
-                    annots_restantes = [
-                        annot for annot in page["/Annots"]
-                        if annot.get("/Subtype") != "/Widget"
-                    ]
-                    page["/Annots"] = pikepdf.Array(annots_restantes)
+                    page["/Annots"] = pikepdf.Array([
+                        a for a in page["/Annots"]
+                        if a.get("/Subtype") != "/Widget"
+                    ])
             pdf.save(dst)
         dst.seek(0)
-        print("✅ PDF aplanado — compatible con navegadores.")
         return dst.read()
     except Exception as e:
-        print(f"⚠️ flatten_pdf_fields: {e} — retornando PDF sin aplanar.")
+        print(f"⚠️ flatten_pdf_fields: {e}")
         return pdf_bytes
 
 
@@ -3559,17 +3592,6 @@ def descargar_pdf_alumno(alumno_id):
             
         print(f"DEBUG: Usando PDF Base Path: {pdf_base_path}") 
 
-
-        # 5. INICIALIZAR EL RELLENADOR DE PDF
-        # Extraer coordenadas del PDF BASE antes de llenarlo
-        coordenadas_base = extraer_coordenadas_campos(pdf_base_path)
-        reader = PdfReader(pdf_base_path) 
-        writer = PdfWriter()
-        
-        # Iterar sobre las páginas
-        for page in reader.pages:
-            writer.add_page(page)
-
         # 6. Preparar y Mapear Campos del PDF 
         nombre = est.get('nombre', '')
         rut = format_rut_python(est.get('rut', ''))
@@ -3677,55 +3699,13 @@ def descargar_pdf_alumno(alumno_id):
             }
 
 
-        # 7. Llenado final del PDF y send_file
-        if "/AcroForm" not in writer._root_object:
-            writer._root_object.update({
-                NameObject("/AcroForm"): DictionaryObject()
-            })
+        # 7. Generar PDF con overlay ReportLab (dibuja TODOS los campos directo)
+        # Esto bypasea completamente el problema del flag ReadOnly del PDF base
+        pdf_final = generar_pdf_con_overlay(pdf_base_path, campos)
 
-        # ── PASO CRÍTICO: quitar ReadOnly ANTES de escribir los valores ───────
-        # Ff=33554432 (bit 25) marca todos los campos como ReadOnly en este PDF base
-        # Si no se quita, PyPDF2 no puede escribir ningún valor
-        FF_READ_ONLY    = 1 << 0   # bit 1
-        FF_READONLY_ALT = 1 << 25  # bit 26 (el que usa este PDF: 33554432)
-        try:
-            acroform = writer._root_object["/AcroForm"]
-            def _quitar_readonly(field_ref):
-                try:
-                    field = field_ref.get_object()
-                    ff = int(field.get("/Ff", 0))
-                    ff_limpio = ff & ~FF_READ_ONLY & ~FF_READONLY_ALT
-                    if ff != ff_limpio:
-                        field.update({NameObject("/Ff"): NumberObject(ff_limpio)})
-                    if "/Kids" in field:
-                        for kid in field["/Kids"]:
-                            _quitar_readonly(kid)
-                except Exception:
-                    pass
-            for fr in acroform.get("/Fields", []):
-                _quitar_readonly(fr)
-            print("✅ ReadOnly removido de todos los campos antes de llenar.")
-        except Exception as e:
-            print(f"⚠️  No se pudo quitar ReadOnly: {e}")
-
-        # ── Llenar campos con los datos del estudiante ─────────────────────────
-        for page in writer.pages:
-            writer.update_page_form_field_values(page, campos)
-            
-        writer._root_object["/AcroForm"].update({
-            NameObject("/NeedAppearances"): BooleanObject(True)
-        })
-
-        # Auto-size y apariencias visuales para compatibilidad con visores web
-        aplicar_autosize_campos(writer)
-        # overlay con coordenadas del PDF base + aplanar para navegadores
-
-        output = io.BytesIO()
-        writer.write(output)
-        output.seek(0)
-        pdf_overlay = aplicar_overlay_texto_largo(output.read(), campos, coordenadas_base=coordenadas_base)
-        pdf_final = flatten_pdf_fields(pdf_overlay)
-
+        if not pdf_final:
+            flash("❌ Error al generar el PDF. Intente nuevamente.", 'error')
+            return redirect(url_for('dashboard'))
 
         # Nombre del archivo para la descarga
         nombre_archivo_descarga = f"Valoracion_{nombre.replace(' ', '_')}_{rut}_{nombre_nomina.replace(' ', '_')}.pdf"
@@ -7435,67 +7415,3 @@ def api_coordinadora_export_pdf():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
-
-
-# ── DIAGNÓSTICO TEMPORAL: ver nombres reales de campos del PDF base ──────────
-@app.route('/admin/inspeccionar_pdf_base', methods=['GET'])
-def admin_inspeccionar_pdf_base():
-    if session.get('usuario') != 'admin':
-        return jsonify({"error": "Acceso denegado"}), 403
-
-    form_type = request.args.get('tipo', 'neurologia')
-    base_dir  = os.path.dirname(os.path.abspath(__file__))
-
-    if form_type == 'neurologia':
-        pdf_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
-    elif form_type == 'familiar':
-        pdf_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
-    elif form_type == 'informe':
-        pdf_path = os.path.join(base_dir, PDF_BASE_INFORME_NEURO)
-    else:
-        return jsonify({"error": "tipo inválido"}), 400
-
-    if not os.path.exists(pdf_path):
-        return jsonify({"error": f"PDF no encontrado: {pdf_path}"}), 404
-
-    try:
-        reader = PdfReader(pdf_path)
-        campos_encontrados = []
-
-        root = reader.trailer["/Root"].get_object()
-        acro = root.get("/AcroForm")
-        if not acro:
-            return jsonify({"error": "El PDF no tiene AcroForm", "path": pdf_path})
-
-        ao = acro.get_object() if hasattr(acro, 'get_object') else acro
-
-        def _proc(fref):
-            try:
-                f = fref.get_object() if hasattr(fref, 'get_object') else fref
-                nombre = str(f.get("/T", "SIN_NOMBRE"))
-                ft     = str(f.get("/FT", "SIN_FT"))
-                rect   = f.get("/Rect")
-                rect_vals = [float(r) for r in rect] if rect else None
-                campos_encontrados.append({
-                    "nombre": nombre,
-                    "tipo":   ft,
-                    "rect":   rect_vals,
-                })
-                kids = f.get("/Kids")
-                if kids:
-                    for kid in kids:
-                        _proc(kid)
-            except Exception as ex:
-                campos_encontrados.append({"error": str(ex)})
-
-        for fr in ao.get("/Fields", []):
-            _proc(fr)
-
-        return jsonify({
-            "pdf_path": pdf_path,
-            "total_campos": len(campos_encontrados),
-            "campos": campos_encontrados,
-        })
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500

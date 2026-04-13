@@ -698,19 +698,28 @@ def generar_pdf_con_overlay(pdf_base_path, campos_valores):
                                      line.encode('latin-1', 'replace').decode('latin-1'))
                     y_pos -= lh
             else:
-                # Texto corto: una sola línea centrada verticalmente
-                fs = 9.0
+                # Texto corto: centrado horizontal y verticalmente
+                # Para campos pequeños tipo checkbox (sexo_f, sexo_m, checks) centra la X
+                es_checkbox = w < 30 and h < 30  # campo pequeño = checkbox
+                fs = 10.0 if es_checkbox else 9.0
+
                 # Reducir fuente si el texto es muy ancho
-                while fs > 6 and simpleSplit(texto, "Helvetica", fs, w - 2 * margin) and \
-                      len(simpleSplit(texto, "Helvetica", fs, w - 2 * margin)) > 1:
+                while fs > 6 and c.stringWidth(texto, "Helvetica-Bold" if es_checkbox else "Helvetica", fs) > w - 2:
                     fs -= 0.5
-                c.setFont("Helvetica", fs)
+
+                font_name = "Helvetica-Bold" if es_checkbox else "Helvetica"
+                c.setFont(font_name, fs)
                 c.setFillColorRGB(0, 0, 0)
-                y_center = y0 + (h - fs) / 2
+
+                # Centrar horizontal y verticalmente dentro del campo
+                text_w = c.stringWidth(texto, font_name, fs)
+                x_pos = x0 + (w - text_w) / 2
+                y_pos = y0 + (h - fs) / 2
+
                 try:
-                    c.drawString(x0 + margin, y_center, texto)
+                    c.drawString(x_pos, y_pos, texto)
                 except Exception:
-                    c.drawString(x0 + margin, y_center,
+                    c.drawString(x_pos, y_pos,
                                  texto.encode('latin-1', 'replace').decode('latin-1'))
 
         c.save()

@@ -814,12 +814,7 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
             ov_fkeys   = list(ov_res['/Font'].keys()) if '/Font' in ov_res else []
 
         # Envolver en q/Q con negro forzado para aislar del estado del PDF base
-        wrapped = b'q
-0 0 0 rg
-0 0 0 RG
-' + raw_bytes + b'
-Q
-'
+        wrapped = b'q\n0 0 0 rg\n0 0 0 RG\n' + raw_bytes + b'\nQ\n'
 
         # ── PASO 2: pikepdf — X en AcroForm + inyectar stream de texto ───────
         with pikepdf.open(pdf_base_path) as pdf:

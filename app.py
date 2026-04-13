@@ -7,6 +7,13 @@ from datetime import datetime, date, timedelta
 from openpyxl import load_workbook
 from PyPDF2 import PdfReader, PdfWriter
 from PyPDF2.generic import BooleanObject, NameObject, NumberObject, DictionaryObject
+# Reportlab: overlay de texto compatible con visores web
+try:
+    from reportlab.pdfgen import canvas as rl_canvas
+    from reportlab.lib.utils import simpleSplit
+    REPORTLAB_OK = True
+except ImportError:
+    REPORTLAB_OK = False
 import mimetypes
 import io
 import uuid
@@ -555,21 +562,18 @@ def aplicar_autosize_campos(writer):
 
 
 
-def generar_apariencias_campos(writer, campos_valores):
+def aplicar_overlay_texto_largo(pdf_bytes, campos_valores):
     """
-    Genera appearance streams (/AP) para campos de texto largo.
-    El texto queda visualmente incrustado — se ve igual en Chrome, Edge, iOS.
-    campos_valores: dict {nombre_campo: texto}
+    Solución definitiva para visores web (Chrome, Edge, iOS):
+    1. Lee el PDF ya rellenado con PyPDF2
+    2. VACIA el valor visible de los campos largos en AcroForm (evita texto doble)
+    3. Obtiene las coordenadas exactas de cada campo largo
+    4. Dibuja el texto con reportlab como gráfico fijo en esas coordenadas
+    5. Fusiona el overlay con el PDF
+    Si reportlab no está disponible, retorna el PDF sin cambios.
     """
-    import textwrap
-    from PyPDF2.generic import (
-        DecodedStreamObject, DictionaryObject, ArrayObject,
-        NameObject, NumberObject
-    )
-
-    FONT_SIZE   = 9
-    LINE_HEIGHT = FONT_SIZE * 1.35
-    MARGIN      = 3
+    if not REPORTLAB_OK:
+        return pdf_bytes
 
     CAMPOS_LARGOS = {
         'indicaciones', 'derivaciones', 'estado_general', 'diagnostico',
@@ -578,96 +582,129 @@ def generar_apariencias_campos(writer, campos_valores):
         'observacion_4', 'observacion_5', 'observacion_6', 'observacion_7',
     }
 
-    def _stream(valor, rect_obj):
+    def _get_rects_y_limpiar(reader):
+        """Lee coords de campos largos y vacía su valor visible en AcroForm."""
+        rects = {}
         try:
-            x0,y0,x1,y1 = [float(rect_obj[i]) for i in range(4)]
-        except Exception:
-            return None
-        w, h = x1-x0, y1-y0
-        if w<=0 or h<=0: return None
+            from pypdf.generic import create_string_object
+            root = reader.trailer["/Root"].get_object()
+            acro = root.get("/AcroForm")
+            if not acro:
+                return rects
+            ao = acro.get_object() if hasattr(acro, 'get_object') else acro
 
-        chars_line = max(10, int((w-2*MARGIN)/(FONT_SIZE*0.52)))
-        lines = []
-        for par in (valor or '').splitlines():
-            if not par.strip():
-                lines.append('')
-            else:
-                lines.extend(textwrap.wrap(par, width=chars_line, break_long_words=True) or [''])
+            def _proc(fref):
+                try:
+                    f = fref.get_object()
+                    nombre = str(f.get("/T", "")).lower().strip()
+                    if f.get("/FT") == "/Tx" and any(c in nombre for c in CAMPOS_LARGOS):
+                        # Buscar valor en campos_valores
+                        valor = None
+                        for k, v in campos_valores.items():
+                            if k.lower() == nombre:
+                                valor = v; break
+                        if not valor:
+                            for k, v in campos_valores.items():
+                                if nombre.startswith(k.lower()) or k.lower().startswith(nombre):
+                                    valor = v; break
+                        if valor and str(valor).strip():
+                            rect = f.get("/Rect")
+                            if rect:
+                                rects[nombre] = (
+                                    float(rect[0]), float(rect[1]),
+                                    float(rect[2]), float(rect[3]),
+                                    str(valor).strip()
+                                )
+                            # Vaciar valor visible del campo para evitar texto doble
+                            try:
+                                from pypdf.generic import create_string_object
+                                f["/V"] = create_string_object("")
+                                if "/AP" in f:
+                                    del f["/AP"]
+                            except Exception:
+                                pass
+                    if "/Kids" in f:
+                        for kid in f["/Kids"]: _proc(kid)
+                except Exception:
+                    pass
 
-        fs, lh = FONT_SIZE, LINE_HEIGHT
-        while len(lines)*lh > h-2*MARGIN and fs > 5:
-            fs -= 0.5; lh = fs*1.35
-
-        ops = [
-            b"/Tx BMC", b"q",
-            ("0 0 %.2f %.2f re W n" % (w,h)).encode(),
-            b"BT", ("/Helv %.1f Tf" % fs).encode(), b"0 g",
-        ]
-        first = True
-        for i, line in enumerate(lines):
-            y_pos = h - MARGIN - fs - i*lh
-            if y_pos < MARGIN: break
-            safe = line.replace('\\','\\\\').replace('(','\\(').replace(')','\\)')
-            sb = safe.encode('latin-1', errors='replace')
-            if first:
-                ops.append(("%.2f %.2f Td" % (MARGIN, y_pos)).encode()); first=False
-            else:
-                ops.append(("0 %.2f Td" % (-lh,)).encode())
-            ops.append(b"(" + sb + b") Tj")
-        ops += [b"ET", b"Q", b"EMC"]
-        return b"\n".join(ops)
-
-    def _proc(field_ref):
-        try:
-            field = field_ref.get_object()
-            if field.get("/FT") == "/Tx":
-                nombre = str(field.get("/T","")).lower()
-                if any(c in nombre for c in CAMPOS_LARGOS):
-                    valor = None
-                    for k,v in campos_valores.items():
-                        if k.lower() == nombre or nombre.startswith(k.lower()):
-                            valor = v; break
-                    if valor:
-                        rect = field.get("/Rect")
-                        if rect:
-                            sc = _stream(valor, rect)
-                            if sc:
-                                ap_obj = DecodedStreamObject()
-                                ap_obj._data = sc
-                                ap_obj.update({
-                                    NameObject("/Type"):    NameObject("/XObject"),
-                                    NameObject("/Subtype"): NameObject("/Form"),
-                                    NameObject("/BBox"): ArrayObject([
-                                        NumberObject(0), NumberObject(0),
-                                        NumberObject(float(rect[2])-float(rect[0])),
-                                        NumberObject(float(rect[3])-float(rect[1]))
-                                    ]),
-                                    NameObject("/Resources"): DictionaryObject({
-                                        NameObject("/Font"): DictionaryObject({
-                                            NameObject("/Helv"): writer._add_object(DictionaryObject({
-                                                NameObject("/Type"):     NameObject("/Font"),
-                                                NameObject("/Subtype"):  NameObject("/Type1"),
-                                                NameObject("/BaseFont"): NameObject("/Helvetica"),
-                                            }))
-                                        })
-                                    }),
-                                })
-                                ap_ref = writer._add_object(ap_obj)
-                                field.update({NameObject("/AP"): DictionaryObject({NameObject("/N"): ap_ref})})
-            if "/Kids" in field:
-                for kid in field["/Kids"]: _proc(kid)
+            for fr in ao.get("/Fields", []):
+                _proc(fr)
         except Exception as ex:
-            print(f"  [ap] {ex}")
+            print(f"  [overlay] get_rects: {ex}")
+        return rects
+
+    def _crear_overlay(rects, pw, ph):
+        """Crea página PDF con texto dibujado en posiciones exactas."""
+        buf = io.BytesIO()
+        c = rl_canvas.Canvas(buf, pagesize=(pw, ph))
+        for nombre, (x0, y0, x1, y1, texto) in rects.items():
+            w, h = x1 - x0, y1 - y0
+            margin, fs = 3, 9.0
+            lh = fs * 1.35
+            lines = []
+            for par in texto.splitlines():
+                if not par.strip():
+                    lines.append('')
+                else:
+                    lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
+            # Reducir fuente si no cabe verticalmente
+            while lines and len(lines) * lh > h - 2*margin and fs > 6:
+                fs -= 0.5; lh = fs * 1.35
+                lines = []
+                for par in texto.splitlines():
+                    if not par.strip():
+                        lines.append('')
+                    else:
+                        lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
+            c.setFont("Helvetica", fs)
+            c.setFillColorRGB(0, 0, 0)
+            y_pos = y1 - margin - fs
+            for line in lines:
+                if y_pos < y0 + margin:
+                    break
+                try:
+                    c.drawString(x0 + margin, y_pos, line)
+                except Exception:
+                    c.drawString(x0 + margin, y_pos,
+                                 line.encode('latin-1', 'replace').decode('latin-1'))
+                y_pos -= lh
+        c.save()
+        buf.seek(0)
+        return buf
 
     try:
-        acroform = writer._root_object.get("/AcroForm")
-        if not acroform: return
-        ao = acroform.get_object() if hasattr(acroform,'get_object') else acroform
-        for f in ao.get("/Fields",[]): _proc(f)
-        print("✅ AP streams generados para visores web.")
-    except Exception as e:
-        print(f"⚠️  generar_apariencias_campos: {e}")
+        from pypdf import PdfReader as _PR, PdfWriter as _PW
+        reader = _PR(io.BytesIO(pdf_bytes))
 
+        # Obtener coordenadas Y limpiar valores visibles de campos largos
+        rects = _get_rects_y_limpiar(reader)
+        if not rects:
+            return pdf_bytes
+
+        pg0 = reader.pages[0]
+        pw, ph = float(pg0.mediabox.width), float(pg0.mediabox.height)
+
+        # Crear overlay con el texto
+        ov_buf = _crear_overlay(rects, pw, ph)
+        ov_reader = _PR(ov_buf)
+
+        # Fusionar: primero el overlay (texto limpio), luego el resto del PDF
+        writer_out = _PW()
+        for i, pg in enumerate(reader.pages):
+            if i == 0 and ov_reader.pages:
+                pg.merge_page(ov_reader.pages[0])
+            writer_out.add_page(pg)
+
+        out = io.BytesIO()
+        writer_out.write(out)
+        out.seek(0)
+        print("✅ Overlay de texto aplicado — compatible con visores web.")
+        return out.read()
+
+    except Exception as e:
+        print(f"⚠️  overlay: {e} — PDF sin overlay.")
+        return pdf_bytes
 
 
 def wrap_texto_pdf(texto, chars_por_linea=85):
@@ -1103,14 +1140,16 @@ def generar_pdf():
 
         # Auto-size y apariencias visuales para compatibilidad con visores web
         aplicar_autosize_campos(writer)
-        generar_apariencias_campos(writer, campos)
+        # overlay aplicado después de escribir PDF
         
         output = io.BytesIO()
         writer.write(output)
         output.seek(0)
+        pdf_final = aplicar_overlay_texto_largo(output.read(), campos)
+
 
         nombre_descarga = f"{nombre.replace(' ', '_')}_{rut}_formulario_{form_type}.pdf"
-        return send_file(output, as_attachment=True, download_name=nombre_descarga, mimetype='application/pdf')
+        return send_file(io.BytesIO(pdf_final), as_attachment=True, download_name=nombre_descarga, mimetype='application/pdf')
 
     except Exception as e:
         print(f"❌ Error al generar PDF: {e}")
@@ -3607,16 +3646,18 @@ def descargar_pdf_alumno(alumno_id):
 
         # Auto-size y apariencias visuales para compatibilidad con visores web
         aplicar_autosize_campos(writer)
-        generar_apariencias_campos(writer, campos)
+        # overlay aplicado después de escribir PDF
         
         output = io.BytesIO()
         writer.write(output)
         output.seek(0)
+        pdf_final = aplicar_overlay_texto_largo(output.read(), campos)
+
 
         # Nombre del archivo para la descarga
         nombre_archivo_descarga = f"Valoracion_{nombre.replace(' ', '_')}_{rut}_{nombre_nomina.replace(' ', '_')}.pdf"
         
-        return send_file(output, as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
+        return send_file(io.BytesIO(pdf_final), as_attachment=True, download_name=nombre_archivo_descarga, mimetype='application/pdf')
 
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al obtener datos de Supabase para PDF: {e}")
@@ -4214,12 +4255,13 @@ def generar_pdfs_visibles():
 
             # Auto-size y apariencias visuales para compatibilidad con visores web
             aplicar_autosize_campos(writer_single_pdf)
-            generar_apariencias_campos(writer_single_pdf, campos)
 
             temp_output = io.BytesIO()
             writer_single_pdf.write(temp_output)
             temp_output.seek(0)
-            temp_reader = PdfReader(temp_output)
+            # Aplicar overlay de texto para visores web
+            temp_bytes = aplicar_overlay_texto_largo(temp_output.read(), campos)
+            temp_reader = PdfReader(io.BytesIO(temp_bytes))
             merged_pdf_writer.add_page(temp_reader.pages[0])
 
         final_output_pdf = io.BytesIO()

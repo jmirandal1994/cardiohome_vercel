@@ -487,20 +487,20 @@ def get_form_field_value(field_name, form_data, return_none_if_empty=False):
 def aplicar_autosize_campos(writer):
     """
     Recorre todos los campos de texto del PDF y les aplica:
+    - Quita el flag ReadOnly (bit 25) para que PyPDF2 pueda escribir los valores
     - Tamaño de fuente automático (DA con tamaño 0 = auto-fit)
-    - Flag Multiline activado para campos de texto largos (indicaciones, diagnóstico, etc.)
+    - Flag Multiline activado para campos de texto largos
     - Flag DoNotScroll desactivado para permitir scroll dentro del campo
-    Evita que el texto se corte o salga del campo cuando el contenido es largo.
     """
-    # Campos que sabemos son multilinea (texto largo)
     CAMPOS_MULTILINEA = {
         'indicaciones', 'derivaciones', 'estado_general', 'diagnostico',
         'diagnostico_1', 'diagnostico_2', 'observaciones', 'observacion_neurologia',
         'motivo_consulta', 'observacion_1', 'observacion_2', 'observacion_3',
         'observacion_4', 'observacion_5', 'observacion_6', 'observacion_7',
     }
-    # Flags de campo PDF
-    FF_MULTILINE    = 1 << 12   # bit 13 — activa texto multilinea
+    FF_READ_ONLY     = 1 << 0   # bit 1  — solo lectura (lo QUITAMOS)
+    FF_READONLY_ALT  = 1 << 25  # bit 26 — otra forma de ReadOnly usada por algunos editores
+    FF_MULTILINE     = 1 << 12  # bit 13 — activa texto multilinea
     FF_DO_NOT_SCROLL = 1 << 23  # bit 24 — desactiva scroll (lo quitamos)
 
     try:
@@ -517,26 +517,28 @@ def aplicar_autosize_campos(writer):
                 ft = field.get("/FT")
 
                 if ft == "/Tx":
-                    # Tamaño 0 = auto-size en lectores PDF compatibles
+                    nombre_campo = str(field.get("/T", "")).lower()
+
+                    # ── 1. Quitar ReadOnly para que se pueda escribir ──────────
+                    ff_actual = int(field.get("/Ff", 0))
+                    ff_nuevo  = ff_actual & ~FF_READ_ONLY & ~FF_READONLY_ALT & ~FF_DO_NOT_SCROLL
+
+                    # ── 2. Activar Multiline en campos largos ─────────────────
+                    es_multilinea = any(m in nombre_campo for m in CAMPOS_MULTILINEA)
+                    if es_multilinea:
+                        ff_nuevo = ff_nuevo | FF_MULTILINE
+
+                    field.update({NameObject("/Ff"): NumberObject(ff_nuevo)})
+
+                    # ── 3. Auto-size fuente ───────────────────────────────────
                     da_actual = str(field.get("/DA", "/Helv 0 Tf 0 g"))
-                    import re
-                    da_nuevo = re.sub(r'(\d+\.?\d*)\s+Tf', '0 Tf', da_actual)
+                    da_nuevo  = re.sub(r'(\d+\.?\d*)\s+Tf', '0 Tf', da_actual)
                     if "Tf" not in da_nuevo:
                         da_nuevo = "/Helv 0 Tf 0 g"
                     field.update({NameObject("/DA"): NameObject(da_nuevo)})
+
                     if "/DS" in field:
                         del field[NameObject("/DS")]
-
-                    # Obtener nombre del campo para detectar si es multilinea
-                    nombre_campo = str(field.get("/T", "")).lower()
-                    es_multilinea = any(m in nombre_campo for m in CAMPOS_MULTILINEA)
-
-                    if es_multilinea:
-                        # Leer flags actuales
-                        ff_actual = int(field.get("/Ff", 0))
-                        # Activar Multiline, desactivar DoNotScroll
-                        ff_nuevo = (ff_actual | FF_MULTILINE) & ~FF_DO_NOT_SCROLL
-                        field.update({NameObject("/Ff"): NumberObject(ff_nuevo)})
 
                 # Procesar hijos (campos agrupados)
                 if "/Kids" in field:
@@ -553,7 +555,7 @@ def aplicar_autosize_campos(writer):
         writer._root_object["/AcroForm"].update({
             NameObject("/NeedAppearances"): BooleanObject(True)
         })
-        print("✅ aplicar_autosize_campos: auto-size + multiline aplicado.")
+        print("✅ aplicar_autosize_campos: ReadOnly removido + auto-size + multiline aplicado.")
 
     except Exception as e:
         print(f"⚠️  aplicar_autosize_campos: error general — {e}")
@@ -3680,8 +3682,33 @@ def descargar_pdf_alumno(alumno_id):
             writer._root_object.update({
                 NameObject("/AcroForm"): DictionaryObject()
             })
-            
-        # 💡 Esta parte asegura que todos los campos de todas las páginas se actualicen
+
+        # ── PASO CRÍTICO: quitar ReadOnly ANTES de escribir los valores ───────
+        # Ff=33554432 (bit 25) marca todos los campos como ReadOnly en este PDF base
+        # Si no se quita, PyPDF2 no puede escribir ningún valor
+        FF_READ_ONLY    = 1 << 0   # bit 1
+        FF_READONLY_ALT = 1 << 25  # bit 26 (el que usa este PDF: 33554432)
+        try:
+            acroform = writer._root_object["/AcroForm"]
+            def _quitar_readonly(field_ref):
+                try:
+                    field = field_ref.get_object()
+                    ff = int(field.get("/Ff", 0))
+                    ff_limpio = ff & ~FF_READ_ONLY & ~FF_READONLY_ALT
+                    if ff != ff_limpio:
+                        field.update({NameObject("/Ff"): NumberObject(ff_limpio)})
+                    if "/Kids" in field:
+                        for kid in field["/Kids"]:
+                            _quitar_readonly(kid)
+                except Exception:
+                    pass
+            for fr in acroform.get("/Fields", []):
+                _quitar_readonly(fr)
+            print("✅ ReadOnly removido de todos los campos antes de llenar.")
+        except Exception as e:
+            print(f"⚠️  No se pudo quitar ReadOnly: {e}")
+
+        # ── Llenar campos con los datos del estudiante ─────────────────────────
         for page in writer.pages:
             writer.update_page_form_field_values(page, campos)
             
@@ -7408,3 +7435,67 @@ def api_coordinadora_export_pdf():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+
+
+# ── DIAGNÓSTICO TEMPORAL: ver nombres reales de campos del PDF base ──────────
+@app.route('/admin/inspeccionar_pdf_base', methods=['GET'])
+def admin_inspeccionar_pdf_base():
+    if session.get('usuario') != 'admin':
+        return jsonify({"error": "Acceso denegado"}), 403
+
+    form_type = request.args.get('tipo', 'neurologia')
+    base_dir  = os.path.dirname(os.path.abspath(__file__))
+
+    if form_type == 'neurologia':
+        pdf_path = os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
+    elif form_type == 'familiar':
+        pdf_path = os.path.join(base_dir, PDF_BASE_FAMILIAR)
+    elif form_type == 'informe':
+        pdf_path = os.path.join(base_dir, PDF_BASE_INFORME_NEURO)
+    else:
+        return jsonify({"error": "tipo inválido"}), 400
+
+    if not os.path.exists(pdf_path):
+        return jsonify({"error": f"PDF no encontrado: {pdf_path}"}), 404
+
+    try:
+        reader = PdfReader(pdf_path)
+        campos_encontrados = []
+
+        root = reader.trailer["/Root"].get_object()
+        acro = root.get("/AcroForm")
+        if not acro:
+            return jsonify({"error": "El PDF no tiene AcroForm", "path": pdf_path})
+
+        ao = acro.get_object() if hasattr(acro, 'get_object') else acro
+
+        def _proc(fref):
+            try:
+                f = fref.get_object() if hasattr(fref, 'get_object') else fref
+                nombre = str(f.get("/T", "SIN_NOMBRE"))
+                ft     = str(f.get("/FT", "SIN_FT"))
+                rect   = f.get("/Rect")
+                rect_vals = [float(r) for r in rect] if rect else None
+                campos_encontrados.append({
+                    "nombre": nombre,
+                    "tipo":   ft,
+                    "rect":   rect_vals,
+                })
+                kids = f.get("/Kids")
+                if kids:
+                    for kid in kids:
+                        _proc(kid)
+            except Exception as ex:
+                campos_encontrados.append({"error": str(ex)})
+
+        for fr in ao.get("/Fields", []):
+            _proc(fr)
+
+        return jsonify({
+            "pdf_path": pdf_path,
+            "total_campos": len(campos_encontrados),
+            "campos": campos_encontrados,
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

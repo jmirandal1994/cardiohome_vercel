@@ -810,44 +810,73 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                     c.drawString(x0 + margin, y_pos,
                                  texto.encode('latin-1', 'replace').decode('latin-1'))
 
-        # Dibujar X del sexo en el mismo canvas (coordenadas exactas del AP stream del PDF base)
-        COORDS_SEXO_REAL = {
-            'sexo_f': (361.8, 718.7, 377.8, 729.8),   # del AP stream de sexo_f
-            'sexo_m': (407.6, 718.0, 424.3, 728.8),   # del AP stream de sexo_m
-        }
-        for fname, (x0, y0, x1, y1) in COORDS_SEXO_REAL.items():
-            if not campos.get(fname, '').strip():
-                continue
-            w = x1 - x0
-            h = y1 - y0
-            fs = 9.0
-            # Rectángulo blanco para tapar el fondo blanco del /Square annotation
-            c.setFillColorRGB(1, 1, 1)
-            c.rect(x0, y0, w, h, fill=1, stroke=0)
-            # X centrada
-            c.setFont("Helvetica-Bold", fs)
-            c.setFillColorRGB(0, 0, 0)
-            xt = x0 + (w - c.stringWidth("X", "Helvetica-Bold", fs)) / 2
-            yt = y0 + (h - fs) / 2
-            c.drawString(xt, yt, "X")
-
         c.save()
         ov_buf.seek(0)
 
-        # Fusionar overlay encima del PDF base
+        # Fusionar overlay de texto debajo del PDF base (texto queda debajo del diseño)
         ov_reader = PdfReader(ov_buf)
         writer_out = PdfWriter()
         for i, pg in enumerate(reader_base.pages):
             if i == 0 and ov_reader.pages:
-                # overlay encima: merge_page(base) sobre el overlay
-                ov_pg = ov_reader.pages[0]
-                ov_pg.merge_page(pg)
-                writer_out.add_page(ov_pg)
-            else:
-                writer_out.add_page(pg)
+                pg.merge_page(ov_reader.pages[0])
+            writer_out.add_page(pg)
 
-        dst = io.BytesIO()
-        writer_out.write(dst)
+        merged = io.BytesIO()
+        writer_out.write(merged)
+        merged.seek(0)
+
+        # ── PASO 2: pikepdf — X del sexo como stream de página (va ENCIMA de todo) ──
+        import pikepdf
+        with pikepdf.open(merged) as pdf:
+            page = pdf.pages[0]
+
+            # Registrar fuente Helvetica-Bold en recursos de página
+            resources = page.obj['/Resources']
+            if '/Font' not in resources:
+                resources['/Font'] = pikepdf.Dictionary()
+            if '/HelvB' not in resources['/Font']:
+                resources['/Font']['/HelvB'] = pikepdf.Dictionary(
+                    Type=pikepdf.Name('/Font'),
+                    Subtype=pikepdf.Name('/Type1'),
+                    BaseFont=pikepdf.Name('/Helvetica-Bold'),
+                )
+
+            # Coordenadas exactas del interior de cada cuadro (del AP stream real)
+            COORDS_SEXO_REAL = {
+                'sexo_f': (361.8, 718.7, 377.8, 729.8),
+                'sexo_m': (407.6, 718.0, 424.3, 728.8),
+            }
+            sexo_ops = []
+            for fname, (x0, y0, x1, y1) in COORDS_SEXO_REAL.items():
+                if not campos.get(fname, '').strip():
+                    continue
+                w = x1 - x0
+                h = y1 - y0
+                fs = 9.0
+                # Centrar X en el cuadro
+                char_w = fs * 0.6
+                xt = x0 + (w - char_w) / 2
+                yt = y0 + (h - fs) / 2 + 1
+                sexo_ops.append(
+                    f"q\n0 0 0 rg\nBT\n/HelvB {fs} Tf\n"
+                    f"{xt:.3f} {yt:.3f} Td\n(X) Tj\nET\nQ\n"
+                )
+
+            if sexo_ops:
+                stream_bytes = "".join(sexo_ops).encode('latin-1')
+                x_stream = pikepdf.Stream(pdf, stream_bytes)
+                # Agregar AL FINAL del contenido de página — siempre encima
+                existing = page.obj.get('/Contents')
+                if isinstance(existing, pikepdf.Array):
+                    existing.append(x_stream)
+                elif existing is not None:
+                    page.obj['/Contents'] = pikepdf.Array([existing, x_stream])
+                else:
+                    page.obj['/Contents'] = x_stream
+
+            dst = io.BytesIO()
+            pdf.save(dst)
+
         print("✅ PDF neurología listo.")
         return flatten_pdf_fields(dst.getvalue())
 
@@ -866,10 +895,10 @@ def flatten_pdf_fields(pdf_bytes):
                 del pdf.Root["/AcroForm"]
             for page in pdf.pages:
                 if "/Annots" in page:
-                    # Eliminar Widget Y Square (los /Square tapan con fondo blanco)
+                    # Solo eliminar Widget — Square son los bordes visibles del formulario
                     page["/Annots"] = pikepdf.Array([
                         a for a in page["/Annots"]
-                        if a.get("/Subtype") not in ("/Widget", "/Square")
+                        if a.get("/Subtype") != "/Widget"
                     ])
             pdf.save(dst)
         dst.seek(0)

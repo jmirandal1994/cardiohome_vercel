@@ -850,14 +850,55 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
             elif existing is not None:
                 page.obj['/Contents'] = pikepdf.Array([existing, fix_stream])
 
-            # X en campos de sexo via NeedAppearances
+            # X en campos de sexo:
+            # Intento 1: via NeedAppearances en AcroForm (si existe)
+            # Intento 2: dibujando X directamente con pikepdf como stream
             acroform = pdf.Root.get('/AcroForm')
+            campos_sexo_escritos = set()
             if acroform and '/Fields' in acroform:
                 acroform['/NeedAppearances'] = pikepdf.Boolean(True)
                 for field_ref in acroform['/Fields']:
                     fname = str(field_ref.get('/T', ''))
                     if fname in ('sexo_f', 'sexo_m') and campos.get(fname, '').strip():
                         field_ref['/V'] = pikepdf.String('X')
+                        campos_sexo_escritos.add(fname)
+
+            # Fallback: para los campos no escritos via AcroForm, dibujar X directo
+            COORDS_SEXO_FB = {
+                'sexo_f': (360.7, 716.5, 379.0, 731.7),
+                'sexo_m': (406.5, 715.2, 426.2, 731.9),
+            }
+            sexo_streams = []
+            for fname, (x0, y0, x1, y1) in COORDS_SEXO_FB.items():
+                if fname in campos_sexo_escritos:
+                    continue
+                if not campos.get(fname, '').strip():
+                    continue
+                w = x1 - x0; h = y1 - y0; fs = 10.0
+                xt = x0 + (w - 6.1) / 2
+                yt = y0 + (h - fs) / 2
+                # Registrar Helvetica si no existe
+                pg_resources = page.obj['/Resources']
+                if '/Font' not in pg_resources:
+                    pg_resources['/Font'] = pikepdf.Dictionary()
+                if '/HelvS' not in pg_resources['/Font']:
+                    pg_resources['/Font']['/HelvS'] = pikepdf.Dictionary(
+                        Type=pikepdf.Name('/Font'),
+                        Subtype=pikepdf.Name('/Type1'),
+                        BaseFont=pikepdf.Name('/Helvetica-Bold'),
+                    )
+                sexo_streams.append(
+                    f"q\n/GSBlack gs\n0 0 0 rg\nBT\n/HelvS {fs} Tf\n"
+                    f"{xt:.3f} {yt:.3f} Td\n(X) Tj\nET\nQ\n"
+                )
+            if sexo_streams:
+                combined = "".join(sexo_streams).encode('latin-1')
+                x_stream = pikepdf.Stream(pdf, combined)
+                existing2 = page.obj.get('/Contents')
+                if isinstance(existing2, pikepdf.Array):
+                    existing2.append(x_stream)
+                else:
+                    page.obj['/Contents'] = pikepdf.Array([existing2, x_stream])
 
             dst = io.BytesIO()
             pdf.save(dst)

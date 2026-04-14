@@ -720,45 +720,57 @@ def _es_femenino(sexo_val):
 
 def generar_pdf_neurologia_overlay(pdf_base_path, campos):
     """
-    Exclusivo para NEUROLOGÍA.
-    Usa ReportLab para texto largo + pikepdf para checkboxes de sexo.
-    Los checkboxes usan Helvetica del AcroForm inyectada como recurso de página.
+    NEUROLOGÍA: estrategia mixta limpia.
+    - PyPDF2 AcroForm (igual que medicina familiar) para campos cortos + sexo
+    - ReportLab overlay SOLO para campos largos (estado_general, derivaciones, diagnostico_2)
+    - flatten_pdf_fields al final para limpiar widgets
     """
     if not REPORTLAB_OK:
         return None
 
-    COORDS_NEURO = {
-        'nombre':             (43.0,  718.0, 346.4, 734.0),
-        'rut':                (454.9, 712.5, 553.7, 734.0),
-        'fecha_nacimiento':   (40.6,  690.0, 142.8, 712.0),
-        'edad':               (143.9, 689.5, 245.5, 711.0),
-        'nacionalidad':       (247.0, 691.5, 348.4, 712.0),
-        'fecha_evaluacion':   (249.0, 568.8, 399.7, 589.7),
-        'fecha_reevaluacion': (403.1, 568.2, 553.7, 591.0),
-        'diagnostico_1':      (393.4, 653.0, 565.0, 671.0),
-        'diagnostico_2':      (41.9,  294.3, 520.5, 316.3),
-        'estado_general':     (43.2,  359.7, 557.1, 514.6),
-        'derivaciones':       (41.9,  122.8, 552.5, 247.6),
+    CAMPOS_LARGOS = {'estado_general', 'derivaciones', 'diagnostico_2'}
+
+    # Coordenadas exactas solo para campos largos (reportlab)
+    COORDS_LARGOS = {
+        'estado_general': (43.2,  359.7, 557.1, 514.6),
+        'derivaciones':   (41.9,  122.8, 552.5, 247.6),
+        'diagnostico_2':  (41.9,  294.3, 520.5, 316.3),
     }
-    COORDS_SEXO = {
-        'sexo_f': (360.7, 716.5, 379.0, 731.7),
-        'sexo_m': (406.5, 715.2, 426.2, 731.9),
-    }
-    CAMPOS_MULTILINEA = {'estado_general', 'derivaciones', 'diagnostico_2'}
 
     try:
-        import pikepdf
-
+        # ── PASO 1: PyPDF2 rellena todos los campos cortos + sexo (igual que familiar) ──
         reader_base = PdfReader(pdf_base_path)
-        pg0 = reader_base.pages[0]
+        writer = PdfWriter()
+        for page in reader_base.pages:
+            writer.add_page(page)
+
+        if "/AcroForm" not in writer._root_object:
+            writer._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
+
+        # Campos para PyPDF2 (todos menos los largos que irán por reportlab)
+        campos_pypdf2 = {k: v for k, v in campos.items() if k not in CAMPOS_LARGOS}
+        for page in writer.pages:
+            writer.update_page_form_field_values(page, campos_pypdf2)
+
+        writer._root_object["/AcroForm"].update({
+            NameObject("/NeedAppearances"): BooleanObject(True)
+        })
+
+        merged_buf = io.BytesIO()
+        writer.write(merged_buf)
+        merged_buf.seek(0)
+
+        # ── PASO 2: ReportLab overlay SOLO para campos largos ────────────────
+        from pypdf import PdfReader as _PR, PdfWriter as _PW
+        reader_m = _PR(merged_buf)
+        pg0 = reader_m.pages[0]
         pw = float(pg0.mediabox.width)
         ph = float(pg0.mediabox.height)
 
-        # ── PASO 1: ReportLab para todos los campos de TEXTO ─────────────────
         ov_buf = io.BytesIO()
         c = rl_canvas.Canvas(ov_buf, pagesize=(pw, ph))
 
-        for campo, (x0, y0, x1, y1) in COORDS_NEURO.items():
+        for campo, (x0, y0, x1, y1) in COORDS_LARGOS.items():
             valor = campos.get(campo, '')
             if not valor or not str(valor).strip():
                 continue
@@ -766,9 +778,16 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
             w = x1 - x0
             h = y1 - y0
             margin = 3
-
-            if campo in CAMPOS_MULTILINEA:
-                fs = 9.0
+            fs = 9.0
+            lh = fs * 1.35
+            lines = []
+            for par in texto.splitlines():
+                if not par.strip():
+                    lines.append('')
+                else:
+                    lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
+            while lines and len(lines) * lh > h - 2*margin and fs > 6:
+                fs -= 0.5
                 lh = fs * 1.35
                 lines = []
                 for par in texto.splitlines():
@@ -776,136 +795,38 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                         lines.append('')
                     else:
                         lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
-                while lines and len(lines) * lh > h - 2*margin and fs > 6:
-                    fs -= 0.5
-                    lh = fs * 1.35
-                    lines = []
-                    for par in texto.splitlines():
-                        if not par.strip():
-                            lines.append('')
-                        else:
-                            lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
-                c.setFont("Helvetica", fs)
-                c.setFillColorRGB(0, 0, 0)
-                y_pos = y1 - margin - fs
-                for line in lines:
-                    if y_pos < y0 + margin:
-                        break
-                    try:
-                        c.drawString(x0 + margin, y_pos, line)
-                    except Exception:
-                        c.drawString(x0 + margin, y_pos,
-                                     line.encode('latin-1', 'replace').decode('latin-1'))
-                    y_pos -= lh
-            else:
-                fs = 10.0
-                while fs > 6 and c.stringWidth(texto, "Helvetica", fs) > w - 2*margin:
-                    fs -= 0.5
-                c.setFont("Helvetica", fs)
-                c.setFillColorRGB(0, 0, 0)
-                y_pos = y0 + (h - fs) / 2
+            c.setFont("Helvetica", fs)
+            c.setFillColorRGB(0, 0, 0)
+            y_pos = y1 - margin - fs
+            for line in lines:
+                if y_pos < y0 + margin:
+                    break
                 try:
-                    c.drawString(x0 + margin, y_pos, texto)
+                    c.drawString(x0 + margin, y_pos, line)
                 except Exception:
                     c.drawString(x0 + margin, y_pos,
-                                 texto.encode('latin-1', 'replace').decode('latin-1'))
+                                 line.encode('latin-1', 'replace').decode('latin-1'))
+                y_pos -= lh
 
         c.save()
         ov_buf.seek(0)
 
-        # Fusionar overlay de texto sobre el PDF base
-        ov_reader = PdfReader(ov_buf)
-        writer_out = PdfWriter()
-        for i, pg in enumerate(reader_base.pages):
+        # Fusionar overlay sobre el PDF
+        ov_reader = _PR(ov_buf)
+        writer_out = _PW()
+        for i, pg in enumerate(reader_m.pages):
             if i == 0 and ov_reader.pages:
                 pg.merge_page(ov_reader.pages[0])
             writer_out.add_page(pg)
 
-        merged = io.BytesIO()
-        writer_out.write(merged)
-        merged.seek(0)
+        final_buf = io.BytesIO()
+        writer_out.write(final_buf)
+        final_buf.seek(0)
 
-        # ── PASO 2: pikepdf — X en sexo + fix opacidad texto ────────────────
-        # La X se escribe en el AcroForm del merged (que preserva el AcroForm
-        # porque merge_page de PyPDF2 SÍ lo copia). Usamos NeedAppearances.
-        # Además agregamos GSBlack para que el texto quede negro (GS3=0.3 en base).
-        with pikepdf.open(merged) as pdf:
-            page = pdf.pages[0]
-
-            # Fix opacidad: agregar ExtGState con opacidad 1
-            resources = page.obj['/Resources']
-            if '/ExtGState' not in resources:
-                resources['/ExtGState'] = pikepdf.Dictionary()
-            resources['/ExtGState']['/GSBlack'] = pikepdf.Dictionary(
-                Type=pikepdf.Name('/ExtGState'),
-                ca=pikepdf.Real(1),
-                CA=pikepdf.Real(1),
-                BM=pikepdf.Name('/Normal'),
-            )
-            # Insertar stream que aplica GSBlack justo antes del último stream
-            fix_stream = pikepdf.Stream(pdf, b'q\n/GSBlack gs\n0 0 0 rg\n0 0 0 RG\nQ\n')
-            existing = page.obj.get('/Contents')
-            if isinstance(existing, pikepdf.Array):
-                existing.insert(len(existing) - 1, fix_stream)
-            elif existing is not None:
-                page.obj['/Contents'] = pikepdf.Array([existing, fix_stream])
-
-            # X en campos de sexo:
-            # Intento 1: via NeedAppearances en AcroForm (si existe)
-            # Intento 2: dibujando X directamente con pikepdf como stream
-            acroform = pdf.Root.get('/AcroForm')
-            campos_sexo_escritos = set()
-            if acroform and '/Fields' in acroform:
-                acroform['/NeedAppearances'] = pikepdf.Boolean(True)
-                for field_ref in acroform['/Fields']:
-                    fname = str(field_ref.get('/T', ''))
-                    if fname in ('sexo_f', 'sexo_m') and campos.get(fname, '').strip():
-                        field_ref['/V'] = pikepdf.String('X')
-                        campos_sexo_escritos.add(fname)
-
-            # Fallback: para los campos no escritos via AcroForm, dibujar X directo
-            COORDS_SEXO_FB = {
-                'sexo_f': (360.7, 716.5, 379.0, 731.7),
-                'sexo_m': (406.5, 715.2, 426.2, 731.9),
-            }
-            sexo_streams = []
-            for fname, (x0, y0, x1, y1) in COORDS_SEXO_FB.items():
-                if fname in campos_sexo_escritos:
-                    continue
-                if not campos.get(fname, '').strip():
-                    continue
-                w = x1 - x0; h = y1 - y0; fs = 10.0
-                xt = x0 + (w - 6.1) / 2
-                yt = y0 + (h - fs) / 2
-                # Registrar Helvetica si no existe
-                pg_resources = page.obj['/Resources']
-                if '/Font' not in pg_resources:
-                    pg_resources['/Font'] = pikepdf.Dictionary()
-                if '/HelvS' not in pg_resources['/Font']:
-                    pg_resources['/Font']['/HelvS'] = pikepdf.Dictionary(
-                        Type=pikepdf.Name('/Font'),
-                        Subtype=pikepdf.Name('/Type1'),
-                        BaseFont=pikepdf.Name('/Helvetica-Bold'),
-                    )
-                sexo_streams.append(
-                    f"q\n/GSBlack gs\n0 0 0 rg\nBT\n/HelvS {fs} Tf\n"
-                    f"{xt:.3f} {yt:.3f} Td\n(X) Tj\nET\nQ\n"
-                )
-            if sexo_streams:
-                combined = "".join(sexo_streams).encode('latin-1')
-                x_stream = pikepdf.Stream(pdf, combined)
-                existing2 = page.obj.get('/Contents')
-                if isinstance(existing2, pikepdf.Array):
-                    existing2.append(x_stream)
-                else:
-                    page.obj['/Contents'] = pikepdf.Array([existing2, x_stream])
-
-            dst = io.BytesIO()
-            pdf.save(dst)
-            print("✅ PDF neurología listo.")
-            # Eliminar todas las anotaciones Widget (campos AcroForm) para que
-            # no queden fondos blancos tapando el contenido dibujado con pikepdf
-            return flatten_pdf_fields(dst.getvalue())
+        # ── PASO 3: flatten — elimina widgets para que no tapen nada ─────────
+        result = flatten_pdf_fields(final_buf.read())
+        print("✅ PDF neurología listo.")
+        return result
 
     except Exception as e:
         print(f"❌ generar_pdf_neurologia_overlay: {e}")

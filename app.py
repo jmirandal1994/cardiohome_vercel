@@ -1158,13 +1158,21 @@ def generar_pdf():
             return redirect(url_for('relleno_formulario', nomina_id=session['current_nomina_id']))
         return redirect(url_for('dashboard'))
 
-    # --- 1. Obtener datos de la nómina para el ID de la Doctora Firmante ---
-    doctora_id_para_pdf = current_doctora_id 
+    # --- 1. Obtener doctora_id_para_formulario directo desde Supabase ---
+    doctora_id_para_pdf = current_doctora_id
     try:
-        nomina_data = obtener_nomina_por_id(nomina_id)
-        doctora_id_para_pdf = nomina_data.get('doctora_id_para_formulario') if nomina_data.get('doctora_id_para_formulario') else current_doctora_id
+        res_nom = requests.get(
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?id=eq.{nomina_id}"
+            f"&select=doctora_id_para_formulario",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        if res_nom.ok and res_nom.json():
+            dip = res_nom.json()[0].get('doctora_id_para_formulario')
+            if dip:
+                doctora_id_para_pdf = dip
     except Exception as e:
-        print(f"ADVERTENCIA: No se pudo obtener el ID de la doctora firmante. Usando ID de sesión. {e}")
+        print(f"ADVERTENCIA: No se pudo obtener doctora_id_para_formulario. Usando ID de sesión. {e}")
         
     # --- 2. Procesamiento de Campos Comunes y Fechas ---
     nombre = get_form_field_value('nombre', request.form)

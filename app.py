@@ -810,65 +810,39 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                     c.drawString(x0 + margin, y_pos,
                                  texto.encode('latin-1', 'replace').decode('latin-1'))
 
-        # Dibujar X de sexo directamente en el canvas de reportlab
-        for fname, (x0, y0, x1, y1) in COORDS_SEXO.items():
+        # Dibujar X del sexo en el mismo canvas (coordenadas exactas del AP stream del PDF base)
+        COORDS_SEXO_REAL = {
+            'sexo_f': (361.8, 718.7, 377.8, 729.8),   # del AP stream de sexo_f
+            'sexo_m': (407.6, 718.0, 424.3, 728.8),   # del AP stream de sexo_m
+        }
+        for fname, (x0, y0, x1, y1) in COORDS_SEXO_REAL.items():
             if not campos.get(fname, '').strip():
                 continue
             w = x1 - x0
             h = y1 - y0
-            fs = 10.0
-            # Pintar rectángulo blanco primero para tapar cualquier fondo del campo
+            fs = 9.0
+            # Rectángulo blanco para tapar el fondo blanco del /Square annotation
             c.setFillColorRGB(1, 1, 1)
             c.rect(x0, y0, w, h, fill=1, stroke=0)
-            # Dibujar la X centrada encima
+            # X centrada
             c.setFont("Helvetica-Bold", fs)
             c.setFillColorRGB(0, 0, 0)
             xt = x0 + (w - c.stringWidth("X", "Helvetica-Bold", fs)) / 2
             yt = y0 + (h - fs) / 2
             c.drawString(xt, yt, "X")
 
-        # Guardar canvas de texto (sin sexo aún)
         c.save()
         ov_buf.seek(0)
 
-        # ── Paso 1b: canvas separado SOLO para la X del sexo (va ENCIMA) ────
-        ov_sexo_buf = io.BytesIO()
-        cs = rl_canvas.Canvas(ov_sexo_buf, pagesize=(pw, ph))
-        for fname, (x0, y0, x1, y1) in COORDS_SEXO.items():
-            if not campos.get(fname, '').strip():
-                continue
-            w = x1 - x0
-            h = y1 - y0
-            fs = 10.0
-            # Rectángulo blanco para tapar el fondo del campo AcroForm
-            cs.setFillColorRGB(1, 1, 1)
-            cs.rect(x0, y0, w, h, fill=1, stroke=0)
-            # X centrada encima
-            cs.setFont("Helvetica-Bold", fs)
-            cs.setFillColorRGB(0, 0, 0)
-            xt = x0 + (w - cs.stringWidth("X", "Helvetica-Bold", fs)) / 2
-            yt = y0 + (h - fs) / 2
-            cs.drawString(xt, yt, "X")
-        cs.save()
-        ov_sexo_buf.seek(0)
-
-        # Fusionar: texto debajo del base, luego sexo encima del resultado
-        ov_texto_reader = PdfReader(ov_buf)
-        ov_sexo_reader  = PdfReader(ov_sexo_buf)
+        # Fusionar overlay encima del PDF base
+        ov_reader = PdfReader(ov_buf)
         writer_out = PdfWriter()
-
         for i, pg in enumerate(reader_base.pages):
-            if i == 0:
-                # 1. Texto debajo del base (overlay de texto como fondo)
-                if ov_texto_reader.pages:
-                    pg.merge_page(ov_texto_reader.pages[0])
-                # 2. Sexo encima del resultado (overlay sexo como capa superior)
-                if ov_sexo_reader.pages:
-                    ov_sexo_page = ov_sexo_reader.pages[0]
-                    ov_sexo_page.merge_page(pg)
-                    writer_out.add_page(ov_sexo_page)
-                else:
-                    writer_out.add_page(pg)
+            if i == 0 and ov_reader.pages:
+                # overlay encima: merge_page(base) sobre el overlay
+                ov_pg = ov_reader.pages[0]
+                ov_pg.merge_page(pg)
+                writer_out.add_page(ov_pg)
             else:
                 writer_out.add_page(pg)
 
@@ -892,9 +866,10 @@ def flatten_pdf_fields(pdf_bytes):
                 del pdf.Root["/AcroForm"]
             for page in pdf.pages:
                 if "/Annots" in page:
+                    # Eliminar Widget Y Square (los /Square tapan con fondo blanco)
                     page["/Annots"] = pikepdf.Array([
                         a for a in page["/Annots"]
-                        if a.get("/Subtype") != "/Widget"
+                        if a.get("/Subtype") not in ("/Widget", "/Square")
                     ])
             pdf.save(dst)
         dst.seek(0)

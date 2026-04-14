@@ -825,14 +825,14 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
         writer_out.write(merged)
         merged.seek(0)
 
-        # ── PASO 2: pikepdf — fix opacidad + X en sexo ──────────────────────
-        # El PDF base tiene /GS3 con opacidad 0.3 que hace el texto gris.
-        # Solución: agregar /GSBlack (opacidad 1) y aplicarlo antes del texto.
-        # Además poner X en AcroForm con NeedAppearances.
+        # ── PASO 2: pikepdf — X en sexo + fix opacidad texto ────────────────
+        # La X se escribe en el AcroForm del merged (que preserva el AcroForm
+        # porque merge_page de PyPDF2 SÍ lo copia). Usamos NeedAppearances.
+        # Además agregamos GSBlack para que el texto quede negro (GS3=0.3 en base).
         with pikepdf.open(merged) as pdf:
             page = pdf.pages[0]
 
-            # Agregar ExtGState con opacidad 1 para forzar negro
+            # Fix opacidad: agregar ExtGState con opacidad 1
             resources = page.obj['/Resources']
             if '/ExtGState' not in resources:
                 resources['/ExtGState'] = pikepdf.Dictionary()
@@ -842,12 +842,10 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                 CA=pikepdf.Real(1),
                 BM=pikepdf.Name('/Normal'),
             )
-
-            # Agregar stream que aplica /GSBlack antes del texto existente
+            # Insertar stream que aplica GSBlack justo antes del último stream
             fix_stream = pikepdf.Stream(pdf, b'q\n/GSBlack gs\n0 0 0 rg\n0 0 0 RG\nQ\n')
             existing = page.obj.get('/Contents')
             if isinstance(existing, pikepdf.Array):
-                # Insertar ANTES del último stream (que es el de ReportLab)
                 existing.insert(len(existing) - 1, fix_stream)
             elif existing is not None:
                 page.obj['/Contents'] = pikepdf.Array([existing, fix_stream])

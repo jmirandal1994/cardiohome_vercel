@@ -1504,13 +1504,17 @@
         const fn=document.getElementById('nuevo-fecha-nac').value;
         const sexo=document.getElementById('nuevo-sexo').value;
         const nacionalidad=document.getElementById('nuevo-nacionalidad').value;
-        const nominaId=document.querySelector('[data-nomina-id]')?.getAttribute('data-nomina-id')||'';
+        // nominaId es la variable global definida en sesión (funciona aunque no haya alumnos aún)
+        const nId = (typeof nominaId !== 'undefined' && nominaId)
+            ? nominaId
+            : (document.querySelector('[data-nomina-id]')?.getAttribute('data-nomina-id') || '');
         if (!nombre||!rut) { alert('Nombre y RUT son obligatorios'); return; }
+        if (!nId) { alert('Error: no se pudo determinar la nómina. Recarga la página e intenta nuevamente.'); return; }
         try {
-            const res=await fetch('/api/estudiante/agregar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nomina_id:nominaId,nombre,rut,fecha_nacimiento:fn||null,sexo:sexo||null,nacionalidad:nacionalidad||null,estado_asistencia:_tipoAgregar==='extra'?'extra':'activo'})});
+            const res=await fetch('/api/estudiante/agregar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nomina_id:nId,nombre,rut,fecha_nacimiento:fn||null,sexo:sexo||null,nacionalidad:nacionalidad||null,estado_asistencia:_tipoAgregar==='extra'?'extra':'activo'})});
             const data=await res.json();
             if (data.success) { cerrarModalAgregar(); location.reload(); }
-            else alert('Error: '+(data.error||'Error'));
+            else alert('Error: '+(data.message||data.error||'Error desconocido'));
         } catch(e) { alert('Error: '+e.message); }
     }
 

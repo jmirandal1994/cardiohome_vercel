@@ -850,34 +850,34 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
             elif existing is not None:
                 page.obj['/Contents'] = pikepdf.Array([existing, fix_stream])
 
-            # X en campos de sexo:
-            # Intento 1: via NeedAppearances en AcroForm (si existe)
-            # Intento 2: dibujando X directamente con pikepdf como stream
+            # X en campos de sexo — siempre vía stream directo (más confiable que AcroForm)
+            # Primero limpiar /AP del campo para que no tape con fondo blanco
             acroform = pdf.Root.get('/AcroForm')
-            campos_sexo_escritos = set()
             if acroform and '/Fields' in acroform:
                 acroform['/NeedAppearances'] = pikepdf.Boolean(True)
                 for field_ref in acroform['/Fields']:
                     fname = str(field_ref.get('/T', ''))
-                    if fname in ('sexo_f', 'sexo_m') and campos.get(fname, '').strip():
-                        field_ref['/V'] = pikepdf.String('X')
-                        campos_sexo_escritos.add(fname)
+                    if fname in ('sexo_f', 'sexo_m'):
+                        # Eliminar /AP existente que puede tener fondo blanco
+                        if '/AP' in field_ref:
+                            del field_ref['/AP']
+                        # Escribir valor (por si algún visor lo necesita)
+                        if campos.get(fname, '').strip():
+                            field_ref['/V'] = pikepdf.String('X')
 
-            # Fallback: para los campos no escritos via AcroForm, dibujar X directo
+            # Dibujar X siempre como stream gráfico directo — sin depender de AcroForm
             COORDS_SEXO_FB = {
                 'sexo_f': (360.7, 716.5, 379.0, 731.7),
                 'sexo_m': (406.5, 715.2, 426.2, 731.9),
             }
             sexo_streams = []
             for fname, (x0, y0, x1, y1) in COORDS_SEXO_FB.items():
-                if fname in campos_sexo_escritos:
-                    continue
                 if not campos.get(fname, '').strip():
                     continue
                 w = x1 - x0; h = y1 - y0; fs = 10.0
                 xt = x0 + (w - 6.1) / 2
                 yt = y0 + (h - fs) / 2
-                # Registrar Helvetica si no existe
+                # Registrar fuente si no existe
                 pg_resources = page.obj['/Resources']
                 if '/Font' not in pg_resources:
                     pg_resources['/Font'] = pikepdf.Dictionary()

@@ -1504,10 +1504,8 @@
         const fn=document.getElementById('nuevo-fecha-nac').value;
         const sexo=document.getElementById('nuevo-sexo').value;
         const nacionalidad=document.getElementById('nuevo-nacionalidad').value;
-        // nominaId es la variable global definida en sesión (funciona aunque no haya alumnos aún)
-        const nId = (typeof nominaId !== 'undefined' && nominaId)
-            ? nominaId
-            : (document.querySelector('[data-nomina-id]')?.getAttribute('data-nomina-id') || '');
+        // Obtener nomina_id desde la URL (/relleno_formulario/<nomina_id>) — siempre fiable
+        const nId = window.location.pathname.split('/').filter(Boolean).pop() || '';
         if (!nombre||!rut) { alert('Nombre y RUT son obligatorios'); return; }
         if (!nId) { alert('Error: no se pudo determinar la nómina. Recarga la página e intenta nuevamente.'); return; }
         try {

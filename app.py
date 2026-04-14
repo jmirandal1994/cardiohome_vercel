@@ -720,57 +720,45 @@ def _es_femenino(sexo_val):
 
 def generar_pdf_neurologia_overlay(pdf_base_path, campos):
     """
-    NEUROLOGÍA: estrategia mixta limpia.
-    - PyPDF2 AcroForm (igual que medicina familiar) para campos cortos + sexo
-    - ReportLab overlay SOLO para campos largos (estado_general, derivaciones, diagnostico_2)
-    - flatten_pdf_fields al final para limpiar widgets
+    Exclusivo para NEUROLOGÍA.
+    Usa ReportLab para texto largo + pikepdf para checkboxes de sexo.
+    Los checkboxes usan Helvetica del AcroForm inyectada como recurso de página.
     """
     if not REPORTLAB_OK:
         return None
 
-    CAMPOS_LARGOS = {'estado_general', 'derivaciones', 'diagnostico_2'}
-
-    # Coordenadas exactas solo para campos largos (reportlab)
-    COORDS_LARGOS = {
-        'estado_general': (43.2,  359.7, 557.1, 514.6),
-        'derivaciones':   (41.9,  122.8, 552.5, 247.6),
-        'diagnostico_2':  (41.9,  294.3, 520.5, 316.3),
+    COORDS_NEURO = {
+        'nombre':             (43.0,  718.0, 346.4, 734.0),
+        'rut':                (454.9, 712.5, 553.7, 734.0),
+        'fecha_nacimiento':   (40.6,  690.0, 142.8, 712.0),
+        'edad':               (143.9, 689.5, 245.5, 711.0),
+        'nacionalidad':       (247.0, 691.5, 348.4, 712.0),
+        'fecha_evaluacion':   (249.0, 568.8, 399.7, 589.7),
+        'fecha_reevaluacion': (403.1, 568.2, 553.7, 591.0),
+        'diagnostico_1':      (393.4, 653.0, 565.0, 671.0),
+        'diagnostico_2':      (41.9,  294.3, 520.5, 316.3),
+        'estado_general':     (43.2,  359.7, 557.1, 514.6),
+        'derivaciones':       (41.9,  122.8, 552.5, 247.6),
     }
+    COORDS_SEXO = {
+        'sexo_f': (360.7, 716.5, 379.0, 731.7),
+        'sexo_m': (406.5, 715.2, 426.2, 731.9),
+    }
+    CAMPOS_MULTILINEA = {'estado_general', 'derivaciones', 'diagnostico_2'}
 
     try:
-        # ── PASO 1: PyPDF2 rellena todos los campos cortos + sexo (igual que familiar) ──
+        import pikepdf
+
         reader_base = PdfReader(pdf_base_path)
-        writer = PdfWriter()
-        for page in reader_base.pages:
-            writer.add_page(page)
-
-        if "/AcroForm" not in writer._root_object:
-            writer._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
-
-        # Campos para PyPDF2 (todos menos los largos que irán por reportlab)
-        campos_pypdf2 = {k: v for k, v in campos.items() if k not in CAMPOS_LARGOS}
-        for page in writer.pages:
-            writer.update_page_form_field_values(page, campos_pypdf2)
-
-        writer._root_object["/AcroForm"].update({
-            NameObject("/NeedAppearances"): BooleanObject(True)
-        })
-
-        merged_buf = io.BytesIO()
-        writer.write(merged_buf)
-        merged_buf.seek(0)
-
-        # ── PASO 2: ReportLab overlay SOLO para campos largos ────────────────
-        from pypdf import PdfReader as _PR, PdfWriter as _PW
-        reader_m = _PR(merged_buf)
-        pg0 = reader_m.pages[0]
+        pg0 = reader_base.pages[0]
         pw = float(pg0.mediabox.width)
         ph = float(pg0.mediabox.height)
 
+        # ── PASO 1: ReportLab para todos los campos de TEXTO ─────────────────
         ov_buf = io.BytesIO()
         c = rl_canvas.Canvas(ov_buf, pagesize=(pw, ph))
 
-        for campo, (x0, y0, x1, y1) in COORDS_LARGOS.items():
+        for campo, (x0, y0, x1, y1) in COORDS_NEURO.items():
             valor = campos.get(campo, '')
             if not valor or not str(valor).strip():
                 continue
@@ -778,16 +766,9 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
             w = x1 - x0
             h = y1 - y0
             margin = 3
-            fs = 9.0
-            lh = fs * 1.35
-            lines = []
-            for par in texto.splitlines():
-                if not par.strip():
-                    lines.append('')
-                else:
-                    lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
-            while lines and len(lines) * lh > h - 2*margin and fs > 6:
-                fs -= 0.5
+
+            if campo in CAMPOS_MULTILINEA:
+                fs = 9.0
                 lh = fs * 1.35
                 lines = []
                 for par in texto.splitlines():
@@ -795,38 +776,76 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                         lines.append('')
                     else:
                         lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
-            c.setFont("Helvetica", fs)
-            c.setFillColorRGB(0, 0, 0)
-            y_pos = y1 - margin - fs
-            for line in lines:
-                if y_pos < y0 + margin:
-                    break
+                while lines and len(lines) * lh > h - 2*margin and fs > 6:
+                    fs -= 0.5
+                    lh = fs * 1.35
+                    lines = []
+                    for par in texto.splitlines():
+                        if not par.strip():
+                            lines.append('')
+                        else:
+                            lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
+                c.setFont("Helvetica", fs)
+                c.setFillColorRGB(0, 0, 0)
+                y_pos = y1 - margin - fs
+                for line in lines:
+                    if y_pos < y0 + margin:
+                        break
+                    try:
+                        c.drawString(x0 + margin, y_pos, line)
+                    except Exception:
+                        c.drawString(x0 + margin, y_pos,
+                                     line.encode('latin-1', 'replace').decode('latin-1'))
+                    y_pos -= lh
+            else:
+                fs = 10.0
+                while fs > 6 and c.stringWidth(texto, "Helvetica", fs) > w - 2*margin:
+                    fs -= 0.5
+                c.setFont("Helvetica", fs)
+                c.setFillColorRGB(0, 0, 0)
+                y_pos = y0 + (h - fs) / 2
                 try:
-                    c.drawString(x0 + margin, y_pos, line)
+                    c.drawString(x0 + margin, y_pos, texto)
                 except Exception:
                     c.drawString(x0 + margin, y_pos,
-                                 line.encode('latin-1', 'replace').decode('latin-1'))
-                y_pos -= lh
+                                 texto.encode('latin-1', 'replace').decode('latin-1'))
 
         c.save()
         ov_buf.seek(0)
 
-        # Fusionar overlay sobre el PDF
-        ov_reader = _PR(ov_buf)
-        writer_out = _PW()
-        for i, pg in enumerate(reader_m.pages):
+        # Fusionar overlay de texto sobre el PDF base
+        ov_reader = PdfReader(ov_buf)
+        writer_out = PdfWriter()
+        for i, pg in enumerate(reader_base.pages):
             if i == 0 and ov_reader.pages:
                 pg.merge_page(ov_reader.pages[0])
             writer_out.add_page(pg)
 
-        final_buf = io.BytesIO()
-        writer_out.write(final_buf)
-        final_buf.seek(0)
+        merged = io.BytesIO()
+        writer_out.write(merged)
+        merged.seek(0)
 
-        # ── PASO 3: flatten — elimina widgets para que no tapen nada ─────────
-        result = flatten_pdf_fields(final_buf.read())
+        # ── PASO 2: PyPDF2 — X en sexo via AcroForm (igual que medicina familiar) ──
+        reader_merged = PdfReader(merged)
+        writer2 = PdfWriter()
+        for pg in reader_merged.pages:
+            writer2.add_page(pg)
+
+        if "/AcroForm" not in writer2._root_object:
+            writer2._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
+
+        campos_sexo = {k: v for k, v in campos.items() if k in ('sexo_f', 'sexo_m')}
+        for pg in writer2.pages:
+            writer2.update_page_form_field_values(pg, campos_sexo)
+
+        writer2._root_object["/AcroForm"].update({
+            NameObject("/NeedAppearances"): BooleanObject(True)
+        })
+
+        dst = io.BytesIO()
+        writer2.write(dst)
         print("✅ PDF neurología listo.")
-        return result
+        return flatten_pdf_fields(dst.getvalue())
 
     except Exception as e:
         print(f"❌ generar_pdf_neurologia_overlay: {e}")

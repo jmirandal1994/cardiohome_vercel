@@ -810,10 +810,24 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                     c.drawString(x0 + margin, y_pos,
                                  texto.encode('latin-1', 'replace').decode('latin-1'))
 
+        # Dibujar X de sexo directamente en el canvas de reportlab
+        for fname, (x0, y0, x1, y1) in COORDS_SEXO.items():
+            if not campos.get(fname, '').strip():
+                continue
+            w = x1 - x0
+            h = y1 - y0
+            fs = 10.0
+            c.setFont("Helvetica-Bold", fs)
+            c.setFillColorRGB(0, 0, 0)
+            # Centrar la X dentro del cuadro
+            xt = x0 + (w - c.stringWidth("X", "Helvetica-Bold", fs)) / 2
+            yt = y0 + (h - fs) / 2
+            c.drawString(xt, yt, "X")
+
         c.save()
         ov_buf.seek(0)
 
-        # Fusionar overlay de texto sobre el PDF base
+        # Fusionar overlay sobre el PDF base y retornar
         ov_reader = PdfReader(ov_buf)
         writer_out = PdfWriter()
         for i, pg in enumerate(reader_base.pages):
@@ -821,29 +835,8 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                 pg.merge_page(ov_reader.pages[0])
             writer_out.add_page(pg)
 
-        merged = io.BytesIO()
-        writer_out.write(merged)
-        merged.seek(0)
-
-        # ── PASO 2: PyPDF2 — X en sexo via AcroForm (igual que medicina familiar) ──
-        reader_merged = PdfReader(merged)
-        writer2 = PdfWriter()
-        for pg in reader_merged.pages:
-            writer2.add_page(pg)
-
-        if "/AcroForm" not in writer2._root_object:
-            writer2._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
-
-        campos_sexo = {k: v for k, v in campos.items() if k in ('sexo_f', 'sexo_m')}
-        for pg in writer2.pages:
-            writer2.update_page_form_field_values(pg, campos_sexo)
-
-        writer2._root_object["/AcroForm"].update({
-            NameObject("/NeedAppearances"): BooleanObject(True)
-        })
-
         dst = io.BytesIO()
-        writer2.write(dst)
+        writer_out.write(dst)
         print("✅ PDF neurología listo.")
         return flatten_pdf_fields(dst.getvalue())
 

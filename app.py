@@ -825,14 +825,34 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
         writer_out.write(merged)
         merged.seek(0)
 
-        # ── PASO 2: pikepdf — X en sexo via NeedAppearances ─────────────────
-        # Abre el PDF BASE (no el merged) para preservar el AcroForm intacto.
-        # PyPDF2 merge_page destruye el AcroForm, por eso usamos el base.
-        # Luego inyectamos el overlay de texto como stream adicional.
-        with pikepdf.open(pdf_base_path) as pdf:
+        # ── PASO 2: pikepdf — fix opacidad + X en sexo ──────────────────────
+        # El PDF base tiene /GS3 con opacidad 0.3 que hace el texto gris.
+        # Solución: agregar /GSBlack (opacidad 1) y aplicarlo antes del texto.
+        # Además poner X en AcroForm con NeedAppearances.
+        with pikepdf.open(merged) as pdf:
             page = pdf.pages[0]
 
-            # Poner X en campo sexo_f o sexo_m
+            # Agregar ExtGState con opacidad 1 para forzar negro
+            resources = page.obj['/Resources']
+            if '/ExtGState' not in resources:
+                resources['/ExtGState'] = pikepdf.Dictionary()
+            resources['/ExtGState']['/GSBlack'] = pikepdf.Dictionary(
+                Type=pikepdf.Name('/ExtGState'),
+                ca=pikepdf.Real(1),
+                CA=pikepdf.Real(1),
+                BM=pikepdf.Name('/Normal'),
+            )
+
+            # Agregar stream que aplica /GSBlack antes del texto existente
+            fix_stream = pikepdf.Stream(pdf, b'q\n/GSBlack gs\n0 0 0 rg\n0 0 0 RG\nQ\n')
+            existing = page.obj.get('/Contents')
+            if isinstance(existing, pikepdf.Array):
+                # Insertar ANTES del último stream (que es el de ReportLab)
+                existing.insert(len(existing) - 1, fix_stream)
+            elif existing is not None:
+                page.obj['/Contents'] = pikepdf.Array([existing, fix_stream])
+
+            # X en campos de sexo via NeedAppearances
             acroform = pdf.Root.get('/AcroForm')
             if acroform and '/Fields' in acroform:
                 acroform['/NeedAppearances'] = pikepdf.Boolean(True)
@@ -840,37 +860,6 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
                     fname = str(field_ref.get('/T', ''))
                     if fname in ('sexo_f', 'sexo_m') and campos.get(fname, '').strip():
                         field_ref['/V'] = pikepdf.String('X')
-
-            # Inyectar el stream del overlay de texto (ya generado con ReportLab)
-            # Leer los bytes del merged (que tiene el texto de ReportLab fusionado)
-            merged.seek(0)
-            with pikepdf.open(merged) as merged_pdf:
-                merged_page = merged_pdf.pages[0]
-                merged_contents = merged_page.get('/Contents')
-                if merged_contents is not None:
-                    if isinstance(merged_contents, pikepdf.Array):
-                        raw = b''.join(bytes(s.read_bytes()) for s in merged_contents)
-                    else:
-                        raw = bytes(merged_contents.read_bytes())
-                    txt_stream = pikepdf.Stream(pdf, raw)
-                    existing = page.get('/Contents')
-                    if isinstance(existing, pikepdf.Array):
-                        existing.append(txt_stream)
-                    else:
-                        page['/Contents'] = pikepdf.Array([existing, txt_stream])
-
-                    # Copiar recursos de fuentes del overlay
-                    m_res = merged_page.get('/Resources', pikepdf.Dictionary())
-                    if '/Font' in m_res:
-                        pg_res = page.get('/Resources', pikepdf.Dictionary())
-                        if '/Font' not in pg_res:
-                            pg_res['/Font'] = pikepdf.Dictionary()
-                        for fk in m_res['/Font'].keys():
-                            if fk not in pg_res['/Font']:
-                                pg_res['/Font'][fk] = pdf.make_indirect(
-                                    pikepdf.Dictionary(m_res['/Font'][fk])
-                                )
-                        page['/Resources'] = pg_res
 
             dst = io.BytesIO()
             pdf.save(dst)

@@ -901,8 +901,9 @@
                             <option value="Trastorno Motor Moderado"            {% if est.diagnostico == 'Trastorno Motor Moderado' %}selected{% endif %}>Trastorno Motor Moderado</option>
                             <option value="Hipoacusia"                           {% if est.diagnostico == 'Hipoacusia' %}selected{% endif %}>Hipoacusia</option>
                             <option value="Sin Diagnostico para ingreso PIE"    {% if est.diagnostico == 'Sin Diagnostico para ingreso PIE' %}selected{% endif %}>Sin Diagnóstico para ingreso PIE</option>
-                            <option value="FIL"                                  {% if est.diagnostico == 'FIL' %}selected{% endif %}>FIL</option>
-                            <option value="DIL"                                  {% if est.diagnostico == 'DIL' %}selected{% endif %}>DIL</option>
+                            <option value="FIL"                                  {% if est.diagnostico == 'FIL' %}selected{% endif %}>FIL - Funcionamiento Intelectual Limítrofe</option>
+                            <option value="DIL"                                  {% if est.diagnostico == 'DIL' %}selected{% endif %}>DIL - Discapacidad Intelectual Leve</option>
+                            <option value="TL"                                   {% if est.diagnostico == 'TL' %}selected{% endif %}>TL - Trastorno del Lenguaje</option>
                             <option value="Discapacidad Intelectual"            {% if est.diagnostico == 'Discapacidad Intelectual' %}selected{% endif %}>Discapacidad Intelectual</option>
                             <option value="Sindrome de Down"                    {% if est.diagnostico == 'Sindrome de Down' %}selected{% endif %}>Síndrome de Down</option>
                             {# Opción para diagnóstico libre que no está en la lista #}
@@ -910,7 +911,7 @@
                                 {% if est.diagnostico and est.diagnostico not in [
                                     'Trastorno Del Espectro Autista','Trastorno Por Deficit de Atención',
                                     'TDAH','Trastorno del Aprendizaje','GARC','Trastorno Motor Moderado',
-                                    'Hipoacusia','Sin Diagnostico para ingreso PIE','FIL','DIL',
+                                    'Hipoacusia','Sin Diagnostico para ingreso PIE','FIL','DIL','TL',
                                     'Discapacidad Intelectual','Sindrome de Down',''] %}selected{% endif %}>
                                 ✏ Escribir diagnóstico manualmente…
                             </option>
@@ -918,11 +919,11 @@
 
                         {# Input libre — aparece solo cuando eligen "Escribir manualmente" #}
                         <div id="dx-libre-wrap-{{ est.id }}"
-                            style="{% if est.diagnostico and est.diagnostico not in ['Trastorno Del Espectro Autista','Trastorno Por Deficit de Atención','TDAH','Trastorno del Aprendizaje','GARC','Trastorno Motor Moderado','Hipoacusia','Sin Diagnostico para ingreso PIE','FIL','DIL','Discapacidad Intelectual','Sindrome de Down','','__otro__'] %}display:block{% else %}display:none{% endif %};margin-top:8px;">
+                            style="{% if est.diagnostico and est.diagnostico not in ['Trastorno Del Espectro Autista','Trastorno Por Deficit de Atención','TDAH','Trastorno del Aprendizaje','GARC','Trastorno Motor Moderado','Hipoacusia','Sin Diagnostico para ingreso PIE','FIL','DIL','TL','Discapacidad Intelectual','Sindrome de Down','','__otro__'] %}display:block{% else %}display:none{% endif %};margin-top:8px;">
                             <input type="text"
                                 id="dx-libre-{{ est.id }}"
                                 placeholder="Escribe el diagnóstico aquí..."
-                                value="{{ est.diagnostico if est.diagnostico and est.diagnostico not in ['Trastorno Del Espectro Autista','Trastorno Por Deficit de Atención','TDAH','Trastorno del Aprendizaje','GARC','Trastorno Motor Moderado','Hipoacusia','Sin Diagnostico para ingreso PIE','FIL','DIL','Discapacidad Intelectual','Sindrome de Down','','__otro__'] else '' }}"
+                                value="{{ est.diagnostico if est.diagnostico and est.diagnostico not in ['Trastorno Del Espectro Autista','Trastorno Por Deficit de Atención','TDAH','Trastorno del Aprendizaje','GARC','Trastorno Motor Moderado','Hipoacusia','Sin Diagnostico para ingreso PIE','FIL','DIL','TL','Discapacidad Intelectual','Sindrome de Down','','__otro__'] else '' }}"
                                 oninput="onDxLibreInput(this, '{{ est.id }}')"
                                 style="width:100%;padding:11px 14px;border:1.5px solid var(--accent);border-radius:10px;font-size:.9rem;font-family:var(--font-body);background:#faf5ff;outline:none;box-sizing:border-box;">
                             <div style="font-size:.72rem;color:var(--accent);margin-top:4px;opacity:.8;">
@@ -952,6 +953,29 @@
                             required onchange="updatePreview(this.form)">
 
                         <label for="derivaciones_{{ est.id }}">Indicaciones / Derivaciones</label>
+                        <!-- Botones de acceso rápido para indicaciones frecuentes -->
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+                            <button type="button"
+                                onclick="agregarIndicacion(this.closest('form').querySelector('[name=derivaciones]'), 'Ingreso a PIE (Programa de Integración Escolar)')"
+                                style="background:#e0f2fe;color:#0369a1;border:1.5px solid #7dd3fc;border-radius:20px;padding:4px 12px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">
+                                + Ingreso a PIE
+                            </button>
+                            <button type="button"
+                                onclick="agregarIndicacion(this.closest('form').querySelector('[name=derivaciones]'), 'Adecuación de evaluaciones')"
+                                style="background:#e0f2fe;color:#0369a1;border:1.5px solid #7dd3fc;border-radius:20px;padding:4px 12px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">
+                                + Adecuación de evaluaciones
+                            </button>
+                            <button type="button"
+                                onclick="agregarIndicacion(this.closest('form').querySelector('[name=derivaciones]'), 'Apoyo multidisciplinario')"
+                                style="background:#e0f2fe;color:#0369a1;border:1.5px solid #7dd3fc;border-radius:20px;padding:4px 12px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">
+                                + Apoyo multidisciplinario
+                            </button>
+                            <button type="button"
+                                onclick="agregarIndicacion(this.closest('form').querySelector('[name=derivaciones]'), 'Jornada reducida')"
+                                style="background:#e0f2fe;color:#0369a1;border:1.5px solid #7dd3fc;border-radius:20px;padding:4px 12px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;">
+                                + Jornada reducida
+                            </button>
+                        </div>
                         <textarea name="derivaciones" id="derivaciones_{{ est.id }}" rows="2"
                             placeholder="Detalles de derivaciones y recomendaciones..."
                             onchange="updatePreview(this.form)">{{ est.derivaciones if est.derivaciones is not none else '' }}</textarea>
@@ -1162,6 +1186,21 @@
     }
 
     // ── PREVIEW ───────────────────────────────────────────────────────
+    // ── BOTONES DE INDICACIONES RÁPIDAS ───────────────────────────────
+    function agregarIndicacion(textarea, texto) {
+        if (!textarea) return;
+        const actual = textarea.value.trim();
+        if (actual === '') {
+            textarea.value = texto;
+        } else {
+            // Si ya contiene el texto, no duplicar
+            if (actual.includes(texto)) return;
+            textarea.value = actual + ', ' + texto;
+        }
+        // Disparar onchange para actualizar preview
+        textarea.dispatchEvent(new Event('change'));
+    }
+
     function updatePreview(form) {
         const c = form.closest('.container'); if (!c) return;
         c.querySelector('.prev-nombre').textContent       = form.nombre?.value || '—';
@@ -1576,7 +1615,7 @@
     var DX_LISTA = [
         'Trastorno Del Espectro Autista','Trastorno Por Deficit de Atención',
         'TDAH','Trastorno del Aprendizaje','GARC','Trastorno Motor Moderado',
-        'Hipoacusia','Sin Diagnostico para ingreso PIE','FIL','DIL',
+        'Hipoacusia','Sin Diagnostico para ingreso PIE','FIL','DIL','TL',
         'Discapacidad Intelectual','Sindrome de Down'
     ];
 
@@ -1644,6 +1683,10 @@
         'funcionamiento intelectual limítrofe': 'FIL',
         'dil':   'DIL',
         'discapacidad intelectual leve': 'DIL',
+        // Trastorno del Lenguaje
+        'tl':    'TL',
+        'trastorno del lenguaje': 'TL',
+        'trastorno lenguaje': 'TL',
         // Discapacidad intelectual
         'di':    'Discapacidad Intelectual',
         'discapacidad intelectual': 'Discapacidad Intelectual',

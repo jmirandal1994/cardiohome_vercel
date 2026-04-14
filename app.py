@@ -817,23 +817,60 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
             w = x1 - x0
             h = y1 - y0
             fs = 10.0
+            # Pintar rectángulo blanco primero para tapar cualquier fondo del campo
+            c.setFillColorRGB(1, 1, 1)
+            c.rect(x0, y0, w, h, fill=1, stroke=0)
+            # Dibujar la X centrada encima
             c.setFont("Helvetica-Bold", fs)
             c.setFillColorRGB(0, 0, 0)
-            # Centrar la X dentro del cuadro
             xt = x0 + (w - c.stringWidth("X", "Helvetica-Bold", fs)) / 2
             yt = y0 + (h - fs) / 2
             c.drawString(xt, yt, "X")
 
+        # Guardar canvas de texto (sin sexo aún)
         c.save()
         ov_buf.seek(0)
 
-        # Fusionar overlay sobre el PDF base y retornar
-        ov_reader = PdfReader(ov_buf)
+        # ── Paso 1b: canvas separado SOLO para la X del sexo (va ENCIMA) ────
+        ov_sexo_buf = io.BytesIO()
+        cs = rl_canvas.Canvas(ov_sexo_buf, pagesize=(pw, ph))
+        for fname, (x0, y0, x1, y1) in COORDS_SEXO.items():
+            if not campos.get(fname, '').strip():
+                continue
+            w = x1 - x0
+            h = y1 - y0
+            fs = 10.0
+            # Rectángulo blanco para tapar el fondo del campo AcroForm
+            cs.setFillColorRGB(1, 1, 1)
+            cs.rect(x0, y0, w, h, fill=1, stroke=0)
+            # X centrada encima
+            cs.setFont("Helvetica-Bold", fs)
+            cs.setFillColorRGB(0, 0, 0)
+            xt = x0 + (w - cs.stringWidth("X", "Helvetica-Bold", fs)) / 2
+            yt = y0 + (h - fs) / 2
+            cs.drawString(xt, yt, "X")
+        cs.save()
+        ov_sexo_buf.seek(0)
+
+        # Fusionar: texto debajo del base, luego sexo encima del resultado
+        ov_texto_reader = PdfReader(ov_buf)
+        ov_sexo_reader  = PdfReader(ov_sexo_buf)
         writer_out = PdfWriter()
+
         for i, pg in enumerate(reader_base.pages):
-            if i == 0 and ov_reader.pages:
-                pg.merge_page(ov_reader.pages[0])
-            writer_out.add_page(pg)
+            if i == 0:
+                # 1. Texto debajo del base (overlay de texto como fondo)
+                if ov_texto_reader.pages:
+                    pg.merge_page(ov_texto_reader.pages[0])
+                # 2. Sexo encima del resultado (overlay sexo como capa superior)
+                if ov_sexo_reader.pages:
+                    ov_sexo_page = ov_sexo_reader.pages[0]
+                    ov_sexo_page.merge_page(pg)
+                    writer_out.add_page(ov_sexo_page)
+                else:
+                    writer_out.add_page(pg)
+            else:
+                writer_out.add_page(pg)
 
         dst = io.BytesIO()
         writer_out.write(dst)

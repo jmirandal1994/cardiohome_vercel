@@ -1895,11 +1895,17 @@
     const establec = {{ establecimiento_nombre | tojson }};
 
     function sendHeartbeat(accion) {
+        // AbortController para cancelar si tarda más de 8 segundos
+        const ctrl = new AbortController();
+        const timeout = setTimeout(() => ctrl.abort(), 8000);
         fetch('/api/presencia', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nomina_id: nominaId, establecimiento: establec, accion: accion })
-        }).catch(() => {});
+            body: JSON.stringify({ nomina_id: nominaId, establecimiento: establec, accion: accion }),
+            signal: ctrl.signal
+        })
+        .catch(() => {})
+        .finally(() => clearTimeout(timeout));
     }
 
     function sendBeaconLogout() {

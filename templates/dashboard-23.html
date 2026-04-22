@@ -1133,6 +1133,7 @@
                         <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fa-solid fa-folder-plus"></i> Crear Proyecto</a></li>
                         <li><a href="#" class="nav-link" data-section="gestionar-proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-upload-nomina"><i class="fa-solid fa-file-excel"></i> Cargar Nómina</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-tokens"><i class="fa-solid fa-key"></i> Tokens</a></li>
 
 
                         <li><a href="#" class="nav-link relative" data-section="admin-correction-requests"><i class="fa-solid fa-bell-concierge"></i> Solicitudes Corrección<span id="correction-alert-badge" class="alert-badge hidden">0</span></a></li>
@@ -2783,6 +2784,46 @@
                     </div>
                 </div>
                 
+                {# SECCIÓN: TOKENS POR PROYECTO #}
+                <div id="admin-tokens" class="content-section">
+                    <div class="section-topbar">
+                        <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                        <i class="fa-solid fa-key section-icon"></i>
+                        <h2 class="section-title">Tokens de Acceso</h2>
+                    </div>
+                    <div class="card">
+                        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+                            <div>
+                                <h3 style="margin:0;font-size:1.05rem;color:#0f2030;"><i class="fas fa-key" style="color:#0f3460;margin-right:8px;"></i>Tokens por Proyecto</h3>
+                                <p style="margin:4px 0 0;font-size:.8rem;color:#94a3b8;">Descarga los tokens de acceso para coordinadores de escuela</p>
+                            </div>
+                            <button onclick="descargarTodosTokens()"
+                                style="background:linear-gradient(135deg,#0f3460,#1c67a3);color:white;border:none;border-radius:12px;padding:10px 20px;font-weight:700;font-size:.84rem;cursor:pointer;display:flex;align-items:center;gap:8px;">
+                                <i class="fas fa-download"></i> Descargar Todos
+                            </button>
+                        </div>
+
+                        <!-- Filtro por proyecto -->
+                        <div style="margin-bottom:16px;">
+                            <select id="tokens-proyecto-filter" onchange="cargarTokensPorProyecto()"
+                                style="padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.86rem;font-family:inherit;outline:none;min-width:240px;color:#334155;">
+                                <option value="">— Todos los proyectos —</option>
+                                {% for p in proyectos %}
+                                <option value="{{ p.id }}">{{ p.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Lista de tokens -->
+                        <div id="tokens-lista" style="display:flex;flex-direction:column;gap:10px;">
+                            <div style="text-align:center;padding:30px;color:#94a3b8;font-size:.85rem;">
+                                <i class="fas fa-spinner fa-spin" style="display:block;font-size:1.5rem;margin-bottom:8px;"></i>
+                                Cargando tokens…
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {# NUEVA SECCIÓN: SOLICITUDES DE CORRECCIÓN PARA EL ADMINISTRADOR #}
                 <div id="admin-correction-requests" class="content-section">
             <div class="section-topbar">
@@ -6002,7 +6043,7 @@
                     </div>
 
                     <!-- Panel token + nómina -->
-                    <div id="access-modal-container" class="token-panel" style="margin-top:20px;">
+                    <div id="access-modal-container" class="token-panel" style="margin-top:20px;display:none;">
                         <!-- Header -->
                         <div class="token-panel-header">
                             <div class="token-panel-title">
@@ -6017,18 +6058,99 @@
                             </button>
                         </div>
 
-                        <!-- Formulario token -->
-                        <div id="password-form-container" class="token-form-area">
-                            <!-- Cerradura animada -->
+                        <!-- PASO 0: Aviso confidencialidad + opciones -->
+                        <div id="step-aviso" class="token-form-area">
+                            <div class="lock-visual" style="margin-bottom:8px;">
+                                <div class="lock-visual-glow"></div>
+                                <i class="fa-solid fa-shield-halved" style="font-size:2rem;color:#0f3460;"></i>
+                            </div>
+                            <div style="background:linear-gradient(135deg,#fef9c3,#fef3c7);border:1.5px solid #fbbf24;border-radius:16px;padding:18px 20px;max-width:480px;text-align:left;margin-bottom:20px;">
+                                <div style="font-weight:800;color:#92400e;font-size:.88rem;margin-bottom:8px;display:flex;align-items:center;gap:7px;">
+                                    <i class="fas fa-triangle-exclamation"></i> Aviso de Confidencialidad
+                                </div>
+                                <p style="font-size:.82rem;color:#78350f;line-height:1.6;margin:0;">
+                                    Este token es <strong>confidencial para su coordinadora</strong>. Todos los datos ingresados quedan dentro de los registros de la empresa y coordinación general del SLEP. <strong>Solo el coordinador de la escuela seleccionada debe registrarse.</strong>
+                                </p>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:12px;width:100%;max-width:400px;">
+                                <button onclick="irAPaso('step-registro')"
+                                    style="background:linear-gradient(135deg,#0f3460,#1c67a3);color:white;border:none;border-radius:14px;padding:14px 24px;font-weight:800;font-size:.92rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:opacity .2s;">
+                                    <i class="fas fa-user-plus"></i> Registrarme para obtener el token
+                                </button>
+                                <button onclick="irAPaso('step-token-directo')"
+                                    style="background:white;color:#0f3460;border:2px solid #0f3460;border-radius:14px;padding:13px 24px;font-weight:700;font-size:.88rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s;">
+                                    <i class="fas fa-key"></i> Ya cuento con token
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- PASO 1: Formulario de registro -->
+                        <div id="step-registro" class="token-form-area" style="display:none;">
+                            <div style="text-align:center;margin-bottom:18px;">
+                                <div style="font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:800;color:#0f2030;margin-bottom:4px;">Registro de Identidad</div>
+                                <div style="font-size:.78rem;color:#94a3b8;">Complete sus datos para recibir el token de acceso</div>
+                            </div>
+                            <form id="form-registro-token" onsubmit="return submitRegistroToken(event)" style="width:100%;max-width:400px;display:flex;flex-direction:column;gap:14px;">
+                                <div>
+                                    <label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;"><i class="fas fa-user" style="margin-right:4px;color:#0f3460;"></i> Nombre Completo *</label>
+                                    <input type="text" id="reg-nombre" required placeholder="Ej: María González López"
+                                        style="width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.88rem;font-family:inherit;outline:none;box-sizing:border-box;transition:border-color .2s;"
+                                        onfocus="this.style.borderColor='#0f3460'" onblur="this.style.borderColor='#e2e8f0'">
+                                </div>
+                                <div>
+                                    <label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;"><i class="fas fa-id-card" style="margin-right:4px;color:#0f3460;"></i> RUT *</label>
+                                    <input type="text" id="reg-rut" required placeholder="Ej: 12.345.678-9"
+                                        style="width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.88rem;font-family:inherit;outline:none;box-sizing:border-box;transition:border-color .2s;"
+                                        onfocus="this.style.borderColor='#0f3460'" onblur="this.style.borderColor='#e2e8f0'">
+                                </div>
+                                <div>
+                                    <label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;"><i class="fas fa-envelope" style="margin-right:4px;color:#0f3460;"></i> Correo Electrónico *</label>
+                                    <input type="email" id="reg-correo" required placeholder="Ej: coordinador@colegio.cl"
+                                        style="width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.88rem;font-family:inherit;outline:none;box-sizing:border-box;transition:border-color .2s;"
+                                        onfocus="this.style.borderColor='#0f3460'" onblur="this.style.borderColor='#e2e8f0'">
+                                </div>
+                                <button type="submit"
+                                    style="background:linear-gradient(135deg,#059669,#047857);color:white;border:none;border-radius:14px;padding:13px;font-weight:800;font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                                    <i class="fas fa-check-circle"></i> Confirmar y Ver Token
+                                </button>
+                                <button type="button" onclick="irAPaso('step-aviso')"
+                                    style="background:none;border:none;color:#94a3b8;font-size:.8rem;cursor:pointer;text-decoration:underline;">
+                                    ← Volver
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- PASO 2: Token revelado tras registro -->
+                        <div id="step-token-revelado" class="token-form-area" style="display:none;">
+                            <div class="lock-visual unlocked">
+                                <div class="lock-visual-glow"></div>
+                                <i class="fa-solid fa-lock-open" style="color:#059669;"></i>
+                            </div>
+                            <div style="text-align:center;margin-bottom:16px;">
+                                <div style="font-weight:800;color:#059669;font-size:.95rem;">¡Registro Exitoso!</div>
+                                <div style="font-size:.78rem;color:#64748b;margin-top:4px;">Su token de acceso para <strong id="token-reveal-school"></strong></div>
+                            </div>
+                            <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid #86efac;border-radius:16px;padding:20px 24px;text-align:center;max-width:340px;margin-bottom:20px;">
+                                <div style="font-size:.7rem;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;"><i class="fas fa-key"></i> Token de Acceso</div>
+                                <div id="token-valor-revelado" style="font-family:'Courier New',monospace;font-size:2rem;font-weight:900;color:#0f3460;letter-spacing:.3em;padding:8px 0;"></div>
+                                <div style="font-size:.7rem;color:#64748b;margin-top:8px;">Guarde este token en un lugar seguro</div>
+                            </div>
+                            <button onclick="usarTokenRevelado()"
+                                style="background:linear-gradient(135deg,#0f3460,#1c67a3);color:white;border:none;border-radius:14px;padding:13px 28px;font-weight:800;font-size:.9rem;cursor:pointer;display:flex;align-items:center;gap:8px;">
+                                <i class="fas fa-unlock-keyhole"></i> Ingresar a la Nómina
+                            </button>
+                        </div>
+
+                        <!-- PASO 3: Ya tengo token (ingreso directo) -->
+                        <div id="step-token-directo" class="token-form-area" style="display:none;">
                             <div class="lock-visual" id="lock-visual-icon">
                                 <div class="lock-visual-glow"></div>
                                 <i class="fa-solid fa-lock-keyhole" id="lock-icon-i"></i>
                             </div>
                             <div style="text-align:center;">
-                                <div style="font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:800;color:#0f2030;margin-bottom:4px;">Token de Acceso Requerido</div>
-                                <div style="font-size:.78rem;color:#94a3b8;">Ingresa el token secreto para desbloquear la nómina</div>
+                                <div style="font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:800;color:#0f2030;margin-bottom:4px;">Token de Acceso</div>
+                                <div style="font-size:.78rem;color:#94a3b8;">Ingresa tu token para desbloquear la nómina</div>
                             </div>
-
                             <form id="access-password-form" onsubmit="return handleAccessPassword(event)" style="width:100%;max-width:400px;display:flex;flex-direction:column;gap:14px;">
                                 <input type="hidden" id="current-school-id" value="">
                                 <div class="token-input-wrap">
@@ -6040,25 +6162,19 @@
                                         <i class="fa-solid fa-eye" id="token-eye-icon"></i>
                                     </button>
                                 </div>
-                                <!-- Puntos indicadores -->
                                 <div class="token-dots" id="token-dots">
-                                    <div class="token-dot" id="td-1"></div>
-                                    <div class="token-dot" id="td-2"></div>
-                                    <div class="token-dot" id="td-3"></div>
-                                    <div class="token-dot" id="td-4"></div>
-                                    <div class="token-dot" id="td-5"></div>
-                                    <div class="token-dot" id="td-6"></div>
-                                    <div class="token-dot" id="td-7"></div>
-                                    <div class="token-dot" id="td-8"></div>
+                                    <div class="token-dot" id="td-1"></div><div class="token-dot" id="td-2"></div>
+                                    <div class="token-dot" id="td-3"></div><div class="token-dot" id="td-4"></div>
+                                    <div class="token-dot" id="td-5"></div><div class="token-dot" id="td-6"></div>
+                                    <div class="token-dot" id="td-7"></div><div class="token-dot" id="td-8"></div>
                                 </div>
                                 <button type="submit" class="token-submit-btn">
-                                    <i class="fa-solid fa-unlock-keyhole"></i>
-                                    Desbloquear Nómina
+                                    <i class="fa-solid fa-unlock-keyhole"></i> Desbloquear Nómina
                                 </button>
-                                <div class="token-hint">
-                                    <i class="fa-solid fa-circle-info"></i>
-                                    El token es proporcionado por la Coordinadora General
-                                </div>
+                                <button type="button" onclick="irAPaso('step-aviso')"
+                                    style="background:none;border:none;color:#94a3b8;font-size:.8rem;cursor:pointer;text-decoration:underline;">
+                                    ← Volver
+                                </button>
                             </form>
                         </div>
 
@@ -6067,15 +6183,31 @@
                             <div class="nomina-desbloqueada">
                                 <h4><i class="fa-solid fa-unlock-keyhole" style="color:#059669;"></i> Nómina Desbloqueada</h4>
 
-                                <!-- Banner bloqueo correcciones (se muestra dinámicamente) -->
+                                <!-- Banner correcciones — solo aviso, siempre pueden solicitar -->
                                 <div id="corr-lock-banner" class="corr-lock-banner" style="display:none;">
                                     <i class="fa-solid fa-clock"></i>
-                                    <span id="corr-lock-msg">El plazo de 5 días hábiles para solicitar correcciones ha vencido.</span>
+                                    <span id="corr-lock-msg">Han pasado más de 5 días hábiles desde la evaluación.</span>
                                 </div>
 
-                                <!-- Correcciones resueltas — aparecen PRIMERO -->
+                                <!-- Barra de descarga masiva + Excel -->
+                                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+                                    <button onclick="descargarMasivaPDFs()" id="btn-descarga-masiva"
+                                        style="background:linear-gradient(135deg,#dc2626,#b91c1c);color:white;border:none;border-radius:12px;padding:10px 18px;font-weight:700;font-size:.82rem;cursor:pointer;display:flex;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(220,38,38,.25);">
+                                        <i class="fas fa-file-pdf"></i> Descarga Masiva PDFs
+                                    </button>
+                                    <button onclick="descargarExcelCoordinador()" id="btn-excel-coordinador"
+                                        style="background:linear-gradient(135deg,#059669,#047857);color:white;border:none;border-radius:12px;padding:10px 18px;font-weight:700;font-size:.82rem;cursor:pointer;display:flex;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(5,150,105,.25);">
+                                        <i class="fas fa-file-excel"></i> Descargar Excel
+                                    </button>
+                                    <div style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:.75rem;color:#64748b;">
+                                        <span id="resumen-eval-badge" style="background:#f0fdf4;border:1px solid #86efac;border-radius:20px;padding:3px 10px;font-weight:700;color:#059669;">0 evaluados</span>
+                                        <span id="resumen-pend-badge" style="background:#fef9c3;border:1px solid #fbbf24;border-radius:20px;padding:3px 10px;font-weight:700;color:#92400e;">0 pendientes</span>
+                                    </div>
+                                </div>
+
+                                <!-- Correcciones resueltas -->
                                 <div class="resubir-wrap" id="resubir-section" style="margin-bottom:18px;">
-                                    <h5 style="display:flex;align-items:center;gap:8px;">
+                                    <h5 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                                         <i class="fa-solid fa-circle-check" style="color:#059669;"></i>
                                         Correcciones Resueltas
                                         <span id="corr-notif-badge" style="display:none;background:#dc2626;color:white;border-radius:99px;padding:2px 9px;font-size:.68rem;font-weight:800;align-items:center;gap:3px;">
@@ -7184,6 +7316,8 @@
                     loadCorrectionRequests();
                 } else if (sectionId === 'gestionar-proyectos') {
                     if (typeof cargarStatsProyectos === 'function') cargarStatsProyectos();
+                } else if (sectionId === 'admin-tokens') {
+                    cargarTokensPorProyecto();
                 } else if (sectionId === 'admin-calendar-doctoras') {
                     // reset calendar on entry
                     var sel = document.getElementById('adminCalDoctorSelect');
@@ -7318,22 +7452,116 @@
             const accessPanel = document.getElementById('access-modal-container');
             const titleEl     = document.getElementById('access-school-name-title');
             const nameEl      = document.getElementById('access-school-name');
-            const formArea    = document.getElementById('password-form-container');
             const contentLock = document.getElementById('nomina-content-locked');
-            const lockIcon    = document.getElementById('lock-visual-icon');
-            const lockI       = document.getElementById('lock-icon-i');
+            // Reset estado
             document.getElementById('school_password').value = '';
             updateTokenDots('');
             contentLock.style.display = 'none';
-            formArea.style.display    = 'flex';
-            if (lockIcon) lockIcon.classList.remove('unlocked');
-            if (lockI)    lockI.className = 'fa-solid fa-lock-keyhole';
-            if (titleEl)  titleEl.textContent = schoolName;
-            if (nameEl)   nameEl.textContent  = schoolName;
+            if (titleEl) titleEl.textContent = schoolName;
+            if (nameEl)  nameEl.textContent  = schoolName;
             document.getElementById('current-school-id').value = schoolId;
+            // Resetear campos de registro
+            const regNombre = document.getElementById('reg-nombre');
+            const regRut    = document.getElementById('reg-rut');
+            const regCorreo = document.getElementById('reg-correo');
+            if (regNombre) regNombre.value = '';
+            if (regRut)    regRut.value    = '';
+            if (regCorreo) regCorreo.value = '';
+            // Mostrar desde el paso aviso
+            irAPaso('step-aviso');
             schoolList.style.display  = 'none';
             accessPanel.style.display = 'block';
             accessPanel.scrollIntoView({ behavior:'smooth', block:'start' });
+        }
+
+        function irAPaso(pasoId) {
+            ['step-aviso','step-registro','step-token-revelado','step-token-directo'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+            const target = document.getElementById(pasoId);
+            if (target) target.style.display = 'flex';
+        }
+
+        async function submitRegistroToken(event) {
+            event.preventDefault();
+            const nombre  = document.getElementById('reg-nombre').value.trim();
+            const rut     = document.getElementById('reg-rut').value.trim();
+            const correo  = document.getElementById('reg-correo').value.trim();
+            const schoolId   = document.getElementById('current-school-id').value;
+            const schoolName = document.getElementById('access-school-name').textContent;
+            if (!nombre || !rut || !correo) { alert('Complete todos los campos'); return false; }
+            // Obtener el token via la API de desbloqueo registrando los datos
+            try {
+                const res  = await fetch('/api/nomina/obtener_token', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ school_id: schoolId, nombre, rut, correo })
+                });
+                const data = await res.json();
+                if (data.success && data.token) {
+                    document.getElementById('token-reveal-school').textContent = schoolName;
+                    document.getElementById('token-valor-revelado').textContent = data.token;
+                    // Guardar token para usar directo
+                    document.getElementById('school_password').value = data.token;
+                    irAPaso('step-token-revelado');
+                } else {
+                    alert(data.message || 'No se pudo obtener el token');
+                }
+            } catch(e) { alert('Error de conexión'); }
+            return false;
+        }
+
+        function usarTokenRevelado() {
+            // El token ya está en el input, pasar directo al desbloqueo
+            irAPaso('step-token-directo');
+            // Auto submit
+            document.getElementById('access-password-form').dispatchEvent(new Event('submit'));
+        }
+
+        // Descarga masiva de PDFs del coordinador escuela
+        async function descargarMasivaPDFs() {
+            const btn = document.getElementById('btn-descarga-masiva');
+            const lista = document.getElementById('alumnos-nomina-list');
+            const links = lista.querySelectorAll('a.al-btn.pdf');
+            if (!links.length) { alert('No hay PDFs disponibles para descargar.'); return; }
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Descargando…';
+            // Descargar uno por uno con delay para no saturar
+            for (let i = 0; i < links.length; i++) {
+                const href = links[i].getAttribute('href');
+                if (!href) continue;
+                const a = document.createElement('a');
+                a.href = href;
+                a.download = '';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                await new Promise(r => setTimeout(r, 800));
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-file-pdf"></i> Descarga Masiva PDFs';
+        }
+
+        // Excel coordinador escuela
+        async function descargarExcelCoordinador() {
+            const btn = document.getElementById('btn-excel-coordinador');
+            const schoolId = document.getElementById('current-school-id').value;
+            if (!schoolId) { alert('No hay establecimiento seleccionado'); return; }
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando…';
+            try {
+                const res = await fetch('/api/coordinador_escuela/excel/' + encodeURIComponent(schoolId));
+                if (!res.ok) throw new Error('Error al generar Excel');
+                const blob = await res.blob();
+                const url  = URL.createObjectURL(blob);
+                const a    = document.createElement('a');
+                a.href = url; a.download = 'Nomina_' + schoolId + '.xlsx';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch(e) { alert('Error al descargar Excel: ' + e.message); }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-file-excel"></i> Descargar Excel';
         }
 
         function backToSchoolList() {
@@ -7341,7 +7569,60 @@
             document.getElementById('school-list-container').style.display  = '';
         }
 
-        // ── RENDER NOMINAS — 5 días hábiles para correcciones ─────────────
+        // ── TOKENS ADMIN — cargar y descargar PDF ────────────────────────
+        async function cargarTokensPorProyecto() {
+            const proyectoId = document.getElementById('tokens-proyecto-filter')?.value || '';
+            const lista = document.getElementById('tokens-lista');
+            if (!lista) return;
+            lista.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;font-size:.85rem;"><i class="fas fa-spinner fa-spin"></i> Cargando…</div>';
+            try {
+                const url = '/api/admin/tokens' + (proyectoId ? '?proyecto_id=' + proyectoId : '');
+                const res  = await fetch(url);
+                const data = await res.json();
+                if (!data.success || !data.tokens || !data.tokens.length) {
+                    lista.innerHTML = '<div style="text-align:center;padding:24px;color:#94a3b8;">No hay tokens para mostrar.</div>';
+                    return;
+                }
+                lista.innerHTML = '';
+                // Agrupar por tipo (neurologia / medicina_familiar)
+                const grupos = { neurologia: [], medicina_familiar: [], otro: [] };
+                data.tokens.forEach(t => {
+                    const tipo = t.form_type || 'otro';
+                    if (grupos[tipo]) grupos[tipo].push(t);
+                    else grupos.otro.push(t);
+                });
+                const labelTipo = { neurologia: '🧠 Neurología', medicina_familiar: '🏥 Medicina Familiar', otro: '📋 Otro' };
+                Object.entries(grupos).forEach(([tipo, items]) => {
+                    if (!items.length) return;
+                    lista.innerHTML += `<div style="font-weight:800;font-size:.8rem;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin:14px 0 8px;padding-bottom:4px;border-bottom:1px solid #f1f5f9;">${labelTipo[tipo]||tipo}</div>`;
+                    items.forEach(t => {
+                        lista.innerHTML += `<div style="display:flex;align-items:center;gap:12px;background:white;border:1.5px solid #e2e8f0;border-radius:12px;padding:12px 16px;flex-wrap:wrap;">
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-weight:700;font-size:.88rem;color:#0f2030;">${t.nombre_colegio||t.nombre_nomina||'—'}</div>
+                                <div style="font-size:.75rem;color:#94a3b8;margin-top:2px;">${t.proyecto_nombre||''}</div>
+                            </div>
+                            <div style="font-family:'Courier New',monospace;font-size:1.1rem;font-weight:900;color:#0f3460;letter-spacing:.25em;background:#f8fafc;padding:6px 14px;border-radius:8px;border:1.5px solid #e2e8f0;">${t.token_acceso||'—'}</div>
+                            <button onclick="descargarTokenPDF('${t.token_acceso||''}','${(t.nombre_colegio||t.nombre_nomina||'').replace(/'/g,' ')}','${tipo}')"
+                                style="background:linear-gradient(135deg,#0f3460,#1c67a3);color:white;border:none;border-radius:10px;padding:8px 14px;font-size:.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;">
+                                <i class="fas fa-file-pdf"></i> PDF
+                            </button>
+                        </div>`;
+                    });
+                });
+            } catch(e) {
+                lista.innerHTML = '<div style="text-align:center;padding:20px;color:#e74c3c;font-size:.85rem;">Error al cargar tokens.</div>';
+            }
+        }
+
+        function descargarTokenPDF(token, colegio, tipo) {
+            window.open('/api/admin/token_pdf?token=' + encodeURIComponent(token) + '&colegio=' + encodeURIComponent(colegio) + '&tipo=' + encodeURIComponent(tipo), '_blank');
+        }
+
+        async function descargarTodosTokens() {
+            window.open('/api/admin/tokens_pdf_todos', '_blank');
+        }
+
+        // ── RENDER NOMINAS — correcciones siempre disponibles (aviso si >5 días) ──
         function esLaborable(d){ const w=d.getDay(); return w!==0&&w!==6; }
         function diasHabilesDesde(str) {
             if(!str) return null;
@@ -7366,37 +7647,42 @@
                 const f = a.fecha_relleno || a.fecha_evaluacion;
                 if(f && (!fechaRef||f>fechaRef)) fechaRef=f;
             });
-            const diasPasados    = diasHabilesDesde(fechaRef);
-            const corrBloqueado  = diasPasados!==null && diasPasados>=5;
-            const diasRestantes  = corrBloqueado ? 0 : (fechaRef ? Math.max(0,5-diasPasados) : null);
+            const diasPasados = diasHabilesDesde(fechaRef);
+            const mostrarAviso = diasPasados !== null && diasPasados >= 5;
 
-            const banner=document.getElementById('corr-lock-banner');
-            const bannerMsg=document.getElementById('corr-lock-msg');
-            if(banner){
-                if(corrBloqueado){
-                    if(bannerMsg) bannerMsg.textContent=`El plazo de 5 días hábiles para solicitar correcciones ha vencido (${diasPasados} días hábiles transcurridos).`;
-                    banner.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(251,191,36,.08);border:1.5px solid rgba(251,191,36,.3);border-radius:10px;margin-bottom:14px;font-size:.78rem;color:#92400e;';
-                    banner.querySelector('i').style.color='#d97706';
-                } else if(fechaRef&&diasRestantes!==null){
-                    if(bannerMsg) bannerMsg.innerHTML=`<strong>Atención:</strong> Tienes <strong>${diasRestantes}</strong> día${diasRestantes!==1?'s':''} hábil${diasRestantes!==1?'es':''} restante${diasRestantes!==1?'s':''} para solicitar correcciones.`;
-                    banner.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(5,150,105,.07);border:1.5px solid rgba(5,150,105,.2);border-radius:10px;margin-bottom:14px;font-size:.78rem;';
-                    banner.querySelector('i').style.color='#059669';
-                    if(bannerMsg) bannerMsg.style.color='#065f46';
-                } else { banner.style.display='none'; }
+            const banner = document.getElementById('corr-lock-banner');
+            const bannerMsg = document.getElementById('corr-lock-msg');
+            if (banner) {
+                if (mostrarAviso) {
+                    if (bannerMsg) bannerMsg.innerHTML = `<strong>Aviso:</strong> Han transcurrido <strong>${diasPasados}</strong> días hábiles desde la evaluación. Aun así puede solicitar correcciones.`;
+                    banner.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(251,191,36,.08);border:1.5px solid rgba(251,191,36,.3);border-radius:10px;margin-bottom:14px;font-size:.78rem;color:#92400e;';
+                } else if (fechaRef && diasPasados !== null) {
+                    if (bannerMsg) bannerMsg.innerHTML = `<strong>Atención:</strong> Tienes <strong>${Math.max(0,5-diasPasados)}</strong> días hábiles dentro del plazo para solicitar correcciones.`;
+                    banner.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(5,150,105,.07);border:1.5px solid rgba(5,150,105,.2);border-radius:10px;margin-bottom:14px;font-size:.78rem;';
+                } else { banner.style.display = 'none'; }
             }
 
+            // Actualizar badges de resumen
+            const totalEval = nominas.filter(a => a.descarga_habilitada).length;
+            const totalPend = nominas.length - totalEval;
+            const evalBadge = document.getElementById('resumen-eval-badge');
+            const pendBadge = document.getElementById('resumen-pend-badge');
+            if (evalBadge) evalBadge.textContent = totalEval + ' evaluados';
+            if (pendBadge) pendBadge.textContent = totalPend + ' pendientes';
+
             nominas.forEach(alumno => {
-                const isEval=alumno.descarga_habilitada;
-                const pdfBtn=isEval
-                    ?`<a href="/descargar_pdf_alumno/${alumno.id}" class="al-btn pdf"><i class="fas fa-file-pdf"></i> PDF</a>`
-                    :`<button class="al-btn pdf disabled" disabled><i class="fas fa-lock"></i> Pendiente</button>`;
-                const corrBtn=corrBloqueado
-                    ?`<button class="al-btn corr locked" disabled><i class="fas fa-lock"></i> Bloqueado</button>`
-                    :`<button class="al-btn corr" onclick="showCorrectionModal('${alumno.id}','${(alumno.nombre_alumno||'').replace(/'/g,String.fromCharCode(92)+"'")}')"><i class="fas fa-triangle-exclamation"></i> Solicitar corrección</button>`;
-                const estadoHtml=isEval
-                    ?`<span class="alumno-estado eval"><i class="fas fa-check-circle"></i> Evaluado</span>`
-                    :`<span class="alumno-estado pend"><i class="fas fa-clock"></i> Pendiente</span>`;
-                containerElement.innerHTML+=`<li class="alumno-row">
+                const isEval = alumno.descarga_habilitada;
+                const pdfBtn = isEval
+                    ? `<a href="/descargar_pdf_alumno/${alumno.id}" class="al-btn pdf"><i class="fas fa-file-pdf"></i> PDF</a>`
+                    : `<button class="al-btn pdf disabled" disabled><i class="fas fa-lock"></i> Pendiente</button>`;
+                // Correcciones siempre disponibles para alumnos evaluados, aviso si >5 días pero no bloquea
+                const corrBtn = isEval
+                    ? `<button class="al-btn corr" onclick="showCorrectionModal('${alumno.id}','${(alumno.nombre_alumno||'').replace(/'/g,String.fromCharCode(92)+"'")}')"><i class="fas fa-triangle-exclamation"></i> Solicitar corrección</button>`
+                    : `<button class="al-btn corr locked" disabled><i class="fas fa-lock"></i> Sin evaluar</button>`;
+                const estadoHtml = isEval
+                    ? `<span class="alumno-estado eval"><i class="fas fa-check-circle"></i> Evaluado</span>`
+                    : `<span class="alumno-estado pend"><i class="fas fa-clock"></i> Pendiente</span>`;
+                containerElement.innerHTML += `<li class="alumno-row">
                     <div class="alumno-avatar"><i class="fas fa-user-graduate"></i></div>
                     <div class="alumno-info">
                         <div class="alumno-nombre">${alumno.nombre_alumno||'N/A'}</div>

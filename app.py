@@ -5890,295 +5890,112 @@ def api_estudiante_agregar():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  PRESENCIA EN TIEMPO REAL
-#  POST /api/presencia   — heartbeat de la doctora mientras evalúa
-#  GET  /api/presencia   — lista para admin / coordinadora
+#  COORDINADOR ESCUELA — ZIP con todos los PDFs evaluados del establecimiento
+#  GET /api/coordinador_escuela/zip/<school_id>
 # ─────────────────────────────────────────────────────────────────────────────
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  COORDINADOR ESCUELA — Obtener token tras registro
-#  POST /api/nomina/obtener_token
-# ─────────────────────────────────────────────────────────────────────────────
-@app.route('/api/nomina/obtener_token', methods=['POST'])
-def api_obtener_token():
+@app.route('/api/coordinador_escuela/zip/<path:school_id>', methods=['GET'])
+def api_coordinador_zip(school_id):
     if session.get('usuario') != 'coordinador_escuela':
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
-        data     = request.get_json() or {}
-        school_id = data.get('school_id', '').strip()
-        nombre   = data.get('nombre', '').strip()
-        rut      = data.get('rut', '').strip()
-        correo   = data.get('correo', '').strip()
-        if not all([school_id, nombre, rut, correo]):
-            return jsonify({"success": False, "message": "Todos los campos son requeridos"}), 400
-        # Validar que el colegio pertenece a este coordinador
-        colegios_ids = session.get('colegios_asignados_ids', [])
-        if school_id not in colegios_ids:
-            return jsonify({"success": False, "message": "No tiene acceso a este establecimiento"}), 403
-        # Obtener el token de la nómina
-        res = requests.get(
-            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?nombre_colegio=eq.{requests.utils.quote(school_id)}"
-            f"&coord_escuela_id=eq.{session.get('usuario_id')}"
-            f"&select=token_acceso,id"
-            f"&limit=1",
-            headers=SUPABASE_SERVICE_HEADERS
-        )
-        nominas = res.json() if res.ok else []
-        if not nominas or not nominas[0].get('token_acceso'):
-            return jsonify({"success": False, "message": "No se encontró token para este establecimiento"}), 404
-        token = nominas[0]['token_acceso']
-        # Registrar el acceso (log opcional)
-        print(f"INFO token_obtenido: colegio={school_id} nombre={nombre} rut={rut} correo={correo}")
-        return jsonify({"success": True, "token": token})
-    except Exception as e:
-        print(f"ERROR api_obtener_token: {e}")
-        return jsonify({"success": False, "message": str(e)}), 500
+        import zipfile as _zipfile
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  COORDINADOR ESCUELA — Excel de nómina
-#  GET /api/coordinador_escuela/excel/<school_id>
-# ─────────────────────────────────────────────────────────────────────────────
-@app.route('/api/coordinador_escuela/excel/<path:school_id>', methods=['GET'])
-def api_coordinador_excel(school_id):
-    if session.get('usuario') != 'coordinador_escuela':
-        return jsonify({"success": False, "message": "No autorizado"}), 403
-    try:
         colegios_ids = session.get('colegios_asignados_ids', [])
         if school_id not in colegios_ids:
             return jsonify({"success": False, "message": "Sin acceso"}), 403
+
         # Obtener nóminas del colegio
         res_nom = requests.get(
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?nombre_colegio=eq.{requests.utils.quote(school_id)}"
             f"&coord_escuela_id=eq.{session.get('usuario_id')}"
-            f"&select=id,nombre_nomina",
+            f"&select=id",
             headers=SUPABASE_SERVICE_HEADERS
         )
         nominas = res_nom.json() if res_nom.ok else []
         if not nominas:
             return jsonify({"success": False, "message": "Sin nóminas"}), 404
-        nomina_ids = [n['id'] for n in nominas]
-        ids_str = ','.join(nomina_ids)
-        # Obtener estudiantes
+
+        nomina_ids = ','.join(n['id'] for n in nominas)
+
+        # Obtener alumnos evaluados
         res_est = requests.get(
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-            f"?nomina_id=in.({ids_str})"
+            f"?nomina_id=in.({nomina_ids})"
+            f"&evaluado_flag=eq.true"
             f"&estado_asistencia=in.(activo,extra)"
-            f"&select=nombre,rut,fecha_nacimiento,fecha_evaluacion,evaluado_flag,nomina_id"
+            f"&select=id,nombre,rut"
             f"&order=nombre.asc",
             headers=SUPABASE_SERVICE_HEADERS
         )
-        estudiantes = res_est.json() if res_est.ok else []
-        nom_map = {n['id']: n['nombre_nomina'] for n in nominas}
-        # Generar Excel
-        import io as _io
-        output = _io.BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            rows_eval  = []
-            rows_pend  = []
-            for est in estudiantes:
-                row = {
-                    'Nombre': est.get('nombre',''),
-                    'RUT': est.get('rut',''),
-                    'Fecha Nacimiento': est.get('fecha_nacimiento',''),
-                    'Fecha Evaluación': est.get('fecha_evaluacion',''),
-                    'Nómina': nom_map.get(est.get('nomina_id',''),''),
-                }
-                if est.get('evaluado_flag'):
-                    rows_eval.append(row)
-                else:
-                    rows_pend.append(row)
-            df_eval = pd.DataFrame(rows_eval) if rows_eval else pd.DataFrame(columns=['Nombre','RUT','Fecha Nacimiento','Fecha Evaluación','Nómina'])
-            df_pend = pd.DataFrame(rows_pend) if rows_pend else pd.DataFrame(columns=['Nombre','RUT','Fecha Nacimiento','Fecha Evaluación','Nómina'])
-            df_eval.to_excel(writer, sheet_name='Evaluados', index=False)
-            df_pend.to_excel(writer, sheet_name='Pendientes', index=False)
-        output.seek(0)
-        filename = f"Nomina_{school_id.replace(' ','_')}.xlsx"
-        return send_file(output, as_attachment=True, download_name=filename,
-                         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        alumnos = res_est.json() if res_est.ok else []
+        if not alumnos:
+            return jsonify({"success": False, "message": "No hay alumnos evaluados"}), 404
+
+        # Crear ZIP en memoria
+        zip_buf = io.BytesIO()
+        carpeta = school_id.replace('/', '_').replace('\\', '_')[:80]
+
+        with _zipfile.ZipFile(zip_buf, 'w', _zipfile.ZIP_DEFLATED) as zf:
+            for alumno in alumnos:
+                alumno_id = alumno['id']
+                nombre    = alumno.get('nombre', 'alumno').replace(' ', '_')
+                rut       = alumno.get('rut', '').replace('.', '').replace('-', '')
+
+                # Reutilizar la lógica de descargar_pdf_alumno
+                try:
+                    with app.test_request_context():
+                        pass  # solo para imports
+                    # Llamar internamente a la función de generación
+                    pdf_bytes = _generar_pdf_bytes_para_alumno(alumno_id)
+                    if pdf_bytes:
+                        filename = f"{nombre}_{rut}.pdf"
+                        zf.writestr(f"{carpeta}/{filename}", pdf_bytes)
+                except Exception as ex:
+                    print(f"ZIP: error generando PDF para {alumno_id}: {ex}")
+                    continue
+
+        zip_buf.seek(0)
+        zip_name = f"{carpeta}.zip"
+        return send_file(
+            zip_buf,
+            as_attachment=True,
+            download_name=zip_name,
+            mimetype='application/zip'
+        )
+
     except Exception as e:
-        print(f"ERROR api_coordinador_excel: {e}")
+        print(f"ERROR api_coordinador_zip: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  ADMIN — Listar tokens por proyecto
-#  GET /api/admin/tokens?proyecto_id=<id>
-# ─────────────────────────────────────────────────────────────────────────────
-@app.route('/api/admin/tokens', methods=['GET'])
-def api_admin_tokens():
-    if session.get('usuario') != 'admin':
-        return jsonify({"success": False, "message": "No autorizado"}), 403
+def _generar_pdf_bytes_para_alumno(alumno_id):
+    """
+    Obtiene los bytes del PDF de un alumno haciendo un request interno
+    a la ruta /descargar_pdf_alumno que ya maneja toda la lógica.
+    """
     try:
-        proyecto_id = request.args.get('proyecto_id', '').strip()
-        url = (f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-               f"?select=id,nombre_nomina,nombre_colegio,form_type,token_acceso,proyecto_id"
-               f"&token_acceso=not.is.null"
-               f"&order=nombre_colegio.asc")
-        if proyecto_id:
-            url += f"&proyecto_id=eq.{proyecto_id}"
-        res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS)
-        nominas = res.json() if res.ok else []
-        # Obtener nombres de proyectos
-        res_proy = requests.get(
-            f"{SUPABASE_URL}/rest/v1/proyectos?select=id,nombre",
-            headers=SUPABASE_SERVICE_HEADERS
-        )
-        proyectos_map = {p['id']: p['nombre'] for p in (res_proy.json() if res_proy.ok else [])}
-        tokens = []
-        for n in nominas:
-            tokens.append({
-                'id': n.get('id'),
-                'nombre_nomina': n.get('nombre_nomina',''),
-                'nombre_colegio': n.get('nombre_colegio',''),
-                'form_type': n.get('form_type',''),
-                'token_acceso': n.get('token_acceso',''),
-                'proyecto_id': n.get('proyecto_id',''),
-                'proyecto_nombre': proyectos_map.get(n.get('proyecto_id',''),'Sin proyecto'),
-            })
-        return jsonify({"success": True, "tokens": tokens})
+        from flask import current_app
+        # Usar el cliente de test de Flask para hacer el request interno
+        with current_app.test_client() as client:
+            # Copiar la sesión actual al cliente de test
+            with client.session_transaction() as sess:
+                for key, val in session.items():
+                    sess[key] = val
+            resp = client.get(f'/descargar_pdf_alumno/{alumno_id}')
+            if resp.status_code == 200:
+                return resp.data
+            return None
     except Exception as e:
-        print(f"ERROR api_admin_tokens: {e}")
-        return jsonify({"success": False, "message": str(e)}), 500
+        print(f"_generar_pdf_bytes_para_alumno error: {e}")
+        return None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  ADMIN — Descargar token individual como PDF
-#  GET /api/admin/token_pdf?token=<>&colegio=<>&tipo=<>
+#  PRESENCIA EN TIEMPO REAL
+#  POST /api/presencia   — heartbeat de la doctora mientras evalúa
+#  GET  /api/presencia   — lista para admin / coordinadora
 # ─────────────────────────────────────────────────────────────────────────────
-@app.route('/api/admin/token_pdf', methods=['GET'])
-def api_admin_token_pdf():
-    if session.get('usuario') != 'admin':
-        return "No autorizado", 403
-    try:
-        token  = request.args.get('token', '')
-        colegio = request.args.get('colegio', '')
-        tipo   = request.args.get('tipo', '')
-        tipo_label = {'neurologia': 'Neurología', 'medicina_familiar': 'Medicina Familiar'}.get(tipo, tipo.title())
-        from reportlab.pdfgen import canvas as rl_canvas_tok
-        from reportlab.lib.pagesizes import A4
-        from reportlab.lib import colors
-        buf = io.BytesIO()
-        c = rl_canvas_tok.Canvas(buf, pagesize=A4)
-        w, h = A4
-        # Fondo superior
-        c.setFillColorRGB(0.059, 0.196, 0.376)
-        c.rect(0, h-140, w, 140, fill=1, stroke=0)
-        # Logo texto
-        c.setFillColorRGB(1,1,1)
-        c.setFont("Helvetica-Bold", 22)
-        c.drawString(50, h-60, "CardioHome")
-        c.setFont("Helvetica", 11)
-        c.drawString(50, h-82, "Token de Acceso — Coordinador de Escuela")
-        c.setFont("Helvetica", 10)
-        c.drawString(50, h-102, f"Tipo: {tipo_label}")
-        # Cuerpo
-        c.setFillColorRGB(0.95, 0.97, 1)
-        c.roundRect(50, h-340, w-100, 170, 12, fill=1, stroke=0)
-        c.setFillColorRGB(0.059, 0.196, 0.376)
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(70, h-180, "Establecimiento:")
-        c.setFont("Helvetica", 12)
-        c.setFillColorRGB(0.2, 0.2, 0.2)
-        c.drawString(70, h-200, colegio)
-        c.setFillColorRGB(0.059, 0.196, 0.376)
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(70, h-230, "Token de Acceso:")
-        # Token grande
-        c.setFillColorRGB(1,1,1)
-        c.roundRect(70, h-288, w-140, 44, 8, fill=1, stroke=0)
-        c.setFillColorRGB(0.059, 0.196, 0.376)
-        c.setFont("Helvetica-Bold", 28)
-        tok_w = c.stringWidth(token, "Helvetica-Bold", 28)
-        c.drawString((w - tok_w) / 2, h-272, token)
-        # Aviso
-        c.setFillColorRGB(0.5, 0.5, 0.5)
-        c.setFont("Helvetica", 9)
-        c.drawCentredString(w/2, h-370, "Este token es confidencial. No comparta este documento con personas no autorizadas.")
-        c.drawCentredString(w/2, h-385, "Todos los accesos quedan registrados en el sistema CardioHome.")
-        c.save()
-        buf.seek(0)
-        filename = f"Token_{colegio.replace(' ','_')}.pdf"
-        return send_file(buf, as_attachment=True, download_name=filename, mimetype='application/pdf')
-    except Exception as e:
-        print(f"ERROR api_admin_token_pdf: {e}")
-        return f"Error: {e}", 500
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  ADMIN — Descargar todos los tokens como PDF
-#  GET /api/admin/tokens_pdf_todos
-# ─────────────────────────────────────────────────────────────────────────────
-@app.route('/api/admin/tokens_pdf_todos', methods=['GET'])
-def api_admin_tokens_pdf_todos():
-    if session.get('usuario') != 'admin':
-        return "No autorizado", 403
-    try:
-        from reportlab.pdfgen import canvas as rl_canvas_all
-        from reportlab.lib.pagesizes import A4
-        res = requests.get(
-            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?select=nombre_nomina,nombre_colegio,form_type,token_acceso,proyecto_id"
-            f"&token_acceso=not.is.null&order=form_type.asc,nombre_colegio.asc",
-            headers=SUPABASE_SERVICE_HEADERS
-        )
-        nominas = res.json() if res.ok else []
-        if not nominas:
-            return "No hay tokens disponibles", 404
-        buf = io.BytesIO()
-        w, h = A4
-        c = rl_canvas_all.Canvas(buf, pagesize=A4)
-        tipo_actual = None
-        y = h - 60
-        def nueva_pagina():
-            nonlocal y
-            c.showPage()
-            y = h - 60
-        # Encabezado inicial
-        c.setFillColorRGB(0.059, 0.196, 0.376)
-        c.rect(0, h-80, w, 80, fill=1, stroke=0)
-        c.setFillColorRGB(1,1,1)
-        c.setFont("Helvetica-Bold", 18)
-        c.drawString(50, h-45, "CardioHome — Todos los Tokens de Acceso")
-        c.setFont("Helvetica", 10)
-        c.drawString(50, h-62, f"Generado: {date.today().strftime('%d/%m/%Y')}")
-        y = h - 110
-        for nom in nominas:
-            tipo = nom.get('form_type','')
-            tipo_label = {'neurologia':'Neurología','medicina_familiar':'Medicina Familiar'}.get(tipo, tipo.title())
-            if tipo != tipo_actual:
-                tipo_actual = tipo
-                if y < 160: nueva_pagina()
-                c.setFillColorRGB(0.059, 0.196, 0.376)
-                c.setFont("Helvetica-Bold", 13)
-                c.drawString(50, y, f"── {tipo_label} ──")
-                y -= 24
-            if y < 100: nueva_pagina()
-            # Card por nómina
-            c.setFillColorRGB(0.95, 0.97, 1)
-            c.roundRect(50, y-52, w-100, 58, 8, fill=1, stroke=0)
-            c.setFillColorRGB(0.2, 0.2, 0.2)
-            c.setFont("Helvetica-Bold", 10)
-            c.drawString(65, y-14, nom.get('nombre_colegio') or nom.get('nombre_nomina',''))
-            c.setFont("Helvetica", 9)
-            c.setFillColorRGB(0.5,0.5,0.5)
-            c.drawString(65, y-28, nom.get('nombre_nomina',''))
-            c.setFillColorRGB(0.059, 0.196, 0.376)
-            c.setFont("Helvetica-Bold", 16)
-            tok = nom.get('token_acceso','—')
-            tok_w = c.stringWidth(tok, "Helvetica-Bold", 16)
-            c.drawString(w - 50 - tok_w - 10, y-28, tok)
-            y -= 68
-        c.save()
-        buf.seek(0)
-        return send_file(buf, as_attachment=True, download_name="Todos_Los_Tokens.pdf", mimetype='application/pdf')
-    except Exception as e:
-        print(f"ERROR api_admin_tokens_pdf_todos: {e}")
-        return f"Error: {e}", 500
-
-
 @app.route('/api/presencia', methods=['POST'])
 def api_presencia_post():
     """Recibe heartbeat de una doctora y upsert en presencia_doctoras."""

@@ -2806,10 +2806,10 @@
                         <!-- Filtro por proyecto -->
                         <div style="margin-bottom:16px;">
                             <select id="tokens-proyecto-filter" onchange="cargarTokensPorProyecto()"
-                                style="padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.86rem;font-family:inherit;outline:none;min-width:240px;color:#334155;background:white;">
-                                <option value="" style="color:#334155;background:white;">— Todos los proyectos —</option>
+                                style="padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.86rem;font-family:inherit;outline:none;min-width:240px;color:#334155 !important;background:#ffffff !important;-webkit-appearance:auto;appearance:auto;">
+                                <option value="" style="color:#334155;background:#ffffff;">— Todos los proyectos —</option>
                                 {% for p in proyectos %}
-                                <option value="{{ p.id }}" style="color:#334155;background:white;">{{ p.nombre }}</option>
+                                <option value="{{ p.id }}" style="color:#334155;background:#ffffff;">{{ p.nombre }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -6191,9 +6191,9 @@
 
                                 <!-- Barra de descarga masiva + Excel -->
                                 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
-                                    <button onclick="descargarMasivaPDFs()" id="btn-descarga-masiva"
+                                    <button onclick="descargarZipPDFs()" id="btn-descarga-masiva"
                                         style="background:linear-gradient(135deg,#dc2626,#b91c1c);color:white;border:none;border-radius:12px;padding:10px 18px;font-weight:700;font-size:.82rem;cursor:pointer;display:flex;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(220,38,38,.25);">
-                                        <i class="fas fa-file-pdf"></i> Descarga Masiva PDFs
+                                        <i class="fas fa-file-zipper"></i> Descarga Masiva ZIP
                                     </button>
                                     <button onclick="descargarExcelCoordinador()" id="btn-excel-coordinador"
                                         style="background:linear-gradient(135deg,#059669,#047857);color:white;border:none;border-radius:12px;padding:10px 18px;font-weight:700;font-size:.82rem;cursor:pointer;display:flex;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(5,150,105,.25);">
@@ -7519,28 +7519,34 @@
             document.getElementById('access-password-form').dispatchEvent(new Event('submit'));
         }
 
-        // Descarga masiva de PDFs del coordinador escuela
-        async function descargarMasivaPDFs() {
+        // Descarga masiva ZIP del coordinador escuela
+        async function descargarZipPDFs() {
             const btn = document.getElementById('btn-descarga-masiva');
-            const lista = document.getElementById('alumnos-nomina-list');
-            const links = lista.querySelectorAll('a.al-btn.pdf');
-            if (!links.length) { alert('No hay PDFs disponibles para descargar.'); return; }
+            const schoolId = document.getElementById('current-school-id').value;
+            if (!schoolId) { alert('No hay establecimiento seleccionado'); return; }
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Descargando…';
-            // Descargar uno por uno con delay para no saturar
-            for (let i = 0; i < links.length; i++) {
-                const href = links[i].getAttribute('href');
-                if (!href) continue;
-                const a = document.createElement('a');
-                a.href = href;
-                a.download = '';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando ZIP…';
+            try {
+                const res = await fetch('/api/coordinador_escuela/zip/' + encodeURIComponent(schoolId));
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.message || 'Error al generar ZIP');
+                }
+                const blob = await res.blob();
+                const url  = URL.createObjectURL(blob);
+                const a    = document.createElement('a');
+                const nombre = schoolId.replace(/[^a-zA-Z0-9\s]/g, '').trim() || 'Valoraciones';
+                a.href = url;
+                a.download = nombre + '.zip';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                await new Promise(r => setTimeout(r, 800));
+                URL.revokeObjectURL(url);
+            } catch(e) {
+                alert('Error al descargar ZIP: ' + e.message);
             }
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-file-pdf"></i> Descarga Masiva PDFs';
+            btn.innerHTML = '<i class="fas fa-file-zipper"></i> Descarga Masiva ZIP';
         }
 
         // Excel coordinador escuela

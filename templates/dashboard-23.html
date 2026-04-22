@@ -2806,10 +2806,10 @@
                         <!-- Filtro por proyecto -->
                         <div style="margin-bottom:16px;">
                             <select id="tokens-proyecto-filter" onchange="cargarTokensPorProyecto()"
-                                style="padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.86rem;font-family:inherit;outline:none;min-width:240px;color:#334155;">
-                                <option value="">— Todos los proyectos —</option>
+                                style="padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.86rem;font-family:inherit;outline:none;min-width:240px;color:#334155;background:white;">
+                                <option value="" style="color:#334155;background:white;">— Todos los proyectos —</option>
                                 {% for p in proyectos %}
-                                <option value="{{ p.id }}">{{ p.nombre }}</option>
+                                <option value="{{ p.id }}" style="color:#334155;background:white;">{{ p.nombre }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -7795,7 +7795,6 @@
             const inputPassword = document.getElementById('school_password').value;
             const currentSchoolId = document.getElementById('current-school-id').value;  
             
-            const formContainer = document.getElementById('password-form-container');
             const contentLocked = document.getElementById('nomina-content-locked');
             const nominasContainer = document.getElementById('alumnos-nomina-list');
             const noResultsMsg = document.getElementById('nomina-no-results-message');
@@ -7818,14 +7817,16 @@
                         timer: 1500,
                         showConfirmButton: false
                     });
-                    
-                    formContainer.style.display = 'none';
+                    // Ocultar todos los pasos y mostrar contenido nómina
+                    ['step-aviso','step-registro','step-token-revelado','step-token-directo'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.display = 'none';
+                    });
+                    // Compatibilidad con flujo antiguo
+                    const formContainer = document.getElementById('password-form-container');
+                    if (formContainer) formContainer.style.display = 'none';
+
                     contentLocked.style.display = 'block';
-                    // Animar cerradura a desbloqueado
-                    const lv = document.getElementById('lock-visual-icon');
-                    const li = document.getElementById('lock-icon-i');
-                    if (lv) lv.classList.add('unlocked');
-                    if (li) li.className = 'fa-solid fa-lock-open';
                     // Reset resubir section
                     const drop = document.getElementById('resubir-drop-area');
                     const suc  = document.getElementById('resubir-success-msg');
@@ -7835,7 +7836,6 @@
                     if (fi)   fi.value = '';
                     
                     renderNominas(data.nominas, nominasContainer, noResultsMsg);
-                    // Cargar correcciones resueltas para este colegio
                     const schoolId = document.getElementById('current-school-id').value;
                     if (typeof cargarCorreccionesResueltas === 'function') cargarCorreccionesResueltas(schoolId);
                     

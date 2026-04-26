@@ -979,9 +979,9 @@ def generar_pdf_familiar_overlay(pdf_base_path, campos):
             c.setFont("Helvetica", fs)
             c.setFillColorRGB(0, 0, 0)
             if campo in CAMPOS_CENTRADOS:
-                # Centrar horizontalmente dentro del cuadro
-                tw = c.stringWidth(valor, "Helvetica", fs)
-                c.drawString(x0 + (w - tw) / 2, y0 + (h - fs) / 2, valor)
+                # Centrar en el punto medio del cuadro
+                cx = (x0 + x1) / 2
+                c.drawCentredString(cx, y0 + (h - fs) / 2, valor)
             else:
                 c.drawString(x0 + 2, y0 + (h - fs) / 2, valor)
 

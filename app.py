@@ -885,6 +885,181 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
         return None
 
 
+def generar_pdf_familiar_overlay(pdf_base_path, campos):
+    """
+    MEDICINA FAMILIAR: igual estrategia que neurología.
+    - Paso 1: ReportLab dibuja texto y X de checks sobre el PDF base
+    - Paso 2: flatten elimina widgets AcroForm para compatibilidad con visores web
+    Coordenadas obtenidas directamente del PDF base con pypdf.
+    """
+    if not REPORTLAB_OK:
+        return None
+
+    # ── Coordenadas exactas de cada campo (x0, y0, x1, y1) ─────────────────
+    COORDS_TEXTO = {
+        'nombre':            (80.5,  698.0, 343.7, 720.0),
+        'fecha_nacimiento':  (77.4,  676.8, 169.8, 698.8),
+        'edad':              (170.2, 678.4, 275.0, 700.4),
+        'nacionalidad':      (276.8, 677.2, 350.9, 699.2),
+        'rut':               (434.6, 699.3, 540.8, 721.3),
+        'diagnostico_1':     (382.7, 650.0, 545.2, 672.0),
+        'fecha_evaluacion':  (293.2, 581.5, 408.5, 603.5),
+        'fecha_reevaluacion':(419.6, 581.5, 563.0, 603.5),
+        'altura':            (165.8, 315.4, 205.7, 330.9),
+        'peso':              (168.8, 297.1, 207.1, 305.8),
+        'imc':               (202.1, 295.5, 262.5, 308.7),
+        'clasificacion':     (270.7, 294.1, 342.4, 308.4),
+        'diagnostico_2':          (77.9,  238.2, 529.2, 254.1),
+        'diagnostico_complementario': (80.3, 218.0, 464.9, 233.3),
+    }
+    COORDS_LARGO = {
+        'observacion_1':  (352.3, 526.7, 535.7, 548.7),
+        'observacion_2':  (384.0, 465.0, 534.0, 487.0),
+        'observacion_3':  (384.8, 438.8, 534.8, 460.8),
+        'observacion_4':  (168.2, 421.5, 534.4, 439.0),
+        'observacion_5':  (167.0, 406.9, 534.4, 424.1),
+        'observacion_6':  (383.6, 392.8, 533.6, 408.0),
+        'observacion_7':  (384.0, 377.9, 528.4, 393.9),
+        'indicaciones':   (76.0,  166.2, 534.8, 194.1),
+        'derivaciones':   (76.9,  136.8, 531.4, 154.2),
+    }
+    # Checks: (x0, y0, x1, y1) — se dibuja X centrada
+    COORDS_CHECK = {
+        'sexo_f':                 (361.2, 701.7, 390.1, 720.4),
+        'sexo_m':                 (405.2, 699.3, 430.8, 721.3),
+        'deficit':                (220.9, 652.4, 241.5, 666.7),
+        'check_cesarea':          (179.0, 528.4, 197.1, 541.6),
+        'check_atermino':         (273.5, 528.0, 288.4, 541.5),
+        'check_vaginal':          (177.8, 516.2, 194.8, 528.6),
+        'check_prematuro':        (273.5, 515.5, 288.0, 529.4),
+        'check_acorde':           (180.0, 482.8, 196.1, 493.9),
+        'check_retraso':          (273.5, 481.6, 287.2, 494.3),
+        'check_retrasogeneralizado': (344.1, 481.2, 359.8, 496.7),
+        'check_esquemac':         (179.5, 457.0, 194.4, 468.1),
+        'check_esquemai':         (271.1, 456.6, 289.6, 469.7),
+        'check_alergiano':        (178.7, 440.3, 194.9, 454.5),
+        'check_alergiasi':        (270.2, 440.2, 290.3, 455.2),
+        'check_cirugiano':        (179.5, 392.8, 194.4, 407.2),
+        'check_cirugiasi':        (273.5, 393.2, 289.2, 406.4),
+        'check_visionsinalteracion': (179.9, 378.3, 194.8, 390.2),
+        'check_visionrefraccion': (271.9, 378.3, 288.4, 391.8),
+        'check_audicionnormal':   (180.7, 363.4, 194.4, 376.1),
+        'check_tapondecerumen':   (271.9, 365.8, 289.2, 376.9),
+        'check_hipoacusia':       (343.7, 362.6, 361.4, 376.5),
+        'check_caries':           (178.7, 348.9, 194.0, 362.0),
+        'check_apinamientodental':(272.3, 347.6, 288.0, 363.2),
+        'check_retenciondental':  (343.1, 347.6, 362.8, 361.6),
+        'check_sinhallazgos':     (177.9, 331.9, 195.2, 347.1),
+        'check_frenillolingual':  (271.1, 332.3, 288.0, 346.3),
+        'check_hipertrofia':      (343.3, 330.3, 359.4, 347.1),
+    }
+
+    try:
+        reader_base = PdfReader(pdf_base_path)
+        pg0 = reader_base.pages[0]
+        pw  = float(pg0.mediabox.width)   # 612.0
+        ph  = float(pg0.mediabox.height)  # 792.0
+
+        ov_buf = io.BytesIO()
+        c = rl_canvas.Canvas(ov_buf, pagesize=(pw, ph))
+
+        # ── Campos de texto cortos ───────────────────────────────────────
+        for campo, (x0, y0, x1, y1) in COORDS_TEXTO.items():
+            valor = campos.get(campo, '')
+            if not valor or not str(valor).strip():
+                continue
+            texto = str(valor).strip()
+            w = x1 - x0
+            h = y1 - y0
+            margin = 2
+            fs = 9.0
+            while fs > 6 and c.stringWidth(texto, "Helvetica", fs) > w - 2*margin:
+                fs -= 0.5
+            c.setFont("Helvetica", fs)
+            c.setFillColorRGB(0, 0, 0)
+            c.drawString(x0 + margin, y0 + (h - fs) / 2, texto)
+
+        # ── Campos de texto largo (con wrap) ────────────────────────────
+        for campo, (x0, y0, x1, y1) in COORDS_LARGO.items():
+            valor = campos.get(campo, '')
+            if not valor or not str(valor).strip():
+                continue
+            texto = str(valor).strip()
+            w = x1 - x0
+            h = y1 - y0
+            margin = 2
+            fs = 8.0
+            lh = fs * 1.3
+            lines = []
+            for par in texto.splitlines():
+                if not par.strip():
+                    lines.append('')
+                else:
+                    lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
+            while lines and len(lines) * lh > h - margin and fs > 6:
+                fs -= 0.5
+                lh  = fs * 1.3
+                lines = []
+                for par in texto.splitlines():
+                    if not par.strip():
+                        lines.append('')
+                    else:
+                        lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
+            c.setFont("Helvetica", fs)
+            c.setFillColorRGB(0, 0, 0)
+            y_pos = y1 - margin - fs
+            for line in lines:
+                if y_pos < y0 + margin:
+                    break
+                try:
+                    c.drawString(x0 + margin, y_pos, line)
+                except Exception:
+                    c.drawString(x0 + margin, y_pos, line.encode('latin-1','replace').decode('latin-1'))
+                y_pos -= lh
+
+        # ── Checks y sexo (X centrada) ───────────────────────────────────
+        for campo, (x0, y0, x1, y1) in COORDS_CHECK.items():
+            valor = campos.get(campo, '')
+            if not valor or not str(valor).strip():
+                continue
+            w  = x1 - x0
+            h  = y1 - y0
+            fs = 8.0
+            c.setFont("Helvetica-Bold", fs)
+            c.setFillColorRGB(0, 0, 0)
+            xt = x0 + (w - c.stringWidth("X", "Helvetica-Bold", fs)) / 2
+            yt = y0 + (h - fs) / 2
+            c.drawString(xt, yt, "X")
+
+        # ── Canvas separado para sexo encima (evita fondo blanco) ───────
+        c.save()
+        ov_buf.seek(0)
+
+        # Fusionar overlay encima del PDF base
+        from pypdf import PdfReader as _PR, PdfWriter as _PW
+        ov_reader = _PR(ov_buf)
+        base_r    = _PR(pdf_base_path)
+        writer_out = _PW()
+        for i, pg in enumerate(base_r.pages):
+            if i == 0 and ov_reader.pages:
+                ov_pg = ov_reader.pages[0]
+                ov_pg.merge_page(pg)
+                writer_out.add_page(ov_pg)
+            else:
+                writer_out.add_page(pg)
+
+        dst = io.BytesIO()
+        writer_out.write(dst)
+        dst.seek(0)
+        result = flatten_pdf_fields(dst.read())
+        print("✅ PDF familiar overlay listo.")
+        return result
+
+    except Exception as e:
+        print(f"❌ generar_pdf_familiar_overlay: {e}")
+        return None
+
+
 def flatten_pdf_fields(pdf_bytes):
     try:
         import pikepdf
@@ -1338,7 +1513,17 @@ def generar_pdf():
                 "check_hipertrofia": map_check_as_text('check_hipertrofia'),
             }
 
-        # Aplicar el relleno
+        # Generar PDF final según tipo
+        if form_type == 'medicina_familiar':
+            # FAMILIAR: overlay con coordenadas fijas (igual que neurología)
+            pdf_final = generar_pdf_familiar_overlay(pdf_base_path, campos)
+            if not pdf_final:
+                flash("❌ Error al generar el PDF de medicina familiar.", 'error')
+                return redirect(url_for('dashboard'))
+            nombre_descarga = f"{nombre.replace(' ', '_')}_{rut}_formulario_{form_type}.pdf"
+            return send_file(io.BytesIO(pdf_final), as_attachment=True, download_name=nombre_descarga, mimetype='application/pdf')
+
+        # Aplicar el relleno (neurología e informe usan su propia función arriba)
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
             
@@ -3843,10 +4028,15 @@ def descargar_pdf_alumno(alumno_id):
         # 7. Generar PDF final
         if form_type in ('neurologia', 'informe_neurologico'):
             # NEUROLOGÍA: ReportLab con coordenadas hardcodeadas
-            # (PDF base tiene todos los campos ReadOnly)
             pdf_final = generar_pdf_neurologia_overlay(pdf_base_path, campos)
             if not pdf_final:
                 flash("❌ Error al generar el PDF de neurología.", 'error')
+                return redirect(url_for('dashboard'))
+        elif form_type == 'medicina_familiar':
+            # FAMILIAR: mismo método que neurología — overlay con coordenadas fijas
+            pdf_final = generar_pdf_familiar_overlay(pdf_base_path, campos)
+            if not pdf_final:
+                flash("❌ Error al generar el PDF de medicina familiar.", 'error')
                 return redirect(url_for('dashboard'))
         else:
             # FAMILIAR y otros: flujo original PyPDF2 (funciona bien)
@@ -4460,6 +4650,13 @@ def generar_pdfs_visibles():
 
             if form_type == 'neurologia':
                 pdf_bytes = generar_pdf_neurologia_overlay(pdf_base_path, campos)
+                if not pdf_bytes:
+                    continue
+                temp_reader = PdfReader(io.BytesIO(pdf_bytes))
+                merged_pdf_writer.add_page(temp_reader.pages[0])
+            elif form_type == 'medicina_familiar':
+                # FAMILIAR: overlay con coordenadas fijas
+                pdf_bytes = generar_pdf_familiar_overlay(pdf_base_path, campos)
                 if not pdf_bytes:
                     continue
                 temp_reader = PdfReader(io.BytesIO(pdf_bytes))

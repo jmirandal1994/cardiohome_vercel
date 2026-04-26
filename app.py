@@ -959,6 +959,9 @@ def generar_pdf_familiar_overlay(pdf_base_path, campos):
         # Campos que necesitan fondo blanco para tapar el diseño del formulario
         CAMPOS_CON_FONDO = {'altura', 'peso', 'imc', 'clasificacion'}
 
+        # Campos que se dibujan centrados horizontalmente
+        CAMPOS_CENTRADOS = {'fecha_nacimiento', 'fecha_evaluacion', 'fecha_reevaluacion', 'nacionalidad'}
+
         # Campos de texto cortos
         for campo, (x0, y0, x1, y1) in COORDS_TEXTO.items():
             valor = str(campos.get(campo, '') or '').strip()
@@ -975,7 +978,12 @@ def generar_pdf_familiar_overlay(pdf_base_path, campos):
                 c.rect(x0, y0, w, h, fill=1, stroke=0)
             c.setFont("Helvetica", fs)
             c.setFillColorRGB(0, 0, 0)
-            c.drawString(x0 + 2, y0 + (h - fs) / 2, valor)
+            if campo in CAMPOS_CENTRADOS:
+                # Centrar horizontalmente dentro del cuadro
+                tw = c.stringWidth(valor, "Helvetica", fs)
+                c.drawString(x0 + (w - tw) / 2, y0 + (h - fs) / 2, valor)
+            else:
+                c.drawString(x0 + 2, y0 + (h - fs) / 2, valor)
 
         # Campos de texto largo con wrap
         for campo, (x0, y0, x1, y1) in COORDS_LARGO.items():

@@ -1134,6 +1134,7 @@
                         <li><a href="#" class="nav-link" data-section="gestionar-proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-upload-nomina"><i class="fa-solid fa-file-excel"></i> Cargar Nómina</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-tokens"><i class="fa-solid fa-key"></i> Tokens</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-mover-estudiantes"><i class="fa-solid fa-people-arrows"></i> Mover Estudiantes</a></li>
 
 
                         <li><a href="#" class="nav-link relative" data-section="admin-correction-requests"><i class="fa-solid fa-bell-concierge"></i> Solicitudes Corrección<span id="correction-alert-badge" class="alert-badge hidden">0</span></a></li>
@@ -2825,6 +2826,76 @@
                 </div>
 
                 {# NUEVA SECCIÓN: SOLICITUDES DE CORRECCIÓN PARA EL ADMINISTRADOR #}
+                {# SECCIÓN: MOVER ESTUDIANTES ENTRE NÓMINAS #}
+                <div id="admin-mover-estudiantes" class="content-section">
+                    <div class="section-topbar">
+                        <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                        <i class="fa-solid fa-people-arrows section-icon"></i>
+                        <h2 class="section-title">Mover Estudiantes</h2>
+                    </div>
+                    <div class="card">
+                        <p style="color:#64748b;font-size:.85rem;margin-bottom:20px;">
+                            <i class="fas fa-info-circle" style="color:#0f3460;margin-right:5px;"></i>
+                            Selecciona el proyecto origen, luego la nómina, marca los alumnos que deseas mover y elige la nómina destino.
+                        </p>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+                            <!-- Columna izquierda: origen -->
+                            <div>
+                                <div style="font-weight:800;font-size:.82rem;color:#0f2030;margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em;">
+                                    <i class="fas fa-arrow-right-from-bracket" style="color:#dc2626;margin-right:5px;"></i> Origen
+                                </div>
+                                <select id="mv-proyecto-origen" onchange="mvCargarNominasOrigen()"
+                                    style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.85rem;font-family:inherit;outline:none;color:#334155;background:#fff;margin-bottom:10px;">
+                                    <option value="">— Seleccionar proyecto —</option>
+                                </select>
+                                <select id="mv-nomina-origen" onchange="mvCargarAlumnos()"
+                                    style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.85rem;font-family:inherit;outline:none;color:#334155;background:#fff;margin-bottom:10px;">
+                                    <option value="">— Seleccionar nómina —</option>
+                                </select>
+                                <!-- Lista de alumnos con checkboxes -->
+                                <div id="mv-alumnos-lista" style="max-height:400px;overflow-y:auto;border:1.5px solid #e2e8f0;border-radius:12px;padding:8px;">
+                                    <div style="text-align:center;padding:20px;color:#94a3b8;font-size:.8rem;">Selecciona un proyecto y nómina</div>
+                                </div>
+                                <div style="display:flex;gap:8px;margin-top:8px;">
+                                    <button onclick="mvSeleccionarTodos(true)" style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:6px 12px;font-size:.76rem;font-weight:600;cursor:pointer;color:#334155;">Seleccionar todos</button>
+                                    <button onclick="mvSeleccionarTodos(false)" style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:6px 12px;font-size:.76rem;font-weight:600;cursor:pointer;color:#334155;">Deseleccionar todos</button>
+                                    <span id="mv-seleccionados-count" style="margin-left:auto;font-size:.78rem;color:#64748b;line-height:2.2;">0 seleccionados</span>
+                                </div>
+                            </div>
+
+                            <!-- Columna derecha: destino -->
+                            <div>
+                                <div style="font-weight:800;font-size:.82rem;color:#0f2030;margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em;">
+                                    <i class="fas fa-arrow-right-to-bracket" style="color:#059669;margin-right:5px;"></i> Destino
+                                </div>
+                                <select id="mv-proyecto-destino" onchange="mvCargarNominasDestino()"
+                                    style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.85rem;font-family:inherit;outline:none;color:#334155;background:#fff;margin-bottom:10px;">
+                                    <option value="">— Seleccionar proyecto destino —</option>
+                                </select>
+                                <select id="mv-nomina-destino"
+                                    style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.85rem;font-family:inherit;outline:none;color:#334155;background:#fff;margin-bottom:10px;">
+                                    <option value="">— Seleccionar nómina destino —</option>
+                                </select>
+
+                                <!-- Resumen de la operación -->
+                                <div id="mv-resumen" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:16px;display:none;">
+                                    <div style="font-weight:700;font-size:.85rem;color:#0f2030;margin-bottom:8px;"><i class="fas fa-clipboard-list" style="color:#0f3460;margin-right:5px;"></i>Resumen</div>
+                                    <div id="mv-resumen-texto" style="font-size:.82rem;color:#475569;line-height:1.6;"></div>
+                                </div>
+
+                                <button onclick="mvEjecutarMovimiento()" id="mv-btn-mover"
+                                    style="width:100%;background:linear-gradient(135deg,#0f3460,#1c67a3);color:white;border:none;border-radius:14px;padding:14px;font-weight:800;font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                                    <i class="fas fa-people-arrows"></i> Mover Estudiantes Seleccionados
+                                </button>
+
+                                <!-- Log de resultado -->
+                                <div id="mv-resultado" style="margin-top:14px;display:none;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="admin-correction-requests" class="content-section">
             <div class="section-topbar">
                 <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
@@ -7318,6 +7389,8 @@
                     if (typeof cargarStatsProyectos === 'function') cargarStatsProyectos();
                 } else if (sectionId === 'admin-tokens') {
                     cargarTokensPorProyecto();
+                } else if (sectionId === 'admin-mover-estudiantes') {
+                    mvInicializar();
                 } else if (sectionId === 'admin-calendar-doctoras') {
                     // reset calendar on entry
                     var sel = document.getElementById('adminCalDoctorSelect');
@@ -7626,6 +7699,138 @@
 
         async function descargarTodosTokens() {
             window.open('/api/admin/tokens_pdf_todos', '_blank');
+        }
+
+        // ── MOVER ESTUDIANTES ─────────────────────────────────────────────
+        let _mvProyectos = [];
+
+        async function mvInicializar() {
+            try {
+                const res  = await fetch('/api/admin/proyectos_con_nominas');
+                const data = await res.json();
+                if (!data.success) return;
+                _mvProyectos = data.proyectos;
+                const opts = data.proyectos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+                document.getElementById('mv-proyecto-origen').innerHTML  = '<option value="">— Seleccionar proyecto —</option>' + opts;
+                document.getElementById('mv-proyecto-destino').innerHTML = '<option value="">— Seleccionar proyecto destino —</option>' + opts;
+            } catch(e) { console.error('mvInicializar:', e); }
+        }
+
+        function mvCargarNominasOrigen() {
+            const pid = document.getElementById('mv-proyecto-origen').value;
+            const sel = document.getElementById('mv-nomina-origen');
+            sel.innerHTML = '<option value="">— Seleccionar nómina —</option>';
+            document.getElementById('mv-alumnos-lista').innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;font-size:.8rem;">Selecciona una nómina</div>';
+            mvActualizarContador();
+            if (!pid) return;
+            const proy = _mvProyectos.find(p => p.id === pid);
+            if (!proy) return;
+            proy.nominas.forEach(n => {
+                sel.innerHTML += `<option value="${n.id}">${n.nombre_colegio || n.nombre_nomina}</option>`;
+            });
+        }
+
+        function mvCargarNominasDestino() {
+            const pid = document.getElementById('mv-proyecto-destino').value;
+            const sel = document.getElementById('mv-nomina-destino');
+            sel.innerHTML = '<option value="">— Seleccionar nómina destino —</option>';
+            if (!pid) return;
+            const proy = _mvProyectos.find(p => p.id === pid);
+            if (!proy) return;
+            proy.nominas.forEach(n => {
+                sel.innerHTML += `<option value="${n.id}">${n.nombre_colegio || n.nombre_nomina}</option>`;
+            });
+        }
+
+        async function mvCargarAlumnos() {
+            const nominaId = document.getElementById('mv-nomina-origen').value;
+            const lista    = document.getElementById('mv-alumnos-lista');
+            if (!nominaId) {
+                lista.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;font-size:.8rem;">Selecciona una nómina</div>';
+                return;
+            }
+            lista.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;font-size:.8rem;"><i class="fas fa-spinner fa-spin"></i></div>';
+            try {
+                const res  = await fetch('/api/admin/alumnos_nomina/' + nominaId);
+                const data = await res.json();
+                if (!data.success || !data.alumnos.length) {
+                    lista.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;font-size:.8rem;">Sin alumnos en esta nómina</div>';
+                    return;
+                }
+                lista.innerHTML = data.alumnos.map(a => {
+                    const evalBadge = a.evaluado_flag
+                        ? '<span style="background:#d1fae5;color:#065f46;border-radius:6px;padding:1px 7px;font-size:.68rem;font-weight:700;">Evaluado</span>'
+                        : '<span style="background:#fef3c7;color:#92400e;border-radius:6px;padding:1px 7px;font-size:.68rem;font-weight:700;">Pendiente</span>';
+                    return `<label style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+                        <input type="checkbox" class="mv-check" value="${a.id}" onchange="mvActualizarContador()" style="width:16px;height:16px;cursor:pointer;accent-color:#0f3460;">
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:600;font-size:.84rem;color:#0f2030;">${a.nombre}</div>
+                            <div style="font-size:.73rem;color:#94a3b8;">RUT: ${a.rut || '—'}</div>
+                        </div>
+                        ${evalBadge}
+                    </label>`;
+                }).join('');
+                mvActualizarContador();
+            } catch(e) {
+                lista.innerHTML = '<div style="text-align:center;padding:20px;color:#e74c3c;font-size:.8rem;">Error al cargar alumnos</div>';
+            }
+        }
+
+        function mvSeleccionarTodos(estado) {
+            document.querySelectorAll('.mv-check').forEach(cb => cb.checked = estado);
+            mvActualizarContador();
+        }
+
+        function mvActualizarContador() {
+            const sel     = document.querySelectorAll('.mv-check:checked').length;
+            const total   = document.querySelectorAll('.mv-check').length;
+            const counter = document.getElementById('mv-seleccionados-count');
+            if (counter) counter.textContent = `${sel} de ${total} seleccionados`;
+        }
+
+        async function mvEjecutarMovimiento() {
+            const alumnoIds   = [...document.querySelectorAll('.mv-check:checked')].map(cb => cb.value);
+            const nominaDest  = document.getElementById('mv-nomina-destino').value;
+            const resultado   = document.getElementById('mv-resultado');
+            const btn         = document.getElementById('mv-btn-mover');
+
+            if (!alumnoIds.length)  { alert('Selecciona al menos un alumno'); return; }
+            if (!nominaDest)        { alert('Selecciona una nómina destino'); return; }
+
+            const nomOrigenId = document.getElementById('mv-nomina-origen').value;
+            if (nominaDest === nomOrigenId) { alert('La nómina destino no puede ser la misma que la origen'); return; }
+
+            const confirmado = confirm(`¿Mover ${alumnoIds.length} alumno(s) a la nómina destino? Esta acción no se puede deshacer.`);
+            if (!confirmado) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Moviendo…';
+
+            try {
+                const res  = await fetch('/api/admin/mover_estudiantes', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ alumno_ids: alumnoIds, nomina_destino_id: nominaDest })
+                });
+                const data = await res.json();
+                resultado.style.display = 'block';
+                if (data.success) {
+                    resultado.innerHTML = `<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:14px 16px;color:#065f46;font-weight:700;font-size:.88rem;">
+                        <i class="fas fa-check-circle" style="margin-right:6px;"></i>${data.message}
+                    </div>`;
+                    // Recargar lista origen
+                    mvCargarAlumnos();
+                } else {
+                    resultado.innerHTML = `<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:12px;padding:14px 16px;color:#991b1b;font-size:.88rem;">
+                        <i class="fas fa-xmark-circle" style="margin-right:6px;"></i>${data.message}
+                    </div>`;
+                }
+            } catch(e) {
+                resultado.style.display = 'block';
+                resultado.innerHTML = `<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:12px;padding:14px 16px;color:#991b1b;font-size:.88rem;">Error de conexión</div>`;
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-people-arrows"></i> Mover Estudiantes Seleccionados';
         }
 
         // ── RENDER NOMINAS — correcciones siempre disponibles (aviso si >5 días) ──

@@ -887,163 +887,137 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
 
 def generar_pdf_familiar_overlay(pdf_base_path, campos):
     """
-    MEDICINA FAMILIAR: igual estrategia que neurología.
-    - Paso 1: ReportLab dibuja texto y X de checks sobre el PDF base
-    - Paso 2: flatten elimina widgets AcroForm para compatibilidad con visores web
-    Coordenadas obtenidas directamente del PDF base con pypdf.
+    MEDICINA FAMILIAR: overlay con ReportLab igual que neurología.
+    Usa PyPDF2 (disponible en Vercel) — NO pypdf.
+    Coordenadas obtenidas directamente del formulario_familiar.pdf base.
     """
     if not REPORTLAB_OK:
         return None
 
-    # ── Coordenadas exactas de cada campo (x0, y0, x1, y1) ─────────────────
     COORDS_TEXTO = {
-        'nombre':            (80.5,  698.0, 343.7, 720.0),
-        'fecha_nacimiento':  (77.4,  676.8, 169.8, 698.8),
-        'edad':              (170.2, 678.4, 275.0, 700.4),
-        'nacionalidad':      (276.8, 677.2, 350.9, 699.2),
-        'rut':               (434.6, 699.3, 540.8, 721.3),
-        'diagnostico_1':     (382.7, 650.0, 545.2, 672.0),
-        'fecha_evaluacion':  (293.2, 581.5, 408.5, 603.5),
-        'fecha_reevaluacion':(419.6, 581.5, 563.0, 603.5),
-        'altura':            (165.8, 315.4, 205.7, 330.9),
-        'peso':              (168.8, 297.1, 207.1, 305.8),
-        'imc':               (202.1, 295.5, 262.5, 308.7),
-        'clasificacion':     (270.7, 294.1, 342.4, 308.4),
-        'diagnostico_2':          (77.9,  238.2, 529.2, 254.1),
-        'diagnostico_complementario': (80.3, 218.0, 464.9, 233.3),
+        'nombre':                     (80.5,  698.0, 343.7, 720.0),
+        'fecha_nacimiento':           (77.4,  676.8, 169.8, 698.8),
+        'edad':                       (170.2, 678.4, 275.0, 700.4),
+        'nacionalidad':               (276.8, 677.2, 350.9, 699.2),
+        'rut':                        (434.6, 699.3, 540.8, 721.3),
+        'diagnostico_1':              (382.7, 650.0, 545.2, 672.0),
+        'fecha_evaluacion':           (293.2, 581.5, 408.5, 603.5),
+        'fecha_reevaluacion':         (419.6, 581.5, 563.0, 603.5),
+        'altura':                     (165.8, 315.4, 205.7, 330.9),
+        'peso':                       (168.8, 297.1, 207.1, 305.8),
+        'imc':                        (202.1, 295.5, 262.5, 308.7),
+        'clasificacion':              (270.7, 294.1, 342.4, 308.4),
+        'diagnostico_2':              (77.9,  238.2, 529.2, 254.1),
+        'diagnostico_complementario': (80.3,  218.0, 464.9, 233.3),
     }
     COORDS_LARGO = {
-        'observacion_1':  (352.3, 526.7, 535.7, 548.7),
-        'observacion_2':  (384.0, 465.0, 534.0, 487.0),
-        'observacion_3':  (384.8, 438.8, 534.8, 460.8),
-        'observacion_4':  (168.2, 421.5, 534.4, 439.0),
-        'observacion_5':  (167.0, 406.9, 534.4, 424.1),
-        'observacion_6':  (383.6, 392.8, 533.6, 408.0),
-        'observacion_7':  (384.0, 377.9, 528.4, 393.9),
-        'indicaciones':   (76.0,  166.2, 534.8, 194.1),
-        'derivaciones':   (76.9,  136.8, 531.4, 154.2),
+        'observacion_1': (352.3, 526.7, 535.7, 548.7),
+        'observacion_2': (384.0, 465.0, 534.0, 487.0),
+        'observacion_3': (384.8, 438.8, 534.8, 460.8),
+        'observacion_4': (168.2, 421.5, 534.4, 439.0),
+        'observacion_5': (167.0, 406.9, 534.4, 424.1),
+        'observacion_6': (383.6, 392.8, 533.6, 408.0),
+        'observacion_7': (384.0, 377.9, 528.4, 393.9),
+        'indicaciones':  (76.0,  166.2, 534.8, 194.1),
+        'derivaciones':  (76.9,  136.8, 531.4, 154.2),
     }
-    # Checks: (x0, y0, x1, y1) — se dibuja X centrada
     COORDS_CHECK = {
-        'sexo_f':                 (361.2, 701.7, 390.1, 720.4),
-        'sexo_m':                 (405.2, 699.3, 430.8, 721.3),
-        'deficit':                (220.9, 652.4, 241.5, 666.7),
-        'check_cesarea':          (179.0, 528.4, 197.1, 541.6),
-        'check_atermino':         (273.5, 528.0, 288.4, 541.5),
-        'check_vaginal':          (177.8, 516.2, 194.8, 528.6),
-        'check_prematuro':        (273.5, 515.5, 288.0, 529.4),
-        'check_acorde':           (180.0, 482.8, 196.1, 493.9),
-        'check_retraso':          (273.5, 481.6, 287.2, 494.3),
+        'sexo_f':                    (361.2, 701.7, 390.1, 720.4),
+        'sexo_m':                    (405.2, 699.3, 430.8, 721.3),
+        'deficit':                   (220.9, 652.4, 241.5, 666.7),
+        'check_cesarea':             (179.0, 528.4, 197.1, 541.6),
+        'check_atermino':            (273.5, 528.0, 288.4, 541.5),
+        'check_vaginal':             (177.8, 516.2, 194.8, 528.6),
+        'check_prematuro':           (273.5, 515.5, 288.0, 529.4),
+        'check_acorde':              (180.0, 482.8, 196.1, 493.9),
+        'check_retraso':             (273.5, 481.6, 287.2, 494.3),
         'check_retrasogeneralizado': (344.1, 481.2, 359.8, 496.7),
-        'check_esquemac':         (179.5, 457.0, 194.4, 468.1),
-        'check_esquemai':         (271.1, 456.6, 289.6, 469.7),
-        'check_alergiano':        (178.7, 440.3, 194.9, 454.5),
-        'check_alergiasi':        (270.2, 440.2, 290.3, 455.2),
-        'check_cirugiano':        (179.5, 392.8, 194.4, 407.2),
-        'check_cirugiasi':        (273.5, 393.2, 289.2, 406.4),
+        'check_esquemac':            (179.5, 457.0, 194.4, 468.1),
+        'check_esquemai':            (271.1, 456.6, 289.6, 469.7),
+        'check_alergiano':           (178.7, 440.3, 194.9, 454.5),
+        'check_alergiasi':           (270.2, 440.2, 290.3, 455.2),
+        'check_cirugiano':           (179.5, 392.8, 194.4, 407.2),
+        'check_cirugiasi':           (273.5, 393.2, 289.2, 406.4),
         'check_visionsinalteracion': (179.9, 378.3, 194.8, 390.2),
-        'check_visionrefraccion': (271.9, 378.3, 288.4, 391.8),
-        'check_audicionnormal':   (180.7, 363.4, 194.4, 376.1),
-        'check_tapondecerumen':   (271.9, 365.8, 289.2, 376.9),
-        'check_hipoacusia':       (343.7, 362.6, 361.4, 376.5),
-        'check_caries':           (178.7, 348.9, 194.0, 362.0),
-        'check_apinamientodental':(272.3, 347.6, 288.0, 363.2),
-        'check_retenciondental':  (343.1, 347.6, 362.8, 361.6),
-        'check_sinhallazgos':     (177.9, 331.9, 195.2, 347.1),
-        'check_frenillolingual':  (271.1, 332.3, 288.0, 346.3),
-        'check_hipertrofia':      (343.3, 330.3, 359.4, 347.1),
+        'check_visionrefraccion':    (271.9, 378.3, 288.4, 391.8),
+        'check_audicionnormal':      (180.7, 363.4, 194.4, 376.1),
+        'check_tapondecerumen':      (271.9, 365.8, 289.2, 376.9),
+        'check_hipoacusia':          (343.7, 362.6, 361.4, 376.5),
+        'check_caries':              (178.7, 348.9, 194.0, 362.0),
+        'check_apinamientodental':   (272.3, 347.6, 288.0, 363.2),
+        'check_retenciondental':     (343.1, 347.6, 362.8, 361.6),
+        'check_sinhallazgos':        (177.9, 331.9, 195.2, 347.1),
+        'check_frenillolingual':     (271.1, 332.3, 288.0, 346.3),
+        'check_hipertrofia':         (343.3, 330.3, 359.4, 347.1),
     }
 
     try:
-        reader_base = PdfReader(pdf_base_path)
-        pg0 = reader_base.pages[0]
-        pw  = float(pg0.mediabox.width)   # 612.0
-        ph  = float(pg0.mediabox.height)  # 792.0
-
+        pw, ph = 612.0, 792.0
         ov_buf = io.BytesIO()
         c = rl_canvas.Canvas(ov_buf, pagesize=(pw, ph))
 
-        # ── Campos de texto cortos ───────────────────────────────────────
+        # Campos de texto cortos
         for campo, (x0, y0, x1, y1) in COORDS_TEXTO.items():
-            valor = campos.get(campo, '')
-            if not valor or not str(valor).strip():
+            valor = str(campos.get(campo, '') or '').strip()
+            if not valor:
                 continue
-            texto = str(valor).strip()
             w = x1 - x0
             h = y1 - y0
-            margin = 2
             fs = 9.0
-            while fs > 6 and c.stringWidth(texto, "Helvetica", fs) > w - 2*margin:
+            while fs > 6 and c.stringWidth(valor, "Helvetica", fs) > w - 4:
                 fs -= 0.5
             c.setFont("Helvetica", fs)
             c.setFillColorRGB(0, 0, 0)
-            c.drawString(x0 + margin, y0 + (h - fs) / 2, texto)
+            c.drawString(x0 + 2, y0 + (h - fs) / 2, valor)
 
-        # ── Campos de texto largo (con wrap) ────────────────────────────
+        # Campos de texto largo con wrap
         for campo, (x0, y0, x1, y1) in COORDS_LARGO.items():
-            valor = campos.get(campo, '')
-            if not valor or not str(valor).strip():
+            valor = str(campos.get(campo, '') or '').strip()
+            if not valor:
                 continue
-            texto = str(valor).strip()
             w = x1 - x0
             h = y1 - y0
-            margin = 2
             fs = 8.0
             lh = fs * 1.3
             lines = []
-            for par in texto.splitlines():
-                if not par.strip():
-                    lines.append('')
-                else:
-                    lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
-            while lines and len(lines) * lh > h - margin and fs > 6:
-                fs -= 0.5
-                lh  = fs * 1.3
+            for par in valor.splitlines():
+                lines.extend(simpleSplit(par, "Helvetica", fs, w - 4) or ['']) if par.strip() else lines.append('')
+            while lines and len(lines) * lh > h - 2 and fs > 6:
+                fs -= 0.5; lh = fs * 1.3
                 lines = []
-                for par in texto.splitlines():
-                    if not par.strip():
-                        lines.append('')
-                    else:
-                        lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
+                for par in valor.splitlines():
+                    lines.extend(simpleSplit(par, "Helvetica", fs, w - 4) or ['']) if par.strip() else lines.append('')
             c.setFont("Helvetica", fs)
             c.setFillColorRGB(0, 0, 0)
-            y_pos = y1 - margin - fs
+            y_pos = y1 - 2 - fs
             for line in lines:
-                if y_pos < y0 + margin:
-                    break
-                try:
-                    c.drawString(x0 + margin, y_pos, line)
-                except Exception:
-                    c.drawString(x0 + margin, y_pos, line.encode('latin-1','replace').decode('latin-1'))
+                if y_pos < y0 + 2: break
+                try: c.drawString(x0 + 2, y_pos, line)
+                except: c.drawString(x0 + 2, y_pos, line.encode('latin-1','replace').decode('latin-1'))
                 y_pos -= lh
 
-        # ── Checks y sexo (X centrada) ───────────────────────────────────
+        # Checks — X centrada en el cuadro
         for campo, (x0, y0, x1, y1) in COORDS_CHECK.items():
-            valor = campos.get(campo, '')
-            if not valor or not str(valor).strip():
+            valor = str(campos.get(campo, '') or '').strip()
+            if not valor:
                 continue
-            w  = x1 - x0
-            h  = y1 - y0
-            fs = 8.0
+            w = x1 - x0; h = y1 - y0; fs = 8.0
             c.setFont("Helvetica-Bold", fs)
             c.setFillColorRGB(0, 0, 0)
             xt = x0 + (w - c.stringWidth("X", "Helvetica-Bold", fs)) / 2
             yt = y0 + (h - fs) / 2
             c.drawString(xt, yt, "X")
 
-        # ── Canvas separado para sexo encima (evita fondo blanco) ───────
-        c.save()
-        ov_buf.seek(0)
+        c.save(); ov_buf.seek(0)
 
-        # Fusionar overlay encima del PDF base
-        from pypdf import PdfReader as _PR, PdfWriter as _PW
-        ov_reader = _PR(ov_buf)
-        base_r    = _PR(pdf_base_path)
-        writer_out = _PW()
+        # Fusionar con PyPDF2 (disponible en Vercel)
+        ov_reader  = PdfReader(ov_buf)
+        base_r     = PdfReader(pdf_base_path)
+        writer_out = PdfWriter()
         for i, pg in enumerate(base_r.pages):
             if i == 0 and ov_reader.pages:
                 ov_pg = ov_reader.pages[0]
-                ov_pg.merge_page(pg)
+                ov_pg.merge_page(pg)   # base debajo del overlay
                 writer_out.add_page(ov_pg)
             else:
                 writer_out.add_page(pg)
@@ -1513,9 +1487,8 @@ def generar_pdf():
                 "check_hipertrofia": map_check_as_text('check_hipertrofia'),
             }
 
-        # Generar PDF final según tipo
+        # Familiar usa overlay como neurología
         if form_type == 'medicina_familiar':
-            # FAMILIAR: overlay con coordenadas fijas (igual que neurología)
             pdf_final = generar_pdf_familiar_overlay(pdf_base_path, campos)
             if not pdf_final:
                 flash("❌ Error al generar el PDF de medicina familiar.", 'error')
@@ -1523,7 +1496,7 @@ def generar_pdf():
             nombre_descarga = f"{nombre.replace(' ', '_')}_{rut}_formulario_{form_type}.pdf"
             return send_file(io.BytesIO(pdf_final), as_attachment=True, download_name=nombre_descarga, mimetype='application/pdf')
 
-        # Aplicar el relleno (neurología e informe usan su propia función arriba)
+        # Aplicar el relleno
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
             
@@ -4027,13 +4000,11 @@ def descargar_pdf_alumno(alumno_id):
 
         # 7. Generar PDF final
         if form_type in ('neurologia', 'informe_neurologico'):
-            # NEUROLOGÍA: ReportLab con coordenadas hardcodeadas
             pdf_final = generar_pdf_neurologia_overlay(pdf_base_path, campos)
             if not pdf_final:
                 flash("❌ Error al generar el PDF de neurología.", 'error')
                 return redirect(url_for('dashboard'))
         elif form_type == 'medicina_familiar':
-            # FAMILIAR: mismo método que neurología — overlay con coordenadas fijas
             pdf_final = generar_pdf_familiar_overlay(pdf_base_path, campos)
             if not pdf_final:
                 flash("❌ Error al generar el PDF de medicina familiar.", 'error')
@@ -4655,7 +4626,6 @@ def generar_pdfs_visibles():
                 temp_reader = PdfReader(io.BytesIO(pdf_bytes))
                 merged_pdf_writer.add_page(temp_reader.pages[0])
             elif form_type == 'medicina_familiar':
-                # FAMILIAR: overlay con coordenadas fijas
                 pdf_bytes = generar_pdf_familiar_overlay(pdf_base_path, campos)
                 if not pdf_bytes:
                     continue
@@ -8039,6 +8009,427 @@ def api_coordinadora_export_pdf():
     except Exception as e:
         print("ERROR export_pdf: " + str(e))
         return jsonify({"success": False, "message": str(e)}), 500
+
+
+
+# ── MOVER ESTUDIANTES ─────────────────────────────────────────────────────────
+@app.route('/api/admin/proyectos_con_nominas', methods=['GET'])
+def api_proyectos_con_nominas():
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        res_p = requests.get(
+            f"{SUPABASE_URL}/rest/v1/proyectos?select=id,nombre_proyecto&order=nombre_proyecto.asc",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        proyectos = res_p.json() if res_p.ok else []
+        # normalizar campo a 'nombre' para el JS
+        for p in proyectos:
+            p['nombre'] = p.get('nombre_proyecto', '')
+
+        res_n = requests.get(
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?select=id,nombre_nomina,nombre_colegio,proyecto_id,form_type&order=nombre_nomina.asc",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        nominas = res_n.json() if res_n.ok else []
+        nom_map = {}
+        for n in nominas:
+            pid = n.get('proyecto_id') or 'sin_proyecto'
+            nom_map.setdefault(pid, []).append(n)
+        for p in proyectos:
+            p['nominas'] = nom_map.get(p['id'], [])
+
+        return jsonify({"success": True, "proyectos": proyectos})
+    except Exception as e:
+        print(f"ERROR api_proyectos_con_nominas: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/admin/alumnos_nomina/<nomina_id>', methods=['GET'])
+def api_alumnos_nomina(nomina_id):
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            f"?nomina_id=eq.{nomina_id}"
+            f"&estado_asistencia=in.(activo,extra)"
+            f"&select=id,nombre,rut,evaluado_flag&order=nombre.asc",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        alumnos = res.json() if res.ok else []
+        return jsonify({"success": True, "alumnos": alumnos})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/admin/mover_estudiantes', methods=['POST'])
+def api_mover_estudiantes():
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        data       = request.get_json() or {}
+        alumno_ids = data.get('alumno_ids', [])
+        destino_id = data.get('nomina_destino_id', '').strip()
+        if not alumno_ids or not destino_id:
+            return jsonify({"success": False, "message": "Faltan datos"}), 400
+        movidos = 0
+        for aid in alumno_ids:
+            res = requests.patch(
+                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{aid}",
+                json={"nomina_id": destino_id},
+                headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=minimal"}
+            )
+            if res.ok: movidos += 1
+        return jsonify({"success": True, "movidos": movidos,
+                        "message": f"{movidos} estudiante(s) movidos correctamente."})
+    except Exception as e:
+        print(f"ERROR api_mover_estudiantes: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# ── COORDINADOR ESCUELA — Obtener token ────────────────────────────────────────
+@app.route('/api/nomina/obtener_token', methods=['POST'])
+def api_obtener_token():
+    if session.get('usuario') != 'coordinador_escuela':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        data = request.get_json() or {}
+        school_id = data.get('school_id','').strip()
+        nombre = data.get('nombre','').strip()
+        rut = data.get('rut','').strip()
+        correo = data.get('correo','').strip()
+        if not all([school_id, nombre, rut, correo]):
+            return jsonify({"success": False, "message": "Todos los campos son requeridos"}), 400
+        colegios_ids = session.get('colegios_asignados_ids', [])
+        if school_id not in colegios_ids:
+            return jsonify({"success": False, "message": "Sin acceso"}), 403
+        res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?nombre_colegio=eq.{school_id}"
+            f"&coord_escuela_id=eq.{session.get('usuario_id')}"
+            f"&select=token_acceso&limit=1",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        nominas = res.json() if res.ok else []
+        if not nominas or not nominas[0].get('token_acceso'):
+            return jsonify({"success": False, "message": "Token no encontrado"}), 404
+        print(f"INFO token_obtenido: colegio={school_id} nombre={nombre} rut={rut} correo={correo}")
+        return jsonify({"success": True, "token": nominas[0]['token_acceso']})
+    except Exception as e:
+        print(f"ERROR api_obtener_token: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# ── COORDINADOR ESCUELA — Excel ────────────────────────────────────────────────
+@app.route('/api/coordinador_escuela/excel/<path:school_id>', methods=['GET'])
+def api_coordinador_excel(school_id):
+    if session.get('usuario') != 'coordinador_escuela':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        colegios_ids = session.get('colegios_asignados_ids', [])
+        if school_id not in colegios_ids:
+            return jsonify({"success": False, "message": "Sin acceso"}), 403
+        res_nom = requests.get(
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?nombre_colegio=eq.{school_id}"
+            f"&coord_escuela_id=eq.{session.get('usuario_id')}"
+            f"&select=id,nombre_nomina",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        nominas = res_nom.json() if res_nom.ok else []
+        if not nominas:
+            return jsonify({"success": False, "message": "Sin nóminas"}), 404
+        ids_str = ','.join(n['id'] for n in nominas)
+        nom_map = {n['id']: n['nombre_nomina'] for n in nominas}
+        res_est = requests.get(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            f"?nomina_id=in.({ids_str})"
+            f"&estado_asistencia=in.(activo,extra)"
+            f"&select=nombre,rut,fecha_nacimiento,fecha_evaluacion,evaluado_flag,nomina_id"
+            f"&order=nombre.asc",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        estudiantes = res_est.json() if res_est.ok else []
+        output = io.BytesIO()
+        cols = ['Nombre','RUT','Fecha Nacimiento','Fecha Evaluación','Nómina']
+        rows_eval, rows_pend = [], []
+        for est in estudiantes:
+            row = {'Nombre': est.get('nombre',''), 'RUT': est.get('rut',''),
+                   'Fecha Nacimiento': est.get('fecha_nacimiento',''),
+                   'Fecha Evaluación': est.get('fecha_evaluacion',''),
+                   'Nómina': nom_map.get(est.get('nomina_id',''),'') }
+            (rows_eval if est.get('evaluado_flag') else rows_pend).append(row)
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer_xl:
+            pd.DataFrame(rows_eval if rows_eval else [], columns=cols).to_excel(writer_xl, sheet_name='Evaluados', index=False)
+            pd.DataFrame(rows_pend if rows_pend else [], columns=cols).to_excel(writer_xl, sheet_name='Pendientes', index=False)
+        output.seek(0)
+        return send_file(output, as_attachment=True,
+                         download_name=f"Nomina_{school_id[:40].replace(' ','_')}.xlsx",
+                         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    except Exception as e:
+        print(f"ERROR api_coordinador_excel: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# ── COORDINADOR ESCUELA — ZIP PDFs ────────────────────────────────────────────
+@app.route('/api/coordinador_escuela/zip/<path:school_id>', methods=['GET'])
+def api_coordinador_zip(school_id):
+    if session.get('usuario') != 'coordinador_escuela':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        import zipfile as _zf
+        colegios_ids = session.get('colegios_asignados_ids', [])
+        if school_id not in colegios_ids:
+            return jsonify({"success": False, "message": "Sin acceso"}), 403
+        res_nom = requests.get(
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?nombre_colegio=eq.{school_id}"
+            f"&coord_escuela_id=eq.{session.get('usuario_id')}"
+            f"&select=id",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        nominas = res_nom.json() if res_nom.ok else []
+        if not nominas:
+            return jsonify({"success": False, "message": "Sin nóminas"}), 404
+        ids_str = ','.join(n['id'] for n in nominas)
+        res_est = requests.get(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            f"?nomina_id=in.({ids_str})"
+            f"&evaluado_flag=eq.true"
+            f"&estado_asistencia=in.(activo,extra)"
+            f"&select=id,nombre,rut&order=nombre.asc",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        alumnos = res_est.json() if res_est.ok else []
+        if not alumnos:
+            return jsonify({"success": False, "message": "No hay alumnos evaluados"}), 404
+        carpeta = school_id.replace('/', '_')[:60]
+        zip_buf = io.BytesIO()
+        with _zf.ZipFile(zip_buf, 'w', _zf.ZIP_DEFLATED) as zf:
+            for alumno in alumnos:
+                try:
+                    pdf_bytes = _generar_pdf_bytes_alumno_id(alumno['id'])
+                    if pdf_bytes:
+                        nombre_a = alumno.get('nombre','alumno').replace(' ','_')
+                        rut_a = alumno.get('rut','').replace('.','').replace('-','')
+                        zf.writestr(f"{carpeta}/{nombre_a}_{rut_a}.pdf", pdf_bytes)
+                except Exception as ex:
+                    print(f"ZIP skip {alumno.get('id')}: {ex}")
+        zip_buf.seek(0)
+        return send_file(zip_buf, as_attachment=True,
+                         download_name=f"{carpeta}.zip", mimetype='application/zip')
+    except Exception as e:
+        print(f"ERROR api_coordinador_zip: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+def _generar_pdf_bytes_alumno_id(alumno_id):
+    """Genera bytes del PDF de un alumno para el ZIP masivo."""
+    try:
+        res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{alumno_id}"
+            f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,"
+            f"derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,"
+            f"diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,"
+            f"observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,"
+            f"check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,"
+            f"check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,check_cirugiasi,"
+            f"check_retraso,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,"
+            f"check_hipoacusia,check_tapondecerumen,check_sinhallazgos,check_caries,"
+            f"check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,"
+            f"altura,peso,imc,indicaciones,doctora_evaluadora_id,nomina_id,clasificacion_imc,"
+            f"motivo_consulta,observaciones,observacion_neurologia,estado_asistencia,deficit",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        if not res.ok or not res.json(): return None
+        est = res.json()[0]
+        if not est.get('fecha_relleno'): return None
+
+        res_nom = requests.get(
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{est['nomina_id']}"
+            f"&select=form_type,doctora_id_para_formulario",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        meta = res_nom.json()[0] if res_nom.ok and res_nom.json() else {}
+        form_type = meta.get('form_type','neurologia')
+        doc_id    = meta.get('doctora_id_para_formulario') or est.get('doctora_evaluadora_id')
+        base_dir  = os.path.dirname(os.path.abspath(__file__))
+
+        if form_type == 'neurologia':
+            sp = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR, f"FORMULARIO TIPO NEUROLOGIA_{doc_id}.pdf")
+            pdf_base = sp if doc_id and os.path.exists(sp) else os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
+        elif form_type == 'informe_neurologico':
+            sp = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR, f"INFORME_NEUROLOGICO_BASE_{doc_id}.pdf")
+            pdf_base = sp if doc_id and os.path.exists(sp) else os.path.join(base_dir, PDF_BASE_INFORME_NEURO)
+        elif form_type == 'medicina_familiar':
+            sp = os.path.join(base_dir, PDF_BASES_FAMILIAR_DIR, f"FORMULARIO_FAMILIAR_{doc_id}.pdf")
+            pdf_base = sp if doc_id and os.path.exists(sp) else os.path.join(base_dir, PDF_BASE_FAMILIAR)
+        else:
+            return None
+        if not os.path.exists(pdf_base): return None
+
+        def sg(f): v=est.get(f); return '' if v is None or str(v).strip() in ('None','null','') else str(v).strip()
+        def mc(v): return "X" if v is True or (isinstance(v,str) and v.strip() and v.strip().lower() not in ('false','0','no','')) else ""
+
+        _fe = datetime.strptime(est['fecha_evaluacion'],'%Y-%m-%d').date() if est.get('fecha_evaluacion') else None
+        edad = calculate_age(datetime.strptime(est['fecha_nacimiento'],'%Y-%m-%d').date(), fecha_ref=_fe) if est.get('fecha_nacimiento') else 'N/A'
+        fn_fmt  = datetime.strptime(est['fecha_nacimiento'],'%Y-%m-%d').strftime('%d/%m/%Y') if est.get('fecha_nacimiento') else ''
+        fe_fmt  = datetime.strptime(est['fecha_evaluacion'],'%Y-%m-%d').strftime('%d/%m/%Y') if est.get('fecha_evaluacion') else ''
+        fre_fmt = datetime.strptime(est['fecha_reevaluacion'],'%Y-%m-%d').strftime('%d/%m/%Y') if est.get('fecha_reevaluacion') else ''
+        nombre  = est.get('nombre','')
+        rut     = format_rut_python(est.get('rut',''))
+
+        if form_type == 'neurologia':
+            campos = {"nombre":nombre,"rut":rut,"fecha_nacimiento":fn_fmt,"nacionalidad":sg('nacionalidad'),
+                      "edad":edad,"diagnostico_1":sg('diagnostico'),"diagnostico_2":sg('diagnostico'),
+                      "estado_general":wrap_texto_pdf(sg('estado_general')),
+                      "derivaciones":wrap_texto_pdf(sg('derivaciones')),
+                      "fecha_evaluacion":fe_fmt,"fecha_reevaluacion":fre_fmt,
+                      "sexo_f":"X" if _es_femenino(est.get('sexo','')) else "",
+                      "sexo_m":"X" if _es_masculino(est.get('sexo','')) else ""}
+            return generar_pdf_neurologia_overlay(pdf_base, campos)
+        elif form_type == 'medicina_familiar':
+            campos = {"nombre":nombre,"rut":rut,"fecha_nacimiento":fn_fmt,"edad":edad,
+                      "nacionalidad":sg('nacionalidad'),
+                      "sexo_f":"X" if est.get('sexo')=="F" else "",
+                      "sexo_m":"X" if est.get('sexo')=="M" else "",
+                      "diagnostico_1":sg('diagnostico_1'),"diagnostico_2":sg('diagnostico_2'),
+                      "diagnostico_complementario":sg('diagnostico_complementario'),
+                      "clasificacion":sg('clasificacion_imc'),
+                      "indicaciones":sg('indicaciones'),"derivaciones":sg('derivaciones'),
+                      "fecha_evaluacion":fe_fmt,"fecha_reevaluacion":fre_fmt,
+                      "altura":sg('altura'),"peso":sg('peso'),"imc":sg('imc'),
+                      "observacion_1":sg('observacion_1'),"observacion_2":sg('observacion_2'),
+                      "observacion_3":sg('observacion_3'),"observacion_4":sg('observacion_4'),
+                      "observacion_5":sg('observacion_5'),"observacion_6":sg('observacion_6'),
+                      "observacion_7":sg('observacion_7'),
+                      "check_cesarea":mc(est.get('check_cesarea')),"check_atermino":mc(est.get('check_atermino')),
+                      "check_vaginal":mc(est.get('check_vaginal')),"check_prematuro":mc(est.get('check_prematuro')),
+                      "check_acorde":mc(est.get('check_acorde')),"check_retraso":mc(est.get('check_retraso')),
+                      "check_retrasogeneralizado":mc(est.get('check_retrasogeneralizado')),
+                      "check_esquemac":mc(est.get('check_esquemac')),"check_esquemai":mc(est.get('check_esquemai')),
+                      "check_alergiano":mc(est.get('check_alergiano')),"check_alergiasi":mc(est.get('check_alergiasi')),
+                      "check_cirugiano":mc(est.get('check_cirugiano')),"check_cirugiasi":mc(est.get('check_cirugiasi')),
+                      "check_visionsinalteracion":mc(est.get('check_visionsinalteracion')),
+                      "check_visionrefraccion":mc(est.get('check_visionrefraccion')),
+                      "check_audicionnormal":mc(est.get('check_audicionnormal')),
+                      "check_hipoacusia":mc(est.get('check_hipoacusia')),
+                      "check_tapondecerumen":mc(est.get('check_tapondecerumen')),
+                      "check_sinhallazgos":mc(est.get('check_sinhallazgos')),
+                      "check_caries":mc(est.get('check_caries')),
+                      "check_apinamientodental":mc(est.get('check_apinamientodental')),
+                      "check_retenciondental":mc(est.get('check_retenciondental')),
+                      "check_frenillolingual":mc(est.get('check_frenillolingual')),
+                      "check_hipertrofia":mc(est.get('check_hipertrofia')),
+                      "deficit":"X" if (est.get('deficit') or '').strip()=='X' else ""}
+            return generar_pdf_familiar_overlay(pdf_base, campos)
+        else:
+            # Otros tipos: PyPDF2 + overlay texto
+            reader_b = PdfReader(pdf_base); writer_b = PdfWriter()
+            for page in reader_b.pages: writer_b.add_page(page)
+            if "/AcroForm" not in writer_b._root_object:
+                writer_b._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
+            for page in writer_b.pages: writer_b.update_page_form_field_values(page, campos if 'campos' in dir() else {})
+            writer_b._root_object["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
+            out_b = io.BytesIO(); writer_b.write(out_b); out_b.seek(0)
+            return aplicar_overlay_texto_largo(out_b.read(), {})
+    except Exception as e:
+        print(f"_generar_pdf_bytes_alumno_id error {alumno_id}: {e}")
+        return None
+
+
+# ── ADMIN — Tokens ────────────────────────────────────────────────────────────
+@app.route('/api/admin/tokens', methods=['GET'])
+def api_admin_tokens():
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        proyecto_id = request.args.get('proyecto_id','').strip()
+        url = (f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+               f"?select=id,nombre_nomina,nombre_colegio,form_type,token_acceso,proyecto_id"
+               f"&token_acceso=not.is.null&order=nombre_colegio.asc")
+        if proyecto_id: url += f"&proyecto_id=eq.{proyecto_id}"
+        res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS)
+        nominas = res.json() if res.ok else []
+        res_p = requests.get(f"{SUPABASE_URL}/rest/v1/proyectos?select=id,nombre_proyecto",
+                             headers=SUPABASE_SERVICE_HEADERS)
+        pmap = {p['id']: p.get('nombre_proyecto','') for p in (res_p.json() if res_p.ok else [])}
+        tokens = [{'id':n.get('id'),'nombre_nomina':n.get('nombre_nomina',''),
+                   'nombre_colegio':n.get('nombre_colegio',''),'form_type':n.get('form_type',''),
+                   'token_acceso':n.get('token_acceso',''),'proyecto_id':n.get('proyecto_id',''),
+                   'proyecto_nombre':pmap.get(n.get('proyecto_id',''),'Sin proyecto')} for n in nominas]
+        return jsonify({"success": True, "tokens": tokens})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/admin/token_pdf', methods=['GET'])
+def api_admin_token_pdf():
+    if session.get('usuario') != 'admin': return "No autorizado", 403
+    try:
+        token = request.args.get('token',''); colegio = request.args.get('colegio','')
+        tipo = request.args.get('tipo','')
+        lbl = {'neurologia':'Neurología','medicina_familiar':'Medicina Familiar'}.get(tipo,tipo.title())
+        from reportlab.pdfgen import canvas as _c; from reportlab.lib.pagesizes import A4
+        buf = io.BytesIO(); c = _c.Canvas(buf, pagesize=A4); w,h = A4
+        c.setFillColorRGB(0.059,0.196,0.376); c.rect(0,h-130,w,130,fill=1,stroke=0)
+        c.setFillColorRGB(1,1,1); c.setFont("Helvetica-Bold",20); c.drawString(50,h-55,"CardioHome")
+        c.setFont("Helvetica",11); c.drawString(50,h-76,f"Token de Acceso — {lbl}")
+        c.setFillColorRGB(0.95,0.97,1); c.roundRect(50,h-310,w-100,150,12,fill=1,stroke=0)
+        c.setFillColorRGB(0.059,0.196,0.376); c.setFont("Helvetica-Bold",11); c.drawString(70,h-168,"Establecimiento:")
+        c.setFillColorRGB(0.2,0.2,0.2); c.setFont("Helvetica",11); c.drawString(70,h-186,colegio[:80])
+        c.setFillColorRGB(0.059,0.196,0.376); c.setFont("Helvetica-Bold",11); c.drawString(70,h-212,"Token:")
+        c.setFillColorRGB(1,1,1); c.roundRect(70,h-268,w-140,44,8,fill=1,stroke=0)
+        c.setFillColorRGB(0.059,0.196,0.376); c.setFont("Helvetica-Bold",24)
+        tw = c.stringWidth(token,"Helvetica-Bold",24); c.drawString((w-tw)/2,h-254,token)
+        c.setFillColorRGB(0.5,0.5,0.5); c.setFont("Helvetica",8)
+        c.drawCentredString(w/2,h-330,"Token confidencial — no compartir")
+        c.save(); buf.seek(0)
+        return send_file(buf,as_attachment=True,
+                         download_name=f"Token_{colegio[:30].replace(' ','_')}.pdf",
+                         mimetype='application/pdf')
+    except Exception as e: return f"Error: {e}", 500
+
+
+@app.route('/api/admin/tokens_pdf_todos', methods=['GET'])
+def api_admin_tokens_pdf_todos():
+    if session.get('usuario') != 'admin': return "No autorizado", 403
+    try:
+        from reportlab.pdfgen import canvas as _ca; from reportlab.lib.pagesizes import A4
+        res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?select=nombre_nomina,nombre_colegio,form_type,token_acceso"
+            f"&token_acceso=not.is.null&order=form_type.asc,nombre_colegio.asc",
+            headers=SUPABASE_SERVICE_HEADERS)
+        nominas = res.json() if res.ok else []
+        if not nominas: return "No hay tokens", 404
+        buf = io.BytesIO(); w,h = A4; c = _ca.Canvas(buf,pagesize=A4)
+        c.setFillColorRGB(0.059,0.196,0.376); c.rect(0,h-80,w,80,fill=1,stroke=0)
+        c.setFillColorRGB(1,1,1); c.setFont("Helvetica-Bold",16)
+        c.drawString(50,h-44,"CardioHome — Tokens de Acceso")
+        c.setFont("Helvetica",9); c.drawString(50,h-60,f"Generado: {date.today().strftime('%d/%m/%Y')}")
+        y = h-100; tipo_actual = None
+        lbl = {'neurologia':'Neurología','medicina_familiar':'Medicina Familiar'}
+        for nom in nominas:
+            tipo = nom.get('form_type','')
+            if tipo != tipo_actual:
+                tipo_actual = tipo
+                if y<150: c.showPage(); y=h-60
+                c.setFillColorRGB(0.059,0.196,0.376); c.setFont("Helvetica-Bold",12)
+                c.drawString(50,y,f"── {lbl.get(tipo,tipo.title())} ──"); y-=22
+            if y<100: c.showPage(); y=h-60
+            c.setFillColorRGB(0.95,0.97,1); c.roundRect(50,y-50,w-100,56,8,fill=1,stroke=0)
+            c.setFillColorRGB(0.2,0.2,0.2); c.setFont("Helvetica-Bold",9)
+            c.drawString(65,y-14,nom.get('nombre_colegio') or nom.get('nombre_nomina',''))
+            tok = nom.get('token_acceso','—')
+            c.setFillColorRGB(0.059,0.196,0.376); c.setFont("Helvetica-Bold",14)
+            tw = c.stringWidth(tok,"Helvetica-Bold",14); c.drawString(w-60-tw,y-26,tok); y-=66
+        c.save(); buf.seek(0)
+        return send_file(buf,as_attachment=True,download_name="Todos_Los_Tokens.pdf",
+                         mimetype='application/pdf')
+    except Exception as e: return f"Error: {e}", 500
 
 
 if __name__ == '__main__':

@@ -956,6 +956,9 @@ def generar_pdf_familiar_overlay(pdf_base_path, campos):
         ov_buf = io.BytesIO()
         c = rl_canvas.Canvas(ov_buf, pagesize=(pw, ph))
 
+        # Campos que necesitan fondo blanco para tapar el diseño del formulario
+        CAMPOS_CON_FONDO = {'altura', 'peso', 'imc', 'clasificacion'}
+
         # Campos de texto cortos
         for campo, (x0, y0, x1, y1) in COORDS_TEXTO.items():
             valor = str(campos.get(campo, '') or '').strip()
@@ -966,6 +969,10 @@ def generar_pdf_familiar_overlay(pdf_base_path, campos):
             fs = 9.0
             while fs > 6 and c.stringWidth(valor, "Helvetica", fs) > w - 4:
                 fs -= 0.5
+            # Fondo blanco para campos donde el diseño interfiere
+            if campo in CAMPOS_CON_FONDO:
+                c.setFillColorRGB(1, 1, 1)
+                c.rect(x0, y0, w, h, fill=1, stroke=0)
             c.setFont("Helvetica", fs)
             c.setFillColorRGB(0, 0, 0)
             c.drawString(x0 + 2, y0 + (h - fs) / 2, valor)
@@ -977,31 +984,38 @@ def generar_pdf_familiar_overlay(pdf_base_path, campos):
                 continue
             w = x1 - x0
             h = y1 - y0
-            fs = 8.0
-            lh = fs * 1.3
+            fs = 8.5
+            lh = fs * 1.35
             lines = []
             for par in valor.splitlines():
                 lines.extend(simpleSplit(par, "Helvetica", fs, w - 4) or ['']) if par.strip() else lines.append('')
             while lines and len(lines) * lh > h - 2 and fs > 6:
-                fs -= 0.5; lh = fs * 1.3
+                fs -= 0.5; lh = fs * 1.35
                 lines = []
                 for par in valor.splitlines():
                     lines.extend(simpleSplit(par, "Helvetica", fs, w - 4) or ['']) if par.strip() else lines.append('')
             c.setFont("Helvetica", fs)
             c.setFillColorRGB(0, 0, 0)
-            y_pos = y1 - 2 - fs
+            # indicaciones: empezar más abajo para no chocar con el encabezado
+            if campo == 'indicaciones':
+                y_pos = y1 - 6 - fs   # más margen superior
+            else:
+                y_pos = y1 - 2 - fs
             for line in lines:
                 if y_pos < y0 + 2: break
                 try: c.drawString(x0 + 2, y_pos, line)
                 except: c.drawString(x0 + 2, y_pos, line.encode('latin-1','replace').decode('latin-1'))
                 y_pos -= lh
 
-        # Checks — X centrada en el cuadro
+        # Checks — X centrada con fondo blanco para tapar líneas del formulario
         for campo, (x0, y0, x1, y1) in COORDS_CHECK.items():
             valor = str(campos.get(campo, '') or '').strip()
             if not valor:
                 continue
             w = x1 - x0; h = y1 - y0; fs = 8.0
+            # Fondo blanco para que la X no quede borrosa sobre líneas del formulario
+            c.setFillColorRGB(1, 1, 1)
+            c.rect(x0 - 1, y0 - 1, w + 2, h + 2, fill=1, stroke=0)
             c.setFont("Helvetica-Bold", fs)
             c.setFillColorRGB(0, 0, 0)
             xt = x0 + (w - c.stringWidth("X", "Helvetica-Bold", fs)) / 2
@@ -6125,7 +6139,7 @@ def api_coordinador_excel(school_id):
         )
         estudiantes = res_est.json() if res_est.ok else []
         output = io.BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
             cols = ['Nombre','RUT','Fecha Nacimiento','Fecha Evaluación','Nómina']
             rows_eval, rows_pend = [], []
             for est in estudiantes:
@@ -6184,16 +6198,11 @@ def api_coordinador_zip(school_id):
         with _zf.ZipFile(zip_buf, 'w', _zf.ZIP_DEFLATED) as zf:
             for alumno in alumnos:
                 try:
-                    from flask import current_app
-                    with current_app.test_client() as client:
-                        with client.session_transaction() as sess:
-                            for k, v in session.items():
-                                sess[k] = v
-                        resp = client.get(f'/descargar_pdf_alumno/{alumno["id"]}')
-                        if resp.status_code == 200:
-                            nombre = alumno.get('nombre','alumno').replace(' ','_')
-                            rut    = alumno.get('rut','').replace('.','').replace('-','')
-                            zf.writestr(f"{carpeta}/{nombre}_{rut}.pdf", resp.data)
+                    pdf_bytes = _generar_pdf_bytes_alumno_id(alumno['id'])
+                    if pdf_bytes:
+                        nombre_a = alumno.get('nombre','alumno').replace(' ','_')
+                        rut_a = alumno.get('rut','').replace('.','').replace('-','')
+                        zf.writestr(f"{carpeta}/{nombre_a}_{rut_a}.pdf", pdf_bytes)
                 except Exception as ex:
                     print(f"ZIP skip {alumno.get('id')}: {ex}")
         zip_buf.seek(0)

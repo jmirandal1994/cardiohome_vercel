@@ -6129,12 +6129,9 @@ def api_coordinador_excel(school_id):
     if session.get('usuario') != 'coordinador_escuela':
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
-        colegios_ids = session.get('colegios_asignados_ids', [])
-        if school_id not in colegios_ids:
-            return jsonify({"success": False, "message": "Sin acceso"}), 403
         res_nom = requests.get(
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?nombre_colegio=eq.{school_id}"
+            f"?nombre_colegio=eq.{requests.utils.quote(school_id, safe='')}"
             f"&coord_escuela_id=eq.{session.get('usuario_id')}"
             f"&select=id,nombre_nomina",
             headers=SUPABASE_SERVICE_HEADERS
@@ -6183,12 +6180,9 @@ def api_coordinador_zip(school_id):
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
         import zipfile as _zf
-        colegios_ids = session.get('colegios_asignados_ids', [])
-        if school_id not in colegios_ids:
-            return jsonify({"success": False, "message": "Sin acceso"}), 403
         res_nom = requests.get(
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?nombre_colegio=eq.{school_id}"
+            f"?nombre_colegio=eq.{requests.utils.quote(school_id, safe='')}"
             f"&coord_escuela_id=eq.{session.get('usuario_id')}"
             f"&select=id",
             headers=SUPABASE_SERVICE_HEADERS

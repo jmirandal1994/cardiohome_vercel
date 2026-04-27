@@ -5640,6 +5640,21 @@
                             placeholder="Buscar establecimiento…"
                             oninput="cslepFiltrar(this.value)">
                     </div>
+                    <!-- Filtros por tipo -->
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;margin-top:10px;">
+                        <button onclick="cslepFiltrarTipo('todos')" id="cslep-filtro-todos"
+                            style="padding:7px 14px;border-radius:20px;border:2px solid #0f3460;background:#0f3460;color:white;font-size:.76rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px;">
+                            <i class="fas fa-layer-group"></i>Todos
+                        </button>
+                        <button onclick="cslepFiltrarTipo('neurologia')" id="cslep-filtro-neuro"
+                            style="padding:7px 14px;border-radius:20px;border:2px solid #7c3aed;background:white;color:#7c3aed;font-size:.76rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px;">
+                            <i class="fas fa-brain"></i>Neurología / Psiquiatría
+                        </button>
+                        <button onclick="cslepFiltrarTipo('medicina_familiar')" id="cslep-filtro-familiar"
+                            style="padding:7px 14px;border-radius:20px;border:2px solid #0f3460;background:white;color:#0f3460;font-size:.76rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px;">
+                            <i class="fas fa-stethoscope"></i>Med. Familiar / Pediatría
+                        </button>
+                    </div>
                     <!-- Grid (skeleton + tarjetas reales) -->
                     <div class="cslep-grid" id="cslep-grid">
                         <div style="height:200px;background:linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);background-size:200% 100%;border-radius:22px;animation:shimmer 1.5s infinite;"></div>
@@ -10663,17 +10678,32 @@ function cslepRenderGrid(dataArr) {
     if (empty) empty.style.display = 'none';
 
     grid.innerHTML = dataArr.map((est, i) => {
-        const c      = CSLEP_COLORS[i % CSLEP_COLORS.length];
+        const tipo    = (est.form_type || '').toLowerCase();
+        const esNeuro = tipo === 'neurologia' || tipo === 'informe_neurologico';
+        const esFam   = tipo === 'medicina_familiar';
+        // Color fijo por tipo — rotatorio solo si tipo desconocido
+        const c = esNeuro
+            ? { bar:'linear-gradient(135deg,#6d28d9,#7c3aed)', icon:'linear-gradient(135deg,#ede9fe,#ddd6fe)', text:'#5b21b6' }
+            : esFam
+            ? { bar:'linear-gradient(135deg,#0d3b5e,#1c67a3)', icon:'linear-gradient(135deg,#e0f0ff,#c7e0ff)', text:'#0d3b5e' }
+            : CSLEP_COLORS[i % CSLEP_COLORS.length];
         const pct    = est.total > 0 ? Math.round((est.evaluados||0)/est.total*100) : 0;
         const pend   = (est.total||0) - (est.evaluados||0);
         const pctCol = pct >= 80 ? '#059669' : pct >= 50 ? '#d97706' : '#e74c3c';
         const safe   = (est.colegio||'').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const tipoBadge = esNeuro
+            ? `<span style="background:linear-gradient(135deg,#6d28d9,#7c3aed);color:white;border-radius:20px;padding:2px 9px;font-size:.6rem;font-weight:800;letter-spacing:.03em;display:inline-flex;align-items:center;gap:3px;margin-bottom:6px;"><i class="fas fa-brain" style="font-size:.55rem;"></i>NEUROLOGÍA</span>`
+            : esFam
+            ? `<span style="background:linear-gradient(135deg,#0d3b5e,#1c67a3);color:white;border-radius:20px;padding:2px 9px;font-size:.6rem;font-weight:800;letter-spacing:.03em;display:inline-flex;align-items:center;gap:3px;margin-bottom:6px;"><i class="fas fa-stethoscope" style="font-size:.55rem;"></i>MED. FAMILIAR</span>`
+            : '';
         return `<div class="cslep-card" onclick="cslepAbrirNomina(${i})" role="button" tabindex="0"
+                    data-tipo="${tipo}"
                     onkeydown="if(event.key==='Enter')cslepAbrirNomina(${i})">
             <div class="cslep-card-accent" style="background:${c.bar};"></div>
             <div class="cslep-card-body">
+                ${tipoBadge}
                 <div class="cslep-icon-wrap" style="background:${c.icon};">
-                    <i class="fa-solid fa-school" style="color:${c.text};"></i>
+                    <i class="fa-solid ${esNeuro?'fa-brain':'fa-school'}" style="color:${c.text};"></i>
                     <div class="cslep-badge" style="background:${pct>=80?'#059669':pct>=50?'#d97706':'#e74c3c'};">
                         <i class="fa-solid fa-${pct>=80?'check':'clock'}" style="font-size:.55rem;"></i>
                     </div>
@@ -10697,11 +10727,38 @@ function cslepRenderGrid(dataArr) {
     }).join('');
 }
 
-// ── Filtrar por búsqueda ──────────────────────────────────────────────────────
+let _cslepTipoActivo = 'todos';
+
+function cslepFiltrarTipo(tipo) {
+    _cslepTipoActivo = tipo;
+    const btns = {
+        'todos':            document.getElementById('cslep-filtro-todos'),
+        'neurologia':       document.getElementById('cslep-filtro-neuro'),
+        'medicina_familiar':document.getElementById('cslep-filtro-familiar'),
+    };
+    const colores = { 'todos':'#0f3460', 'neurologia':'#7c3aed', 'medicina_familiar':'#0f3460' };
+    Object.entries(btns).forEach(([t, btn]) => {
+        if (!btn) return;
+        btn.style.background = t === tipo ? colores[t] : 'white';
+        btn.style.color      = t === tipo ? 'white'    : colores[t];
+    });
+    const q = (document.getElementById('cslep-search-input')?.value || '').toLowerCase().trim();
+    _cslepAplicarFiltros(q, tipo);
+}
+
 function cslepFiltrar(q) {
-    const filtrado = !q.trim()
-        ? cslepData
-        : cslepData.filter(d => (d.colegio||'').toLowerCase().includes(q.toLowerCase()));
+    _cslepAplicarFiltros(q.toLowerCase().trim(), _cslepTipoActivo);
+}
+
+function _cslepAplicarFiltros(q, tipo) {
+    const filtrado = cslepData.filter(d => {
+        const matchNombre = !q || (d.colegio||'').toLowerCase().includes(q);
+        const dt = (d.form_type||'').toLowerCase();
+        let matchTipo = true;
+        if (tipo === 'neurologia')        matchTipo = dt === 'neurologia' || dt === 'informe_neurologico';
+        if (tipo === 'medicina_familiar') matchTipo = dt === 'medicina_familiar';
+        return matchNombre && matchTipo;
+    });
     cslepRenderGrid(filtrado);
 }
 

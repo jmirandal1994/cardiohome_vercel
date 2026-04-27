@@ -1906,31 +1906,33 @@ def login():
             # 2. Lógica específica para COORDINADOR DE ESCUELA
             if role == 'coordinador_escuela':
                 
-                # --- OBTENER COLEGIOS/NÓMINAS ASIGNADAS DESDE NOMINAS_MEDICAS ---
+                # --- OBTENER NÓMINAS ASIGNADAS (una entrada por nómina, incluye form_type) ---
                 url_nominas_asignadas_por_colegio = (
                     f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-                    f"?coord_escuela_id=eq.{user_data['id']}" # Filtrar por el ID del coordinador
-                    f"&select=nombre_colegio,token_acceso"
+                    f"?coord_escuela_id=eq.{user_data['id']}"
+                    f"&select=id,nombre_colegio,token_acceso,form_type,nombre_nomina"
                 )
                 res_nominas = requests.get(url_nominas_asignadas_por_colegio, headers=SUPABASE_SERVICE_HEADERS)
                 res_nominas.raise_for_status()
                 nominas_raw = res_nominas.json()
                 
-                # Agrupar por nombre_colegio para tener una lista única de colegios
-                colegios_asignados_data = {}
+                # Una entrada por nómina (no por colegio) para mantener form_type
+                colegios_asignados_list = []
+                establecimientos_ids = []
                 for nom in nominas_raw:
                     nombre_colegio = nom.get('nombre_colegio')
-                    
-                    if nombre_colegio and nombre_colegio not in colegios_asignados_data:
-                        # Usamos el nombre del colegio como ID temporal para el frontend
-                        colegios_asignados_data[nombre_colegio] = {
-                            'id': nombre_colegio, # Usar el nombre como ID/clave de acceso temporal
-                            'nombre_colegio': nombre_colegio
-                        }
-
-                colegios_asignados_list = list(colegios_asignados_data.values())
-                # Los IDs ahora son los nombres de los colegios
-                establecimientos_ids = [c['id'] for c in colegios_asignados_list] 
+                    if not nombre_colegio:
+                        continue
+                    # Usar nombre_colegio como ID de acceso (igual que antes)
+                    entry = {
+                        'id': nombre_colegio,
+                        'nombre_colegio': nombre_colegio,
+                        'form_type': nom.get('form_type', ''),
+                        'nombre_nomina': nom.get('nombre_nomina', ''),
+                    }
+                    colegios_asignados_list.append(entry)
+                    if nombre_colegio not in establecimientos_ids:
+                        establecimientos_ids.append(nombre_colegio)
 
                 session['colegios_asignados_ids'] = establecimientos_ids
                 session['colegios_asignados'] = colegios_asignados_list

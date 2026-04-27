@@ -979,9 +979,16 @@ def generar_pdf_familiar_overlay(pdf_base_path, campos):
             c.setFont("Helvetica", fs)
             c.setFillColorRGB(0, 0, 0)
             if campo in CAMPOS_CENTRADOS:
-                # Posición Y centrada, X desde el borde izquierdo del campo (opción B)
+                # Y centrada, X con offset específico por campo
                 cy_text = (y0 + y1) / 2 - fs / 2
-                c.drawString(x0 + 5, cy_text, valor)
+                offsets = {
+                    'fecha_nacimiento':   12,
+                    'fecha_evaluacion':   5,
+                    'fecha_reevaluacion': 15,
+                    'nacionalidad':       12,
+                }
+                dx = offsets.get(campo, 5)
+                c.drawString(x0 + dx, cy_text, valor)
             else:
                 c.drawString(x0 + 2, y0 + (h - fs) / 2, valor)
 

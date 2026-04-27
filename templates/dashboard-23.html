@@ -7893,10 +7893,18 @@
                 const estadoHtml = isEval
                     ? `<span class="alumno-estado eval"><i class="fas fa-check-circle"></i> Evaluado</span>`
                     : `<span class="alumno-estado pend"><i class="fas fa-clock"></i> Pendiente</span>`;
+                // Badge de tipo de nómina (neurología o medicina familiar)
+                const tipo = (alumno.form_type || '').toLowerCase();
+                let tipoBadge = '';
+                if (tipo === 'neurologia' || tipo === 'informe_neurologico') {
+                    tipoBadge = `<span style="background:linear-gradient(135deg,#6d28d9,#7c3aed);color:white;border-radius:20px;padding:2px 8px;font-size:.6rem;font-weight:800;letter-spacing:.03em;margin-left:6px;vertical-align:middle;white-space:nowrap;"><i class="fas fa-brain" style="font-size:.58rem;margin-right:2px;"></i>NEUROLOGÍA</span>`;
+                } else if (tipo === 'medicina_familiar') {
+                    tipoBadge = `<span style="background:linear-gradient(135deg,#0f3460,#1c67a3);color:white;border-radius:20px;padding:2px 8px;font-size:.6rem;font-weight:800;letter-spacing:.03em;margin-left:6px;vertical-align:middle;white-space:nowrap;"><i class="fas fa-stethoscope" style="font-size:.58rem;margin-right:2px;"></i>MED. FAMILIAR</span>`;
+                }
                 containerElement.innerHTML += `<li class="alumno-row">
                     <div class="alumno-avatar"><i class="fas fa-user-graduate"></i></div>
                     <div class="alumno-info">
-                        <div class="alumno-nombre">${alumno.nombre_alumno||'N/A'}</div>
+                        <div class="alumno-nombre">${alumno.nombre_alumno||'N/A'}${tipoBadge}</div>
                         <div class="alumno-meta">RUT: ${alumno.rut_alumno||'N/A'} · ${alumno.nombre_nomina||''}</div>
                     </div>
                     ${estadoHtml}

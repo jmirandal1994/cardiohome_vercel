@@ -3794,13 +3794,15 @@ def desbloquear_nomina():
                     print(f"ADVERTENCIA: Elemento inesperado saltado: {alumno}")
                     continue 
                 
-                # Consulta de apoyo para el nombre de la nómina (usando el nomina_id)
+                # Consulta de apoyo para el nombre de la nómina y form_type
                 nombre_nomina = 'N/A'
+                form_type = ''
                 if alumno.get('nomina_id'):
-                    url_nomina_name = f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{alumno['nomina_id']}&select=nombre_nomina"
+                    url_nomina_name = f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{alumno['nomina_id']}&select=nombre_nomina,form_type"
                     res_nomina_name = requests.get(url_nomina_name, headers=SUPABASE_SERVICE_HEADERS)
                     if res_nomina_name.ok and res_nomina_name.json():
                         nombre_nomina = res_nomina_name.json()[0]['nombre_nomina']
+                        form_type     = res_nomina_name.json()[0].get('form_type', '')
 
                 fecha_relleno = alumno.get('fecha_relleno')
                 estado_evaluacion = "Evaluado" if fecha_relleno else "PENDIENTE"
@@ -3812,6 +3814,7 @@ def desbloquear_nomina():
                     'rut_alumno': format_rut_python(alumno.get('rut')), 
                     'fecha_evaluacion': alumno.get('fecha_evaluacion') or 'N/A',
                     'nombre_nomina': nombre_nomina, 
+                    'form_type': form_type,
                     'estado': estado_evaluacion, 
                     'descarga_habilitada': puede_descargar 
                 })
@@ -6130,12 +6133,15 @@ def api_coordinador_excel(school_id):
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
         res_nom = requests.get(
-            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?nombre_colegio=eq.{requests.utils.quote(school_id, safe='')}"
-            f"&coord_escuela_id=eq.{session.get('usuario_id')}"
-            f"&select=id,nombre_nomina",
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas",
+            params={
+                'nombre_colegio': f'eq.{school_id}',
+                'coord_escuela_id': f'eq.{session.get("usuario_id")}',
+                'select': 'id,nombre_nomina',
+            },
             headers=SUPABASE_SERVICE_HEADERS
         )
+        print(f"DEBUG excel: school_id='{school_id}' status={res_nom.status_code} resp={res_nom.text[:200]}")
         nominas = res_nom.json() if res_nom.ok else []
         if not nominas:
             return jsonify({"success": False, "message": "Sin nóminas"}), 404
@@ -6181,12 +6187,15 @@ def api_coordinador_zip(school_id):
     try:
         import zipfile as _zf
         res_nom = requests.get(
-            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?nombre_colegio=eq.{requests.utils.quote(school_id, safe='')}"
-            f"&coord_escuela_id=eq.{session.get('usuario_id')}"
-            f"&select=id",
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas",
+            params={
+                'nombre_colegio': f'eq.{school_id}',
+                'coord_escuela_id': f'eq.{session.get("usuario_id")}',
+                'select': 'id',
+            },
             headers=SUPABASE_SERVICE_HEADERS
         )
+        print(f"DEBUG zip: school_id='{school_id}' status={res_nom.status_code} resp={res_nom.text[:200]}")
         nominas = res_nom.json() if res_nom.ok else []
         if not nominas:
             return jsonify({"success": False, "message": "Sin nóminas"}), 404

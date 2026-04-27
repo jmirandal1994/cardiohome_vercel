@@ -918,8 +918,8 @@ def generar_pdf_familiar_overlay(pdf_base_path, campos):
         'observacion_5': (167.0, 392.0, 534.4, 424.1),  # ampliado: más espacio antec. personales línea 2
         'observacion_6': (383.6, 392.8, 533.6, 408.0),
         'observacion_7': (384.0, 377.9, 528.4, 393.9),
-        'indicaciones':  (76.0,  166.2, 534.8, 194.1),
-        'derivaciones':  (76.9,  136.8, 531.4, 154.2),
+        'indicaciones':  (76.0,  140.0, 534.8, 194.1),  # ampliado: usa todo el cuadro indicaciones
+        'derivaciones':  (76.9,  118.0, 531.4, 154.2),  # ampliado ligeramente
     }
     COORDS_CHECK = {
         'sexo_f':                    (361.2, 701.7, 390.1, 720.4),
@@ -1004,8 +1004,9 @@ def generar_pdf_familiar_overlay(pdf_base_path, campos):
             lines = []
             for par in valor.splitlines():
                 lines.extend(simpleSplit(par, "Helvetica", fs, w - 4) or ['']) if par.strip() else lines.append('')
-            # No bajar la fuente de 7.5 para que no quede ilegible
-            while lines and len(lines) * lh > h - 2 and fs > 7.5:
+            # Para indicaciones permitir fuente más pequeña para que quepa todo el texto
+            fs_min = 6.5 if campo in ('indicaciones', 'derivaciones') else 7.5
+            while lines and len(lines) * lh > h - 2 and fs > fs_min:
                 fs -= 0.5; lh = fs * 1.35
                 lines = []
                 for par in valor.splitlines():
@@ -1014,11 +1015,11 @@ def generar_pdf_familiar_overlay(pdf_base_path, campos):
             c.setFillColorRGB(0, 0, 0)
             # Ajuste de margen superior por campo
             if campo == 'indicaciones':
-                y_pos = y1 - 6 - fs
+                y_pos = y1 - 8 - fs   # margen grande — el título "INDICACIONES" está encima
             elif campo == 'observacion_1':
-                y_pos = y1 - 4 - fs   # bajar un poco (hipoglicemia)
+                y_pos = y1 - 4 - fs
             elif campo in ('observacion_4', 'observacion_5'):
-                y_pos = y1 - 3 - fs   # antecedentes personales — bajar sobre la línea
+                y_pos = y1 - 3 - fs
             else:
                 y_pos = y1 - 2 - fs
             for line in lines:
@@ -1530,7 +1531,14 @@ def generar_pdf():
             nombre_descarga = f"{nombre.replace(' ', '_')}_{rut}_formulario_{form_type}.pdf"
             return send_file(io.BytesIO(pdf_final), as_attachment=True, download_name=nombre_descarga, mimetype='application/pdf')
 
-        # Aplicar el relleno
+        # NEUROLOGÍA e INFORME: usar overlay con coordenadas fijas (igual resultado para TODAS las doctoras)
+        if form_type in ('neurologia', 'informe_neurologico'):
+            pdf_final = generar_pdf_neurologia_overlay(pdf_base_path, campos)
+            if not pdf_final:
+                flash("❌ Error al generar el PDF de neurología.", 'error')
+                return redirect(url_for('dashboard'))
+            nombre_descarga = f"{nombre.replace(' ', '_')}_{rut}_formulario_{form_type}.pdf"
+            return send_file(io.BytesIO(pdf_final), as_attachment=True, download_name=nombre_descarga, mimetype='application/pdf')
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
             

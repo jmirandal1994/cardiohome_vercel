@@ -911,11 +911,11 @@ def generar_pdf_familiar_overlay(pdf_base_path, campos):
         'diagnostico_complementario': (80.3,  218.0, 464.9, 233.3),
     }
     COORDS_LARGO = {
-        'observacion_1': (352.3, 526.7, 535.7, 548.7),
+        'observacion_1': (352.3, 518.0, 535.7, 548.7),  # ampliado: más espacio para hipoglicemia
         'observacion_2': (384.0, 465.0, 534.0, 487.0),
         'observacion_3': (384.8, 438.8, 534.8, 460.8),
-        'observacion_4': (168.2, 421.5, 534.4, 439.0),
-        'observacion_5': (167.0, 406.9, 534.4, 424.1),
+        'observacion_4': (168.2, 406.0, 534.4, 439.0),  # ampliado: más espacio antec. personales línea 1
+        'observacion_5': (167.0, 392.0, 534.4, 424.1),  # ampliado: más espacio antec. personales línea 2
         'observacion_6': (383.6, 392.8, 533.6, 408.0),
         'observacion_7': (384.0, 377.9, 528.4, 393.9),
         'indicaciones':  (76.0,  166.2, 534.8, 194.1),
@@ -1004,16 +1004,21 @@ def generar_pdf_familiar_overlay(pdf_base_path, campos):
             lines = []
             for par in valor.splitlines():
                 lines.extend(simpleSplit(par, "Helvetica", fs, w - 4) or ['']) if par.strip() else lines.append('')
-            while lines and len(lines) * lh > h - 2 and fs > 6:
+            # No bajar la fuente de 7.5 para que no quede ilegible
+            while lines and len(lines) * lh > h - 2 and fs > 7.5:
                 fs -= 0.5; lh = fs * 1.35
                 lines = []
                 for par in valor.splitlines():
                     lines.extend(simpleSplit(par, "Helvetica", fs, w - 4) or ['']) if par.strip() else lines.append('')
             c.setFont("Helvetica", fs)
             c.setFillColorRGB(0, 0, 0)
-            # indicaciones: empezar más abajo para no chocar con el encabezado
+            # Ajuste de margen superior por campo
             if campo == 'indicaciones':
-                y_pos = y1 - 6 - fs   # más margen superior
+                y_pos = y1 - 6 - fs
+            elif campo == 'observacion_1':
+                y_pos = y1 - 4 - fs   # bajar un poco (hipoglicemia)
+            elif campo in ('observacion_4', 'observacion_5'):
+                y_pos = y1 - 3 - fs   # antecedentes personales — bajar sobre la línea
             else:
                 y_pos = y1 - 2 - fs
             for line in lines:
@@ -5478,11 +5483,12 @@ def api_coordinadora_reporte_detalle():
             label = colegio + ('  (' + doc_nombre + ')' if doc_nombre else '')
 
             detalles.append({
-                "colegio":   label,
-                "alumnos":   alumnos,
-                "ausentes":  ausentes,
-                "total":     total_count,
-                "evaluados": ev_count
+                "colegio":    label,
+                "alumnos":    alumnos,
+                "ausentes":   ausentes,
+                "total":      total_count,
+                "evaluados":  ev_count,
+                "form_type":  nom.get('form_type', ''),
             })
 
         return jsonify({
@@ -8119,6 +8125,114 @@ def api_mover_estudiantes():
 
 
 # ── COORDINADOR ESCUELA — Obtener token ────────────────────────────────────────
+
+
+
+def _generar_pdf_bytes_alumno_id(alumno_id):
+    """Genera bytes del PDF de un alumno para el ZIP masivo del coordinador escuela."""
+    try:
+        res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{alumno_id}"
+            f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,diagnostico,"
+            f"derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,"
+            f"diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,"
+            f"observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,"
+            f"check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,"
+            f"check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,check_cirugiasi,"
+            f"check_retraso,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,"
+            f"check_hipoacusia,check_tapondecerumen,check_sinhallazgos,check_caries,"
+            f"check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,"
+            f"altura,peso,imc,indicaciones,doctora_evaluadora_id,nomina_id,clasificacion_imc,"
+            f"motivo_consulta,observaciones,observacion_neurologia,estado_asistencia,deficit",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        if not res.ok or not res.json(): return None
+        est = res.json()[0]
+        if not est.get('fecha_relleno'): return None
+
+        res_nom = requests.get(
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas?id=eq.{est['nomina_id']}"
+            f"&select=form_type,doctora_id_para_formulario",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        meta = res_nom.json()[0] if res_nom.ok and res_nom.json() else {}
+        form_type = meta.get('form_type', 'neurologia')
+        doc_id = meta.get('doctora_id_para_formulario') or est.get('doctora_evaluadora_id')
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+
+        if form_type == 'neurologia':
+            sp = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR, f"FORMULARIO TIPO NEUROLOGIA_{doc_id}.pdf")
+            pdf_base = sp if doc_id and os.path.exists(sp) else os.path.join(base_dir, PDF_BASE_NEUROLOGIA)
+        elif form_type == 'informe_neurologico':
+            sp = os.path.join(base_dir, PDF_BASES_NEUROLOGIA_DIR, f"INFORME_NEUROLOGICO_BASE_{doc_id}.pdf")
+            pdf_base = sp if doc_id and os.path.exists(sp) else os.path.join(base_dir, PDF_BASE_INFORME_NEURO)
+        elif form_type == 'medicina_familiar':
+            sp = os.path.join(base_dir, PDF_BASES_FAMILIAR_DIR, f"FORMULARIO_FAMILIAR_{doc_id}.pdf")
+            pdf_base = sp if doc_id and os.path.exists(sp) else os.path.join(base_dir, PDF_BASE_FAMILIAR)
+        else:
+            return None
+        if not os.path.exists(pdf_base): return None
+
+        def sg(f): v=est.get(f); return '' if v is None or str(v).strip() in ('None','null','') else str(v).strip()
+        def mc(v): return "X" if v is True or (isinstance(v,str) and v.strip() and v.strip().lower() not in ('false','0','no','')) else ""
+
+        _fe = datetime.strptime(est['fecha_evaluacion'],'%Y-%m-%d').date() if est.get('fecha_evaluacion') else None
+        edad = calculate_age(datetime.strptime(est['fecha_nacimiento'],'%Y-%m-%d').date(), fecha_ref=_fe) if est.get('fecha_nacimiento') else 'N/A'
+        fn_fmt  = datetime.strptime(est['fecha_nacimiento'],'%Y-%m-%d').strftime('%d/%m/%Y') if est.get('fecha_nacimiento') else ''
+        fe_fmt  = datetime.strptime(est['fecha_evaluacion'],'%Y-%m-%d').strftime('%d/%m/%Y') if est.get('fecha_evaluacion') else ''
+        fre_fmt = datetime.strptime(est['fecha_reevaluacion'],'%Y-%m-%d').strftime('%d/%m/%Y') if est.get('fecha_reevaluacion') else ''
+        nombre  = est.get('nombre','')
+        rut     = format_rut_python(est.get('rut',''))
+
+        if form_type == 'neurologia':
+            campos = {"nombre":nombre,"rut":rut,"fecha_nacimiento":fn_fmt,"nacionalidad":sg('nacionalidad'),
+                      "edad":edad,"diagnostico_1":sg('diagnostico'),"diagnostico_2":sg('diagnostico'),
+                      "estado_general":wrap_texto_pdf(sg('estado_general')),
+                      "derivaciones":wrap_texto_pdf(sg('derivaciones')),
+                      "fecha_evaluacion":fe_fmt,"fecha_reevaluacion":fre_fmt,
+                      "sexo_f":"X" if _es_femenino(est.get('sexo','')) else "",
+                      "sexo_m":"X" if _es_masculino(est.get('sexo','')) else ""}
+            return generar_pdf_neurologia_overlay(pdf_base, campos)
+
+        elif form_type == 'medicina_familiar':
+            campos = {"nombre":nombre,"rut":rut,"fecha_nacimiento":fn_fmt,"edad":edad,
+                      "nacionalidad":sg('nacionalidad'),
+                      "sexo_f":"X" if est.get('sexo')=="F" else "",
+                      "sexo_m":"X" if est.get('sexo')=="M" else "",
+                      "diagnostico_1":sg('diagnostico_1'),"diagnostico_2":sg('diagnostico_2'),
+                      "diagnostico_complementario":sg('diagnostico_complementario'),
+                      "clasificacion":sg('clasificacion_imc'),
+                      "indicaciones":sg('indicaciones'),"derivaciones":sg('derivaciones'),
+                      "fecha_evaluacion":fe_fmt,"fecha_reevaluacion":fre_fmt,
+                      "altura":sg('altura'),"peso":sg('peso'),"imc":sg('imc'),
+                      "observacion_1":sg('observacion_1'),"observacion_2":sg('observacion_2'),
+                      "observacion_3":sg('observacion_3'),"observacion_4":sg('observacion_4'),
+                      "observacion_5":sg('observacion_5'),"observacion_6":sg('observacion_6'),
+                      "observacion_7":sg('observacion_7'),
+                      "check_cesarea":mc(est.get('check_cesarea')),"check_atermino":mc(est.get('check_atermino')),
+                      "check_vaginal":mc(est.get('check_vaginal')),"check_prematuro":mc(est.get('check_prematuro')),
+                      "check_acorde":mc(est.get('check_acorde')),"check_retraso":mc(est.get('check_retraso')),
+                      "check_retrasogeneralizado":mc(est.get('check_retrasogeneralizado')),
+                      "check_esquemac":mc(est.get('check_esquemac')),"check_esquemai":mc(est.get('check_esquemai')),
+                      "check_alergiano":mc(est.get('check_alergiano')),"check_alergiasi":mc(est.get('check_alergiasi')),
+                      "check_cirugiano":mc(est.get('check_cirugiano')),"check_cirugiasi":mc(est.get('check_cirugiasi')),
+                      "check_visionsinalteracion":mc(est.get('check_visionsinalteracion')),
+                      "check_visionrefraccion":mc(est.get('check_visionrefraccion')),
+                      "check_audicionnormal":mc(est.get('check_audicionnormal')),
+                      "check_hipoacusia":mc(est.get('check_hipoacusia')),
+                      "check_tapondecerumen":mc(est.get('check_tapondecerumen')),
+                      "check_sinhallazgos":mc(est.get('check_sinhallazgos')),
+                      "check_caries":mc(est.get('check_caries')),
+                      "check_apinamientodental":mc(est.get('check_apinamientodental')),
+                      "check_retenciondental":mc(est.get('check_retenciondental')),
+                      "check_frenillolingual":mc(est.get('check_frenillolingual')),
+                      "check_hipertrofia":mc(est.get('check_hipertrofia')),
+                      "deficit":"X" if (est.get('deficit') or '').strip()=='X' else ""}
+            return generar_pdf_familiar_overlay(pdf_base, campos)
+        return None
+    except Exception as e:
+        print(f"_generar_pdf_bytes_alumno_id error {alumno_id}: {e}")
+        return None
 
 
 if __name__ == '__main__':

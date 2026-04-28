@@ -671,10 +671,10 @@
                 <button class="btn btn-outline-purple btn-sm" onclick="abrirReporteDiagnosticos()">
                     <i class="fas fa-chart-bar"></i> Ver Reporte
                 </button>
-                <button class="btn btn-success btn-sm" onclick="generarEImprimirPDFsVisibles('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
+                <button class="btn btn-success btn-sm" onclick="generarEImprimirPDFsVisibles('{{ session['current_nomina_id'] }}', {{ establecimiento_nombre | tojson }})">
                     <i class="fas fa-file-pdf"></i> Generar PDFs
                 </button>
-                <button class="btn btn-primary btn-sm" onclick="descargarExcelCompletados('{{ session['current_nomina_id'] }}', '{{ establecimiento_nombre }}')">
+                <button class="btn btn-primary btn-sm" onclick="descargarExcelCompletados('{{ session['current_nomina_id'] }}', {{ establecimiento_nombre | tojson }})">
                     <i class="fas fa-file-excel"></i> Exportar Excel
                 </button>
                 <button class="btn btn-ghost btn-sm" onclick="window.location.reload()">

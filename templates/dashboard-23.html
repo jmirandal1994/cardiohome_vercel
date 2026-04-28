@@ -7255,105 +7255,176 @@
         </div>
 
         <!-- Formulario de edición -->
-        <div id="aem-form-container" style="display:none;padding:24px 28px;">
+        <div id="aem-form-container" style="display:none;padding:24px 28px;max-height:80vh;overflow-y:auto;">
 
           <!-- Datos personales -->
           <div style="background:#f8faff;border:1px solid #e2e8f0;border-radius:14px;padding:18px 20px;margin-bottom:18px;">
             <div style="font-size:.72rem;font-weight:800;color:#0f3460;letter-spacing:.08em;margin-bottom:14px;"><i class="fas fa-id-card"></i> DATOS PERSONALES</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-              <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Nombre completo</label>
+              <div style="grid-column:1/-1;"><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Nombre completo</label>
                 <input id="aem-nombre" type="text" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
               <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">RUT</label>
                 <input id="aem-rut" type="text" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
-              <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Fecha de Nacimiento</label>
-                <input id="aem-fecha-nac" type="date" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;" oninput="aemRecalcularEdad()"></div>
-              <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Fecha Evaluación</label>
-                <input id="aem-fecha-eval" type="date" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;" oninput="aemRecalcularEdad()"></div>
-              <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Edad (calculada automáticamente)</label>
-                <div style="position:relative;">
-                  <input id="aem-edad" type="text" readonly placeholder="Se calcula con las fechas" style="width:100%;padding:9px 12px 9px 38px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;background:#f1f5f9;color:#374151;cursor:default;">
-                  <i class="fas fa-calculator" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.8rem;pointer-events:none;"></i>
-                </div>
-              </div>
               <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Sexo</label>
                 <select id="aem-sexo" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
                   <option value="">— Sin especificar —</option>
                   <option value="M">Masculino</option>
                   <option value="F">Femenino</option>
                 </select></div>
+              <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Fecha Nacimiento</label>
+                <input id="aem-fecha-nac" type="date" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;" oninput="aemRecalcularEdad()"></div>
               <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Nacionalidad</label>
-                <input type="text" id="aem-nacionalidad" placeholder="Ej: Chilena, Venezolana…"
-                  style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+                <input type="text" id="aem-nacionalidad" placeholder="Ej: Chilena, Venezolana…" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+              <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Fecha Evaluación</label>
+                <input id="aem-fecha-eval" type="date" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;" oninput="aemRecalcularEdad()"></div>
+              <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Fecha Reevaluación</label>
+                <input id="aem-fecha-reeval" type="date" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+              <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Edad (auto)</label>
+                <div style="position:relative;">
+                  <input id="aem-edad" type="text" readonly placeholder="Se calcula con las fechas" style="width:100%;padding:9px 12px 9px 38px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;background:#f1f5f9;color:#374151;cursor:default;">
+                  <i class="fas fa-calculator" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.8rem;pointer-events:none;"></i>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Campos clínicos — se muestran según form_type -->
-          <div id="aem-campos-clinicos" style="background:#f8faff;border:1px solid #e2e8f0;border-radius:14px;padding:18px 20px;margin-bottom:18px;">
-            <div style="font-size:.72rem;font-weight:800;color:#0f3460;letter-spacing:.08em;margin-bottom:14px;" id="aem-clinico-titulo"><i class="fas fa-stethoscope"></i> EVALUACIÓN CLÍNICA</div>
+          <!-- Campos clínicos por form_type -->
+          <div id="aem-campos-clinicos" style="margin-bottom:18px;">
+
+            <!-- NEUROLOGÍA -->
             <div id="aem-campos-neuro" style="display:none;">
-              <div style="display:grid;gap:12px;">
-                <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Motivo de Consulta</label>
-                  <textarea id="aem-motivo" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
-                <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Diagnóstico</label>
-                  <textarea id="aem-diagnostico" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
-                <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Observaciones</label>
-                  <textarea id="aem-observaciones" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
-                <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Indicaciones</label>
-                  <textarea id="aem-indicaciones" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
-                <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Derivaciones</label>
-                  <textarea id="aem-derivaciones" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+              <div style="background:#f3f0ff;border:1px solid #ddd6fe;border-radius:14px;padding:18px 20px;margin-bottom:14px;">
+                <div style="font-size:.72rem;font-weight:800;color:#6d28d9;letter-spacing:.08em;margin-bottom:14px;"><i class="fas fa-brain"></i> EVALUACIÓN NEUROLÓGICA</div>
+                <div style="display:grid;gap:12px;">
+                  <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Motivo de Consulta / Estado General</label>
+                    <textarea id="aem-motivo" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Diagnóstico</label>
+                      <textarea id="aem-diagnostico" rows="3" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+                    <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Diagnóstico Sospecha</label>
+                      <textarea id="aem-diag-sospecha" rows="3" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+                  </div>
+                  <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Observaciones</label>
+                    <textarea id="aem-observaciones" rows="3" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Indicaciones</label>
+                      <textarea id="aem-indicaciones" rows="3" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+                    <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Derivaciones</label>
+                      <textarea id="aem-derivaciones" rows="3" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+                  </div>
+                </div>
               </div>
             </div>
-            <div id="aem-campos-familiar" style="display:none;">
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                <div style="grid-column:1/-1;"><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Diagnóstico</label>
-                  <textarea id="aem-diag1" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
-                <div style="grid-column:1/-1;"><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Diagnóstico Complementario</label>
-                  <textarea id="aem-diag-comp" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
 
-                <div style="grid-column:1/-1;">
-                  <label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">
-                    <i class="fas fa-x" style="font-size:.65rem;margin-right:3px;"></i> Campo especial PDF
-                  </label>
-                  <div style="display:flex;align-items:center;gap:10px;background:#fef9c3;border:1.5px solid #fde68a;border-radius:10px;padding:10px 14px;">
-                    <button type="button" id="aem-btn-deficit"
-                      onclick="toggleDeficit()"
-                      style="padding:8px 18px;border-radius:8px;border:2px solid #d97706;background:#fff;color:#92400e;font-weight:800;font-size:.85rem;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:7px;transition:all .2s;">
-                      <i class="fas fa-times" style="font-size:.8rem;"></i> deficit
-                    </button>
-                    <span id="aem-deficit-status" style="font-size:.8rem;color:#78350f;font-weight:600;">
-                      Sin marcar — presiona el botón para colocar <strong>X</strong> en el campo <em>deficit</em> del formulario
-                    </span>
-                    <input type="hidden" id="aem-deficit" value="">
-                  </div>
-                </div>
-                <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Altura (cm)</label>
-                  <input id="aem-altura" type="number" step="0.1" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
-                <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Peso (kg)</label>
-                  <input id="aem-peso" type="number" step="0.1" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
-                <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">IMC</label>
-                  <input id="aem-imc" type="number" step="0.01" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
-                <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Clasificación IMC</label>
-                  <input id="aem-clasif-imc" type="text" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
-                <div style="grid-column:1/-1;"><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Derivaciones</label>
-                  <textarea id="aem-deriv-fam" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
-                <div style="grid-column:1/-1;">
-                  <label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:8px;">Observaciones (1-7)</label>
-                  <div style="display:grid;gap:8px;">
-                    <input id="aem-obs1" type="text" placeholder="Observación 1" style="width:100%;padding:8px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.85rem;font-family:inherit;box-sizing:border-box;">
-                    <input id="aem-obs2" type="text" placeholder="Observación 2" style="width:100%;padding:8px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.85rem;font-family:inherit;box-sizing:border-box;">
-                    <input id="aem-obs3" type="text" placeholder="Observación 3" style="width:100%;padding:8px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.85rem;font-family:inherit;box-sizing:border-box;">
-                    <input id="aem-obs4" type="text" placeholder="Observación 4" style="width:100%;padding:8px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.85rem;font-family:inherit;box-sizing:border-box;">
-                    <input id="aem-obs5" type="text" placeholder="Observación 5" style="width:100%;padding:8px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.85rem;font-family:inherit;box-sizing:border-box;">
-                    <input id="aem-obs6" type="text" placeholder="Observación 6" style="width:100%;padding:8px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.85rem;font-family:inherit;box-sizing:border-box;">
-                    <input id="aem-obs7" type="text" placeholder="Observación 7" style="width:100%;padding:8px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.85rem;font-family:inherit;box-sizing:border-box;">
-                  </div>
+            <!-- MEDICINA FAMILIAR -->
+            <div id="aem-campos-familiar" style="display:none;">
+
+              <!-- Diagnósticos -->
+              <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:18px 20px;margin-bottom:14px;">
+                <div style="font-size:.72rem;font-weight:800;color:#1d4ed8;letter-spacing:.08em;margin-bottom:14px;"><i class="fas fa-stethoscope"></i> DIAGNÓSTICOS</div>
+                <div style="display:grid;gap:10px;">
+                  <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Diagnóstico Principal</label>
+                    <textarea id="aem-diag1" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+                  <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Diagnóstico 2</label>
+                    <textarea id="aem-diag2" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+                  <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Diagnóstico Complementario</label>
+                    <textarea id="aem-diag-comp" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
                 </div>
               </div>
+
+              <!-- Antecedentes perinatales / DSM / Vacunas / Alergias -->
+              <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;padding:18px 20px;margin-bottom:14px;">
+                <div style="font-size:.72rem;font-weight:800;color:#065f46;letter-spacing:.08em;margin-bottom:12px;"><i class="fas fa-baby"></i> ANTECEDENTES PERINATALES / DSM / VACUNAS / ALERGIAS</div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-cesarea" style="accent-color:#059669;width:14px;height:14px;"> Cesárea</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-atermino" style="accent-color:#059669;width:14px;height:14px;"> A Término</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-vaginal" style="accent-color:#059669;width:14px;height:14px;"> Vaginal</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-prematuro" style="accent-color:#059669;width:14px;height:14px;"> Prematuro</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-acorde" style="accent-color:#059669;width:14px;height:14px;"> Acorde a la edad</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-retraso" style="accent-color:#059669;width:14px;height:14px;"> Retraso lenguaje</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-retrasogen" style="accent-color:#059669;width:14px;height:14px;"> Retraso generalizado</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-esquemac" style="accent-color:#059669;width:14px;height:14px;"> Vacunas: Completo</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-esquemai" style="accent-color:#059669;width:14px;height:14px;"> Vacunas: Incompleto</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-alergiano" style="accent-color:#059669;width:14px;height:14px;"> Alergias: No</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-alergiasi" style="accent-color:#059669;width:14px;height:14px;"> Alergias: Sí</label>
+                </div>
+                <div style="display:grid;gap:6px;">
+                  <div><label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:3px;">OBS Perinatales</label>
+                    <input id="aem-obs1" type="text" placeholder="Observación antecedentes perinatales" style="width:100%;padding:7px 10px;border:1.5px solid #d1d5db;border-radius:8px;font-size:.84rem;font-family:inherit;box-sizing:border-box;"></div>
+                  <div><label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:3px;">OBS Alergias</label>
+                    <input id="aem-obs2" type="text" placeholder="Observación alergias" style="width:100%;padding:7px 10px;border:1.5px solid #d1d5db;border-radius:8px;font-size:.84rem;font-family:inherit;box-sizing:border-box;"></div>
+                </div>
+              </div>
+
+              <!-- Antecedentes personales / Cirugías / Visión / Audición / Bucodental -->
+              <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:18px 20px;margin-bottom:14px;">
+                <div style="font-size:.72rem;font-weight:800;color:#c2410c;letter-spacing:.08em;margin-bottom:12px;"><i class="fas fa-notes-medical"></i> ANTECEDENTES PERSONALES / VISIÓN / AUDICIÓN / BUCODENTAL</div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-cirugiano" style="accent-color:#ea580c;width:14px;height:14px;"> Cirugías: No</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-cirugiasi" style="accent-color:#ea580c;width:14px;height:14px;"> Cirugías: Sí</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-visionnorm" style="accent-color:#ea580c;width:14px;height:14px;"> Visión sin alteración</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-visionref" style="accent-color:#ea580c;width:14px;height:14px;"> Vicios de refracción</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-audicionnorm" style="accent-color:#ea580c;width:14px;height:14px;"> Audición normal</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-tapon" style="accent-color:#ea580c;width:14px;height:14px;"> Tapón de cerumen</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-hipoacusia" style="accent-color:#ea580c;width:14px;height:14px;"> Hipoacusia</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-caries" style="accent-color:#ea580c;width:14px;height:14px;"> Caries</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-apinam" style="accent-color:#ea580c;width:14px;height:14px;"> Apiñamiento dental</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-retencion" style="accent-color:#ea580c;width:14px;height:14px;"> Retención dental</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-sinhallazgos" style="accent-color:#ea580c;width:14px;height:14px;"> Sin hallazgos</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-frenillo" style="accent-color:#ea580c;width:14px;height:14px;"> Frenillo lingual</label>
+                  <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;background:white;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;"><input type="checkbox" id="aem-ck-hipertrofia" style="accent-color:#ea580c;width:14px;height:14px;"> Hipertrofia amigdalina</label>
+                </div>
+                <div style="display:grid;gap:6px;">
+                  <div><label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:3px;">Antecedentes personales línea 1</label>
+                    <input id="aem-obs4" type="text" style="width:100%;padding:7px 10px;border:1.5px solid #d1d5db;border-radius:8px;font-size:.84rem;font-family:inherit;box-sizing:border-box;"></div>
+                  <div><label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:3px;">Antecedentes personales línea 2</label>
+                    <input id="aem-obs5" type="text" style="width:100%;padding:7px 10px;border:1.5px solid #d1d5db;border-radius:8px;font-size:.84rem;font-family:inherit;box-sizing:border-box;"></div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                    <div><label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:3px;">OBS Cirugías</label>
+                      <input id="aem-obs3" type="text" style="width:100%;padding:7px 10px;border:1.5px solid #d1d5db;border-radius:8px;font-size:.84rem;font-family:inherit;box-sizing:border-box;"></div>
+                    <div><label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:3px;">OBS Visión</label>
+                      <input id="aem-obs6" type="text" style="width:100%;padding:7px 10px;border:1.5px solid #d1d5db;border-radius:8px;font-size:.84rem;font-family:inherit;box-sizing:border-box;"></div>
+                  </div>
+                  <div><label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:3px;">OBS Audición / Otras</label>
+                    <input id="aem-obs7" type="text" style="width:100%;padding:7px 10px;border:1.5px solid #d1d5db;border-radius:8px;font-size:.84rem;font-family:inherit;box-sizing:border-box;"></div>
+                </div>
+              </div>
+
+              <!-- Medidas + Indicaciones + Derivaciones -->
+              <div style="background:#f8faff;border:1px solid #e2e8f0;border-radius:14px;padding:18px 20px;margin-bottom:14px;">
+                <div style="font-size:.72rem;font-weight:800;color:#0f3460;letter-spacing:.08em;margin-bottom:12px;"><i class="fas fa-weight-scale"></i> MEDIDAS ANTROPOMÉTRICAS / INDICACIONES</div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">
+                  <div><label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:3px;">Altura (cm)</label>
+                    <input id="aem-altura" type="number" step="0.1" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+                  <div><label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:3px;">Peso (kg)</label>
+                    <input id="aem-peso" type="number" step="0.1" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+                  <div><label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:3px;">IMC</label>
+                    <input id="aem-imc" type="number" step="0.01" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+                  <div><label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:3px;">Clasificación IMC</label>
+                    <input id="aem-clasif-imc" type="text" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                  <div><label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:3px;">Indicaciones</label>
+                    <textarea id="aem-indicaciones-fam" rows="3" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+                  <div><label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:3px;">Derivaciones</label>
+                    <textarea id="aem-deriv-fam" rows="3" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+                </div>
+              </div>
+
+              <!-- Déficit -->
+              <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:14px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                <label style="font-size:.82rem;font-weight:700;color:#be123c;display:flex;align-items:center;gap:8px;cursor:pointer;">
+                  <input type="checkbox" id="aem-btn-deficit" style="accent-color:#dc2626;width:16px;height:16px;" onchange="_actualizarEstadoDeficit(this.checked)">
+                  Marcar campo DEFICIT (X)
+                </label>
+                <input type="hidden" id="aem-deficit" value="">
+                <span id="aem-deficit-status" style="font-size:.78rem;color:#64748b;"></span>
+              </div>
             </div>
+
           </div>
 
-          <!-- Botones acción -->
+                    <!-- Botones acción -->
           <div style="display:flex;gap:12px;justify-content:flex-end;padding-top:4px;">
             <button onclick="cerrarAdminEditModal()" style="padding:11px 22px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:10px;font-weight:700;font-size:.88rem;cursor:pointer;font-family:inherit;color:#374151;">
               <i class="fas fa-xmark"></i> Cancelar
@@ -8472,32 +8543,67 @@
 
                 if (ft === 'neurologia' || ft === 'informe_neurologico') {
                     document.getElementById('aem-campos-neuro').style.display = 'grid';
-                    document.getElementById('aem-motivo').value       = a.motivo_consulta       || '';
-                    document.getElementById('aem-diagnostico').value  = a.diagnostico           || '';
-                    document.getElementById('aem-observaciones').value= a.observaciones         || '';
-                    document.getElementById('aem-indicaciones').value = a.indicaciones          || '';
-                    document.getElementById('aem-derivaciones').value = a.derivaciones          || '';
+                    document.getElementById('aem-motivo').value        = a.motivo_consulta || a.estado_general || '';
+                    document.getElementById('aem-diagnostico').value   = a.diagnostico           || '';
+                    document.getElementById('aem-diag-sospecha').value = a.diagnostico_sospecha  || '';
+                    document.getElementById('aem-observaciones').value = a.observaciones         || '';
+                    document.getElementById('aem-indicaciones').value  = a.indicaciones          || '';
+                    document.getElementById('aem-derivaciones').value  = a.derivaciones          || '';
                 } else if (ft === 'medicina_familiar') {
                     document.getElementById('aem-campos-familiar').style.display = 'grid';
-                    document.getElementById('aem-diag1').value       = a.diagnostico_1          || '';
-                    document.getElementById('aem-diag-comp').value   = a.diagnostico_complementario || '';
-                    document.getElementById('aem-altura').value      = a.altura                 || '';
-                    document.getElementById('aem-peso').value        = a.peso                   || '';
-                    document.getElementById('aem-imc').value         = a.imc                    || '';
-                    document.getElementById('aem-clasif-imc').value  = a.clasificacion_imc || a.clasificacion || '';
-                    document.getElementById('aem-deriv-fam').value   = a.derivaciones           || '';
-                    document.getElementById('aem-obs1').value = a.observacion_1 || '';
-                    document.getElementById('aem-obs2').value = a.observacion_2 || '';
-                    document.getElementById('aem-obs3').value = a.observacion_3 || '';
-                    document.getElementById('aem-obs4').value = a.observacion_4 || '';
-                    document.getElementById('aem-obs5').value = a.observacion_5 || '';
-                    document.getElementById('aem-obs6').value = a.observacion_6 || '';
-                    document.getElementById('aem-obs7').value = a.observacion_7 || '';
-                    // Cargar estado actual del campo deficit
+                    document.getElementById('aem-diag1').value          = a.diagnostico_1                    || '';
+                    document.getElementById('aem-diag2').value          = a.diagnostico_2                    || '';
+                    document.getElementById('aem-diag-comp').value      = a.diagnostico_complementario       || '';
+                    document.getElementById('aem-altura').value         = a.altura                           || '';
+                    document.getElementById('aem-peso').value           = a.peso                             || '';
+                    document.getElementById('aem-imc').value            = a.imc                              || '';
+                    document.getElementById('aem-clasif-imc').value     = a.clasificacion_imc || a.clasificacion || '';
+                    document.getElementById('aem-indicaciones-fam').value = a.indicaciones                  || '';
+                    document.getElementById('aem-deriv-fam').value      = a.derivaciones                    || '';
+                    document.getElementById('aem-obs1').value           = a.observacion_1                   || '';
+                    document.getElementById('aem-obs2').value           = a.observacion_2                   || '';
+                    document.getElementById('aem-obs3').value           = a.observacion_3                   || '';
+                    document.getElementById('aem-obs4').value           = a.observacion_4                   || '';
+                    document.getElementById('aem-obs5').value           = a.observacion_5                   || '';
+                    document.getElementById('aem-obs6').value           = a.observacion_6                   || '';
+                    document.getElementById('aem-obs7').value           = a.observacion_7                   || '';
+                    // Poblar checkboxes — True o string no vacío = checked
+                    const ck = (v) => v === true || (typeof v === 'string' && v.trim() && v.toLowerCase() !== 'false' && v !== '0');
+                    document.getElementById('aem-ck-cesarea').checked    = ck(a.check_cesarea);
+                    document.getElementById('aem-ck-atermino').checked   = ck(a.check_atermino);
+                    document.getElementById('aem-ck-vaginal').checked    = ck(a.check_vaginal);
+                    document.getElementById('aem-ck-prematuro').checked  = ck(a.check_prematuro);
+                    document.getElementById('aem-ck-acorde').checked     = ck(a.check_acorde);
+                    document.getElementById('aem-ck-retraso').checked    = ck(a.check_retraso);
+                    document.getElementById('aem-ck-retrasogen').checked = ck(a.check_retrasogeneralizado);
+                    document.getElementById('aem-ck-esquemac').checked   = ck(a.check_esquemac);
+                    document.getElementById('aem-ck-esquemai').checked   = ck(a.check_esquemai);
+                    document.getElementById('aem-ck-alergiano').checked  = ck(a.check_alergiano);
+                    document.getElementById('aem-ck-alergiasi').checked  = ck(a.check_alergiasi);
+                    document.getElementById('aem-ck-cirugiano').checked  = ck(a.check_cirugiano);
+                    document.getElementById('aem-ck-cirugiasi').checked  = ck(a.check_cirugiasi);
+                    document.getElementById('aem-ck-visionnorm').checked = ck(a.check_visionsinalteracion);
+                    document.getElementById('aem-ck-visionref').checked  = ck(a.check_visionrefraccion);
+                    document.getElementById('aem-ck-audicionnorm').checked = ck(a.check_audicionnormal);
+                    document.getElementById('aem-ck-tapon').checked      = ck(a.check_tapondecerumen);
+                    document.getElementById('aem-ck-hipoacusia').checked  = ck(a.check_hipoacusia);
+                    document.getElementById('aem-ck-caries').checked     = ck(a.check_caries);
+                    document.getElementById('aem-ck-apinam').checked     = ck(a.check_apinamientodental);
+                    document.getElementById('aem-ck-retencion').checked  = ck(a.check_retenciondental);
+                    document.getElementById('aem-ck-sinhallazgos').checked = ck(a.check_sinhallazgos);
+                    document.getElementById('aem-ck-frenillo').checked   = ck(a.check_frenillolingual);
+                    document.getElementById('aem-ck-hipertrofia').checked = ck(a.check_hipertrofia);
+                    // Déficit
                     const defVal = a.deficit || '';
                     document.getElementById('aem-deficit').value = defVal;
+                    // Sync checkbox state
+                    const defCk = document.getElementById('aem-btn-deficit');
+                    if (defCk) defCk.checked = defVal === 'X';
                     _actualizarEstadoDeficit(defVal === 'X');
                 }
+                // Fecha reevaluación (ambos tipos)
+                const rrEl = document.getElementById('aem-fecha-reeval');
+                if (rrEl) rrEl.value = a.fecha_reevaluacion || '';
 
                 document.getElementById('aem-loading').style.display       = 'none';
                 document.getElementById('aem-form-container').style.display = 'block';
@@ -8517,27 +8623,20 @@
         }
 
         function _actualizarEstadoDeficit(marcado) {
-            var btn    = document.getElementById('aem-btn-deficit');
             var status = document.getElementById('aem-deficit-status');
             var input  = document.getElementById('aem-deficit');
-            if (!btn || !status || !input) return;
+            var ckBtn  = document.getElementById('aem-btn-deficit');
+            if (!input) return;
             if (marcado) {
-                input.value  = 'X';
-                btn.style.background    = '#dc2626';
-                btn.style.color         = '#fff';
-                btn.style.borderColor   = '#dc2626';
-                btn.innerHTML = '<i class="fas fa-times"></i> deficit — ✓ X marcada';
-                status.innerHTML = '<span style="color:#dc2626;font-weight:800;">✓ Se guardará <strong>X</strong> en el campo <em>deficit</em> del formulario.</span> Presiona de nuevo para desmarcar.';
+                input.value = 'X';
+                if (status) status.innerHTML = '<span style="color:#dc2626;font-weight:800;">✓ Campo <em>deficit</em> marcado como <strong>X</strong></span>';
+                if (ckBtn) ckBtn.checked = true;
             } else {
-                input.value  = '';
-                btn.style.background    = '#fff';
-                btn.style.color         = '#92400e';
-                btn.style.borderColor   = '#d97706';
-                btn.innerHTML = '<i class="fas fa-times" style="font-size:.8rem;"></i> deficit';
-                status.innerHTML = 'Sin marcar — presiona el botón para colocar <strong>X</strong> en el campo <em>deficit</em> del formulario.';
+                input.value = '';
+                if (status) status.innerHTML = '<span style="color:#94a3b8;">Sin marcar</span>';
+                if (ckBtn) ckBtn.checked = false;
             }
         }
-
         function toggleDeficit() {
             var input = document.getElementById('aem-deficit');
             if (!input) return;
@@ -8550,48 +8649,75 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando…';
 
-            // Recoger todos los campos según form_type
+            const ckVal = (id) => document.getElementById(id)?.checked ? true : false;
+
             const campos = {
-                nombre:          document.getElementById('aem-nombre').value.trim(),
-                rut:             document.getElementById('aem-rut').value.trim(),
-                fecha_nacimiento:document.getElementById('aem-fecha-nac').value   || null,
-                fecha_evaluacion:document.getElementById('aem-fecha-eval').value  || null,
-                sexo:            document.getElementById('aem-sexo').value         || null,
-                nacionalidad:    (document.getElementById('aem-nacionalidad').value || '').trim() || null,
-                edad:            document.getElementById('aem-edad').value         || null,
+                nombre:           document.getElementById('aem-nombre').value.trim(),
+                rut:              document.getElementById('aem-rut').value.trim(),
+                fecha_nacimiento: document.getElementById('aem-fecha-nac').value   || null,
+                fecha_evaluacion: document.getElementById('aem-fecha-eval').value  || null,
+                fecha_reevaluacion: document.getElementById('aem-fecha-reeval')?.value || null,
+                sexo:             document.getElementById('aem-sexo').value         || null,
+                nacionalidad:     (document.getElementById('aem-nacionalidad').value || '').trim() || null,
+                edad:             document.getElementById('aem-edad').value         || null,
             };
 
             if (_aemFormType === 'neurologia' || _aemFormType === 'informe_neurologico') {
                 Object.assign(campos, {
-                    motivo_consulta:      document.getElementById('aem-motivo').value.trim()       || null,
-                    diagnostico:          document.getElementById('aem-diagnostico').value.trim()  || null,
-                    observaciones:        document.getElementById('aem-observaciones').value.trim()|| null,
-                    indicaciones:         document.getElementById('aem-indicaciones').value.trim() || null,
-                    derivaciones:         document.getElementById('aem-derivaciones').value.trim() || null,
+                    motivo_consulta:     document.getElementById('aem-motivo').value.trim()        || null,
+                    estado_general:      document.getElementById('aem-motivo').value.trim()        || null,
+                    diagnostico:         document.getElementById('aem-diagnostico').value.trim()   || null,
+                    diagnostico_sospecha:document.getElementById('aem-diag-sospecha')?.value.trim()|| null,
+                    observaciones:       document.getElementById('aem-observaciones').value.trim() || null,
+                    indicaciones:        document.getElementById('aem-indicaciones').value.trim()  || null,
+                    derivaciones:        document.getElementById('aem-derivaciones').value.trim()  || null,
                 });
             } else if (_aemFormType === 'medicina_familiar') {
-                const diag = document.getElementById('aem-diag1').value.trim();
                 const deficitEl  = document.getElementById('aem-deficit');
                 const deficitVal = deficitEl ? deficitEl.value.trim() : '';
-                console.log('[deficit debug] elemento encontrado:', !!deficitEl, '| valor raw:', deficitEl?.value, '| trim:', deficitVal, '| será X:', deficitVal === 'X');
                 Object.assign(campos, {
-                    diagnostico_1:               diag || null,
-                    diagnostico_2:               diag || null,
-                    diagnostico_complementario:  document.getElementById('aem-diag-comp').value.trim() || null,
-                    altura:                      document.getElementById('aem-altura').value   || null,
-                    peso:                        document.getElementById('aem-peso').value     || null,
-                    imc:                         document.getElementById('aem-imc').value      || null,
-                    clasificacion_imc:           document.getElementById('aem-clasif-imc').value.trim() || null,
-                    derivaciones:                document.getElementById('aem-deriv-fam').value.trim()  || null,
-                    observacion_1:               document.getElementById('aem-obs1').value.trim() || null,
-                    observacion_2:               document.getElementById('aem-obs2').value.trim() || null,
-                    observacion_3:               document.getElementById('aem-obs3').value.trim() || null,
-                    observacion_4:               document.getElementById('aem-obs4').value.trim() || null,
-                    observacion_5:               document.getElementById('aem-obs5').value.trim() || null,
-                    observacion_6:               document.getElementById('aem-obs6').value.trim() || null,
-                    observacion_7:               document.getElementById('aem-obs7').value.trim() || null,
-                    // Campo especial solo desde correcciones — coloca X en el PDF
-                    deficit:                     deficitVal === 'X' ? 'X' : null,
+                    diagnostico_1:              document.getElementById('aem-diag1').value.trim()      || null,
+                    diagnostico_2:              document.getElementById('aem-diag2').value.trim()      || null,
+                    diagnostico_complementario: document.getElementById('aem-diag-comp').value.trim()  || null,
+                    altura:                     document.getElementById('aem-altura').value            || null,
+                    peso:                       document.getElementById('aem-peso').value              || null,
+                    imc:                        document.getElementById('aem-imc').value               || null,
+                    clasificacion_imc:          document.getElementById('aem-clasif-imc').value.trim() || null,
+                    indicaciones:               document.getElementById('aem-indicaciones-fam').value.trim() || null,
+                    derivaciones:               document.getElementById('aem-deriv-fam').value.trim()  || null,
+                    observacion_1:              document.getElementById('aem-obs1').value.trim()       || null,
+                    observacion_2:              document.getElementById('aem-obs2').value.trim()       || null,
+                    observacion_3:              document.getElementById('aem-obs3').value.trim()       || null,
+                    observacion_4:              document.getElementById('aem-obs4').value.trim()       || null,
+                    observacion_5:              document.getElementById('aem-obs5').value.trim()       || null,
+                    observacion_6:              document.getElementById('aem-obs6').value.trim()       || null,
+                    observacion_7:              document.getElementById('aem-obs7').value.trim()       || null,
+                    deficit:                    deficitVal === 'X' ? 'X' : null,
+                    // Checkboxes
+                    check_cesarea:              ckVal('aem-ck-cesarea'),
+                    check_atermino:             ckVal('aem-ck-atermino'),
+                    check_vaginal:              ckVal('aem-ck-vaginal'),
+                    check_prematuro:            ckVal('aem-ck-prematuro'),
+                    check_acorde:               ckVal('aem-ck-acorde'),
+                    check_retraso:              ckVal('aem-ck-retraso'),
+                    check_retrasogeneralizado:  ckVal('aem-ck-retrasogen'),
+                    check_esquemac:             ckVal('aem-ck-esquemac'),
+                    check_esquemai:             ckVal('aem-ck-esquemai'),
+                    check_alergiano:            ckVal('aem-ck-alergiano'),
+                    check_alergiasi:            ckVal('aem-ck-alergiasi'),
+                    check_cirugiano:            ckVal('aem-ck-cirugiano'),
+                    check_cirugiasi:            ckVal('aem-ck-cirugiasi'),
+                    check_visionsinalteracion:  ckVal('aem-ck-visionnorm'),
+                    check_visionrefraccion:     ckVal('aem-ck-visionref'),
+                    check_audicionnormal:       ckVal('aem-ck-audicionnorm'),
+                    check_tapondecerumen:       ckVal('aem-ck-tapon'),
+                    check_hipoacusia:           ckVal('aem-ck-hipoacusia'),
+                    check_caries:               ckVal('aem-ck-caries'),
+                    check_apinamientodental:    ckVal('aem-ck-apinam'),
+                    check_retenciondental:      ckVal('aem-ck-retencion'),
+                    check_sinhallazgos:         ckVal('aem-ck-sinhallazgos'),
+                    check_frenillolingual:      ckVal('aem-ck-frenillo'),
+                    check_hipertrofia:          ckVal('aem-ck-hipertrofia'),
                 });
             }
 

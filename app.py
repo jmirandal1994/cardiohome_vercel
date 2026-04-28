@@ -3762,10 +3762,27 @@ def desbloquear_nomina():
     password_ingresada = data.get('password')
     school_name = data.get('school_id') 
     
-    # 2. Verificación de Asignación
+    # 2. Verificación de Asignación — primero sesión, si falla verifica en Supabase
+    #    (Vercel serverless puede perder la caché de sesión entre requests)
     colegios_permitidos = session.get('colegios_asignados_ids', [])
     if school_name not in colegios_permitidos:
-        return jsonify({"success": False, "message": "No tiene permiso asignado para este establecimiento."}), 403
+        # Fallback: verificar directamente en Supabase
+        try:
+            res_check = requests.get(
+                f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+                f"?nombre_colegio=eq.{school_name}"
+                f"&coord_escuela_id=eq.{session.get('usuario_id')}"
+                f"&select=id&limit=1",
+                headers=SUPABASE_SERVICE_HEADERS
+            )
+            if not res_check.ok or not res_check.json():
+                return jsonify({"success": False, "message": "No tiene permiso asignado para este establecimiento."}), 403
+            # Válido — actualizar la sesión para siguientes requests
+            if school_name not in colegios_permitidos:
+                colegios_permitidos.append(school_name)
+                session['colegios_asignados_ids'] = colegios_permitidos
+        except Exception:
+            return jsonify({"success": False, "message": "Error al verificar acceso."}), 500
         
     # 3. Validar el token de acceso para ese colegio (Envuelto en TRY/EXCEPT para errores de conexión)
     try:

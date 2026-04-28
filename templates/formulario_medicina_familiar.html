@@ -4371,14 +4371,17 @@ function actualizarContadoresFormulario() {
 /* ── Presencia: heartbeat cada 60 s mientras el formulario está abierto ── */
 (function() {
     const nominaId = document.querySelector('input[name="nomina_id"]')?.value || '';
-    const establec = document.querySelector('.nomina-title, h1, title')?.textContent || document.title || '';
+    const establec = {{ establecimiento_nombre | tojson }};
 
     function sendHeartbeat(accion) {
+        const ctrl = new AbortController();
+        const timeout = setTimeout(() => ctrl.abort(), 8000);
         fetch('/api/presencia', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nomina_id: nominaId, establecimiento: establec, accion: accion })
-        }).catch(() => {});
+            body: JSON.stringify({ nomina_id: nominaId, establecimiento: establec, accion: accion }),
+            signal: ctrl.signal
+        }).catch(() => {}).finally(() => clearTimeout(timeout));
     }
 
     // sendBeacon garantiza entrega aunque la página esté cerrando

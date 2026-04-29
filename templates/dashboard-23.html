@@ -7904,31 +7904,39 @@
         // ── EVALUACIONES DE SERVICIO ──────────────────────────────────────────
         let _evalRatings = { servicio: 0, doctora: 0 };
 
-        // Inicializar interacción estrellas
-        document.querySelectorAll('.eval-star').forEach(star => {
-            star.addEventListener('click', () => {
-                const grupo = star.dataset.grupo;
-                const val   = parseInt(star.dataset.val);
-                _evalRatings[grupo] = val;
-                document.querySelectorAll(`.eval-star[data-grupo="${grupo}"]`).forEach(s => {
-                    s.style.opacity = parseInt(s.dataset.val) <= val ? '1' : '0.3';
-                    s.style.color   = parseInt(s.dataset.val) <= val ? '#f59e0b' : 'inherit';
-                });
+        // Event delegation — funciona aunque el modal esté oculto o se agregue tarde al DOM
+        document.addEventListener('click', function(e) {
+            const star = e.target.closest('.eval-star');
+            if (!star) return;
+            const grupo = star.dataset.grupo;
+            const val   = parseInt(star.dataset.val);
+            _evalRatings[grupo] = val;
+            document.querySelectorAll(`.eval-star[data-grupo="${grupo}"]`).forEach(s => {
+                const sv = parseInt(s.dataset.val);
+                s.style.opacity = sv <= val ? '1' : '0.3';
+                s.style.color   = sv <= val ? '#f59e0b' : '#cbd5e1';
             });
-            star.addEventListener('mouseover', () => {
-                const grupo = star.dataset.grupo;
-                const val   = parseInt(star.dataset.val);
-                document.querySelectorAll(`.eval-star[data-grupo="${grupo}"]`).forEach(s => {
-                    s.style.opacity = parseInt(s.dataset.val) <= val ? '1' : '0.3';
-                });
+        });
+
+        document.addEventListener('mouseover', function(e) {
+            const star = e.target.closest('.eval-star');
+            if (!star) return;
+            const grupo = star.dataset.grupo;
+            const val   = parseInt(star.dataset.val);
+            document.querySelectorAll(`.eval-star[data-grupo="${grupo}"]`).forEach(s => {
+                s.style.opacity = parseInt(s.dataset.val) <= val ? '1' : '0.3';
             });
-            star.addEventListener('mouseout', () => {
-                const grupo = star.dataset.grupo;
-                const saved = _evalRatings[grupo] || 0;
-                document.querySelectorAll(`.eval-star[data-grupo="${grupo}"]`).forEach(s => {
-                    s.style.opacity = parseInt(s.dataset.val) <= saved ? '1' : '0.3';
-                    s.style.color   = parseInt(s.dataset.val) <= saved ? '#f59e0b' : 'inherit';
-                });
+        });
+
+        document.addEventListener('mouseout', function(e) {
+            const star = e.target.closest('.eval-star');
+            if (!star) return;
+            const grupo = star.dataset.grupo;
+            const saved = _evalRatings[grupo] || 0;
+            document.querySelectorAll(`.eval-star[data-grupo="${grupo}"]`).forEach(s => {
+                const sv = parseInt(s.dataset.val);
+                s.style.opacity = sv <= saved ? '1' : '0.3';
+                s.style.color   = sv <= saved ? '#f59e0b' : '#cbd5e1';
             });
         });
 

@@ -1134,6 +1134,7 @@
                         <li><a href="#" class="nav-link" data-section="gestionar-proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-upload-nomina"><i class="fa-solid fa-file-excel"></i> Cargar Nómina</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-tokens"><i class="fa-solid fa-key"></i> Tokens</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-evaluaciones"><i class="fa-solid fa-star"></i> Evaluaciones</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-mover-estudiantes"><i class="fa-solid fa-people-arrows"></i> Mover Estudiantes</a></li>
 
 
@@ -2827,6 +2828,41 @@
 
                 {# NUEVA SECCIÓN: SOLICITUDES DE CORRECCIÓN PARA EL ADMINISTRADOR #}
                 {# SECCIÓN: MOVER ESTUDIANTES ENTRE NÓMINAS #}
+                {# SECCIÓN: EVALUACIONES DE SERVICIO #}
+                <div id="admin-evaluaciones" class="content-section">
+                    <div class="section-topbar">
+                        <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                        <i class="fa-solid fa-star section-icon" style="color:#f59e0b;"></i>
+                        <h2 class="section-title">Evaluaciones de Servicio</h2>
+                    </div>
+                    <div class="card">
+                        <!-- Resumen -->
+                        <div id="eval-resumen" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;">
+                            <div style="background:linear-gradient(135deg,#fef9c3,#fef3c7);border:1.5px solid #fbbf24;border-radius:14px;padding:18px;text-align:center;">
+                                <div style="font-size:2rem;font-weight:900;color:#92400e;" id="eval-promedio-general">—</div>
+                                <div style="font-size:.75rem;color:#92400e;font-weight:700;margin-top:4px;">Promedio General</div>
+                                <div id="eval-estrellas-promedio" style="font-size:1.1rem;color:#f59e0b;margin-top:4px;">★★★★★</div>
+                            </div>
+                            <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;border-radius:14px;padding:18px;text-align:center;">
+                                <div style="font-size:2rem;font-weight:900;color:#065f46;" id="eval-total">—</div>
+                                <div style="font-size:.75rem;color:#065f46;font-weight:700;margin-top:4px;">Total Evaluaciones</div>
+                            </div>
+                            <div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1.5px solid #93c5fd;border-radius:14px;padding:18px;text-align:center;">
+                                <div style="font-size:2rem;font-weight:900;color:#1d4ed8;" id="eval-mes">—</div>
+                                <div style="font-size:.75rem;color:#1d4ed8;font-weight:700;margin-top:4px;">Este mes</div>
+                            </div>
+                        </div>
+                        <!-- Lista de evaluaciones -->
+                        <div id="eval-lista" style="display:flex;flex-direction:column;gap:10px;">
+                            <div style="text-align:center;padding:30px;color:#94a3b8;">
+                                <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;display:block;margin-bottom:8px;"></i>
+                                Cargando evaluaciones…
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {# SECCIÓN: MOVER ESTUDIANTES #}
                 <div id="admin-mover-estudiantes" class="content-section">
                     <div class="section-topbar">
                         <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
@@ -7323,10 +7359,9 @@
               <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:18px 20px;margin-bottom:14px;">
                 <div style="font-size:.72rem;font-weight:800;color:#1d4ed8;letter-spacing:.08em;margin-bottom:14px;"><i class="fas fa-stethoscope"></i> DIAGNÓSTICOS</div>
                 <div style="display:grid;gap:10px;">
-                  <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Diagnóstico Principal</label>
-                    <textarea id="aem-diag1" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
-                  <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Diagnóstico 2</label>
-                    <textarea id="aem-diag2" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
+                  <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Diagnóstico Principal <span style="font-size:.68rem;color:#94a3b8;">(se guarda en diagnóstico 1 y 2)</span></label>
+                    <textarea id="aem-diag1" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;" oninput="document.getElementById('aem-diag2').value=this.value"></textarea>
+                    <input type="hidden" id="aem-diag2"></div>
                   <div><label style="font-size:.75rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Diagnóstico Complementario</label>
                     <textarea id="aem-diag-comp" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea></div>
                 </div>
@@ -7510,6 +7545,8 @@
                     if (typeof cargarStatsProyectos === 'function') cargarStatsProyectos();
                 } else if (sectionId === 'admin-tokens') {
                     cargarTokensPorProyecto();
+                } else if (sectionId === 'admin-evaluaciones') {
+                    cargarEvaluacionesAdmin();
                 } else if (sectionId === 'admin-mover-estudiantes') {
                     mvInicializar();
                 } else if (sectionId === 'admin-calendar-doctoras') {
@@ -7806,6 +7843,7 @@
         }
 
         function backToSchoolList() {
+            detenerPollingCorrecciones();
             document.getElementById('access-modal-container').style.display = 'none';
             document.getElementById('school-list-container').style.display  = '';
         }
@@ -7861,6 +7899,127 @@
 
         async function descargarTodosTokens() {
             window.open('/api/admin/tokens_pdf_todos', '_blank');
+        }
+
+        // ── EVALUACIONES DE SERVICIO ──────────────────────────────────────────
+        let _evalRatings = { servicio: 0, doctora: 0 };
+
+        // Inicializar interacción estrellas
+        document.querySelectorAll('.eval-star').forEach(star => {
+            star.addEventListener('click', () => {
+                const grupo = star.dataset.grupo;
+                const val   = parseInt(star.dataset.val);
+                _evalRatings[grupo] = val;
+                document.querySelectorAll(`.eval-star[data-grupo="${grupo}"]`).forEach(s => {
+                    s.style.opacity = parseInt(s.dataset.val) <= val ? '1' : '0.3';
+                    s.style.color   = parseInt(s.dataset.val) <= val ? '#f59e0b' : 'inherit';
+                });
+            });
+            star.addEventListener('mouseover', () => {
+                const grupo = star.dataset.grupo;
+                const val   = parseInt(star.dataset.val);
+                document.querySelectorAll(`.eval-star[data-grupo="${grupo}"]`).forEach(s => {
+                    s.style.opacity = parseInt(s.dataset.val) <= val ? '1' : '0.3';
+                });
+            });
+            star.addEventListener('mouseout', () => {
+                const grupo = star.dataset.grupo;
+                const saved = _evalRatings[grupo] || 0;
+                document.querySelectorAll(`.eval-star[data-grupo="${grupo}"]`).forEach(s => {
+                    s.style.opacity = parseInt(s.dataset.val) <= saved ? '1' : '0.3';
+                    s.style.color   = parseInt(s.dataset.val) <= saved ? '#f59e0b' : 'inherit';
+                });
+            });
+        });
+
+        function mostrarEvalModal(schoolId) {
+            // Solo mostrar 1 vez por colegio — usar localStorage
+            const key = 'eval_done_' + schoolId;
+            if (localStorage.getItem(key)) return;
+            _evalRatings = { servicio: 0, doctora: 0 };
+            // Reset estrellas
+            document.querySelectorAll('.eval-star').forEach(s => {
+                s.style.opacity = '0.3'; s.style.color = 'inherit';
+            });
+            document.getElementById('eval-comentario').value = '';
+            document.getElementById('eval-modal-overlay').style.display = 'flex';
+            window._evalSchoolId = schoolId;
+        }
+
+        function cerrarEvalModal() {
+            document.getElementById('eval-modal-overlay').style.display = 'none';
+            // Marcar como "ya mostrado" aunque no haya enviado
+            if (window._evalSchoolId) localStorage.setItem('eval_done_' + window._evalSchoolId, '1');
+        }
+
+        async function enviarEvaluacion() {
+            if (!_evalRatings.servicio || !_evalRatings.doctora) {
+                alert('Por favor selecciona una puntuación en ambas categorías'); return;
+            }
+            const btn = document.getElementById('eval-enviar-btn');
+            btn.disabled = true; btn.textContent = 'Enviando…';
+            try {
+                await fetch('/api/evaluacion/enviar', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({
+                        school_id:       window._evalSchoolId || '',
+                        rating_servicio: _evalRatings.servicio,
+                        rating_doctora:  _evalRatings.doctora,
+                        comentario:      document.getElementById('eval-comentario').value.trim()
+                    })
+                });
+                if (window._evalSchoolId) localStorage.setItem('eval_done_' + window._evalSchoolId, '1');
+                document.getElementById('eval-modal-overlay').style.display = 'none';
+                Swal.fire({ icon:'success', title:'¡Gracias!', text:'Tu evaluación fue registrada.', timer:2000, showConfirmButton:false });
+            } catch(e) { alert('Error al enviar evaluación'); }
+            btn.disabled = false; btn.innerHTML = 'Enviar Evaluación';
+        }
+
+        // ── EVALUACIONES ADMIN ────────────────────────────────────────────────
+        async function cargarEvaluacionesAdmin() {
+            const lista = document.getElementById('eval-lista');
+            if (!lista) return;
+            lista.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i></div>';
+            try {
+                const res  = await fetch('/api/admin/evaluaciones');
+                const data = await res.json();
+                if (!data.success || !data.evaluaciones?.length) {
+                    lista.innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;font-size:.85rem;"><i class="fas fa-star" style="display:block;font-size:2rem;margin-bottom:8px;opacity:.3;"></i>Sin evaluaciones aún.</div>';
+                    return;
+                }
+                const evs = data.evaluaciones;
+                const prom = (evs.reduce((a,e)=>(a+(e.rating_servicio||0)+(e.rating_doctora||0)),0)/(evs.length*2)).toFixed(1);
+                const hoy  = new Date(); const mes = hoy.getMonth(); const anio = hoy.getFullYear();
+                const delMes = evs.filter(e=>{ const d=new Date(e.created_at); return d.getMonth()===mes&&d.getFullYear()===anio;}).length;
+                document.getElementById('eval-promedio-general').textContent = prom;
+                document.getElementById('eval-total').textContent = evs.length;
+                document.getElementById('eval-mes').textContent  = delMes;
+                const stars = n => '★'.repeat(Math.round(n)) + '☆'.repeat(5-Math.round(n));
+                document.getElementById('eval-estrellas-promedio').textContent = stars(parseFloat(prom));
+                lista.innerHTML = evs.map(e => `
+                    <div style="background:white;border:1.5px solid #f1f5f9;border-radius:14px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:700;font-size:.88rem;color:#0f2030;margin-bottom:3px;">${e.school_id||'Establecimiento'}</div>
+                            <div style="font-size:.72rem;color:#94a3b8;">${e.created_at ? new Date(e.created_at).toLocaleDateString('es-CL') : ''}</div>
+                            ${e.comentario ? `<div style="font-size:.8rem;color:#475569;margin-top:6px;font-style:italic;">"${e.comentario}"</div>` : ''}
+                        </div>
+                        <div style="display:flex;gap:16px;flex-shrink:0;">
+                            <div style="text-align:center;">
+                                <div style="font-size:.65rem;font-weight:700;color:#64748b;margin-bottom:2px;">SERVICIO</div>
+                                <div style="color:#f59e0b;font-size:1rem;">${stars(e.rating_servicio||0)}</div>
+                                <div style="font-size:.8rem;font-weight:800;color:#92400e;">${e.rating_servicio||0}/5</div>
+                            </div>
+                            <div style="text-align:center;">
+                                <div style="font-size:.65rem;font-weight:700;color:#64748b;margin-bottom:2px;">DOCTORA</div>
+                                <div style="color:#f59e0b;font-size:1rem;">${stars(e.rating_doctora||0)}</div>
+                                <div style="font-size:.8rem;font-weight:800;color:#92400e;">${e.rating_doctora||0}/5</div>
+                            </div>
+                        </div>
+                    </div>`).join('');
+            } catch(e) {
+                lista.innerHTML = '<div style="color:#e74c3c;text-align:center;padding:20px;font-size:.85rem;">Error al cargar evaluaciones.</div>';
+            }
         }
 
         // ── MOVER ESTUDIANTES ─────────────────────────────────────────────
@@ -8071,6 +8230,18 @@
         async function cargarCorreccionesResueltas(schoolId) {
             const list = document.getElementById('correcciones-resueltas-list');
             if (!list) return;
+            // Iniciar polling automático cada 45s para mostrar correcciones sin recargar
+            if (window._corrPollTimer) clearInterval(window._corrPollTimer);
+            window._corrPollSchoolId = schoolId;
+            window._corrPollTimer = setInterval(async () => {
+                if (window._corrPollSchoolId) await _fetchCorreccionesResueltas(window._corrPollSchoolId);
+            }, 45000);
+            await _fetchCorreccionesResueltas(schoolId);
+        }
+
+        async function _fetchCorreccionesResueltas(schoolId) {
+            const list = document.getElementById('correcciones-resueltas-list');
+            if (!list) return;
             try {
                 const res  = await fetch('/api/coordinador_escuela/correcciones_resueltas/' + encodeURIComponent(schoolId));
                 const data = await res.json();
@@ -8138,6 +8309,12 @@
             } catch(e) {
                 list.innerHTML = '<div style="color:#e74c3c;font-size:.8rem;text-align:center;padding:14px;">Error al cargar correcciones.</div>';
             }
+        }  // fin _fetchCorreccionesResueltas
+
+        // Detener polling al salir de la nómina
+        function detenerPollingCorrecciones() {
+            if (window._corrPollTimer) { clearInterval(window._corrPollTimer); window._corrPollTimer = null; }
+            window._corrPollSchoolId = null;
         }
 
         async function marcarCorrVista(solicitudId, cardEl) {
@@ -8211,6 +8388,8 @@
                     renderNominas(data.nominas, nominasContainer, noResultsMsg);
                     const schoolId = document.getElementById('current-school-id').value;
                     if (typeof cargarCorreccionesResueltas === 'function') cargarCorreccionesResueltas(schoolId);
+                    // Mostrar modal de evaluación (solo 1 vez por colegio)
+                    setTimeout(() => mostrarEvalModal(schoolId), 2500);
                     
                 } else {
                     Swal.fire({
@@ -8551,8 +8730,8 @@
                     document.getElementById('aem-derivaciones').value  = a.derivaciones          || '';
                 } else if (ft === 'medicina_familiar') {
                     document.getElementById('aem-campos-familiar').style.display = 'grid';
-                    document.getElementById('aem-diag1').value          = a.diagnostico_1                    || '';
-                    document.getElementById('aem-diag2').value          = a.diagnostico_2                    || '';
+                    document.getElementById('aem-diag1').value          = a.diagnostico_1 || a.diagnostico_2 || '';
+                    document.getElementById('aem-diag2').value          = a.diagnostico_1 || a.diagnostico_2 || '';
                     document.getElementById('aem-diag-comp').value      = a.diagnostico_complementario       || '';
                     document.getElementById('aem-altura').value         = a.altura                           || '';
                     document.getElementById('aem-peso').value           = a.peso                             || '';
@@ -13474,6 +13653,43 @@ async function coordExportarExcel(tipo) {
     }
 }
 </script>
+<!-- ── MODAL EVALUACIÓN DE SERVICIO (coordinador_escuela) ── -->
+<div id="eval-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:white;border-radius:24px;padding:32px 28px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center;">
+    <div style="width:64px;height:64px;background:linear-gradient(135deg,#fef9c3,#fef3c7);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.8rem;">⭐</div>
+    <h3 style="font-size:1.1rem;font-weight:800;color:#0f2030;margin:0 0 6px;">¿Cómo fue la atención?</h3>
+    <p style="font-size:.83rem;color:#64748b;margin:0 0 24px;line-height:1.5;">Evalúa el servicio y la atención recibida por parte del equipo CardioHome</p>
+    <!-- Servicio general -->
+    <div style="margin-bottom:18px;">
+      <div style="font-size:.78rem;font-weight:700;color:#374151;margin-bottom:8px;">Servicio General</div>
+      <div id="stars-servicio" style="display:flex;justify-content:center;gap:8px;">
+        <span class="eval-star" data-grupo="servicio" data-val="1" style="font-size:2rem;cursor:pointer;opacity:.3;transition:opacity .15s;">★</span>
+        <span class="eval-star" data-grupo="servicio" data-val="2" style="font-size:2rem;cursor:pointer;opacity:.3;transition:opacity .15s;">★</span>
+        <span class="eval-star" data-grupo="servicio" data-val="3" style="font-size:2rem;cursor:pointer;opacity:.3;transition:opacity .15s;">★</span>
+        <span class="eval-star" data-grupo="servicio" data-val="4" style="font-size:2rem;cursor:pointer;opacity:.3;transition:opacity .15s;">★</span>
+        <span class="eval-star" data-grupo="servicio" data-val="5" style="font-size:2rem;cursor:pointer;opacity:.3;transition:opacity .15s;">★</span>
+      </div>
+    </div>
+    <!-- Atención doctora -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:.78rem;font-weight:700;color:#374151;margin-bottom:8px;">Atención de la Doctora</div>
+      <div id="stars-doctora" style="display:flex;justify-content:center;gap:8px;">
+        <span class="eval-star" data-grupo="doctora" data-val="1" style="font-size:2rem;cursor:pointer;opacity:.3;transition:opacity .15s;">★</span>
+        <span class="eval-star" data-grupo="doctora" data-val="2" style="font-size:2rem;cursor:pointer;opacity:.3;transition:opacity .15s;">★</span>
+        <span class="eval-star" data-grupo="doctora" data-val="3" style="font-size:2rem;cursor:pointer;opacity:.3;transition:opacity .15s;">★</span>
+        <span class="eval-star" data-grupo="doctora" data-val="4" style="font-size:2rem;cursor:pointer;opacity:.3;transition:opacity .15s;">★</span>
+        <span class="eval-star" data-grupo="doctora" data-val="5" style="font-size:2rem;cursor:pointer;opacity:.3;transition:opacity .15s;">★</span>
+      </div>
+    </div>
+    <!-- Comentario opcional -->
+    <textarea id="eval-comentario" placeholder="Comentario opcional…" rows="2"
+      style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.85rem;font-family:inherit;resize:none;box-sizing:border-box;margin-bottom:16px;"></textarea>
+    <div style="display:flex;gap:10px;">
+      <button onclick="cerrarEvalModal()" style="flex:1;padding:12px;border:1.5px solid #e2e8f0;border-radius:12px;background:white;color:#64748b;font-size:.85rem;font-weight:600;cursor:pointer;">Ahora no</button>
+      <button onclick="enviarEvaluacion()" id="eval-enviar-btn" style="flex:2;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#0f3460,#1c67a3);color:white;font-size:.88rem;font-weight:800;cursor:pointer;">Enviar Evaluación</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>

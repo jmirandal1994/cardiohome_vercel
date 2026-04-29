@@ -8260,5 +8260,64 @@ def _generar_pdf_bytes_alumno_id(alumno_id):
         return None
 
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  EVALUACIONES DE SERVICIO
+# ─────────────────────────────────────────────────────────────────────────────
+@app.route('/api/evaluacion/enviar', methods=['POST'])
+def api_evaluacion_enviar():
+    """Coordinador escuela envía evaluación de 1-5 estrellas."""
+    if session.get('usuario') != 'coordinador_escuela':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        data = request.get_json() or {}
+        school_id       = data.get('school_id', '').strip()
+        rating_servicio = int(data.get('rating_servicio', 0))
+        rating_doctora  = int(data.get('rating_doctora', 0))
+        comentario      = data.get('comentario', '').strip()
+
+        if not (1 <= rating_servicio <= 5) or not (1 <= rating_doctora <= 5):
+            return jsonify({"success": False, "message": "Puntuación inválida"}), 400
+
+        payload = {
+            "school_id":        school_id,
+            "coord_id":         session.get('usuario_id'),
+            "coord_nombre":     session.get('nombre', ''),
+            "rating_servicio":  rating_servicio,
+            "rating_doctora":   rating_doctora,
+            "comentario":       comentario or None,
+        }
+        res = requests.post(
+            f"{SUPABASE_URL}/rest/v1/evaluaciones_servicio",
+            json=payload,
+            headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=minimal"}
+        )
+        if res.ok:
+            return jsonify({"success": True})
+        return jsonify({"success": False, "message": res.text}), 500
+    except Exception as e:
+        print(f"ERROR api_evaluacion_enviar: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/admin/evaluaciones', methods=['GET'])
+def api_admin_evaluaciones():
+    """Admin ve todas las evaluaciones de servicio."""
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/evaluaciones_servicio"
+            f"?select=id,school_id,coord_nombre,rating_servicio,rating_doctora,comentario,created_at"
+            f"&order=created_at.desc",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        evs = res.json() if res.ok else []
+        return jsonify({"success": True, "evaluaciones": evs})
+    except Exception as e:
+        print(f"ERROR api_admin_evaluaciones: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))

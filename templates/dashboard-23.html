@@ -1172,6 +1172,7 @@
             
             {# NUEVA SECCIÓN DE BIENVENIDA (Reemplaza el antiguo resumen del proyecto) #}
             {% if usuario != 'coordinadora' and usuario != 'coordinador_escuela' %}
+
             <div id="welcome-section" class="content-section active">
 <style>
 /* ══ WELCOME REDESIGN — CardioHome Corporate ══ */
@@ -2921,127 +2922,6 @@
                                 <div style="color:#94a3b8;font-size:.82rem;text-align:center;padding:16px;">
                                     <i class="fas fa-spinner fa-spin"></i> Cargando…
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {# SECCIÓN: OPERATIVO MASIVO (DOCTORA) #}
-                <div id="operativo-masivo" class="content-section">
-                    <div class="section-topbar">
-                        <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
-                        <i class="fa-solid fa-bolt section-icon" style="color:#f59e0b;"></i>
-                        <h2 class="section-title">Operativo Masivo</h2>
-                    </div>
-
-                    <!-- Vista lista de nóminas masivas -->
-                    <div id="op-lista-view">
-                        <div class="card" style="margin-bottom:16px;">
-                            <p style="font-size:.84rem;color:#64748b;margin:0;line-height:1.6;">
-                                Selecciona el operativo al que pertenece el alumno que vas a evaluar. El sistema usará tu formulario asignado automáticamente.
-                            </p>
-                        </div>
-                        <div id="op-nominas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
-                            <div style="color:#94a3b8;font-size:.82rem;text-align:center;padding:30px;grid-column:1/-1;">
-                                <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;display:block;margin-bottom:8px;"></i>Cargando operativos…
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Vista interior de una nómina masiva -->
-                    <div id="op-nomina-view" style="display:none;">
-                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
-                            <button onclick="volverOpLista()" style="background:white;border:1.5px solid #e2e8f0;border-radius:10px;padding:8px 14px;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
-                                <i class="fas fa-arrow-left"></i> Volver
-                            </button>
-                            <h3 id="op-nomina-titulo" style="margin:0;font-size:1rem;font-weight:800;color:#0f2030;"></h3>
-                            <span id="op-nomina-tipo-badge"></span>
-                        </div>
-
-                        <!-- Agregar alumno -->
-                        <div class="card" style="margin-bottom:16px;border-left:4px solid #f59e0b;">
-                            <div style="font-weight:800;font-size:.86rem;color:#0f2030;margin-bottom:14px;"><i class="fas fa-user-plus" style="color:#f59e0b;margin-right:6px;"></i>Agregar Alumno al Operativo</div>
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                                <div style="grid-column:1/-1;">
-                                    <label style="font-size:.74rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Nombre completo *</label>
-                                    <input id="op-nombre" type="text" placeholder="Nombres y Apellidos"
-                                        style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
-                                </div>
-                                <div>
-                                    <label style="font-size:.74rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">RUT *</label>
-                                    <input id="op-rut" type="text" placeholder="Ej: 12.345.678-9"
-                                        style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
-                                </div>
-                                <div>
-                                    <label style="font-size:.74rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Fecha Nacimiento</label>
-                                    <input id="op-fecha-nac" type="date"
-                                        style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
-                                </div>
-                                <div>
-                                    <label style="font-size:.74rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Sexo</label>
-                                    <select id="op-sexo" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.88rem;font-family:inherit;box-sizing:border-box;background:white;">
-                                        <option value="">— Sin especificar —</option>
-                                        <option value="M">Masculino</option>
-                                        <option value="F">Femenino</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style="font-size:.74rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Nacionalidad</label>
-                                    <input id="op-nacionalidad" type="text" value="Chilena"
-                                        style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
-                                </div>
-                                <div style="display:flex;align-items:flex-end;">
-                                    <button onclick="opAgregarAlumno()" id="op-agregar-btn"
-                                        style="width:100%;background:linear-gradient(135deg,#f59e0b,#ea580c);color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:.88rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
-                                        <i class="fas fa-plus-circle"></i> Agregar y Evaluar
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Lista alumnos del operativo -->
-                        <div class="card">
-                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-                                <div style="font-weight:800;font-size:.86rem;color:#0f2030;"><i class="fas fa-users" style="color:#0f3460;margin-right:6px;"></i>Alumnos en este Operativo</div>
-                                <button onclick="opCargarAlumnos()" style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:6px 12px;font-size:.76rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;">
-                                    <i class="fas fa-rotate"></i> Actualizar
-                                </button>
-                            </div>
-                            <div id="op-alumnos-lista" style="display:flex;flex-direction:column;gap:8px;">
-                                <div style="color:#94a3b8;text-align:center;padding:20px;font-size:.82rem;">Sin alumnos aún</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="admin-evaluaciones" class="content-section">
-                    <div class="section-topbar">
-                        <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
-                        <i class="fa-solid fa-star section-icon" style="color:#f59e0b;"></i>
-                        <h2 class="section-title">Evaluaciones de Servicio</h2>
-                    </div>
-                    <div class="card">
-                        <!-- Resumen -->
-                        <div id="eval-resumen" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;">
-                            <div style="background:linear-gradient(135deg,#fef9c3,#fef3c7);border:1.5px solid #fbbf24;border-radius:14px;padding:18px;text-align:center;">
-                                <div style="font-size:2rem;font-weight:900;color:#92400e;" id="eval-promedio-general">—</div>
-                                <div style="font-size:.75rem;color:#92400e;font-weight:700;margin-top:4px;">Promedio General</div>
-                                <div id="eval-estrellas-promedio" style="font-size:1.1rem;color:#f59e0b;margin-top:4px;">★★★★★</div>
-                            </div>
-                            <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;border-radius:14px;padding:18px;text-align:center;">
-                                <div style="font-size:2rem;font-weight:900;color:#065f46;" id="eval-total">—</div>
-                                <div style="font-size:.75rem;color:#065f46;font-weight:700;margin-top:4px;">Total Evaluaciones</div>
-                            </div>
-                            <div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1.5px solid #93c5fd;border-radius:14px;padding:18px;text-align:center;">
-                                <div style="font-size:2rem;font-weight:900;color:#1d4ed8;" id="eval-mes">—</div>
-                                <div style="font-size:.75rem;color:#1d4ed8;font-weight:700;margin-top:4px;">Este mes</div>
-                            </div>
-                        </div>
-                        <!-- Lista de evaluaciones -->
-                        <div id="eval-lista" style="display:flex;flex-direction:column;gap:10px;">
-                            <div style="text-align:center;padding:30px;color:#94a3b8;">
-                                <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;display:block;margin-bottom:8px;"></i>
-                                Cargando evaluaciones…
                             </div>
                         </div>
                     </div>
@@ -6571,6 +6451,94 @@
                     </div>
                 </div>
 
+            <div id="operativo-masivo" class="content-section">
+                    <div class="section-topbar">
+                        <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                        <i class="fa-solid fa-bolt section-icon" style="color:#f59e0b;"></i>
+                        <h2 class="section-title">Operativo Masivo</h2>
+                    </div>
+
+                    <!-- Vista lista de nóminas masivas -->
+                    <div id="op-lista-view">
+                        <div class="card" style="margin-bottom:16px;">
+                            <p style="font-size:.84rem;color:#64748b;margin:0;line-height:1.6;">
+                                Selecciona el operativo al que pertenece el alumno que vas a evaluar. El sistema usará tu formulario asignado automáticamente.
+                            </p>
+                        </div>
+                        <div id="op-nominas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
+                            <div style="color:#94a3b8;font-size:.82rem;text-align:center;padding:30px;grid-column:1/-1;">
+                                <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;display:block;margin-bottom:8px;"></i>Cargando operativos…
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vista interior de una nómina masiva -->
+                    <div id="op-nomina-view" style="display:none;">
+                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+                            <button onclick="volverOpLista()" style="background:white;border:1.5px solid #e2e8f0;border-radius:10px;padding:8px 14px;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                                <i class="fas fa-arrow-left"></i> Volver
+                            </button>
+                            <h3 id="op-nomina-titulo" style="margin:0;font-size:1rem;font-weight:800;color:#0f2030;"></h3>
+                            <span id="op-nomina-tipo-badge"></span>
+                        </div>
+
+                        <!-- Agregar alumno -->
+                        <div class="card" style="margin-bottom:16px;border-left:4px solid #f59e0b;">
+                            <div style="font-weight:800;font-size:.86rem;color:#0f2030;margin-bottom:14px;"><i class="fas fa-user-plus" style="color:#f59e0b;margin-right:6px;"></i>Agregar Alumno al Operativo</div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                <div style="grid-column:1/-1;">
+                                    <label style="font-size:.74rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Nombre completo *</label>
+                                    <input id="op-nombre" type="text" placeholder="Nombres y Apellidos"
+                                        style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
+                                </div>
+                                <div>
+                                    <label style="font-size:.74rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">RUT *</label>
+                                    <input id="op-rut" type="text" placeholder="Ej: 12.345.678-9"
+                                        style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
+                                </div>
+                                <div>
+                                    <label style="font-size:.74rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Fecha Nacimiento</label>
+                                    <input id="op-fecha-nac" type="date"
+                                        style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
+                                </div>
+                                <div>
+                                    <label style="font-size:.74rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Sexo</label>
+                                    <select id="op-sexo" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.88rem;font-family:inherit;box-sizing:border-box;background:white;">
+                                        <option value="">— Sin especificar —</option>
+                                        <option value="M">Masculino</option>
+                                        <option value="F">Femenino</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size:.74rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Nacionalidad</label>
+                                    <input id="op-nacionalidad" type="text" value="Chilena"
+                                        style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
+                                </div>
+                                <div style="display:flex;align-items:flex-end;">
+                                    <button onclick="opAgregarAlumno()" id="op-agregar-btn"
+                                        style="width:100%;background:linear-gradient(135deg,#f59e0b,#ea580c);color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:.88rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
+                                        <i class="fas fa-plus-circle"></i> Agregar y Evaluar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lista alumnos del operativo -->
+                        <div class="card">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                                <div style="font-weight:800;font-size:.86rem;color:#0f2030;"><i class="fas fa-users" style="color:#0f3460;margin-right:6px;"></i>Alumnos en este Operativo</div>
+                                <button onclick="opCargarAlumnos()" style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:6px 12px;font-size:.76rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;">
+                                    <i class="fas fa-rotate"></i> Actualizar
+                                </button>
+                            </div>
+                            <div id="op-alumnos-lista" style="display:flex;flex-direction:column;gap:8px;">
+                                <div style="color:#94a3b8;text-align:center;padding:20px;font-size:.82rem;">Sin alumnos aún</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
                 <div id="school-contact" class="content-section">
             <div class="section-topbar">
                 <button class="back-btn" onclick="showSection('school-dashboard')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
@@ -7735,7 +7703,7 @@
                 } else if (sectionId === 'admin-nomina-masiva') {
                     cargarListaMasivasAdmin();
                 } else if (sectionId === 'operativo-masivo') {
-                    opCargarNominas();
+                    setTimeout(opCargarNominas, 100);
                 } else if (sectionId === 'admin-mover-estudiantes') {
                     mvInicializar();
                 } else if (sectionId === 'admin-calendar-doctoras') {

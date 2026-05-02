@@ -8319,5 +8319,170 @@ def api_admin_evaluaciones():
         return jsonify({"success": False, "message": str(e)}), 500
 
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  OPERATIVO MASIVO
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route('/api/operativo/nominas_masivas', methods=['GET'])
+def api_operativo_nominas_masivas():
+    """Doctora obtiene lista de nóminas masivas activas (sin doctora fija asignada)."""
+    if 'usuario' not in session or session.get('usuario') not in ('doctora', 'admin'):
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+            f"?tipo_nomina=eq.MASIVA"
+            f"&select=id,nombre_nomina,nombre_colegio,form_type,proyecto_id"
+            f"&order=nombre_nomina.asc",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        nominas = res.json() if res.ok else []
+        return jsonify({"success": True, "nominas": nominas})
+    except Exception as e:
+        print(f"ERROR api_operativo_nominas_masivas: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/operativo/alumnos_masiva/<nomina_id>', methods=['GET'])
+def api_operativo_alumnos_masiva(nomina_id):
+    """Lista alumnos de una nómina masiva con info de doctora evaluadora."""
+    if 'usuario' not in session:
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+            f"?nomina_id=eq.{nomina_id}"
+            f"&select=id,nombre,rut,fecha_nacimiento,sexo,fecha_evaluacion,evaluado_flag,"
+            f"doctora_evaluadora_id,estado_asistencia"
+            f"&order=nombre.asc",
+            headers=SUPABASE_SERVICE_HEADERS
+        )
+        alumnos = res.json() if res.ok else []
+        # Obtener nombres de doctoras
+        doctora_ids = list({a.get('doctora_evaluadora_id') for a in alumnos if a.get('doctora_evaluadora_id')})
+        doctoras_map = {}
+        if doctora_ids:
+            ids_str = ','.join(f'"{d}"' for d in doctora_ids)
+            res_doc = requests.get(
+                f"{SUPABASE_URL}/rest/v1/doctoras?id=in.({','.join(doctora_ids)})&select=id,nombre",
+                headers=SUPABASE_SERVICE_HEADERS
+            )
+            if res_doc.ok:
+                doctoras_map = {d['id']: d['nombre'] for d in res_doc.json()}
+        for a in alumnos:
+            a['doctora_nombre'] = doctoras_map.get(a.get('doctora_evaluadora_id'), '—')
+        return jsonify({"success": True, "alumnos": alumnos})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/operativo/agregar_alumno', methods=['POST'])
+def api_operativo_agregar_alumno():
+    """
+    Doctora agrega alumno a nómina masiva.
+    - El alumno queda con doctora_evaluadora_id = doctora actual
+    - El PDF usará el formulario específico de esa doctora
+    """
+    if 'usuario' not in session or session.get('usuario') not in ('doctora', 'admin'):
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        data       = request.get_json() or {}
+        nomina_id  = data.get('nomina_id', '').strip()
+        nombre     = data.get('nombre', '').strip()
+        rut        = data.get('rut', '').strip()
+        fecha_nac  = data.get('fecha_nacimiento') or None
+        sexo       = data.get('sexo') or None
+        nacionalidad = data.get('nacionalidad', 'Chilena').strip()
+        form_type  = data.get('form_type', 'neurologia')  # elegido por la doctora
+
+        if not nomina_id or not nombre or not rut:
+            return jsonify({"success": False, "message": "Nómina, nombre y RUT son requeridos"}), 400
+
+        doctora_id = session.get('usuario_id')
+
+        new_id = str(uuid.uuid4())
+        payload = {
+            "id":                    new_id,
+            "nomina_id":             nomina_id,
+            "nombre":                nombre,
+            "rut":                   rut,
+            "fecha_nacimiento":      fecha_nac,
+            "sexo":                  sexo,
+            "nacionalidad":          nacionalidad,
+            "estado_asistencia":     "activo",
+            "evaluado_flag":         False,
+            "doctora_evaluadora_id": doctora_id,  # PDF usará formulario de esta doctora
+        }
+        res = requests.post(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina",
+            headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=representation"},
+            json=payload
+        )
+        if res.status_code == 201:
+            nuevo = res.json()[0] if res.json() else {}
+            return jsonify({
+                "success": True,
+                "id": nuevo.get('id', new_id),
+                "message": "Alumno agregado al operativo"
+            })
+        return jsonify({"success": False, "message": f"Error: {res.text}"}), 500
+    except Exception as e:
+        print(f"ERROR api_operativo_agregar_alumno: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/admin/crear_nomina_masiva', methods=['POST'])
+def api_admin_crear_nomina_masiva():
+    """Admin crea una nómina masiva vacía, sin doctora asignada."""
+    if session.get('usuario') != 'admin':
+        return jsonify({"success": False, "message": "No autorizado"}), 403
+    try:
+        data            = request.get_json() or {}
+        nombre_nomina   = data.get('nombre_nomina', '').strip()
+        nombre_colegio  = data.get('nombre_colegio', 'OPERATIVO MASIVO').strip()
+        proyecto_id     = data.get('proyecto_id', '').strip() or None
+        coord_general   = data.get('coord_general_id', '').strip() or None
+        coord_escuela   = data.get('coord_escuela_id', '').strip() or None
+        form_type       = data.get('form_type', 'neurologia')
+        token           = data.get('token_acceso', '').strip() or None
+
+        if not nombre_nomina:
+            return jsonify({"success": False, "message": "Nombre de nómina requerido"}), 400
+
+        new_id = str(uuid.uuid4())
+        token_generado = token or secrets.token_hex(4)
+
+        payload = {
+            "id":               new_id,
+            "nombre_nomina":    nombre_nomina,
+            "nombre_colegio":   nombre_colegio,
+            "tipo_nomina":      "MASIVA",
+            "form_type":        form_type,
+            "token_acceso":     token_generado,
+            "proyecto_id":      proyecto_id,
+            "coord_general_id": coord_general,
+            "coord_escuela_id": coord_escuela,
+            # Sin doctora_id — cualquier doctora puede agregar alumnos
+        }
+        res = requests.post(
+            f"{SUPABASE_URL}/rest/v1/nominas_medicas",
+            headers={**SUPABASE_SERVICE_HEADERS, "Prefer": "return=representation"},
+            json=payload
+        )
+        if res.status_code == 201:
+            nom = res.json()[0] if res.json() else {}
+            return jsonify({
+                "success": True,
+                "id": nom.get('id', new_id),
+                "token": token_generado,
+                "message": "Nómina masiva creada correctamente"
+            })
+        return jsonify({"success": False, "message": f"Error Supabase: {res.text}"}), 500
+    except Exception as e:
+        print(f"ERROR api_admin_crear_nomina_masiva: {e}")
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))

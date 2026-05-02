@@ -1600,7 +1600,12 @@
                     {% elif est_estado == 'extra' %}
                         <span class="status-badge extra-badge"><i class="fas fa-plus-circle"></i> Extra</span>
                     {% elif est.fecha_relleno is not none %}
-                        <span class="status-badge evaluated"><i class="fas fa-check-circle"></i> Evaluado</span>
+                        <span class="status-badge evaluated">
+                            <i class="fas fa-check-circle"></i> Evaluado
+                            {% if est.nombre_doctora_evaluadora %}
+                            <span style="font-size:.65rem;opacity:.85;margin-left:4px;">· {{ est.nombre_doctora_evaluadora }}</span>
+                            {% endif %}
+                        </span>
                     {% else %}
                         <span class="status-badge pending"><i class="fas fa-clock"></i> Pendiente</span>
                     {% endif %}
@@ -3966,11 +3971,12 @@
             const rut       = document.getElementById('nuevo-rut').value.trim();
             const fechaNac  = document.getElementById('nuevo-fecha-nac').value;
             const sexo      = document.getElementById('nuevo-sexo').value;
-            const nominaId  = document.querySelector('input[name="nomina_id"]')?.value
-                            || document.querySelector('[data-nomina-id]')?.getAttribute('data-nomina-id')
+            const nominaId  = window.location.pathname.split('/').filter(Boolean).pop()
+                            || document.querySelector('input[name="nomina_id"]')?.value
                             || '{{ session["current_nomina_id"] }}';
 
             if (!nombre || !rut) { alert('Nombre y RUT son obligatorios'); return; }
+            if (!nominaId) { alert('Error: no se pudo determinar la nómina. Recarga la página.'); return; }
 
             try {
                 const res = await fetch('/api/estudiante/agregar', {

@@ -1210,26 +1210,14 @@ def relleno_formulario(nomina_id):
     url_estudiantes = (
         f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
         f"?nomina_id=eq.{nomina_id}"
-        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,check_cirugiasi,check_retraso,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,check_caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,fecha_reevaluacion_select,motivo_consulta,observacion_neurologia,observaciones,diagnostico_sospecha,diagnostico_definitivo,estado_asistencia,motivo_ausencia,doctora_evaluadora_id"
+        f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,estado_general,diagnostico,derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,check_vaginal,check_prematuro,check_acorde,check_retrasogeneralizado,check_esquemac,check_esquemai,check_alergiano,check_alergiasi,check_cirugiano,check_cirugiasi,check_retraso,check_visionsinalteracion,check_visionrefraccion,check_audicionnormal,check_hipoacusia,check_tapondecerumen,check_sinhallazgos,check_caries,check_apinamientodental,check_retenciondental,check_frenillolingual,check_hipertrofia,altura,peso,imc,indicaciones,fecha_reevaluacion_select,motivo_consulta,observacion_neurologia,observaciones,diagnostico_sospecha,diagnostico_definitivo,estado_asistencia,motivo_ausencia" 
         f"&order=nombre.asc"
     )
 
     try:
-        res_estudiantes = requests.get(url_estudiantes, headers=SUPABASE_SERVICE_HEADERS)
+        res_estudiantes = requests.get(url_estudiantes, headers=SUPABASE_SERVICE_HEADERS) 
         res_estudiantes.raise_for_status()
         estudiantes_raw = res_estudiantes.json()
-
-        # Mapa de nombres de doctoras para mostrar en nóminas compartidas
-        doctoras_ids_eval = list({e.get('doctora_evaluadora_id') for e in estudiantes_raw if e.get('doctora_evaluadora_id')})
-        doctoras_nombre_map = {}
-        if doctoras_ids_eval:
-            res_doc = requests.get(
-                f"{SUPABASE_URL}/rest/v1/doctoras?id=in.({','.join(doctoras_ids_eval)})&select=id,nombre,usuario",
-                headers=SUPABASE_SERVICE_HEADERS
-            )
-            if res_doc.ok:
-                for d in res_doc.json():
-                    doctoras_nombre_map[d['id']] = d.get('nombre') or d.get('usuario', 'Doctora')
         
         # 3. Preparar los datos de estudiantes para el template
         estudiantes = []
@@ -1271,9 +1259,6 @@ def relleno_formulario(nomina_id):
             sexo_db = (est.get('sexo') or "").upper()
             est['genero_f'] = (sexo_db == 'F')
             est['genero_m'] = (sexo_db == 'M')
-            # Nombre de doctora evaluadora para nóminas compartidas
-            did_eval = est.get('doctora_evaluadora_id')
-            est['nombre_doctora_evaluadora'] = doctoras_nombre_map.get(did_eval, '') if did_eval else ''
             
             estudiantes.append(est)
         
@@ -1292,6 +1277,13 @@ def relleno_formulario(nomina_id):
         # Guardar fecha_evaluacion_fija en sesión para que marcar_evaluado la use
         session['fecha_evaluacion_fija'] = nomina.get('fecha_evaluacion_fija') or None
 
+        # Determinar si es nómina compartida (tiene más de una doctora asignada)
+        es_nomina_compartida = bool(
+            nomina.get('doctora_id_2') or
+            nomina.get('doctora_id_3') or
+            nomina.get('doctora_id_4')
+        )
+
         base_render_params = {
             'nomina_id': nomina_id,
             'establecimiento_nombre': nomina['nombre_nomina'],
@@ -1303,6 +1295,7 @@ def relleno_formulario(nomina_id):
             'usuario': user_role,
             'token_acceso': nomina.get('token_acceso') or '',
             'fecha_evaluacion_fija': nomina.get('fecha_evaluacion_fija') or None,
+            'es_nomina_compartida': es_nomina_compartida,
         }
         
         # Redirección basada en la columna 'form_type'
@@ -5383,13 +5376,13 @@ def api_doctor_reporte_detalle():
         return jsonify({"success": False, "message": "ID de usuario no encontrado"}), 400
 
     try:
-        # 1. Nóminas donde la doctora está asignada (principal o compartida)
-        res_n = requests.get(
+        # 1. Nóminas de la doctora
+        url_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?or=(doctora_id.eq.{user_id},doctora_id_2.eq.{user_id},doctora_id_3.eq.{user_id},doctora_id_4.eq.{user_id})"
-            f"&select=id,nombre_nomina,nombre_colegio,form_type,doctora_id",
-            headers=SUPABASE_SERVICE_HEADERS
+            f"?doctora_id=eq.{user_id}"
+            f"&select=id,nombre_nomina,nombre_colegio,form_type"
         )
+        res_n = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
         nominas = res_n.json() if res_n.ok else []
 
         detalles = []
@@ -5397,35 +5390,19 @@ def api_doctor_reporte_detalle():
         global_evaluados = 0
 
         for nom in nominas:
-            nom_id = nom['id']
-            # Nómina compartida = esta doctora NO es la principal
-            es_compartida = nom.get('doctora_id') != user_id
-
-            if es_compartida:
-                # Solo alumnos que esta doctora evaluó
-                url_e = (
-                    f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                    f"?nomina_id=eq.{nom_id}"
-                    f"&doctora_evaluadora_id=eq.{user_id}"
-                    f"&estado_asistencia=in.(activo,extra)"
-                    f"&select=id,nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia,fecha_relleno,doctora_evaluadora_id"
-                    f"&order=nombre.asc"
-                )
-            else:
-                url_e = (
-                    f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                    f"?nomina_id=eq.{nom_id}"
-                    f"&estado_asistencia=in.(activo,extra)"
-                    f"&select=id,nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia,fecha_relleno,doctora_evaluadora_id"
-                    f"&order=nombre.asc"
-                )
-
+            url_e = (
+                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                f"?nomina_id=eq.{nom['id']}"
+                f"&estado_asistencia=in.(activo,extra)"
+                f"&select=id,nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia,fecha_relleno"
+                f"&order=nombre.asc"
+            )
             res_e = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS)
             alumnos = res_e.json() if res_e.ok else []
 
             url_aus = (
                 f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                f"?nomina_id=eq.{nom_id}"
+                f"?nomina_id=eq.{nom['id']}"
                 f"&estado_asistencia=in.(no_asiste_reemplazado,no_asiste_sin_reemplazo)"
                 f"&select=nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia"
                 f"&order=nombre.asc"
@@ -5439,15 +5416,12 @@ def api_doctor_reporte_detalle():
             global_evaluados += ev_count
 
             colegio = nom.get('nombre_colegio') or nom.get('nombre_nomina') or 'Sin nombre'
-            if es_compartida:
-                colegio += ' ⚡'
             detalles.append({
-                "colegio":       colegio,
-                "alumnos":       alumnos,
-                "ausentes":      ausentes,
-                "total":         total_count,
-                "evaluados":     ev_count,
-                "es_compartida": es_compartida,
+                "colegio":   colegio,
+                "alumnos":   alumnos,
+                "ausentes":  ausentes,
+                "total":     total_count,
+                "evaluados": ev_count
             })
 
         return jsonify({
@@ -6118,6 +6092,7 @@ def api_estudiante_agregar():
         diagnostico_previo  = data.get('diagnostico_previo') or None
         motivo_ingreso      = data.get('motivo_ingreso') or 'extra'
         estado_asist        = data.get('estado_asistencia') or 'extra'
+        motivo_consulta     = (data.get('motivo_consulta') or '').strip() or None  # colegio en nóminas compartidas
 
         if not nomina_id or not nombre:
             return jsonify({"success": False, "message": "nomina_id y nombre son requeridos"}), 400
@@ -6136,6 +6111,7 @@ def api_estudiante_agregar():
             "motivo_ausencia":       motivo_ingreso,
             "evaluado_flag":         False,
             "doctora_evaluadora_id": session.get('usuario_id'),
+            "motivo_consulta":       motivo_consulta,  # colegio del alumno en nóminas compartidas
         }
 
         res = requests.post(

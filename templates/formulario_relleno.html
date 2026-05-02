@@ -1131,10 +1131,10 @@
                 <input type="text" id="nuevo-edad-display" readonly placeholder="Auto" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;color:#334155;box-sizing:border-box;outline:none;background:#f1f5f9;cursor:default;">
             </div>
         </div>
-        <div id="campo-colegio-alumno" style="margin-bottom:12px;display:none;">
-            <label style="display:block;font-size:.8rem;font-weight:700;color:#0f3460;margin-bottom:5px;">
-                <i class="fas fa-school" style="font-size:.75rem;margin-right:4px;color:#f59e0b;"></i>
-                Colegio del Alumno <span style="font-size:.7rem;color:#94a3b8;font-weight:500;">(nómina compartida)</span>
+        <div id="campo-colegio-alumno" style="margin-bottom:12px;display:{{ 'block' if requiere_colegio_alumno else 'none' }};">
+            <label style="display:block;font-size:.8rem;font-weight:700;color:#92400e;margin-bottom:5px;">
+                <i class="fas fa-school" style="font-size:.75rem;margin-right:4px;"></i>
+                Colegio del Alumno{% if requiere_colegio_alumno %} <span style="color:#dc2626;">*</span>{% endif %}
             </label>
             <input type="text" id="nuevo-colegio" placeholder="Ej: Escuela Básica Los Pinos"
                 style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid #f59e0b;font-size:.85rem;color:#334155;font-family:inherit;box-sizing:border-box;outline:none;background:#fffbeb;">
@@ -1493,11 +1493,6 @@
         ['nuevo-nombre','nuevo-rut','nuevo-fecha-nac','nuevo-edad-display'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
         document.getElementById('nuevo-sexo').value='';
         document.getElementById('nuevo-nacionalidad').value='';
-        // Campo colegio: visible solo en nóminas compartidas
-        const nc = document.getElementById('nuevo-colegio');
-        if (nc) nc.value = '';
-        const campoColegio = document.getElementById('campo-colegio-alumno');
-        if (campoColegio) campoColegio.style.display = {{ 'true' if es_nomina_compartida else 'false' }} ? 'block' : 'none';
         document.getElementById('modal-agregar').style.display='flex';
         setTimeout(()=>document.getElementById('nuevo-nombre').focus(),100);
     }
@@ -1513,26 +1508,32 @@
     }
 
     async function confirmarAgregarAlumno() {
-        const nombre=document.getElementById('nuevo-nombre').value.trim();
-        const rut=document.getElementById('nuevo-rut').value.trim();
-        const fn=document.getElementById('nuevo-fecha-nac').value;
-        const sexo=document.getElementById('nuevo-sexo').value;
-        const nacionalidad=document.getElementById('nuevo-nacionalidad').value;
-        const colegio=(document.getElementById('nuevo-colegio')?.value||'').trim();
-        const nId = window.location.pathname.split('/').filter(Boolean).pop() || '';
-        if (!nombre||!rut) { alert('Nombre y RUT son obligatorios'); return; }
+        const nombre      = document.getElementById('nuevo-nombre').value.trim();
+        const rut         = document.getElementById('nuevo-rut').value.trim();
+        const fn          = document.getElementById('nuevo-fecha-nac').value;
+        const sexo        = document.getElementById('nuevo-sexo').value;
+        const nacionalidad= document.getElementById('nuevo-nacionalidad').value;
+        const colegio     = (document.getElementById('nuevo-colegio')?.value || '').trim();
+        const nId         = window.location.pathname.split('/').filter(Boolean).pop() || '';
+        const requiereColegio = {{ 'true' if requiere_colegio_alumno else 'false' }};
+        if (!nombre || !rut) { alert('Nombre y RUT son obligatorios'); return; }
+        if (requiereColegio && !colegio) { alert('El colegio del alumno es obligatorio en esta nómina'); return; }
         if (!nId) { alert('Error: no se pudo determinar la nómina. Recarga la página.'); return; }
         try {
-            const res=await fetch('/api/estudiante/agregar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-                nomina_id:nId, nombre, rut,
-                fecha_nacimiento:fn||null, sexo:sexo||null, nacionalidad:nacionalidad||null,
-                estado_asistencia:_tipoAgregar==='extra'?'extra':'activo',
-                motivo_consulta: colegio||null,  // colegio del alumno en nóminas compartidas
-            })});
-            const data=await res.json();
+            const res = await fetch('/api/estudiante/agregar', {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    nomina_id: nId, nombre, rut,
+                    fecha_nacimiento: fn || null, sexo: sexo || null,
+                    nacionalidad: nacionalidad || null,
+                    estado_asistencia: _tipoAgregar === 'extra' ? 'extra' : 'activo',
+                    motivo_consulta: colegio || null,
+                })
+            });
+            const data = await res.json();
             if (data.success) { cerrarModalAgregar(); location.reload(); }
-            else alert('Error: '+(data.message||data.error||'Error desconocido'));
-        } catch(e) { alert('Error: '+e.message); }
+            else alert('Error: ' + (data.message || data.error || 'Error desconocido'));
+        } catch(e) { alert('Error: ' + e.message); }
     }
 
     // ── CÁLCULO DE EDAD ───────────────────────────────────────────────

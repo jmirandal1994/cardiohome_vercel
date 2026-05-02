@@ -2870,14 +2870,35 @@
                                     {% endfor %}
                                 </select>
                             </div>
+                            <!-- Coordinadora General — OBLIGATORIO -->
+                            <div>
+                                <label style="font-size:.76rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">
+                                    Coordinadora General * <span style="font-size:.68rem;color:#059669;font-weight:600;">(aparece en su conteo)</span>
+                                </label>
+                                <select id="nm-coord-general" required
+                                    style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.88rem;font-family:inherit;box-sizing:border-box;background:white;color:#334155;">
+                                    <option value="">— Seleccionar coordinadora —</option>
+                                    {% for c in coordinadoras_generales %}
+                                    <option value="{{ c.id }}">{{ c.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <!-- Coordinador Escuela — OBLIGATORIO -->
+                            <div>
+                                <label style="font-size:.76rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">
+                                    Coordinador/a de Escuela * <span style="font-size:.68rem;color:#0f3460;font-weight:600;">(puede ingresar y descargar)</span>
+                                </label>
+                                <select id="nm-coord-escuela" required
+                                    style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.88rem;font-family:inherit;box-sizing:border-box;background:white;color:#334155;">
+                                    <option value="">— Seleccionar coordinador/a —</option>
+                                    {% for c in coordinadores_escuela %}
+                                    <option value="{{ c.id }}">{{ c.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                             <div>
                                 <label style="font-size:.76rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Token de acceso (opcional)</label>
                                 <input id="nm-token" type="text" placeholder="Se genera automáticamente si lo dejas vacío"
-                                    style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
-                            </div>
-                            <div>
-                                <label style="font-size:.76rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Coordinadora General ID (opcional)</label>
-                                <input id="nm-coord-general" type="text" placeholder="UUID coordinadora"
                                     style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
                             </div>
                             <div style="grid-column:1/-1;">
@@ -8150,18 +8171,23 @@
         // ── NÓMINA MASIVA (ADMIN) ─────────────────────────────────────────────
         async function crearNominaMasiva(event) {
             event.preventDefault();
+            const coordGeneral = document.getElementById('nm-coord-general').value;
+            const coordEscuela = document.getElementById('nm-coord-escuela').value;
+            if (!coordGeneral) { alert('Debes seleccionar una Coordinadora General'); return false; }
+            if (!coordEscuela) { alert('Debes seleccionar un/a Coordinador/a de Escuela'); return false; }
             const btn = document.getElementById('nm-submit-btn');
             btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando…';
             try {
                 const res  = await fetch('/api/admin/crear_nomina_masiva', {
                     method: 'POST', headers: {'Content-Type':'application/json'},
                     body: JSON.stringify({
-                        nombre_nomina:   document.getElementById('nm-nombre').value.trim(),
-                        nombre_colegio:  document.getElementById('nm-colegio').value.trim() || 'OPERATIVO MASIVO',
-                        form_type:       document.getElementById('nm-form-type').value,
-                        proyecto_id:     document.getElementById('nm-proyecto').value || null,
-                        token_acceso:    document.getElementById('nm-token').value.trim() || null,
-                        coord_general_id: document.getElementById('nm-coord-general').value.trim() || null,
+                        nombre_nomina:    document.getElementById('nm-nombre').value.trim(),
+                        nombre_colegio:   document.getElementById('nm-colegio').value.trim() || 'OPERATIVO MASIVO',
+                        form_type:        document.getElementById('nm-form-type').value,
+                        proyecto_id:      document.getElementById('nm-proyecto').value || null,
+                        token_acceso:     document.getElementById('nm-token').value.trim() || null,
+                        coord_general_id: coordGeneral,
+                        coord_escuela_id: coordEscuela,
                     })
                 });
                 const data = await res.json();

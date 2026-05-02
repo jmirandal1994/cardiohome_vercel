@@ -2598,7 +2598,25 @@
                                 </p>
                             </div>
                             <!-- ══ FIN FECHA FIJA ══ -->
-                            
+
+                            <!-- ══ COLEGIO POR ALUMNO ══ -->
+                            <div style="background:#fffbeb;border:1.5px solid #fbbf24;border-radius:12px;padding:14px 16px;margin-bottom:18px;">
+                                <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;">
+                                    <input type="checkbox" name="requiere_colegio_alumno" id="requiere_colegio_alumno"
+                                        style="width:18px;height:18px;margin-top:2px;accent-color:#f59e0b;flex-shrink:0;">
+                                    <div>
+                                        <div style="font-size:.88rem;font-weight:700;color:#92400e;margin-bottom:3px;">
+                                            <i class="fas fa-school" style="margin-right:5px;"></i>
+                                            La doctora debe ingresar el colegio de cada alumno que agregue
+                                        </div>
+                                        <div style="font-size:.76rem;color:#b45309;line-height:1.5;">
+                                            Activa esta opción en nóminas compartidas donde los alumnos pueden venir de distintos colegios. Al activarla, el campo "Colegio del alumno" será <strong>obligatorio</strong> al agregar cada alumno nuevo.
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                            <!-- ══ FIN COLEGIO POR ALUMNO ══ -->
+
                             <label for="excel_nomina">Archivo Excel/CSV de la Nómina:</label>
                             <input type="file" id="excel_nomina" name="excel" accept=".xls,.xlsx,.csv" required class="form-input" />
                             

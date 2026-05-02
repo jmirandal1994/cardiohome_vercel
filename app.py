@@ -1342,7 +1342,7 @@ def generar_pdf():
             return redirect(url_for('relleno_formulario', nomina_id=session['current_nomina_id']))
         return redirect(url_for('dashboard'))
 
-    # --- 1. Obtener doctora_id_para_formulario — prioridad: nómina → alumno → sesión ---
+    # --- 1. Obtener doctora_id_para_formulario directo desde Supabase ---
     doctora_id_para_pdf = current_doctora_id
     try:
         res_nom = requests.get(
@@ -1355,19 +1355,8 @@ def generar_pdf():
             dip = res_nom.json()[0].get('doctora_id_para_formulario')
             if dip:
                 doctora_id_para_pdf = dip
-            else:
-                # Sin doctora_id_para_formulario → usar doctora_evaluadora_id del alumno
-                res_est = requests.get(
-                    f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                    f"?id=eq.{estudiante_id}&select=doctora_evaluadora_id",
-                    headers=SUPABASE_SERVICE_HEADERS
-                )
-                if res_est.ok and res_est.json():
-                    dev = res_est.json()[0].get('doctora_evaluadora_id')
-                    if dev:
-                        doctora_id_para_pdf = dev
     except Exception as e:
-        print(f"ADVERTENCIA: No se pudo obtener doctora_id_para_formulario. {e}")
+        print(f"ADVERTENCIA: No se pudo obtener doctora_id_para_formulario. Usando ID de sesión. {e}")
         
     # --- 2. Procesamiento de Campos Comunes y Fechas ---
     nombre = get_form_field_value('nombre', request.form)
@@ -3704,7 +3693,7 @@ def mis_nominas():
         url_nominas_asignadas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?or=(doctora_id.eq.{usuario_id},doctora_id_2.eq.{usuario_id},doctora_id_3.eq.{usuario_id},doctora_id_4.eq.{usuario_id})"
-            f"&select=id,nombre_nomina,tipo_nomina,form_type,doctora_id_para_formulario,doctora_id"
+            f"&select=id,nombre_nomina,tipo_nomina,form_type,doctora_id_para_formulario"
         )
         res_nominas_asignadas = requests.get(url_nominas_asignadas, headers=SUPABASE_HEADERS)
         res_nominas_asignadas.raise_for_status()
@@ -5379,12 +5368,13 @@ def api_doctor_reporte_detalle():
         return jsonify({"success": False, "message": "ID de usuario no encontrado"}), 400
 
     try:
-        res_n = requests.get(
+        # 1. Nóminas de la doctora
+        url_nominas = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-            f"?or=(doctora_id.eq.{user_id},doctora_id_2.eq.{user_id},doctora_id_3.eq.{user_id},doctora_id_4.eq.{user_id})"
-            f"&select=id,nombre_nomina,nombre_colegio,form_type,doctora_id",
-            headers=SUPABASE_SERVICE_HEADERS
+            f"?doctora_id=eq.{user_id}"
+            f"&select=id,nombre_nomina,nombre_colegio,form_type"
         )
+        res_n = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
         nominas = res_n.json() if res_n.ok else []
 
         detalles = []
@@ -5392,32 +5382,19 @@ def api_doctor_reporte_detalle():
         global_evaluados = 0
 
         for nom in nominas:
-            nom_id = nom['id']
-            es_compartida = nom.get('doctora_id') != user_id
-
-            if es_compartida:
-                url_e = (
-                    f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                    f"?nomina_id=eq.{nom_id}"
-                    f"&doctora_evaluadora_id=eq.{user_id}"
-                    f"&estado_asistencia=in.(activo,extra)"
-                    f"&select=id,nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia,fecha_relleno"
-                    f"&order=nombre.asc"
-                )
-            else:
-                url_e = (
-                    f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                    f"?nomina_id=eq.{nom_id}"
-                    f"&estado_asistencia=in.(activo,extra)"
-                    f"&select=id,nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia,fecha_relleno"
-                    f"&order=nombre.asc"
-                )
+            url_e = (
+                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                f"?nomina_id=eq.{nom['id']}"
+                f"&estado_asistencia=in.(activo,extra)"
+                f"&select=id,nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia,fecha_relleno"
+                f"&order=nombre.asc"
+            )
             res_e = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS)
             alumnos = res_e.json() if res_e.ok else []
 
             url_aus = (
                 f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                f"?nomina_id=eq.{nom_id}"
+                f"?nomina_id=eq.{nom['id']}"
                 f"&estado_asistencia=in.(no_asiste_reemplazado,no_asiste_sin_reemplazo)"
                 f"&select=nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia"
                 f"&order=nombre.asc"
@@ -5431,14 +5408,12 @@ def api_doctor_reporte_detalle():
             global_evaluados += ev_count
 
             colegio = nom.get('nombre_colegio') or nom.get('nombre_nomina') or 'Sin nombre'
-            if es_compartida:
-                colegio += ' ⚡'
             detalles.append({
                 "colegio":   colegio,
                 "alumnos":   alumnos,
                 "ausentes":  ausentes,
                 "total":     total_count,
-                "evaluados": ev_count,
+                "evaluados": ev_count
             })
 
         return jsonify({
@@ -6115,18 +6090,17 @@ def api_estudiante_agregar():
 
         new_id = str(uuid.uuid4())
         payload = {
-            "id":                    new_id,
-            "nomina_id":             nomina_id,
-            "nombre":                nombre,
-            "rut":                   rut or None,
-            "fecha_nacimiento":      fecha_nac,
-            "sexo":                  sexo,
-            "nacionalidad":          nacionalidad,
-            "diagnostico_sospecha":  diagnostico_previo,
-            "estado_asistencia":     estado_asist,
-            "motivo_ausencia":       motivo_ingreso,
-            "evaluado_flag":         False,
-            "doctora_evaluadora_id": session.get('usuario_id'),
+            "id":                  new_id,
+            "nomina_id":           nomina_id,
+            "nombre":              nombre,
+            "rut":                 rut or None,
+            "fecha_nacimiento":    fecha_nac,
+            "sexo":                sexo,
+            "nacionalidad":        nacionalidad,
+            "diagnostico_sospecha": diagnostico_previo,
+            "estado_asistencia":   estado_asist,
+            "motivo_ausencia":     motivo_ingreso,
+            "evaluado_flag":       False
         }
 
         res = requests.post(

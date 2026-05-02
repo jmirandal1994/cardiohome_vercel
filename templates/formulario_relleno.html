@@ -742,6 +742,7 @@
                     </div>
                     <div class="student-meta">
                         RUT: {{ est.rut or '— Sin RUT —' }} &nbsp;·&nbsp; Edad: {{ est.edad or '—' }}
+                        {% if est.motivo_consulta %}&nbsp;·&nbsp; <span style="background:#fef3c7;color:#92400e;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid #fbbf24;"><i class="fas fa-school" style="font-size:.65rem;"></i> {{ est.motivo_consulta }}</span>{% endif %}
                         {% if est.campos_faltantes %}&nbsp;·&nbsp; <span style="color:#e17055;font-weight:600;">Falta: {{ est.campos_faltantes }}</span>{% endif %}
                         {% if est.motivo_ausencia %}&nbsp;·&nbsp; <span style="color:var(--danger);">{{ est.motivo_ausencia }}</span>{% endif %}
                     </div>
@@ -753,12 +754,7 @@
                 {% elif est_estado == 'extra' %}
                     <span class="status-badge extra-badge"><i class="fas fa-plus-circle"></i> Extra</span>
                 {% elif est.fecha_relleno is not none %}
-                    <span class="status-badge evaluated">
-                        <i class="fas fa-check-circle"></i> Evaluado
-                        {% if est.nombre_doctora_evaluadora %}
-                        <span style="font-size:.65rem;opacity:.85;margin-left:4px;">· {{ est.nombre_doctora_evaluadora }}</span>
-                        {% endif %}
-                    </span>
+                    <span class="status-badge evaluated"><i class="fas fa-check-circle"></i> Evaluado</span>
                 {% else %}
                     <span class="status-badge pending"><i class="fas fa-clock"></i> Pendiente</span>
                 {% endif %}
@@ -898,17 +894,17 @@
                             data-dx-previo="{{ est.diagnostico_sospecha if est.diagnostico_sospecha else '' }}"
                             style="{% if est.diagnostico_sospecha and est.fecha_relleno is not none and not est.diagnostico %}display:none;{% endif %}">
                             <option value="">Seleccionar diagnóstico</option>
-                            <option value="Trastorno Del Espectro Autista"      {% if est.diagnostico == 'Trastorno Del Espectro Autista' %}selected{% endif %}>Trastorno Del Espectro Autista (TEA)</option>
-                            <option value="Trastorno Por Deficit de Atención"   {% if est.diagnostico == 'Trastorno Por Deficit de Atención' %}selected{% endif %}>Trastorno por Déficit de Atención (TDA)</option>
-                            <option value="TDAH"                                 {% if est.diagnostico == 'TDAH' %}selected{% endif %}>Trastorno por Déficit de Atención e Hiperactividad (TDAH)</option>
+                            <option value="Trastorno Del Espectro Autista"      {% if est.diagnostico == 'Trastorno Del Espectro Autista' %}selected{% endif %}>Trastorno Del Espectro Autista</option>
+                            <option value="Trastorno Por Deficit de Atención"   {% if est.diagnostico == 'Trastorno Por Deficit de Atención' %}selected{% endif %}>Trastorno Por Déficit de Atención</option>
+                            <option value="TDAH"                                 {% if est.diagnostico == 'TDAH' %}selected{% endif %}>TDAH</option>
                             <option value="Trastorno del Aprendizaje"           {% if est.diagnostico == 'Trastorno del Aprendizaje' %}selected{% endif %}>Trastorno del Aprendizaje</option>
-                            <option value="GARC"                                 {% if est.diagnostico == 'GARC' %}selected{% endif %}>Grave Alteración en la Capacidad de Relación y Comunicación (GARC)</option>
+                            <option value="GARC"                                 {% if est.diagnostico == 'GARC' %}selected{% endif %}>GARC</option>
                             <option value="Trastorno Motor Moderado"            {% if est.diagnostico == 'Trastorno Motor Moderado' %}selected{% endif %}>Trastorno Motor Moderado</option>
                             <option value="Hipoacusia"                           {% if est.diagnostico == 'Hipoacusia' %}selected{% endif %}>Hipoacusia</option>
                             <option value="Sin Diagnostico para ingreso PIE"    {% if est.diagnostico == 'Sin Diagnostico para ingreso PIE' %}selected{% endif %}>Sin Diagnóstico para ingreso PIE</option>
-                            <option value="FIL"                                  {% if est.diagnostico == 'FIL' %}selected{% endif %}>Funcionamiento Intelectual Limítrofe (FIL)</option>
-                            <option value="DIL"                                  {% if est.diagnostico == 'DIL' %}selected{% endif %}>Discapacidad Intelectual Leve (DIL)</option>
-                            <option value="TL"                                   {% if est.diagnostico == 'TL' %}selected{% endif %}>Trastorno del Lenguaje (TL)</option>
+                            <option value="FIL"                                  {% if est.diagnostico == 'FIL' %}selected{% endif %}>FIL - Funcionamiento Intelectual Limítrofe</option>
+                            <option value="DIL"                                  {% if est.diagnostico == 'DIL' %}selected{% endif %}>DIL - Discapacidad Intelectual Leve</option>
+                            <option value="TL"                                   {% if est.diagnostico == 'TL' %}selected{% endif %}>TL - Trastorno del Lenguaje</option>
                             <option value="Discapacidad Intelectual"            {% if est.diagnostico == 'Discapacidad Intelectual' %}selected{% endif %}>Discapacidad Intelectual</option>
                             <option value="Sindrome de Down"                    {% if est.diagnostico == 'Sindrome de Down' %}selected{% endif %}>Síndrome de Down</option>
                             {# Opción para diagnóstico libre que no está en la lista #}
@@ -1134,6 +1130,14 @@
             <div style="flex:1;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">Edad</label>
                 <input type="text" id="nuevo-edad-display" readonly placeholder="Auto" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;color:#334155;box-sizing:border-box;outline:none;background:#f1f5f9;cursor:default;">
             </div>
+        </div>
+        <div id="campo-colegio-alumno" style="margin-bottom:12px;display:none;">
+            <label style="display:block;font-size:.8rem;font-weight:700;color:#0f3460;margin-bottom:5px;">
+                <i class="fas fa-school" style="font-size:.75rem;margin-right:4px;color:#f59e0b;"></i>
+                Colegio del Alumno <span style="font-size:.7rem;color:#94a3b8;font-weight:500;">(nómina compartida)</span>
+            </label>
+            <input type="text" id="nuevo-colegio" placeholder="Ej: Escuela Básica Los Pinos"
+                style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid #f59e0b;font-size:.85rem;color:#334155;font-family:inherit;box-sizing:border-box;outline:none;background:#fffbeb;">
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
             <button onclick="cerrarModalAgregar()" style="padding:9px 20px;border-radius:99px;border:1.5px solid var(--border);background:white;color:#64748b;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>
@@ -1489,6 +1493,11 @@
         ['nuevo-nombre','nuevo-rut','nuevo-fecha-nac','nuevo-edad-display'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
         document.getElementById('nuevo-sexo').value='';
         document.getElementById('nuevo-nacionalidad').value='';
+        // Campo colegio: visible solo en nóminas compartidas
+        const nc = document.getElementById('nuevo-colegio');
+        if (nc) nc.value = '';
+        const campoColegio = document.getElementById('campo-colegio-alumno');
+        if (campoColegio) campoColegio.style.display = {{ 'true' if es_nomina_compartida else 'false' }} ? 'block' : 'none';
         document.getElementById('modal-agregar').style.display='flex';
         setTimeout(()=>document.getElementById('nuevo-nombre').focus(),100);
     }
@@ -1509,11 +1518,17 @@
         const fn=document.getElementById('nuevo-fecha-nac').value;
         const sexo=document.getElementById('nuevo-sexo').value;
         const nacionalidad=document.getElementById('nuevo-nacionalidad').value;
+        const colegio=(document.getElementById('nuevo-colegio')?.value||'').trim();
         const nId = window.location.pathname.split('/').filter(Boolean).pop() || '';
         if (!nombre||!rut) { alert('Nombre y RUT son obligatorios'); return; }
         if (!nId) { alert('Error: no se pudo determinar la nómina. Recarga la página.'); return; }
         try {
-            const res=await fetch('/api/estudiante/agregar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nomina_id:nId,nombre,rut,fecha_nacimiento:fn||null,sexo:sexo||null,nacionalidad:nacionalidad||null,estado_asistencia:_tipoAgregar==='extra'?'extra':'activo'})});
+            const res=await fetch('/api/estudiante/agregar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+                nomina_id:nId, nombre, rut,
+                fecha_nacimiento:fn||null, sexo:sexo||null, nacionalidad:nacionalidad||null,
+                estado_asistencia:_tipoAgregar==='extra'?'extra':'activo',
+                motivo_consulta: colegio||null,  // colegio del alumno en nóminas compartidas
+            })});
             const data=await res.json();
             if (data.success) { cerrarModalAgregar(); location.reload(); }
             else alert('Error: '+(data.message||data.error||'Error desconocido'));

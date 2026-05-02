@@ -8463,7 +8463,11 @@ def api_admin_crear_nomina_masiva():
             "proyecto_id":      proyecto_id,
             "coord_general_id": coord_general,
             "coord_escuela_id": coord_escuela,
-            # Sin doctora_id — cualquier doctora puede agregar alumnos
+            "doctora_id":       None,  # Nómina masiva — sin doctora fija
+            "doctora_id_2":     None,
+            "doctora_id_3":     None,
+            "doctora_id_4":     None,
+            "doctora_id_para_formulario": None,
         }
         res = requests.post(
             f"{SUPABASE_URL}/rest/v1/nominas_medicas",

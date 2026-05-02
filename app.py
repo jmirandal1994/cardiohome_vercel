@@ -8439,13 +8439,13 @@ def api_admin_crear_nomina_masiva():
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
         data            = request.get_json() or {}
-        nombre_nomina   = data.get('nombre_nomina', '').strip()
-        nombre_colegio  = data.get('nombre_colegio', 'OPERATIVO MASIVO').strip()
-        proyecto_id     = data.get('proyecto_id', '').strip() or None
-        coord_general   = data.get('coord_general_id', '').strip() or None
-        coord_escuela   = data.get('coord_escuela_id', '').strip() or None
+        nombre_nomina   = (data.get('nombre_nomina') or '').strip()
+        nombre_colegio  = (data.get('nombre_colegio') or 'OPERATIVO MASIVO').strip()
+        proyecto_id     = (data.get('proyecto_id') or '').strip() or None
+        coord_general   = (data.get('coord_general_id') or '').strip() or None
+        coord_escuela   = (data.get('coord_escuela_id') or '').strip() or None
         form_type       = data.get('form_type', 'neurologia')
-        token           = data.get('token_acceso', '').strip() or None
+        token           = (data.get('token_acceso') or '').strip() or None
 
         if not nombre_nomina:
             return jsonify({"success": False, "message": "Nombre de nómina requerido"}), 400

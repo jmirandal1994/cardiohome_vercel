@@ -1166,7 +1166,7 @@ def relleno_formulario(nomina_id):
     url_nomina = (
         f"{SUPABASE_URL}/rest/v1/nominas_medicas"
         f"?id=eq.{nomina_id}"
-        f"&select=form_type,tipo_nomina,doctora_id,doctora_id_2,doctora_id_3,doctora_id_4,nombre_nomina,doctora_id_para_formulario,token_acceso,fecha_evaluacion_fija"
+        f"&select=form_type,tipo_nomina,doctora_id,doctora_id_2,doctora_id_3,doctora_id_4,nombre_nomina,doctora_id_para_formulario,token_acceso,fecha_evaluacion_fija,requiere_colegio_alumno"
     )
     
     try:
@@ -1288,6 +1288,7 @@ def relleno_formulario(nomina_id):
             'usuario': user_role,
             'token_acceso': nomina.get('token_acceso') or '',
             'fecha_evaluacion_fija': nomina.get('fecha_evaluacion_fija') or None,
+            'requiere_colegio_alumno': bool(nomina.get('requiere_colegio_alumno')),
         }
         
         # Redirección basada en la columna 'form_type'
@@ -3311,6 +3312,7 @@ def admin_cargar_nomina():
 
     # Fecha de evaluación fija (opcional)
     fecha_evaluacion_fija_from_form = request.form.get('fecha_evaluacion_fija', '').strip() or None
+    requiere_colegio_alumno = request.form.get('requiere_colegio_alumno') == 'on'
     
     # Obtener IDs de coordinación
     coord_general_id_from_form = request.form.get('coord_general_id', '').strip()
@@ -3337,10 +3339,6 @@ def admin_cargar_nomina():
 
     if form_type is None: 
         flash(f'❌ El tipo de nómina "{tipo_nomina_raw}" no se pudo mapear a un tipo de formulario conocido.', 'error')
-        return redirect(url_for('dashboard'))
-
-    if form_type == 'neurologia' and not doctora_id_para_formulario:
-        flash('❌ Para nóminas de tipo "Neurología", debe seleccionar la Doctora para el formulario.', 'error')
         return redirect(url_for('dashboard'))
 
 
@@ -3398,6 +3396,7 @@ def admin_cargar_nomina():
         # doctora_id_para_formulario aplica a neurología Y medicina_familiar
         "doctora_id_para_formulario": doctora_id_para_formulario if form_type in ('neurologia', 'medicina_familiar', 'informe_neurologico') else None,
         "fecha_evaluacion_fija": fecha_evaluacion_fija_from_form,
+        "requiere_colegio_alumno": requiere_colegio_alumno,
         
         # --- CAMPOS CLAVE 100% INTEGRADOS ---
         "nombre_colegio": nombre_colegio_o_establecimiento,
@@ -6090,17 +6089,19 @@ def api_estudiante_agregar():
 
         new_id = str(uuid.uuid4())
         payload = {
-            "id":                  new_id,
-            "nomina_id":           nomina_id,
-            "nombre":              nombre,
-            "rut":                 rut or None,
-            "fecha_nacimiento":    fecha_nac,
-            "sexo":                sexo,
-            "nacionalidad":        nacionalidad,
-            "diagnostico_sospecha": diagnostico_previo,
-            "estado_asistencia":   estado_asist,
-            "motivo_ausencia":     motivo_ingreso,
-            "evaluado_flag":       False
+            "id":                    new_id,
+            "nomina_id":             nomina_id,
+            "nombre":                nombre,
+            "rut":                   rut or None,
+            "fecha_nacimiento":      fecha_nac,
+            "sexo":                  sexo,
+            "nacionalidad":          nacionalidad,
+            "diagnostico_sospecha":  diagnostico_previo,
+            "estado_asistencia":     estado_asist,
+            "motivo_ausencia":       motivo_ingreso,
+            "evaluado_flag":         False,
+            "doctora_evaluadora_id": session.get('usuario_id'),
+            "motivo_consulta":       (data.get('motivo_consulta') or '').strip() or None,
         }
 
         res = requests.post(

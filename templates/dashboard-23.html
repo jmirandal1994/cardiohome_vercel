@@ -2875,13 +2875,19 @@
                                 <label style="font-size:.76rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">
                                     Coordinadora General * <span style="font-size:.68rem;color:#059669;font-weight:600;">(aparece en su conteo)</span>
                                 </label>
+                                {% if coordinadoras_generales %}
                                 <select id="nm-coord-general" required
                                     style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.88rem;font-family:inherit;box-sizing:border-box;background:white;color:#334155;">
                                     <option value="">— Seleccionar coordinadora —</option>
                                     {% for c in coordinadoras_generales %}
-                                    <option value="{{ c.id }}">{{ c.nombre }}</option>
+                                    <option value="{{ c.id }}">{{ c.nombre or c.usuario }} ({{ c.usuario }})</option>
                                     {% endfor %}
                                 </select>
+                                {% else %}
+                                <input id="nm-coord-general" type="text" placeholder="UUID de la coordinadora general"
+                                    style="width:100%;padding:10px 14px;border:1.5px solid #fbbf24;border-radius:12px;font-size:.88rem;font-family:inherit;box-sizing:border-box;background:#fffbeb;">
+                                <div style="font-size:.7rem;color:#92400e;margin-top:4px;"><i class="fas fa-triangle-exclamation"></i> No hay coordinadoras registradas. Ingresa el UUID manualmente.</div>
+                                {% endif %}
                             </div>
                             <!-- Coordinador Escuela — OBLIGATORIO -->
                             <div>
@@ -2892,7 +2898,7 @@
                                     style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.88rem;font-family:inherit;box-sizing:border-box;background:white;color:#334155;">
                                     <option value="">— Seleccionar coordinador/a —</option>
                                     {% for c in coordinadores_escuela %}
-                                    <option value="{{ c.id }}">{{ c.nombre }}</option>
+                                    <option value="{{ c.id }}">{{ c.nombre or c.usuario }} ({{ c.usuario }})</option>
                                     {% endfor %}
                                 </select>
                             </div>

@@ -1133,6 +1133,7 @@
                         <li><a href="#" class="nav-link" data-section="crear_proyecto"><i class="fa-solid fa-folder-plus"></i> Crear Proyecto</a></li>
                         <li><a href="#" class="nav-link" data-section="gestionar-proyectos"><i class="fa-solid fa-list-check"></i> Gestionar Proyectos</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-upload-nomina"><i class="fa-solid fa-file-excel"></i> Cargar Nómina</a></li>
+                        <li><a href="#" class="nav-link" data-section="admin-nomina-masiva"><i class="fa-solid fa-bolt"></i> Nómina Masiva</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-tokens"><i class="fa-solid fa-key"></i> Tokens</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-evaluaciones"><i class="fa-solid fa-star"></i> Evaluaciones</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-mover-estudiantes"><i class="fa-solid fa-people-arrows"></i> Mover Estudiantes</a></li>
@@ -1160,6 +1161,7 @@
                         <li><a href="#" class="nav-link" data-section="doctor-performance"><i class="fa-solid fa-chart-simple"></i> Mi Rendimiento</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-proyectos"><i class="fa-solid fa-folder-tree"></i> Proyectos Asignados</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-visits"><i class="fa-solid fa-calendar-days"></i> Mis Próximas Visitas</a></li>
+                        <li><a href="#" class="nav-link" data-section="operativo-masivo" style="background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(234,88,12,.1));border-left:3px solid #f59e0b !important;"><i class="fa-solid fa-bolt" style="color:#f59e0b;"></i> <strong>Operativo Masivo</strong></a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-contact"><i class="fa-solid fa-envelope"></i> Contacto</a></li>
                     {% endif %}
                 </ul>
@@ -2829,6 +2831,162 @@
                 {# NUEVA SECCIÓN: SOLICITUDES DE CORRECCIÓN PARA EL ADMINISTRADOR #}
                 {# SECCIÓN: MOVER ESTUDIANTES ENTRE NÓMINAS #}
                 {# SECCIÓN: EVALUACIONES DE SERVICIO #}
+                {# SECCIÓN: NÓMINA MASIVA (ADMIN) #}
+                <div id="admin-nomina-masiva" class="content-section">
+                    <div class="section-topbar">
+                        <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                        <i class="fa-solid fa-bolt section-icon" style="color:#f59e0b;"></i>
+                        <h2 class="section-title">Crear Nómina Masiva</h2>
+                    </div>
+                    <div class="card">
+                        <p style="font-size:.84rem;color:#64748b;margin-bottom:20px;line-height:1.6;">
+                            <i class="fas fa-info-circle" style="color:#f59e0b;margin-right:5px;"></i>
+                            Una nómina masiva no tiene doctora fija — cualquier doctora puede agregar alumnos desde su perfil. El sistema detecta automáticamente el formulario correcto según quién evalúa.
+                        </p>
+                        <form id="form-nomina-masiva" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:700px;" onsubmit="return crearNominaMasiva(event)">
+                            <div style="grid-column:1/-1;">
+                                <label style="font-size:.76rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Nombre del Operativo / Nómina *</label>
+                                <input id="nm-nombre" type="text" required placeholder="Ej: Operativo Neurología 28 Abril 2026"
+                                    style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
+                            </div>
+                            <div>
+                                <label style="font-size:.76rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Nombre del Colegio / Lugar</label>
+                                <input id="nm-colegio" type="text" placeholder="Ej: OPERATIVO MASIVO SLEP"
+                                    style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
+                            </div>
+                            <div>
+                                <label style="font-size:.76rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Tipo de Formulario</label>
+                                <select id="nm-form-type" style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.88rem;font-family:inherit;box-sizing:border-box;background:white;">
+                                    <option value="neurologia">Neurología / Psiquiatría</option>
+                                    <option value="medicina_familiar">Medicina Familiar / Pediatría</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size:.76rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Proyecto</label>
+                                <select id="nm-proyecto" style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.88rem;font-family:inherit;box-sizing:border-box;background:white;">
+                                    <option value="">— Sin proyecto —</option>
+                                    {% for p in proyectos %}
+                                    <option value="{{ p.id }}">{{ p.nombre_proyecto or p.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size:.76rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Token de acceso (opcional)</label>
+                                <input id="nm-token" type="text" placeholder="Se genera automáticamente si lo dejas vacío"
+                                    style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
+                            </div>
+                            <div>
+                                <label style="font-size:.76rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Coordinadora General ID (opcional)</label>
+                                <input id="nm-coord-general" type="text" placeholder="UUID coordinadora"
+                                    style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
+                            </div>
+                            <div style="grid-column:1/-1;">
+                                <button type="submit" id="nm-submit-btn"
+                                    style="background:linear-gradient(135deg,#f59e0b,#ea580c);color:white;border:none;border-radius:14px;padding:13px 28px;font-weight:800;font-size:.92rem;cursor:pointer;display:flex;align-items:center;gap:8px;">
+                                    <i class="fas fa-bolt"></i> Crear Nómina Masiva
+                                </button>
+                            </div>
+                        </form>
+                        <!-- Lista de nóminas masivas existentes -->
+                        <div style="margin-top:28px;border-top:1px solid #f1f5f9;padding-top:20px;">
+                            <div style="font-weight:800;font-size:.85rem;color:#0f2030;margin-bottom:12px;"><i class="fas fa-list" style="margin-right:6px;color:#f59e0b;"></i>Nóminas Masivas Activas</div>
+                            <div id="nm-lista-masivas" style="display:flex;flex-direction:column;gap:10px;">
+                                <div style="color:#94a3b8;font-size:.82rem;text-align:center;padding:16px;">
+                                    <i class="fas fa-spinner fa-spin"></i> Cargando…
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {# SECCIÓN: OPERATIVO MASIVO (DOCTORA) #}
+                <div id="operativo-masivo" class="content-section">
+                    <div class="section-topbar">
+                        <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
+                        <i class="fa-solid fa-bolt section-icon" style="color:#f59e0b;"></i>
+                        <h2 class="section-title">Operativo Masivo</h2>
+                    </div>
+
+                    <!-- Vista lista de nóminas masivas -->
+                    <div id="op-lista-view">
+                        <div class="card" style="margin-bottom:16px;">
+                            <p style="font-size:.84rem;color:#64748b;margin:0;line-height:1.6;">
+                                Selecciona el operativo al que pertenece el alumno que vas a evaluar. El sistema usará tu formulario asignado automáticamente.
+                            </p>
+                        </div>
+                        <div id="op-nominas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
+                            <div style="color:#94a3b8;font-size:.82rem;text-align:center;padding:30px;grid-column:1/-1;">
+                                <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;display:block;margin-bottom:8px;"></i>Cargando operativos…
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vista interior de una nómina masiva -->
+                    <div id="op-nomina-view" style="display:none;">
+                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+                            <button onclick="volverOpLista()" style="background:white;border:1.5px solid #e2e8f0;border-radius:10px;padding:8px 14px;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                                <i class="fas fa-arrow-left"></i> Volver
+                            </button>
+                            <h3 id="op-nomina-titulo" style="margin:0;font-size:1rem;font-weight:800;color:#0f2030;"></h3>
+                            <span id="op-nomina-tipo-badge"></span>
+                        </div>
+
+                        <!-- Agregar alumno -->
+                        <div class="card" style="margin-bottom:16px;border-left:4px solid #f59e0b;">
+                            <div style="font-weight:800;font-size:.86rem;color:#0f2030;margin-bottom:14px;"><i class="fas fa-user-plus" style="color:#f59e0b;margin-right:6px;"></i>Agregar Alumno al Operativo</div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                <div style="grid-column:1/-1;">
+                                    <label style="font-size:.74rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Nombre completo *</label>
+                                    <input id="op-nombre" type="text" placeholder="Nombres y Apellidos"
+                                        style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
+                                </div>
+                                <div>
+                                    <label style="font-size:.74rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">RUT *</label>
+                                    <input id="op-rut" type="text" placeholder="Ej: 12.345.678-9"
+                                        style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
+                                </div>
+                                <div>
+                                    <label style="font-size:.74rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Fecha Nacimiento</label>
+                                    <input id="op-fecha-nac" type="date"
+                                        style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
+                                </div>
+                                <div>
+                                    <label style="font-size:.74rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Sexo</label>
+                                    <select id="op-sexo" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.88rem;font-family:inherit;box-sizing:border-box;background:white;">
+                                        <option value="">— Sin especificar —</option>
+                                        <option value="M">Masculino</option>
+                                        <option value="F">Femenino</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size:.74rem;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Nacionalidad</label>
+                                    <input id="op-nacionalidad" type="text" value="Chilena"
+                                        style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.88rem;font-family:inherit;box-sizing:border-box;">
+                                </div>
+                                <div style="display:flex;align-items:flex-end;">
+                                    <button onclick="opAgregarAlumno()" id="op-agregar-btn"
+                                        style="width:100%;background:linear-gradient(135deg,#f59e0b,#ea580c);color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:.88rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
+                                        <i class="fas fa-plus-circle"></i> Agregar y Evaluar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lista alumnos del operativo -->
+                        <div class="card">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                                <div style="font-weight:800;font-size:.86rem;color:#0f2030;"><i class="fas fa-users" style="color:#0f3460;margin-right:6px;"></i>Alumnos en este Operativo</div>
+                                <button onclick="opCargarAlumnos()" style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:6px 12px;font-size:.76rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;">
+                                    <i class="fas fa-rotate"></i> Actualizar
+                                </button>
+                            </div>
+                            <div id="op-alumnos-lista" style="display:flex;flex-direction:column;gap:8px;">
+                                <div style="color:#94a3b8;text-align:center;padding:20px;font-size:.82rem;">Sin alumnos aún</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="admin-evaluaciones" class="content-section">
                     <div class="section-topbar">
                         <button class="back-btn" onclick="showSection('welcome-section')"><i class="fa-solid fa-arrow-left"></i> Inicio</button>
@@ -7547,6 +7705,10 @@
                     cargarTokensPorProyecto();
                 } else if (sectionId === 'admin-evaluaciones') {
                     cargarEvaluacionesAdmin();
+                } else if (sectionId === 'admin-nomina-masiva') {
+                    cargarListaMasivasAdmin();
+                } else if (sectionId === 'operativo-masivo') {
+                    opCargarNominas();
                 } else if (sectionId === 'admin-mover-estudiantes') {
                     mvInicializar();
                 } else if (sectionId === 'admin-calendar-doctoras') {
@@ -7985,6 +8147,200 @@
         }
 
         // ── EVALUACIONES ADMIN ────────────────────────────────────────────────
+        // ── NÓMINA MASIVA (ADMIN) ─────────────────────────────────────────────
+        async function crearNominaMasiva(event) {
+            event.preventDefault();
+            const btn = document.getElementById('nm-submit-btn');
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando…';
+            try {
+                const res  = await fetch('/api/admin/crear_nomina_masiva', {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({
+                        nombre_nomina:   document.getElementById('nm-nombre').value.trim(),
+                        nombre_colegio:  document.getElementById('nm-colegio').value.trim() || 'OPERATIVO MASIVO',
+                        form_type:       document.getElementById('nm-form-type').value,
+                        proyecto_id:     document.getElementById('nm-proyecto').value || null,
+                        token_acceso:    document.getElementById('nm-token').value.trim() || null,
+                        coord_general_id: document.getElementById('nm-coord-general').value.trim() || null,
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    Swal.fire({icon:'success', title:'¡Nómina masiva creada!',
+                        html:`Token de acceso: <strong style="font-family:monospace;font-size:1.2rem;letter-spacing:.15em;">${data.token}</strong><br><small>Las doctoras pueden agregar alumnos desde "Operativo Masivo"</small>`,
+                        confirmButtonColor:'#f59e0b'});
+                    document.getElementById('form-nomina-masiva').reset();
+                    cargarListaMasivasAdmin();
+                } else { alert('Error: ' + data.message); }
+            } catch(e) { alert('Error: ' + e.message); }
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-bolt"></i> Crear Nómina Masiva';
+            return false;
+        }
+
+        async function cargarListaMasivasAdmin() {
+            const lista = document.getElementById('nm-lista-masivas');
+            if (!lista) return;
+            lista.innerHTML = '<div style="color:#94a3b8;font-size:.82rem;text-align:center;padding:16px;"><i class="fas fa-spinner fa-spin"></i></div>';
+            try {
+                const res  = await fetch('/api/operativo/nominas_masivas');
+                const data = await res.json();
+                if (!data.success || !data.nominas?.length) {
+                    lista.innerHTML = '<div style="color:#94a3b8;font-size:.82rem;text-align:center;padding:16px;">No hay nóminas masivas creadas.</div>';
+                    return;
+                }
+                lista.innerHTML = data.nominas.map(n => {
+                    const tipo = (n.form_type||'').toLowerCase();
+                    const badge = tipo === 'neurologia'
+                        ? '<span style="background:linear-gradient(135deg,#6d28d9,#7c3aed);color:white;border-radius:20px;padding:2px 9px;font-size:.62rem;font-weight:800;"><i class="fas fa-brain"></i> NEUROLOGÍA</span>'
+                        : '<span style="background:linear-gradient(135deg,#0f3460,#1c67a3);color:white;border-radius:20px;padding:2px 9px;font-size:.62rem;font-weight:800;"><i class="fas fa-stethoscope"></i> MED. FAMILIAR</span>';
+                    return `<div style="background:white;border:1.5px solid #f1f5f9;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                        <i class="fas fa-bolt" style="color:#f59e0b;font-size:1.2rem;flex-shrink:0;"></i>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:700;font-size:.88rem;color:#0f2030;">${n.nombre_nomina}</div>
+                            <div style="font-size:.73rem;color:#94a3b8;margin-top:2px;">${n.nombre_colegio||''}</div>
+                        </div>
+                        ${badge}
+                        <div style="font-family:monospace;font-size:.85rem;font-weight:800;color:#0f3460;background:#f8fafc;padding:4px 10px;border-radius:8px;border:1px solid #e2e8f0;">Token: ${n.token_acceso||'—'}</div>
+                    </div>`;
+                }).join('');
+            } catch(e) {
+                lista.innerHTML = '<div style="color:#e74c3c;font-size:.82rem;text-align:center;padding:16px;">Error al cargar.</div>';
+            }
+        }
+
+        // ── OPERATIVO MASIVO (DOCTORA) ────────────────────────────────────────
+        let _opNominaActual = null;
+
+        async function opCargarNominas() {
+            const grid = document.getElementById('op-nominas-grid');
+            if (!grid) return;
+            grid.innerHTML = '<div style="color:#94a3b8;font-size:.82rem;text-align:center;padding:30px;grid-column:1/-1;"><i class="fas fa-spinner fa-spin" style="font-size:1.5rem;display:block;margin-bottom:8px;"></i>Cargando operativos…</div>';
+            try {
+                const res  = await fetch('/api/operativo/nominas_masivas');
+                const data = await res.json();
+                if (!data.success || !data.nominas?.length) {
+                    grid.innerHTML = '<div style="color:#94a3b8;font-size:.85rem;text-align:center;padding:40px;grid-column:1/-1;"><i class="fas fa-bolt" style="font-size:2rem;display:block;margin-bottom:8px;opacity:.3;"></i>No hay operativos activos por ahora.</div>';
+                    return;
+                }
+                grid.innerHTML = data.nominas.map(n => {
+                    const tipo = (n.form_type||'').toLowerCase();
+                    const esNeuro = tipo === 'neurologia';
+                    const bar  = esNeuro ? 'linear-gradient(135deg,#6d28d9,#7c3aed)' : 'linear-gradient(135deg,#0f3460,#1c67a3)';
+                    const icon = esNeuro ? 'fa-brain' : 'fa-stethoscope';
+                    const badge= esNeuro
+                        ? '<span style="background:linear-gradient(135deg,#6d28d9,#7c3aed);color:white;border-radius:20px;padding:2px 9px;font-size:.62rem;font-weight:800;display:inline-flex;align-items:center;gap:3px;"><i class="fas fa-brain" style="font-size:.58rem;"></i>NEUROLOGÍA</span>'
+                        : '<span style="background:linear-gradient(135deg,#0f3460,#1c67a3);color:white;border-radius:20px;padding:2px 9px;font-size:.62rem;font-weight:800;display:inline-flex;align-items:center;gap:3px;"><i class="fas fa-stethoscope" style="font-size:.58rem;"></i>MED. FAMILIAR</span>';
+                    return `<div onclick="opAbrirNomina(${JSON.stringify(n).replace(/"/g,'&quot;')})"
+                        style="background:white;border:1.5px solid #f1f5f9;border-radius:16px;overflow:hidden;cursor:pointer;transition:box-shadow .2s,transform .2s;"
+                        onmouseover="this.style.boxShadow='0 8px 24px rgba(0,0,0,.1)';this.style.transform='translateY(-2px)'"
+                        onmouseout="this.style.boxShadow='';this.style.transform=''">
+                        <div style="height:5px;background:${bar};"></div>
+                        <div style="padding:18px;">
+                            ${badge}
+                            <div style="margin-top:10px;font-weight:800;font-size:.95rem;color:#0f2030;line-height:1.3;">${n.nombre_nomina}</div>
+                            <div style="font-size:.76rem;color:#94a3b8;margin-top:4px;">${n.nombre_colegio||''}</div>
+                            <div style="margin-top:14px;background:linear-gradient(135deg,rgba(245,158,11,.1),rgba(234,88,12,.05));border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:8px;">
+                                <i class="fas fa-bolt" style="color:#f59e0b;"></i>
+                                <span style="font-size:.78rem;font-weight:700;color:#92400e;">Agregar alumno y evaluar</span>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch(e) {
+                grid.innerHTML = '<div style="color:#e74c3c;text-align:center;padding:20px;grid-column:1/-1;">Error al cargar operativos.</div>';
+            }
+        }
+
+        function opAbrirNomina(nomina) {
+            _opNominaActual = nomina;
+            document.getElementById('op-lista-view').style.display = 'none';
+            document.getElementById('op-nomina-view').style.display = 'block';
+            document.getElementById('op-nomina-titulo').textContent = nomina.nombre_nomina;
+            const tipo = (nomina.form_type||'').toLowerCase();
+            const esNeuro = tipo === 'neurologia';
+            document.getElementById('op-nomina-tipo-badge').innerHTML = esNeuro
+                ? '<span style="background:linear-gradient(135deg,#6d28d9,#7c3aed);color:white;border-radius:20px;padding:3px 11px;font-size:.65rem;font-weight:800;"><i class="fas fa-brain" style="margin-right:3px;"></i>NEUROLOGÍA</span>'
+                : '<span style="background:linear-gradient(135deg,#0f3460,#1c67a3);color:white;border-radius:20px;padding:3px 11px;font-size:.65rem;font-weight:800;"><i class="fas fa-stethoscope" style="margin-right:3px;"></i>MED. FAMILIAR</span>';
+            // Limpiar form
+            ['op-nombre','op-rut','op-fecha-nac','op-nacionalidad'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = id === 'op-nacionalidad' ? 'Chilena' : '';
+            });
+            document.getElementById('op-sexo').value = '';
+            opCargarAlumnos();
+        }
+
+        function volverOpLista() {
+            _opNominaActual = null;
+            document.getElementById('op-lista-view').style.display = 'block';
+            document.getElementById('op-nomina-view').style.display = 'none';
+        }
+
+        async function opAgregarAlumno() {
+            if (!_opNominaActual) return;
+            const nombre = document.getElementById('op-nombre').value.trim();
+            const rut    = document.getElementById('op-rut').value.trim();
+            if (!nombre || !rut) { alert('Nombre y RUT son obligatorios'); return; }
+            const btn = document.getElementById('op-agregar-btn');
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Agregando…';
+            try {
+                const res  = await fetch('/api/operativo/agregar_alumno', {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({
+                        nomina_id:       _opNominaActual.id,
+                        nombre:          nombre,
+                        rut:             rut,
+                        fecha_nacimiento: document.getElementById('op-fecha-nac').value || null,
+                        sexo:             document.getElementById('op-sexo').value || null,
+                        nacionalidad:     document.getElementById('op-nacionalidad').value || 'Chilena',
+                        form_type:        _opNominaActual.form_type || 'neurologia',
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // Limpiar form y redirigir al formulario
+                    ['op-nombre','op-rut','op-fecha-nac'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+                    document.getElementById('op-sexo').value = '';
+                    // Ir al formulario de evaluación
+                    window.location.href = `/relleno_formulario/${_opNominaActual.id}`;
+                } else { alert('Error: ' + data.message); }
+            } catch(e) { alert('Error: ' + e.message); }
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus-circle"></i> Agregar y Evaluar';
+        }
+
+        async function opCargarAlumnos() {
+            if (!_opNominaActual) return;
+            const lista = document.getElementById('op-alumnos-lista');
+            if (!lista) return;
+            lista.innerHTML = '<div style="color:#94a3b8;text-align:center;padding:16px;font-size:.8rem;"><i class="fas fa-spinner fa-spin"></i></div>';
+            try {
+                const res  = await fetch('/api/operativo/alumnos_masiva/' + _opNominaActual.id);
+                const data = await res.json();
+                if (!data.success || !data.alumnos?.length) {
+                    lista.innerHTML = '<div style="color:#94a3b8;text-align:center;padding:16px;font-size:.8rem;">Sin alumnos aún en este operativo.</div>';
+                    return;
+                }
+                lista.innerHTML = data.alumnos.map(a => {
+                    const eval_badge = a.evaluado_flag
+                        ? '<span style="background:#d1fae5;color:#065f46;border-radius:6px;padding:2px 8px;font-size:.68rem;font-weight:700;"><i class="fas fa-check"></i> Evaluado</span>'
+                        : '<span style="background:#fef3c7;color:#92400e;border-radius:6px;padding:2px 8px;font-size:.68rem;font-weight:700;"><i class="fas fa-clock"></i> Pendiente</span>';
+                    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:white;border:1px solid #f1f5f9;border-radius:10px;flex-wrap:wrap;">
+                        <div style="width:34px;height:34px;background:linear-gradient(135deg,#e0f0ff,#c7e0ff);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <i class="fas fa-user-graduate" style="color:#0f3460;font-size:.85rem;"></i>
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:700;font-size:.85rem;color:#0f2030;">${a.nombre}</div>
+                            <div style="font-size:.72rem;color:#94a3b8;">RUT: ${a.rut||'—'} · Dr/a: ${a.doctora_nombre}</div>
+                        </div>
+                        ${eval_badge}
+                        ${a.evaluado_flag ? `<a href="/descargar_pdf_alumno/${a.id}" style="background:linear-gradient(135deg,#0f3460,#1c67a3);color:white;border-radius:8px;padding:5px 11px;font-size:.72rem;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:4px;"><i class="fas fa-file-pdf"></i> PDF</a>` : ''}
+                    </div>`;
+                }).join('');
+            } catch(e) {
+                lista.innerHTML = '<div style="color:#e74c3c;text-align:center;padding:12px;font-size:.8rem;">Error al cargar alumnos.</div>';
+            }
+        }
+
         async function cargarEvaluacionesAdmin() {
             const lista = document.getElementById('eval-lista');
             if (!lista) return;

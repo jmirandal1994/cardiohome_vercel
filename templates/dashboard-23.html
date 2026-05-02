@@ -8247,14 +8247,17 @@
             const grid = document.getElementById('op-nominas-grid');
             const listaView = document.getElementById('op-lista-view');
             const nominaView = document.getElementById('op-nomina-view');
-            if (!grid) return;
-            // Asegurar que se muestre la lista y no la vista de nómina
+            console.log('[OpMasivo] opCargarNominas llamado. grid:', !!grid, 'listaView:', !!listaView);
+            if (!grid) { console.error('[OpMasivo] op-nominas-grid no encontrado'); return; }
+            // Asegurar visibilidad
             if (listaView) listaView.style.display = 'block';
             if (nominaView) nominaView.style.display = 'none';
             grid.innerHTML = '<div style="color:#94a3b8;font-size:.82rem;text-align:center;padding:30px;grid-column:1/-1;"><i class="fas fa-spinner fa-spin" style="font-size:1.5rem;display:block;margin-bottom:8px;"></i>Cargando operativos…</div>';
             try {
                 const res  = await fetch('/api/operativo/nominas_masivas');
+                console.log('[OpMasivo] respuesta status:', res.status);
                 const data = await res.json();
+                console.log('[OpMasivo] data:', data);
                 if (!data.success || !data.nominas?.length) {
                     grid.innerHTML = '<div style="color:#94a3b8;font-size:.85rem;text-align:center;padding:40px;grid-column:1/-1;"><i class="fas fa-bolt" style="font-size:2rem;display:block;margin-bottom:8px;opacity:.3;"></i>No hay operativos activos por ahora.<br><small>El administrador debe crear una nómina masiva primero.</small></div>';
                     return;
@@ -8283,9 +8286,10 @@
                         </div>
                     </div>`;
                 }).join('');
+                console.log('[OpMasivo] Renderizados', data.nominas.length, 'cards');
             } catch(e) {
-                console.error('opCargarNominas error:', e);
-                grid.innerHTML = '<div style="color:#e74c3c;text-align:center;padding:20px;grid-column:1/-1;">Error al cargar operativos: ' + e.message + '</div>';
+                console.error('[OpMasivo] Error:', e);
+                grid.innerHTML = '<div style="color:#e74c3c;text-align:center;padding:20px;grid-column:1/-1;">Error: ' + e.message + '</div>';
             }
         }
 
@@ -9575,27 +9579,20 @@
             const badge = document.getElementById('correction-alert-badge');
             
             function fetchCorrectionAlert() {
-                // Llama a la ruta de Flask/Vercel que cuenta las solicitudes 'Pendientes' en Supabase
+                if (!badge) return;  // No existe para doctoras/coordinadores — salir silenciosamente
                 fetch('/api/correcciones_pendientes')
                     .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
+                        if (!response.ok) throw new Error('Network response was not ok');
                         return response.json();
                     })
                     .then(data => {
                         const count = data.count;
-
                         if (data.success && count > 0) {
-                            // Actualizar el número y mostrar la alerta
                             badge.textContent = count;
                             badge.classList.remove('hidden');
-                            // Si estamos en la vista de solicitudes, actualizar el badge del header de la sección
                             const adminSectionBadge = document.getElementById('admin-pending-count-badge');
                             if (adminSectionBadge) adminSectionBadge.textContent = count;
-
                         } else {
-                            // Ocultar la alerta si el conteo es 0 o si hubo un error controlado
                             badge.textContent = '0';
                             badge.classList.add('hidden');
                             const adminSectionBadge = document.getElementById('admin-pending-count-badge');
@@ -9604,8 +9601,7 @@
                     })
                     .catch(error => {
                         console.error("Error al obtener alerta de correcciones:", error);
-                        // Asegurar que la alerta esté oculta si falla la conexión
-                        badge.classList.add('hidden');
+                        if (badge) badge.classList.add('hidden');
                     });
             }
 

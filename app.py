@@ -1930,27 +1930,25 @@ def login():
                 res_nominas.raise_for_status()
                 nominas_raw = res_nominas.json()
                 
-                # Agrupar por nombre_colegio — UNA sola card por colegio
-                # aunque haya múltiples nóminas del mismo colegio (operativos masivos)
+                # UNA sola card por nombre_colegio — agrupa múltiples nóminas del mismo colegio
                 colegios_asignados_list = []
-                establecimientos_ids    = []
-                colegios_vistos = {}
-
+                establecimientos_ids = []
+                ya_vistos = set()
                 for nom in nominas_raw:
                     nombre_colegio = (nom.get('nombre_colegio') or '').strip()
                     if not nombre_colegio:
                         continue
-                    if nombre_colegio not in colegios_vistos:
-                        entry = {
-                            'id':             nombre_colegio,
-                            'nombre_colegio': nombre_colegio,
-                            'form_type':      nom.get('form_type', ''),
-                            'nombre_nomina':  nom.get('nombre_nomina', ''),
-                        }
-                        colegios_vistos[nombre_colegio] = entry
-                        colegios_asignados_list.append(entry)
-                        establecimientos_ids.append(nombre_colegio)
-                    # Si el colegio ya existe, no duplicar la card
+                    if nombre_colegio in ya_vistos:
+                        continue  # ya hay una card para este colegio, no duplicar
+                    ya_vistos.add(nombre_colegio)
+                    entry = {
+                        'id': nombre_colegio,
+                        'nombre_colegio': nombre_colegio,
+                        'form_type': nom.get('form_type', ''),
+                        'nombre_nomina': nom.get('nombre_nomina', ''),
+                    }
+                    colegios_asignados_list.append(entry)
+                    establecimientos_ids.append(nombre_colegio)
 
                 session['colegios_asignados_ids'] = establecimientos_ids
                 session['colegios_asignados'] = colegios_asignados_list

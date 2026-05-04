@@ -10969,6 +10969,7 @@ async function loadCoordEvaluaciones() {
         if (!data.success) throw new Error(data.message || 'Error al cargar');
 
         cslepData = data.data || [];   // [{colegio, alumnos, ausentes, total, evaluados}]
+        _cslepDataFiltrado = cslepData.slice();  // copia para cuando no hay filtro
 
         // Actualizar KPIs del hero
         const totalAlumnos  = cslepData.reduce((s,d) => s + (d.total||0), 0);
@@ -11058,7 +11059,8 @@ function cslepRenderGrid(dataArr) {
     }).join('');
 }
 
-let _cslepTipoActivo = 'todos';
+let _cslepTipoActivo  = 'todos';
+let _cslepDataFiltrado = [];  // siempre refleja lo que se muestra en el grid
 
 function cslepFiltrarTipo(tipo) {
     _cslepTipoActivo = tipo;
@@ -11082,7 +11084,7 @@ function cslepFiltrar(q) {
 }
 
 function _cslepAplicarFiltros(q, tipo) {
-    const filtrado = cslepData.filter(d => {
+    _cslepDataFiltrado = cslepData.filter(d => {
         const matchNombre = !q || (d.colegio||'').toLowerCase().includes(q);
         const dt = (d.form_type||'').toLowerCase();
         let matchTipo = true;
@@ -11090,12 +11092,16 @@ function _cslepAplicarFiltros(q, tipo) {
         if (tipo === 'medicina_familiar') matchTipo = dt === 'medicina_familiar';
         return matchNombre && matchTipo;
     });
-    cslepRenderGrid(filtrado);
+    cslepRenderGrid(_cslepDataFiltrado);
 }
 
 // ── Abrir nómina de un establecimiento ───────────────────────────────────────
 async function cslepAbrirNomina(idx) {
-    const est  = cslepData[idx];
+    // Usar _cslepDataFiltrado para respetar el filtro activo
+    const source = (_cslepDataFiltrado.length > 0 || _cslepTipoActivo !== 'todos' || (document.getElementById('cslep-search-input')?.value||'').trim())
+        ? _cslepDataFiltrado
+        : cslepData;
+    const est = source[idx];
     if (!est) return;
 
     const listView  = document.getElementById('cslep-list-view');

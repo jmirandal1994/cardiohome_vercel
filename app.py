@@ -1930,23 +1930,27 @@ def login():
                 res_nominas.raise_for_status()
                 nominas_raw = res_nominas.json()
                 
-                # Una entrada por nómina (no por colegio) para mantener form_type
+                # Agrupar por nombre_colegio — una sola entrada por colegio
+                # aunque haya múltiples nóminas (operativos con varias doctoras)
                 colegios_asignados_list = []
                 establecimientos_ids = []
+                colegios_vistos = {}
                 for nom in nominas_raw:
                     nombre_colegio = nom.get('nombre_colegio')
                     if not nombre_colegio:
                         continue
-                    # Usar nombre_colegio como ID de acceso (igual que antes)
-                    entry = {
-                        'id': nombre_colegio,
-                        'nombre_colegio': nombre_colegio,
-                        'form_type': nom.get('form_type', ''),
-                        'nombre_nomina': nom.get('nombre_nomina', ''),
-                    }
-                    colegios_asignados_list.append(entry)
-                    if nombre_colegio not in establecimientos_ids:
+                    if nombre_colegio not in colegios_vistos:
+                        # Primera vez que vemos este colegio — crear entrada
+                        entry = {
+                            'id': nombre_colegio,
+                            'nombre_colegio': nombre_colegio,
+                            'form_type': nom.get('form_type', ''),
+                            'nombre_nomina': nom.get('nombre_nomina', ''),
+                        }
+                        colegios_vistos[nombre_colegio] = entry
+                        colegios_asignados_list.append(entry)
                         establecimientos_ids.append(nombre_colegio)
+                    # Si ya existe, no duplicar (el acceso por nombre_colegio ya trae todas)
 
                 session['colegios_asignados_ids'] = establecimientos_ids
                 session['colegios_asignados'] = colegios_asignados_list
@@ -3783,13 +3787,13 @@ def desbloquear_nomina():
         except Exception:
             return jsonify({"success": False, "message": "Error al verificar acceso."}), 500
         
-    # 3. Validar el token de acceso para ese colegio (Envuelto en TRY/EXCEPT para errores de conexión)
+    # 3. Validar el token de acceso para ese colegio — busca TODAS las nóminas del colegio
     try:
         url_token = (
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?nombre_colegio=eq.{school_name}"
             f"&coord_escuela_id=eq.{session.get('usuario_id')}"
-            f"&select=token_acceso,id"
+            f"&select=token_acceso,id,nombre_nomina,form_type"
         )
         
         res_token = requests.get(url_token, headers=SUPABASE_SERVICE_HEADERS)
@@ -3801,13 +3805,14 @@ def desbloquear_nomina():
         # 4. Comparamos la contraseña
         if token_esperado and token_esperado == password_ingresada:
             
+            # Todas las nóminas del mismo colegio agrupadas
             nomina_ids = [nom.get('id') for nom in nominas_con_token if nom.get('id')]
             nomina_ids_str = ",".join(nomina_ids)
 
             if not nomina_ids:
                 return jsonify({"success": True, "nominas": []}) 
                 
-            # 5. CONSULTA FINAL DE ESTUDIANTES (Sin filtro de fecha)
+            # 5. CONSULTA FINAL DE ESTUDIANTES — todas las nóminas del grupo
             url_students = (
                 f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
                 f"?nomina_id=in.({nomina_ids_str})"
@@ -5475,44 +5480,65 @@ def api_coordinadora_reporte_detalle():
         global_total = 0
         global_evaluados = 0
 
+        # Agrupar nóminas por nombre_colegio
+        from collections import defaultdict
+        grupos = defaultdict(list)
         for nom in nominas:
-            url_e = (
-                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                f"?nomina_id=eq.{nom['id']}"
-                f"&estado_asistencia=in.(activo,extra)"
-                f"&select=id,nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia,fecha_relleno"
-                f"&order=nombre.asc"
-            )
-            res_e = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS)
-            alumnos = res_e.json() if res_e.ok else []
+            clave = (nom.get('nombre_colegio') or nom.get('nombre_nomina') or 'Sin nombre').strip()
+            grupos[clave].append(nom)
 
-            url_aus = (
-                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                f"?nomina_id=eq.{nom['id']}"
-                f"&estado_asistencia=in.(no_asiste_reemplazado,no_asiste_sin_reemplazo)"
-                f"&select=nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia"
-                f"&order=nombre.asc"
-            )
-            res_aus = requests.get(url_aus, headers=SUPABASE_SERVICE_HEADERS)
-            ausentes = res_aus.json() if res_aus.ok else []
+        for colegio, noms_grupo in grupos.items():
+            alumnos_grupo  = []
+            ausentes_grupo = []
+            form_type_grupo = noms_grupo[0].get('form_type', '')
 
-            ev_count    = len([a for a in alumnos if a.get('evaluado_flag') is True])
-            total_count = len(alumnos)
+            for nom in noms_grupo:
+                url_e = (
+                    f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                    f"?nomina_id=eq.{nom['id']}"
+                    f"&estado_asistencia=in.(activo,extra)"
+                    f"&select=id,nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia,fecha_relleno"
+                    f"&order=nombre.asc"
+                )
+                res_e = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS)
+                alumnos_grupo.extend(res_e.json() if res_e.ok else [])
+
+                url_aus = (
+                    f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
+                    f"?nomina_id=eq.{nom['id']}"
+                    f"&estado_asistencia=in.(no_asiste_reemplazado,no_asiste_sin_reemplazo)"
+                    f"&select=nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia"
+                    f"&order=nombre.asc"
+                )
+                res_aus = requests.get(url_aus, headers=SUPABASE_SERVICE_HEADERS)
+                ausentes_grupo.extend(res_aus.json() if res_aus.ok else [])
+
+            # Ordenar todos los alumnos del grupo por nombre
+            alumnos_grupo.sort(key=lambda a: a.get('nombre',''))
+
+            ev_count    = len([a for a in alumnos_grupo if a.get('evaluado_flag') is True])
+            total_count = len(alumnos_grupo)
             global_total     += total_count
             global_evaluados += ev_count
 
-            colegio    = nom.get('nombre_colegio') or nom.get('nombre_nomina') or 'Sin nombre'
-            doc_id     = str(nom.get('doctora_id') or '')
-            doc_nombre = doctoras_map.get(doc_id, '')
-            label = colegio + ('  (' + doc_nombre + ')' if doc_nombre else '')
+            # Si hay múltiples doctoras en el grupo, indicarlo
+            doctoras_str = ''
+            doc_ids = list({str(n.get('doctora_id','')) for n in noms_grupo if n.get('doctora_id')})
+            if len(doc_ids) > 1:
+                doctoras_str = f" · {len(doc_ids)} doctoras"
+            elif len(doc_ids) == 1:
+                doc_nombre = doctoras_map.get(doc_ids[0], '')
+                if doc_nombre:
+                    doctoras_str = f" · {doc_nombre}"
 
             detalles.append({
-                "colegio":    label,
-                "alumnos":    alumnos,
-                "ausentes":   ausentes,
+                "colegio":    colegio + doctoras_str,
+                "alumnos":    alumnos_grupo,
+                "ausentes":   ausentes_grupo,
                 "total":      total_count,
                 "evaluados":  ev_count,
-                "form_type":  nom.get('form_type', ''),
+                "form_type":  form_type_grupo,
+                "nomina_ids": [n['id'] for n in noms_grupo],
             })
 
         return jsonify({

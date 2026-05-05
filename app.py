@@ -1618,10 +1618,11 @@ def api_admin_corregir_alumno():
     if session.get('usuario') != 'admin':
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
-        data        = request.get_json()
+        # force=True ignora Content-Type, silent=True retorna None en vez de 400
+        data = request.get_json(force=True, silent=True) or {}
         alumno_id   = data.get('alumno_id')
         solicitud_id = data.get('solicitud_id')
-        campos      = data.get('campos', {})   # dict con los campos a actualizar
+        campos      = data.get('campos', {})
 
         if not alumno_id or not campos:
             return jsonify({"success": False, "message": "Faltan datos"}), 400
@@ -1930,25 +1931,26 @@ def login():
                 res_nominas.raise_for_status()
                 nominas_raw = res_nominas.json()
                 
-                # UNA sola entry por nombre_colegio — deduplicar nóminas del mismo colegio
+                # Una entrada por nómina (no por colegio) para mantener form_type
                 colegios_asignados_list = []
-                establecimientos_ids    = []
-                ya_vistos = set()
+                establecimientos_ids = []
                 for nom in nominas_raw:
-                    nombre_colegio = (nom.get('nombre_colegio') or '').strip()
-                    if not nombre_colegio or nombre_colegio in ya_vistos:
+                    nombre_colegio = nom.get('nombre_colegio')
+                    if not nombre_colegio:
                         continue
-                    ya_vistos.add(nombre_colegio)
-                    colegios_asignados_list.append({
-                        'id':             nombre_colegio,
+                    # Usar nombre_colegio como ID de acceso (igual que antes)
+                    entry = {
+                        'id': nombre_colegio,
                         'nombre_colegio': nombre_colegio,
-                        'form_type':      nom.get('form_type', ''),
-                        'nombre_nomina':  nom.get('nombre_nomina', ''),
-                    })
-                    establecimientos_ids.append(nombre_colegio)
+                        'form_type': nom.get('form_type', ''),
+                        'nombre_nomina': nom.get('nombre_nomina', ''),
+                    }
+                    colegios_asignados_list.append(entry)
+                    if nombre_colegio not in establecimientos_ids:
+                        establecimientos_ids.append(nombre_colegio)
 
-                # Guardar solo los IDs en sesión (evita cookie demasiado grande en Vercel)
                 session['colegios_asignados_ids'] = establecimientos_ids
+                session['colegios_asignados'] = colegios_asignados_list
             
             print(f"DEBUG: Sesión iniciada: usuario={session['usuario']}, usuario_id={session['usuario_id']}")
             flash(f'¡Bienvenido, {usuario_login}!', 'success')
@@ -2491,7 +2493,7 @@ def api_admin_crear_usuario():
     if session.get('usuario') != 'admin':
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
-        data     = request.get_json() or {}
+        data     = request.get_json(force=True, silent=True) or {}
         nombre   = (data.get('nombre') or '').strip()
         usuario  = (data.get('usuario') or '').strip()
         password = (data.get('password') or '').strip()
@@ -2587,7 +2589,7 @@ def api_nomina_asignar_doctora2():
     if session.get('usuario') != 'admin':
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
-        data        = request.get_json() or {}
+        data        = request.get_json(force=True, silent=True) or {}
         nomina_id   = data.get('nomina_id', '').strip()
         doctora_id2 = data.get('doctora_id_2') or None  # None = quitar segunda doctora
 
@@ -2959,31 +2961,8 @@ def dashboard():
             flash('Error al cargar nóminas asignadas.', 'error')
             assigned_nominations = []
 
-    # --- Lógica de carga para Coordinador de Escuela ---
-    colegios_asignados_escuela = []
-    if user_role == 'coordinador_escuela':
-        try:
-            res_col = requests.get(
-                f"{SUPABASE_URL}/rest/v1/nominas_medicas"
-                f"?coord_escuela_id=eq.{user_id}"
-                f"&select=id,nombre_colegio,form_type,nombre_nomina"
-                f"&order=nombre_colegio.asc",
-                headers=SUPABASE_SERVICE_HEADERS
-            )
-            ya_vistos_dash = set()
-            for nom in (res_col.json() if res_col.ok else []):
-                nc = (nom.get('nombre_colegio') or '').strip()
-                if not nc or nc in ya_vistos_dash:
-                    continue
-                ya_vistos_dash.add(nc)
-                colegios_asignados_escuela.append({
-                    'id':             nc,
-                    'nombre_colegio': nc,
-                    'form_type':      nom.get('form_type', ''),
-                    'nombre_nomina':  nom.get('nombre_nomina', ''),
-                })
-        except Exception as e:
-            print(f"ERROR cargando colegios coordinador_escuela: {e}")
+    # --- Lógica de carga para Coordinador de Escuela (Usa datos de Session) ---
+    colegios_asignados_escuela = session.get('colegios_asignados', [])
 
     # ------------------ Renderizado del Dashboard ------------------
     return render_template(
@@ -3178,7 +3157,7 @@ def solicitar_correccion():
 
     try:
         # 2. Obtener los datos enviados (JSON)
-        data = request.get_json()
+        data = request.get_json(force=True, silent=True) or {}
         
         alumno_id = data.get('alumno_id')
         detalles = data.get('detalles')
@@ -3226,7 +3205,7 @@ def actualizar_estado_correccion():
         return jsonify({"success": False, "message": "Acceso denegado"}), 403
     
     try:
-        data = request.get_json()
+        data = request.get_json(force=True, silent=True) or {}
         request_id = data.get('request_id')
         nuevo_estado = data.get('estado') # 'Aprobada' o 'Rechazada'
 
@@ -3779,7 +3758,7 @@ def desbloquear_nomina():
     if session.get('usuario') != 'coordinador_escuela':
         return jsonify({"success": False, "message": "Acceso no autorizado al recurso"}), 403
     
-    data = request.get_json()
+    data = request.get_json(force=True, silent=True) or {}
     password_ingresada = data.get('password')
     school_name = data.get('school_id') 
     
@@ -4523,7 +4502,7 @@ def generar_zip_pdfs_evaluados():
     if 'user_id' not in session:
         return jsonify({"success": False, "message": "Acceso denegado."}), 403
 
-    data = request.get_json()
+    data = request.get_json(force=True, silent=True) or {}
     nomina_id = data.get('nomina_id')
     student_ids = data.get('student_ids', [])
 
@@ -4567,7 +4546,7 @@ def generar_pdfs_visibles():
     if 'usuario' not in session:
         return jsonify({"success": False, "message": "No autorizado"}), 401
 
-    data = request.get_json()
+    data = request.get_json(force=True, silent=True) or {}
     nomina_id = data.get('nomina_id')
     student_ids = data.get('student_ids')
 
@@ -5585,7 +5564,7 @@ def api_admin_listado_excel():
         from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
         from io import BytesIO
 
-        data = request.get_json()
+        data = request.get_json(force=True, silent=True) or {}
         nomina_id = data.get('nomina_id')
         filtro    = data.get('filtro', 'todos')
         if not nomina_id:
@@ -5765,7 +5744,7 @@ def api_admin_listado_pdf():
     if session.get('usuario') != 'admin':
         return jsonify({"success": False, "message": "Acceso denegado"}), 403
     try:
-        data = request.get_json()
+        data = request.get_json(force=True, silent=True) or {}
         nomina_id = data.get('nomina_id')
         filtro    = data.get('filtro', 'todos')   # 'todos' | 'evaluados' | 'pendientes'
         if not nomina_id:
@@ -6042,7 +6021,7 @@ def api_estudiante_estado_ausencia():
     if 'usuario' not in session:
         return jsonify({"success": False, "message": "No autorizado"}), 401
     try:
-        data = request.get_json()
+        data = request.get_json(force=True, silent=True) or {}
         if not data:
             return jsonify({"success": False, "message": "Body JSON requerido"}), 400
 
@@ -6092,7 +6071,7 @@ def api_estudiante_agregar():
     if 'usuario' not in session:
         return jsonify({"success": False, "message": "No autorizado"}), 401
     try:
-        data = request.get_json()
+        data = request.get_json(force=True, silent=True) or {}
         if not data:
             return jsonify({"success": False, "message": "Body JSON requerido"}), 400
 
@@ -6153,7 +6132,7 @@ def api_obtener_token():
     if session.get('usuario') != 'coordinador_escuela':
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
-        data      = request.get_json() or {}
+        data      = request.get_json(force=True, silent=True) or {}
         school_id = data.get('school_id', '').strip()
         nombre    = data.get('nombre', '').strip()
         rut       = data.get('rut', '').strip()
@@ -6424,7 +6403,7 @@ def api_presencia_post():
     if session.get('usuario') != 'doctora':
         return jsonify({"success": True, "skipped": True}), 200
     try:
-        data          = request.get_json() or {}
+        data          = request.get_json(force=True, silent=True) or {}
         doctora_id    = session.get('usuario_id')
         nomina_id     = data.get('nomina_id') or session.get('current_nomina_id') or ''
         establec      = data.get('establecimiento') or ''
@@ -6818,7 +6797,7 @@ def marcar_correccion_vista():
     if 'usuario' not in session:
         return jsonify({"success": False}), 401
     try:
-        solicitud_id = (request.get_json() or {}).get('solicitud_id')
+        solicitud_id = (request.get_json(force=True, silent=True) or {}).get('solicitud_id')
         if not solicitud_id:
             return jsonify({"success": False, "message": "Falta solicitud_id"}), 400
         requests.patch(
@@ -6840,7 +6819,7 @@ def actualizar_respuesta_correccion():
     if session.get('usuario') != 'admin':
         return jsonify({"success": False, "message": "Acceso denegado"}), 403
     try:
-        data         = request.get_json() or {}
+        data         = request.get_json(force=True, silent=True) or {}
         solicitud_id = data.get('solicitud_id')
         respuesta    = (data.get('respuesta_admin') or '').strip() or None
         if not solicitud_id:
@@ -6868,7 +6847,7 @@ def agente_analizar_correccion():
     if not ANTHROPIC_API_KEY:
         return jsonify({"success": False, "message": "API key de Anthropic no configurada"}), 500
     try:
-        data         = request.get_json() or {}
+        data         = request.get_json(force=True, silent=True) or {}
         solicitud_id = data.get('solicitud_id')
         if not solicitud_id:
             return jsonify({"success": False, "message": "Falta solicitud_id"}), 400
@@ -6991,7 +6970,7 @@ def doctora_revisar_nomina():
     if 'usuario' not in session:
         return jsonify({"success": False, "message": "No autorizado"}), 401
     try:
-        data      = request.get_json() or {}
+        data      = request.get_json(force=True, silent=True) or {}
         nomina_id = data.get('nomina_id')
         if not nomina_id:
             return jsonify({"success": False, "message": "Falta nomina_id"}), 400
@@ -7092,7 +7071,7 @@ def agente_barrer_nomina():
     if not ANTHROPIC_API_KEY:
         return jsonify({"success": False, "message": "API key de Anthropic no configurada"}), 500
     try:
-        data      = request.get_json() or {}
+        data      = request.get_json(force=True, silent=True) or {}
         nomina_id = data.get('nomina_id')
         if not nomina_id:
             return jsonify({"success": False, "message": "Falta nomina_id"}), 400
@@ -7307,7 +7286,7 @@ def agente_chat():
     if not ANTHROPIC_API_KEY:
         return jsonify({"success": False, "message": "API key no configurada"}), 500
     try:
-        data     = request.get_json() or {}
+        data     = request.get_json(force=True, silent=True) or {}
         mensaje  = data.get('mensaje', '').strip()
         historial = data.get('historial', [])
         if not mensaje:
@@ -7353,7 +7332,7 @@ def soporte_solicitar():
     if rol not in ('coordinador_escuela', 'coordinadora', 'doctora'):
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
-        data      = request.get_json() or {}
+        data      = request.get_json(force=True, silent=True) or {}
         nombre    = (data.get('nombre') or session.get('nombre') or '').strip()
         escuela   = (data.get('escuela') or '').strip()
         es_general = (rol in ('coordinadora', 'doctora'))  # doctora y coord general = prioridad alta
@@ -7436,7 +7415,7 @@ def soporte_aceptar():
     if session.get('usuario') != 'admin':
         return jsonify({"success": False}), 403
     try:
-        data     = request.get_json() or {}
+        data     = request.get_json(force=True, silent=True) or {}
         sesion_id = data.get('sesion_id')
         admin_id  = str(session.get('usuario_id', ''))
         admin_nombre = session.get('nombre') or session.get('usuario') or 'Admin'
@@ -7525,7 +7504,7 @@ def soporte_enviar():
     if rol not in ('admin', 'coordinador_escuela', 'coordinadora', 'doctora'):
         return jsonify({"success": False}), 403
     try:
-        data      = request.get_json() or {}
+        data      = request.get_json(force=True, silent=True) or {}
         sesion_id = data.get('sesion_id')
         mensaje   = (data.get('mensaje') or '').strip()
         if not mensaje or not sesion_id:
@@ -7551,7 +7530,7 @@ def soporte_cerrar():
     if rol not in ('admin', 'coordinador_escuela', 'coordinadora', 'doctora'):
         return jsonify({"success": False}), 403
     try:
-        data      = request.get_json() or {}
+        data      = request.get_json(force=True, silent=True) or {}
         sesion_id = data.get('sesion_id')
         requests.patch(
             f"{SUPABASE_URL}/rest/v1/chat_soporte_sesiones?id=eq.{sesion_id}",
@@ -7640,7 +7619,7 @@ def chat_admin_enviar():
     if session.get('usuario') != 'admin':
         return jsonify({"success": False}), 403
     try:
-        data    = request.get_json() or {}
+        data    = request.get_json(force=True, silent=True) or {}
         mensaje = (data.get('mensaje') or '').strip()
         if not mensaje: return jsonify({"success": False}), 400
         autor_id     = session.get('usuario_id')
@@ -7722,7 +7701,7 @@ def chat_admin_enviar_privado():
     if session.get('usuario') != 'admin':
         return jsonify({"success": False}), 403
     try:
-        data    = request.get_json() or {}
+        data    = request.get_json(force=True, silent=True) or {}
         dest_id = data.get('dest_id')
         mensaje = (data.get('mensaje') or '').strip()
         if not mensaje or not dest_id:
@@ -8152,7 +8131,7 @@ def api_mover_estudiantes():
     if session.get('usuario') != 'admin':
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
-        data       = request.get_json() or {}
+        data       = request.get_json(force=True, silent=True) or {}
         alumno_ids = data.get('alumno_ids', [])
         destino_id = data.get('nomina_destino_id', '').strip()
         if not alumno_ids or not destino_id:
@@ -8293,7 +8272,7 @@ def api_evaluacion_enviar():
     if session.get('usuario') != 'coordinador_escuela':
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
-        data = request.get_json() or {}
+        data = request.get_json(force=True, silent=True) or {}
         school_id       = data.get('school_id', '').strip()
         rating_servicio = int(data.get('rating_servicio', 0))
         rating_doctora  = int(data.get('rating_doctora', 0))

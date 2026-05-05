@@ -1,4 +1,4 @@
-rom flask import Flask, render_template, request, redirect, session, url_for, flash, send_file, Response, jsonify
+from flask import Flask, render_template, request, redirect, session, url_for, flash, send_file, Response, jsonify
 import os
 import requests
 import base64

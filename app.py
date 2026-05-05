@@ -1618,11 +1618,10 @@ def api_admin_corregir_alumno():
     if session.get('usuario') != 'admin':
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
-        # force=True ignora Content-Type, silent=True retorna None en vez de 400
-        data = request.get_json(force=True, silent=True) or {}
+        data        = request.get_json(force=True, silent=True) or {}
         alumno_id   = data.get('alumno_id')
         solicitud_id = data.get('solicitud_id')
-        campos      = data.get('campos', {})
+        campos      = data.get('campos', {})   # dict con los campos a actualizar
 
         if not alumno_id or not campos:
             return jsonify({"success": False, "message": "Faltan datos"}), 400

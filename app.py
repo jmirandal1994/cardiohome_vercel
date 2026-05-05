@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, url_for, flash, send_file, Response, jsonify
+rom flask import Flask, render_template, request, redirect, session, url_for, flash, send_file, Response, jsonify
 import os
 import requests
 import base64
@@ -6278,8 +6278,14 @@ def api_coordinador_zip(school_id):
                         rut_a = alumno.get('rut','').replace('.','').replace('-','')
                         zf.writestr(f"{carpeta}/{nombre_a}_{rut_a}.pdf", pdf_bytes)
                 except Exception as ex:
-                    print(f"ZIP skip {alumno.get('id')}: {ex}")
+                    import traceback
+                    print(f"ZIP ERROR {alumno.get('id')}: {ex}")
+                    print(traceback.format_exc())
         zip_buf.seek(0)
+        zip_size = zip_buf.getbuffer().nbytes
+        print(f"DEBUG ZIP size: {zip_size} bytes, alumnos procesados: {len(alumnos)}")
+        if zip_size < 100:
+            return jsonify({"success": False, "message": "No se pudieron generar los PDFs. Revisa los logs."}), 500
         return send_file(zip_buf, as_attachment=True,
                          download_name=f"{carpeta}.zip",
                          mimetype='application/zip')
@@ -8223,6 +8229,8 @@ def _generar_pdf_bytes_alumno_id(alumno_id):
 
         def sg(f): v=est.get(f); return '' if v is None or str(v).strip() in ('None','null','') else str(v).strip()
         def mc(v): return "X" if v is True or (isinstance(v,str) and v.strip() and v.strip().lower() not in ('false','0','no','')) else ""
+        print(f"DEBUG PDF alumno {alumno_id}: form_type={form_type}, pdf_base={pdf_base}, existe={os.path.exists(pdf_base) if pdf_base else False}")
+        print(f"DEBUG PDF datos: nombre={est.get('nombre')}, estado_general={repr(est.get('estado_general','')[:50])}, diagnostico={repr(est.get('diagnostico','')[:30])}")
 
         _fe = datetime.strptime(est['fecha_evaluacion'],'%Y-%m-%d').date() if est.get('fecha_evaluacion') else None
         edad = calculate_age(datetime.strptime(est['fecha_nacimiento'],'%Y-%m-%d').date(), fecha_ref=_fe) if est.get('fecha_nacimiento') else 'N/A'

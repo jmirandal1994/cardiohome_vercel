@@ -826,59 +826,64 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
         merged.seek(0)
 
         # ── PASO 2: pikepdf — X del sexo como stream de página (va ENCIMA de todo) ──
-        import pikepdf
-        with pikepdf.open(merged) as pdf:
-            page = pdf.pages[0]
+        try:
+            import pikepdf
+            with pikepdf.open(merged) as pdf:
+                page = pdf.pages[0]
 
-            # Registrar fuente Helvetica-Bold en recursos de página
-            resources = page.obj['/Resources']
-            if '/Font' not in resources:
-                resources['/Font'] = pikepdf.Dictionary()
-            if '/HelvB' not in resources['/Font']:
-                resources['/Font']['/HelvB'] = pikepdf.Dictionary(
-                    Type=pikepdf.Name('/Font'),
-                    Subtype=pikepdf.Name('/Type1'),
-                    BaseFont=pikepdf.Name('/Helvetica-Bold'),
-                )
+                # Registrar fuente Helvetica-Bold en recursos de página
+                resources = page.obj['/Resources']
+                if '/Font' not in resources:
+                    resources['/Font'] = pikepdf.Dictionary()
+                if '/HelvB' not in resources['/Font']:
+                    resources['/Font']['/HelvB'] = pikepdf.Dictionary(
+                        Type=pikepdf.Name('/Font'),
+                        Subtype=pikepdf.Name('/Type1'),
+                        BaseFont=pikepdf.Name('/Helvetica-Bold'),
+                    )
 
-            # Coordenadas exactas del interior de cada cuadro (del AP stream real)
-            COORDS_SEXO_REAL = {
-                'sexo_f': (361.8, 718.7, 377.8, 729.8),
-                'sexo_m': (407.6, 718.0, 424.3, 728.8),
-            }
-            sexo_ops = []
-            for fname, (x0, y0, x1, y1) in COORDS_SEXO_REAL.items():
-                if not campos.get(fname, '').strip():
-                    continue
-                w = x1 - x0
-                h = y1 - y0
-                fs = 9.0
-                # Centrar X en el cuadro
-                char_w = fs * 0.6
-                xt = x0 + (w - char_w) / 2
-                yt = y0 + (h - fs) / 2 + 1
-                sexo_ops.append(
-                    f"q\n0 0 0 rg\nBT\n/HelvB {fs} Tf\n"
-                    f"{xt:.3f} {yt:.3f} Td\n(X) Tj\nET\nQ\n"
-                )
+                # Coordenadas exactas del interior de cada cuadro (del AP stream real)
+                COORDS_SEXO_REAL = {
+                    'sexo_f': (361.8, 718.7, 377.8, 729.8),
+                    'sexo_m': (407.6, 718.0, 424.3, 728.8),
+                }
+                sexo_ops = []
+                for fname, (x0, y0, x1, y1) in COORDS_SEXO_REAL.items():
+                    if not campos.get(fname, '').strip():
+                        continue
+                    w = x1 - x0
+                    h = y1 - y0
+                    fs = 9.0
+                    char_w = fs * 0.6
+                    xt = x0 + (w - char_w) / 2
+                    yt = y0 + (h - fs) / 2 + 1
+                    sexo_ops.append(
+                        f"q\n0 0 0 rg\nBT\n/HelvB {fs} Tf\n"
+                        f"{xt:.3f} {yt:.3f} Td\n(X) Tj\nET\nQ\n"
+                    )
 
-            if sexo_ops:
-                stream_bytes = "".join(sexo_ops).encode('latin-1')
-                x_stream = pikepdf.Stream(pdf, stream_bytes)
-                # Agregar AL FINAL del contenido de página — siempre encima
-                existing = page.obj.get('/Contents')
-                if isinstance(existing, pikepdf.Array):
-                    existing.append(x_stream)
-                elif existing is not None:
-                    page.obj['/Contents'] = pikepdf.Array([existing, x_stream])
-                else:
-                    page.obj['/Contents'] = x_stream
+                if sexo_ops:
+                    stream_bytes = "".join(sexo_ops).encode('latin-1')
+                    x_stream = pikepdf.Stream(pdf, stream_bytes)
+                    existing = page.obj.get('/Contents')
+                    if isinstance(existing, pikepdf.Array):
+                        existing.append(x_stream)
+                    elif existing is not None:
+                        page.obj['/Contents'] = pikepdf.Array([existing, x_stream])
+                    else:
+                        page.obj['/Contents'] = x_stream
 
-            dst = io.BytesIO()
-            pdf.save(dst)
+                dst = io.BytesIO()
+                pdf.save(dst)
 
-        print("✅ PDF neurología listo.")
-        return flatten_pdf_fields(dst.getvalue())
+            print("✅ PDF neurología listo (con pikepdf).")
+            return flatten_pdf_fields(dst.getvalue())
+
+        except Exception as pikepdf_err:
+            # pikepdf no disponible o falló — retornar PDF sin X de sexo
+            print(f"⚠️ pikepdf no disponible, retornando sin marca de sexo: {pikepdf_err}")
+            merged.seek(0)
+            return flatten_pdf_fields(merged.getvalue())
 
     except Exception as e:
         print(f"❌ generar_pdf_neurologia_overlay: {e}")

@@ -6184,6 +6184,8 @@ def api_coordinador_excel(school_id):
     if session.get('usuario') != 'coordinador_escuela':
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
+        from urllib.parse import unquote
+        school_id = unquote(school_id)
         res_nom = requests.get(
             f"{SUPABASE_URL}/rest/v1/nominas_medicas",
             params={
@@ -6237,6 +6239,8 @@ def api_coordinador_zip(school_id):
     if session.get('usuario') != 'coordinador_escuela':
         return jsonify({"success": False, "message": "No autorizado"}), 403
     try:
+        from urllib.parse import unquote
+        school_id = unquote(school_id)
         import zipfile as _zf
         res_nom = requests.get(
             f"{SUPABASE_URL}/rest/v1/nominas_medicas",

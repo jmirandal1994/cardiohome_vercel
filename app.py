@@ -8181,7 +8181,7 @@ def _generar_pdf_bytes_alumno_id(alumno_id):
     try:
         res = requests.get(
             f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{alumno_id}"
-            f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,diagnostico,"
+            f"&select=id,nombre,rut,fecha_nacimiento,nacionalidad,sexo,diagnostico,estado_general,"
             f"derivaciones,fecha_evaluacion,fecha_reevaluacion,fecha_relleno,diagnostico_1,diagnostico_2,"
             f"diagnostico_complementario,clasificacion,observacion_1,observacion_2,observacion_3,"
             f"observacion_4,observacion_5,observacion_6,observacion_7,check_cesarea,check_atermino,"
@@ -8240,7 +8240,6 @@ def _generar_pdf_bytes_alumno_id(alumno_id):
                       "fecha_evaluacion":fe_fmt,"fecha_reevaluacion":fre_fmt,
                       "sexo_f":"X" if _es_femenino(est.get('sexo','')) else "",
                       "sexo_m":"X" if _es_masculino(est.get('sexo','')) else ""}
-            return generar_pdf_neurologia_overlay(pdf_base, campos)
 
         elif form_type == 'medicina_familiar':
             campos = {"nombre":nombre,"rut":rut,"fecha_nacimiento":fn_fmt,"edad":edad,

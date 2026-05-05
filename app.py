@@ -1930,26 +1930,9 @@ def login():
                 res_nominas.raise_for_status()
                 nominas_raw = res_nominas.json()
                 
-                # Una entrada por nómina (no por colegio) para mantener form_type
-                colegios_asignados_list = []
-                establecimientos_ids = []
-                for nom in nominas_raw:
-                    nombre_colegio = nom.get('nombre_colegio')
-                    if not nombre_colegio:
-                        continue
-                    # Usar nombre_colegio como ID de acceso (igual que antes)
-                    entry = {
-                        'id': nombre_colegio,
-                        'nombre_colegio': nombre_colegio,
-                        'form_type': nom.get('form_type', ''),
-                        'nombre_nomina': nom.get('nombre_nomina', ''),
-                    }
-                    colegios_asignados_list.append(entry)
-                    if nombre_colegio not in establecimientos_ids:
-                        establecimientos_ids.append(nombre_colegio)
-
-                session['colegios_asignados_ids'] = establecimientos_ids
-                session['colegios_asignados'] = colegios_asignados_list
+                # No guardar colegios en sesión — la cookie se hace demasiado grande
+                # Se cargan desde Supabase en cada request al dashboard
+                pass  # colegios se cargan en dashboard()
             
             print(f"DEBUG: Sesión iniciada: usuario={session['usuario']}, usuario_id={session['usuario_id']}")
             flash(f'¡Bienvenido, {usuario_login}!', 'success')
@@ -2960,8 +2943,30 @@ def dashboard():
             flash('Error al cargar nóminas asignadas.', 'error')
             assigned_nominations = []
 
-    # --- Lógica de carga para Coordinador de Escuela (Usa datos de Session) ---
-    colegios_asignados_escuela = session.get('colegios_asignados', [])
+    # --- Lógica de carga para Coordinador de Escuela (desde Supabase, no sesión) ---
+    colegios_asignados_escuela = []
+    if user_role == 'coordinador_escuela':
+        try:
+            res_col = requests.get(
+                f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+                f"?coord_escuela_id=eq.{user_id}"
+                f"&select=nombre_colegio,form_type,nombre_nomina"
+                f"&order=nombre_colegio.asc",
+                headers=SUPABASE_SERVICE_HEADERS
+            )
+            vistos = set()
+            for nom in (res_col.json() if res_col.ok else []):
+                nc = (nom.get('nombre_colegio') or '').strip()
+                if not nc or nc in vistos:
+                    continue
+                vistos.add(nc)
+                colegios_asignados_escuela.append({
+                    'id': nc, 'nombre_colegio': nc,
+                    'form_type': nom.get('form_type', ''),
+                    'nombre_nomina': nom.get('nombre_nomina', ''),
+                })
+        except Exception as e:
+            print(f"ERROR cargando colegios coord_escuela: {e}")
 
     # ------------------ Renderizado del Dashboard ------------------
     return render_template(
@@ -3763,6 +3768,7 @@ def desbloquear_nomina():
     
     # 2. Verificación de Asignación — primero sesión, si falla verifica en Supabase
     #    (Vercel serverless puede perder la caché de sesión entre requests)
+    # Validar acceso directamente en Supabase (no depender de sesión)
     colegios_permitidos = session.get('colegios_asignados_ids', [])
     if school_name not in colegios_permitidos:
         # Fallback: verificar directamente en Supabase

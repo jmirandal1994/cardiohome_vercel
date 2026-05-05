@@ -1930,28 +1930,25 @@ def login():
                 res_nominas.raise_for_status()
                 nominas_raw = res_nominas.json()
                 
-                # UNA sola card por nombre_colegio — agrupa múltiples nóminas del mismo colegio
+                # UNA sola entry por nombre_colegio — deduplicar nóminas del mismo colegio
                 colegios_asignados_list = []
-                establecimientos_ids = []
+                establecimientos_ids    = []
                 ya_vistos = set()
                 for nom in nominas_raw:
                     nombre_colegio = (nom.get('nombre_colegio') or '').strip()
-                    if not nombre_colegio:
+                    if not nombre_colegio or nombre_colegio in ya_vistos:
                         continue
-                    if nombre_colegio in ya_vistos:
-                        continue  # ya hay una card para este colegio, no duplicar
                     ya_vistos.add(nombre_colegio)
-                    entry = {
-                        'id': nombre_colegio,
+                    colegios_asignados_list.append({
+                        'id':             nombre_colegio,
                         'nombre_colegio': nombre_colegio,
-                        'form_type': nom.get('form_type', ''),
-                        'nombre_nomina': nom.get('nombre_nomina', ''),
-                    }
-                    colegios_asignados_list.append(entry)
+                        'form_type':      nom.get('form_type', ''),
+                        'nombre_nomina':  nom.get('nombre_nomina', ''),
+                    })
                     establecimientos_ids.append(nombre_colegio)
 
+                # Guardar solo los IDs en sesión (evita cookie demasiado grande en Vercel)
                 session['colegios_asignados_ids'] = establecimientos_ids
-                session['colegios_asignados'] = colegios_asignados_list
             
             print(f"DEBUG: Sesión iniciada: usuario={session['usuario']}, usuario_id={session['usuario_id']}")
             flash(f'¡Bienvenido, {usuario_login}!', 'success')
@@ -2962,8 +2959,31 @@ def dashboard():
             flash('Error al cargar nóminas asignadas.', 'error')
             assigned_nominations = []
 
-    # --- Lógica de carga para Coordinador de Escuela (Usa datos de Session) ---
-    colegios_asignados_escuela = session.get('colegios_asignados', [])
+    # --- Lógica de carga para Coordinador de Escuela ---
+    colegios_asignados_escuela = []
+    if user_role == 'coordinador_escuela':
+        try:
+            res_col = requests.get(
+                f"{SUPABASE_URL}/rest/v1/nominas_medicas"
+                f"?coord_escuela_id=eq.{user_id}"
+                f"&select=id,nombre_colegio,form_type,nombre_nomina"
+                f"&order=nombre_colegio.asc",
+                headers=SUPABASE_SERVICE_HEADERS
+            )
+            ya_vistos_dash = set()
+            for nom in (res_col.json() if res_col.ok else []):
+                nc = (nom.get('nombre_colegio') or '').strip()
+                if not nc or nc in ya_vistos_dash:
+                    continue
+                ya_vistos_dash.add(nc)
+                colegios_asignados_escuela.append({
+                    'id':             nc,
+                    'nombre_colegio': nc,
+                    'form_type':      nom.get('form_type', ''),
+                    'nombre_nomina':  nom.get('nombre_nomina', ''),
+                })
+        except Exception as e:
+            print(f"ERROR cargando colegios coordinador_escuela: {e}")
 
     # ------------------ Renderizado del Dashboard ------------------
     return render_template(

@@ -3969,8 +3969,7 @@
             const sexo      = document.getElementById('nuevo-sexo').value;
             const nominaId  = document.querySelector('input[name="nomina_id"]')?.value
                             || document.querySelector('[data-nomina-id]')?.getAttribute('data-nomina-id')
-                            || window.location.pathname.split('/').filter(Boolean).pop()
-                            || '';
+                            || '{{ session["current_nomina_id"] }}';
 
             if (!nombre || !rut) { alert('Nombre y RUT son obligatorios'); return; }
 

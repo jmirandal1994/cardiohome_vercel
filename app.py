@@ -825,11 +825,10 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
         writer_out.write(merged)
         merged.seek(0)
 
-        # ── PASO 2: pikepdf — X del sexo (fallback si no disponible en Vercel) ──
-        try:
-            import pikepdf
-            with pikepdf.open(merged) as pdf:
-                page = pdf.pages[0]
+        # ── PASO 2: pikepdf — X del sexo como stream de página (va ENCIMA de todo) ──
+        import pikepdf
+        with pikepdf.open(merged) as pdf:
+            page = pdf.pages[0]
 
             # Registrar fuente Helvetica-Bold en recursos de página
             resources = page.obj['/Resources']
@@ -878,12 +877,8 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
             dst = io.BytesIO()
             pdf.save(dst)
 
-            print("✅ PDF neurología listo (con pikepdf).")
-            return flatten_pdf_fields(dst.getvalue())
-        except Exception as pikepdf_err:
-            print(f"⚠️ pikepdf no disponible: {pikepdf_err}")
-            merged.seek(0)
-            return flatten_pdf_fields(merged.getvalue())
+        print("✅ PDF neurología listo.")
+        return flatten_pdf_fields(dst.getvalue())
 
     except Exception as e:
         print(f"❌ generar_pdf_neurologia_overlay: {e}")
@@ -1056,23 +1051,20 @@ def generar_pdf_familiar_overlay(pdf_base_path, campos):
         writer_out = PdfWriter()
         for i, pg in enumerate(base_r.pages):
             if i == 0 and ov_reader.pages:
-                pg.merge_page(ov_reader.pages[0])  # overlay encima de base
-                writer_out.add_page(pg)
+                ov_pg = ov_reader.pages[0]
+                ov_pg.merge_page(pg)   # base debajo del overlay
+                writer_out.add_page(ov_pg)
             else:
                 writer_out.add_page(pg)
 
         dst = io.BytesIO()
         writer_out.write(dst)
         dst.seek(0)
-        raw = dst.read()
-        try:
-            result = flatten_pdf_fields(raw)
-            return result if result else raw
-        except Exception:
-            return raw
+        result = flatten_pdf_fields(dst.read())
+        print("✅ PDF familiar overlay listo.")
+        return result
 
     except Exception as e:
-        import traceback; print(traceback.format_exc())
         print(f"❌ generar_pdf_familiar_overlay: {e}")
         return None
 
@@ -1701,19 +1693,10 @@ def marcar_evaluado():
     if 'usuario' not in session:
         return jsonify({"success": False, "message": "No autorizado"}), 401
 
-    # Vercel a veces no pasa correctamente el Content-Type de FormData
-    # Leer desde form-data o desde JSON según lo que llegue
-    def gf(key, default=''):
-        v = request.form.get(key)
-        if v is not None:
-            return v
-        jd = request.get_json(force=True, silent=True) or {}
-        return jd.get(key, default)
-
-    estudiante_id = gf('estudiante_id') or None
+    estudiante_id = request.form.get('estudiante_id')
     
     # --- CORRECCIÓN CLAVE: Fallback si nomina_id no viene en el formulario (era "") ---
-    nomina_id = gf('nomina_id') or None
+    nomina_id = request.form.get('nomina_id')
     if not nomina_id:
         nomina_id = session.get('current_nomina_id')
     # ----------------------------------------------------------------------------------
@@ -1722,11 +1705,11 @@ def marcar_evaluado():
     form_type = session.get('current_form_type', 'neurologia') 
     
     # Nota: Debes tener get_form_field_value y date importados
-    nombre = gf('nombre')
-    rut = gf('rut')
+    nombre = get_form_field_value('nombre', request.form)
+    rut = get_form_field_value('rut', request.form)
 
     print(f"DEBUG: Recibida solicitud para marcar como evaluado: estudiante_id={estudiante_id}, nomina_id={nomina_id}, doctora_id={doctora_id}, form_type={form_type}")
-    print(f"DEBUG: form={dict(request.form)} json={request.get_json(force=True,silent=True)}")
+    print(f"DEBUG: Contenido completo de request.form: {request.form.to_dict()}")
 
     # Validación básica de datos obligatorios
     if not all([estudiante_id, nomina_id, doctora_id]):
@@ -1737,12 +1720,12 @@ def marcar_evaluado():
     # Si la nómina tiene fecha_evaluacion_fija → usarla siempre (inamovible)
     # Si no → usar la que envía el formulario (comportamiento actual)
     fecha_evaluacion_fija = session.get('fecha_evaluacion_fija')
-    fecha_evaluacion_final = fecha_evaluacion_fija if fecha_evaluacion_fija else gf('fecha_evaluacion') or None
+    fecha_evaluacion_final = fecha_evaluacion_fija if fecha_evaluacion_fija else get_form_field_value('fecha_evaluacion', request.form, return_none_if_empty=True)
 
     # Si hay fecha fija, recalcular edad con esa fecha como referencia
-    edad_final = gf('edad')
+    edad_final = get_form_field_value('edad', request.form)
     if fecha_evaluacion_fija:
-        fn_str = gf('fecha_nacimiento') or None
+        fn_str = get_form_field_value('fecha_nacimiento', request.form, return_none_if_empty=True)
         if fn_str:
             try:
                 from datetime import date as _dt_date
@@ -1757,12 +1740,12 @@ def marcar_evaluado():
         'doctora_evaluadora_id': doctora_id, 
         'nombre': nombre,
         'rut': rut, 
-        'fecha_nacimiento': gf('fecha_nacimiento') or None, 
+        'fecha_nacimiento': get_form_field_value('fecha_nacimiento', request.form, return_none_if_empty=True), 
         'fecha_evaluacion': fecha_evaluacion_final,
-        'fecha_reevaluacion': gf('fecha_reevaluacion') or None,
+        'fecha_reevaluacion': get_form_field_value('fecha_reevaluacion', request.form, return_none_if_empty=True),
         'edad': edad_final, 
-        'nacionalidad': gf('nacionalidad'), 
-        'sexo': gf('sexo'),
+        'nacionalidad': get_form_field_value('nacionalidad', request.form), 
+        'sexo': get_form_field_value('sexo', request.form),
         'evaluado_flag': True,
     }
 
@@ -1770,20 +1753,20 @@ def marcar_evaluado():
     if form_type == 'neurologia':
         # Campos específicos de Neurología (Antiguo) se añaden a update_data
         update_data.update({
-            'estado_general': gf('estado'),
-            'diagnostico': gf('diagnostico'), 
-            'derivaciones': gf('derivaciones'),
+            'estado_general': get_form_field_value('estado', request.form),
+            'diagnostico': get_form_field_value('diagnostico', request.form), 
+            'derivaciones': get_form_field_value('derivaciones', request.form),
         })
     
     # 🟢 CORRECCIÓN: Lógica para guardar el Informe Neurológico Individual
     elif form_type == 'informe_neurologico':
          update_data.update({
              # Campos de Evaluación Confirmados (5 campos)
-             'motivo_consulta': gf('motivo_consulta'),
-             'observaciones': gf('observaciones'),
-             'observacion_neurologia': gf('observacion_neurologia'),
-             'diagnostico': gf('diagnostico'), 
-             'indicaciones': gf('indicaciones'),
+             'motivo_consulta': get_form_field_value('motivo_consulta', request.form),
+             'observaciones': get_form_field_value('observaciones', request.form),
+             'observacion_neurologia': get_form_field_value('observacion_neurologia', request.form),
+             'diagnostico': get_form_field_value('diagnostico', request.form), 
+             'indicaciones': get_form_field_value('indicaciones', request.form),
              
              # Nota: Los campos que no se usan en este formulario (como diagnostico_sospecha o historia_actual) se omiten o se dejan en NULL.
              # Para evitar errores en otros procesos (como la generación del PDF), 
@@ -1794,14 +1777,14 @@ def marcar_evaluado():
     elif form_type == 'medicina_familiar':
         
         # OBTENEMOS EL VALOR UNIFICADO DEL CAMPO DIAGNOSTICO
-        diagnostico_unificado_valor = gf('diagnostico_unificado')
+        diagnostico_unificado_valor = get_form_field_value('diagnostico_unificado', request.form)
 
         # FUNCIÓN AUXILIAR PARA MAPEO BOOLEANO
         # Si el campo tiene valor → True (checkbox marcado)
         # Si el campo viene vacío → False (checkbox desmarcado, JS envía '')
         # Si el campo NO viene en el form → None (no tocar en BD)
         def map_to_boolean(field_name):
-            raw = request.form.get(field_name) if request.form else (request.get_json(force=True,silent=True) or {}).get(field_name)
+            raw = request.form.get(field_name)
             if raw is None:
                 return None      # campo ausente → no modificar
             if raw.strip():
@@ -1809,8 +1792,8 @@ def marcar_evaluado():
             return False         # string vacío → desmarcado
             
         # 💡 CORRECCIÓN 1: Capturar y mapear el género (sexo) para guardar en el campo maestro 'sexo'
-        genero_f_check = gf('genero_f')
-        genero_m_check = gf('genero_m')
+        genero_f_check = get_form_field_value('genero_f', request.form)
+        genero_m_check = get_form_field_value('genero_m', request.form)
         sexo_final = None
         if genero_f_check:
             sexo_final = 'F'
@@ -1828,24 +1811,24 @@ def marcar_evaluado():
             # Limpiar dx_previo solo si se guardó un valor válido del desplegable
             'diagnostico_sospecha': ('' if diagnostico_unificado_valor and diagnostico_unificado_valor.strip() else None),
             'diagnostico_2': diagnostico_unificado_valor,
-            'diagnostico_complementario': gf('diagnostico_complementario'),
-            'clasificacion': gf('clasificacion_imc'),
-            'derivaciones': gf('derivaciones'),
+            'diagnostico_complementario': get_form_field_value('diagnostico_complementario', request.form),
+            'clasificacion': get_form_field_value('clasificacion_imc', request.form),
+            'derivaciones': get_form_field_value('derivaciones', request.form),
             
             # Mapeo Corregido: Guardado del campo 'indicaciones'
-            'indicaciones': gf('indicaciones'), 
+            'indicaciones': get_form_field_value('indicaciones', request.form), 
             
             # 💡 CORRECCIÓN 3: Guardado del valor del SELECT de años
-            'fecha_reevaluacion_select': gf('fecha_reevaluacion_select') or None,
+            'fecha_reevaluacion_select': get_form_field_value('fecha_reevaluacion_select', request.form, return_none_if_empty=True),
             
             # Observaciones
-            'observacion_1': gf('observacion_1'),
-            'observacion_2': gf('observacion_2'),
-            'observacion_3': gf('observacion_3'),
-            'observacion_4': gf('observacion_4'),
-            'observacion_5': gf('observacion_5'),
-            'observacion_6': gf('observacion_6'),
-            'observacion_7': gf('observacion_7'),
+            'observacion_1': get_form_field_value('observacion_1', request.form),
+            'observacion_2': get_form_field_value('observacion_2', request.form),
+            'observacion_3': get_form_field_value('observacion_3', request.form),
+            'observacion_4': get_form_field_value('observacion_4', request.form),
+            'observacion_5': get_form_field_value('observacion_5', request.form),
+            'observacion_6': get_form_field_value('observacion_6', request.form),
+            'observacion_7': get_form_field_value('observacion_7', request.form),
 
             # Checkboxes y Numéricos - CRÍTICO: USAR map_to_boolean para booleanos
             'check_cesarea': map_to_boolean('check_cesarea'),
@@ -1872,10 +1855,10 @@ def marcar_evaluado():
             'check_retenciondental': map_to_boolean('check_retenciondental'),
             'check_frenillolingual': map_to_boolean('check_frenillolingual'),
             'check_hipertrofia': map_to_boolean('check_hipertrofia'),
-            'altura': gf('altura') or None,
-            'peso': gf('peso') or None,
-            'imc': gf('imc') or None,
-            'clasificacion_imc': gf('clasificacion_imc') or None,
+            'altura': get_form_field_value('altura', request.form, return_none_if_empty=True),
+            'peso': get_form_field_value('peso', request.form, return_none_if_empty=True),
+            'imc': get_form_field_value('imc', request.form, return_none_if_empty=True),
+            'clasificacion_imc': get_form_field_value('clasificacion_imc', request.form, return_none_if_empty=True),
         })
 
     print(f"DEBUG: Payload final para Supabase PATCH en /marcar_evaluado: {update_data}")
@@ -6175,7 +6158,7 @@ def api_obtener_token():
         correo    = data.get('correo', '').strip()
         if not all([school_id, nombre, rut, correo]):
             return jsonify({"success": False, "message": "Todos los campos son requeridos"}), 400
-        # Acceso validado via Supabase
+        # Acceso validado via Supabase directamente
         res = requests.get(
             f"{SUPABASE_URL}/rest/v1/nominas_medicas"
             f"?nombre_colegio=eq.{school_id}"
@@ -8257,7 +8240,6 @@ def _generar_pdf_bytes_alumno_id(alumno_id):
                       "fecha_evaluacion":fe_fmt,"fecha_reevaluacion":fre_fmt,
                       "sexo_f":"X" if _es_femenino(est.get('sexo','')) else "",
                       "sexo_m":"X" if _es_masculino(est.get('sexo','')) else ""}
-            return generar_pdf_neurologia_overlay(pdf_base, campos)
 
         elif form_type == 'medicina_familiar':
             campos = {"nombre":nombre,"rut":rut,"fecha_nacimiento":fn_fmt,"edad":edad,

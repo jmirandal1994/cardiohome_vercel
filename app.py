@@ -1696,13 +1696,8 @@ def api_admin_corregir_alumno():
         print(f"ERROR api_admin_corregir_alumno: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-@app.route('/marcar_evaluado', methods=['GET', 'POST'])
+@app.route('/marcar_evaluado', methods=['POST'])
 def marcar_evaluado():
-    # Vercel convierte un POST fallido en GET en algunas circunstancias —
-    # respondemos con 405 en JSON para evitar el crash 500.
-    if request.method == 'GET':
-        return jsonify({"success": False, "message": "Método no permitido. Use POST."}), 405
-
     if 'usuario' not in session:
         return jsonify({"success": False, "message": "No autorizado"}), 401
 

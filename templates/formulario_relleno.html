@@ -671,10 +671,10 @@
                 <button class="btn btn-outline-purple btn-sm" onclick="abrirReporteDiagnosticos()">
                     <i class="fas fa-chart-bar"></i> Ver Reporte
                 </button>
-                <button class="btn btn-success btn-sm" onclick="generarEImprimirPDFsVisibles('{{ session['current_nomina_id'] }}', {{ establecimiento_nombre | tojson }})">
+                <button class="btn btn-success btn-sm" onclick="generarEImprimirPDFsVisibles(this)" data-nomina-id="{{ session['current_nomina_id'] }}" data-nombre="{{ establecimiento_nombre | e }}">
                     <i class="fas fa-file-pdf"></i> Generar PDFs
                 </button>
-                <button class="btn btn-primary btn-sm" onclick="descargarExcelCompletados('{{ session['current_nomina_id'] }}', {{ establecimiento_nombre | tojson }})">
+                <button class="btn btn-primary btn-sm" onclick="descargarExcelCompletados(this)" data-nomina-id="{{ session['current_nomina_id'] }}" data-nombre="{{ establecimiento_nombre | e }}">
                     <i class="fas fa-file-excel"></i> Exportar Excel
                 </button>
                 <button class="btn btn-ghost btn-sm" onclick="window.location.reload()">
@@ -1411,7 +1411,9 @@
     // ── ACCIONES GENERALES ────────────────────────────────────────────
     function cerrarSesion() { window.location.href = '/logout'; }
 
-    async function descargarExcelCompletados(nominaId, nombre) {
+    async function descargarExcelCompletados(btn) {
+        const nominaId = btn.dataset.nominaId;
+        const nombre   = btn.dataset.nombre;
         Swal.fire({title:'Preparando Excel…',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
         try {
             const res = await fetch('/descargar_excel_evaluados',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nomina_id:nominaId})});
@@ -1423,7 +1425,9 @@
         } catch(e) { Swal.fire({icon:'error',title:'Error',text:e.message}); }
     }
 
-    async function generarEImprimirPDFsVisibles(nominaId, nombre) {
+    async function generarEImprimirPDFsVisibles(btn) {
+        const nominaId = btn.dataset.nominaId;
+        const nombre   = btn.dataset.nombre;
         const visible = Array.from(document.querySelectorAll('details.estudiante:not([style*="display: none"])')).map(d=>d.getAttribute('data-estudiante-id'));
         if (!visible.length) { Swal.fire({icon:'info',title:'Sin formularios visibles'}); return; }
         Swal.fire({title:'Generando PDFs…',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});

@@ -1431,7 +1431,8 @@
             const res = await fetch('/generar_pdfs_visibles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nomina_id:nominaId,student_ids:visible})});
             if (!res.ok) throw new Error((await res.json()).message || 'Error');
             const blob=await res.blob(); const url=URL.createObjectURL(blob);
-            window.open(url,'_blank'); URL.revokeObjectURL(url); Swal.close();
+            const a=document.createElement('a'); a.href=url; a.download=`PDFs_Nomina_${new Date().toISOString().slice(0,10)}.pdf`;
+            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); Swal.close();
         } catch(e) { Swal.fire({icon:'error',title:'Error',text:e.message}); }
     }
 

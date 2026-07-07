@@ -513,6 +513,19 @@
         }
         .preview-print-btn:hover { background: rgba(14,116,144,0.06); color: var(--accent); border-color: var(--accent); }
 
+        /* FAB — Agregar Alumno */
+        .fab-agregar {
+            position: fixed; bottom: 28px; right: 28px;
+            background: var(--accent-gradient); color: white;
+            border: none; border-radius: 50px; padding: 13px 22px;
+            font-size: 0.88rem; font-weight: 800; cursor: pointer;
+            box-shadow: 0 6px 20px rgba(14,116,144,0.35);
+            display: flex; align-items: center; gap: 8px; z-index: 100;
+            transition: transform 0.18s, box-shadow 0.18s; font-family: var(--font-body);
+        }
+        .fab-agregar:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(14,116,144,0.45); }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
         footer {
             text-align: center; padding: 18px;
             font-size: 0.75rem; color: var(--text-muted);
@@ -722,21 +735,34 @@
 
                     <input type="hidden" name="estudiante_id" value="{{ est.id }}">
                     <input type="hidden" name="nomina_id" value="{{ nomina_id }}">
-                    <input type="hidden" name="nombre" value="{{ est.nombre }}">
-                    <input type="hidden" name="rut" value="{{ est.rut }}">
-                    <!-- 🟢 Corregido: el backend espera "fecha_nacimiento" (antes se mandaba
-                         "fecha_nacimiento_original" y el campo se guardaba vacío en cada evaluación) -->
-                    <input type="hidden" name="fecha_nacimiento" value="{{ est.fecha_nacimiento | default('') }}">
-                    <input type="hidden" name="nacionalidad" value="{{ est.nacionalidad | default('Chilena') }}">
-                    <input type="hidden" name="edad" value="{{ est.edad | default('N/A') }}">
 
-                    <div class="form-section-title"><i class="fas fa-id-card"></i> Datos de Identificación (Pre-cargados)</div>
-                    <div class="datos-alumno">
-                        <div class="dato-item"><span class="dato-label">RUT</span><span class="dato-valor prev-rut">{{ est.rut | default('N/A') }}</span></div>
-                        <div class="dato-item"><span class="dato-label">Edad</span><span class="dato-valor prev-edad-info">{{ est.edad | default('N/A') }}</span></div>
-                        <div class="dato-item"><span class="dato-label">F. Nacimiento</span><span class="dato-valor prev-fecha-nacimiento-info">{{ est.fecha_nacimiento_formato | default('N/A') }}</span></div>
-                        <div class="dato-item"><span class="dato-label">Nacionalidad</span><span class="dato-valor prev-nacionalidad-info">{{ est.nacionalidad | default('N/A') }}</span></div>
+                    <div class="form-section-title"><i class="fas fa-id-card"></i> Datos de Identificación</div>
+                    <div style="background:#fefce8;border:1.5px solid #fbbf24;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:9px;">
+                        <i class="fas fa-circle-info" style="color:#92400e;margin-top:2px;flex-shrink:0;"></i>
+                        <div style="font-size:.78rem;color:#92400e;">Estos datos vienen precargados desde el Excel, pero puedes corregirlos aquí si hay algún error.</div>
                     </div>
+
+                    <label for="nombre_{{ est.id }}">Nombre</label>
+                    <input type="text" name="nombre" id="nombre_{{ est.id }}"
+                        value="{{ est.nombre }}" required oninput="updatePreview(this.form)">
+
+                    <label for="rut_{{ est.id }}">RUT</label>
+                    <input type="text" name="rut" id="rut_{{ est.id }}"
+                        value="{{ est.rut or '' }}" required oninput="updatePreview(this.form)">
+
+                    <label for="fecha_nac_edit_{{ est.id }}">Fecha de Nacimiento</label>
+                    <input type="date" name="fecha_nacimiento" id="fecha_nac_edit_{{ est.id }}"
+                        value="{{ est.fecha_nacimiento if est.fecha_nacimiento is not none else '' }}"
+                        onchange="recalcularEdadInforme(this.form)">
+
+                    <label for="nacionalidad_edit_{{ est.id }}">Nacionalidad</label>
+                    <input type="text" name="nacionalidad" id="nacionalidad_edit_{{ est.id }}"
+                        value="{{ est.nacionalidad | default('Chilena') }}" oninput="updatePreview(this.form)">
+
+                    <label for="edad_{{ est.id }}">Edad</label>
+                    <input type="text" name="edad" id="edad_{{ est.id }}"
+                        value="{{ est.edad | default('') }}" oninput="updatePreview(this.form)"
+                        placeholder="Se calcula automáticamente, o edítala si es necesario">
 
                     <label for="sexo_select_{{ est.id }}">Género de Evaluación</label>
                     <select name="sexo" id="sexo_select_{{ est.id }}" required onchange="updatePreview(this.form)">
@@ -880,6 +906,7 @@
 
             <div class="preview">
                 <h3>Vista Previa del Informe</h3>
+                <p><strong>Nombre</strong><span class="prev-nombre">{{ est.nombre | default('—') }}</span></p>
                 <p><strong>RUT</strong><span class="prev-rut">{{ est.rut | default('—') }}</span></p>
                 <p><strong>Edad</strong><span class="prev-edad-info">{{ est.edad | default('—') }}</span></p>
                 <p><strong>F. Evaluación</strong><span class="prev-fecha-evaluacion">{% if est.fecha_evaluacion %}{{ est.fecha_evaluacion.split('-')[2] }}/{{ est.fecha_evaluacion.split('-')[1] }}/{{ est.fecha_evaluacion.split('-')[0] }}{% else %}—{% endif %}</span></p>
@@ -905,6 +932,63 @@
     {% else %}
     <p style="text-align: center; color: var(--text-muted); font-size: 1.1rem; margin-top: 50px;">No hay estudiantes asignados en esta nómina.</p>
     {% endif %}
+</div>
+
+<!-- ─── FAB — Agregar Alumno ─── -->
+<button class="fab-agregar" onclick="abrirModalAgregar()">
+    <i class="fas fa-user-plus"></i> Agregar Alumno
+</button>
+
+<!-- ─── MODAL AGREGAR ALUMNO ─── -->
+<div id="modal-agregar" style="display:none;position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:9000;align-items:center;justify-content:center;" onclick="if(event.target===this)cerrarModalAgregar()">
+    <div style="background:white;border-radius:20px;padding:28px 30px 24px;max-width:440px;width:94%;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:fadeUp .25s ease;">
+        <h3 style="margin:0 0 18px;font-size:1.05rem;color:#0f4c75;font-family:'Sora',sans-serif;"><i class="fas fa-user-plus" style="color:var(--accent);margin-right:8px;"></i>Agregar Alumno</h3>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <button id="tipo-btn-reemplazo" onclick="setTipoAgregar('reemplazo')" style="flex:1;padding:9px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;border:1.5px solid var(--accent);background:rgba(14,116,144,.08);color:var(--accent);font-family:inherit;">Reemplazo</button>
+            <button id="tipo-btn-extra" onclick="setTipoAgregar('extra')" style="flex:1;padding:9px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:white;color:#64748b;font-family:inherit;">Extra</button>
+        </div>
+        <div style="margin-bottom:12px;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">Nombre Completo *</label><input type="text" id="nuevo-nombre" placeholder="Nombre y apellidos" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;color:#334155;font-family:inherit;box-sizing:border-box;outline:none;"></div>
+        <div style="margin-bottom:12px;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">RUN (RUT) *</label><input type="text" id="nuevo-rut" placeholder="12.345.678-9" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;color:#334155;font-family:inherit;box-sizing:border-box;outline:none;"></div>
+        <div style="display:flex;gap:10px;margin-bottom:12px;">
+            <div style="flex:1;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">Fecha Nacimiento</label><input type="date" id="nuevo-fecha-nac" oninput="recalcularEdadNuevo()" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;color:#334155;box-sizing:border-box;outline:none;"></div>
+            <div style="flex:1;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">Sexo</label><select id="nuevo-sexo" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;color:#334155;box-sizing:border-box;outline:none;"><option value="">—</option><option value="F">Femenino</option><option value="M">Masculino</option></select></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:12px;">
+            <div style="flex:1;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">Nacionalidad</label>
+                <select id="nuevo-nacionalidad" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;color:#334155;box-sizing:border-box;outline:none;">
+                    <option value="">— Sin especificar —</option>
+                    <option value="Chilena">Chilena</option>
+                    <option value="Venezolana">Venezolana</option>
+                    <option value="Peruana">Peruana</option>
+                    <option value="Colombiana">Colombiana</option>
+                    <option value="Boliviana">Boliviana</option>
+                    <option value="Argentina">Argentina</option>
+                    <option value="Ecuatoriana">Ecuatoriana</option>
+                    <option value="Haitiana">Haitiana</option>
+                    <option value="Brasileña">Brasileña</option>
+                    <option value="Dominicana">Dominicana</option>
+                    <option value="Cubana">Cubana</option>
+                    <option value="Española">Española</option>
+                    <option value="Otra">Otra</option>
+                </select>
+            </div>
+            <div style="flex:1;"><label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:5px;margin-top:0;">Edad</label>
+                <input type="text" id="nuevo-edad-display" readonly placeholder="Auto" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;color:#334155;box-sizing:border-box;outline:none;background:#f1f5f9;cursor:default;">
+            </div>
+        </div>
+        <div id="campo-colegio-alumno" style="margin-bottom:12px;display:{{ 'block' if requiere_colegio_alumno else 'none' }};">
+            <label style="display:block;font-size:.8rem;font-weight:700;color:#92400e;margin-bottom:5px;">
+                <i class="fas fa-school" style="font-size:.75rem;margin-right:4px;"></i>
+                Colegio del Alumno{% if requiere_colegio_alumno %} <span style="color:#dc2626;">*</span>{% endif %}
+            </label>
+            <input type="text" id="nuevo-colegio" placeholder="Ej: Escuela Básica Los Pinos"
+                style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid #f59e0b;font-size:.85rem;color:#334155;font-family:inherit;box-sizing:border-box;outline:none;background:#fffbeb;">
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+            <button onclick="cerrarModalAgregar()" style="padding:9px 20px;border-radius:99px;border:1.5px solid var(--border);background:white;color:#64748b;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>
+            <button onclick="confirmarAgregarAlumno()" style="padding:9px 20px;border-radius:99px;border:none;background:var(--accent);color:white;font-weight:700;cursor:pointer;font-family:inherit;"><i class="fas fa-plus"></i> Agregar</button>
+        </div>
+    </div>
 </div>
 
 <footer>
@@ -968,6 +1052,111 @@
 
     function cerrarSesion() { window.location.href = '/logout'; }
 
+    // ── RECALCULAR EDAD (si la doctora corrige la fecha de nacimiento) ─
+    function calcularEdadInforme(fechaNac, fechaRef) {
+        if (!fechaNac || !fechaRef) return '';
+        const nac = new Date(fechaNac + 'T00:00:00');
+        const ref = new Date(fechaRef + 'T00:00:00');
+        if (isNaN(nac) || isNaN(ref) || ref < nac) return '';
+        let años = ref.getFullYear() - nac.getFullYear();
+        let meses = ref.getMonth() - nac.getMonth();
+        if (ref.getDate() < nac.getDate()) meses--;
+        if (meses < 0) { años--; meses += 12; }
+        if (años < 0) return '';
+        const partAnios = años > 0 ? años + ' año' + (años !== 1 ? 's' : '') : '';
+        const partMeses = meses > 0 ? meses + ' mes' + (meses !== 1 ? 'es' : '') : '';
+        if (partAnios && partMeses) return partAnios + ' con ' + partMeses;
+        if (partAnios) return partAnios;
+        if (partMeses) return partMeses;
+        return '0 meses';
+    }
+
+    function recalcularEdadInforme(form) {
+        const fn = form.querySelector('input[name="fecha_nacimiento"]');
+        const fe = form.querySelector('input[name="fecha_evaluacion"]');
+        const ei = form.querySelector('input[name="edad"]');
+        if (!fn || !ei) return;
+        const fechaRef = (fe && fe.value) ? fe.value : new Date().toISOString().slice(0,10);
+        const nuevaEdad = calcularEdadInforme(fn.value, fechaRef);
+        if (nuevaEdad) ei.value = nuevaEdad;
+        updatePreview(form);
+    }
+
+    // ── AGREGAR ALUMNO (modal + FAB) ───────────────────────────────────
+    let _tipoAgregar = 'reemplazo';
+    const NOMINA_ID_ACTUAL = '{{ nomina_id }}';
+    const REQUIERE_COLEGIO_ALUMNO = {{ 'true' if requiere_colegio_alumno else 'false' }};
+
+    function abrirModalAgregar() {
+        setTipoAgregar('reemplazo');
+        ['nuevo-nombre','nuevo-rut','nuevo-fecha-nac','nuevo-edad-display','nuevo-colegio'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        document.getElementById('nuevo-sexo').value = '';
+        document.getElementById('nuevo-nacionalidad').value = '';
+        document.getElementById('modal-agregar').style.display = 'flex';
+        setTimeout(() => document.getElementById('nuevo-nombre').focus(), 100);
+    }
+
+    function cerrarModalAgregar() {
+        document.getElementById('modal-agregar').style.display = 'none';
+    }
+
+    function setTipoAgregar(tipo) {
+        _tipoAgregar = tipo;
+        const br = document.getElementById('tipo-btn-reemplazo');
+        const be = document.getElementById('tipo-btn-extra');
+        const activo   = 'flex:1;padding:9px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;border:1.5px solid var(--accent);background:rgba(14,116,144,.08);color:var(--accent);font-family:inherit;';
+        const inactivo = 'flex:1;padding:9px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:white;color:#64748b;font-family:inherit;';
+        br.style.cssText = tipo === 'reemplazo' ? activo : inactivo;
+        be.style.cssText = tipo === 'extra' ? activo : inactivo;
+    }
+
+    function recalcularEdadNuevo() {
+        const fn = document.getElementById('nuevo-fecha-nac').value;
+        const hoy = new Date();
+        const ref = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+        const el = document.getElementById('nuevo-edad-display');
+        if (el) el.value = calcularEdadInforme(fn, ref);
+    }
+
+    async function confirmarAgregarAlumno() {
+        const nombre = document.getElementById('nuevo-nombre').value.trim();
+        const rut = document.getElementById('nuevo-rut').value.trim();
+        const fn = document.getElementById('nuevo-fecha-nac').value;
+        const sexo = document.getElementById('nuevo-sexo').value;
+        const nacionalidad = document.getElementById('nuevo-nacionalidad').value;
+        const colegio = (document.getElementById('nuevo-colegio')?.value || '').trim();
+
+        if (!nombre || !rut) { Swal.fire({icon:'warning', title:'Faltan datos', text:'Nombre y RUT son obligatorios.'}); return; }
+        if (REQUIERE_COLEGIO_ALUMNO && !colegio) { Swal.fire({icon:'warning', title:'Falta el colegio', text:'El colegio del alumno es obligatorio en esta nómina.'}); return; }
+        if (!NOMINA_ID_ACTUAL) { Swal.fire({icon:'error', title:'Error', text:'No se pudo determinar la nómina. Recarga la página.'}); return; }
+
+        try {
+            const res = await fetch('/api/estudiante/agregar', {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    nomina_id: NOMINA_ID_ACTUAL, nombre, rut,
+                    fecha_nacimiento: fn || null, sexo: sexo || null,
+                    nacionalidad: nacionalidad || null,
+                    estado_asistencia: _tipoAgregar === 'extra' ? 'extra' : 'activo',
+                    motivo_consulta: colegio || null,
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                cerrarModalAgregar();
+                Swal.fire({icon:'success', title:'¡Alumno agregado!', timer:1200, showConfirmButton:false})
+                    .then(() => location.reload());
+            } else {
+                Swal.fire({icon:'error', title:'Error', text: data.message || 'Error desconocido'});
+            }
+        } catch(e) {
+            Swal.fire({icon:'error', title:'Error de conexión', text: e.message});
+        }
+    }
+
     function updateCompletedCount() {
         const completedCount = document.querySelectorAll('details.estudiante[data-evaluated-status="true"]').length;
         const totalCount = document.querySelectorAll('details.estudiante').length;
@@ -1016,11 +1205,17 @@
         if (!container) return;
         const badge = form.closest('.formulario').querySelector('.badge');
 
+        const nombre = form.querySelector('[name="nombre"]');
+        const rut = form.querySelector('[name="rut"]');
+        const edad = form.querySelector('[name="edad"]');
         const motivo = form.querySelector('[name="motivo_consulta"]');
         const diagnosticoInput = form.querySelector('#dx-hidden-' + form.querySelector('input[name="estudiante_id"]').value) || form.querySelector('[name="diagnostico"]');
         const indicaciones = form.querySelector('[name="indicaciones"]');
         const fechaEvaluacionInput = form.querySelector('input[name="fecha_evaluacion"]');
 
+        if (nombre) container.querySelector('.prev-nombre').textContent = nombre.value || '—';
+        if (rut) container.querySelector('.prev-rut').textContent = rut.value || '—';
+        if (edad) container.querySelector('.prev-edad-info').textContent = edad.value || '—';
         if (motivo) container.querySelector('.prev-motivo-consulta').textContent = motivo.value || '—';
         if (diagnosticoInput) container.querySelector('.prev-diagnostico').textContent = diagnosticoInput.value || '—';
         if (indicaciones) container.querySelector('.prev-indicaciones').textContent = indicaciones.value || '—';

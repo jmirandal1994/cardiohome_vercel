@@ -3341,16 +3341,24 @@ def admin_cargar_nomina():
     proyecto_id_db = proyecto_id_from_form if proyecto_id_from_form else None    
     
     tipo_nomina_normalized = tipo_nomina_raw.strip().lower() if tipo_nomina_raw else ''
-    
-    form_type = None
-    if 'neurologia' in tipo_nomina_normalized: 
-        form_type = 'neurologia'
-    elif 'familiar' in tipo_nomina_normalized or 'medicina familiar' in tipo_nomina_normalized: 
-        form_type = 'medicina_familiar'
-    # 🟢 CORRECCIÓN DE INDENTACIÓN (Asegurado que esté alineado con los 'elif' anteriores)
-    elif 'informe' in tipo_nomina_normalized and 'neuro' in tipo_nomina_normalized:
-        form_type = 'informe_neurologico'
-    # -----------------------------------------------------------------------------------
+
+    # 🟢 FIX: usar el valor EXPLÍCITO del select "Tipo de Formulario Asociado"
+    # (name="form_type"), que sí tiene la opción "informe_neurologico".
+    # Antes se adivinaba solo desde tipo_nomina, cuyo select NUNCA manda "informe",
+    # por eso todo terminaba guardado como form_type = 'neurologia'.
+    form_type_explicito = request.form.get('form_type', '').strip().lower()
+
+    if form_type_explicito in ('neurologia', 'medicina_familiar', 'informe_neurologico'):
+        form_type = form_type_explicito
+    else:
+        form_type = None
+        if 'informe' in tipo_nomina_normalized and 'neuro' in tipo_nomina_normalized:
+            form_type = 'informe_neurologico'
+        elif 'neurologia' in tipo_nomina_normalized:
+            form_type = 'neurologia'
+        elif 'familiar' in tipo_nomina_normalized or 'medicina familiar' in tipo_nomina_normalized:
+            form_type = 'medicina_familiar'
+            # -----------------------------------------------------------------------------------
         
     # Validaciones básicas
     if not all([tipo_nomina_raw, nombre_colegio_o_establecimiento, doctora_id_from_form, excel_file]):

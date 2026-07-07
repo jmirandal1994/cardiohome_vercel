@@ -884,6 +884,189 @@ def generar_pdf_neurologia_overlay(pdf_base_path, campos):
         print(f"❌ generar_pdf_neurologia_overlay: {e}")
         return None
 
+def generar_pdf_informe_neurologico_overlay(pdf_base_path, campos):
+    """
+    Exclusivo para el INFORME NEUROLÓGICO INDIVIDUAL (2 páginas).
+    Independiente de generar_pdf_neurologia_overlay (Neurología clásica) —
+    no comparte coordenadas ni lógica con esa función.
+
+    Usa ReportLab para el texto largo + pikepdf para la X de género
+    (genero_m / genero_f), igual mecanismo que Neurología pero con las
+    coordenadas propias del PDF INFORME_NEUROLOGICO_BASE.pdf (extraídas
+    directamente de los campos de su AcroForm, por lo que calzan exacto
+    con los recuadros impresos en la plantilla).
+    """
+    if not REPORTLAB_OK:
+        return None
+
+    # Página 1 (index 0): datos de identificación + Historia Clínica + Examen Físico
+    # Página 2 (index 1): Examen Neurológico Específico + Diagnóstico + Plan y Recomendaciones
+    COORDS_INFORME = {
+        'nombre':                 (287.4, 574.44, 556.08, 590.64),
+        'rut':                    (287.4, 556.08, 556.08, 572.64),
+        'fecha_nacimiento':       (287.4, 519.72, 556.08, 536.64),
+        'edad':                   (287.4, 501.72, 556.08, 518.64),
+        'nacionalidad':           (287.4, 483.72, 556.08, 500.64),
+        'fecha_evaluacion':       (287.4, 465.72, 556.08, 482.64),
+        'motivo_consulta':        (31.4,  170.4,  589.9,  402.5),
+        'observaciones':          (42.2,  38.5,   587.6,  122.3),
+        'observacion_neurologia': (47.8,  603.1,  572.8,  680.1),
+        'diagnostico':            (84.4,  501.0,  542.7,  539.3),
+        'indicaciones':           (74.6,  274.5,  549.3,  400.6),
+    }
+    CAMPOS_MULTILINEA = {
+        'motivo_consulta', 'observaciones', 'observacion_neurologia',
+        'diagnostico', 'indicaciones',
+    }
+    COORDS_GENERO = {
+        'genero_m': (364.0, 540.8, 379.3, 552.0),
+        'genero_f': (479.0, 541.1, 495.1, 551.6),
+    }
+    PAGINA_CAMPO = {
+        'nombre': 0, 'rut': 0, 'fecha_nacimiento': 0, 'edad': 0,
+        'nacionalidad': 0, 'fecha_evaluacion': 0,
+        'motivo_consulta': 0, 'observaciones': 0,
+        'observacion_neurologia': 1, 'diagnostico': 1, 'indicaciones': 1,
+    }
+    PAGINA_GENERO = 0
+
+    try:
+        import pikepdf
+
+        reader_base = PdfReader(pdf_base_path)
+        pw = float(reader_base.pages[0].mediabox.width)
+        ph = float(reader_base.pages[0].mediabox.height)
+        n_paginas = len(reader_base.pages)
+
+        # ── PASO 1: ReportLab — un overlay de texto por página ──
+        overlays_por_pagina = {}
+        for pagina_idx in range(n_paginas):
+            campos_de_esta_pagina = [c for c, p in PAGINA_CAMPO.items() if p == pagina_idx]
+            if not campos_de_esta_pagina:
+                continue
+
+            ov_buf = io.BytesIO()
+            c = rl_canvas.Canvas(ov_buf, pagesize=(pw, ph))
+
+            for campo in campos_de_esta_pagina:
+                x0, y0, x1, y1 = COORDS_INFORME[campo]
+                valor = campos.get(campo, '')
+                if not valor or not str(valor).strip():
+                    continue
+                texto = str(valor).strip()
+                w = x1 - x0
+                h = y1 - y0
+                margin = 3
+
+                if campo in CAMPOS_MULTILINEA:
+                    fs = 9.0
+                    lh = fs * 1.35
+                    lines = []
+                    for par in texto.splitlines():
+                        if not par.strip():
+                            lines.append('')
+                        else:
+                            lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
+                    while lines and len(lines) * lh > h - 2*margin and fs > 6:
+                        fs -= 0.5
+                        lh = fs * 1.35
+                        lines = []
+                        for par in texto.splitlines():
+                            if not par.strip():
+                                lines.append('')
+                            else:
+                                lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
+                    c.setFont("Helvetica", fs)
+                    c.setFillColorRGB(0, 0, 0)
+                    y_pos = y1 - margin - fs
+                    for line in lines:
+                        if y_pos < y0 + margin:
+                            break
+                        try:
+                            c.drawString(x0 + margin, y_pos, line)
+                        except Exception:
+                            c.drawString(x0 + margin, y_pos,
+                                         line.encode('latin-1', 'replace').decode('latin-1'))
+                        y_pos -= lh
+                else:
+                    fs = 10.0
+                    while fs > 6 and c.stringWidth(texto, "Helvetica", fs) > w - 2*margin:
+                        fs -= 0.5
+                    c.setFont("Helvetica", fs)
+                    c.setFillColorRGB(0, 0, 0)
+                    y_pos = y0 + (h - fs) / 2
+                    try:
+                        c.drawString(x0 + margin, y_pos, texto)
+                    except Exception:
+                        c.drawString(x0 + margin, y_pos,
+                                     texto.encode('latin-1', 'replace').decode('latin-1'))
+
+            c.save()
+            ov_buf.seek(0)
+            overlays_por_pagina[pagina_idx] = PdfReader(ov_buf)
+
+        writer_out = PdfWriter()
+        for i, pg in enumerate(reader_base.pages):
+            ov_reader = overlays_por_pagina.get(i)
+            if ov_reader and ov_reader.pages:
+                pg.merge_page(ov_reader.pages[0])
+            writer_out.add_page(pg)
+
+        merged = io.BytesIO()
+        writer_out.write(merged)
+        merged.seek(0)
+
+        # ── PASO 2: pikepdf — X de género como stream de página ──
+        import pikepdf
+        with pikepdf.open(merged) as pdf:
+            page = pdf.pages[PAGINA_GENERO]
+
+            resources = page.obj['/Resources']
+            if '/Font' not in resources:
+                resources['/Font'] = pikepdf.Dictionary()
+            if '/HelvB' not in resources['/Font']:
+                resources['/Font']['/HelvB'] = pikepdf.Dictionary(
+                    Type=pikepdf.Name('/Font'),
+                    Subtype=pikepdf.Name('/Type1'),
+                    BaseFont=pikepdf.Name('/Helvetica-Bold'),
+                )
+
+            genero_ops = []
+            for fname, (x0, y0, x1, y1) in COORDS_GENERO.items():
+                if not campos.get(fname, '').strip():
+                    continue
+                w = x1 - x0
+                h = y1 - y0
+                fs = 9.0
+                char_w = fs * 0.6
+                xt = x0 + (w - char_w) / 2
+                yt = y0 + (h - fs) / 2 + 1
+                genero_ops.append(
+                    f"q\n0 0 0 rg\nBT\n/HelvB {fs} Tf\n"
+                    f"{xt:.3f} {yt:.3f} Td\n(X) Tj\nET\nQ\n"
+                )
+
+            if genero_ops:
+                stream_bytes = "".join(genero_ops).encode('latin-1')
+                x_stream = pikepdf.Stream(pdf, stream_bytes)
+                existing = page.obj.get('/Contents')
+                if isinstance(existing, pikepdf.Array):
+                    existing.append(x_stream)
+                elif existing is not None:
+                    page.obj['/Contents'] = pikepdf.Array([existing, x_stream])
+                else:
+                    page.obj['/Contents'] = x_stream
+
+            dst = io.BytesIO()
+            pdf.save(dst)
+
+        print("✅ PDF Informe Neurológico Individual listo.")
+        return flatten_pdf_fields(dst.getvalue())
+
+    except Exception as e:
+        print(f"❌ generar_pdf_informe_neurologico_overlay: {e}")
+        return None
+        
 
 def generar_pdf_familiar_overlay(pdf_base_path, campos):
     """

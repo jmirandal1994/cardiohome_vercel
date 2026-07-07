@@ -1715,14 +1715,25 @@ def generar_pdf():
             nombre_descarga = f"{nombre.replace(' ', '_')}_{rut}_formulario_{form_type}.pdf"
             return send_file(io.BytesIO(pdf_final), as_attachment=True, download_name=nombre_descarga, mimetype='application/pdf')
 
-        # NEUROLOGÍA e INFORME: usar overlay con coordenadas fijas (igual resultado para TODAS las doctoras)
-        if form_type in ('neurologia', 'informe_neurologico'):
+        # 🟢 NEUROLOGÍA: función y coordenadas originales, SIN CAMBIOS
+        if form_type == 'neurologia':
             pdf_final = generar_pdf_neurologia_overlay(pdf_base_path, campos)
             if not pdf_final:
                 flash("❌ Error al generar el PDF de neurología.", 'error')
                 return redirect(url_for('dashboard'))
             nombre_descarga = f"{nombre.replace(' ', '_')}_{rut}_formulario_{form_type}.pdf"
             return send_file(io.BytesIO(pdf_final), as_attachment=True, download_name=nombre_descarga, mimetype='application/pdf')
+
+        # 🟢 INFORME NEUROLÓGICO INDIVIDUAL: función propia e independiente,
+        # con sus propias coordenadas (2 páginas) — no comparte nada con Neurología
+        if form_type == 'informe_neurologico':
+            pdf_final = generar_pdf_informe_neurologico_overlay(pdf_base_path, campos)
+            if not pdf_final:
+                flash("❌ Error al generar el PDF del informe neurológico.", 'error')
+                return redirect(url_for('dashboard'))
+            nombre_descarga = f"{nombre.replace(' ', '_')}_{rut}_formulario_{form_type}.pdf"
+            return send_file(io.BytesIO(pdf_final), as_attachment=True, download_name=nombre_descarga, mimetype='application/pdf')
+
         if "/AcroForm" not in writer._root_object:
             writer._root_object.update({NameObject("/AcroForm"): DictionaryObject()})
             
@@ -1747,8 +1758,7 @@ def generar_pdf():
     except Exception as e:
         print(f"❌ Error al generar PDF: {e}")
         flash(f"❌ Error al generar el PDF: {e}", 'error')
-        return redirect(url_for('dashboard'))
-        
+        return redirect(url_for('dashboard'))        
 
 
 

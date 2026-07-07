@@ -959,17 +959,17 @@ def generar_pdf_informe_neurologico_overlay(pdf_base_path, campos):
                 margin = 3
 
                 if campo in CAMPOS_MULTILINEA:
-                    fs = 9.0
-                    lh = fs * 1.35
+                    fs = 10.0
+                    lh = fs * 1.3
                     lines = []
                     for par in texto.splitlines():
                         if not par.strip():
                             lines.append('')
                         else:
                             lines.extend(simpleSplit(par, "Helvetica", fs, w - 2*margin) or [''])
-                    while lines and len(lines) * lh > h - 2*margin and fs > 6:
+                    while lines and len(lines) * lh > h - 2*margin and fs > 7:
                         fs -= 0.5
-                        lh = fs * 1.35
+                        lh = fs * 1.3
                         lines = []
                         for par in texto.splitlines():
                             if not par.strip():
@@ -989,8 +989,8 @@ def generar_pdf_informe_neurologico_overlay(pdf_base_path, campos):
                                          line.encode('latin-1', 'replace').decode('latin-1'))
                         y_pos -= lh
                 else:
-                    fs = 10.0
-                    while fs > 6 and c.stringWidth(texto, "Helvetica", fs) > w - 2*margin:
+                    fs = 11.0
+                    while fs > 7 and c.stringWidth(texto, "Helvetica", fs) > w - 2*margin:
                         fs -= 0.5
                     c.setFont("Helvetica", fs)
                     c.setFillColorRGB(0, 0, 0)
@@ -1065,8 +1065,7 @@ def generar_pdf_informe_neurologico_overlay(pdf_base_path, campos):
 
     except Exception as e:
         print(f"❌ generar_pdf_informe_neurologico_overlay: {e}")
-        return None
-        
+        return None        
 
 def generar_pdf_familiar_overlay(pdf_base_path, campos):
     """

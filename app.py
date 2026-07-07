@@ -4283,10 +4283,15 @@ def descargar_pdf_alumno(alumno_id):
 
 
         # 7. Generar PDF final
-        if form_type in ('neurologia', 'informe_neurologico'):
+        if form_type == 'neurologia':
             pdf_final = generar_pdf_neurologia_overlay(pdf_base_path, campos)
             if not pdf_final:
                 flash("❌ Error al generar el PDF de neurología.", 'error')
+                return redirect(url_for('dashboard'))
+        elif form_type == 'informe_neurologico':
+            pdf_final = generar_pdf_informe_neurologico_overlay(pdf_base_path, campos)
+            if not pdf_final:
+                flash("❌ Error al generar el PDF del informe neurológico.", 'error')
                 return redirect(url_for('dashboard'))
         elif form_type == 'medicina_familiar':
             pdf_final = generar_pdf_familiar_overlay(pdf_base_path, campos)
@@ -4327,8 +4332,7 @@ def descargar_pdf_alumno(alumno_id):
     except Exception as e:
         print(f"❌ Error inesperado al generar PDF de alumno: {e}")
         flash(f"❌ Error inesperado al generar el PDF. Detalle: {e}", 'error')
-        return redirect(url_for('dashboard'))
-        
+        return redirect(url_for('dashboard'))        
 # app-30.py (Define esta ruta después de las funciones auxiliares)
 
 # app-30.py (Define esta ruta después de las funciones auxiliares)

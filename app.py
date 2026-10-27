@@ -2814,6 +2814,34 @@ def api_nomina_asignar_doctora2():
 
 
 # - Ruta 
+def _leer_estudiantes_stats(nomina_ids, todas=False):
+    """Trae los estudiantes activos/extra de varias nóminas en pocas consultas.
+
+    Supabase entrega un máximo de filas por consulta (1.000 por defecto), así que
+    se pagina con limit/offset hasta recibir una página vacía. Con todas=True se lee la tabla completa (vista global); si no,
+    se filtra por nómina en grupos para no armar URLs demasiado largas.
+    """
+    campos = "select=id,nomina_id,evaluado_flag,doctora_evaluadora_id,fecha_evaluacion"
+    filtro = "estado_asistencia=in.(activo,extra)"
+    grupos = [None] if todas else [nomina_ids[i:i + 80] for i in range(0, len(nomina_ids), 80)]
+    filas = []
+    for grupo in grupos:
+        extra = "" if grupo is None else "&nomina_id=in.(" + ",".join(grupo) + ")"
+        offset = 0
+        while True:
+            url = (f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?{campos}&{filtro}{extra}"
+                   f"&order=id.asc&limit=1000&offset={offset}")
+            res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS)
+            res.raise_for_status()
+            pagina = res.json()
+            if not pagina:
+                break
+            filas.extend(pagina)
+            # Se avanza según lo recibido: funciona aunque el límite del servidor sea menor a 1.000
+            offset += len(pagina)
+    return filas
+
+
 @app.route('/api/admin/stats/<project_id>')
 def get_admin_stats(project_id):
     if session.get('usuario') != 'admin':
@@ -2830,7 +2858,9 @@ def get_admin_stats(project_id):
         if project_id != 'all':
             params += f"&proyecto_id=eq.{project_id}"
         if doctor_filter != 'all':
-            params += f"&doctora_id=eq.{doctor_filter}"
+            # La doctora puede estar como principal o como 2ª a 4ª doctora (nómina compartida)
+            params += (f"&or=(doctora_id.eq.{doctor_filter},doctora_id_2.eq.{doctor_filter},"
+                       f"doctora_id_3.eq.{doctor_filter},doctora_id_4.eq.{doctor_filter})")
 
         url_nominas = f"{SUPABASE_URL}/rest/v1/nominas_medicas?{params}"
         res_n = requests.get(url_nominas, headers=SUPABASE_SERVICE_HEADERS)
@@ -2856,62 +2886,62 @@ def get_admin_stats(project_id):
         weekly_counts    = defaultdict(int)
         hoy              = date.today()
 
-        for nom in nominas:
-            nom_id    = str(nom.get("id"))
-            tipo      = (nom.get("tipo_nomina") or "").lower().strip()
-            doc_id    = str(nom.get("doctora_id") or "")
+        # Estudiantes en bloque y paginados (H60). Antes se hacían 3 consultas por
+        # nómina (~2.900 en la vista global) y la respuesta no alcanzaba a llegar.
+        nominas_por_id = {str(n.get("id")): n for n in nominas}
+        estudiantes = _leer_estudiantes_stats(
+            list(nominas_por_id), todas=(project_id == 'all' and doctor_filter == 'all'))
+
+        for e in estudiantes:
+            nom = nominas_por_id.get(str(e.get("nomina_id")))
+            if not nom:
+                continue
+            tipo       = (nom.get("tipo_nomina") or "").lower().strip()
             est_nombre = nom.get("nombre_colegio") or nom.get("nombre_nomina") or "Sin nombre"
+            evaluado   = e.get("evaluado_flag") is True
+            evaluadora = str(e.get("doctora_evaluadora_id") or "")
 
-            evaluados  = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
-            pendientes = get_supabase_count(f"nomina_id=eq.{nom_id}&evaluado_flag=eq.false&estado_asistencia=in.(activo,extra)")
-            subtotal   = evaluados + pendientes
+            # Con filtro de doctora, solo cuentan las evaluaciones que hizo ella
+            if doctor_filter != 'all' and evaluado and evaluadora != doctor_filter:
+                continue
 
-            total_evaluados  += evaluados
-            total_pendientes += pendientes
+            est_stats[est_nombre]['total'] += 1
+            est_stats[est_nombre]['nombre'] = est_nombre
 
-            # Especialidad
-            if "neuro" in tipo:
-                neuro_count += evaluados
-            elif "familiar" in tipo or "medicina" in tipo:
-                familiar_count += evaluados
-
-            # Por doctora
-            if doc_id:
-                doctor_stats[doc_id]['completed'] += evaluados
-                doctor_stats[doc_id]['total']     += subtotal
-                doctor_stats[doc_id]['nombre']     = doctoras_map.get(doc_id, 'Desconocida')
-
-            # Por establecimiento
-            est_stats[est_nombre]['completed'] += evaluados
-            est_stats[est_nombre]['total']     += subtotal
-            est_stats[est_nombre]['nombre']     = est_nombre
-
-            # Tendencia: obtener fechas de evaluaciones de esta nómina
-            try:
-                url_fechas = (
-                    f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                    f"?nomina_id=eq.{nom_id}&evaluado_flag=eq.true"
-                    f"&select=fecha_evaluacion"
-                )
-                res_f = requests.get(url_fechas, headers=SUPABASE_SERVICE_HEADERS)
-                if res_f.ok:
-                    for row in res_f.json():
-                        fe = row.get('fecha_evaluacion')
-                        if fe:
-                            try:
-                                fe_date = datetime.strptime(str(fe)[:10], '%Y-%m-%d').date()
-                                delta = (hoy - fe_date).days
-                                if 0 <= delta <= 30:
-                                    daily_counts[str(fe_date)] += 1
-                                delta_w = (hoy - fe_date).days // 7
-                                if 0 <= delta_w < 12:
-                                    iso_w = fe_date.isocalendar()
-                                    wk_key = f"{iso_w[0]}-W{iso_w[1]:02d}"
-                                    weekly_counts[wk_key] += 1
-                            except Exception:
-                                pass
-            except Exception:
-                pass
+            if evaluado:
+                total_evaluados += 1
+                est_stats[est_nombre]['completed'] += 1
+                if "neuro" in tipo:
+                    neuro_count += 1
+                elif "familiar" in tipo or "medicina" in tipo:
+                    familiar_count += 1
+                # Ranking por quien evaluó (H61). Las cuentas que no son de doctora
+                # (por ejemplo, admin) no entran al ranking.
+                if evaluadora in doctoras_map:
+                    doctor_stats[evaluadora]['completed'] += 1
+                    doctor_stats[evaluadora]['total']     += 1
+                    doctor_stats[evaluadora]['nombre']     = doctoras_map[evaluadora]
+                # Tendencia
+                fe = e.get('fecha_evaluacion')
+                if fe:
+                    try:
+                        fe_date = datetime.strptime(str(fe)[:10], '%Y-%m-%d').date()
+                        delta = (hoy - fe_date).days
+                        if 0 <= delta <= 30:
+                            daily_counts[str(fe_date)] += 1
+                        delta_w = delta // 7
+                        if 0 <= delta_w < 12:
+                            iso_w = fe_date.isocalendar()
+                            weekly_counts[f"{iso_w[0]}-W{iso_w[1]:02d}"] += 1
+                    except Exception:
+                        pass
+            else:
+                total_pendientes += 1
+                # Un pendiente todavía no tiene evaluadora: se asigna a la doctora principal
+                principal = str(nom.get("doctora_id") or "")
+                if principal in doctoras_map:
+                    doctor_stats[principal]['total']  += 1
+                    doctor_stats[principal]['nombre']  = doctoras_map[principal]
 
         # ── 4. Construir ranking de doctoras (top 10) ──────────────────
         ranking = []
@@ -2925,7 +2955,10 @@ def get_admin_stats(project_id):
                 'total':     stats['total'],
                 'percent':   pct
             })
-        ranking.sort(key=lambda x: x['percent'], reverse=True)
+        # Primero quien más evaluó; antes se ordenaba por porcentaje y casi todas quedaban empatadas en 100%
+        ranking.sort(key=lambda x: (x['completed'], x['percent']), reverse=True)
+        if doctor_filter != 'all':
+            ranking = [r for r in ranking if r['id'] == doctor_filter]
         ranking = ranking[:10]
 
         # ── 5. Top establecimientos (top 10) ───────────────────────────

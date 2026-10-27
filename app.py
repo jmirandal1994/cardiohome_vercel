@@ -2058,6 +2058,20 @@ def marcar_evaluado():
             'clasificacion_imc': get_form_field_value('clasificacion_imc', request.form, return_none_if_empty=True),
         })
 
+    # H68: la evaluadora se registra solo la primera vez que la ficha queda evaluada.
+    # Si alguien la vuelve a marcar (por ejemplo, un admin que corrige), se conserva
+    # a quien la evaluó. Si la consulta falla, se mantiene el comportamiento anterior.
+    try:
+        res_actual = requests.get(
+            f"{SUPABASE_URL}/rest/v1/estudiantes_nomina?id=eq.{estudiante_id}"
+            f"&select=evaluado_flag,doctora_evaluadora_id",
+            headers=SUPABASE_SERVICE_HEADERS)
+        actual = (res_actual.json() or [{}])[0] if res_actual.ok else {}
+        if actual.get('evaluado_flag') is True and actual.get('doctora_evaluadora_id'):
+            update_data.pop('doctora_evaluadora_id', None)
+    except Exception as e:
+        print(f"AVISO: no se pudo revisar la evaluadora actual de {estudiante_id}: {e}")
+
     print(f"DEBUG: Payload final para Supabase PATCH en /marcar_evaluado: {update_data}")
     
     try:

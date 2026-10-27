@@ -1,0 +1,517 @@
+# -*- coding: utf-8 -*-
+"""
+Módulo "Salud de estudiantes": historial por estudiante, estadísticas de
+peso/talla/IMC y alertas de reevaluación.
+
+Todo es de SOLO LECTURA: no escribe nada en la base de datos ni modifica
+rutas existentes. Se registra desde app.py con:
+
+    from salud_estudiantes import crear_blueprint_salud
+    app.register_blueprint(crear_blueprint_salud(SUPABASE_URL, SUPABASE_SERVICE_HEADERS))
+
+Permisos por rol (session['usuario']):
+    admin          -> todas las nóminas
+    coordinadora   -> nóminas donde coord_general_id = su id
+    doctora        -> nóminas donde es doctora_id, _2, _3 o _4
+    otros          -> sin acceso
+"""
+import re
+import time
+import threading
+from datetime import date, datetime
+from concurrent.futures import ThreadPoolExecutor
+
+import requests
+from flask import Blueprint, jsonify, request, session
+
+ROLES_PERMITIDOS = ("admin", "coordinadora", "doctora")
+CACHE_TTL = 300          # segundos
+PAGE = 1000              # filas por página (límite típico de PostgREST)
+
+COLS_LIGERAS = ("id,nomina_id,nombre,rut,fecha_nacimiento,sexo,fecha_relleno,"
+                "altura,peso,imc,clasificacion_imc,fecha_reevaluacion,estado_asistencia")
+COLS_HISTORIAL = ("id,nomina_id,nombre,rut,fecha_nacimiento,edad,sexo,fecha_relleno,altura,peso,imc,"
+                  "clasificacion_imc,fecha_reevaluacion,diagnostico,diagnostico_1,diagnostico_2,"
+                  "diagnostico_complementario,diagnostico_sospecha,diagnostico_definitivo,derivaciones,"
+                  "indicaciones,doctor_nombre,doctor_especialidad,estado_asistencia")
+COLS_NOMINA = ("id,nombre_nomina,nombre_colegio,form_type,tipo_nomina,proyecto_id,coord_general_id,"
+               "doctora_id,doctora_id_2,doctora_id_3,doctora_id_4")
+
+CLASES = ["Bajo peso", "Normal", "Sobrepeso", "Obesidad"]
+
+
+# ───────────────────────── utilidades ─────────────────────────
+def normalizar_rut(rut):
+    """'12.345.678-k' -> '12345678K'"""
+    return re.sub(r"[^0-9K]", "", str(rut or "").upper())
+
+
+def variantes_rut(rut):
+    """Formas en que el mismo RUT puede estar escrito en la base."""
+    n = normalizar_rut(rut)
+    if len(n) < 2:
+        return []
+    cuerpo, dv = n[:-1], n[-1]
+    con_puntos = f"{int(cuerpo):,}".replace(",", ".") if cuerpo.isdigit() else cuerpo
+    vs = {n, n.lower(), f"{cuerpo}-{dv}", f"{cuerpo}-{dv.lower()}",
+          f"{con_puntos}-{dv}", f"{con_puntos}-{dv.lower()}"}
+    return sorted(vs)
+
+
+def normalizar_clasificacion(texto, imc=None):
+    t = (texto or "").strip().lower()
+    if not t:
+        return "Sin clasificar" if imc not in (None, "") else None
+    if "bajo" in t or "desnutr" in t:
+        return "Bajo peso"
+    if "obes" in t:
+        return "Obesidad"
+    if "sobre" in t:
+        return "Sobrepeso"
+    if "normal" in t or "eutrof" in t:
+        return "Normal"
+    if "curva" in t or "< 2" in t:
+        return "Menor de 2 años"
+    return "Sin clasificar"
+
+
+def _fecha(v):
+    if not v:
+        return None
+    try:
+        return datetime.fromisoformat(str(v).replace("Z", "+00:00")[:19]).date() \
+            if "T" in str(v) or " " in str(v) else date.fromisoformat(str(v)[:10])
+    except Exception:
+        return None
+
+
+def _num(v):
+    try:
+        f = float(v)
+        return f if f == f else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _edad_anios(nac, ref):
+    if not nac or not ref:
+        return None
+    a = ref.year - nac.year - ((ref.month, ref.day) < (nac.month, nac.day))
+    return a if 0 <= a <= 25 else None
+
+
+def _especialidad(nom):
+    ft = (nom or {}).get("form_type") or ""
+    tipo = ((nom or {}).get("tipo_nomina") or "").lower()
+    if ft in ("neurologia", "informe_neurologico") or "neuro" in tipo:
+        return "Neurología"
+    if ft == "medicina_familiar" or "familiar" in tipo or "medicina" in tipo:
+        return "Medicina familiar"
+    return "Otra"
+
+
+def estado_reevaluacion(fecha_reev, hoy=None):
+    """Semáforo según los días que faltan. Se recalcula cada día."""
+    hoy = hoy or date.today()
+    if not fecha_reev:
+        return "sin_fecha", None
+    if fecha_reev.year < 2020 or (fecha_reev - hoy).days > 365 * 8:
+        return "fecha_a_revisar", None
+    dias = (fecha_reev - hoy).days
+    if dias < 0:
+        return "vencida", dias
+    if dias <= 30:
+        return "urgente", dias
+    if dias <= 90:
+        return "proxima", dias
+    if dias <= 365:
+        return "este_anio", dias
+    return "en_plazo", dias
+
+
+def calidad_antropometria(altura, peso, imc):
+    """Devuelve lista de problemas detectados (vacía si todo es plausible)."""
+    p = []
+    if altura is not None:
+        if altura < 3:
+            p.append("Talla parece estar en metros")
+        elif altura < 45 or altura > 210:
+            p.append("Talla fuera de rango")
+    if peso is not None and (peso < 5 or peso > 160):
+        p.append("Peso fuera de rango")
+    if imc is not None and (imc < 9 or imc > 50):
+        p.append("IMC improbable")
+    return p
+
+
+# ───────────────────────── blueprint ─────────────────────────
+def crear_blueprint_salud(supabase_url, headers):
+    bp = Blueprint("salud_estudiantes", __name__)
+    _cache = {}
+    _lock = threading.Lock()
+
+    def _get(path, extra_headers=None):
+        h = dict(headers)
+        if extra_headers:
+            h.update(extra_headers)
+        r = requests.get(f"{supabase_url}/rest/v1/{path}", headers=h, timeout=25)
+        r.raise_for_status()
+        return r
+
+    def _cacheado(clave, fn):
+        ahora = time.time()
+        with _lock:
+            hit = _cache.get(clave)
+            if hit and ahora - hit[0] < CACHE_TTL:
+                return hit[1]
+        val = fn()
+        with _lock:
+            _cache[clave] = (ahora, val)
+        return val
+
+    def _todas_paginas(path_base):
+        """Trae todas las filas de una consulta, en paralelo por páginas."""
+        r = _get(path_base, {"Prefer": "count=exact", "Range": "0-0"})
+        try:
+            total = int(r.headers.get("Content-Range", "0/0").split("/")[-1])
+        except ValueError:
+            total = 0
+        if total == 0:
+            return []
+        rangos = [(i, min(i + PAGE, total) - 1) for i in range(0, total, PAGE)]
+
+        def pedir(rg):
+            return _get(path_base, {"Range": f"{rg[0]}-{rg[1]}", "Prefer": "count=none"}).json()
+
+        filas = []
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            for bloque in ex.map(pedir, rangos):
+                filas.extend(bloque)
+        return filas
+
+    def _nominas():
+        return _cacheado("nominas", lambda: {
+            n["id"]: n for n in _todas_paginas(f"nominas_medicas?select={COLS_NOMINA}&order=id.asc")})
+
+    def _proyectos():
+        return _cacheado("proyectos", lambda: {
+            p["id"]: p.get("nombre_proyecto") for p in
+            _get("proyectos?select=id,nombre_proyecto").json()})
+
+    def _nominas_permitidas():
+        rol, uid = session.get("usuario"), str(session.get("usuario_id") or "")
+        noms = _nominas()
+        if rol == "admin":
+            return set(noms.keys())
+        if rol == "coordinadora":
+            return {k for k, n in noms.items() if str(n.get("coord_general_id") or "") == uid}
+        if rol == "doctora":
+            return {k for k, n in noms.items()
+                    if uid in {str(n.get(c) or "") for c in ("doctora_id", "doctora_id_2", "doctora_id_3", "doctora_id_4")}}
+        return set()
+
+    def _evaluaciones_ligeras():
+        """Todas las evaluaciones realizadas (cache compartida); se filtran por rol después."""
+        return _cacheado("evals", lambda: _todas_paginas(
+            f"estudiantes_nomina?select={COLS_LIGERAS}&fecha_relleno=not.is.null&order=id.asc"))
+
+    def _autorizado():
+        return "usuario" in session and session.get("usuario") in ROLES_PERMITIDOS
+
+    def _filtrar(filas, permitidas):
+        proyecto = request.args.get("proyecto_id") or ""
+        colegio = (request.args.get("colegio") or "").strip().lower()
+        noms = _nominas()
+        out = []
+        for f in filas:
+            nid = f.get("nomina_id")
+            if nid not in permitidas:
+                continue
+            n = noms.get(nid) or {}
+            if proyecto and str(n.get("proyecto_id") or "") != proyecto:
+                continue
+            if colegio and (n.get("nombre_colegio") or "").strip().lower() != colegio:
+                continue
+            out.append(f)
+        return out
+
+    # ───────────── filtros disponibles ─────────────
+    @bp.route("/api/salud/filtros", methods=["GET"])
+    def api_salud_filtros():
+        if not _autorizado():
+            return jsonify({"success": False, "message": "No autorizado"}), 403
+        try:
+            permitidas = _nominas_permitidas()
+            noms, proys = _nominas(), _proyectos()
+            proyectos, colegios = {}, set()
+            for nid in permitidas:
+                n = noms[nid]
+                if n.get("proyecto_id"):
+                    proyectos[n["proyecto_id"]] = proys.get(n["proyecto_id"]) or "Proyecto"
+                if n.get("nombre_colegio"):
+                    colegios.add(n["nombre_colegio"].strip())
+            return jsonify({"success": True,
+                            "proyectos": sorted([{"id": k, "nombre": v} for k, v in proyectos.items()], key=lambda x: x["nombre"]),
+                            "colegios": sorted(colegios),
+                            "rol": session.get("usuario")})
+        except Exception as e:
+            print(f"ERROR api_salud_filtros: {e}")
+            return jsonify({"success": False, "message": "Error al cargar filtros"}), 500
+
+    # ───────────── historial de un estudiante ─────────────
+    @bp.route("/api/salud/buscar", methods=["GET"])
+    def api_salud_buscar():
+        """Busca estudiantes por RUT o nombre dentro del alcance del usuario."""
+        if not _autorizado():
+            return jsonify({"success": False, "message": "No autorizado"}), 403
+        q = (request.args.get("q") or "").strip()
+        if len(q) < 3:
+            return jsonify({"success": True, "resultados": []})
+        try:
+            permitidas = _nominas_permitidas()
+            noms = _nominas()
+            n = normalizar_rut(q)
+            if len(n) >= 7 and n[:-1].isdigit():
+                rows = _get(f"estudiantes_nomina?select=id,nomina_id,nombre,rut,fecha_relleno"
+                            f"&rut=in.({','.join(variantes_rut(q))})&limit=200").json()
+            else:
+                termino = re.sub(r"[%*,()]", " ", q)
+                rows = _get(f"estudiantes_nomina?select=id,nomina_id,nombre,rut,fecha_relleno"
+                            f"&nombre=ilike.*{requests.utils.quote(termino)}*&limit=400").json()
+            agrupado = {}
+            for r in rows:
+                if r.get("nomina_id") not in permitidas:
+                    continue
+                clave = normalizar_rut(r.get("rut")) or r["id"]
+                g = agrupado.setdefault(clave, {"rut": r.get("rut"), "nombre": r.get("nombre"),
+                                                "evaluaciones": 0, "colegios": set()})
+                if r.get("fecha_relleno"):
+                    g["evaluaciones"] += 1
+                col = (noms.get(r["nomina_id"]) or {}).get("nombre_colegio")
+                if col:
+                    g["colegios"].add(col.strip())
+            res = [{**v, "colegios": sorted(v["colegios"])} for v in agrupado.values()]
+            res.sort(key=lambda x: (x["nombre"] or ""))
+            return jsonify({"success": True, "resultados": res[:30]})
+        except Exception as e:
+            print(f"ERROR api_salud_buscar: {e}")
+            return jsonify({"success": False, "message": "Error en la búsqueda"}), 500
+
+    @bp.route("/api/salud/historial", methods=["GET"])
+    def api_salud_historial():
+        if not _autorizado():
+            return jsonify({"success": False, "message": "No autorizado"}), 403
+        rut = request.args.get("rut") or ""
+        vs = variantes_rut(rut)
+        if not vs:
+            return jsonify({"success": False, "message": "RUT inválido"}), 400
+        try:
+            permitidas = _nominas_permitidas()
+            noms = _nominas()
+            rows = _get(f"estudiantes_nomina?select={COLS_HISTORIAL}&rut=in.({','.join(vs)})").json()
+            # La doctora solo puede ver el historial de estudiantes que estén en alguna de sus nóminas
+            if not any(r.get("nomina_id") in permitidas for r in rows):
+                return jsonify({"success": False, "message": "Este estudiante no está en tus nóminas"}), 403
+            # Admin y coordinadora ven solo sus nóminas; la doctora ve el historial completo del estudiante
+            # (es su paciente) para poder comparar con evaluaciones anteriores.
+            if session.get("usuario") != "doctora":
+                rows = [r for r in rows if r.get("nomina_id") in permitidas]
+            hoy = date.today()
+            evals = []
+            for r in rows:
+                n = noms.get(r.get("nomina_id")) or {}
+                fr = _fecha(r.get("fecha_relleno"))
+                nac = _fecha(r.get("fecha_nacimiento"))
+                altura, peso, imc = _num(r.get("altura")), _num(r.get("peso")), _num(r.get("imc"))
+                freev = _fecha(r.get("fecha_reevaluacion"))
+                est, dias = estado_reevaluacion(freev, hoy)
+                diags = [r.get(k) for k in ("diagnostico_definitivo", "diagnostico_1", "diagnostico_2",
+                                            "diagnostico", "diagnostico_sospecha", "diagnostico_complementario")]
+                diags = list(dict.fromkeys([d.strip() for d in diags if d and str(d).strip()]))
+                evals.append({
+                    "id": r["id"],
+                    "fecha": fr.isoformat() if fr else None,
+                    "anio": fr.year if fr else None,
+                    "evaluado": bool(fr),
+                    "especialidad": _especialidad(n),
+                    "colegio": (n.get("nombre_colegio") or "").strip() or None,
+                    "nomina": n.get("nombre_nomina"),
+                    "profesional": r.get("doctor_nombre"),
+                    "edad": r.get("edad") or (f"{_edad_anios(nac, fr)} años" if _edad_anios(nac, fr) is not None else None),
+                    "edad_anios": _edad_anios(nac, fr or hoy),
+                    "altura": altura, "peso": peso, "imc": imc,
+                    "clasificacion": normalizar_clasificacion(r.get("clasificacion_imc"), imc),
+                    "alertas_datos": calidad_antropometria(altura, peso, imc),
+                    "diagnosticos": diags,
+                    "derivaciones": r.get("derivaciones"),
+                    "indicaciones": r.get("indicaciones"),
+                    "fecha_reevaluacion": freev.isoformat() if freev else None,
+                    "estado_reevaluacion": est,
+                    "dias_para_reevaluar": dias,
+                    "progreso_reevaluacion": (
+                        max(0, min(100, round(100 * (hoy - fr).days / max(1, (freev - fr).days))))
+                        if fr and freev and freev > fr and est != "fecha_a_revisar" else None),
+                })
+            evals.sort(key=lambda e: (e["fecha"] or "9999", e["especialidad"]))
+            # Solo la evaluación más reciente de cada especialidad tiene una reevaluación pendiente;
+            # las anteriores ya se cumplieron con la evaluación siguiente.
+            vista = set()
+            for e in reversed(evals):
+                if not e["evaluado"]:
+                    continue
+                if e["especialidad"] in vista:
+                    e["estado_reevaluacion"], e["dias_para_reevaluar"], e["progreso_reevaluacion"] = "cumplida", None, 100
+                vista.add(e["especialidad"])
+            base = rows[0] if rows else {}
+            return jsonify({"success": True, "estudiante": {
+                "nombre": base.get("nombre"), "rut": base.get("rut"), "sexo": base.get("sexo"),
+                "fecha_nacimiento": base.get("fecha_nacimiento"),
+            }, "evaluaciones": evals, "hoy": hoy.isoformat()})
+        except Exception as e:
+            print(f"ERROR api_salud_historial: {e}")
+            return jsonify({"success": False, "message": "Error al cargar el historial"}), 500
+
+    # ───────────── estadísticas de peso, talla e IMC ─────────────
+    @bp.route("/api/salud/nutricion", methods=["GET"])
+    def api_salud_nutricion():
+        if not _autorizado():
+            return jsonify({"success": False, "message": "No autorizado"}), 403
+        try:
+            filas = _filtrar(_evaluaciones_ligeras(), _nominas_permitidas())
+            noms = _nominas()
+            anios = sorted({fr.year for fr in (_fecha(f.get("fecha_relleno")) for f in filas) if fr})
+            try:
+                anio_sel = int(request.args.get("anio") or (anios[-1] if anios else date.today().year))
+            except ValueError:
+                anio_sel = anios[-1] if anios else date.today().year
+            dist = {c: 0 for c in CLASES}
+            vistos_anio = set()
+            otros = {"Sin clasificar": 0, "Menor de 2 años": 0}
+            por_colegio, por_edad, por_anio = {}, {}, {}
+            revisar, con_medidas = [], 0
+            for f in filas:
+                altura, peso, imc = _num(f.get("altura")), _num(f.get("peso")), _num(f.get("imc"))
+                if altura is None and peso is None and imc is None:
+                    continue
+                con_medidas += 1
+                problemas = calidad_antropometria(altura, peso, imc)
+                n = noms.get(f.get("nomina_id")) or {}
+                col = (n.get("nombre_colegio") or "Sin colegio").strip()
+                if problemas:
+                    if len(revisar) < 300:
+                        revisar.append({"nombre": f.get("nombre"), "rut": f.get("rut"), "colegio": col,
+                                        "altura": altura, "peso": peso, "imc": imc, "problemas": problemas})
+                    continue
+                c = normalizar_clasificacion(f.get("clasificacion_imc"), imc)
+                fr, nac = _fecha(f.get("fecha_relleno")), _fecha(f.get("fecha_nacimiento"))
+                if fr:
+                    pa = por_anio.setdefault(fr.year, {"anio": fr.year, "total": 0, **{k: 0 for k in CLASES}})
+                    pa["total"] += 1
+                    if c in CLASES:
+                        pa[c] += 1
+                # Lo que sigue describe solo el año elegido y una medición por estudiante
+                if not fr or fr.year != anio_sel:
+                    continue
+                clave_est = normalizar_rut(f.get("rut")) or f["id"]
+                if clave_est in vistos_anio:
+                    continue
+                vistos_anio.add(clave_est)
+                if c in dist:
+                    dist[c] += 1
+                elif c in otros:
+                    otros[c] += 1
+                pc = por_colegio.setdefault(col, {"colegio": col, "total": 0, **{k: 0 for k in CLASES}})
+                pc["total"] += 1
+                if c in CLASES:
+                    pc[c] += 1
+                ed = _edad_anios(nac, fr)
+                sexo = (f.get("sexo") or "").strip().upper()[:1]  # "F"/"M"; otros valores no se grafican
+                if ed is not None and imc is not None and 2 <= ed <= 18:
+                    pe = por_edad.setdefault(ed, {"edad": ed, "F": [], "M": [], "talla_F": [], "talla_M": [],
+                                                   "peso_F": [], "peso_M": []})
+                    if sexo in ("F", "M"):
+                        pe[sexo].append(imc)
+                        if altura:
+                            pe["talla_" + sexo].append(altura)
+                        if peso:
+                            pe["peso_" + sexo].append(peso)
+
+            def prom(xs):
+                return round(sum(xs) / len(xs), 1) if xs else None
+
+            edades = [{"edad": e["edad"],
+                       "imc_F": prom(e["F"]), "imc_M": prom(e["M"]),
+                       "talla_F": prom(e["talla_F"]), "talla_M": prom(e["talla_M"]),
+                       "peso_F": prom(e["peso_F"]), "peso_M": prom(e["peso_M"]),
+                       "n": len(e["F"]) + len(e["M"])} for e in sorted(por_edad.values(), key=lambda x: x["edad"])]
+            colegios = []
+            for pc in por_colegio.values():
+                clas = sum(pc[k] for k in CLASES)
+                pc["exceso_pct"] = round(100 * (pc["Sobrepeso"] + pc["Obesidad"]) / clas, 1) if clas else None
+                pc["bajo_pct"] = round(100 * pc["Bajo peso"] / clas, 1) if clas else None
+                colegios.append(pc)
+            colegios.sort(key=lambda x: -(x["exceso_pct"] or 0))
+            clasificados = sum(dist.values())
+            return jsonify({
+                "success": True,
+                "anio": anio_sel, "anios": anios,
+                "evaluados": len(filas), "con_medidas": con_medidas, "clasificados": clasificados,
+                "distribucion": dist, "otros": otros,
+                "exceso_pct": round(100 * (dist["Sobrepeso"] + dist["Obesidad"]) / clasificados, 1) if clasificados else None,
+                "colegios": colegios, "por_edad": edades,
+                "por_anio": sorted(por_anio.values(), key=lambda x: x["anio"]),
+                "a_revisar": revisar, "a_revisar_total": len(revisar),
+            })
+        except Exception as e:
+            print(f"ERROR api_salud_nutricion: {e}")
+            return jsonify({"success": False, "message": "Error al calcular estadísticas"}), 500
+
+    # ───────────── alertas de reevaluación ─────────────
+    @bp.route("/api/salud/reevaluaciones", methods=["GET"])
+    def api_salud_reevaluaciones():
+        if not _autorizado():
+            return jsonify({"success": False, "message": "No autorizado"}), 403
+        try:
+            filas = _filtrar(_evaluaciones_ligeras(), _nominas_permitidas())
+            noms = _nominas()
+            hoy = date.today()
+            # Una alerta por estudiante y especialidad: la evaluación más reciente manda.
+            ultima = {}
+            for f in filas:
+                n = noms.get(f.get("nomina_id")) or {}
+                esp = _especialidad(n)
+                clave = (normalizar_rut(f.get("rut")) or f["id"], esp)
+                fr = _fecha(f.get("fecha_relleno"))
+                prev = ultima.get(clave)
+                if not prev or (fr and (prev["_fr"] is None or fr > prev["_fr"])):
+                    ultima[clave] = {**f, "_fr": fr, "_esp": esp, "_col": (n.get("nombre_colegio") or "").strip()}
+            conteo = {k: 0 for k in ("vencida", "urgente", "proxima", "este_anio", "en_plazo", "fecha_a_revisar", "sin_fecha")}
+            por_mes, lista = {}, []
+            for f in ultima.values():
+                freev = _fecha(f.get("fecha_reevaluacion"))
+                est, dias = estado_reevaluacion(freev, hoy)
+                conteo[est] += 1
+                if freev and est not in ("fecha_a_revisar", "sin_fecha"):
+                    k = freev.strftime("%Y-%m")
+                    por_mes[k] = por_mes.get(k, 0) + 1
+                if est in ("vencida", "urgente", "proxima", "este_anio", "fecha_a_revisar"):
+                    fr = f["_fr"]
+                    lista.append({
+                        "nombre": f.get("nombre"), "rut": f.get("rut"), "colegio": f["_col"] or None,
+                        "especialidad": f["_esp"], "fecha_evaluacion": fr.isoformat() if fr else None,
+                        "fecha_reevaluacion": freev.isoformat() if freev else None,
+                        "estado": est, "dias": dias,
+                        "progreso": (max(0, min(100, round(100 * (hoy - fr).days / max(1, (freev - fr).days))))
+                                     if fr and freev and freev > fr and est != "fecha_a_revisar" else None),
+                    })
+            orden = {"vencida": 0, "urgente": 1, "proxima": 2, "este_anio": 3, "fecha_a_revisar": 4}
+            lista.sort(key=lambda x: (orden[x["estado"]], x["dias"] if x["dias"] is not None else 99999))
+            meses = sorted(por_mes.items())
+            return jsonify({"success": True, "hoy": hoy.isoformat(), "total_estudiantes": len(ultima),
+                            "conteo": conteo, "por_mes": [{"mes": k, "n": v} for k, v in meses],
+                            "lista": lista[:2000], "lista_total": len(lista)})
+        except Exception as e:
+            print(f"ERROR api_salud_reevaluaciones: {e}")
+            return jsonify({"success": False, "message": "Error al calcular reevaluaciones"}), 500
+
+    return bp

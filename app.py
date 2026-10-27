@@ -61,6 +61,15 @@ SUPABASE_SERVICE_HEADERS = {
     "Prefer": "count=exact"
 }
 
+# -------------------- Módulo Salud de estudiantes (solo lectura) --------------------
+# Historial por estudiante, estadísticas de peso/talla/IMC y alertas de reevaluación.
+# Si el módulo fallara al cargar, la plataforma sigue funcionando igual que antes.
+try:
+    from salud_estudiantes import crear_blueprint_salud
+    app.register_blueprint(crear_blueprint_salud(SUPABASE_URL, SUPABASE_SERVICE_HEADERS))
+except Exception as _e_salud:
+    print(f"⚠️ Módulo salud_estudiantes no cargado: {_e_salud}")
+
 # Configuración de SendGrid
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 SENDGRID_FROM = os.getenv("SENDGRID_FROM_EMAIL", 'your_sendgrid_email@example.com')

@@ -1,0 +1,41 @@
+{# ═══ Sección "Salud y Reevaluaciones" · se incluye desde dashboard-23.html ═══
+   Visible para admin, coordinadora y doctora. Todo es de solo lectura. #}
+<link rel="stylesheet" href="{{ url_for('static', filename='salud_estudiantes.css') }}">
+<div id="salud-estudiantes" class="content-section" style="display:none">
+  <div id="se-root" class="se-wrap">
+    <div class="se-head">
+      <div>
+        <h2 class="se-title"><i class="fa-solid fa-heart-pulse"></i> Salud y Reevaluaciones</h2>
+        <p class="se-sub">
+          {% if usuario == 'doctora' %}Tus estudiantes evaluados: cuándo toca reevaluarlos, su peso, talla e IMC, y el historial de cada uno.
+          {% elif usuario == 'coordinadora' %}Estudiantes de tus proyectos: alertas de reevaluación, estado nutricional e historial individual.
+          {% else %}Todos los proyectos: alertas de reevaluación, estado nutricional e historial individual.{% endif %}
+        </p>
+      </div>
+      <div class="se-filtros">
+        <select id="se-f-proy" aria-label="Proyecto"><option value="">Todos los proyectos</option></select>
+        <select id="se-f-col" aria-label="Colegio"><option value="">Todos los colegios</option></select>
+        <select id="se-f-anio" aria-label="Año" style="display:none"><option value="">Año</option></select>
+      </div>
+    </div>
+
+    <div class="se-tabs" role="tablist">
+      <button type="button" class="se-tab on" data-tab="reev"><i class="fa-solid fa-bell"></i> Alertas de reevaluación</button>
+      <button type="button" class="se-tab" data-tab="nutri"><i class="fa-solid fa-weight-scale"></i> Peso, talla e IMC</button>
+      <button type="button" class="se-tab" data-tab="hist"><i class="fa-solid fa-clock-rotate-left"></i> Historial por estudiante</button>
+    </div>
+
+    <div class="se-panel on" id="se-p-reev"><div id="se-p-reev-body"></div></div>
+    <div class="se-panel" id="se-p-nutri"><div id="se-p-nutri-body"></div></div>
+    <div class="se-panel" id="se-p-hist">
+      <div class="se-card" style="margin-bottom:12px">
+        <h4>Buscar estudiante</h4>
+        <p class="se-cap">Escribe el RUT (con o sin puntos) o al menos 3 letras del nombre.</p>
+        <input class="se-input" id="se-buscar" type="search" placeholder="Ej: 23.456.789-0 o Martina González" autocomplete="off" style="width:100%">
+        <div id="se-resultados"></div>
+      </div>
+      <div id="se-ficha"></div>
+    </div>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='salud_estudiantes.js') }}"></script>

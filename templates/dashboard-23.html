@@ -1107,6 +1107,7 @@
                     {% if usuario == 'admin' %}
                         <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-gauge-high"></i> Inicio</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-performance"><i class="fa-solid fa-chart-simple"></i> Rendimiento General</a></li>
+                        <li><a href="#" class="nav-link" data-section="salud-estudiantes"><i class="fa-solid fa-heart-pulse"></i> Salud y Reevaluaciones</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-add-visit"><i class="fa-solid fa-calendar-days"></i> Programar Visita</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-calendar-doctoras"><i class="fa-solid fa-calendar-week"></i> Calendario Doctoras</a></li>
                         <li><a href="#" class="nav-link" data-section="admin-presencia"><i class="fa-solid fa-circle-dot" style="color:#10b981;"></i> Actividad en Tiempo Real</a></li>
@@ -1149,6 +1150,7 @@
             {% elif usuario == 'coordinadora' %}
                         <li><a href="#" class="nav-link active" data-section="coord-performance"><i class="fa-solid fa-gauge-high"></i> Rendimiento en Vivo</a></li>
                         <li><a href="#" class="nav-link" data-section="coord-evaluaciones"><i class="fa-solid fa-sitemap"></i> Evaluaciones por Establecimiento</a></li>
+                        <li><a href="#" class="nav-link" data-section="salud-estudiantes"><i class="fa-solid fa-heart-pulse"></i> Salud y Reevaluaciones</a></li>
                         <li><a href="#" class="nav-link" data-section="coord-contact"><i class="fa-solid fa-envelope"></i> Solicitudes</a></li>
                     
                     {% elif usuario == 'coordinador_escuela' %}
@@ -1158,6 +1160,7 @@
                     {% else %}
                         <li><a href="#" class="nav-link active" data-section="welcome-section"><i class="fa-solid fa-gauge-high"></i> Inicio</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-performance"><i class="fa-solid fa-chart-simple"></i> Mi Rendimiento</a></li>
+                        {% if usuario == 'doctora' %}<li><a href="#" class="nav-link" data-section="salud-estudiantes"><i class="fa-solid fa-heart-pulse"></i> Salud y Reevaluaciones</a></li>{% endif %}
                         <li><a href="#" class="nav-link" data-section="doctor-proyectos"><i class="fa-solid fa-folder-tree"></i> Proyectos Asignados</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-visits"><i class="fa-solid fa-calendar-days"></i> Mis Próximas Visitas</a></li>
                         <li><a href="#" class="nav-link" data-section="doctor-contact"><i class="fa-solid fa-envelope"></i> Contacto</a></li>
@@ -7273,6 +7276,11 @@
                         </form>
                     </div>
                 </div>
+            {% endif %}
+
+            {# ══ Módulo Salud de estudiantes (historial, nutrición y reevaluaciones) ══ #}
+            {% if usuario in ['admin', 'coordinadora', 'doctora'] %}
+                {% include '_salud_estudiantes.html' %}
             {% endif %}
         </main>
     </div>

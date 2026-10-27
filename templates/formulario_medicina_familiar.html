@@ -1604,6 +1604,13 @@
                     {% else %}
                         <span class="status-badge pending"><i class="fas fa-clock"></i> Pendiente</span>
                     {% endif %}
+                    {% if est.rut %}
+                    <button type="button" class="se-hist-btn" data-rut="{{ est.rut }}" data-nombre="{{ est.nombre }}"
+                            onclick="event.preventDefault(); event.stopPropagation(); SE.histBtn(this)"
+                            title="Ver evaluaciones anteriores, peso, talla, IMC y fecha de reevaluación">
+                        <i class="fas fa-clock-rotate-left"></i> Historial
+                    </button>
+                    {% endif %}
                     {% if est_estado == 'activo' or est_estado == 'extra' %}
                     <button type="button" class="btn-estado-ausencia"
                             onclick="event.preventDefault(); event.stopPropagation(); abrirModalAusencia('{{ est.id }}','{{ est.nombre | replace("'","\'") }}')"
@@ -4416,5 +4423,8 @@ function actualizarContadoresFormulario() {
     });
 })();
 </script>
+<!-- ══ Módulo Salud de estudiantes: historial en ventana emergente (solo lectura) ══ -->
+<link rel="stylesheet" href="{{ url_for('static', filename='salud_estudiantes.css') }}">
+<script src="{{ url_for('static', filename='salud_estudiantes.js') }}"></script>
 </body>
 </html>

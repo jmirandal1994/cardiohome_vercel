@@ -1,0 +1,91 @@
+/* ═══ Módulo Salud de estudiantes · estilos con prefijo se- para no chocar con el resto ═══ */
+.se-wrap{--se-ink:#13263a;--se-muted:#5b6b7a;--se-line:#e3e9ef;--se-soft:#f6f9fb;--se-navy:#0f3460;--se-blue:#1c67a3;
+  --se-green:#16a34a;--se-amber:#d97706;--se-orange:#ea580c;--se-red:#dc2626;--se-violet:#7c3aed;--se-gray:#94a3b8;
+  font-family:inherit;color:var(--se-ink)}
+.se-wrap *{box-sizing:border-box}
+.se-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px}
+.se-title{font-size:1.45rem;font-weight:800;margin:0;color:var(--se-navy)}
+.se-sub{color:var(--se-muted);font-size:.88rem;margin:4px 0 0}
+.se-tabs{display:flex;gap:6px;flex-wrap:wrap;background:#fff;border:1px solid var(--se-line);border-radius:12px;padding:5px;margin-bottom:14px}
+.se-tab{border:0;background:transparent;padding:9px 14px;border-radius:9px;font-weight:700;font-size:.86rem;color:var(--se-muted);cursor:pointer;display:inline-flex;gap:7px;align-items:center}
+.se-tab:hover{background:var(--se-soft);color:var(--se-ink)}
+.se-tab.on{background:var(--se-navy);color:#fff}
+.se-filtros{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.se-filtros select,.se-input{border:1px solid var(--se-line);border-radius:9px;padding:8px 10px;font-size:.86rem;background:#fff;color:var(--se-ink);min-width:150px}
+.se-input{min-width:260px}
+.se-btn{border:1px solid var(--se-line);background:#fff;border-radius:9px;padding:8px 12px;font-weight:700;font-size:.84rem;cursor:pointer;color:var(--se-navy);display:inline-flex;gap:6px;align-items:center}
+.se-btn:hover{background:var(--se-soft)}
+.se-btn.pri{background:var(--se-navy);color:#fff;border-color:var(--se-navy)}
+.se-panel{display:none}.se-panel.on{display:block}
+.se-grid{display:grid;gap:12px}
+.se-g4{grid-template-columns:repeat(4,minmax(0,1fr))}.se-g6{grid-template-columns:repeat(6,minmax(0,1fr))}
+.se-g2{grid-template-columns:repeat(2,minmax(0,1fr))}.se-g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:1100px){.se-g6{grid-template-columns:repeat(3,minmax(0,1fr))}.se-g4{grid-template-columns:repeat(2,minmax(0,1fr))}.se-g2,.se-g3{grid-template-columns:1fr}}
+@media(max-width:620px){.se-g6,.se-g4{grid-template-columns:1fr 1fr}.se-input{min-width:0;width:100%}}
+.se-card{background:#fff;border:1px solid var(--se-line);border-radius:14px;padding:14px 16px}
+.se-card h4{margin:0 0 2px;font-size:.98rem;font-weight:800;color:var(--se-ink)}
+.se-card .se-cap{color:var(--se-muted);font-size:.78rem;margin:0 0 10px}
+.se-kpi{position:relative;overflow:hidden}
+.se-kpi .lab{font-size:.76rem;font-weight:700;color:var(--se-muted);text-transform:uppercase;letter-spacing:.03em}
+.se-kpi .val{font-size:1.75rem;font-weight:800;line-height:1.15;margin-top:4px}
+.se-kpi .hint{font-size:.76rem;color:var(--se-muted);margin-top:2px}
+.se-kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c,var(--se-blue))}
+.se-kpi.click{cursor:pointer;transition:transform .12s,box-shadow .12s}
+.se-kpi.click:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(15,52,96,.08)}
+.se-kpi.sel{outline:2px solid var(--c,var(--se-blue));outline-offset:-2px}
+.se-help{background:#eef6ff;border:1px solid #cfe3fb;border-radius:12px;padding:10px 14px;font-size:.84rem;color:#1d3d5f;margin:0 0 12px;display:flex;gap:10px;align-items:flex-start}
+.se-help i{margin-top:2px;color:var(--se-blue)}
+.se-help b{color:var(--se-navy)}
+details.se-que{margin-top:8px;font-size:.8rem;color:var(--se-muted)}
+details.se-que summary{cursor:pointer;font-weight:700;color:var(--se-blue);list-style:none}
+details.se-que summary::-webkit-details-marker{display:none}
+details.se-que p{margin:6px 0 0;line-height:1.45}
+.se-chart{position:relative;height:250px}
+.se-chart.sm{height:170px}
+.se-table{width:100%;border-collapse:collapse;font-size:.84rem}
+.se-table th{background:var(--se-soft);color:var(--se-muted);font-weight:700;text-align:left;padding:8px 10px;border-bottom:1px solid var(--se-line);white-space:nowrap}
+.se-table td{padding:8px 10px;border-bottom:1px solid var(--se-line);vertical-align:middle}
+.se-table tr.link{cursor:pointer}.se-table tr.link:hover td{background:#f8fbff}
+.se-tw{overflow-x:auto;border:1px solid var(--se-line);border-radius:12px;background:#fff}
+.se-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;font-size:.74rem;font-weight:800;white-space:nowrap;background:var(--bg,#eef2f6);color:var(--fg,#334155)}
+.se-chip.dot::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--fg)}
+.se-bar{height:7px;border-radius:99px;background:#e8eef4;overflow:hidden;min-width:90px}
+.se-bar>span{display:block;height:100%;border-radius:99px;background:var(--fg,var(--se-blue))}
+.se-empty{text-align:center;color:var(--se-muted);padding:28px 10px;font-size:.9rem}
+.se-empty i{font-size:1.6rem;display:block;margin-bottom:8px;color:var(--se-gray)}
+.se-load{display:flex;align-items:center;gap:10px;justify-content:center;color:var(--se-muted);padding:30px;font-size:.9rem}
+.se-spin{width:18px;height:18px;border:3px solid #dbe5ef;border-top-color:var(--se-blue);border-radius:50%;animation:sespin .8s linear infinite}
+@keyframes sespin{to{transform:rotate(360deg)}}
+.se-res{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.se-res-it{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--se-line);border-radius:10px;background:#fff;cursor:pointer}
+.se-res-it:hover{border-color:var(--se-blue);background:#f8fbff}
+.se-res-it .n{font-weight:800}.se-res-it .m{font-size:.78rem;color:var(--se-muted)}
+/* Ficha del estudiante */
+.se-ficha{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
+.se-avatar{width:52px;height:52px;border-radius:50%;background:var(--se-navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.1rem;flex-shrink:0}
+.se-ficha .who{display:flex;gap:12px;align-items:center}
+.se-ficha .nm{font-size:1.15rem;font-weight:800}
+.se-ficha .meta{font-size:.82rem;color:var(--se-muted)}
+.se-countdown{min-width:260px;flex:1;max-width:420px}
+.se-countdown .t{display:flex;justify-content:space-between;font-size:.8rem;font-weight:700;margin-bottom:6px}
+.se-timeline{position:relative;margin-left:8px;padding-left:20px;border-left:2px solid var(--se-line)}
+.se-ev{position:relative;margin-bottom:12px}
+.se-ev::before{content:"";position:absolute;left:-27px;top:16px;width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid var(--fg,var(--se-blue))}
+.se-ev .hd{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px}
+.se-ev .fecha{font-weight:800}
+.se-ev .med{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+.se-med{background:var(--se-soft);border:1px solid var(--se-line);border-radius:10px;padding:6px 10px;font-size:.78rem;color:var(--se-muted)}
+.se-med b{display:block;font-size:1rem;color:var(--se-ink)}
+.se-delta{font-size:.72rem;font-weight:800;margin-left:4px}
+.se-kv{font-size:.82rem;margin-top:4px}.se-kv span{color:var(--se-muted)}
+.se-warn{color:var(--se-orange);font-size:.78rem;font-weight:700}
+.se-pag{display:flex;gap:6px;justify-content:flex-end;align-items:center;padding:10px;font-size:.8rem;color:var(--se-muted)}
+/* Modal (formularios de la doctora) */
+.se-modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:99999;display:none;align-items:flex-start;justify-content:center;padding:30px 12px;overflow-y:auto}
+.se-modal-bg.on{display:flex}
+.se-modal{background:#f4f7f9;border-radius:16px;max-width:980px;width:100%;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.se-modal .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.se-modal .top h3{margin:0;font-size:1.1rem;color:var(--se-navy);font-weight:800}
+.se-x{border:0;background:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:1rem;color:var(--se-muted);border:1px solid var(--se-line)}
+.se-hist-btn{background:rgba(28,103,163,.08);color:#1c67a3;border:1.5px solid rgba(28,103,163,.25);border-radius:8px;padding:5px 11px;font-size:.75rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.se-hist-btn:hover{background:rgba(28,103,163,.16)}

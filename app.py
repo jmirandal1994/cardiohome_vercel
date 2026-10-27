@@ -7650,12 +7650,17 @@ def soporte_solicitar():
         data      = request.get_json(force=True, silent=True) or {}
         nombre    = (data.get('nombre') or session.get('nombre') or '').strip()
         escuela   = (data.get('escuela') or '').strip()
+        # Correo de contacto obligatorio: permite a los admins seguir el caso por correo
+        # (por ejemplo, si piden un archivo distinto o el chat se corta).
+        contacto  = (data.get('contacto') or '').strip()
         es_general = (rol in ('coordinadora', 'doctora'))  # doctora y coord general = prioridad alta
 
         if not nombre:
             return jsonify({"success": False, "message": "Ingresa tu nombre"}), 400
         if not es_general and not escuela:
             return jsonify({"success": False, "message": "Ingresa el establecimiento"}), 400
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", contacto):
+            return jsonify({"success": False, "message": "Ingresa un correo de contacto válido"}), 400
 
         # Token único por pestaña del navegador (enviado desde el JS frontend)
         # Esto aísla coordinadores que comparten el mismo usuario_id
@@ -7673,6 +7678,7 @@ def soporte_solicitar():
             "solicitante_id":     solicitante_id,
             "session_token":      session_token,
             "solicitante_nombre": nombre,
+            "solicitante_contacto": contacto,
             "solicitante_escuela": escuela if not es_general else "Coordinación General",
             "solicitante_rol":    rol,
             "estado":             "esperando",   # esperando | activo | cerrado
@@ -7705,14 +7711,14 @@ def soporte_sesiones_pendientes():
         res_pend = requests.get(
             f"{SUPABASE_URL}/rest/v1/chat_soporte_sesiones"
             f"?estado=eq.esperando&order=created_at.asc"
-            f"&select=id,solicitante_nombre,solicitante_escuela,solicitante_rol,prioridad,created_at",
+            f"&select=id,solicitante_nombre,solicitante_escuela,solicitante_contacto,solicitante_rol,prioridad,created_at",
             headers=SUPABASE_SERVICE_HEADERS
         )
         # Activas de este admin
         res_activa = requests.get(
             f"{SUPABASE_URL}/rest/v1/chat_soporte_sesiones"
             f"?estado=eq.activo&admin_id=eq.{admin_id}"
-            f"&select=id,solicitante_nombre,solicitante_escuela,solicitante_rol,prioridad,created_at",
+            f"&select=id,solicitante_nombre,solicitante_escuela,solicitante_contacto,solicitante_rol,prioridad,created_at",
             headers=SUPABASE_SERVICE_HEADERS
         )
         return jsonify({
@@ -7866,7 +7872,14 @@ def soporte_mi_sesion():
     try:
         solicitante_id = str(session.get('usuario_id', ''))
         session_token = session.get('soporte_session_token', '')
-        filtro_id = f'session_token=eq.{session_token}' if session_token else f'solicitante_id=eq.{solicitante_id}'
+        if session_token:
+            filtro_id = f'session_token=eq.{session_token}'
+        elif rol == 'coordinador_escuela':
+            # Cuenta de escuela compartida: sin el token de este navegador no se muestra
+            # nada, para no abrirle a una profesora el chat de otra.
+            return jsonify({"success": True, "sesion": None})
+        else:
+            filtro_id = f'solicitante_id=eq.{solicitante_id}'
         res = requests.get(
             f"{SUPABASE_URL}/rest/v1/chat_soporte_sesiones"
             f"?{filtro_id}"
@@ -7959,7 +7972,7 @@ def soporte_historial():
         res = requests.get(
             f"{SUPABASE_URL}/rest/v1/chat_soporte_sesiones"
             f"?order=created_at.desc&limit=30"
-            f"&select=id,solicitante_nombre,solicitante_escuela,solicitante_rol,"
+            f"&select=id,solicitante_nombre,solicitante_escuela,solicitante_contacto,solicitante_rol,"
             f"prioridad,estado,admin_id,admin_nombre,created_at",
             headers=SUPABASE_SERVICE_HEADERS
         )

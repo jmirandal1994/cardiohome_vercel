@@ -12290,8 +12290,10 @@ async function confirmarEliminarAlumno(alumnoId, nombre, filaEl) {
 
 /* ── Panel soporte ── */
 #soporte-panel {
-    position: fixed; bottom: 110px; right: 28px; z-index: 9998;
-    width: 390px; max-height: 580px; background: white;
+    position: fixed; bottom: 130px; right: 28px; z-index: 9998;
+    /* Alto fijo: antes crecía según el contenido y se encogía al aceptar un chat (H72);
+       nunca más alto que la pantalla, para que no quede cortado arriba (H71) */
+    width: 390px; height: min(560px, calc(100vh - 150px)); background: white;
     border-radius: 22px; box-shadow: 0 16px 56px rgba(76,29,149,.22);
     border: 1.5px solid #ede9fe; display: none; flex-direction: column; overflow: hidden;
 }
@@ -12690,6 +12692,7 @@ function _spShowForm() {
             + '<i class="fas fa-bolt" style="margin-right:6px;"></i>'
             + '<strong>' + badgeIcon + ' ' + badgeTitle + '</strong> — ' + badgeDesc
             + '</div>'
+            + '<div class="sp-field"><label>Tu correo de contacto</label><input type="email" id="sp-contacto" placeholder="Ej: nombre@colegio.cl"></div>'
             + '<button class="sp-btn-primary" id="sp-solicitar-btn" onclick="_spSolicitar()">'
             + '<i class="fas fa-headset"></i> Iniciar chat con administrador</button>'
             + '</div>';
@@ -12720,6 +12723,7 @@ function _spShowForm() {
         + horarioBadge
         + '<div class="sp-field"><label>Tu nombre completo</label><input type="text" id="sp-nombre" placeholder="Ej: María González"></div>'
         + '<div class="sp-field"><label>Establecimiento</label><input type="text" id="sp-escuela" placeholder="Ej: Escuela Las Acacias"></div>'
+        + '<div class="sp-field"><label>Tu correo de contacto</label><input type="email" id="sp-contacto" placeholder="Ej: nombre@colegio.cl"></div>'
         + '<button class="sp-btn-primary" id="sp-solicitar-btn" onclick="_spSolicitar()">'
         + '<i class="fas fa-headset"></i> Iniciar chat con administrador</button>'
         + '</div>';
@@ -12735,12 +12739,19 @@ function _spSolicitar() {
         if (!nombre) { document.getElementById('sp-nombre').style.borderColor='#ef4444'; return; }
         if (!escuela){ document.getElementById('sp-escuela').style.borderColor='#ef4444'; return; }
     }
+    // Correo de contacto obligatorio para todos: los admins pueden seguir el caso por correo
+    var contactoInput = document.getElementById('sp-contacto');
+    var contacto = (contactoInput?.value || '').trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contacto)) {
+        if (contactoInput) { contactoInput.style.borderColor = '#ef4444'; contactoInput.focus(); }
+        return;
+    }
     // Doctora: nombre desde sesión, escuela vacía, prioridad alta automática
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Conectando...';
     fetch('/api/soporte/solicitar', {
         method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ nombre: nombre, escuela: escuela, tab_token: _SP.tabToken })
+        body: JSON.stringify({ nombre: nombre, escuela: escuela, contacto: contacto, tab_token: _SP.tabToken })
     }).then(r=>r.json()).then(function(data) {
         if (data.success) {
             _SP.sesionId = data.sesion.id;
@@ -12992,7 +13003,9 @@ function _spAdminPoll() {
                     + '<div style="flex:1;"><div class="sp-notif-name">' + _spEsc(s.solicitante_nombre) + '</div>'
                     + '<div class="sp-notif-esc">' + _spEsc(s.solicitante_escuela)
                     + (isUrgente ? ' · <strong style="color:#fde68a;">PRIORIDAD ALTA</strong>' : '')
-                    + ' · hace ' + (mins < 1 ? 'un momento' : mins + ' min') + '</div></div></div>'
+                    + ' · hace ' + (mins < 1 ? 'un momento' : mins + ' min')
+                    + (s.solicitante_contacto ? '<br><i class="fas fa-envelope" style="margin-right:4px;"></i>' + _spEsc(s.solicitante_contacto) : '')
+                    + '</div></div></div>'
                     + '<div class="sp-notif-body">'
                     + '<button class="sp-btn-aceptar" onclick="_spAdminAceptar(\'' + s.id + '\')"><i class="fas fa-check"></i> Aceptar chat</button>'
                     + '<button class="sp-btn-ignorar" onclick="_spAdminIgnorar(\'' + s.id + '\', this)"><i class="fas fa-times"></i> Ignorar</button>'
@@ -13030,7 +13043,10 @@ function _spAdminShowChat(sesion) {
     var nombre = sesion.solicitante_nombre || 'Coordinadora';
     var esc    = sesion.solicitante_escuela || '';
     document.getElementById('sp-title').textContent = nombre;
-    document.getElementById('sp-sub').textContent   = (esc ? esc + ' · ' : '') + '● Chat activo';
+    var contacto = sesion.solicitante_contacto || '';
+    document.getElementById('sp-sub').innerHTML = _spEsc((esc ? esc + ' · ' : '') + '● Chat activo')
+        + (contacto ? '<br><a href="mailto:' + encodeURIComponent(contacto) + '" style="color:#fff;font-weight:700;text-decoration:underline;">'
+                      + '<i class="fas fa-envelope" style="margin-right:4px;"></i>' + _spEsc(contacto) + '</a>' : '');
     // Limpiar botones de finalizar previos
     var panel = document.getElementById('soporte-panel');
     panel.querySelectorAll('.sp-admin-close-wrap').forEach(function(el){ el.remove(); });
@@ -13166,15 +13182,15 @@ setTimeout(function() {
     if (bubble) bubble.classList.add('hidden');
 }, 7000);
 
-// Cerrar chat de soporte al cerrar/refrescar la página
-window.addEventListener('beforeunload', function() {
-    if (_SP.sesionId && _SP.estado !== 'admin_idle' && _SP.estado !== 'idle') {
-        var data = JSON.stringify({ sesion_id: _SP.sesionId });
-        if (navigator.sendBeacon) {
-            navigator.sendBeacon('/api/soporte/cerrar', new Blob([data], {type:'application/json'}));
-        }
-    }
-});
+// H69: el chat ya no se cierra al recargar o cambiar de página (antes se cerraba con
+// beforeunload y la conversación se perdía). Se cierra solo con "Finalizar" o "Cancelar".
+// Al volver a la página, si hay un chat abierto o en espera, se retoma automáticamente.
+if (_SP.rol === 'coordinador_escuela' || _SP.rol === 'coordinadora' || _SP.rol === 'doctora') {
+    fetch('/api/soporte/mi_sesion').then(function(r) { return r.json(); }).then(function(data) {
+        var panel = document.getElementById('soporte-panel');
+        if (data && data.sesion && panel && !panel.classList.contains('open')) soporteToggle();
+    }).catch(function() {});
+}
 
 // Background poll para badge (admin: nuevas solicitudes)
 setInterval(function() {
@@ -13283,6 +13299,7 @@ function soRenderHistorial() {
             + '</div>'
             + '<div style="font-size:.76rem;color:#64748b;display:flex;gap:12px;flex-wrap:wrap;">'
             + (s.solicitante_escuela ? '<span><i class="fas fa-school" style="opacity:.5;margin-right:4px;"></i>' + _spEsc(s.solicitante_escuela) + '</span>' : '')
+            + (s.solicitante_contacto ? '<span><i class="fas fa-envelope" style="opacity:.5;margin-right:4px;"></i><a href="mailto:' + encodeURIComponent(s.solicitante_contacto) + '" style="color:#4c1d95;">' + _spEsc(s.solicitante_contacto) + '</a></span>' : '')
             + '<span><i class="fas fa-clock" style="opacity:.5;margin-right:4px;"></i>' + fechaStr + '</span>'
             + (atendida && s.admin_nombre ? '<span><i class="fas fa-user-tie" style="opacity:.5;margin-right:4px;"></i>Atendido por: <strong>' + _spEsc(s.admin_nombre) + '</strong></span>' : '')
             + '</div>'

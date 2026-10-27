@@ -1555,7 +1555,7 @@
         if (años < 0)  return '';
         const partAnios = años  > 0 ? años  + ' año'  + (años  !== 1 ? 's' : '') : '';
         const partMeses = meses > 0 ? meses + ' mes'  + (meses !== 1 ? 'es' : '') : '';
-        if (partAnios && partMeses) return partAnios + ' y ' + partMeses;
+        if (partAnios && partMeses) return partAnios + ' con ' + partMeses;  // mismo formato que el servidor (H42)
         if (partAnios) return partAnios;
         if (partMeses) return partMeses;
         return '0 meses';

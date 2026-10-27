@@ -250,11 +250,16 @@ def calculate_age(birth_date, fecha_ref=None):
     if months < 0:
         years  -= 1
         months += 12
+    # Formato único con singular y plural (H42): "11 años con 1 mes", "1 año", "7 meses"
+    anios_txt = f"{years} año" if years == 1 else f"{years} años"
+    meses_txt = f"{months} mes" if months == 1 else f"{months} meses"
     if years < 0:
         return "0 meses"
     if years == 0:
-        return f"{months} meses"
-    return f"{years} años con {months} meses"
+        return meses_txt
+    if months == 0:
+        return anios_txt
+    return f"{anios_txt} con {meses_txt}"
 
 def guess_gender(name):
     """

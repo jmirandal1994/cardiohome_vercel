@@ -2369,16 +2369,10 @@
                 }
             }
             
-            let edadTexto = '';
-            if (años > 0) {
-                edadTexto = `${años} año${años !== 1 ? 's' : ''}`;
-            }
-            if (meses > 0) {
-                edadTexto += (edadTexto ? ' ' : '') + `${meses} mes${meses !== 1 ? 'es' : ''}`;
-            }
-            if (!edadTexto) {
-                edadTexto = 'Menos de 1 mes';
-            }
+            // Mismo formato que calculate_age() en app.py (H42): "11 años con 1 mes", "1 año", "7 meses"
+            const tA = años  === 1 ? '1 año' : `${años} años`;
+            const tM = meses === 1 ? '1 mes' : `${meses} meses`;
+            const edadTexto = años <= 0 ? tM : (meses === 0 ? tA : `${tA} con ${tM}`);
             
             if (edadInput) {
                 edadInput.value = edadTexto;

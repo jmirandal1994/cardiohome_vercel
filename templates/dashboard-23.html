@@ -8748,9 +8748,10 @@
             if (dias  < 0) { meses--; }
             if (meses < 0) { años--; meses += 12; }
             if (años < 0)  { edadInput.value = ''; return; }
-            // Mismo formato que calculate_age() en app.py y el formulario de la doctora (H58):
-            // antes se guardaba "11 años" y se perdían los meses.
-            edadInput.value = años === 0 ? `${meses} meses` : `${años} años con ${meses} meses`;
+            // Mismo formato que calculate_age() en app.py (H58, H42): "11 años con 1 mes", "1 año", "7 meses"
+            const tA = años  === 1 ? '1 año' : `${años} años`;
+            const tM = meses === 1 ? '1 mes' : `${meses} meses`;
+            edadInput.value = años === 0 ? tM : (meses === 0 ? tA : `${tA} con ${tM}`);
         }
 
         async function abrirAdminEditModal(alumnoId, solicitudId, detalles) {

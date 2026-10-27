@@ -2095,7 +2095,7 @@
                     <svg viewBox="0 0 100 100" style="transform:rotate(-90deg)">
                         <circle cx="50" cy="50" r="38" stroke="#dbeafe" stroke-width="9" fill="none"/>
                         <circle cx="50" cy="50" r="38" stroke="url(#gNeuro)" stroke-width="9" fill="none"
-                            stroke-dasharray="238.76" stroke-dashoffset="238.76" id="ring-neuro"
+                            stroke-dasharray="238.76" stroke-dashoffset="238.76" id="dist-ring-neuro"
                             style="stroke-linecap:round;transition:stroke-dashoffset 1.2s ease;"/>
                         <defs><linearGradient id="gNeuro" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stop-color="#0A3D62"/><stop offset="100%" stop-color="#1C67A3"/>
@@ -2106,14 +2106,14 @@
                     </div>
                 </div>
                 <div style="margin-top:.5rem;font-size:.72rem;font-weight:700;color:#0A3D62;">Neurología</div>
-                <div style="font-size:1.6rem;font-weight:900;color:#0A3D62;" id="stat-neuro">0</div>
+                <div style="font-size:1.6rem;font-weight:900;color:#0A3D62;" id="dist-neuro">0</div>
             </div>
             <div style="text-align:center;">
                 <div style="position:relative;width:100px;height:100px;margin:0 auto;">
                     <svg viewBox="0 0 100 100" style="transform:rotate(-90deg)">
                         <circle cx="50" cy="50" r="38" stroke="#d1fae5" stroke-width="9" fill="none"/>
                         <circle cx="50" cy="50" r="38" stroke="url(#gFam)" stroke-width="9" fill="none"
-                            stroke-dasharray="238.76" stroke-dashoffset="238.76" id="ring-familiar"
+                            stroke-dasharray="238.76" stroke-dashoffset="238.76" id="dist-ring-familiar"
                             style="stroke-linecap:round;transition:stroke-dashoffset 1.2s ease;"/>
                         <defs><linearGradient id="gFam" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stop-color="#059669"/><stop offset="100%" stop-color="#10B981"/>
@@ -2124,7 +2124,7 @@
                     </div>
                 </div>
                 <div style="margin-top:.5rem;font-size:.72rem;font-weight:700;color:#059669;">Med. Familiar</div>
-                <div style="font-size:1.6rem;font-weight:900;color:#059669;" id="stat-familiar">0</div>
+                <div style="font-size:1.6rem;font-weight:900;color:#059669;" id="dist-familiar">0</div>
             </div>
         </div>
     </div>
@@ -9360,6 +9360,16 @@ async function updateAdminStats() {
         };
         setRing('ring-neuro',    (data.neuro    / totalR) * 100);
         setRing('ring-familiar', (data.familiar / totalR) * 100);
+
+        // Tarjeta "Distribución por Especialidad" (H62): tenía los mismos id que los KPI
+        // de arriba y nunca se llenaba. Muestra la parte de cada especialidad en lo evaluado.
+        const totalEsp = (data.neuro || 0) + (data.familiar || 0) || 1;
+        const distNeuro = document.getElementById('dist-neuro');
+        const distFam   = document.getElementById('dist-familiar');
+        if (distNeuro) distNeuro.textContent = (data.neuro || 0).toLocaleString('es-CL');
+        if (distFam)   distFam.textContent   = (data.familiar || 0).toLocaleString('es-CL');
+        setRing('dist-ring-neuro',    ((data.neuro    || 0) / totalEsp) * 100, 238.76);
+        setRing('dist-ring-familiar', ((data.familiar || 0) / totalEsp) * 100, 238.76);
 
         // KPI percent ring (r=22 → circ=138.23)
         const pctNum = parseFloat(String(data.percent).replace('%','')) || 0;

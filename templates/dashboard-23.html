@@ -8932,6 +8932,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ alumno_id: _aemAlumnoId,
                                           solicitud_id: _aemSolicitudId,
+                                          respuesta_admin: (document.getElementById('aem-respuesta-admin')?.value || '').trim(),
                                           campos })
                 });
                 const data = await res.json();

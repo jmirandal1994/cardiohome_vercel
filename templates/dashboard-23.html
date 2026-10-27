@@ -7448,11 +7448,11 @@
                 <div style="font-size:.72rem;font-weight:800;color:#0f3460;letter-spacing:.08em;margin-bottom:12px;"><i class="fas fa-weight-scale"></i> MEDIDAS ANTROPOMÉTRICAS / INDICACIONES</div>
                 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">
                   <div><label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:3px;">Altura (cm)</label>
-                    <input id="aem-altura" type="number" step="0.1" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+                    <input id="aem-altura" type="number" step="0.1" oninput="aemRecalcularIMC()" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
                   <div><label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:3px;">Peso (kg)</label>
-                    <input id="aem-peso" type="number" step="0.1" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+                    <input id="aem-peso" type="number" step="0.1" oninput="aemRecalcularIMC()" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
                   <div><label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:3px;">IMC</label>
-                    <input id="aem-imc" type="number" step="0.01" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
+                    <input id="aem-imc" type="number" step="0.01" oninput="aemReclasificarIMC()" title="Se calcula solo con altura y peso. Se puede editar." style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
                   <div><label style="font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:3px;">Clasificación IMC</label>
                     <input id="aem-clasif-imc" type="text" style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:9px;font-size:.88rem;font-family:inherit;box-sizing:border-box;"></div>
                 </div>
@@ -8661,6 +8661,68 @@
         let _aemAlumnoId    = null;
         let _aemSolicitudId = null;
         let _aemFormType    = null;
+
+        // ── IMC en el modal: se calcula solo al cambiar altura o peso (H57) ──
+        // El admin puede editar después el IMC y la clasificación a mano.
+        // Misma regla que el formulario de la doctora (classifyIMC): tablas OMS 2007 por edad y sexo.
+        const AEM_IMC_PERCENTILES = {
+            2:  {F:[14.0,17.1,18.7], M:[14.2,17.2,18.8]},
+            3:  {F:[13.5,16.7,18.4], M:[13.7,16.8,18.5]},
+            4:  {F:[13.2,16.4,18.2], M:[13.4,16.5,18.3]},
+            5:  {F:[13.0,16.5,18.4], M:[13.2,16.5,18.5]},
+            6:  {F:[13.0,16.8,18.9], M:[13.1,16.8,19.0]},
+            7:  {F:[13.1,17.4,19.7], M:[13.2,17.4,19.8]},
+            8:  {F:[13.4,18.1,20.7], M:[13.4,18.1,20.8]},
+            9:  {F:[13.7,18.9,21.8], M:[13.7,18.9,21.7]},
+            10: {F:[14.2,19.7,22.8], M:[14.0,19.7,22.8]},
+            11: {F:[14.7,20.5,23.8], M:[14.4,20.5,23.8]},
+            12: {F:[15.2,21.3,24.8], M:[14.9,21.4,24.9]},
+            13: {F:[15.8,22.0,25.7], M:[15.4,22.2,25.9]},
+            14: {F:[16.3,22.7,26.5], M:[16.0,22.9,26.9]},
+            15: {F:[16.8,23.3,27.2], M:[16.6,23.6,27.8]},
+            16: {F:[17.3,23.8,27.8], M:[17.2,24.2,28.6]},
+            17: {F:[17.7,24.3,28.3], M:[17.7,24.7,29.3]},
+            18: {F:[18.0,25.0,30.0], M:[18.0,25.0,30.0]},
+        };
+
+        function aemClasificarIMC(imc) {
+            const nac = document.getElementById('aem-fecha-nac').value;
+            const evalFecha = document.getElementById('aem-fecha-eval').value;
+            const sexo = document.getElementById('aem-sexo').value;
+            let edad = null;
+            if (nac) {
+                const ref = evalFecha ? new Date(evalFecha + 'T12:00:00') : new Date();
+                edad = (ref - new Date(nac + 'T12:00:00')) / (365.25 * 24 * 3600 * 1000);
+            }
+            const adulto = (v) => v < 18.5 ? 'Bajo peso' : v < 25 ? 'Peso normal' : v < 30 ? 'Sobrepeso' : 'Obesidad';
+            if (edad === null || isNaN(edad) || edad >= 18) return adulto(imc);
+            if (edad < 2) return 'Ver curva P/T OMS (< 2 años)';
+            const a = Math.min(17, Math.max(2, Math.floor(edad)));
+            const frac = edad - a;
+            const k = sexo === 'F' ? 'F' : 'M';
+            const cur = AEM_IMC_PERCENTILES[a][k];
+            const nxt = AEM_IMC_PERCENTILES[Math.min(18, a + 1)][k];
+            const p3  = cur[0] + (nxt[0] - cur[0]) * frac;
+            const p85 = cur[1] + (nxt[1] - cur[1]) * frac;
+            const p97 = cur[2] + (nxt[2] - cur[2]) * frac;
+            return imc < p3 ? 'Bajo peso' : imc < p85 ? 'Peso normal' : imc < p97 ? 'Sobrepeso' : 'Obesidad';
+        }
+
+        function aemRecalcularIMC() {
+            const alturaCm = parseFloat(document.getElementById('aem-altura').value);
+            const pesoKg = parseFloat(document.getElementById('aem-peso').value);
+            const imcInput = document.getElementById('aem-imc');
+            const clasifInput = document.getElementById('aem-clasif-imc');
+            if (isNaN(alturaCm) || isNaN(pesoKg) || alturaCm <= 0 || pesoKg <= 0) return;
+            const imc = pesoKg / Math.pow(alturaCm / 100, 2);
+            imcInput.value = imc.toFixed(2);
+            clasifInput.value = aemClasificarIMC(imc);
+        }
+
+        function aemReclasificarIMC() {
+            const imc = parseFloat(document.getElementById('aem-imc').value);
+            if (!isNaN(imc) && imc > 0) document.getElementById('aem-clasif-imc').value = aemClasificarIMC(imc);
+        }
 
         // ── Recalcula la edad en el modal según fecha de nacimiento y fecha de evaluación ──
         function aemRecalcularEdad() {

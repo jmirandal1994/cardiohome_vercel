@@ -104,3 +104,24 @@
 .rp-est .bar{height:8px;border-radius:99px;background:#e8eef4;overflow:hidden;margin-top:6px}
 .rp-est .bar span{display:block;height:100%;border-radius:99px;transition:width 1.1s cubic-bezier(.2,.8,.2,1)}
 .rp-est .pct{font-weight:800;font-size:1.02rem;min-width:58px;text-align:right}
+.rp-hoy{display:inline-block;margin:6px 0 3px;font-size:.72rem;font-weight:700;color:#0f3460;background:#e0ecff;border-radius:99px;padding:3px 9px}
+.rp-hoy b{font-size:.82rem}
+.rp-person{width:170px}
+.rp-hoy{white-space:nowrap;font-size:.68rem}
+/* ═══ Alerta de reevaluaciones por establecimiento ═══ */
+.rp-reev-card,.rp-reev-card *{box-sizing:border-box}
+.rp-btn{border:1px solid #e3e9ef;background:#fff;border-radius:10px;padding:8px 12px;font-size:.8rem;font-weight:800;color:#0f3460;cursor:pointer;font-family:inherit;display:inline-flex;gap:7px;align-items:center}
+.rp-btn:hover{background:#f6f9fb;border-color:#bcd3ea}
+.rp-reev-nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.rp-reev-nums div{background:var(--bg);border-radius:12px;padding:10px 12px}
+.rp-reev-nums b{display:block;font-size:1.5rem;font-weight:800;color:var(--fg)}
+.rp-reev-nums small{font-size:.74rem;font-weight:700;color:var(--fg)}
+.rp-reev-lista{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 18px}
+@media(max-width:1000px){.rp-reev-lista{grid-template-columns:1fr}}
+.rp-reev-col{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid #eef2f6;border-radius:12px;background:#fff;cursor:pointer;font-family:inherit;text-align:left;transition:border-color .2s,box-shadow .2s}
+.rp-reev-col:hover{border-color:#fdba74;box-shadow:0 6px 14px rgba(234,88,12,.10)}
+.rp-reev-col .logo{width:34px;height:34px;border-radius:10px;color:#fff;font-weight:800;font-size:.74rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rp-reev-col b{display:block;font-size:.84rem;color:#13263a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp-reev-col small{display:block;font-size:.72rem;color:#5b6b7a}
+.rp-reev-chip{background:var(--bg);color:var(--fg);font-weight:800;font-size:.76rem;border-radius:99px;padding:3px 9px;flex-shrink:0}
+.rp-reev-mas{font-size:.78rem;color:#5b6b7a;margin:10px 0 0}

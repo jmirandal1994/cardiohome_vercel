@@ -160,6 +160,43 @@ def _hoja_reev(wb, r):
         ws2.add_chart(ch, "D4")
 
 
+def _hoja_reev_est(wb, r):
+    ws = wb.create_sheet("Reev. por establecimiento")
+    _titulo(ws, "Reevaluaciones por establecimiento",
+            f"Días calculados al {date.fromisoformat(r['hoy']).strftime('%d/%m/%Y')}. Ordenado por urgencia.", 12)
+    filas = [[c["proyecto"], c["colegio"], c["total"], c["conteo"]["vencida"], c["conteo"]["urgente"], c["conteo"]["proxima"],
+              c["conteo"]["este_anio"], c["conteo"]["en_plazo"], c["conteo"]["fecha_a_revisar"], c["conteo"]["sin_fecha"],
+              c["reevaluados"], _f(c["proxima_fecha"])] for c in r["colegios"]]
+    fin = _tabla(ws, 4, ["Proyecto", "Establecimiento", "Estudiantes", "Vencidas", "Próximos 30 días", "En 31 a 90 días",
+                         "Dentro de 12 meses", "Al día", "Fecha a revisar", "Sin fecha", "Ya reevaluados", "Próxima fecha"],
+                 filas, [20, 38, 12, 10, 12, 12, 12, 9, 11, 10, 12, 13])
+    for col, k in ((4, "vencida"), (5, "urgente"), (6, "proxima")):
+        lab, bg, fg = ESTADOS[k]
+        for i in range(5, fin):
+            if ws.cell(i, col).value:
+                ws.cell(i, col).fill = PatternFill("solid", fgColor=bg)
+                ws.cell(i, col).font = Font(bold=True, color=fg)
+
+    ws2 = wb.create_sheet("Alertas por establecimiento")
+    _titulo(ws2, "Estudiantes a reevaluar, separados por establecimiento",
+            "Vencidas, próximas y fechas a revisar. Una fila por estudiante y especialidad.", 9)
+    filas2 = []
+    for c in r["colegios"]:
+        for x in c.get("estudiantes", []):
+            filas2.append([c["proyecto"], c["colegio"], x["nombre"], _rut(x["rut"]), x["especialidad"],
+                           _f(x["fecha_evaluacion"]), _f(x["fecha_reevaluacion"]), ESTADOS[x["estado"]][0], x["dias"]])
+    fin2 = _tabla(ws2, 4, ["Proyecto", "Establecimiento", "Estudiante", "RUT", "Especialidad", "Evaluado",
+                           "Reevaluar antes de", "Estado", "Días que faltan"],
+                  filas2, [20, 36, 32, 14, 18, 12, 16, 20, 14])
+    for i in range(5, fin2):
+        est = ws2.cell(i, 8).value
+        for lab, bg, fg in ESTADOS.values():
+            if lab == est:
+                ws2.cell(i, 8).fill = PatternFill("solid", fgColor=bg)
+                ws2.cell(i, 8).font = Font(bold=True, color=fg)
+                break
+
+
 def _hoja_nutri(wb, n):
     ws = wb.create_sheet("Nutrición por colegio")
     _titulo(ws, f"Estado nutricional por colegio · {n['anio']}", "Una medición por estudiante. Clasificación registrada por la doctora.", 8)
@@ -228,6 +265,8 @@ def armar_excel(tipo, datos, filtros):
     _hoja_resumen(wb, datos, filtros)
     if "reev" in datos:
         _hoja_reev(wb, datos["reev"])
+    if "reev_est" in datos:
+        _hoja_reev_est(wb, datos["reev_est"])
     if "nutri" in datos:
         _hoja_nutri(wb, datos["nutri"])
     if "deriv" in datos:

@@ -32,6 +32,7 @@
       if (!r.ok || !j.success) throw new Error(j.message || "Error");
       datos = j;
       pintar();
+      cargarReev();
       revisarPeriodoVacio();
     } catch (e) {
       ["rp-team", "rp-feed", "rp-corr", "rp-doc-list", "rp-heat", "rp-aus"].forEach((id) => {
@@ -54,6 +55,8 @@
     }
     el.innerHTML = `<div class="rp-team">${c.map((p, i) => `<div class="rp-person" style="animation-delay:${i * 60}ms">
       ${avatar(p.doctora, "rp-ava on")}<b>${esc(p.doctora)}</b><small>${esc(p.establecimiento || "—")}</small>
+      <span class="rp-hoy"><b>${fmtN(p.hoy || 0)}</b> ${p.hoy === 1 ? "evaluación" : "evaluaciones"} hoy</span>
+      ${p.avance_nomina && p.avance_nomina.total ? `<small>Nómina: ${fmtN(p.avance_nomina.evaluados)} de ${fmtN(p.avance_nomina.total)}</small>` : ""}
       <small style="color:#15803d;font-weight:700;margin-top:3px">${p.hace_min <= 1 ? "activa ahora" : `hace ${p.hace_min} min`}</small></div>`).join("")}</div>`;
   }
 
@@ -169,14 +172,43 @@
   const vigilante = setInterval(() => { revisarPeriodoVacio(); if (++revisiones > 30) clearInterval(vigilante); }, 1000);
   document.addEventListener("click", (ev) => { if (ev.target.closest && ev.target.closest("#btn-periodo-dia, #btn-periodo-semana")) setTimeout(revisarPeriodoVacio, 400); });
 
+  // ── Alerta de reevaluaciones por establecimiento ──
+  const REEV = { vencida: ["Vencidas", "#dc2626", "#fee2e2"], urgente: ["Próximos 30 días", "#ea580c", "#ffedd5"], proxima: ["31 a 90 días", "#d97706", "#fef3c7"] };
+  let reevHecho = 0;
+  async function cargarReev() {
+    const el = $("rp-reev-body");
+    if (!el || Date.now() - reevHecho < 600000) return;
+    reevHecho = Date.now();
+    try {
+      const r = await fetch("/api/salud/reevaluaciones/establecimientos?resumen=1", { credentials: "same-origin" });
+      const j = await r.json();
+      if (!r.ok || !j.success) throw new Error(j.message || "Error");
+      const res = j.resumen, c = res.conteo || {};
+      $("rp-reev-sub").textContent = res.alerta
+        ? `${fmtN(res.alerta)} estudiantes en ${fmtN(res.colegios_alerta)} de ${fmtN(res.colegios)} establecimientos · vencidas o en los próximos 90 días`
+        : `Ningún establecimiento tiene reevaluaciones vencidas ni en los próximos 90 días (${fmtN(res.colegios)} establecimientos)`;
+      const nums = `<div class="rp-reev-nums">${Object.entries(REEV).map(([k, v]) => `<div style="--fg:${v[1]};--bg:${v[2]}"><b>${fmtN(c[k] || 0)}</b><small>${v[0]}</small></div>`).join("")}</div>`;
+      const lista = (j.colegios || []).map((x) => `<button type="button" class="rp-reev-col" onclick="window.SE && SE.irEstablecimientos(${x.proyecto_id ? `'${esc(x.proyecto_id)}'` : ""})">
+          <span class="logo" style="background:${x.conteo.vencida ? "#dc2626" : "#ea580c"}">${esc(ini(x.colegio))}</span>
+          <span style="flex:1;min-width:0"><b>${esc(x.colegio)}</b><small>${esc(x.proyecto)}</small></span>
+          ${Object.keys(REEV).filter((k) => x.conteo[k]).map((k) => `<span class="rp-reev-chip" style="--fg:${REEV[k][1]};--bg:${REEV[k][2]}" title="${REEV[k][0]}">${fmtN(x.conteo[k])}</span>`).join("")}</button>`).join("");
+      el.innerHTML = res.alerta ? `${nums}<div class="rp-reev-lista">${lista}</div>${res.colegios_alerta > (j.colegios || []).length ? `<p class="rp-reev-mas">y ${fmtN(res.colegios_alerta - j.colegios.length)} establecimientos más con alertas</p>` : ""}`
+        : `<div class="rp-empty"><i class="fa-solid fa-circle-check" style="font-size:1.6rem;color:#16a34a"></i><div>Todo al día por ahora.</div></div>`;
+    } catch (e) {
+      el.innerHTML = `<div class="rp-load" style="color:#b91c1c"><i class="fa-solid fa-triangle-exclamation"></i> No se pudo cargar la alerta de reevaluaciones.</div>`;
+      reevHecho = Date.now() - 540000;
+    }
+  }
+
   // ── Avance por establecimiento (datos de /api/coordinadora/stats que ya cargó el panel) ──
   let estUltimo = null, estFiltro = "todos";
   const estColor = (p) => (p >= 100 ? "#16a34a" : p >= 80 ? "#22c55e" : p >= 50 ? "#f59e0b" : p > 0 ? "#ef4444" : "#94a3b8");
   function datosCoord() { try { return typeof _coordData !== "undefined" ? _coordData : null; } catch (e) { return null; } }
   function pintarEst() {
     const d = datosCoord(), lista = $("rp-est-lista");
-    if (!lista || !d || !Array.isArray(d.establecimientos)) return;
-    const est = d.establecimientos.map((e) => ({ ...e, pend: Math.max(0, (e.total || 0) - (e.completed || 0)) }));
+    const todos = d && (Array.isArray(d.establecimientos_todos) ? d.establecimientos_todos : d.establecimientos);
+    if (!lista || !Array.isArray(todos)) return;
+    const est = todos.map((e) => ({ ...e, pend: Math.max(0, (e.total || 0) - (e.completed || 0)) }));
     const completos = est.filter((e) => e.total > 0 && e.completed >= e.total).length;
     const sinIniciar = est.filter((e) => !e.completed).length;
     const enCurso = est.length - completos - sinIniciar;

@@ -1,0 +1,15 @@
+{# ═══ Actividad en vivo · columna derecha del panel de coordinación ═══ #}
+<link rel="stylesheet" href="{{ url_for('static', filename='rendimiento_plus.css') }}">
+<div class="rp-card rp-feed-card" id="rp-feed-card">
+  <div class="rp-h">
+    <div><h3><i class="fa-solid fa-bolt" style="color:#f59e0b"></i> Actividad en vivo</h3>
+      <p>Evaluaciones y correcciones más recientes</p></div>
+    <span class="rp-live"><span class="rp-dot"></span> En vivo</span>
+  </div>
+  <div class="rp-filtros" role="group" aria-label="Filtrar actividad" style="margin-bottom:.6rem;align-self:flex-start">
+    <button type="button" class="on" data-f="todo">Todo</button>
+    <button type="button" data-f="evaluacion">Evaluaciones</button>
+    <button type="button" data-f="correccion">Correcciones</button>
+  </div>
+  <div id="rp-feed" class="rp-feed"><div class="rp-load"><span class="rp-spin"></span> Cargando…</div></div>
+</div>

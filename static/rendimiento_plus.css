@@ -60,3 +60,27 @@
 .rp-spin{width:20px;height:20px;border:3px solid #dbe5ef;border-top-color:#1c67a3;border-radius:50%;animation:rp-giro .8s linear infinite}
 @keyframes rp-giro{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion: reduce){.rp-wrap *{animation:none!important;transition:none!important}}
+
+/* ═══ Distribución del inicio: avance y período a la izquierda, actividad en vivo a la derecha ═══ */
+.coord-main-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,400px);gap:1.5rem;margin-bottom:1.5rem;align-items:stretch}
+.coord-main-izq{min-width:0;display:flex;flex-direction:column}
+.coord-main-der{min-width:0;display:flex}
+.rp-feed-card{width:100%;display:flex;flex-direction:column;padding:1.25rem 1.3rem}
+.rp-feed-card .rp-h{margin-bottom:.6rem}
+.rp-feed-card .rp-feed{flex:1 1 auto;max-height:560px;min-height:320px}
+.coord-periodo-vacio{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.92);border-radius:12px;text-align:center}
+.coord-periodo-vacio>div{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:420px;color:#5b6b7a;font-size:.84rem}
+.coord-periodo-vacio i{font-size:1.6rem;color:#94a3b8}
+.coord-periodo-vacio b{color:#0f3460;font-size:.98rem}
+@media(max-width:1250px){.coord-main-grid{grid-template-columns:1fr}.rp-feed-card .rp-feed{max-height:420px}}
+/* Ajustes: la columna derecha toma la altura de la izquierda y la actividad se desplaza adentro */
+.coord-main-izq .coord-row-1{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.coord-main-izq .card{min-width:0}
+.coord-main-der{position:relative;min-height:420px}
+.coord-main-der .rp-feed-card{position:absolute;inset:0}
+.coord-main-der .rp-feed-card .rp-feed{max-height:none;min-height:0}
+.rp-filtros button.on{background:#0f3460!important;color:#fff!important}
+.rp-filtros button{background:transparent!important}
+.rp-filtros button.on{background:#0f3460!important}
+@media(max-width:1250px){.coord-main-der .rp-feed-card{position:static}.coord-main-der .rp-feed-card .rp-feed{max-height:420px}}
+.rp-feed-card,.rp-feed-card *{box-sizing:border-box}

@@ -11,28 +11,6 @@
     <div id="rp-team"><div class="rp-load"><span class="rp-spin"></span> Cargando…</div></div>
   </div>
 
-  <div class="rp-grid rp-g2">
-    <div class="rp-card">
-      <div class="rp-h">
-        <div><h3><i class="fa-solid fa-bolt" style="color:#f59e0b"></i> Actividad en vivo</h3>
-          <p>Evaluaciones cerradas y correcciones resueltas, de la más reciente a la más antigua</p></div>
-        <div class="rp-filtros" role="group" aria-label="Filtrar actividad">
-          <button type="button" class="on" data-f="todo">Todo</button>
-          <button type="button" data-f="evaluacion">Evaluaciones</button>
-          <button type="button" data-f="correccion">Correcciones</button>
-        </div>
-      </div>
-      <div id="rp-feed" class="rp-feed"><div class="rp-load"><span class="rp-spin"></span> Cargando…</div></div>
-    </div>
-    <div class="rp-card">
-      <div class="rp-h">
-        <div><h3><i class="fa-solid fa-pen-to-square" style="color:#7c3aed"></i> Correcciones</h3>
-          <p>Solicitudes de corrección de los formularios</p></div>
-      </div>
-      <div id="rp-corr"><div class="rp-load"><span class="rp-spin"></span> Cargando…</div></div>
-    </div>
-  </div>
-
   <div class="rp-card">
     <div class="rp-h">
       <div><h3><i class="fa-solid fa-chart-column" style="color:#16a34a"></i> Evaluaciones por doctora</h3>
@@ -52,10 +30,10 @@
   <div class="rp-grid rp-g2">
     <div class="rp-card">
       <div class="rp-h">
-        <div><h3><i class="fa-solid fa-calendar-days" style="color:#1c67a3"></i> Calendario de actividad</h3>
-          <p>Evaluaciones cerradas por día durante el último año · cada cuadro es un día</p></div>
+        <div><h3><i class="fa-solid fa-pen-to-square" style="color:#7c3aed"></i> Correcciones</h3>
+          <p>Solicitudes de corrección de los formularios</p></div>
       </div>
-      <div id="rp-heat"></div>
+      <div id="rp-corr"><div class="rp-load"><span class="rp-spin"></span> Cargando…</div></div>
     </div>
     <div class="rp-card">
       <div class="rp-h">
@@ -65,5 +43,13 @@
       <div id="rp-aus"></div>
     </div>
   </div>
+
+  <div class="rp-card">
+      <div class="rp-h">
+        <div><h3><i class="fa-solid fa-calendar-days" style="color:#1c67a3"></i> Calendario de actividad</h3>
+          <p>Evaluaciones cerradas por día durante el último año · cada cuadro es un día</p></div>
+      </div>
+      <div id="rp-heat"></div>
+    </div>
 </div>
 <script src="{{ url_for('static', filename='rendimiento_plus.js') }}"></script>

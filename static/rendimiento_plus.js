@@ -32,6 +32,7 @@
       if (!r.ok || !j.success) throw new Error(j.message || "Error");
       datos = j;
       pintar();
+      revisarPeriodoVacio();
     } catch (e) {
       ["rp-team", "rp-feed", "rp-corr", "rp-doc-list", "rp-heat", "rp-aus"].forEach((id) => {
         const el = $(id); if (el && !datos) el.innerHTML = `<div class="rp-load" style="color:#b91c1c"><i class="fa-solid fa-triangle-exclamation"></i> No se pudo cargar. Se reintentará en un minuto.</div>`;
@@ -143,12 +144,30 @@
   }
 
   document.addEventListener("click", (ev) => {
-    const b = ev.target.closest && ev.target.closest("#rp-root .rp-filtros button");
+    const b = ev.target.closest && ev.target.closest("#rp-root .rp-filtros button, #rp-feed-card .rp-filtros button");
     if (!b || !datos) return;
     b.parentElement.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b));
     if (b.dataset.f) { filtro = b.dataset.f; feed(); }
     if (b.dataset.p) { periodo = b.dataset.p; porDoctora(); }
   });
+
+  // Gráfico "Evaluaciones por período": si no hay evaluaciones en el rango, mostrar un aviso en vez de ejes vacíos
+  function revisarPeriodoVacio() {
+    const cv = $("coordLineChart"), av = $("coord-periodo-vacio");
+    if (!cv || !av || !window.Chart || !Chart.getChart) return;
+    const ch = Chart.getChart(cv);
+    if (!ch) return;
+    const total = ch.data.datasets.reduce((s, d) => s + (d.data || []).reduce((a, v) => a + (+v || 0), 0), 0);
+    if (total > 0) { av.style.display = "none"; return; }
+    const evs = (datos && datos.eventos || []).filter((e) => e.tipo === "evaluacion");
+    const ult = evs.length ? evs[0].fecha : null;
+    av.innerHTML = `<div><i class="fa-solid fa-mug-hot"></i><b>Sin evaluaciones en este período</b>
+      <span>${ult ? `La última evaluación cerrada fue el ${new Date(ult + "T12:00").toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" })}.` : "Cuando se cierren evaluaciones aparecerán aquí."} Revisa el calendario de actividad más abajo.</span></div>`;
+    av.style.display = "flex";
+  }
+  let revisiones = 0;
+  const vigilante = setInterval(() => { revisarPeriodoVacio(); if (++revisiones > 30) clearInterval(vigilante); }, 1000);
+  document.addEventListener("click", (ev) => { if (ev.target.closest && ev.target.closest("#btn-periodo-dia, #btn-periodo-semana")) setTimeout(revisarPeriodoVacio, 400); });
 
   function visible() { const r = $("rp-root"); return r && r.offsetParent !== null; }
   function iniciar() {

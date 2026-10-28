@@ -5324,6 +5324,9 @@
                       </div>
                     </div>
 
+                    <!-- Distribución: a la izquierda avance por especialidad y período; a la derecha actividad en vivo -->
+                    <div class="coord-main-grid">
+                    <div class="coord-main-izq">
                     <!-- Fila: Anillos neuro/familiar + barra de progreso global -->
                     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;" class="coord-row-1">
                         <!-- Anillo Neurología -->
@@ -5386,7 +5389,7 @@
                     </div>
 
                     <!-- Gráfico principal: Diario / Semanal con toggle -->
-                    <div class="card" style="margin-bottom:1.5rem;padding:1.75rem;">
+                    <div class="card" style="margin-bottom:0;padding:1.25rem 1.5rem;">
                         <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;margin-bottom:1.25rem;gap:1rem;">
                             <h3 style="margin:0;border:none;padding:0;font-size:1.1rem;color:var(--primary-blue);display:flex;align-items:center;gap:8px;">
                                 <i class="fa-solid fa-chart-line" style="color:#1C67A3;"></i> Evaluaciones por Período
@@ -5400,8 +5403,13 @@
                                 </button>
                             </div>
                         </div>
-                        <div style="position:relative;height:300px;"><canvas id="coordLineChart"></canvas></div>
+                        <div style="position:relative;height:230px;"><canvas id="coordLineChart"></canvas><div id="coord-periodo-vacio" class="coord-periodo-vacio" style="display:none;"></div></div>
                     </div>
+                    </div><!-- /coord-main-izq -->
+                    <div class="coord-main-der">
+                        {% include '_rp_feed.html' %}
+                    </div>
+                    </div><!-- /coord-main-grid -->
 
                     <!-- Fila inferior: Ranking doctoras + Top establecimientos -->
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;" class="coord-row-2">

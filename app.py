@@ -69,6 +69,11 @@ try:
     app.register_blueprint(crear_blueprint_salud(SUPABASE_URL, SUPABASE_SERVICE_HEADERS))
 except Exception as _e_salud:
     print(f"⚠️ Módulo salud_estudiantes no cargado: {_e_salud}")
+try:
+    from actividad_coordinacion import crear_blueprint_actividad
+    app.register_blueprint(crear_blueprint_actividad(SUPABASE_URL, SUPABASE_SERVICE_HEADERS))
+except Exception as _e_act:
+    print(f"⚠️ Módulo actividad_coordinacion no cargado: {_e_act}")
 
 # Configuración de SendGrid
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")

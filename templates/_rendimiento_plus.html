@@ -1,0 +1,69 @@
+{# ═══ Rendimiento en Vivo ampliado · se incluye dentro de #coord-performance (solo lectura) ═══ #}
+<link rel="stylesheet" href="{{ url_for('static', filename='rendimiento_plus.css') }}">
+<div class="rp-wrap" id="rp-root">
+
+  <div class="rp-card">
+    <div class="rp-h">
+      <div><h3><i class="fa-solid fa-user-doctor" style="color:#1c67a3"></i> Equipo conectado ahora</h3>
+        <p>Doctoras con actividad en la plataforma en los últimos 30 minutos</p></div>
+      <span class="rp-live"><span class="rp-dot"></span> En vivo</span>
+    </div>
+    <div id="rp-team"><div class="rp-load"><span class="rp-spin"></span> Cargando…</div></div>
+  </div>
+
+  <div class="rp-grid rp-g2">
+    <div class="rp-card">
+      <div class="rp-h">
+        <div><h3><i class="fa-solid fa-bolt" style="color:#f59e0b"></i> Actividad en vivo</h3>
+          <p>Evaluaciones cerradas y correcciones resueltas, de la más reciente a la más antigua</p></div>
+        <div class="rp-filtros" role="group" aria-label="Filtrar actividad">
+          <button type="button" class="on" data-f="todo">Todo</button>
+          <button type="button" data-f="evaluacion">Evaluaciones</button>
+          <button type="button" data-f="correccion">Correcciones</button>
+        </div>
+      </div>
+      <div id="rp-feed" class="rp-feed"><div class="rp-load"><span class="rp-spin"></span> Cargando…</div></div>
+    </div>
+    <div class="rp-card">
+      <div class="rp-h">
+        <div><h3><i class="fa-solid fa-pen-to-square" style="color:#7c3aed"></i> Correcciones</h3>
+          <p>Solicitudes de corrección de los formularios</p></div>
+      </div>
+      <div id="rp-corr"><div class="rp-load"><span class="rp-spin"></span> Cargando…</div></div>
+    </div>
+  </div>
+
+  <div class="rp-card">
+    <div class="rp-h">
+      <div><h3><i class="fa-solid fa-chart-column" style="color:#16a34a"></i> Evaluaciones por doctora</h3>
+        <p id="rp-doc-sub">Formularios cerrados por cada profesional</p></div>
+      <div class="rp-filtros" role="group" aria-label="Periodo">
+        <button type="button" class="on" data-p="total">Total</button>
+        <button type="button" data-p="d30">Últimos 30 días</button>
+        <button type="button" data-p="d7">Últimos 7 días</button>
+      </div>
+    </div>
+    <div class="rp-grid rp-g2" style="gap:1.25rem">
+      <div class="rp-chart"><canvas id="rp-doc-chart"></canvas></div>
+      <div id="rp-doc-list" style="max-height:320px;overflow-y:auto"></div>
+    </div>
+  </div>
+
+  <div class="rp-grid rp-g2">
+    <div class="rp-card">
+      <div class="rp-h">
+        <div><h3><i class="fa-solid fa-calendar-days" style="color:#1c67a3"></i> Calendario de actividad</h3>
+          <p>Evaluaciones cerradas por día durante el último año · cada cuadro es un día</p></div>
+      </div>
+      <div id="rp-heat"></div>
+    </div>
+    <div class="rp-card">
+      <div class="rp-h">
+        <div><h3><i class="fa-solid fa-user-slash" style="color:#dc2626"></i> Ausencias</h3>
+          <p>Estudiantes que no asistieron a su evaluación</p></div>
+      </div>
+      <div id="rp-aus"></div>
+    </div>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='rendimiento_plus.js') }}"></script>

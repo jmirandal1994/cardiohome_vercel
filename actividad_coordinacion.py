@@ -95,8 +95,26 @@ def crear_blueprint_actividad(supabase_url, headers):
                 select="id,nomina_id,nombre,fecha_relleno,doctora_evaluadora_id,doctor_nombre,estado_asistencia,motivo_ausencia,evaluado_flag")
             hoy = date.today()
             ahora = datetime.now(timezone.utc)
+            hoy_iso = hoy.isoformat()
+            hoy_por_doc = Counter(f.get("doctora_evaluadora_id") for f in filas
+                                  if f.get("doctora_evaluadora_id") and str(f.get("fecha_relleno") or "")[:10] == hoy_iso)
 
             # ── Conectadas ahora ──
+            avance_cache = {}
+
+            def _avance(nid):
+                """Evaluados / total de la nómina en que está trabajando la doctora."""
+                if not nid or nid not in noms:
+                    return None
+                if nid not in avance_cache:
+                    tot = ev = 0
+                    for f in filas:
+                        if f.get("nomina_id") == nid and f.get("estado_asistencia") in (None, "activo", "extra"):
+                            tot += 1
+                            ev += 1 if f.get("evaluado_flag") else 0
+                    avance_cache[nid] = {"evaluados": ev, "total": tot}
+                return avance_cache[nid]
+
             doctoras_scope = {n.get(c) for n in nominas for c in ("doctora_id", "doctora_id_2", "doctora_id_3", "doctora_id_4") if n.get(c)}
             conectadas, ultima_vez = [], None
             for p in _get("presencia_doctoras?select=doctora_id,nomina_id,establecimiento,ultima_actividad,estado"):
@@ -112,7 +130,9 @@ def crear_blueprint_actividad(supabase_url, headers):
                     n = noms.get(p.get("nomina_id")) or {}
                     conectadas.append({"doctora": docs.get(p.get("doctora_id"), "Doctora"),
                                        "establecimiento": p.get("establecimiento") or n.get("nombre_colegio") or "",
-                                       "especialidad": _especialidad(n) if n else "", "hace_min": max(0, minutos)})
+                                       "especialidad": _especialidad(n) if n else "", "hace_min": max(0, minutos),
+                                       "hoy": hoy_por_doc.get(p.get("doctora_id"), 0),
+                                       "avance_nomina": _avance(p.get("nomina_id"))})
             conectadas.sort(key=lambda x: x["hace_min"])
 
             # ── Evaluaciones por doctora y por día ──

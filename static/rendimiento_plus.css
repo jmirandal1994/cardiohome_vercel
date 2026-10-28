@@ -104,3 +104,7 @@
 .rp-est .bar{height:8px;border-radius:99px;background:#e8eef4;overflow:hidden;margin-top:6px}
 .rp-est .bar span{display:block;height:100%;border-radius:99px;transition:width 1.1s cubic-bezier(.2,.8,.2,1)}
 .rp-est .pct{font-weight:800;font-size:1.02rem;min-width:58px;text-align:right}
+.rp-hoy{display:inline-block;margin:6px 0 3px;font-size:.72rem;font-weight:700;color:#0f3460;background:#e0ecff;border-radius:99px;padding:3px 9px}
+.rp-hoy b{font-size:.82rem}
+.rp-person{width:170px}
+.rp-hoy{white-space:nowrap;font-size:.68rem}

@@ -1,0 +1,44 @@
+{# ═══ Bitácora de actividad por doctora · se incluye en el Monitor de Doctoras (admin) ═══ #}
+<link rel="stylesheet" href="{{ url_for('static', filename='monitor_bitacora.css') }}">
+<div class="bit-card" id="bit-card">
+  <div class="bit-head">
+    <div>
+      <h3><i class="fa-solid fa-book-open"></i> Bitácora de actividad</h3>
+      <p>Qué hizo cada doctora en el sistema: inicios de sesión, nóminas abiertas, evaluaciones, correcciones y descargas.</p>
+    </div>
+    <div class="bit-filtros">
+      <select id="bit-doc" class="bit-sel" aria-label="Doctora"><option value="">Todas las doctoras</option></select>
+      <select id="bit-dias" class="bit-sel" aria-label="Período">
+        <option value="1">Hoy</option>
+        <option value="7" selected>Últimos 7 días</option>
+        <option value="30">Últimos 30 días</option>
+        <option value="90">Últimos 90 días</option>
+      </select>
+      <select id="bit-accion" class="bit-sel" aria-label="Tipo de actividad">
+        <option value="">Toda la actividad</option>
+        <option value="inicio_sesion">Inicios de sesión</option>
+        <option value="cierre_sesion">Cierres de sesión</option>
+        <option value="abrir_nomina">Nóminas abiertas</option>
+        <option value="evaluacion_cerrada">Evaluaciones cerradas</option>
+        <option value="evaluacion_editada">Evaluaciones editadas</option>
+        <option value="correccion_solicitada">Correcciones solicitadas</option>
+        <option value="correccion_resuelta">Correcciones resueltas</option>
+        <option value="asistencia_cambiada">Cambios de asistencia</option>
+        <option value="descarga">Descargas</option>
+        <option value="inicio_fallido">Intentos fallidos</option>
+      </select>
+    </div>
+  </div>
+  <div id="bit-aviso" class="bit-aviso" style="display:none"></div>
+  <div class="bit-cuerpo">
+    <div id="bit-dias-box" class="bit-col" style="display:none">
+      <div class="bit-sub"><i class="fa-solid fa-calendar-check"></i> Evaluaciones por día</div>
+      <div id="bit-por-dia"></div>
+    </div>
+    <div class="bit-col bit-col-main">
+      <div class="bit-sub"><i class="fa-solid fa-clock-rotate-left"></i> Línea de tiempo</div>
+      <div id="bit-lista" class="bit-lista"><div class="bit-vacio">Cargando…</div></div>
+    </div>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='monitor_bitacora.js') }}"></script>

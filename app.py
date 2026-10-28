@@ -74,6 +74,11 @@ try:
     app.register_blueprint(crear_blueprint_actividad(SUPABASE_URL, SUPABASE_SERVICE_HEADERS))
 except Exception as _e_act:
     print(f"⚠️ Módulo actividad_coordinacion no cargado: {_e_act}")
+try:
+    from bitacora import crear_blueprint_bitacora
+    app.register_blueprint(crear_blueprint_bitacora(SUPABASE_URL, SUPABASE_SERVICE_HEADERS))
+except Exception as _e_bit:
+    print(f"⚠️ Módulo bitacora no cargado: {_e_bit}")
 
 # Configuración de SendGrid
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
@@ -5575,7 +5580,8 @@ def api_coordinadora_stats():
             "por_dia":            por_dia_sorted,
             "por_semana":         por_semana_sorted,
             "doctoras_ranking":   doctoras_ranking[:10],
-            "establecimientos":   establecimientos[:10]
+            "establecimientos":   establecimientos[:10],
+            "establecimientos_todos": establecimientos
         })
 
     except requests.exceptions.RequestException as e:

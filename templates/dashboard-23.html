@@ -3999,6 +3999,8 @@
                     </div>
                 </div>
 
+                {% include '_bitacora.html' %}
+
             </div>
 
 
@@ -10138,7 +10140,7 @@ async function exportarPDFCoordinadora() {
         var topDoc  = ranking.length ? (ranking[0].nombre || 'Sin nombre') : '—';
         var topPct  = ranking.length ? (ranking[0].percent || 0) : 0;
         var numDocs = ranking.length;
-        var numEst  = (d.establecimientos || []).length;
+        var numEst  = (d.establecimientos_todos || d.establecimientos || []).length;
 
         // Determinar estado general
         var estadoTexto, estadoColor;
@@ -10401,7 +10403,7 @@ async function exportarPDFCoordinadora() {
         }
 
         // ── 5. GRÁFICO BARRAS HORIZONTALES — establecimientos ────────────
-        var estData = (d.establecimientos || []).map(function(e) {
+        var estData = (d.establecimientos_todos || d.establecimientos || []).map(function(e) {
             return { colegio: e.nombre || e.nombre_colegio || '—', evaluados: e.completed || e.completados || 0, total: e.total || 0 };
         });
         if (estData.length) {
@@ -11869,8 +11871,13 @@ function presRenderGrid() {
             ? '<div class="pres-nomina-tag"><i class="fas fa-file-medical" style="font-size:.62rem;"></i>' + d.nomina_nombre + '</div>'
             : '';
 
+        const hoyHtml = d.hoy_eval !== undefined
+            ? '<div class="pres-hoy-chip"><i class="fa-solid fa-clipboard-check"></i><b>' + d.hoy_eval + '</b> ' + (d.hoy_eval === 1 ? 'evaluación' : 'evaluaciones') + ' hoy'
+              + (d.hoy_colegios && d.hoy_colegios.length > 1 ? ' · ' + d.hoy_colegios.length + ' colegios' : '') + '</div>'
+            : '';
+
         const delay = i * 60;
-        return '<div class="pres-card" style="animation-delay:' + delay + 'ms;position:relative;">'
+        return '<div class="pres-card" data-doc="' + d.doctora_id + '" title="Ver bitácora de ' + (d.nombre||'') + '" onclick="window.presAbrirBitacora && presAbrirBitacora(this.dataset.doc)" style="animation-delay:' + delay + 'ms;position:relative;cursor:pointer;">'
             + rankBadge
             + '<div class="pres-card-stripe ' + d.estado + '"></div>'
             + '<div class="pres-card-body">'
@@ -11883,6 +11890,7 @@ function presRenderGrid() {
             + '<p class="pres-name">' + d.nombre + '</p>'
             + '<p class="pres-est"><i class="fa-solid fa-school" style="font-size:.65rem;color:#94a3b8;"></i>' + (d.establecimiento || 'Sin establecimiento') + '</p>'
             + nominaHtml
+            + hoyHtml
             + '</div>'
             + '<span class="pres-badge ' + d.estado + '">' + label + '</span>'
             + '</div>'
@@ -11902,6 +11910,20 @@ function presRenderGrid() {
     }).join('');
 }
 
+/* ── Fecha y hora legibles: "hoy · 15:07", "ayer · 09:12", "11 may · 15:07" ── */
+function presFechaHora(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (isNaN(d)) return '—';
+    const hora = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+    const hoy = new Date(); const ayer = new Date(); ayer.setDate(hoy.getDate() - 1);
+    if (d.toDateString() === hoy.toDateString()) return 'hoy · ' + hora;
+    if (d.toDateString() === ayer.toDateString()) return 'ayer · ' + hora;
+    const opt = { day: 'numeric', month: 'short' };
+    if (d.getFullYear() !== hoy.getFullYear()) opt.year = 'numeric';
+    return d.toLocaleDateString('es-CL', opt).replace('.', '') + ' · ' + hora;
+}
+
 /* ── Feed de actividad reciente ── */
 function presRenderFeed() {
     const feed = document.getElementById('pres-feed');
@@ -11910,7 +11932,7 @@ function presRenderFeed() {
         feed.innerHTML = '<div class="pres-event"><div class="pres-ev-dot" style="background:#e2e8f0;"></div><span style="color:#94a3b8;">Sin actividad reciente registrada</span></div>';
         return;
     }
-    feed.innerHTML = _presFeedLog.slice(0, 5).map(ev => `
+    feed.innerHTML = _presFeedLog.slice(0, 8).map(ev => `
         <div class="pres-event">
             <div class="pres-ev-dot" style="background:${ev.color};"></div>
             <span>${ev.texto}</span>
@@ -11926,8 +11948,10 @@ function presRenderHoy(activas, nOff) {
     if (hoyDoc) hoyDoc.textContent = activas.length;
     const establecs = new Set(activas.map(d => d.establecimiento).filter(Boolean));
     if (hoyEst) hoyEst.textContent = establecs.size;
-    const totalEvalHoy = activas.reduce((s, d) => s + (d.evaluados_nomina || 0), 0);
-    if (hoyEval) hoyEval.textContent = totalEvalHoy || '—';
+    const totalEvalHoy = (window._presHoyTotal !== undefined)
+        ? window._presHoyTotal
+        : activas.reduce((s, d) => s + (d.evaluados_nomina || 0), 0);
+    if (hoyEval) hoyEval.textContent = totalEvalHoy || (window._presHoyTotal !== undefined ? '0' : '—');
 }
 
 /* ── Carga principal desde API ── */
@@ -11978,10 +12002,13 @@ async function cargarPresencia() {
                 : `<strong>${d.nombre}</strong> lleva ${d.minutos ?? '?'} min sin actividad`;
             _presFeedLog.push({ color, texto, tiempo: mins });
         });
-        _presDatos.filter(d => d.estado === 'desconectada' && d.ultima_actividad).slice(0,2).forEach(d => {
-            _presFeedLog.push({ color:'#94a3b8', texto:`<strong>${d.nombre}</strong> cerró sesión`, tiempo: d.ultima_actividad ? new Date(d.ultima_actividad).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}) : '—' });
+        _presDatos.filter(d => d.estado === 'desconectada' && d.ultima_actividad)
+            .sort((a, b) => new Date(b.ultima_actividad) - new Date(a.ultima_actividad))
+            .slice(0, 5).forEach(d => {
+            _presFeedLog.push({ color:'#94a3b8', texto:`<strong>${d.nombre}</strong> · última actividad${d.establecimiento ? ' en ' + d.establecimiento : ''}`, tiempo: presFechaHora(d.ultima_actividad) });
         });
         presRenderFeed();
+        if (window.presTrasCargar) window.presTrasCargar();
 
         // Resumen hoy
         presRenderHoy(activas, nOff);

@@ -54,6 +54,8 @@
     }
     el.innerHTML = `<div class="rp-team">${c.map((p, i) => `<div class="rp-person" style="animation-delay:${i * 60}ms">
       ${avatar(p.doctora, "rp-ava on")}<b>${esc(p.doctora)}</b><small>${esc(p.establecimiento || "—")}</small>
+      <span class="rp-hoy"><b>${fmtN(p.hoy || 0)}</b> ${p.hoy === 1 ? "evaluación" : "evaluaciones"} hoy</span>
+      ${p.avance_nomina && p.avance_nomina.total ? `<small>Nómina: ${fmtN(p.avance_nomina.evaluados)} de ${fmtN(p.avance_nomina.total)}</small>` : ""}
       <small style="color:#15803d;font-weight:700;margin-top:3px">${p.hace_min <= 1 ? "activa ahora" : `hace ${p.hace_min} min`}</small></div>`).join("")}</div>`;
   }
 
@@ -175,8 +177,9 @@
   function datosCoord() { try { return typeof _coordData !== "undefined" ? _coordData : null; } catch (e) { return null; } }
   function pintarEst() {
     const d = datosCoord(), lista = $("rp-est-lista");
-    if (!lista || !d || !Array.isArray(d.establecimientos)) return;
-    const est = d.establecimientos.map((e) => ({ ...e, pend: Math.max(0, (e.total || 0) - (e.completed || 0)) }));
+    const todos = d && (Array.isArray(d.establecimientos_todos) ? d.establecimientos_todos : d.establecimientos);
+    if (!lista || !Array.isArray(todos)) return;
+    const est = todos.map((e) => ({ ...e, pend: Math.max(0, (e.total || 0) - (e.completed || 0)) }));
     const completos = est.filter((e) => e.total > 0 && e.completed >= e.total).length;
     const sinIniciar = est.filter((e) => !e.completed).length;
     const enCurso = est.length - completos - sinIniciar;

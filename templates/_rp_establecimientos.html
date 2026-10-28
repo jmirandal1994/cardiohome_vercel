@@ -1,0 +1,18 @@
+{# ═══ Avance por establecimiento · usa los datos que ya carga Rendimiento en Vivo (_coordData) ═══ #}
+<div class="rp-card rp-est-card" id="rp-est-card">
+  <div class="rp-h">
+    <div><h3><i class="fa-solid fa-school" style="color:#1c67a3"></i> Avance por establecimiento</h3>
+      <p id="rp-est-sub">Formularios cerrados sobre el total en nómina de cada colegio</p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <input type="search" id="rp-est-q" class="rp-input" placeholder="Buscar colegio" aria-label="Buscar colegio">
+      <select id="rp-est-orden" class="rp-input" aria-label="Ordenar">
+        <option value="menor">Menor avance primero</option>
+        <option value="mayor">Mayor avance primero</option>
+        <option value="pend">Más pendientes primero</option>
+        <option value="az">Nombre (A-Z)</option>
+      </select>
+    </div>
+  </div>
+  <div class="rp-est-resumen" id="rp-est-resumen"></div>
+  <div class="rp-est-lista" id="rp-est-lista"><div class="rp-load"><span class="rp-spin"></span> Cargando…</div></div>
+</div>

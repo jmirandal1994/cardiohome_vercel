@@ -84,3 +84,23 @@
 .rp-filtros button.on{background:#0f3460!important}
 @media(max-width:1250px){.coord-main-der .rp-feed-card{position:static}.coord-main-der .rp-feed-card .rp-feed{max-height:420px}}
 .rp-feed-card,.rp-feed-card *{box-sizing:border-box}
+/* ═══ Avance por establecimiento ═══ */
+.rp-est-card,.rp-est-card *{box-sizing:border-box}
+.rp-est-card{margin-bottom:0}
+.rp-input{border:1px solid #e3e9ef;border-radius:10px;padding:8px 11px;font-size:.82rem;font-family:inherit;color:#13263a;background:#fff;min-width:170px}
+.rp-est-resumen{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.rp-chip{border:1px solid #e3e9ef;background:#f6f9fb;border-radius:99px;padding:7px 13px;font-size:.78rem;font-weight:700;color:#5b6b7a;cursor:pointer;display:inline-flex;gap:7px;align-items:center;font-family:inherit}
+.rp-chip b{color:#13263a}
+.rp-chip.on{background:#0f3460!important;border-color:#0f3460;color:#fff}
+.rp-chip.on b{color:#fff}
+.rp-chip i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.rp-est-lista{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 22px;max-height:520px;overflow-y:auto;padding-right:4px}
+@media(max-width:1000px){.rp-est-lista{grid-template-columns:1fr}}
+.rp-est{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid #eef2f6;border-radius:14px;background:#fff;animation:rp-entra .45s both;transition:border-color .2s,box-shadow .2s}
+.rp-est:hover{border-color:#cfe0f0;box-shadow:0 6px 16px rgba(15,52,96,.07)}
+.rp-est .logo{width:40px;height:40px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.8rem;color:#fff}
+.rp-est .nom{font-size:.86rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp-est .det{font-size:.72rem;color:#5b6b7a;margin-top:1px}
+.rp-est .bar{height:8px;border-radius:99px;background:#e8eef4;overflow:hidden;margin-top:6px}
+.rp-est .bar span{display:block;height:100%;border-radius:99px;transition:width 1.1s cubic-bezier(.2,.8,.2,1)}
+.rp-est .pct{font-weight:800;font-size:1.02rem;min-width:58px;text-align:right}

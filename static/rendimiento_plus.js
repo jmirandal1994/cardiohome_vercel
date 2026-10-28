@@ -169,6 +169,42 @@
   const vigilante = setInterval(() => { revisarPeriodoVacio(); if (++revisiones > 30) clearInterval(vigilante); }, 1000);
   document.addEventListener("click", (ev) => { if (ev.target.closest && ev.target.closest("#btn-periodo-dia, #btn-periodo-semana")) setTimeout(revisarPeriodoVacio, 400); });
 
+  // ── Avance por establecimiento (datos de /api/coordinadora/stats que ya cargó el panel) ──
+  let estUltimo = null, estFiltro = "todos";
+  const estColor = (p) => (p >= 100 ? "#16a34a" : p >= 80 ? "#22c55e" : p >= 50 ? "#f59e0b" : p > 0 ? "#ef4444" : "#94a3b8");
+  function datosCoord() { try { return typeof _coordData !== "undefined" ? _coordData : null; } catch (e) { return null; } }
+  function pintarEst() {
+    const d = datosCoord(), lista = $("rp-est-lista");
+    if (!lista || !d || !Array.isArray(d.establecimientos)) return;
+    const est = d.establecimientos.map((e) => ({ ...e, pend: Math.max(0, (e.total || 0) - (e.completed || 0)) }));
+    const completos = est.filter((e) => e.total > 0 && e.completed >= e.total).length;
+    const sinIniciar = est.filter((e) => !e.completed).length;
+    const enCurso = est.length - completos - sinIniciar;
+    const chip = (k, lab, n, col) => `<button type="button" class="rp-chip${estFiltro === k ? " on" : ""}" data-est="${k}">${col ? `<i style="background:${col}"></i>` : ""}${lab} <b>${fmtN(n)}</b></button>`;
+    $("rp-est-resumen").innerHTML = chip("todos", "Todos", est.length) + chip("curso", "En curso", enCurso, "#f59e0b") + chip("completos", "Completos", completos, "#16a34a") + chip("sin", "Sin iniciar", sinIniciar, "#94a3b8");
+    const q = ($("rp-est-q").value || "").trim().toLowerCase();
+    let vis = est.filter((e) => (!q || (e.nombre || "").toLowerCase().includes(q)) &&
+      (estFiltro === "todos" || (estFiltro === "completos" && e.total > 0 && e.completed >= e.total) || (estFiltro === "sin" && !e.completed) ||
+       (estFiltro === "curso" && e.completed > 0 && e.completed < e.total)));
+    const orden = $("rp-est-orden").value;
+    vis.sort((a, b) => orden === "mayor" ? b.percent - a.percent : orden === "pend" ? b.pend - a.pend : orden === "az" ? (a.nombre || "").localeCompare(b.nombre || "", "es") : a.percent - b.percent);
+    $("rp-est-sub").textContent = `${fmtN(est.length)} establecimientos · ${fmtN(est.reduce((s, e) => s + e.pend, 0))} evaluaciones pendientes en total`;
+    if (!vis.length) { lista.innerHTML = `<div class="rp-load" style="grid-column:1/-1">No hay establecimientos con este filtro.</div>`; return; }
+    lista.innerHTML = vis.map((e, i) => {
+      const c = estColor(e.percent);
+      return `<div class="rp-est" style="animation-delay:${Math.min(i, 20) * 25}ms">
+        <span class="logo" style="background:linear-gradient(135deg,${colorDe(e.nombre)},#0f3460)">${esc(ini(e.nombre))}</span>
+        <div style="flex:1;min-width:0"><div class="nom" title="${esc(e.nombre)}">${esc(e.nombre)}</div>
+          <div class="det">${fmtN(e.completed)} de ${fmtN(e.total)} evaluados · ${e.pend ? `<b style="color:#b45309">${fmtN(e.pend)} pendientes</b>` : `<b style="color:#15803d">completo</b>`}</div>
+          <div class="bar"><span style="width:${Math.min(100, e.percent)}%;background:${c}"></span></div></div>
+        <span class="pct" style="color:${c}">${String(e.percent).replace(".", ",")}%</span></div>`;
+    }).join("");
+  }
+  setInterval(() => { const d = datosCoord(); if (d && d !== estUltimo) { estUltimo = d; pintarEst(); } }, 700);
+  document.addEventListener("input", (ev) => { if (ev.target && ev.target.id === "rp-est-q") pintarEst(); });
+  document.addEventListener("change", (ev) => { if (ev.target && ev.target.id === "rp-est-orden") pintarEst(); });
+  document.addEventListener("click", (ev) => { const c = ev.target.closest && ev.target.closest("#rp-est-resumen .rp-chip"); if (c) { estFiltro = c.dataset.est; pintarEst(); } });
+
   function visible() { const r = $("rp-root"); return r && r.offsetParent !== null; }
   function iniciar() {
     if (!$("rp-root")) return;

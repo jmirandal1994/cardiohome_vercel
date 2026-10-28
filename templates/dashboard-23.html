@@ -5411,25 +5411,8 @@
                     </div>
                     </div><!-- /coord-main-grid -->
 
-                    <!-- Fila inferior: Ranking doctoras + Top establecimientos -->
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;" class="coord-row-2">
-
-                        <!-- Ranking doctoras -->
-                        <div class="card" style="margin-bottom:0;padding:1.75rem;">
-                            <h3 style="margin:0 0 1.25rem 0;border:none;padding:0;font-size:1.05rem;color:var(--primary-blue);">
-                                <i class="fa-solid fa-ranking-star" style="color:#F1C40F;"></i> Ranking de Doctoras
-                            </h3>
-                            <div id="coord-ranking-list" style="display:flex;flex-direction:column;gap:.75rem;max-height:280px;overflow-y:auto;"></div>
-                        </div>
-
-                        <!-- Top establecimientos -->
-                        <div class="card" style="margin-bottom:0;padding:1.75rem;">
-                            <h3 style="margin:0 0 1.25rem 0;border:none;padding:0;font-size:1.05rem;color:var(--primary-blue);">
-                                <i class="fa-solid fa-building-columns" style="color:#2ECC71;"></i> Top Establecimientos
-                            </h3>
-                            <div id="coord-est-list" style="display:flex;flex-direction:column;gap:.6rem;max-height:280px;overflow-y:auto;"></div>
-                        </div>
-                    </div>
+                    <!-- Avance por establecimiento (reemplaza Ranking de Doctoras y Top Establecimientos) -->
+                    {% include '_rp_establecimientos.html' %}
                 </div><!-- /coord-content -->
 
                 {# ══ Rendimiento en Vivo ampliado: equipo conectado, actividad, correcciones, doctoras ══ #}

@@ -32,6 +32,7 @@
       if (!r.ok || !j.success) throw new Error(j.message || "Error");
       datos = j;
       pintar();
+      cargarReev();
       revisarPeriodoVacio();
     } catch (e) {
       ["rp-team", "rp-feed", "rp-corr", "rp-doc-list", "rp-heat", "rp-aus"].forEach((id) => {
@@ -170,6 +171,34 @@
   let revisiones = 0;
   const vigilante = setInterval(() => { revisarPeriodoVacio(); if (++revisiones > 30) clearInterval(vigilante); }, 1000);
   document.addEventListener("click", (ev) => { if (ev.target.closest && ev.target.closest("#btn-periodo-dia, #btn-periodo-semana")) setTimeout(revisarPeriodoVacio, 400); });
+
+  // ── Alerta de reevaluaciones por establecimiento ──
+  const REEV = { vencida: ["Vencidas", "#dc2626", "#fee2e2"], urgente: ["Próximos 30 días", "#ea580c", "#ffedd5"], proxima: ["31 a 90 días", "#d97706", "#fef3c7"] };
+  let reevHecho = 0;
+  async function cargarReev() {
+    const el = $("rp-reev-body");
+    if (!el || Date.now() - reevHecho < 600000) return;
+    reevHecho = Date.now();
+    try {
+      const r = await fetch("/api/salud/reevaluaciones/establecimientos?resumen=1", { credentials: "same-origin" });
+      const j = await r.json();
+      if (!r.ok || !j.success) throw new Error(j.message || "Error");
+      const res = j.resumen, c = res.conteo || {};
+      $("rp-reev-sub").textContent = res.alerta
+        ? `${fmtN(res.alerta)} estudiantes en ${fmtN(res.colegios_alerta)} de ${fmtN(res.colegios)} establecimientos · vencidas o en los próximos 90 días`
+        : `Ningún establecimiento tiene reevaluaciones vencidas ni en los próximos 90 días (${fmtN(res.colegios)} establecimientos)`;
+      const nums = `<div class="rp-reev-nums">${Object.entries(REEV).map(([k, v]) => `<div style="--fg:${v[1]};--bg:${v[2]}"><b>${fmtN(c[k] || 0)}</b><small>${v[0]}</small></div>`).join("")}</div>`;
+      const lista = (j.colegios || []).map((x) => `<button type="button" class="rp-reev-col" onclick="window.SE && SE.irEstablecimientos(${x.proyecto_id ? `'${esc(x.proyecto_id)}'` : ""})">
+          <span class="logo" style="background:${x.conteo.vencida ? "#dc2626" : "#ea580c"}">${esc(ini(x.colegio))}</span>
+          <span style="flex:1;min-width:0"><b>${esc(x.colegio)}</b><small>${esc(x.proyecto)}</small></span>
+          ${Object.keys(REEV).filter((k) => x.conteo[k]).map((k) => `<span class="rp-reev-chip" style="--fg:${REEV[k][1]};--bg:${REEV[k][2]}" title="${REEV[k][0]}">${fmtN(x.conteo[k])}</span>`).join("")}</button>`).join("");
+      el.innerHTML = res.alerta ? `${nums}<div class="rp-reev-lista">${lista}</div>${res.colegios_alerta > (j.colegios || []).length ? `<p class="rp-reev-mas">y ${fmtN(res.colegios_alerta - j.colegios.length)} establecimientos más con alertas</p>` : ""}`
+        : `<div class="rp-empty"><i class="fa-solid fa-circle-check" style="font-size:1.6rem;color:#16a34a"></i><div>Todo al día por ahora.</div></div>`;
+    } catch (e) {
+      el.innerHTML = `<div class="rp-load" style="color:#b91c1c"><i class="fa-solid fa-triangle-exclamation"></i> No se pudo cargar la alerta de reevaluaciones.</div>`;
+      reevHecho = Date.now() - 540000;
+    }
+  }
 
   // ── Avance por establecimiento (datos de /api/coordinadora/stats que ya cargó el panel) ──
   let estUltimo = null, estFiltro = "todos";

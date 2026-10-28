@@ -238,7 +238,8 @@
 
   // ───────── SECCIÓN DEL PANEL ─────────
   let iniciado = false;
-  const estado = { tab: "reev", filtroEst: null, buscaReev: "", pag: 0, reev: null, nutri: null, deriv: null };
+  const estado = { tab: "reev", filtroEst: null, buscaReev: "", pag: 0, reev: null, nutri: null, deriv: null,
+    est: null, estQ: "", estSoloAlerta: true, estAbierto: null, estOrden: "urgencia" };
   const $ = (id) => document.getElementById(id);
   const qsFiltros = () => {
     const p = new URLSearchParams();
@@ -254,7 +255,7 @@
       iniciado = true;
       raiz.querySelectorAll(".se-tab").forEach((b) => b.addEventListener("click", () => SE.tab(b.dataset.tab)));
       $("se-buscar").addEventListener("input", debounce(buscar, 350));
-      ["se-f-proy", "se-f-col"].forEach((id) => $(id).addEventListener("change", () => { estado.reev = null; estado.nutri = null; estado.deriv = null; SE.tab(estado.tab); }));
+      ["se-f-proy", "se-f-col"].forEach((id) => $(id).addEventListener("change", () => { estado.reev = null; estado.nutri = null; estado.deriv = null; estado.est = null; estado.estAbierto = null; SE.tab(estado.tab); }));
       $("se-f-anio").addEventListener("change", () => { estado.nutri = null; SE.tab("nutri"); });
       try {
         const f = await api("/api/salud/filtros");
@@ -271,6 +272,7 @@
     document.querySelectorAll("#se-root .se-panel").forEach((p) => p.classList.toggle("on", p.id === `se-p-${t}`));
     $("se-f-anio").style.display = t === "nutri" ? "" : "none";
     if (t === "reev") cargarReev();
+    if (t === "est") cargarEst();
     if (t === "nutri") cargarNutri();
     if (t === "deriv") cargarDeriv();
   };
@@ -399,6 +401,123 @@
     t.querySelectorAll("tr.link").forEach((tr) => tr.addEventListener("click", () => SE.verEstudiante(tr.dataset.rut)));
   }
   SE.pagina = function (d) { estado.pag = Math.max(0, estado.pag + d); tablaReev(); };
+
+  // ── Reevaluaciones por establecimiento ──
+  const ALERTA = ["vencida", "urgente", "proxima"];
+  async function cargarEst() {
+    const box = $("se-p-est-body");
+    if (estado.est) return pintarEst();
+    box.innerHTML = loading("Agrupando reevaluaciones por establecimiento…");
+    try {
+      estado.est = await api(`/api/salud/reevaluaciones/establecimientos?${qsFiltros()}`);
+      if (!estado.est.resumen.colegios_alerta) estado.estSoloAlerta = false;
+      pintarEst();
+    } catch (e) { box.innerHTML = empty(esc(e.message), "fa-circle-exclamation"); }
+  }
+  SE.irEstablecimientos = function (proyectoId) {
+    estado.tab = "est";
+    const a = document.querySelector('a.nav-link[data-section="salud-estudiantes"]');
+    if (a) a.click(); else SE.init();
+    if (proyectoId) setTimeout(() => { const f = $("se-f-proy"); if (f && [...f.options].some((o) => o.value === String(proyectoId))) { f.value = proyectoId; f.dispatchEvent(new Event("change")); } }, 900);
+  };
+  SE.estProyecto = function (id) { const f = $("se-f-proy"); if (!f) return; f.value = id || ""; f.dispatchEvent(new Event("change")); };
+  SE.estToggle = function (i) { estado.estAbierto = estado.estAbierto === i ? null : i; listaEst(); };
+  SE.estDescargar = function (colegio) {
+    const f = $("se-f-col");
+    if (f && [...f.options].some((o) => o.value === colegio)) { const prev = f.value; f.value = colegio; SE.descargar("reevaluaciones"); f.value = prev; }
+    else SE.descargar("reevaluaciones");
+  };
+  const barraEstados = (c) => {
+    const tot = Math.max(1, c.total), ks = ["vencida", "urgente", "proxima", "este_anio", "en_plazo", "fecha_a_revisar", "sin_fecha"];
+    return `<div class="se-est-stack">${ks.filter((k) => c.conteo[k]).map((k) => `<span title="${EST[k].lab}: ${c.conteo[k]}" style="width:${(100 * c.conteo[k]) / tot}%;background:${EST[k].fg}"></span>`).join("")}</div>`;
+  };
+  function pintarEst() {
+    const j = estado.est, r = j.resumen, c = r.conteo || {}, box = $("se-p-est-body");
+    const proyFiltro = $("se-f-proy") && $("se-f-proy").value;
+    const hay = r.alerta > 0;
+    let h = `<div class="se-est-alerta ${hay ? "" : "ok"}">
+        <i class="fa-solid ${hay ? "fa-bell se-ring" : "fa-circle-check"}"></i>
+        <div style="flex:1;min-width:0"><b>${hay ? `${fmtN(r.alerta)} estudiantes deben reevaluarse pronto en ${fmtN(r.colegios_alerta)} de ${fmtN(r.colegios)} establecimientos` : `Ningún establecimiento tiene reevaluaciones vencidas ni en los próximos 90 días`}</b>
+          <span>Vencidas, próximos 30 días y de 31 a 90 días · calculado al ${fmtF(j.hoy)}</span></div>
+        <div class="se-est-nums">${ALERTA.map((k) => `<span style="--fg:${EST[k].fg};--bg:${EST[k].bg}"><b>${fmtN(c[k] || 0)}</b>${k === "vencida" ? "Vencidas" : EST[k].lab}</span>`).join("")}</div></div>`;
+    if (!proyFiltro && j.proyectos.length > 1) {
+      h += `<div class="se-card" style="margin-bottom:12px"><h4>Por proyecto</h4><p class="se-cap">Haz clic en un proyecto para ver solo sus establecimientos</p>
+        <div class="se-est-proys">${j.proyectos.map((p) => `<button type="button" class="se-est-proy" onclick="SE.estProyecto('${esc(p.id || "")}')">
+          <b>${esc(p.nombre)}</b><small>${fmtN(p.colegios)} establecimientos · ${fmtN(p.total)} estudiantes</small>
+          <span class="n" style="color:${p.alerta ? EST.vencida.fg : EST.en_plazo.fg}">${p.alerta ? `<i class="fa-solid fa-bell"></i> ${fmtN(p.alerta)} por reevaluar · ${fmtN(p.colegios_alerta)} colegios` : `<i class="fa-solid fa-circle-check"></i> Sin urgencias`}</span>
+          ${p.conteo.vencida ? `<em>${fmtN(p.conteo.vencida)} vencidas</em>` : ""}</button>`).join("")}</div></div>`;
+    }
+    h += `<div class="se-card"><div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px">
+        <div><h4>Establecimientos</h4><p class="se-cap" style="margin:0">Abre un establecimiento para ver cuáles estudiantes reevaluar y su historial de evaluaciones</p></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <label class="se-est-check"><input type="checkbox" id="se-est-solo" ${estado.estSoloAlerta ? "checked" : ""}> Solo con alertas</label>
+          <select class="se-input" id="se-est-orden" style="min-width:0">
+            <option value="urgencia">Más urgentes primero</option><option value="proxima">Próxima fecha</option><option value="az">Nombre A–Z</option></select>
+          <input class="se-input" id="se-est-q" placeholder="Buscar establecimiento" value="${esc(estado.estQ)}"></div></div>
+        <div id="se-est-lista"></div></div>`;
+    box.innerHTML = h;
+    animar(box);
+    $("se-est-orden").value = estado.estOrden;
+    $("se-est-solo").addEventListener("change", (e) => { estado.estSoloAlerta = e.target.checked; estado.estAbierto = null; listaEst(); });
+    $("se-est-orden").addEventListener("change", (e) => { estado.estOrden = e.target.value; estado.estAbierto = null; listaEst(); });
+    $("se-est-q").addEventListener("input", debounce(() => { estado.estQ = $("se-est-q").value; estado.estAbierto = null; listaEst(); }, 250));
+    listaEst();
+  }
+  function listaEst() {
+    const j = estado.est, q = estado.estQ.trim().toLowerCase(), cont = $("se-est-lista");
+    let cols = j.colegios.map((c, i) => ({ ...c, _i: i }));
+    if (estado.estSoloAlerta) cols = cols.filter((c) => c.alerta);
+    if (q) cols = cols.filter((c) => c.colegio.toLowerCase().includes(q) || (c.proyecto || "").toLowerCase().includes(q));
+    if (estado.estOrden === "az") cols.sort((a, b) => a.colegio.localeCompare(b.colegio, "es"));
+    if (estado.estOrden === "proxima") cols.sort((a, b) => (a.proxima_fecha || "9999").localeCompare(b.proxima_fecha || "9999"));
+    if (!cols.length) { cont.innerHTML = empty(estado.estSoloAlerta ? "No hay establecimientos con alertas. Desmarca «Solo con alertas» para verlos todos." : "No hay establecimientos con este filtro.", "fa-circle-check"); return; }
+    const varios = new Set(cols.map((c) => c.proyecto)).size > 1;
+    cont.innerHTML = cols.slice(0, 400).map((c) => {
+      const ab = estado.estAbierto === c._i;
+      const badges = ["vencida", "urgente", "proxima", "este_anio", "fecha_a_revisar"].filter((k) => c.conteo[k])
+        .map((k) => `<span class="se-chip" style="--fg:${EST[k].fg};--bg:${EST[k].bg}" title="${EST[k].lab}"><i class="fa-solid ${EST[k].icon}"></i>${fmtN(c.conteo[k])}</span>`).join("");
+      return `<div class="se-est ${ab ? "on" : ""} ${c.alerta ? "alerta" : ""}">
+        <button type="button" class="se-est-row" onclick="SE.estToggle(${c._i})" aria-expanded="${ab}">
+          <span class="se-est-logo" style="background:${c.conteo.vencida ? EST.vencida.fg : c.alerta ? EST.urgente.fg : "#1c67a3"}">${esc(iniciales(c.colegio))}</span>
+          <span class="se-est-info"><b>${esc(c.colegio)}</b><small>${varios ? esc(c.proyecto) + " · " : ""}${fmtN(c.total)} estudiantes · ${fmtN(c.reevaluados)} ya reevaluados${c.proxima_fecha ? ` · próxima: ${fmtF(c.proxima_fecha)}` : ""}</small>${barraEstados(c)}</span>
+          <span class="se-est-badges">${badges || `<span class="se-chip" style="--fg:${EST.en_plazo.fg};--bg:${EST.en_plazo.bg}"><i class="fa-solid fa-circle-check"></i>Al día</span>`}</span>
+          <i class="fa-solid fa-chevron-down se-est-chev"></i></button>
+        ${ab ? detalleEst(c) : ""}</div>`;
+    }).join("") + (cols.length > 400 ? `<div class="se-pag">Se muestran 400 de ${fmtN(cols.length)} establecimientos. Usa el buscador para encontrar otros.</div>` : "");
+    cont.querySelectorAll("tr.link").forEach((tr) => tr.addEventListener("click", () => SE.verEstudiante(tr.dataset.rut)));
+    if (estado.estAbierto != null) dibujarHistEst(j.colegios[estado.estAbierto]);
+  }
+  function detalleEst(c) {
+    const est = c.estudiantes || [];
+    const tabla = est.length ? `<div class="se-tw" style="max-height:380px"><table class="se-table"><thead><tr><th>Estudiante</th><th>Especialidad</th><th>Evaluado</th><th>Reevaluar</th><th>Estado</th></tr></thead><tbody>
+        ${est.map((r) => `<tr class="link" data-rut="${esc(r.rut)}"><td><b>${esc(r.nombre)}</b><div style="font-size:.74rem;color:#5b6b7a">${esc(fmtRut(r.rut))}${r.veces > 1 ? ` · ${r.veces}ª evaluación` : ""}</div></td>
+          <td>${esc(r.especialidad)}</td><td>${fmtF(r.fecha_evaluacion)}</td><td><b>${fmtF(r.fecha_reevaluacion)}</b></td>
+          <td>${chipEst(r.estado)}<div style="font-size:.74rem;font-weight:700;margin-top:3px;color:${EST[r.estado].fg}">${textoDias(r.dias, r.estado)}</div></td></tr>`).join("")}</tbody></table></div>`
+      : empty(`Ningún estudiante requiere reevaluación en los próximos 12 meses.`, "fa-circle-check");
+    const camp = c.campanas.slice(-8).reverse();
+    return `<div class="se-est-det">
+      <div class="se-est-col"><div class="se-est-t"><i class="fa-solid fa-bell"></i> Estudiantes a reevaluar <small>${fmtN(est.length)}</small>
+          <button type="button" class="se-btn" style="margin-left:auto;padding:5px 10px;font-size:.76rem" onclick="SE.estDescargar(${esc(JSON.stringify(c.colegio))})"><i class="fa-solid fa-file-excel"></i> Excel</button></div>${tabla}</div>
+      <div class="se-est-col"><div class="se-est-t"><i class="fa-solid fa-calendar-days"></i> Calendario de reevaluaciones</div>
+        ${c.calendario.vencidas ? `<div class="se-est-venc"><i class="fa-solid fa-triangle-exclamation"></i> ${fmtN(c.calendario.vencidas)} ya vencidas</div>` : ""}
+        <div class="se-chart" style="height:170px"><canvas id="se-c-est-cal"></canvas></div>
+        <div class="se-est-t" style="margin-top:12px"><i class="fa-solid fa-clock-rotate-left"></i> Historial de evaluaciones</div>
+        <div class="se-est-camp">${camp.length ? camp.map((m) => `<div><span>${fmtMes(m.mes)}</span><b>${fmtN(m.n)}</b> evaluados</div>`).join("") : `<span style="color:#5b6b7a;font-size:.8rem">Sin evaluaciones registradas.</span>`}</div>
+        <p class="se-cap" style="margin-top:8px">${fmtN(c.reevaluados)} de ${fmtN(c.total)} estudiantes ya tienen más de una evaluación en la misma especialidad.</p>
+      </div></div>`;
+  }
+  function dibujarHistEst(c) {
+    if (!c) return;
+    ensureChart().then(() => {
+      const hoyYM = estado.est.hoy.slice(0, 7), meses = [];
+      for (let k = 0; k < 12; k++) meses.push(addMes(hoyYM, k));
+      const mapa = Object.fromEntries(c.calendario.meses.map((m) => [m.mes, m.n]));
+      chart("se-c-est-cal", { type: "bar", data: { labels: meses.map(fmtMes), datasets: [{ data: meses.map((m) => mapa[m] || 0),
+        backgroundColor: meses.map((m, k) => (k === 0 ? EST.urgente.fg : k <= 2 ? EST.proxima.fg : EST.este_anio.fg)), borderRadius: 4 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+          scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } }, y: { grid: { color: "#eef2f6" }, ticks: { precision: 0 } } } } });
+    }).catch(() => {});
+  }
 
   // ── Nutrición ──
   async function cargarNutri() {

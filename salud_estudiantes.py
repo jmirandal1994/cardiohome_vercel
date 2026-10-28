@@ -18,6 +18,7 @@ Permisos por rol (session['usuario']):
 import re
 import time
 import threading
+from collections import Counter, defaultdict
 from datetime import date, datetime
 from concurrent.futures import ThreadPoolExecutor
 
@@ -526,6 +527,93 @@ def crear_blueprint_salud(supabase_url, headers):
                 "por_mes": [{"mes": k, "n": v} for k, v in sorted(por_mes.items())],
                 "lista": lista, "lista_total": len(lista)}
 
+    def _calc_reev_establecimientos(filas, con_estudiantes=True):
+        """Reevaluaciones agrupadas por proyecto y establecimiento: cuántas vencen, cuáles son,
+        y el historial de cada colegio (cuándo se evaluó y quiénes ya fueron reevaluados)."""
+        noms, proys = _nominas(), _proyectos()
+        hoy = date.today()
+        hoy_ym = hoy.strftime("%Y-%m")
+        lim_ym = (date(hoy.year + 1, hoy.month, 1)).strftime("%Y-%m")
+        # Evaluaciones de cada estudiante y especialidad, ordenadas en el tiempo
+        grupos = defaultdict(list)
+        for f in filas:
+            n = noms.get(f.get("nomina_id")) or {}
+            esp = _especialidad(n)
+            grupos[(normalizar_rut(f.get("rut")) or f["id"], esp)].append((_fecha(f.get("fecha_relleno")), f, n))
+        ALERTA = ("vencida", "urgente", "proxima")
+        cols = {}
+
+        def colegio(n):
+            pid = n.get("proyecto_id")
+            nombre = (n.get("nombre_colegio") or n.get("nombre_nomina") or "Sin colegio").strip()
+            k = (str(pid or ""), nombre.upper())
+            if k not in cols:
+                cols[k] = {"proyecto_id": pid, "proyecto": proys.get(pid) or "Sin proyecto", "colegio": nombre,
+                           "total": 0, "reevaluados": 0, "conteo": Counter(), "campanas": Counter(),
+                           "calendario": Counter(), "proxima_fecha": None, "estudiantes": []}
+            return cols[k]
+
+        for evs in grupos.values():
+            evs.sort(key=lambda x: (x[0] or date.min))
+            fr, f, n = evs[-1]
+            c = colegio(n)
+            c["total"] += 1
+            for fr_i, _f_i, n_i in evs:  # campañas: cuándo se evaluó en cada colegio
+                if fr_i:
+                    colegio(n_i)["campanas"][fr_i.strftime("%Y-%m")] += 1
+            if len(evs) > 1:
+                c["reevaluados"] += 1
+            freev = _fecha(f.get("fecha_reevaluacion"))
+            est, dias = estado_reevaluacion(freev, hoy)
+            c["conteo"][est] += 1
+            if freev and est not in ("fecha_a_revisar", "sin_fecha"):
+                ym = freev.strftime("%Y-%m")
+                if est == "vencida":
+                    c["calendario"]["vencidas"] += 1
+                elif ym <= lim_ym:
+                    c["calendario"][ym] += 1
+                if est != "vencida" and (c["proxima_fecha"] is None or freev.isoformat() < c["proxima_fecha"]):
+                    c["proxima_fecha"] = freev.isoformat()
+            if con_estudiantes and est in ALERTA + ("este_anio", "fecha_a_revisar"):
+                c["estudiantes"].append({"nombre": f.get("nombre"), "rut": f.get("rut"), "especialidad": _especialidad(n),
+                                         "fecha_evaluacion": fr.isoformat() if fr else None,
+                                         "fecha_reevaluacion": freev.isoformat() if freev else None,
+                                         "estado": est, "dias": dias, "veces": len(evs)})
+
+        orden = {"vencida": 0, "urgente": 1, "proxima": 2, "este_anio": 3, "fecha_a_revisar": 4}
+        salida, por_proy = [], {}
+        for c in cols.values():
+            c["alerta"] = sum(c["conteo"].get(k, 0) for k in ALERTA)
+            c["estudiantes"].sort(key=lambda x: (orden[x["estado"]], x["dias"] if x["dias"] is not None else 99999, x["nombre"] or ""))
+            c["conteo"] = {k: c["conteo"].get(k, 0) for k in ("vencida", "urgente", "proxima", "este_anio", "en_plazo", "fecha_a_revisar", "sin_fecha")}
+            c["campanas"] = [{"mes": k, "n": v} for k, v in sorted(c["campanas"].items())]
+            cal = c["calendario"]
+            c["calendario"] = {"vencidas": cal.pop("vencidas", 0),
+                               "meses": [{"mes": k, "n": v} for k, v in sorted(cal.items()) if k >= hoy_ym]}
+            if not con_estudiantes:
+                c.pop("estudiantes")
+            salida.append(c)
+            pk = str(c["proyecto_id"] or "")
+            p = por_proy.setdefault(pk, {"id": c["proyecto_id"], "nombre": c["proyecto"], "colegios": 0, "colegios_alerta": 0,
+                                         "total": 0, "conteo": Counter()})
+            p["colegios"] += 1
+            p["colegios_alerta"] += 1 if c["alerta"] else 0
+            p["total"] += c["total"]
+            p["conteo"].update(c["conteo"])
+        for p in por_proy.values():
+            p["conteo"] = dict(p["conteo"])
+            p["alerta"] = sum(p["conteo"].get(k, 0) for k in ALERTA)
+        salida.sort(key=lambda c: (-c["conteo"]["vencida"], -c["conteo"]["urgente"], -c["conteo"]["proxima"],
+                                   c["proyecto"], c["colegio"]))
+        tot = Counter()
+        for c in salida:
+            tot.update(c["conteo"])
+        return {"hoy": hoy.isoformat(),
+                "resumen": {"conteo": dict(tot), "alerta": sum(tot.get(k, 0) for k in ALERTA),
+                            "colegios": len(salida), "colegios_alerta": sum(1 for c in salida if c["alerta"])},
+                "proyectos": sorted(por_proy.values(), key=lambda p: (-p["alerta"], p["nombre"] or "")),
+                "colegios": salida}
+
     def _calc_derivaciones(filas):
         """Derivaciones por especialidad. Cuenta estudiantes (no textos): un estudiante con
         'DENTISTA - OFTALMÓLOGO' suma 1 en Dental y 1 en Oftalmología."""
@@ -612,6 +700,21 @@ def crear_blueprint_salud(supabase_url, headers):
             print(f"ERROR api_salud_reevaluaciones: {e}")
             return jsonify({"success": False, "message": "Error al calcular reevaluaciones"}), 500
 
+    @bp.route("/api/salud/reevaluaciones/establecimientos", methods=["GET"])
+    def api_salud_reev_establecimientos():
+        if not _autorizado():
+            return jsonify({"success": False, "message": "No autorizado"}), 403
+        try:
+            resumen = request.args.get("resumen") == "1"
+            r = _calc_reev_establecimientos(_filtrar(_evaluaciones_ligeras(), _nominas_permitidas()),
+                                            con_estudiantes=not resumen)
+            if resumen:  # solo para la alerta del inicio: los colegios con más urgencias
+                r["colegios"] = [c for c in r["colegios"] if c["alerta"]][:8]
+            return jsonify({"success": True, **r})
+        except Exception as e:
+            print(f"ERROR api_salud_reev_establecimientos: {e}")
+            return jsonify({"success": False, "message": "Error al calcular reevaluaciones por establecimiento"}), 500
+
     @bp.route("/api/salud/derivaciones", methods=["GET"])
     def api_salud_derivaciones():
         if not _autorizado():
@@ -639,6 +742,7 @@ def crear_blueprint_salud(supabase_url, headers):
             datos = {}
             if tipo in ("completo", "reevaluaciones"):
                 datos["reev"] = _calc_reev(filas, incluir_al_dia=True)
+                datos["reev_est"] = _calc_reev_establecimientos(filas)
             if tipo in ("completo", "nutricion"):
                 datos["nutri"] = _calc_nutricion(filas, request.args.get("anio"))
             if tipo in ("completo", "derivaciones"):

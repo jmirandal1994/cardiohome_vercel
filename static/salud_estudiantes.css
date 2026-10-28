@@ -150,3 +150,46 @@ details.se-que p{margin:6px 0 0;line-height:1.45}
   body.se-print .se-card{break-inside:avoid;box-shadow:none}
   body.se-print .se-kpi::after{display:none}
 }
+/* ═══ Reevaluaciones por establecimiento ═══ */
+.se-est-alerta{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:linear-gradient(135deg,#fff1f2,#fff7ed);border:1px solid #fecaca;border-radius:14px;padding:14px 16px;margin-bottom:12px}
+.se-est-alerta.ok{background:#f0fdf4;border-color:#bbf7d0}
+.se-est-alerta>i{font-size:1.5rem;color:#dc2626}
+.se-est-alerta.ok>i{color:#16a34a}
+.se-est-alerta b{display:block;font-size:.98rem;color:#13263a}
+.se-est-alerta span{font-size:.78rem;color:#5b6b7a}
+.se-ring{animation:se-ring 2.4s ease-in-out infinite;transform-origin:50% 0}
+@keyframes se-ring{0%,60%,100%{transform:rotate(0)}10%,30%{transform:rotate(14deg)}20%,40%{transform:rotate(-14deg)}}
+.se-est-nums{display:flex;gap:8px;flex-wrap:wrap}
+.se-est-nums span{background:var(--bg);color:var(--fg);border-radius:10px;padding:6px 11px;font-size:.72rem;font-weight:700;display:flex;flex-direction:column;align-items:center;min-width:92px}
+.se-est-nums span b{font-size:1.25rem;color:var(--fg);display:block}
+.se-est-proys{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.se-est-proy{text-align:left;border:1px solid #e3e9ef;background:#f6f9fb;border-radius:12px;padding:11px 13px;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:3px;transition:border-color .2s,box-shadow .2s}
+.se-est-proy:hover{border-color:#bcd3ea;box-shadow:0 6px 14px rgba(15,52,96,.08);background:#fff}
+.se-est-proy b{font-size:.9rem;color:#0f3460}
+.se-est-proy small{font-size:.74rem;color:#5b6b7a}
+.se-est-proy .n{font-size:.78rem;font-weight:800;margin-top:3px}
+.se-est-proy em{font-style:normal;font-size:.72rem;font-weight:800;color:#dc2626}
+.se-est-check{display:inline-flex;gap:6px;align-items:center;font-size:.82rem;font-weight:700;color:#0f3460;cursor:pointer}
+.se-est{border:1px solid #eef2f6;border-radius:14px;margin-bottom:8px;background:#fff;transition:border-color .2s,box-shadow .2s}
+.se-est.alerta{border-left:4px solid #ea580c}
+.se-est.on{border-color:#bcd3ea;box-shadow:0 8px 20px rgba(15,52,96,.08)}
+.se-est-row{width:100%;display:flex;align-items:center;gap:12px;padding:11px 13px;border:0;background:transparent;cursor:pointer;font-family:inherit;text-align:left}
+.se-est-logo{width:40px;height:40px;border-radius:12px;color:#fff;font-weight:800;font-size:.8rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.se-est-info{flex:1;min-width:0}
+.se-est-info b{display:block;font-size:.88rem;color:#13263a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.se-est-info small{display:block;font-size:.73rem;color:#5b6b7a;margin-top:1px}
+.se-est-stack{display:flex;height:7px;border-radius:99px;overflow:hidden;background:#eef2f6;margin-top:6px;max-width:420px}
+.se-est-badges{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:330px}
+.se-est-chev{color:#94a3b8;transition:transform .25s}
+.se-est.on .se-est-chev{transform:rotate(180deg)}
+.se-est-det{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;padding:4px 14px 14px;border-top:1px solid #eef2f6;animation:se-abre .3s ease both}
+@keyframes se-abre{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@media(max-width:1000px){.se-est-det{grid-template-columns:1fr}.se-est-badges{display:none}}
+.se-est-t{display:flex;align-items:center;gap:7px;font-size:.78rem;font-weight:800;color:#0f3460;text-transform:uppercase;letter-spacing:.03em;margin:12px 0 8px}
+.se-est-t small{background:#eef2f6;color:#475569;border-radius:99px;padding:1px 8px;font-size:.72rem}
+.se-est-venc{background:#fee2e2;color:#b91c1c;border-radius:10px;padding:7px 10px;font-size:.8rem;font-weight:800;margin-bottom:8px}
+.se-est-camp{display:flex;flex-direction:column;gap:4px}
+.se-est-camp div{display:flex;gap:8px;align-items:baseline;font-size:.8rem;color:#5b6b7a;padding:5px 9px;background:#f6f9fb;border-radius:8px}
+.se-est-camp span{min-width:62px;font-weight:700;color:#13263a}
+.se-est-camp b{color:#1c67a3}
+@media (prefers-reduced-motion: reduce){.se-ring,.se-est-det{animation:none}}

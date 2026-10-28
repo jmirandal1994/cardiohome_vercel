@@ -3,30 +3,44 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='salud_estudiantes.css') }}">
 <div id="salud-estudiantes" class="content-section" style="display:none">
   <div id="se-root" class="se-wrap">
-    <div class="se-head">
-      <div>
-        <h2 class="se-title"><i class="fa-solid fa-heart-pulse"></i> Salud y Reevaluaciones</h2>
+    <div class="se-head se-hero">
+      <div class="se-hero-bg" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div style="position:relative">
+        <div class="se-kicker"><span class="se-live"></span> Datos en tiempo real · solo lectura</div>
+        <h2 class="se-title"><i class="fa-solid fa-heart-pulse se-beat"></i> Salud y Reevaluaciones</h2>
         <p class="se-sub">
           {% if usuario == 'doctora' %}Tus estudiantes evaluados: cuándo toca reevaluarlos, su peso, talla e IMC, y el historial de cada uno.
           {% elif usuario == 'coordinadora' %}Estudiantes de tus proyectos: alertas de reevaluación, estado nutricional e historial individual.
           {% else %}Todos los proyectos: alertas de reevaluación, estado nutricional e historial individual.{% endif %}
         </p>
       </div>
-      <div class="se-filtros">
+      <div class="se-filtros" style="position:relative">
         <select id="se-f-proy" aria-label="Proyecto"><option value="">Todos los proyectos</option></select>
         <select id="se-f-col" aria-label="Colegio"><option value="">Todos los colegios</option></select>
         <select id="se-f-anio" aria-label="Año" style="display:none"><option value="">Año</option></select>
+        <div class="se-dl">
+          <button type="button" class="se-btn pri" id="se-dl-btn" onclick="SE.menuDescarga()"><i class="fa-solid fa-file-arrow-down"></i> Descargar reporte <i class="fa-solid fa-chevron-down" style="font-size:.7rem"></i></button>
+          <div class="se-dl-menu" id="se-dl-menu" role="menu">
+            <button type="button" onclick="SE.descargar('completo')"><i class="fa-solid fa-file-excel"></i><span><b>Reporte completo</b><small>Alertas, nutrición y derivaciones en un Excel</small></span></button>
+            <button type="button" onclick="SE.descargar('reevaluaciones')"><i class="fa-solid fa-bell"></i><span><b>Reevaluaciones</b><small>Todos los estudiantes con su fecha y estado</small></span></button>
+            <button type="button" onclick="SE.descargar('nutricion')"><i class="fa-solid fa-weight-scale"></i><span><b>Peso, talla e IMC</b><small>Por colegio, por edad y datos a revisar</small></span></button>
+            <button type="button" onclick="SE.descargar('derivaciones')"><i class="fa-solid fa-share-from-square"></i><span><b>Derivaciones</b><small>Por especialidad, por colegio y listado</small></span></button>
+            <button type="button" onclick="SE.imprimir()"><i class="fa-solid fa-print"></i><span><b>Imprimir o guardar PDF</b><small>La pestaña que estás viendo</small></span></button>
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="se-tabs" role="tablist">
       <button type="button" class="se-tab on" data-tab="reev"><i class="fa-solid fa-bell"></i> Alertas de reevaluación</button>
       <button type="button" class="se-tab" data-tab="nutri"><i class="fa-solid fa-weight-scale"></i> Peso, talla e IMC</button>
+      <button type="button" class="se-tab" data-tab="deriv"><i class="fa-solid fa-share-from-square"></i> Derivaciones</button>
       <button type="button" class="se-tab" data-tab="hist"><i class="fa-solid fa-clock-rotate-left"></i> Historial por estudiante</button>
     </div>
 
     <div class="se-panel on" id="se-p-reev"><div id="se-p-reev-body"></div></div>
     <div class="se-panel" id="se-p-nutri"><div id="se-p-nutri-body"></div></div>
+    <div class="se-panel" id="se-p-deriv"><div id="se-p-deriv-body"></div></div>
     <div class="se-panel" id="se-p-hist">
       <div class="se-card" style="margin-bottom:12px">
         <h4>Buscar estudiante</h4>

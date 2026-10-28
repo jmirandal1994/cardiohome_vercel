@@ -22,7 +22,7 @@ from datetime import date, datetime
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
-from flask import Blueprint, jsonify, request, session
+from flask import Blueprint, Response, jsonify, request, session
 
 ROLES_PERMITIDOS = ("admin", "coordinadora", "doctora")
 CACHE_TTL = 300          # segundos
@@ -142,6 +142,38 @@ def calidad_antropometria(altura, peso, imc):
     if imc is not None and (imc < 9 or imc > 50):
         p.append("IMC improbable")
     return p
+
+
+# Especialidades a las que se deriva. Se reconocen por palabras clave porque el
+# texto viene libre (medicina familiar usa "DENTISTA - OFTALMÓLOGO", neurología
+# escribe recomendaciones completas).
+ESPECIALIDADES_DERIVACION = [
+    ("Oftalmología", r"oftalm|[oó]ptic"),
+    ("Dental", r"dentist|odontol|dental"),
+    ("Nutrición", r"nutri"),
+    ("Otorrinolaringología", r"otorrin|lavado de o[ií]do"),
+    ("Neurología", r"neur[oó]log"),
+    ("Pediatría", r"pediatr"),
+    ("Fonoaudiología", r"fonoaud"),
+    ("Psicología", r"psic[oó]log"),
+    ("Terapia ocupacional", r"terap\w* ocupacional"),
+    ("Psicopedagogía / Ed. diferencial", r"psicopedag|educador\w* diferencial"),
+    ("Psiquiatría", r"psiquiatr"),
+    ("Endocrinología", r"endocrin"),
+    ("Broncopulmonar", r"broncopulm"),
+    ("Dermatología", r"dermat"),
+    ("Traumatología", r"traumat"),
+    ("Kinesiología", r"kinesi"),
+    ("Cardiología", r"cardi[oó]log"),
+]
+_RX_DERIV = [(n, re.compile(p, re.I)) for n, p in ESPECIALIDADES_DERIVACION]
+
+
+def especialidades_derivadas(texto):
+    if not texto or not str(texto).strip():
+        return []
+    t = str(texto)
+    return [n for n, rx in _RX_DERIV if rx.search(t)]
 
 
 # ───────────────────────── blueprint ─────────────────────────
@@ -371,147 +403,260 @@ def crear_blueprint_salud(supabase_url, headers):
             print(f"ERROR api_salud_historial: {e}")
             return jsonify({"success": False, "message": "Error al cargar el historial"}), 500
 
-    # ───────────── estadísticas de peso, talla e IMC ─────────────
+    # ───────────── cálculos (compartidos por la pantalla y los reportes) ─────────────
+    def _calc_nutricion(filas, anio_param=None):
+        noms = _nominas()
+        anios = sorted({fr.year for fr in (_fecha(f.get("fecha_relleno")) for f in filas) if fr})
+        try:
+            anio_sel = int(anio_param or (anios[-1] if anios else date.today().year))
+        except ValueError:
+            anio_sel = anios[-1] if anios else date.today().year
+        dist = {c: 0 for c in CLASES}
+        vistos_anio = set()
+        otros = {"Sin clasificar": 0, "Menor de 2 años": 0}
+        por_colegio, por_edad, por_anio = {}, {}, {}
+        revisar, con_medidas = [], 0
+        for f in filas:
+            altura, peso, imc = _num(f.get("altura")), _num(f.get("peso")), _num(f.get("imc"))
+            if altura is None and peso is None and imc is None:
+                continue
+            con_medidas += 1
+            problemas = calidad_antropometria(altura, peso, imc)
+            n = noms.get(f.get("nomina_id")) or {}
+            col = (n.get("nombre_colegio") or "Sin colegio").strip()
+            if problemas:
+                revisar.append({"nombre": f.get("nombre"), "rut": f.get("rut"), "colegio": col,
+                                "altura": altura, "peso": peso, "imc": imc, "problemas": problemas})
+                continue
+            c = normalizar_clasificacion(f.get("clasificacion_imc"), imc)
+            fr, nac = _fecha(f.get("fecha_relleno")), _fecha(f.get("fecha_nacimiento"))
+            if fr:
+                pa = por_anio.setdefault(fr.year, {"anio": fr.year, "total": 0, **{k: 0 for k in CLASES}})
+                pa["total"] += 1
+                if c in CLASES:
+                    pa[c] += 1
+            # Lo que sigue describe solo el año elegido y una medición por estudiante
+            if not fr or fr.year != anio_sel:
+                continue
+            clave_est = normalizar_rut(f.get("rut")) or f["id"]
+            if clave_est in vistos_anio:
+                continue
+            vistos_anio.add(clave_est)
+            if c in dist:
+                dist[c] += 1
+            elif c in otros:
+                otros[c] += 1
+            pc = por_colegio.setdefault(col, {"colegio": col, "total": 0, **{k: 0 for k in CLASES}})
+            pc["total"] += 1
+            if c in CLASES:
+                pc[c] += 1
+            ed = _edad_anios(nac, fr)
+            sexo = (f.get("sexo") or "").strip().upper()[:1]  # "F"/"M"; otros valores no se grafican
+            if ed is not None and imc is not None and 2 <= ed <= 18:
+                pe = por_edad.setdefault(ed, {"edad": ed, "F": [], "M": [], "talla_F": [], "talla_M": [],
+                                               "peso_F": [], "peso_M": []})
+                if sexo in ("F", "M"):
+                    pe[sexo].append(imc)
+                    if altura:
+                        pe["talla_" + sexo].append(altura)
+                    if peso:
+                        pe["peso_" + sexo].append(peso)
+
+        def prom(xs):
+            return round(sum(xs) / len(xs), 1) if xs else None
+
+        edades = [{"edad": e["edad"],
+                   "imc_F": prom(e["F"]), "imc_M": prom(e["M"]),
+                   "talla_F": prom(e["talla_F"]), "talla_M": prom(e["talla_M"]),
+                   "peso_F": prom(e["peso_F"]), "peso_M": prom(e["peso_M"]),
+                   "n": len(e["F"]) + len(e["M"])} for e in sorted(por_edad.values(), key=lambda x: x["edad"])]
+        colegios = []
+        for pc in por_colegio.values():
+            clas = sum(pc[k] for k in CLASES)
+            pc["exceso_pct"] = round(100 * (pc["Sobrepeso"] + pc["Obesidad"]) / clas, 1) if clas else None
+            pc["bajo_pct"] = round(100 * pc["Bajo peso"] / clas, 1) if clas else None
+            colegios.append(pc)
+        colegios.sort(key=lambda x: -(x["exceso_pct"] or 0))
+        clasificados = sum(dist.values())
+        return {
+            "anio": anio_sel, "anios": anios,
+            "evaluados": len(filas), "con_medidas": con_medidas, "clasificados": clasificados,
+            "distribucion": dist, "otros": otros,
+            "exceso_pct": round(100 * (dist["Sobrepeso"] + dist["Obesidad"]) / clasificados, 1) if clasificados else None,
+            "colegios": colegios, "por_edad": edades,
+            "por_anio": sorted(por_anio.values(), key=lambda x: x["anio"]),
+            "a_revisar": revisar, "a_revisar_total": len(revisar),
+        }
+
+    def _calc_reev(filas, incluir_al_dia=False):
+        noms = _nominas()
+        hoy = date.today()
+        # Una alerta por estudiante y especialidad: la evaluación más reciente manda.
+        ultima = {}
+        for f in filas:
+            n = noms.get(f.get("nomina_id")) or {}
+            esp = _especialidad(n)
+            clave = (normalizar_rut(f.get("rut")) or f["id"], esp)
+            fr = _fecha(f.get("fecha_relleno"))
+            prev = ultima.get(clave)
+            if not prev or (fr and (prev["_fr"] is None or fr > prev["_fr"])):
+                ultima[clave] = {**f, "_fr": fr, "_esp": esp, "_col": (n.get("nombre_colegio") or "").strip()}
+        conteo = {k: 0 for k in ("vencida", "urgente", "proxima", "este_anio", "en_plazo", "fecha_a_revisar", "sin_fecha")}
+        por_mes, lista = {}, []
+        for f in ultima.values():
+            freev = _fecha(f.get("fecha_reevaluacion"))
+            est, dias = estado_reevaluacion(freev, hoy)
+            conteo[est] += 1
+            if freev and est not in ("fecha_a_revisar", "sin_fecha"):
+                k = freev.strftime("%Y-%m")
+                por_mes[k] = por_mes.get(k, 0) + 1
+            if incluir_al_dia or est in ("vencida", "urgente", "proxima", "este_anio", "fecha_a_revisar"):
+                fr = f["_fr"]
+                lista.append({
+                    "nombre": f.get("nombre"), "rut": f.get("rut"), "colegio": f["_col"] or None,
+                    "especialidad": f["_esp"], "fecha_evaluacion": fr.isoformat() if fr else None,
+                    "fecha_reevaluacion": freev.isoformat() if freev else None,
+                    "estado": est, "dias": dias,
+                    "progreso": (max(0, min(100, round(100 * (hoy - fr).days / max(1, (freev - fr).days))))
+                                 if fr and freev and freev > fr and est != "fecha_a_revisar" else None),
+                })
+        orden = {"vencida": 0, "urgente": 1, "proxima": 2, "este_anio": 3, "fecha_a_revisar": 4, "en_plazo": 5, "sin_fecha": 6}
+        lista.sort(key=lambda x: (orden[x["estado"]], x["dias"] if x["dias"] is not None else 99999))
+        return {"hoy": hoy.isoformat(), "total_estudiantes": len(ultima), "conteo": conteo,
+                "por_mes": [{"mes": k, "n": v} for k, v in sorted(por_mes.items())],
+                "lista": lista, "lista_total": len(lista)}
+
+    def _calc_derivaciones(filas):
+        """Derivaciones por especialidad. Cuenta estudiantes (no textos): un estudiante con
+        'DENTISTA - OFTALMÓLOGO' suma 1 en Dental y 1 en Oftalmología."""
+        noms = _nominas()
+        evaluados = set()
+        por_esp, por_colegio, por_origen, por_anio = {}, {}, {}, {}
+        derivados, lista = set(), []
+        for f in filas:
+            clave = normalizar_rut(f.get("rut")) or f["id"]
+            evaluados.add(clave)
+            esps = especialidades_derivadas(f.get("derivaciones"))
+            if not esps:
+                continue
+            derivados.add(clave)
+            n = noms.get(f.get("nomina_id")) or {}
+            col = (n.get("nombre_colegio") or "Sin colegio").strip()
+            origen = _especialidad(n)
+            fr = _fecha(f.get("fecha_relleno"))
+            for e in esps:
+                por_esp.setdefault(e, set()).add(clave)
+                pc = por_colegio.setdefault(col, {"colegio": col, "derivados": set(), **{}})
+                pc.setdefault(e, set()).add(clave)
+                pc["derivados"].add(clave)
+                por_origen.setdefault(origen, {}).setdefault(e, set()).add(clave)
+                if fr:
+                    por_anio.setdefault(fr.year, {}).setdefault(e, set()).add(clave)
+            lista.append({"nombre": f.get("nombre"), "rut": f.get("rut"), "colegio": col, "origen": origen,
+                          "fecha": fr.isoformat() if fr else None, "especialidades": esps})
+        ranking = sorted(((e, len(v)) for e, v in por_esp.items()), key=lambda x: -x[1])
+        orden_esp = [e for e, _ in ranking]
+        tot_eval = len(evaluados)
+        colegios = []
+        for pc in por_colegio.values():
+            fila = {"colegio": pc["colegio"], "derivados": len(pc["derivados"])}
+            for e in orden_esp:
+                fila[e] = len(pc.get(e, ()))
+            colegios.append(fila)
+        colegios.sort(key=lambda x: -x["derivados"])
+        lista.sort(key=lambda x: (x["colegio"] or "", x["nombre"] or ""))
+        return {
+            "evaluados": tot_eval, "derivados": len(derivados),
+            "derivados_pct": round(100 * len(derivados) / tot_eval, 1) if tot_eval else None,
+            "especialidades": [{"especialidad": e, "estudiantes": n,
+                                "pct": round(100 * n / tot_eval, 1) if tot_eval else None} for e, n in ranking],
+            "colegios": colegios,
+            "por_origen": {o: {e: len(v) for e, v in d.items()} for o, d in por_origen.items()},
+            "por_anio": [{"anio": a, **{e: len(v) for e, v in d.items()}} for a, d in sorted(por_anio.items())],
+            "lista": lista,
+        }
+
+    def _evaluaciones_derivaciones():
+        return _cacheado("deriv", lambda: _todas_paginas(
+            "estudiantes_nomina?select=id,nomina_id,nombre,rut,fecha_relleno,derivaciones"
+            "&fecha_relleno=not.is.null&derivaciones=not.is.null&order=id.asc"))
+
+    def _evaluados_para_derivaciones():
+        """Evaluaciones (con y sin derivación) para calcular porcentajes."""
+        ligeras = _filtrar(_evaluaciones_ligeras(), _nominas_permitidas())
+        con_texto = {f["id"]: f.get("derivaciones") for f in _filtrar(_evaluaciones_derivaciones(), _nominas_permitidas())}
+        return [{**f, "derivaciones": con_texto.get(f["id"])} for f in ligeras]
+
+    # ───────────── rutas de la pantalla ─────────────
     @bp.route("/api/salud/nutricion", methods=["GET"])
     def api_salud_nutricion():
         if not _autorizado():
             return jsonify({"success": False, "message": "No autorizado"}), 403
         try:
-            filas = _filtrar(_evaluaciones_ligeras(), _nominas_permitidas())
-            noms = _nominas()
-            anios = sorted({fr.year for fr in (_fecha(f.get("fecha_relleno")) for f in filas) if fr})
-            try:
-                anio_sel = int(request.args.get("anio") or (anios[-1] if anios else date.today().year))
-            except ValueError:
-                anio_sel = anios[-1] if anios else date.today().year
-            dist = {c: 0 for c in CLASES}
-            vistos_anio = set()
-            otros = {"Sin clasificar": 0, "Menor de 2 años": 0}
-            por_colegio, por_edad, por_anio = {}, {}, {}
-            revisar, con_medidas = [], 0
-            for f in filas:
-                altura, peso, imc = _num(f.get("altura")), _num(f.get("peso")), _num(f.get("imc"))
-                if altura is None and peso is None and imc is None:
-                    continue
-                con_medidas += 1
-                problemas = calidad_antropometria(altura, peso, imc)
-                n = noms.get(f.get("nomina_id")) or {}
-                col = (n.get("nombre_colegio") or "Sin colegio").strip()
-                if problemas:
-                    if len(revisar) < 300:
-                        revisar.append({"nombre": f.get("nombre"), "rut": f.get("rut"), "colegio": col,
-                                        "altura": altura, "peso": peso, "imc": imc, "problemas": problemas})
-                    continue
-                c = normalizar_clasificacion(f.get("clasificacion_imc"), imc)
-                fr, nac = _fecha(f.get("fecha_relleno")), _fecha(f.get("fecha_nacimiento"))
-                if fr:
-                    pa = por_anio.setdefault(fr.year, {"anio": fr.year, "total": 0, **{k: 0 for k in CLASES}})
-                    pa["total"] += 1
-                    if c in CLASES:
-                        pa[c] += 1
-                # Lo que sigue describe solo el año elegido y una medición por estudiante
-                if not fr or fr.year != anio_sel:
-                    continue
-                clave_est = normalizar_rut(f.get("rut")) or f["id"]
-                if clave_est in vistos_anio:
-                    continue
-                vistos_anio.add(clave_est)
-                if c in dist:
-                    dist[c] += 1
-                elif c in otros:
-                    otros[c] += 1
-                pc = por_colegio.setdefault(col, {"colegio": col, "total": 0, **{k: 0 for k in CLASES}})
-                pc["total"] += 1
-                if c in CLASES:
-                    pc[c] += 1
-                ed = _edad_anios(nac, fr)
-                sexo = (f.get("sexo") or "").strip().upper()[:1]  # "F"/"M"; otros valores no se grafican
-                if ed is not None and imc is not None and 2 <= ed <= 18:
-                    pe = por_edad.setdefault(ed, {"edad": ed, "F": [], "M": [], "talla_F": [], "talla_M": [],
-                                                   "peso_F": [], "peso_M": []})
-                    if sexo in ("F", "M"):
-                        pe[sexo].append(imc)
-                        if altura:
-                            pe["talla_" + sexo].append(altura)
-                        if peso:
-                            pe["peso_" + sexo].append(peso)
-
-            def prom(xs):
-                return round(sum(xs) / len(xs), 1) if xs else None
-
-            edades = [{"edad": e["edad"],
-                       "imc_F": prom(e["F"]), "imc_M": prom(e["M"]),
-                       "talla_F": prom(e["talla_F"]), "talla_M": prom(e["talla_M"]),
-                       "peso_F": prom(e["peso_F"]), "peso_M": prom(e["peso_M"]),
-                       "n": len(e["F"]) + len(e["M"])} for e in sorted(por_edad.values(), key=lambda x: x["edad"])]
-            colegios = []
-            for pc in por_colegio.values():
-                clas = sum(pc[k] for k in CLASES)
-                pc["exceso_pct"] = round(100 * (pc["Sobrepeso"] + pc["Obesidad"]) / clas, 1) if clas else None
-                pc["bajo_pct"] = round(100 * pc["Bajo peso"] / clas, 1) if clas else None
-                colegios.append(pc)
-            colegios.sort(key=lambda x: -(x["exceso_pct"] or 0))
-            clasificados = sum(dist.values())
-            return jsonify({
-                "success": True,
-                "anio": anio_sel, "anios": anios,
-                "evaluados": len(filas), "con_medidas": con_medidas, "clasificados": clasificados,
-                "distribucion": dist, "otros": otros,
-                "exceso_pct": round(100 * (dist["Sobrepeso"] + dist["Obesidad"]) / clasificados, 1) if clasificados else None,
-                "colegios": colegios, "por_edad": edades,
-                "por_anio": sorted(por_anio.values(), key=lambda x: x["anio"]),
-                "a_revisar": revisar, "a_revisar_total": len(revisar),
-            })
+            r = _calc_nutricion(_filtrar(_evaluaciones_ligeras(), _nominas_permitidas()), request.args.get("anio"))
+            r["a_revisar"] = r["a_revisar"][:300]
+            return jsonify({"success": True, **r})
         except Exception as e:
             print(f"ERROR api_salud_nutricion: {e}")
             return jsonify({"success": False, "message": "Error al calcular estadísticas"}), 500
 
-    # ───────────── alertas de reevaluación ─────────────
     @bp.route("/api/salud/reevaluaciones", methods=["GET"])
     def api_salud_reevaluaciones():
         if not _autorizado():
             return jsonify({"success": False, "message": "No autorizado"}), 403
         try:
-            filas = _filtrar(_evaluaciones_ligeras(), _nominas_permitidas())
-            noms = _nominas()
-            hoy = date.today()
-            # Una alerta por estudiante y especialidad: la evaluación más reciente manda.
-            ultima = {}
-            for f in filas:
-                n = noms.get(f.get("nomina_id")) or {}
-                esp = _especialidad(n)
-                clave = (normalizar_rut(f.get("rut")) or f["id"], esp)
-                fr = _fecha(f.get("fecha_relleno"))
-                prev = ultima.get(clave)
-                if not prev or (fr and (prev["_fr"] is None or fr > prev["_fr"])):
-                    ultima[clave] = {**f, "_fr": fr, "_esp": esp, "_col": (n.get("nombre_colegio") or "").strip()}
-            conteo = {k: 0 for k in ("vencida", "urgente", "proxima", "este_anio", "en_plazo", "fecha_a_revisar", "sin_fecha")}
-            por_mes, lista = {}, []
-            for f in ultima.values():
-                freev = _fecha(f.get("fecha_reevaluacion"))
-                est, dias = estado_reevaluacion(freev, hoy)
-                conteo[est] += 1
-                if freev and est not in ("fecha_a_revisar", "sin_fecha"):
-                    k = freev.strftime("%Y-%m")
-                    por_mes[k] = por_mes.get(k, 0) + 1
-                if est in ("vencida", "urgente", "proxima", "este_anio", "fecha_a_revisar"):
-                    fr = f["_fr"]
-                    lista.append({
-                        "nombre": f.get("nombre"), "rut": f.get("rut"), "colegio": f["_col"] or None,
-                        "especialidad": f["_esp"], "fecha_evaluacion": fr.isoformat() if fr else None,
-                        "fecha_reevaluacion": freev.isoformat() if freev else None,
-                        "estado": est, "dias": dias,
-                        "progreso": (max(0, min(100, round(100 * (hoy - fr).days / max(1, (freev - fr).days))))
-                                     if fr and freev and freev > fr and est != "fecha_a_revisar" else None),
-                    })
-            orden = {"vencida": 0, "urgente": 1, "proxima": 2, "este_anio": 3, "fecha_a_revisar": 4}
-            lista.sort(key=lambda x: (orden[x["estado"]], x["dias"] if x["dias"] is not None else 99999))
-            meses = sorted(por_mes.items())
-            return jsonify({"success": True, "hoy": hoy.isoformat(), "total_estudiantes": len(ultima),
-                            "conteo": conteo, "por_mes": [{"mes": k, "n": v} for k, v in meses],
-                            "lista": lista[:2000], "lista_total": len(lista)})
+            r = _calc_reev(_filtrar(_evaluaciones_ligeras(), _nominas_permitidas()))
+            r["lista"] = r["lista"][:2000]
+            return jsonify({"success": True, **r})
         except Exception as e:
             print(f"ERROR api_salud_reevaluaciones: {e}")
             return jsonify({"success": False, "message": "Error al calcular reevaluaciones"}), 500
+
+    @bp.route("/api/salud/derivaciones", methods=["GET"])
+    def api_salud_derivaciones():
+        if not _autorizado():
+            return jsonify({"success": False, "message": "No autorizado"}), 403
+        try:
+            r = _calc_derivaciones(_evaluados_para_derivaciones())
+            r["colegios"] = r["colegios"][:60]
+            r.pop("lista", None)
+            return jsonify({"success": True, **r})
+        except Exception as e:
+            print(f"ERROR api_salud_derivaciones: {e}")
+            return jsonify({"success": False, "message": "Error al calcular derivaciones"}), 500
+
+    # ───────────── reportes descargables (Excel) ─────────────
+    @bp.route("/api/salud/reporte", methods=["GET"])
+    def api_salud_reporte():
+        if not _autorizado():
+            return jsonify({"success": False, "message": "No autorizado"}), 403
+        tipo = request.args.get("tipo", "completo")
+        if tipo not in ("completo", "reevaluaciones", "nutricion", "derivaciones"):
+            return jsonify({"success": False, "message": "Tipo de reporte no válido"}), 400
+        try:
+            from reportes_salud import armar_excel
+            filas = _filtrar(_evaluaciones_ligeras(), _nominas_permitidas())
+            datos = {}
+            if tipo in ("completo", "reevaluaciones"):
+                datos["reev"] = _calc_reev(filas, incluir_al_dia=True)
+            if tipo in ("completo", "nutricion"):
+                datos["nutri"] = _calc_nutricion(filas, request.args.get("anio"))
+            if tipo in ("completo", "derivaciones"):
+                datos["deriv"] = _calc_derivaciones(_evaluados_para_derivaciones())
+            proys = _proyectos()
+            filtros = {
+                "Generado por": session.get("nombre") or session.get("usuario"),
+                "Perfil": {"admin": "Administrador", "coordinadora": "Coordinadora general", "doctora": "Doctora"}.get(session.get("usuario"), ""),
+                "Proyecto": proys.get(request.args.get("proyecto_id")) or "Todos",
+                "Colegio": request.args.get("colegio") or "Todos",
+            }
+            contenido = armar_excel(tipo, datos, filtros)
+            nombre = f"Reporte_salud_{tipo}_{date.today().isoformat()}.xlsx"
+            return Response(contenido,
+                            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            headers={"Content-Disposition": f'attachment; filename="{nombre}"'})
+        except Exception as e:
+            print(f"ERROR api_salud_reporte: {e}")
+            return jsonify({"success": False, "message": "No se pudo generar el reporte"}), 500
 
     return bp

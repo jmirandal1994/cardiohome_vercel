@@ -29,6 +29,28 @@
     if (!r.ok || j.success === false) throw new Error(j.message || `Error ${r.status}`);
     return j;
   }
+  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Cuenta de 0 al valor final en los números grandes (.val) y hace aparecer las tarjetas en cascada
+  function animar(cont) {
+    if (!cont) return;
+    cont.querySelectorAll(".se-card, .se-help").forEach((el, i) => { el.classList.add("se-in"); el.style.animationDelay = `${Math.min(i, 14) * 45}ms`; });
+    if (reduceMotion) return;
+    cont.querySelectorAll(".val").forEach((el) => {
+      const txt = el.textContent.trim();
+      const m = txt.match(/^([\d.]+)(,\d+)?(%?)$/);
+      if (!m) return;
+      const fin = parseFloat(m[1].replace(/\./g, "") + (m[2] ? "." + m[2].slice(1) : ""));
+      const dec = m[2] ? m[2].length - 1 : 0, suf = m[3] || "";
+      if (!isFinite(fin) || fin === 0) return;
+      const t0 = performance.now(), dur = 900;
+      const paso = (t) => {
+        const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+        el.textContent = fmtN(fin * e, dec) + suf;
+        if (k < 1) requestAnimationFrame(paso); else el.textContent = txt;
+      };
+      requestAnimationFrame(paso);
+    });
+  }
   const loading = (txt = "Cargando…") => `<div class="se-load"><span class="se-spin"></span>${esc(txt)}</div>`;
   const empty = (txt, icon = "fa-circle-info") => `<div class="se-empty"><i class="fa-solid ${icon}"></i>${txt}</div>`;
   function ensureChart() {
@@ -182,6 +204,7 @@
     try {
       const j = await api(`/api/salud/historial?rut=${encodeURIComponent(rut)}`);
       cont.innerHTML = htmlHistorial(j, prefijo);
+      animar(cont);
       graficosHistorial(j, prefijo);
     } catch (e) {
       cont.innerHTML = empty(esc(e.message), "fa-lock");
@@ -215,7 +238,7 @@
 
   // ───────── SECCIÓN DEL PANEL ─────────
   let iniciado = false;
-  const estado = { tab: "reev", filtroEst: null, buscaReev: "", pag: 0, reev: null, nutri: null };
+  const estado = { tab: "reev", filtroEst: null, buscaReev: "", pag: 0, reev: null, nutri: null, deriv: null };
   const $ = (id) => document.getElementById(id);
   const qsFiltros = () => {
     const p = new URLSearchParams();
@@ -231,7 +254,7 @@
       iniciado = true;
       raiz.querySelectorAll(".se-tab").forEach((b) => b.addEventListener("click", () => SE.tab(b.dataset.tab)));
       $("se-buscar").addEventListener("input", debounce(buscar, 350));
-      ["se-f-proy", "se-f-col"].forEach((id) => $(id).addEventListener("change", () => { estado.reev = null; estado.nutri = null; SE.tab(estado.tab); }));
+      ["se-f-proy", "se-f-col"].forEach((id) => $(id).addEventListener("change", () => { estado.reev = null; estado.nutri = null; estado.deriv = null; SE.tab(estado.tab); }));
       $("se-f-anio").addEventListener("change", () => { estado.nutri = null; SE.tab("nutri"); });
       try {
         const f = await api("/api/salud/filtros");
@@ -249,7 +272,42 @@
     $("se-f-anio").style.display = t === "nutri" ? "" : "none";
     if (t === "reev") cargarReev();
     if (t === "nutri") cargarNutri();
+    if (t === "deriv") cargarDeriv();
   };
+
+  // ── Descarga de reportes ──
+  SE.descargar = function (tipo) {
+    const p = qsFiltros();
+    p.set("tipo", tipo);
+    if ($("se-f-anio") && $("se-f-anio").value) p.set("anio", $("se-f-anio").value);
+    const btn = $("se-dl-btn");
+    const txt = btn ? btn.innerHTML : "";
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="se-spin" style="width:14px;height:14px;border-width:2px"></span> Generando…'; }
+    fetch(`/api/salud/reporte?${p}`, { credentials: "same-origin" })
+      .then(async (r) => {
+        if (!r.ok) { let m = "No se pudo generar el reporte"; try { m = (await r.json()).message || m; } catch (e) { /* */ } throw new Error(m); }
+        const blob = await r.blob();
+        const cd = r.headers.get("Content-Disposition") || "";
+        const nombre = (cd.match(/filename="([^"]+)"/) || [])[1] || `Reporte_salud_${tipo}.xlsx`;
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click();
+        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+      })
+      .catch((e) => alertaSuave(e.message))
+      .finally(() => { if (btn) { btn.disabled = false; btn.innerHTML = txt; } SE.menuDescarga(false); });
+  };
+  SE.menuDescarga = function (abrir) {
+    const m = $("se-dl-menu");
+    if (!m) return;
+    m.classList.toggle("on", abrir === undefined ? !m.classList.contains("on") : abrir);
+  };
+  SE.imprimir = function () { SE.menuDescarga(false); document.body.classList.add("se-print"); setTimeout(() => { window.print(); document.body.classList.remove("se-print"); }, 120); };
+  function alertaSuave(msg) {
+    let t = $("se-toast");
+    if (!t) { t = document.createElement("div"); t.id = "se-toast"; t.className = "se-toast"; document.body.appendChild(t); }
+    t.textContent = msg; t.classList.add("on"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("on"), 4000);
+  }
+  document.addEventListener("click", (ev) => { if (!ev.target.closest || !ev.target.closest(".se-dl")) SE.menuDescarga(false); });
 
   function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
@@ -305,6 +363,7 @@
         <input class="se-input" id="se-reev-q" placeholder="Filtrar por nombre, RUT o colegio" value="${esc(estado.buscaReev)}"></div>
         <div id="se-reev-tabla"></div></div>`;
     box.innerHTML = h;
+    animar(box);
     box.querySelectorAll("[data-est]").forEach((el) => el.addEventListener("click", () => SE.filtroEst(el.dataset.est === estado.filtroEst ? null : el.dataset.est)));
     $("se-reev-q").addEventListener("input", debounce(() => { estado.buscaReev = $("se-reev-q").value; estado.pag = 0; tablaReev(); }, 250));
     tablaReev();
@@ -389,6 +448,7 @@
       ${j.a_revisar.slice(0, estado.verRevisar ? 300 : 15).map((r) => `<tr class="link" data-rut="${esc(r.rut)}"><td><b>${esc(r.nombre)}</b><div style="font-size:.74rem;color:#5b6b7a">${esc(fmtRut(r.rut))}</div></td><td>${esc(r.colegio)}</td><td>${fmtN(r.altura, 2)}</td><td>${fmtN(r.peso, 1)}</td><td>${fmtN(r.imc, 1)}</td><td class="se-warn">${esc(r.problemas.join(", "))}</td></tr>`).join("")}
       </tbody></table></div>${j.a_revisar.length > 15 ? `<div class="se-pag"><button class="se-btn" onclick="SE.toggleRevisar()">${estado.verRevisar ? "Ver menos" : `Ver los ${fmtN(j.a_revisar.length)}`}</button></div>` : ""}` : empty("No encontramos mediciones sospechosas.", "fa-circle-check")}</div>`;
     box.innerHTML = h;
+    animar(box);
     box.querySelectorAll("tr.link").forEach((tr) => tr.addEventListener("click", () => SE.verEstudiante(tr.dataset.rut)));
     ensureChart().then(() => {
       const ks = ["Normal", "Sobrepeso", "Obesidad", "Bajo peso"];
@@ -418,6 +478,46 @@
   }
 
   SE.toggleRevisar = function () { estado.verRevisar = !estado.verRevisar; pintarNutri(); };
+
+  // ── Derivaciones por especialidad ──
+  const COL_ESP = ["#1c67a3", "#0f766e", "#d97706", "#7c3aed", "#db2777", "#0891b2", "#65a30d", "#ea580c", "#4f46e5", "#be123c", "#0d9488", "#a16207", "#6d28d9", "#15803d", "#9333ea", "#b91c1c", "#475569"];
+  async function cargarDeriv() {
+    const box = $("se-p-deriv-body");
+    if (estado.deriv) return pintarDeriv();
+    box.innerHTML = loading("Contando derivaciones por especialidad…");
+    try { estado.deriv = await api(`/api/salud/derivaciones?${qsFiltros()}`); pintarDeriv(); }
+    catch (e) { box.innerHTML = empty(esc(e.message), "fa-circle-exclamation"); }
+  }
+  function pintarDeriv() {
+    const j = estado.deriv, box = $("se-p-deriv-body");
+    if (!j.derivados) { box.innerHTML = empty("No hay derivaciones registradas con estos filtros.", "fa-share-from-square"); return; }
+    const esps = j.especialidades, top = esps.slice(0, 4);
+    const colEsp = {}; esps.forEach((e, i) => { colEsp[e.especialidad] = COL_ESP[i % COL_ESP.length]; });
+    let h = `<div class="se-help"><i class="fa-solid fa-share-from-square"></i><div>De <b>${fmtN(j.evaluados)} estudiantes evaluados</b>, <b>${fmtN(j.derivados)} (${fmtN(j.derivados_pct, 1)}%)</b> fueron derivados a al menos una especialidad. Un estudiante derivado a dentista y oftalmólogo cuenta en ambas.</div></div>
+      <div class="se-grid se-g4" style="margin-bottom:12px">${top.map((e) => `<div class="se-card se-kpi" style="--c:${colEsp[e.especialidad]}"><div class="lab">${esc(e.especialidad)}</div><div class="val" style="color:${colEsp[e.especialidad]}">${fmtN(e.estudiantes)}</div><div class="hint">${fmtN(e.pct, 1)}% de los evaluados</div></div>`).join("")}</div>
+      <div class="se-grid se-g2" style="margin-bottom:12px">
+        <div class="se-card"><h4>Estudiantes derivados por especialidad</h4><p class="se-cap">cantidad de estudiantes</p><div class="se-chart" style="height:${Math.max(250, esps.length * 26 + 40)}px"><canvas id="se-c-deriv"></canvas></div>
+          <details class="se-que"><summary>¿Para qué sirve?</summary><p>Muestra qué especialistas se necesitan más. Sirve para coordinar operativos (por ejemplo, oftalmología o dental) y para gestionar horas con la red de salud.</p></details></div>
+        <div class="se-card"><h4>Según quién derivó</h4><p class="se-cap">medicina familiar y neurología</p><div class="se-chart" style="height:${Math.max(250, esps.length * 26 + 40)}px"><canvas id="se-c-origen"></canvas></div>
+          <details class="se-que"><summary>¿Cómo leerlo?</summary><p>Medicina familiar deriva sobre todo a oftalmología, dental, nutrición y otorrino. Neurología suele recomendar apoyos como fonoaudiología, psicología o terapia ocupacional.</p></details></div>
+      </div>
+      <div class="se-card"><h4>Derivaciones por colegio</h4><p class="se-cap">estudiantes derivados a cada especialidad · ordenado por total</p>
+        <div class="se-tw"><table class="se-table"><thead><tr><th>Colegio</th><th>Derivados</th>${esps.slice(0, 8).map((e) => `<th>${esc(e.especialidad)}</th>`).join("")}</tr></thead><tbody>
+        ${j.colegios.slice(0, 25).map((c) => `<tr><td><b>${esc(c.colegio)}</b></td><td><b>${fmtN(c.derivados)}</b></td>${esps.slice(0, 8).map((e) => { const v = c[e.especialidad] || 0, mx = Math.max(1, c.derivados); return `<td><div style="display:flex;align-items:center;gap:6px"><span style="min-width:28px">${fmtN(v)}</span><div class="se-bar" style="min-width:50px;flex:1"><span style="width:${Math.round(100 * v / mx)}%;--fg:${colEsp[e.especialidad]}"></span></div></div></td>`; }).join("")}</tr>`).join("")}
+        </tbody></table></div>${j.colegios.length > 25 ? `<div class="se-pag">Se muestran 25 de ${fmtN(j.colegios.length)} colegios. Descarga el reporte para ver todos.</div>` : ""}</div>`;
+    box.innerHTML = h;
+    animar(box);
+    ensureChart().then(() => {
+      chart("se-c-deriv", { type: "bar", data: { labels: esps.map((e) => e.especialidad), datasets: [{ data: esps.map((e) => e.estudiantes), backgroundColor: esps.map((e) => colEsp[e.especialidad]), borderRadius: 5 }] },
+        options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${fmtN(c.parsed.x)} estudiantes (${fmtN(esps[c.dataIndex].pct, 1)}%)` } } },
+          scales: { x: { grid: { color: "#eef2f6" } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } } } });
+      const origenes = Object.keys(j.por_origen || {});
+      const colO = { "Medicina familiar": "#1c67a3", "Neurología": "#7c3aed", "Otra": "#94a3b8" };
+      chart("se-c-origen", { type: "bar", data: { labels: esps.map((e) => e.especialidad), datasets: origenes.map((o) => ({ label: o, data: esps.map((e) => (j.por_origen[o] || {})[e.especialidad] || 0), backgroundColor: colO[o] || "#94a3b8", borderRadius: 4 })) },
+        options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { boxWidth: 12 } } },
+          scales: { x: { stacked: true, grid: { color: "#eef2f6" } }, y: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } } } } });
+    }).catch(() => {});
+  }
 
   // Iniciar cuando se abre la sección desde el menú
   document.addEventListener("click", (ev) => {

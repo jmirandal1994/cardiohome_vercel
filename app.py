@@ -154,6 +154,17 @@ def get_supabase_count(filter_params=""):
         url = f"{url}&{filter_params}"
 
     try:
+        # Rápido: pedir solo 1 fila; el total viene en Content-Range (Prefer: count=exact).
+        # Antes se descargaban hasta 1.000 ids por cada conteo.
+        try:
+            res_rapido = requests.get(f"{url}&limit=1", headers=SUPABASE_SERVICE_HEADERS)
+            if res_rapido.ok:
+                cr = res_rapido.headers.get("Content-Range") or ""
+                if '/' in cr and cr.split('/')[-1].isdigit():
+                    return int(cr.split('/')[-1])
+        except Exception:
+            pass
+
         # Usamos SERVICE headers (tienes Prefer: count=exact ahí)
         res = requests.get(url, headers=SUPABASE_SERVICE_HEADERS)
         res.raise_for_status()
@@ -5387,7 +5398,28 @@ def api_coordinadora_stats():
         nomina_ids   = [n['id'] for n in nominas]
         nominas_set  = set(nomina_ids)
 
-        # ── 2. Conteos globales usando get_supabase_count ──
+        # ── 2. Conteos por nómina en pocas consultas (antes: varias por nómina) ──
+        from consultas_rapidas import cargar_filas_nominas
+        _filas = cargar_filas_nominas(
+            SUPABASE_URL, SUPABASE_SERVICE_HEADERS, nomina_ids,
+            select="nomina_id,evaluado_flag,fecha_evaluacion",
+            filtro="estado_asistencia=in.(activo,extra)")
+        _conteo = {nid: {"t": 0, "c": 0, "fechas": []} for nid in nomina_ids}
+        for _f in _filas:
+            _d = _conteo.get(_f.get('nomina_id'))
+            if _d is None:
+                continue
+            _d["t"] += 1
+            if _f.get('evaluado_flag') is True:
+                _d["c"] += 1
+                _d["fechas"].append(_f)
+
+        def _cnt_total(nid):
+            return _conteo.get(nid, {}).get("t", 0)
+
+        def _cnt_eval(nid):
+            return _conteo.get(nid, {}).get("c", 0)
+
         total_global     = 0
         completed_global = 0
         neuro_total      = 0
@@ -5400,8 +5432,8 @@ def api_coordinadora_stats():
             ftype = nomina.get('form_type', '') or ''
             tipo  = (nomina.get('tipo_nomina') or '').lower()
 
-            t = get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)")
-            c = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
+            t = _cnt_total(nid)
+            c = _cnt_eval(nid)
 
             total_global     += t
             completed_global += c
@@ -5437,17 +5469,7 @@ def api_coordinadora_stats():
             else:
                 tipo_key = 'otro'
             try:
-                url_f = (
-                    f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                    f"?nomina_id=eq.{nid}"
-                    f"&evaluado_flag=eq.true"
-                    f"&estado_asistencia=in.(activo,extra)"
-                    f"&select=fecha_evaluacion"
-                )
-                res_f = requests.get(url_f, headers=SUPABASE_SERVICE_HEADERS)
-                if not res_f.ok:
-                    continue
-                for row in res_f.json():
+                for row in _conteo.get(nid, {}).get("fechas", []):
                     fe = (row.get('fecha_evaluacion') or '').strip()
                     if not fe:
                         continue
@@ -5496,8 +5518,8 @@ def api_coordinadora_stats():
             doctoras_info = {d['id']: d for d in (res_docs.json() if res_docs.ok else [])}
 
             for did, nids in doctoras_nominas.items():
-                doc_total = sum(get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)") for nid in nids)
-                doc_comp  = sum(get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)") for nid in nids)
+                doc_total = sum(_cnt_total(nid) for nid in nids)
+                doc_comp  = sum(_cnt_eval(nid) for nid in nids)
                 doc_pct   = round((doc_comp / doc_total * 100), 1) if doc_total > 0 else 0
                 # Usar 'usuario' o 'nombre' para mostrar
                 doc_info  = doctoras_info.get(did, {})
@@ -5517,8 +5539,8 @@ def api_coordinadora_stats():
         for nomina in nominas:
             nid   = nomina['id']
             ename = nomina.get('nombre_colegio') or nomina.get('nombre_nomina') or 'Sin nombre'
-            t = get_supabase_count(f"nomina_id=eq.{nid}&estado_asistencia=in.(activo,extra)")
-            c = get_supabase_count(f"nomina_id=eq.{nid}&evaluado_flag=eq.true&estado_asistencia=in.(activo,extra)")
+            t = _cnt_total(nid)
+            c = _cnt_eval(nid)
             est_data[ename]["total"]     += t
             est_data[ename]["completed"] += c
 
@@ -5665,26 +5687,24 @@ def api_doctor_reporte_detalle():
         global_total = 0
         global_evaluados = 0
 
-        for nom in nominas:
-            url_e = (
-                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                f"?nomina_id=eq.{nom['id']}"
-                f"&estado_asistencia=in.(activo,extra)"
-                f"&select=id,nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia,fecha_relleno"
-                f"&order=nombre.asc"
-            )
-            res_e = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS)
-            alumnos = res_e.json() if res_e.ok else []
+        # Todas las filas de todas las nóminas en pocas consultas (antes: 2 por nómina)
+        from consultas_rapidas import cargar_filas_nominas
+        _filas = cargar_filas_nominas(
+            SUPABASE_URL, SUPABASE_SERVICE_HEADERS, [n['id'] for n in nominas],
+            select="id,nomina_id,nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia,fecha_relleno",
+            filtro="estado_asistencia=in.(activo,extra,no_asiste_reemplazado,no_asiste_sin_reemplazo)",
+            order="nombre.asc,id.asc")
+        _por_nomina = {}
+        for _f in _filas:
+            _g = _por_nomina.setdefault(_f.get('nomina_id'), {"alumnos": [], "ausentes": []})
+            if _f.get('estado_asistencia') in ('activo', 'extra'):
+                _g["alumnos"].append({k: _f.get(k) for k in ('id', 'nombre', 'rut', 'evaluado_flag', 'estado_asistencia', 'motivo_ausencia', 'fecha_relleno')})
+            else:
+                _g["ausentes"].append({k: _f.get(k) for k in ('nombre', 'rut', 'evaluado_flag', 'estado_asistencia', 'motivo_ausencia')})
 
-            url_aus = (
-                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                f"?nomina_id=eq.{nom['id']}"
-                f"&estado_asistencia=in.(no_asiste_reemplazado,no_asiste_sin_reemplazo)"
-                f"&select=nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia"
-                f"&order=nombre.asc"
-            )
-            res_aus = requests.get(url_aus, headers=SUPABASE_SERVICE_HEADERS)
-            ausentes = res_aus.json() if res_aus.ok else []
+        for nom in nominas:
+            alumnos  = _por_nomina.get(nom['id'], {}).get("alumnos", [])
+            ausentes = _por_nomina.get(nom['id'], {}).get("ausentes", [])
 
             ev_count    = len([a for a in alumnos if a.get('evaluado_flag') is True])
             total_count = len(alumnos)
@@ -5760,26 +5780,24 @@ def api_coordinadora_reporte_detalle():
         global_total = 0
         global_evaluados = 0
 
-        for nom in nominas:
-            url_e = (
-                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                f"?nomina_id=eq.{nom['id']}"
-                f"&estado_asistencia=in.(activo,extra)"
-                f"&select=id,nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia,fecha_relleno"
-                f"&order=nombre.asc"
-            )
-            res_e = requests.get(url_e, headers=SUPABASE_SERVICE_HEADERS)
-            alumnos = res_e.json() if res_e.ok else []
+        # Todas las filas de todas las nóminas en pocas consultas (antes: 2 por nómina)
+        from consultas_rapidas import cargar_filas_nominas
+        _filas = cargar_filas_nominas(
+            SUPABASE_URL, SUPABASE_SERVICE_HEADERS, [n['id'] for n in nominas],
+            select="id,nomina_id,nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia,fecha_relleno",
+            filtro="estado_asistencia=in.(activo,extra,no_asiste_reemplazado,no_asiste_sin_reemplazo)",
+            order="nombre.asc,id.asc")
+        _por_nomina = {}
+        for _f in _filas:
+            _g = _por_nomina.setdefault(_f.get('nomina_id'), {"alumnos": [], "ausentes": []})
+            if _f.get('estado_asistencia') in ('activo', 'extra'):
+                _g["alumnos"].append({k: _f.get(k) for k in ('id', 'nombre', 'rut', 'evaluado_flag', 'estado_asistencia', 'motivo_ausencia', 'fecha_relleno')})
+            else:
+                _g["ausentes"].append({k: _f.get(k) for k in ('nombre', 'rut', 'evaluado_flag', 'estado_asistencia', 'motivo_ausencia')})
 
-            url_aus = (
-                f"{SUPABASE_URL}/rest/v1/estudiantes_nomina"
-                f"?nomina_id=eq.{nom['id']}"
-                f"&estado_asistencia=in.(no_asiste_reemplazado,no_asiste_sin_reemplazo)"
-                f"&select=nombre,rut,evaluado_flag,estado_asistencia,motivo_ausencia"
-                f"&order=nombre.asc"
-            )
-            res_aus = requests.get(url_aus, headers=SUPABASE_SERVICE_HEADERS)
-            ausentes = res_aus.json() if res_aus.ok else []
+        for nom in nominas:
+            alumnos  = _por_nomina.get(nom['id'], {}).get("alumnos", [])
+            ausentes = _por_nomina.get(nom['id'], {}).get("ausentes", [])
 
             ev_count    = len([a for a in alumnos if a.get('evaluado_flag') is True])
             total_count = len(alumnos)

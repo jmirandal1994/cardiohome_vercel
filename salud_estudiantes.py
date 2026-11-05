@@ -762,6 +762,12 @@ def crear_blueprint_salud(supabase_url, headers):
         con_texto = {f["id"]: f.get("derivaciones") for f in _filtrar(_evaluaciones_derivaciones(), _nominas_permitidas())}
         return [{**f, "derivaciones": con_texto.get(f["id"])} for f in ligeras]
 
+    def _derivados_nutricion(anio):
+        """Derivados a nutricionista entre los evaluados del año (un estudiante cuenta una vez)."""
+        return len({normalizar_rut(f.get("rut")) or f["id"] for f in _evaluados_para_derivaciones()
+                    if (_fecha(f.get("fecha_relleno")) or date.min).year == anio
+                    and "Nutrición" in especialidades_derivadas(f.get("derivaciones"))})
+
     def _evaluaciones_diagnosticos():
         return _cacheado("diag", lambda: _todas_paginas(
             "estudiantes_nomina?select=id,nomina_id,rut,fecha_relleno,diagnostico_1"
@@ -819,11 +825,7 @@ def crear_blueprint_salud(supabase_url, headers):
         try:
             r = _calc_nutricion(_solo_familiar(_filtrar(_evaluaciones_ligeras(), _nominas_permitidas())), request.args.get("anio"))
             r["a_revisar"] = r["a_revisar"][:300]
-            # Derivados a nutricionista entre los evaluados del mismo año (un estudiante cuenta una vez)
-            r["derivados_nutricion"] = len({
-                normalizar_rut(f.get("rut")) or f["id"] for f in _evaluados_para_derivaciones()
-                if (_fecha(f.get("fecha_relleno")) or date.min).year == r["anio"]
-                and "Nutrición" in especialidades_derivadas(f.get("derivaciones"))})
+            r["derivados_nutricion"] = _derivados_nutricion(r["anio"])
             return jsonify({"success": True, **r})
         except Exception as e:
             print(f"ERROR api_salud_nutricion: {e}")
@@ -862,7 +864,6 @@ def crear_blueprint_salud(supabase_url, headers):
             return jsonify({"success": False, "message": "No autorizado"}), 403
         try:
             r = _calc_derivaciones(_evaluados_para_derivaciones())
-            r["colegios"] = r["colegios"][:400]
             r.pop("lista", None)
             return jsonify({"success": True, **r})
         except Exception as e:
@@ -875,7 +876,6 @@ def crear_blueprint_salud(supabase_url, headers):
             return jsonify({"success": False, "message": "No autorizado"}), 403
         try:
             r = _calc_diagnosticos(_evaluados_para_diagnosticos())
-            r["colegios"] = r["colegios"][:60]
             return jsonify({"success": True, **r})
         except Exception as e:
             print(f"ERROR api_salud_diagnosticos: {e}")
@@ -887,7 +887,7 @@ def crear_blueprint_salud(supabase_url, headers):
         if not _autorizado():
             return jsonify({"success": False, "message": "No autorizado"}), 403
         tipo = request.args.get("tipo", "completo")
-        if tipo not in ("completo", "reevaluaciones", "nutricion", "derivaciones"):
+        if tipo not in ("completo", "reevaluaciones", "nutricion", "derivaciones", "diagnosticos"):
             return jsonify({"success": False, "message": "Tipo de reporte no válido"}), 400
         try:
             from reportes_salud import armar_excel
@@ -898,8 +898,11 @@ def crear_blueprint_salud(supabase_url, headers):
                 datos["reev_est"] = _calc_reev_establecimientos(filas)
             if tipo in ("completo", "nutricion"):
                 datos["nutri"] = _calc_nutricion(_solo_familiar(filas), request.args.get("anio"))
+                datos["nutri"]["derivados_nutricion"] = _derivados_nutricion(datos["nutri"]["anio"])
             if tipo in ("completo", "derivaciones"):
                 datos["deriv"] = _calc_derivaciones(_evaluados_para_derivaciones())
+            if tipo in ("completo", "diagnosticos"):
+                datos["diag"] = _calc_diagnosticos(_evaluados_para_diagnosticos())
             proys = _proyectos()
             filtros = {
                 "Generado por": session.get("nombre") or session.get("usuario"),

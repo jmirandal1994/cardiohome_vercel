@@ -238,7 +238,7 @@
 
   // ───────── SECCIÓN DEL PANEL ─────────
   let iniciado = false;
-  const estado = { tab: "reev", filtroEst: null, buscaReev: "", pag: 0, reev: null, nutri: null, deriv: null,
+  const estado = { tab: "reev", filtroEst: null, buscaReev: "", pag: 0, reev: null, nutri: null, deriv: null, diag: null,
     est: null, estQ: "", estSoloAlerta: true, estAbierto: null, estOrden: "urgencia" };
   const $ = (id) => document.getElementById(id);
   const qsFiltros = () => {
@@ -255,7 +255,7 @@
       iniciado = true;
       raiz.querySelectorAll(".se-tab").forEach((b) => b.addEventListener("click", () => SE.tab(b.dataset.tab)));
       $("se-buscar").addEventListener("input", debounce(buscar, 350));
-      ["se-f-proy", "se-f-col"].forEach((id) => $(id).addEventListener("change", () => { estado.reev = null; estado.nutri = null; estado.deriv = null; estado.est = null; estado.estAbierto = null; SE.tab(estado.tab); }));
+      ["se-f-proy", "se-f-col"].forEach((id) => $(id).addEventListener("change", () => { estado.reev = null; estado.nutri = null; estado.deriv = null; estado.diag = null; estado.est = null; estado.estAbierto = null; SE.tab(estado.tab); }));
       $("se-f-anio").addEventListener("change", () => { estado.nutri = null; SE.tab("nutri"); });
       try {
         const f = await api("/api/salud/filtros");
@@ -275,6 +275,7 @@
     if (t === "est") cargarEst();
     if (t === "nutri") cargarNutri();
     if (t === "deriv") cargarDeriv();
+    if (t === "diag") cargarDiag();
   };
 
   // ── Descarga de reportes ──
@@ -539,7 +540,13 @@
     const j = estado.nutri, d = j.distribucion, tot = j.clasificados || 0, box = $("se-p-nutri-body");
     const pct = (n) => (tot ? Math.round((100 * n) / tot) : 0);
     if (!tot) { box.innerHTML = empty(`No hay mediciones de peso y talla para ${j.anio}.`, "fa-weight-scale"); return; }
+    const rangos = (j.por_rango || []).filter((r) => r.rango !== "Sin edad válida" && r.total >= 5);
+    const sinEdad = (j.por_rango || []).find((r) => r.rango === "Sin edad válida");
     let h = `<div class="se-help"><i class="fa-solid fa-child-reaching"></i><div>Resumen de <b>${fmtN(tot)} estudiantes medidos en ${j.anio}</b> (una medición por estudiante). La clasificación es la que registró la doctora en el formulario, según las curvas de IMC para la edad y el sexo.</div></div>
+      <div class="se-grid se-g2" style="margin-bottom:12px">
+        <div class="se-card se-kpi" style="--c:#dc2626"><div class="lab">Malnutrición por exceso</div><div class="val" style="color:#dc2626">${fmtN(j.exceso_pct, 0)}%</div><div class="hint">sobrepeso + obesidad · ${fmtN(tot)} estudiantes medidos en ${j.anio}</div></div>
+        <div class="se-card se-kpi" style="--c:#0f766e"><div class="lab">Derivados a nutricionista</div><div class="val" style="color:#0f766e">${fmtN(j.derivados_nutricion)}</div><div class="hint">${fmtN(100 * (j.derivados_nutricion || 0) / tot, 0)}% de los estudiantes medidos · detalle en Derivaciones</div></div>
+      </div>
       <div class="se-grid se-g4" style="margin-bottom:12px">
         <div class="se-card se-kpi" style="--c:#16a34a"><div class="lab">Peso normal</div><div class="val" style="color:#16a34a">${pct(d.Normal)}%</div><div class="hint">${fmtN(d.Normal)} estudiantes</div></div>
         <div class="se-card se-kpi" style="--c:#d97706"><div class="lab">Sobrepeso</div><div class="val" style="color:#d97706">${pct(d.Sobrepeso)}%</div><div class="hint">${fmtN(d.Sobrepeso)} estudiantes</div></div>
@@ -549,14 +556,10 @@
       <div class="se-grid se-g2" style="margin-bottom:12px">
         <div class="se-card"><h4>Estado nutricional</h4><p class="se-cap">${j.exceso_pct != null ? `<b style="color:#dc2626">${fmtN(j.exceso_pct, 1)}%</b> tiene exceso de peso (sobrepeso + obesidad)` : ""}</p><div class="se-chart"><canvas id="se-c-dist"></canvas></div>
           <details class="se-que"><summary>¿Qué es el IMC?</summary><p>El Índice de Masa Corporal es el peso (kg) dividido por la talla (m) al cuadrado. En niños y adolescentes no se usa un número fijo: se compara con otros niños de su misma edad y sexo (percentiles). Por eso un mismo IMC puede ser normal a los 15 años y sobrepeso a los 8.</p></details></div>
-        <div class="se-card"><h4>IMC promedio por edad</h4><p class="se-cap">niñas y niños por separado</p><div class="se-chart"><canvas id="se-c-edad"></canvas></div>
-          <details class="se-que"><summary>¿Cómo leerlo?</summary><p>Es normal que el IMC promedio suba con la edad. Lo que conviene mirar es si en alguna edad el promedio sube más de lo esperado, porque ahí se concentra el exceso de peso.</p></details></div>
+        <div class="se-card"><h4>Estado nutricional por edad</h4><p class="se-cap">% de cada clasificación en cada rango de edad${sinEdad ? ` · ${fmtN(sinEdad.total)} estudiantes sin fecha de nacimiento válida van aparte` : ""}</p><div class="se-chart"><canvas id="se-c-edad"></canvas></div>
+          <details class="se-que"><summary>¿Cómo leerlo?</summary><p>La clasificación ya considera la edad y el sexo de cada estudiante, así que los rangos se pueden comparar entre sí. Muestra en qué edades se concentra el exceso de peso.</p></details></div>
       </div>
-      <div class="se-grid se-g2" style="margin-bottom:12px">
-        <div class="se-card"><h4>Talla promedio por edad</h4><p class="se-cap">centímetros</p><div class="se-chart sm"><canvas id="se-c-talla"></canvas></div></div>
-        <div class="se-card"><h4>Peso promedio por edad</h4><p class="se-cap">kilogramos</p><div class="se-chart sm"><canvas id="se-c-pesoedad"></canvas></div></div>
-      </div>
-      <div class="se-card" style="margin-bottom:12px"><h4>Colegios con más exceso de peso</h4><p class="se-cap">% de estudiantes con sobrepeso u obesidad · colegios con 10 o más medidos</p><div class="se-chart" style="height:${Math.max(220, Math.min(15, j.colegios.filter((x) => x.total >= 10).length) * 26 + 40)}px"><canvas id="se-c-col"></canvas></div></div>`;
+      <div class="se-card" style="margin-bottom:12px"><h4>Colegios con más exceso de peso</h4><p class="se-cap">% de estudiantes con sobrepeso u obesidad · colegios con 10 o más medidos · la línea punteada es el promedio (${fmtN(j.exceso_pct, 0)}%)</p><div class="se-chart" style="height:${Math.max(220, Math.min(15, j.colegios.filter((x) => x.total >= 10).length) * 26 + 40)}px"><canvas id="se-c-col"></canvas></div></div>`;
     if ((j.por_anio || []).length > 1) {
       h += `<div class="se-card" style="margin-bottom:12px"><h4>Evolución año a año</h4><p class="se-cap">% de cada clasificación por año de evaluación</p><div class="se-chart sm"><canvas id="se-c-anios"></canvas></div></div>`;
     } else {
@@ -573,19 +576,36 @@
       const ks = ["Normal", "Sobrepeso", "Obesidad", "Bajo peso"];
       chart("se-c-dist", { type: "doughnut", data: { labels: ks, datasets: [{ data: ks.map((k) => d[k]), backgroundColor: ks.map((k) => CLAS[k].fg), borderWidth: 2, borderColor: "#fff" }] },
         options: { responsive: true, maintainAspectRatio: false, cutout: "60%", plugins: { legend: { position: "right" }, tooltip: { callbacks: { label: (c) => `${c.label}: ${fmtN(c.parsed)} (${pct(c.parsed)}%)` } } } } });
-      const ed = j.por_edad.filter((e) => e.n >= 5);
-      const lineas = (campo, unidad) => ({ type: "line", data: { labels: ed.map((e) => `${e.edad} a`), datasets: [
-        { label: "Niñas", data: ed.map((e) => e[campo + "_F"]), borderColor: "#db2777", backgroundColor: "#db2777", tension: 0.3, pointRadius: 3, spanGaps: true },
-        { label: "Niños", data: ed.map((e) => e[campo + "_M"]), borderColor: "#1c67a3", backgroundColor: "#1c67a3", tension: 0.3, pointRadius: 3, spanGaps: true }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { boxWidth: 12 } }, tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${fmtN(c.parsed.y, 1)} ${unidad}` } } },
-          scales: { x: { grid: { display: false } }, y: { grid: { color: "#eef2f6" } } } } });
-      chart("se-c-edad", lineas("imc", "kg/m²"));
-      chart("se-c-talla", lineas("talla", "cm"));
-      chart("se-c-pesoedad", lineas("peso", "kg"));
+      // Estado nutricional por rango de edad: barras al 100%, de menos a más peso.
+      // Cada tramo lleva su porcentaje escrito encima si cabe (los muy delgados se ven en el tooltip).
+      const etiquetasTramos = { id: "etiquetasTramos", afterDatasetsDraw(ch) {
+        const g = ch.ctx;
+        g.save(); g.font = "600 11px Inter, system-ui, sans-serif"; g.fillStyle = "#fff"; g.textAlign = "center"; g.textBaseline = "middle";
+        ch.data.datasets.forEach((ds, i) => {
+          if (!ch.isDatasetVisible(i)) return;
+          ch.getDatasetMeta(i).data.forEach((el, k) => {
+            const v = ds.data[k], alto = Math.abs(el.base - el.y);
+            if (!v || alto < 15) return;
+            g.fillText(`${fmtN(v, 0)}%`, el.x, (el.y + el.base) / 2);
+          });
+        });
+        g.restore(); } };
+      chart("se-c-edad", { type: "bar", plugins: [etiquetasTramos], data: { labels: rangos.map((r) => `${r.rango} años`), datasets: ["Bajo peso", "Normal", "Sobrepeso", "Obesidad"].map((k) => ({
+          label: k, data: rangos.map((r) => +(100 * r[k] / Math.max(1, r.total)).toFixed(1)), backgroundColor: CLAS[k].fg })) },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { boxWidth: 12 } },
+            tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${fmtN(c.parsed.y, 1)}%`, footer: (it) => `${fmtN(rangos[it[0].dataIndex].total)} estudiantes` } } },
+          scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, max: 100, ticks: { callback: (v) => v + "%" }, grid: { color: "#eef2f6" } } } } });
+      // Mismo denominador que las tarjetas (estudiantes clasificados) y línea con el promedio
+      const clas = (x) => Math.max(1, x["Bajo peso"] + x.Normal + x.Sobrepeso + x.Obesidad);
       const cols = j.colegios.filter((x) => x.total >= 10).slice(0, 15);
-      chart("se-c-col", { type: "bar", data: { labels: cols.map((x) => x.colegio.length > 38 ? x.colegio.slice(0, 36) + "…" : x.colegio), datasets: [
-        { label: "Sobrepeso", data: cols.map((x) => +(100 * x.Sobrepeso / Math.max(1, x.total)).toFixed(1)), backgroundColor: CLAS.Sobrepeso.fg },
-        { label: "Obesidad", data: cols.map((x) => +(100 * x.Obesidad / Math.max(1, x.total)).toFixed(1)), backgroundColor: CLAS.Obesidad.fg }] },
+      const lineaPromedio = { id: "promedio", afterDatasetsDraw(ch) {
+        if (j.exceso_pct == null) return;
+        const x = ch.scales.x.getPixelForValue(j.exceso_pct), a = ch.chartArea, g = ch.ctx;
+        g.save(); g.strokeStyle = "#0f172a"; g.lineWidth = 1.5; g.setLineDash([5, 4]);
+        g.beginPath(); g.moveTo(x, a.top); g.lineTo(x, a.bottom); g.stroke(); g.restore(); } };
+      chart("se-c-col", { type: "bar", plugins: [lineaPromedio], data: { labels: cols.map((x) => x.colegio.length > 38 ? x.colegio.slice(0, 36) + "…" : x.colegio), datasets: [
+        { label: "Sobrepeso", data: cols.map((x) => +(100 * x.Sobrepeso / clas(x)).toFixed(1)), backgroundColor: CLAS.Sobrepeso.fg },
+        { label: "Obesidad", data: cols.map((x) => +(100 * x.Obesidad / clas(x)).toFixed(1)), backgroundColor: CLAS.Obesidad.fg }] },
         options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { boxWidth: 12 } }, tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.parsed.x}%` } } },
           scales: { x: { stacked: true, max: 100, ticks: { callback: (v) => v + "%" }, grid: { color: "#eef2f6" } }, y: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } } } } });
       if ((j.por_anio || []).length > 1) {
@@ -612,13 +632,15 @@
     if (!j.derivados) { box.innerHTML = empty("No hay derivaciones registradas con estos filtros.", "fa-share-from-square"); return; }
     const esps = j.especialidades, top = esps.slice(0, 4);
     const colEsp = {}; esps.forEach((e, i) => { colEsp[e.especialidad] = COL_ESP[i % COL_ESP.length]; });
-    let h = `<div class="se-help"><i class="fa-solid fa-share-from-square"></i><div>De <b>${fmtN(j.evaluados)} estudiantes evaluados</b>, <b>${fmtN(j.derivados)} (${fmtN(j.derivados_pct, 1)}%)</b> fueron derivados a al menos una especialidad. Un estudiante derivado a dentista y oftalmólogo cuenta en ambas.</div></div>
+    // Con solo medicina familiar hay un único origen: el gráfico "según quién derivó" no aporta y se oculta
+    const variosOrigenes = Object.keys(j.por_origen || {}).length > 1;
+    let h = `<div class="se-help"><i class="fa-solid fa-share-from-square"></i><div>De <b>${fmtN(j.evaluados)} estudiantes evaluados en medicina familiar</b>, <b>${fmtN(j.derivados)} (${fmtN(j.derivados_pct, 1)}%)</b> fueron derivados a al menos una especialidad. Un estudiante derivado a dentista y oftalmólogo cuenta en ambas.</div></div>
       <div class="se-grid se-g4" style="margin-bottom:12px">${top.map((e) => `<div class="se-card se-kpi" style="--c:${colEsp[e.especialidad]}"><div class="lab">${esc(e.especialidad)}</div><div class="val" style="color:${colEsp[e.especialidad]}">${fmtN(e.estudiantes)}</div><div class="hint">${fmtN(e.pct, 1)}% de los evaluados</div></div>`).join("")}</div>
-      <div class="se-grid se-g2" style="margin-bottom:12px">
+      <div class="se-grid ${variosOrigenes ? "se-g2" : ""}" style="margin-bottom:12px">
         <div class="se-card"><h4>Estudiantes derivados por especialidad</h4><p class="se-cap">cantidad de estudiantes</p><div class="se-chart" style="height:${Math.max(250, esps.length * 26 + 40)}px"><canvas id="se-c-deriv"></canvas></div>
           <details class="se-que"><summary>¿Para qué sirve?</summary><p>Muestra qué especialistas se necesitan más. Sirve para coordinar operativos (por ejemplo, oftalmología o dental) y para gestionar horas con la red de salud.</p></details></div>
-        <div class="se-card"><h4>Según quién derivó</h4><p class="se-cap">medicina familiar y neurología</p><div class="se-chart" style="height:${Math.max(250, esps.length * 26 + 40)}px"><canvas id="se-c-origen"></canvas></div>
-          <details class="se-que"><summary>¿Cómo leerlo?</summary><p>Medicina familiar deriva sobre todo a oftalmología, dental, nutrición y otorrino. Neurología suele recomendar apoyos como fonoaudiología, psicología o terapia ocupacional.</p></details></div>
+        ${variosOrigenes ? `<div class="se-card"><h4>Según quién derivó</h4><p class="se-cap">medicina familiar y neurología</p><div class="se-chart" style="height:${Math.max(250, esps.length * 26 + 40)}px"><canvas id="se-c-origen"></canvas></div>
+          <details class="se-que"><summary>¿Cómo leerlo?</summary><p>Medicina familiar deriva sobre todo a oftalmología, dental, nutrición y otorrino. Neurología suele recomendar apoyos como fonoaudiología, psicología o terapia ocupacional.</p></details></div>` : ""}
       </div>
       <div class="se-card"><h4>Derivaciones por colegio</h4><p class="se-cap">estudiantes derivados a cada especialidad · ordenado por total</p>
         <div class="se-tw"><table class="se-table"><thead><tr><th>Colegio</th><th>Derivados</th>${esps.slice(0, 8).map((e) => `<th>${esc(e.especialidad)}</th>`).join("")}</tr></thead><tbody>
@@ -632,9 +654,40 @@
           scales: { x: { grid: { color: "#eef2f6" } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } } } });
       const origenes = Object.keys(j.por_origen || {});
       const colO = { "Medicina familiar": "#1c67a3", "Neurología": "#7c3aed", "Otra": "#94a3b8" };
-      chart("se-c-origen", { type: "bar", data: { labels: esps.map((e) => e.especialidad), datasets: origenes.map((o) => ({ label: o, data: esps.map((e) => (j.por_origen[o] || {})[e.especialidad] || 0), backgroundColor: colO[o] || "#94a3b8", borderRadius: 4 })) },
+      if (variosOrigenes) chart("se-c-origen", { type: "bar", data: { labels: esps.map((e) => e.especialidad), datasets: origenes.map((o) => ({ label: o, data: esps.map((e) => (j.por_origen[o] || {})[e.especialidad] || 0), backgroundColor: colO[o] || "#94a3b8", borderRadius: 4 })) },
         options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { boxWidth: 12 } } },
           scales: { x: { stacked: true, grid: { color: "#eef2f6" } }, y: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } } } } });
+    }).catch(() => {});
+  }
+
+  // ── Diagnósticos PIE (medicina familiar, agrupados según el Decreto 170) ──
+  async function cargarDiag() {
+    const box = $("se-p-diag-body");
+    if (estado.diag) return pintarDiag();
+    box.innerHTML = loading("Agrupando diagnósticos…");
+    try { estado.diag = await api(`/api/salud/diagnosticos?${qsFiltros()}`); pintarDiag(); }
+    catch (e) { box.innerHTML = empty(esc(e.message), "fa-circle-exclamation"); }
+  }
+  function pintarDiag() {
+    const j = estado.diag, box = $("se-p-diag-body");
+    if (!j.con_diagnostico) { box.innerHTML = empty("No hay diagnósticos registrados con estos filtros.", "fa-notes-medical"); return; }
+    const gs = j.grupos, top = gs.slice(0, 4);
+    const colG = {}; gs.forEach((g, i) => { colG[g.grupo] = COL_ESP[i % COL_ESP.length]; });
+    const extra = [j.sin_diagnostico ? `${fmtN(j.sin_diagnostico)} sin diagnóstico o pendientes` : "", j.otro ? `${fmtN(j.otro)} con un texto que no calza con ningún grupo` : ""].filter(Boolean).join(" y ");
+    let h = `<div class="se-help"><i class="fa-solid fa-notes-medical"></i><div>De <b>${fmtN(j.evaluados)} estudiantes evaluados en medicina familiar</b>, <b>${fmtN(j.con_diagnostico)}</b> tienen diagnóstico registrado. Los diagnósticos se agrupan en las categorías del Decreto 170, porque el mismo diagnóstico se escribe de muchas formas.${extra ? ` Además hay ${extra}; no entran en el gráfico.` : ""}</div></div>
+      <div class="se-grid se-g4" style="margin-bottom:12px">${top.map((g) => `<div class="se-card se-kpi" style="--c:${colG[g.grupo]}"><div class="lab">${esc(g.grupo)}</div><div class="val" style="color:${colG[g.grupo]}">${fmtN(g.estudiantes)}</div><div class="hint">${fmtN(g.pct, 1)}% de los diagnósticos</div></div>`).join("")}</div>
+      <div class="se-card" style="margin-bottom:12px"><h4>Diagnósticos PIE</h4><p class="se-cap">estudiantes por grupo de diagnóstico</p><div class="se-chart" style="height:${Math.max(220, gs.length * 30 + 40)}px"><canvas id="se-c-diag"></canvas></div>
+        <details class="se-que"><summary>¿Para qué sirve?</summary><p>Muestra qué apoyos necesita el PIE: por ejemplo, muchos trastornos del lenguaje piden más horas de fonoaudiología.</p></details></div>
+      <div class="se-card"><h4>Colegios</h4><p class="se-cap">estudiantes con diagnóstico y el diagnóstico más frecuente de cada colegio</p>
+        <div class="se-tw"><table class="se-table"><thead><tr><th>Colegio</th><th>Con diagnóstico</th><th>Diagnóstico principal</th></tr></thead><tbody>
+        ${j.colegios.slice(0, 15).map((c) => `<tr><td><b>${esc(c.colegio)}</b></td><td>${fmtN(c.con_diagnostico)}</td><td>${c.principal ? `${esc(c.principal)} <span style="color:#5b6b7a">· ${fmtN(c.principal_n)} (${fmtN(c.principal_pct, 0)}%)</span>` : "—"}</td></tr>`).join("")}
+        </tbody></table></div>${j.colegios.length > 15 ? `<div class="se-pag">Se muestran 15 de ${fmtN(j.colegios.length)} colegios. Filtra por colegio para ver uno en particular.</div>` : ""}</div>`;
+    box.innerHTML = h;
+    animar(box);
+    ensureChart().then(() => {
+      chart("se-c-diag", { type: "bar", data: { labels: gs.map((g) => g.grupo), datasets: [{ data: gs.map((g) => g.estudiantes), backgroundColor: gs.map((g) => colG[g.grupo]), borderRadius: 5 }] },
+        options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${fmtN(c.parsed.x)} estudiantes (${fmtN(gs[c.dataIndex].pct, 1)}%)` } } },
+          scales: { x: { grid: { color: "#eef2f6" } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } } } });
     }).catch(() => {});
   }
 

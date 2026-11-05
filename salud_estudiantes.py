@@ -101,6 +101,17 @@ def _edad_anios(nac, ref):
     return a if 0 <= a <= 25 else None
 
 
+RANGOS_EDAD = ["0-3", "4-5", "6-9", "10-13", "14-17", "18+"]
+SIN_EDAD = "Sin edad válida"
+
+
+def rango_edad(ed):
+    """Mismos cortes que v_evaluaciones.rango_etario en vistas_bi.sql."""
+    if ed is None:
+        return SIN_EDAD
+    return "0-3" if ed <= 3 else "4-5" if ed <= 5 else "6-9" if ed <= 9 else         "10-13" if ed <= 13 else "14-17" if ed <= 17 else "18+"
+
+
 def _especialidad(nom):
     ft = (nom or {}).get("form_type") or ""
     tipo = ((nom or {}).get("tipo_nomina") or "").lower()
@@ -175,6 +186,60 @@ def especialidades_derivadas(texto):
         return []
     t = str(texto)
     return [n for n, rx in _RX_DERIV if rx.search(t)]
+
+
+# Diagnósticos PIE: el texto libre de medicina familiar (diagnostico_1) se agrupa en las
+# categorías del Decreto 170 con la misma regla de vistas_bi.sql (v_evaluaciones.diagnostico_grupo).
+# El orden importa: negaciones primero y luego de lo más específico a lo más general.
+SIN_DX = "Sin diagnóstico / pendiente"
+OTRO_DX = "Otro / revisar"
+
+
+def _sin_tildes(t):
+    return t.translate(str.maketrans("áéíóúü", "aeiouu"))
+
+
+def grupo_diagnostico(texto):
+    if not texto or not str(texto).strip():
+        return None
+    d = _sin_tildes(re.sub(r"\s+", " ", str(texto)).strip().lower())  # \s incluye espacios no separables
+    d2 = " " + re.sub(r"[-,/.()]", " ", d) + " "
+
+    def palabra(*siglas):
+        return any(f" {s} " in d2 for s in siglas)
+
+    def tiene(*partes):
+        return any(p in d for p in partes)
+
+    if tiene("descart", "pendiente", "sin diagnostico", "no presenta diagnostico"):
+        return SIN_DX
+    if palabra("tea", "cea", "tea1") or tiene("autista", "austista", "espectro"):
+        return "Trastorno del espectro autista (TEA)"
+    if palabra("tdah", "tda") or tiene("deficit atencional", "deficit de atencion", "hiperactividad"):
+        return "Déficit atencional (TDA/TDAH)"
+    if palabra("dea") or tiene("aprendizaje"):
+        return "Dificultades específicas del aprendizaje (DEA)"
+    if palabra("fil") or tiene("limitrofe"):
+        return "Funcionamiento intelectual limítrofe (FIL)"
+    if palabra("tel", "tl") or tiene("lenguaje"):
+        return "Trastorno del lenguaje (TEL)"
+    if palabra("garc") or tiene("graves alteraciones"):
+        return "Graves alteraciones de relación y comunicación (GARC)"
+    if palabra("dil", "dim", "dis", "d i") or d == "di" or tiene("intelectual"):
+        return "Discapacidad intelectual (DI)"
+    if tiene("down"):
+        return "Síndrome de Down"
+    if palabra("rgd") or tiene("retraso global", "retraso generalizado"):
+        return "Retraso global del desarrollo"
+    if tiene("multiple", "multideficit"):
+        return "Discapacidad múltiple"
+    if tiene("auditiv", "hipoacusia"):
+        return "Discapacidad auditiva"
+    if tiene("visual"):
+        return "Discapacidad visual"
+    if tiene("motor"):
+        return "Discapacidad motora"
+    return OTRO_DX
 
 
 # ───────────────────────── blueprint ─────────────────────────
@@ -415,7 +480,7 @@ def crear_blueprint_salud(supabase_url, headers):
         dist = {c: 0 for c in CLASES}
         vistos_anio = set()
         otros = {"Sin clasificar": 0, "Menor de 2 años": 0}
-        por_colegio, por_edad, por_anio = {}, {}, {}
+        por_colegio, por_edad, por_anio, por_rango = {}, {}, {}, {}
         revisar, con_medidas = [], 0
         for f in filas:
             altura, peso, imc = _num(f.get("altura")), _num(f.get("peso")), _num(f.get("imc"))
@@ -452,6 +517,10 @@ def crear_blueprint_salud(supabase_url, headers):
             if c in CLASES:
                 pc[c] += 1
             ed = _edad_anios(nac, fr)
+            if c in CLASES:  # estado nutricional por rango de edad (solo estudiantes clasificados)
+                rg = por_rango.setdefault(rango_edad(ed), {"rango": rango_edad(ed), "total": 0, **{k: 0 for k in CLASES}})
+                rg["total"] += 1
+                rg[c] += 1
             sexo = (f.get("sexo") or "").strip().upper()[:1]  # "F"/"M"; otros valores no se grafican
             if ed is not None and imc is not None and 2 <= ed <= 18:
                 pe = por_edad.setdefault(ed, {"edad": ed, "F": [], "M": [], "talla_F": [], "talla_M": [],
@@ -485,6 +554,7 @@ def crear_blueprint_salud(supabase_url, headers):
             "distribucion": dist, "otros": otros,
             "exceso_pct": round(100 * (dist["Sobrepeso"] + dist["Obesidad"]) / clasificados, 1) if clasificados else None,
             "colegios": colegios, "por_edad": edades,
+            "por_rango": [por_rango[k] for k in RANGOS_EDAD + [SIN_EDAD] if k in por_rango],
             "por_anio": sorted(por_anio.values(), key=lambda x: x["anio"]),
             "a_revisar": revisar, "a_revisar_total": len(revisar),
         }
@@ -669,11 +739,67 @@ def crear_blueprint_salud(supabase_url, headers):
             "estudiantes_nomina?select=id,nomina_id,nombre,rut,fecha_relleno,derivaciones"
             "&fecha_relleno=not.is.null&derivaciones=not.is.null&order=id.asc"))
 
+    def _solo_familiar(filas):
+        """Solo evaluaciones de nóminas de medicina familiar. En neurología el campo
+        'derivaciones' trae recomendaciones PIE (apoyos del colegio), no derivaciones a
+        especialistas, y no hay examen físico; mezclarlas cambia los porcentajes."""
+        noms = _nominas()
+        return [f for f in filas if _especialidad(noms.get(f.get("nomina_id"))) == "Medicina familiar"]
+
     def _evaluados_para_derivaciones():
-        """Evaluaciones (con y sin derivación) para calcular porcentajes."""
-        ligeras = _filtrar(_evaluaciones_ligeras(), _nominas_permitidas())
+        """Evaluaciones de medicina familiar (con y sin derivación) para calcular porcentajes."""
+        ligeras = _solo_familiar(_filtrar(_evaluaciones_ligeras(), _nominas_permitidas()))
         con_texto = {f["id"]: f.get("derivaciones") for f in _filtrar(_evaluaciones_derivaciones(), _nominas_permitidas())}
         return [{**f, "derivaciones": con_texto.get(f["id"])} for f in ligeras]
+
+    def _evaluaciones_diagnosticos():
+        return _cacheado("diag", lambda: _todas_paginas(
+            "estudiantes_nomina?select=id,nomina_id,rut,fecha_relleno,diagnostico_1"
+            "&fecha_relleno=not.is.null&diagnostico_1=not.is.null&order=id.asc"))
+
+    def _evaluados_para_diagnosticos():
+        ligeras = _solo_familiar(_filtrar(_evaluaciones_ligeras(), _nominas_permitidas()))
+        con_texto = {f["id"]: f.get("diagnostico_1") for f in _filtrar(_evaluaciones_diagnosticos(), _nominas_permitidas())}
+        return [{**f, "diagnostico_1": con_texto.get(f["id"])} for f in ligeras]
+
+    def _calc_diagnosticos(filas):
+        """Diagnósticos PIE de medicina familiar agrupados (Decreto 170). Un estudiante cuenta
+        una vez: si tiene varias evaluaciones, manda la más reciente."""
+        noms = _nominas()
+        ultima = {}
+        for f in filas:
+            clave = normalizar_rut(f.get("rut")) or f["id"]
+            fr = _fecha(f.get("fecha_relleno"))
+            prev = ultima.get(clave)
+            if not prev or (fr and (prev["_fr"] is None or fr > prev["_fr"])):
+                ultima[clave] = {**f, "_fr": fr}
+        grupos, por_colegio = Counter(), {}
+        con_dx = 0
+        for f in ultima.values():
+            g = grupo_diagnostico(f.get("diagnostico_1"))
+            if not g:
+                continue
+            con_dx += 1
+            grupos[g] += 1
+            col = ((noms.get(f.get("nomina_id")) or {}).get("nombre_colegio") or "Sin colegio").strip()
+            por_colegio.setdefault(col, Counter())[g] += 1
+        # "Sin diagnóstico" y "Otro / revisar" se informan aparte y no compiten como diagnóstico principal
+        clinicos = {g: n for g, n in grupos.items() if g not in (SIN_DX, OTRO_DX)}
+        colegios = []
+        for col, cnt in por_colegio.items():
+            tot = sum(cnt.values())
+            cl = [(g, n) for g, n in cnt.most_common() if g not in (SIN_DX, OTRO_DX)]
+            principal, n_pr = cl[0] if cl else (None, 0)
+            colegios.append({"colegio": col, "con_diagnostico": tot, "principal": principal,
+                             "principal_n": n_pr, "principal_pct": round(100 * n_pr / tot, 1) if tot else None})
+        colegios.sort(key=lambda x: -x["con_diagnostico"])
+        return {
+            "evaluados": len(ultima), "con_diagnostico": con_dx,
+            "grupos": [{"grupo": g, "estudiantes": n, "pct": round(100 * n / con_dx, 1) if con_dx else None}
+                       for g, n in sorted(clinicos.items(), key=lambda x: -x[1])],
+            "sin_diagnostico": grupos.get(SIN_DX, 0), "otro": grupos.get(OTRO_DX, 0),
+            "colegios": colegios,
+        }
 
     # ───────────── rutas de la pantalla ─────────────
     @bp.route("/api/salud/nutricion", methods=["GET"])
@@ -681,8 +807,13 @@ def crear_blueprint_salud(supabase_url, headers):
         if not _autorizado():
             return jsonify({"success": False, "message": "No autorizado"}), 403
         try:
-            r = _calc_nutricion(_filtrar(_evaluaciones_ligeras(), _nominas_permitidas()), request.args.get("anio"))
+            r = _calc_nutricion(_solo_familiar(_filtrar(_evaluaciones_ligeras(), _nominas_permitidas())), request.args.get("anio"))
             r["a_revisar"] = r["a_revisar"][:300]
+            # Derivados a nutricionista entre los evaluados del mismo año (un estudiante cuenta una vez)
+            r["derivados_nutricion"] = len({
+                normalizar_rut(f.get("rut")) or f["id"] for f in _evaluados_para_derivaciones()
+                if (_fecha(f.get("fecha_relleno")) or date.min).year == r["anio"]
+                and "Nutrición" in especialidades_derivadas(f.get("derivaciones"))})
             return jsonify({"success": True, **r})
         except Exception as e:
             print(f"ERROR api_salud_nutricion: {e}")
@@ -728,6 +859,18 @@ def crear_blueprint_salud(supabase_url, headers):
             print(f"ERROR api_salud_derivaciones: {e}")
             return jsonify({"success": False, "message": "Error al calcular derivaciones"}), 500
 
+    @bp.route("/api/salud/diagnosticos", methods=["GET"])
+    def api_salud_diagnosticos():
+        if not _autorizado():
+            return jsonify({"success": False, "message": "No autorizado"}), 403
+        try:
+            r = _calc_diagnosticos(_evaluados_para_diagnosticos())
+            r["colegios"] = r["colegios"][:60]
+            return jsonify({"success": True, **r})
+        except Exception as e:
+            print(f"ERROR api_salud_diagnosticos: {e}")
+            return jsonify({"success": False, "message": "Error al calcular diagnósticos"}), 500
+
     # ───────────── reportes descargables (Excel) ─────────────
     @bp.route("/api/salud/reporte", methods=["GET"])
     def api_salud_reporte():
@@ -744,7 +887,7 @@ def crear_blueprint_salud(supabase_url, headers):
                 datos["reev"] = _calc_reev(filas, incluir_al_dia=True)
                 datos["reev_est"] = _calc_reev_establecimientos(filas)
             if tipo in ("completo", "nutricion"):
-                datos["nutri"] = _calc_nutricion(filas, request.args.get("anio"))
+                datos["nutri"] = _calc_nutricion(_solo_familiar(filas), request.args.get("anio"))
             if tipo in ("completo", "derivaciones"):
                 datos["deriv"] = _calc_derivaciones(_evaluados_para_derivaciones())
             proys = _proyectos()

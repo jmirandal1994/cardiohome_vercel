@@ -193,3 +193,25 @@ details.se-que p{margin:6px 0 0;line-height:1.45}
 .se-est-camp span{min-width:62px;font-weight:700;color:#13263a}
 .se-est-camp b{color:#1c67a3}
 @media (prefers-reduced-motion: reduce){.se-ring,.se-est-det{animation:none}}
+/* Matriz de derivaciones por colegio (% de evaluados) */
+.se-mx-top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+.se-mx-escala{display:flex;align-items:center;gap:8px;font-size:.75rem;color:#5b6b7a;white-space:nowrap}
+.se-mx-escala span{display:flex;border-radius:4px;overflow:hidden}
+.se-mx-escala i{width:14px;height:12px}
+.se-mx-tw{max-height:560px;overflow:auto;border:1px solid var(--se-line);border-radius:12px;background:#fff}
+.se-mx{border-collapse:separate;border-spacing:0;width:100%;font-size:.8rem}
+.se-mx th{position:sticky;top:0;z-index:2;background:var(--se-soft);color:#334155;font-weight:700;text-align:center;padding:8px 6px;border-bottom:1px solid var(--se-line);cursor:pointer;white-space:nowrap;user-select:none}
+.se-mx th .ord{color:#94a3b8;font-size:.7rem;margin-left:3px}
+.se-mx th.on .ord{color:#1c5cab}
+.se-mx th.izq{left:0;z-index:3;text-align:left}
+.se-mx td{height:30px;padding:0 8px;border-bottom:2px solid #fff;text-align:center;white-space:nowrap}
+.se-mx td.izq{position:sticky;left:0;z-index:1;background:#fff;text-align:left;font-weight:600;color:#13263a;max-width:300px;overflow:hidden;text-overflow:ellipsis}
+.se-mx td.num{color:#475569;font-variant-numeric:tabular-nums}
+.se-mx td.tot{font-weight:700;color:#13263a}
+.se-mx td.tot small{color:#64748b;font-weight:500}
+.se-mx td.c{min-width:74px;border-left:2px solid #fff;font-weight:600;font-variant-numeric:tabular-nums}
+.se-mx td.c.gris{color:#94a3b8;font-weight:500}
+.se-mx tr.chico td.izq,.se-mx tr.chico td.num{color:#94a3b8}
+.se-mx tr.prom td{background:var(--se-soft);border-bottom:2px solid #cbd5e1}
+.se-mx tr.prom td.izq{font-weight:800}
+.se-mx tbody tr:hover td.izq{color:#1c67a3}

@@ -255,7 +255,7 @@
       iniciado = true;
       raiz.querySelectorAll(".se-tab").forEach((b) => b.addEventListener("click", () => SE.tab(b.dataset.tab)));
       $("se-buscar").addEventListener("input", debounce(buscar, 350));
-      ["se-f-proy", "se-f-col"].forEach((id) => $(id).addEventListener("change", () => { estado.reev = null; estado.nutri = null; estado.deriv = null; estado.diag = null; estado.est = null; estado.estAbierto = null; SE.tab(estado.tab); }));
+      ["se-f-proy", "se-f-col"].forEach((id) => $(id).addEventListener("change", () => { estado.reev = null; estado.nutri = null; estado.deriv = null; estado.derivOrden = null; estado.diag = null; estado.est = null; estado.estAbierto = null; SE.tab(estado.tab); }));
       $("se-f-anio").addEventListener("change", () => { estado.nutri = null; SE.tab("nutri"); });
       try {
         const f = await api("/api/salud/filtros");
@@ -642,11 +642,12 @@
         ${variosOrigenes ? `<div class="se-card"><h4>Según quién derivó</h4><p class="se-cap">medicina familiar y neurología</p><div class="se-chart" style="height:${Math.max(250, esps.length * 26 + 40)}px"><canvas id="se-c-origen"></canvas></div>
           <details class="se-que"><summary>¿Cómo leerlo?</summary><p>Medicina familiar deriva sobre todo a oftalmología, dental, nutrición y otorrino. Neurología suele recomendar apoyos como fonoaudiología, psicología o terapia ocupacional.</p></details></div>` : ""}
       </div>
-      <div class="se-card"><h4>Derivaciones por colegio</h4><p class="se-cap">estudiantes derivados a cada especialidad · ordenado por total</p>
-        <div class="se-tw"><table class="se-table"><thead><tr><th>Colegio</th><th>Derivados</th>${esps.slice(0, 8).map((e) => `<th>${esc(e.especialidad)}</th>`).join("")}</tr></thead><tbody>
-        ${j.colegios.slice(0, 25).map((c) => `<tr><td><b>${esc(c.colegio)}</b></td><td><b>${fmtN(c.derivados)}</b></td>${esps.slice(0, 8).map((e) => { const v = c[e.especialidad] || 0, mx = Math.max(1, c.derivados); return `<td><div style="display:flex;align-items:center;gap:6px"><span style="min-width:28px">${fmtN(v)}</span><div class="se-bar" style="min-width:50px;flex:1"><span style="width:${Math.round(100 * v / mx)}%;--fg:${colEsp[e.especialidad]}"></span></div></div></td>`; }).join("")}</tr>`).join("")}
-        </tbody></table></div>${j.colegios.length > 25 ? `<div class="se-pag">Se muestran 25 de ${fmtN(j.colegios.length)} colegios. Descarga el reporte para ver todos.</div>` : ""}</div>`;
+      <div class="se-card"><div class="se-mx-top"><div><h4>Derivaciones por colegio</h4><p class="se-cap" style="margin:0">% de los estudiantes evaluados en cada colegio que fueron derivados a cada especialidad, para comparar colegios de distinto tamaño. Haz clic en una columna para ordenar.</p></div>
+        <div class="se-mx-escala" aria-hidden="true">0%<span>${MX_RAMPA.map((c) => `<i style="background:${c}"></i>`).join("")}</span>${MX_TOPE}% o más</div></div>
+        <div class="se-mx-tw"><table class="se-mx"><thead><tr id="se-mx-cab"></tr></thead><tbody id="se-mx-cuerpo"></tbody></table></div>
+        <p class="se-cap" style="margin:8px 0 0">Los colegios con menos de ${MX_MIN_N} estudiantes evaluados van al final y en gris: con tan pocos estudiantes, un solo caso cambia mucho el porcentaje.</p></div>`;
     box.innerHTML = h;
+    pintarMatrizDeriv();
     animar(box);
     ensureChart().then(() => {
       chart("se-c-deriv", { type: "bar", data: { labels: esps.map((e) => e.especialidad), datasets: [{ data: esps.map((e) => e.estudiantes), backgroundColor: esps.map((e) => colEsp[e.especialidad]), borderRadius: 5 }] },
@@ -689,6 +690,41 @@
         options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${fmtN(c.parsed.x)} estudiantes (${fmtN(gs[c.dataIndex].pct, 1)}%)` } } },
           scales: { x: { grid: { color: "#eef2f6" } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } } } });
     }).catch(() => {});
+  }
+
+  // ── Matriz de derivaciones por colegio: % de evaluados del colegio, color de un solo tono (claro → oscuro) ──
+  const MX_RAMPA = ["#eef4fb", "#cde2fb", "#b7d3f6", "#9ec5f4", "#86b6ef", "#6da7ec", "#5598e7", "#3987e5", "#2a78d6", "#256abf", "#1c5cab", "#184f95", "#104281"];
+  const MX_TOPE = 60, MX_MIN_N = 10;
+  const MX_CORTO = { "Otorrinolaringología": "Otorrino" };
+  const mxPaso = (p) => (p <= 0 ? 0 : Math.min(MX_RAMPA.length - 1, 1 + Math.floor(p / (MX_TOPE / (MX_RAMPA.length - 1)))));
+  SE.ordenMatriz = function (k) { estado.derivOrden = k; pintarMatrizDeriv(); };
+  function pintarMatrizDeriv() {
+    const j = estado.deriv, cab = $("se-mx-cab"), cuerpo = $("se-mx-cuerpo");
+    if (!j || !cab || !cuerpo) return;
+    const esps = [...(j.principales || []), "Otras"];
+    const orden = estado.derivOrden || "derivados";
+    const pct = (n, d) => (d ? (100 * (n || 0)) / d : 0);
+    const cols = [["colegio", "Colegio", "izq"], ["evaluados", "Evaluados", "num"], ["derivados", "Derivados", "num"], ...esps.map((e) => [e, MX_CORTO[e] || e, ""])];
+    cab.innerHTML = cols.map(([k, l, cl]) => `<th class="${cl} ${orden === k ? "on" : ""}" scope="col" onclick="SE.ordenMatriz('${k}')" aria-sort="${orden === k ? "descending" : "none"}">${esc(l)}<span class="ord">${orden === k ? "▼" : "↕"}</span></th>`).join("");
+    const val = (c) => (orden === "colegio" ? c.colegio : orden === "evaluados" ? c.evaluados : pct(c[orden], c.evaluados));
+    const cmp = (a, b) => (orden === "colegio" ? a.colegio.localeCompare(b.colegio, "es") : val(b) - val(a) || b.evaluados - a.evaluados);
+    const grandes = j.colegios.filter((c) => c.evaluados >= MX_MIN_N).sort(cmp);
+    const chicos = j.colegios.filter((c) => c.evaluados < MX_MIN_N).sort(cmp);
+    const celda = (c, e, gris) => {
+      const p = pct(c[e], c.evaluados), r = Math.round(p);
+      const tip = `${c.colegio} · ${MX_CORTO[e] || e}: ${fmtN(c[e] || 0)} de ${fmtN(c.evaluados)} evaluados (${r}%)`;
+      if (gris) return `<td class="c gris" title="${esc(tip)}">${r}%</td>`;
+      const k = mxPaso(p);
+      return `<td class="c" title="${esc(tip)}" style="background:${MX_RAMPA[k]};color:${k >= 8 ? "#fff" : "#0f172a"}">${r}%</td>`;
+    };
+    const fila = (c, cl = "") => {
+      const gris = !cl && c.evaluados < MX_MIN_N;
+      return `<tr class="${cl}${gris ? " chico" : ""}"><td class="izq" title="${esc(c.colegio)}">${esc(c.colegio)}</td><td class="num">${fmtN(c.evaluados)}</td>
+        <td class="num tot">${Math.round(pct(c.derivados, c.evaluados))}% <small>· ${fmtN(c.derivados)}</small></td>${esps.map((e) => celda(c, e, gris)).join("")}</tr>`;
+    };
+    const prom = { colegio: "Promedio", evaluados: j.evaluados, derivados: j.derivados, Otras: j.otras };
+    (j.especialidades || []).forEach((e) => { prom[e.especialidad] = e.estudiantes; });
+    cuerpo.innerHTML = fila(prom, "prom") + grandes.map((c) => fila(c)).join("") + chicos.map((c) => fila(c)).join("");
   }
 
   // Iniciar cuando se abre la sección desde el menú

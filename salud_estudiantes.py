@@ -179,6 +179,8 @@ ESPECIALIDADES_DERIVACION = [
     ("Cardiología", r"cardi[oó]log"),
 ]
 _RX_DERIV = [(n, re.compile(p, re.I)) for n, p in ESPECIALIDADES_DERIVACION]
+# Columnas propias de la matriz por colegio; el resto de las especialidades se agrupa en "Otras"
+DERIV_PRINCIPALES = ("Oftalmología", "Dental", "Nutrición", "Otorrinolaringología")
 
 
 def especialidades_derivadas(texto):
@@ -691,15 +693,20 @@ def crear_blueprint_salud(supabase_url, headers):
         evaluados = set()
         por_esp, por_colegio, por_origen, por_anio = {}, {}, {}, {}
         derivados, lista = set(), []
+        eval_colegio, otras, otras_colegio = {}, set(), {}  # para la matriz de % por colegio
         for f in filas:
             clave = normalizar_rut(f.get("rut")) or f["id"]
             evaluados.add(clave)
+            n = noms.get(f.get("nomina_id")) or {}
+            col = (n.get("nombre_colegio") or "Sin colegio").strip()
+            eval_colegio.setdefault(col, set()).add(clave)
             esps = especialidades_derivadas(f.get("derivaciones"))
             if not esps:
                 continue
             derivados.add(clave)
-            n = noms.get(f.get("nomina_id")) or {}
-            col = (n.get("nombre_colegio") or "Sin colegio").strip()
+            if any(e not in DERIV_PRINCIPALES for e in esps):
+                otras.add(clave)
+                otras_colegio.setdefault(col, set()).add(clave)
             origen = _especialidad(n)
             fr = _fecha(f.get("fecha_relleno"))
             for e in esps:
@@ -716,8 +723,10 @@ def crear_blueprint_salud(supabase_url, headers):
         orden_esp = [e for e, _ in ranking]
         tot_eval = len(evaluados)
         colegios = []
-        for pc in por_colegio.values():
-            fila = {"colegio": pc["colegio"], "derivados": len(pc["derivados"])}
+        for col, ev in eval_colegio.items():  # todos los colegios evaluados, también los sin derivaciones
+            pc = por_colegio.get(col, {})
+            fila = {"colegio": col, "evaluados": len(ev), "derivados": len(pc.get("derivados", ())),
+                    "Otras": len(otras_colegio.get(col, ()))}
             for e in orden_esp:
                 fila[e] = len(pc.get(e, ()))
             colegios.append(fila)
@@ -729,6 +738,7 @@ def crear_blueprint_salud(supabase_url, headers):
             "especialidades": [{"especialidad": e, "estudiantes": n,
                                 "pct": round(100 * n / tot_eval, 1) if tot_eval else None} for e, n in ranking],
             "colegios": colegios,
+            "principales": list(DERIV_PRINCIPALES), "otras": len(otras),
             "por_origen": {o: {e: len(v) for e, v in d.items()} for o, d in por_origen.items()},
             "por_anio": [{"anio": a, **{e: len(v) for e, v in d.items()}} for a, d in sorted(por_anio.items())],
             "lista": lista,
@@ -852,7 +862,7 @@ def crear_blueprint_salud(supabase_url, headers):
             return jsonify({"success": False, "message": "No autorizado"}), 403
         try:
             r = _calc_derivaciones(_evaluados_para_derivaciones())
-            r["colegios"] = r["colegios"][:60]
+            r["colegios"] = r["colegios"][:400]
             r.pop("lista", None)
             return jsonify({"success": True, **r})
         except Exception as e:

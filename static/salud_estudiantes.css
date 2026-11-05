@@ -215,3 +215,25 @@ details.se-que p{margin:6px 0 0;line-height:1.45}
 .se-mx tr.prom td{background:var(--se-soft);border-bottom:2px solid #cbd5e1}
 .se-mx tr.prom td.izq{font-weight:800}
 .se-mx tbody tr:hover td.izq{color:#1c67a3}
+/* Imprimir o guardar PDF: solo la pestaña, sin el marco del panel, en varias páginas y con sus colores */
+@media print{
+  @page{margin:12mm}
+  html:has(body.se-print),body.se-print{height:auto!important;overflow:visible!important;background:#fff!important}
+  body.se-print *:has(#se-root){display:block!important;position:static!important;width:auto!important;height:auto!important;min-height:0!important;max-height:none!important;margin:0!important;padding:0!important;overflow:visible!important;transform:none!important;background:none!important;box-shadow:none!important;border:0!important}
+  body.se-print *:not(:has(#se-root)):not(#se-root):not(#se-root *){display:none!important}
+  body.se-print #se-root{position:static!important;width:100%!important}
+  body.se-print #se-root *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.se-print .se-head.se-hero{padding:0 0 8px;margin:0}
+  body.se-print .se-kicker{display:none}
+  body.se-print .se-chart{height:auto!important}
+  body.se-print canvas{max-width:100%!important;height:auto!important}
+  body.se-print .se-mx-tw{max-height:none!important;overflow:visible!important}
+  body.se-print .se-card:has(.se-mx),body.se-print .se-card:has(.se-table){break-inside:auto}
+  body.se-print .se-mx{font-size:.68rem}
+  body.se-print .se-mx th{position:static;padding:5px 3px}
+  body.se-print .se-mx th .ord{display:none}
+  body.se-print .se-mx td{height:auto;padding:3px}
+  body.se-print .se-mx td.izq{position:static;white-space:normal;max-width:none;overflow:visible}
+  body.se-print .se-mx td.c{min-width:0}
+  body.se-print .se-mx tr{break-inside:avoid}
+}

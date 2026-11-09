@@ -9,13 +9,13 @@
   "use strict";
 
   var SECCIONES = {
-    "identificación del estudiante": { ico: "fa-id-card", corto: "Identificación", tema: "slate" },
-    "antecedentes perinatales": { ico: "fa-baby", corto: "Perinatales", half: true, tema: "green" },
-    "dsm": { ico: "fa-child", corto: "DSM", half: true, tema: "green" },
-    "antecedentes personales": { ico: "fa-notes-medical", corto: "Personales", tema: "orange" },
-    "visión y audición": { ico: "fa-eye", corto: "Visión y audición", half: true, tema: "violet" },
-    "salud bucodental": { ico: "fa-tooth", corto: "Bucodental", half: true, tema: "rose" },
-    "examen físico y clasificación": { ico: "fa-stethoscope", corto: "Examen físico", tema: "blue" }
+    "identificación del estudiante": { ico: "fa-id-card", corto: "Identificación" },
+    "antecedentes perinatales": { ico: "fa-baby", corto: "Perinatales", half: true },
+    "dsm": { ico: "fa-child", corto: "DSM", half: true },
+    "antecedentes personales": { ico: "fa-notes-medical", corto: "Personales" },
+    "visión y audición": { ico: "fa-eye", corto: "Visión y audición", half: true },
+    "salud bucodental": { ico: "fa-tooth", corto: "Bucodental", half: true },
+    "examen físico y clasificación": { ico: "fa-stethoscope", corto: "Examen físico" }
   };
 
   function el(tag, cls, html) {
@@ -86,7 +86,6 @@
         var cfg = SECCIONES[titulo.toLowerCase()] || { ico: "fa-file-medical", corto: titulo };
         var sec = el("section", "fm-sec" + (cfg.half ? " fm-half" : ""));
         sec.style.animationDelay = (secciones.length * 40) + "ms";
-        sec.setAttribute("data-tema", cfg.tema || "slate");
         var head = el("div", "fm-head");
         head.appendChild(el("span", "fm-ico", '<i class="fas ' + cfg.ico + '"></i>'));
         head.appendChild(h);
@@ -133,7 +132,6 @@
       });
       var chip = el("button", "fm-chip", '<span class="fm-ring"><i></i></span>' + s.cfg.corto);
       chip.type = "button";
-      chip.setAttribute("data-tema", s.cfg.tema || "slate");
       chip.addEventListener("click", function () {
         s.sec.classList.remove("closed");
         s.sec.scrollIntoView({ behavior: "smooth", block: "start" });

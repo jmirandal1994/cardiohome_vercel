@@ -1,7 +1,7 @@
 """Formulario Único de Evaluación de Salud (Mineduc, Decreto 170) en formato texto.
 Toma los datos de una evaluación de Medicina Familiar y los escribe como texto
 corrido sobre el formulario oficial, sin casillas."""
-import io, os
+import io, os, re
 from datetime import date, datetime
 from reportlab.pdfgen import canvas as rl_canvas
 from reportlab.lib.utils import simpleSplit, ImageReader
@@ -49,6 +49,7 @@ def _lista(est, pares):
 def _frase(titulo, items, obs=''):
     partes = ', '.join(items)
     obs = _txt(obs)
+    obs = obs.strip().rstrip('.').strip()
     if obs and obs.upper() != 'NO INFORMADO':
         partes = f"{partes}. {obs}" if partes else obs
     elif obs.upper() == 'NO INFORMADO' and not partes:
@@ -173,6 +174,15 @@ def generar_fu_desde_campos(pdf_base_path, campos):
     _campo(c, 'Español', 443, 127, 548, 141)
     _campo(c, _fecha(est.get('fecha_evaluacion')), 200, 245, 368, 259)
     _campo(c, _fecha(est.get('fecha_reevaluacion')), 371, 245, 548, 259)
+    # Diagnóstico de discapacidad o déficit (mismo texto del diagnóstico)
+    diag = (_txt(est.get('diagnostico_1')) or _txt(est.get('diagnostico_2'))).rstrip('.')
+    ancho = 548 - 413 - 4
+    if diag and c.stringWidth(diag, 'Helvetica', 6.5) > ancho:
+        corto = re.split(r'[,;.]', diag)[0].strip()
+        while corto and c.stringWidth(corto + '…', 'Helvetica', 6.5) > ancho:
+            corto = corto[:-1].rstrip()
+        diag = corto if corto == re.split(r'[,;.]', diag)[0].strip() else corto + '…'
+    _campo(c, diag, 413, 169, 548, 182, fs=8)
     _escribe(c, texto_examen(est), 47, 321, 548, 441, fs=8.5)
     _escribe(c, texto_diagnostico(est), 47, 478, 548, 542, fs=9)
     _escribe(c, texto_indicaciones(est), 47, 581, 548, 707, fs=8.5)

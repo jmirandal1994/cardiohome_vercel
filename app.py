@@ -1111,6 +1111,15 @@ def generar_pdf_familiar_overlay(pdf_base_path, campos):
     if not REPORTLAB_OK:
         return None
 
+    # Si el PDF base de la doctora es el Formulario Único Mineduc (formato texto),
+    # se escribe todo como texto corrido en vez de casillas.
+    try:
+        from fu_mineduc import es_base_fu, generar_fu_desde_campos
+        if es_base_fu(pdf_base_path):
+            return generar_fu_desde_campos(pdf_base_path, campos)
+    except Exception as e:
+        print(f"⚠️ Formato FU Mineduc no disponible, se usa el formulario normal: {e}")
+
     COORDS_TEXTO = {
         'nombre':                     (80.5,  698.0, 343.7, 720.0),
         'fecha_nacimiento':           (77.4,  676.8, 169.8, 698.8),
